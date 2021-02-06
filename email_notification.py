@@ -12,11 +12,13 @@ EMAIL_SEND_ERROR = 3
 OTHER_ERROR = 4
 
 
-def send_email_alert(to_address_lst=[os.environ['GMAIL_TO_USERNAME']], from_address=os.environ['GMAIL_USERNAME'],
-                     from_password=os.environ['GMAIL_PASSWORD'], subject="", body="", debug=False):
+def send_email_alert(to_address_lst=[os.environ['GMAIL_TO_USERNAME']],
+                     from_address=os.environ['GMAIL_USERNAME'],
+                     from_password=os.environ['GMAIL_PASSWORD'],
+                     subject="", body="", debug=False):
     """
     Send an email alert on gmail.
-    
+
     inputs:
         to(list):      list of email addresses
         from(str):     from gmail address
@@ -33,27 +35,27 @@ def send_email_alert(to_address_lst=[os.environ['GMAIL_TO_USERNAME']], from_addr
     From: %s
     To: %s
     Subject: %s
-    
+
     %s
     """ % (from_address, ", ".join(to_address_lst), subject, body)
-    
+
     try:
         server = smtplib.SMTP_SSL('smtp.gmail.com', 465)
-    except:
+    except Exception:
         if debug:
             print("exception during smtp connection")
         return CONNECTION_ERROR
     server.ehlo()
     try:
         server.login(from_address, from_password)
-    except:
+    except Exception:
         if debug:
             print("exception during email account authorization")
         server.close()
         return AUTHORIZATION_ERROR
     try:
         server.sendmail(from_address, to_address_lst, email_text)
-    except:
+    except Exception:
         if debug:
             print("exception during mail send")
         server.close()
