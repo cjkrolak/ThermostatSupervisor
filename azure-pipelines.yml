@@ -6,8 +6,8 @@
 trigger:
 - main
 
-pool:
-  vmImage: ubuntu-default
+# pool:
+#   vmImage: ubuntu-default
 strategy:
   matrix:
     Python27:
@@ -30,6 +30,11 @@ steps:
     pip install -r requirements.txt
   displayName: 'Install dependencies'
 
+- script: |
+    python -m pip install flake8
+    flake8 .
+  displayName: 'Run lint tests'
+  workingDirectory: 
 - script: |
     pip install pytest pytest-azurepipelines
     pytest
