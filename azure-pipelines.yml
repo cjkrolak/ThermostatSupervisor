@@ -8,6 +8,8 @@ trigger:
 
 # pool:
 #   vmImage: ubuntu-default
+variables:
+  GMAIL_USERNAME: '$(GMAIL_USER_NAME)'
 strategy:
   matrix:
     # Python27:
