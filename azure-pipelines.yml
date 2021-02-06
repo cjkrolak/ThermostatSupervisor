@@ -9,7 +9,11 @@ trigger:
 # pool:
 #   vmImage: ubuntu-default
 variables:
-  GMAIL_USERNAME: '$(GMAIL_USER_NAME)'
+  GMAIL_USERNAME: '$(GMAIL_USERNAME)'
+  GMAIL_PASSWORD: '$(GMAIL_PASSWORD)'
+  TCC_USERNAME: '$(TCC_USERNAME)'
+  TCC_PASSWORD: '$(TCC_PASSWORD)'
+
 strategy:
   matrix:
     # Python27:
