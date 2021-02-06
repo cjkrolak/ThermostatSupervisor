@@ -1,8 +1,7 @@
-'''
-Created on Feb 6, 2021
+"""
+Unit tes module for email_notification.py.
+"""
 
-@author: cjkro
-'''
 import email_notification as eml
 import unittest
 
@@ -16,13 +15,14 @@ class Test(unittest.TestCase):
         pass
 
     def testName(self):
+        body="this is a test of the email notification alert."
         return_status = \
         eml.send_email_alert(subject="(unittest) test email alert",
-                             body="this is a test of the email notification alert.",
+                             body,
                              debug=True)
         self.assertEqual(return_status, eml.NO_ERROR)
 
-        
+
 if __name__ == "__main__":
     # import sys;sys.argv = ['', 'Test.testName']
     unittest.main()
