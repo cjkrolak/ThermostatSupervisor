@@ -6,7 +6,7 @@ Flask server for posting supervisor status messages.
 from contextlib import redirect_stdout
 import flask
 import subprocess
-import time          #You don't need this. Just included it so you can see the output stream.
+import time
 import webbrowser
 
 # script to run
