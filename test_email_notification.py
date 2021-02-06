@@ -15,11 +15,11 @@ class Test(unittest.TestCase):
         pass
 
     def testName(self):
-        body="this is a test of the email notification alert."
+        body = "this is a test of the email notification alert."
         return_status = \
-        eml.send_email_alert(subject="(unittest) test email alert",
-                             body,
-                             debug=True)
+            eml.send_email_alert(subject="(unittest) test email alert",
+                                 body=body,
+                                 debug=True)
         self.assertEqual(return_status, eml.NO_ERROR)
 
 
