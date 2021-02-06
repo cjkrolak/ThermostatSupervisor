@@ -9,14 +9,11 @@ import unittest
 
 class Test(unittest.TestCase):
 
-
     def setUp(self):
         pass
 
-
     def tearDown(self):
         pass
-
 
     def testName(self):
         return_status = \
@@ -24,7 +21,6 @@ class Test(unittest.TestCase):
                              body="this is a test of the email notification alert.",
                              debug=True)
         self.assertEqual(return_status, eml.NO_ERROR)
-
 
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testName']
