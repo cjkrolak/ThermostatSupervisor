@@ -4,17 +4,34 @@ connection to Honeywell thermoststat using pyhtcc
 https://pypi.org/project/pyhtcc/
 
 """
+# from contextlib import redirect_stdout
 import datetime
+from flask import Flask
 import operator
 import os
 import pprint
 import pyhtcc
 import time
+import webbrowser
 
 import email_notification
 
-# from pyhtcc import PyHTCC
-# from pyhtcc import Zone
+# Flask server
+render_flask = False
+
+# redirect output to file if this string is not None
+# console_log_file = ".\\data\\honeywell_status.txt"
+console_log_file = None
+
+# create a flask app for this file
+if render_flask:
+    app = Flask(__name__)
+
+    @app.route('/')  # define the route
+    def index():
+        main()
+
+
 # globals
 OFF_MODE = "OFF_MODE"
 HEAT_MODE = "HEAT_MODE"
@@ -471,7 +488,7 @@ def main():
                     current_mode["cool_deviation"]):
                 email_notification.send_email_alert(
                     subject="cool deviation alert",
-                    body=current_mode["status_msg"], debug=True)
+                    body=current_mode["status_msg"], debug=False)
                 print("\n*** cool deviation detected, reverting thermostat to "
                       "cool schedule ***\n")
                 zone.set_heat_setpoint(zone.get_schedule_cool_sp())
@@ -496,4 +513,14 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    # if console_log_file is not None:
+    #    # redirect console output to file for posting
+    #    with open(console_log_file, 'w') as f:
+    #        with redirect_stdout(f):
+
+    if render_flask:  # flask server output
+        # show the page in browser
+        webbrowser.open('http://localhost:23423')
+        app.run(host='localhost', port=23423, debug=True)
+    else:  # console output
+        main()

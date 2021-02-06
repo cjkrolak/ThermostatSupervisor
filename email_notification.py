@@ -1,20 +1,37 @@
 """
-Email notifications from gmail client
+Email notifications from gmail client.
+
+dependencies:
+  environment variables must be setup:
+  'GMAIL_USERNAME':  from address on gmail service
+  'GMAIL_PASSWORD':  GMAIL_USERNAME password
 """
+from email.mime.text import MIMEText
 import os
 import smtplib
+import socket
+import sys
+import traceback
 
 # status flags
 NO_ERROR = 0
 CONNECTION_ERROR = 1
 AUTHORIZATION_ERROR = 2
 EMAIL_SEND_ERROR = 3
-OTHER_ERROR = 4
+ENVIRONMENT_ERROR = 4
+OTHER_ERROR = 5
+
+# tracing data
+module_name = sys.modules[__name__]
+host_name = socket.gethostname()
+host_ip = socket.gethostbyname(host_name)
+email_trace = ("email sent from module '%s' running on %s (%s)" %
+               (module_name, host_name, host_ip))
 
 
-def send_email_alert(to_address_lst=[os.environ['GMAIL_TO_USERNAME']],
-                     from_address=os.environ['GMAIL_USERNAME'],
-                     from_password=os.environ['GMAIL_PASSWORD'],
+def send_email_alert(to_address=None,
+                     from_address=None,
+                     from_password=None,
                      subject="", body="", debug=False):
     """
     Send an email alert on gmail.
@@ -22,25 +39,58 @@ def send_email_alert(to_address_lst=[os.environ['GMAIL_TO_USERNAME']],
     inputs:
         to(list):      list of email addresses
         from(str):     from gmail address
-        from_pwd(str): password for from gmail address
+        from_password(str): password for from gmail address
         subject(str):  email subject text
         body(str):     email body text
         debug(bool):   True to enable verbose debug loggging
     returns:
         status(int):  status or error code, 0 for no error
     """
+
+    # default email addresses from env variables
+    if not to_address:
+        to_address_default = 'GMAIL_USERNAME'
+        try:
+            to_address = os.environ[to_address_default]
+        except KeyError:
+            print("FATAL ERROR: required environment variable '%s'"
+                  " is missing." % to_address_default)
+            return ENVIRONMENT_ERROR
+    if not from_address:
+        from_address_default = 'GMAIL_USERNAME'
+        try:
+            from_address = os.environ[from_address_default]
+        except KeyError:
+            print("FATAL ERROR: required environment variable '%s'"
+                  " is missing." % from_address_default)
+            return ENVIRONMENT_ERROR
+    if not from_password:
+        from_pwd_default = 'GMAIL_PASSWORD'
+        try:
+            from_password = os.environ[from_pwd_default]
+        except KeyError:
+            print("FATAL ERROR: required environment variable '%s'"
+                  " is missing." % from_pwd_default)
+            return ENVIRONMENT_ERROR
+
     status = NO_ERROR
 
-    email_text = """\
-    From: %s
-    To: %s
-    Subject: %s
+    # add trace
+    body += "\n\n%s" % email_trace
 
-    %s
-    """ % (from_address, ", ".join(to_address_lst), subject, body)
+    # build email message
+    msg = MIMEText(body)
+    msg['Subject'] = subject
+    msg['From'] = from_address
+    msg['To'] = to_address
+
+    if debug:
+        print("message text=%s" % msg.as_string())
 
     try:
         server = smtplib.SMTP_SSL('smtp.gmail.com', 465)
+        if debug:
+            print("smtp connection successful")
     except Exception:
         if debug:
             print("exception during smtp connection")
@@ -48,13 +98,20 @@ def send_email_alert(to_address_lst=[os.environ['GMAIL_TO_USERNAME']],
     server.ehlo()
     try:
         server.login(from_address, from_password)
+        if debug:
+            print("email account authorization "
+                  "for account %s successful" % from_address)
     except Exception:
         if debug:
-            print("exception during email account authorization")
+            print(traceback.format_exc())
+            print("exception during email account authorization "
+                  "for account %s" % from_address)
         server.close()
         return AUTHORIZATION_ERROR
     try:
-        server.sendmail(from_address, to_address_lst, email_text)
+        server.sendmail(from_address, to_address, msg.as_string())
+        if debug:
+            print("mail send was successful")
     except Exception:
         if debug:
             print("exception during mail send")
@@ -65,3 +122,9 @@ def send_email_alert(to_address_lst=[os.environ['GMAIL_TO_USERNAME']],
         print("Email sent!")
 
     return status
+
+
+if __name__ == "__main__":
+    send_email_alert(subject="test email alert",
+                     body="this is a test of the email notification alert.",
+                     debug=True)
