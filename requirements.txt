@@ -1,1 +1,1 @@
-pip3 install pyhtcc
+pyhtcc==0.1.6
