@@ -13,8 +13,11 @@ Script can be configured to customize polling interval, force re-logon after per
 
 # environment variables required
 'TCC_USERNAME':  username to Honeywell TCC website
+
 'TCC_PASSWORD':  password for TCC_USERNAME
 
 'GMAIL_TO_USERNAME':  email accounts to send alerts
+
 'GMAIL_USERNAME': email account to send notifications from
+
 'GMAIL_PASSWORD': password for GMAIL_USERNAME
