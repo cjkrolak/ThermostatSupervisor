@@ -31,6 +31,12 @@ class Test(unittest.TestCase):
                                  subject="(unittest) test email alert",
                                  body=body,
                                  debug=True)
+
+        return_status = \
+        eml.send_email_alert(subject="(unittest) test email alert",
+                             body="this is a test of the email notification alert.",
+                             debug=True)
+
         self.assertEqual(return_status, eml.NO_ERROR)
 
 
