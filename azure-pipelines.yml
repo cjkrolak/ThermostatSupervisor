@@ -43,7 +43,7 @@ steps:
 
 # python unit tests
 - script: |
-    python -m unittest test_utilities.py
+    python -m unittest test//test_utilities.py
   displayName: 'Unit Tests'
   env:
     GMAIL_USERNAME: '$(GMAIL_USERNAME)'
