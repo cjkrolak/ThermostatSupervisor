@@ -1,13 +1,17 @@
-'''
-Created on Feb 6, 2021
+"""
+Unit tes module for email_notification.py.
+"""
 
-@author: cjkro
-'''
 import email_notification as eml
+import sys
 import unittest
 
 
 class Test(unittest.TestCase):
+
+    to_address = None
+    from_address = None
+    from_password = None
 
     def setUp(self):
         pass
@@ -16,14 +20,30 @@ class Test(unittest.TestCase):
         pass
 
     def testName(self):
+        body = "this is a test of the email notification alert."
+        print("to_address before test: %s" % self.to_address)
+        print("from_address before test: %s" % self.from_address)
+        print("from_password before test: %s" % self.from_password)
+        return_status = \
+            eml.send_email_alert(to_address=self.to_address,
+                                 from_address=self.from_address,
+                                 from_password=self.from_password,
+                                 subject="(unittest) test email alert",
+                                 body=body,
+                                 debug=True)
+
         return_status = \
         eml.send_email_alert(subject="(unittest) test email alert",
                              body="this is a test of the email notification alert.",
                              debug=True)
+
         self.assertEqual(return_status, eml.NO_ERROR)
 
 
 if __name__ == "__main__":
-    #import sys;sys.argv = ['', 'Test.testName']
+    # import sys;sys.argv = ['', 'Test.testName']
+    if len(sys.argv) > 1 and False:
+        Test.to_address = sys.argv.pop()
+        Test.from_address = sys.argv.pop()
+        Test.from_password = sys.argv.pop()
     unittest.main()
-    
