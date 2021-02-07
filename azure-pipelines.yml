@@ -8,11 +8,11 @@ trigger:
 
 # pool:
 #   vmImage: ubuntu-default
-variables:
-  GMAIL_USERNAME: '$(GMAIL_USERNAME)'
-  GMAIL_PASSWORD: '$(GMAIL_PASSWORD)'
-  TCC_USERNAME: '$(TCC_USERNAME)'
-  TCC_PASSWORD: '$(TCC_PASSWORD)'
+#variables:
+#  GMAIL_USERNAME: '$(GMAIL_USERNAME)'
+#  GMAIL_PASSWORD: '$(GMAIL_PASSWORD)'
+#  TCC_USERNAME: '$(TCC_USERNAME)'
+#  TCC_PASSWORD: '$(TCC_PASSWORD)'
 
 strategy:
   matrix:
@@ -40,10 +40,10 @@ steps:
     python -m pip install flake8
     flake8 .
   displayName: 'Run lint tests'
-  workingDirectory: 
+#  workingDirectory: 
 #- script: |
 #    pip install pytest pytest-azurepipelines
 #    pytest
 #  displayName: 'pytest'
 
-- script: python -m unittest test_email_notification.py
+- script: python -m unittest test_email_notification.py $(GMAIL_USERNAME) $(GMAIL_USERNAME) $(GMAIL_PASSWORD)
