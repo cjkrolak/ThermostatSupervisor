@@ -35,7 +35,7 @@ class Test(unittest.TestCase):
         # write to file that does not exist
         test_msg1 = "first test message from unit test"
         # test_msg1_length = util.utf8len(test_msg1 + "\n") + 1
-        return_buffer = util.log_msg(test_msg1,
+        return_buffer = util.log_msg(test_msg1, mode=util.BOTH_LOG,
                                      file_name=file_name)
         self.assertEqual(return_buffer["status"], util.NO_ERROR)
 
@@ -47,7 +47,7 @@ class Test(unittest.TestCase):
         # append to file that does exist
         test_msg2 = "second test message from unit test"
         # test_msg2_length = util.utf8len(test_msg2 + "\n") + 1
-        return_buffer = util.log_msg(test_msg2,
+        return_buffer = util.log_msg(test_msg2, mode=util.BOTH_LOG,
                                      file_name=file_name)
         self.assertEqual(return_buffer["status"], util.NO_ERROR)
 
@@ -64,11 +64,12 @@ class Test(unittest.TestCase):
         """
         for env_key in ["GMAIL_USERNAME", "GMAIL_PASSWORD",
                         "TCC_USERNAME", "TCC_PASSWORD"]:
-            buff = util.get_env_variable(env_key, debug=True)
+            buff = util.get_env_variable(env_key)
             print("env$%s=%s" % (env_key, buff["value"]))
             self.assertEqual(buff["status"], util.NO_ERROR)
             self.assertGreater(len(buff["value"]), 0)
 
 
 if __name__ == "__main__":
+    util.log_msg.debug = True
     unittest.main()

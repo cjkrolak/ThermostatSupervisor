@@ -33,15 +33,13 @@ class Test(unittest.TestCase):
                                  from_address=self.from_address,
                                  from_password=self.from_password,
                                  subject="(unittest) test email alert",
-                                 body=body,
-                                 debug=True)
+                                 body=body)
         self.assertEqual(return_status, util.NO_ERROR)
 
         body = "this is a test of the email notification alert."
         return_status = \
             eml.send_email_alert(subject="(unittest) test email alert",
-                                 body=body,
-                                 debug=True)
+                                 body=body)
 
         self.assertEqual(return_status, util.NO_ERROR)
 
@@ -52,4 +50,5 @@ if __name__ == "__main__":
         Test.to_address = sys.argv.pop()
         Test.from_address = sys.argv.pop()
         Test.from_password = sys.argv.pop()
+    util.log_msg.debug = True
     unittest.main()
