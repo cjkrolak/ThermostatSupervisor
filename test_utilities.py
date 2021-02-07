@@ -52,8 +52,8 @@ class Test(unittest.TestCase):
 
         # confirm file exists
         file_size_bytes = os.path.getsize(full_path)
-        # TODO: file size estimate differs per platform
-        #self.assertEqual(file_size_bytes,
+        # file size estimate differs per platform, need to refine
+        # self.assertEqual(file_size_bytes,
         #                 test_msg1_length + test_msg2_length)
         self.assertGreater(file_size_bytes, 60)
 
