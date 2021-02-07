@@ -4,6 +4,7 @@ connection to Honeywell thermoststat using pyhtcc
 https://pypi.org/project/pyhtcc/
 
 """
+# built-in imports
 # from contextlib import redirect_stdout
 import datetime
 from flask import Flask
@@ -14,7 +15,9 @@ import pyhtcc
 import time
 import webbrowser
 
+# local imports
 import email_notification
+import utilities as util
 
 # Flask server
 render_flask = False
@@ -182,8 +185,8 @@ def get_all_metadata(p, zone_number=0, debug=False):
       dict
     """
     return_data = get_metadata(p, zone_number, parameter=None)
-    if debug:
-        print("all meta data: %s" % return_data)
+    util.log_msg("all meta data: %s" % return_data,
+                 func_name=1, debug=debug)
     return return_data
 
 
@@ -201,17 +204,18 @@ def get_metadata(p, zone_number=0, parameter=None, debug=False):
       str if parameter != None
     """
     zone_info_list = p.get_zones_info()
-    # print("zone info: %s" % zone_info_list)
+    # util.log_msg("zone info: %s" % zone_info_list,
+    #             func_name=1, debug=debug)
     if parameter is None:
         return_data = zone_info_list[zone_number]
-        if debug:
-            print("zone%s info: %s" % (zone_number, return_data))
+        util.log_msg("zone%s info: %s" % (zone_number, return_data),
+                     func_name=1, debug=debug)
         return return_data
     else:
         return_data = zone_info_list[zone_number].get(parameter)
-        if debug:
-            print("zone%s parameter '%s': %s" % (zone_number, parameter,
-                                                 return_data))
+        util.log_msg("zone%s parameter '%s': %s" %
+                     (zone_number, parameter, return_data),
+                     func_name=1, debug=debug)
         return return_data
 
 
@@ -228,8 +232,8 @@ def get_latestdata(p, zone_number=0, debug=False):
       str if parameter != None
     """
     latest_data_dict = get_metadata(p, zone_number).get('latestData')
-    if debug:
-        print("zone%s latestData: %s" % (zone_number, latest_data_dict))
+    util.log_msg("zone%s latestData: %s" % (zone_number, latest_data_dict),
+                 func_name=1, debug=debug)
     return latest_data_dict
 
 
@@ -245,8 +249,8 @@ def get_uiData(p, zone_number=0, debug=False):
       dict
     """
     ui_data_dict = get_latestdata(p, zone_number, debug).get('uiData')
-    if debug:
-        print("zone%s latestData: %s" % (zone_number, ui_data_dict))
+    util.log_msg("zone%s latestData: %s" % (zone_number, ui_data_dict),
+                 func_name=1, debug=debug)
     return ui_data_dict
 
 
@@ -263,41 +267,55 @@ def get_uiData_param(p, zone_number=0, parameter=None, debug=False):
       dict
     """
     parameter_data = get_uiData(p, zone_number=0, debug=False).get(parameter)
-    if debug:
-        print("zone%s uiData parameter %s: %s" % (zone_number, parameter,
-                                                  parameter_data))
+    util.log_msg("zone%s uiData parameter %s: %s" %
+                 (zone_number, parameter, parameter_data),
+                 func_name=1, debug=debug)
     return parameter_data
 
 
-def report_heating_parameters(zone):
+def report_heating_parameters(zone, debug=False):
     """
     Display critical thermostat settings and reading to the screen.
+    inputs:
+        zone(obj): Zone object
+        debug(bool): debug flag
+    returns:
+        None
     """
     # current temp as measured by thermostat
-    print("display temp=%s" % zone.get_display_temp())
+    util.log_msg("display temp=%s" % zone.get_display_temp(),
+                 func_name=1, debug=debug)
 
     # heating status
     if zone.get_system_switch_position() == system_switch_position[HEAT_MODE]:
-        print("heat mode=%s" % zone.get_heat_mode())
-        print("heat setpoint=%s" % zone.get_heat_setpoint())
-        # print("heat setpoint raw=%s" % zone.get_heat_setpoint_raw())
-        print("schedule heat sp=%s" % zone.get_schedule_heat_sp())
-        print("\n")
+        util.log_msg("heat mode=%s" % zone.get_heat_mode(), debug=debug)
+        util.log_msg("heat setpoint=%s" %
+                     zone.get_heat_setpoint(), debug=debug)
+        # util.log_msg("heat setpoint raw=%s" %
+        #              zone.get_heat_setpoint_raw(), debug=debug)
+        util.log_msg("schedule heat sp=%s" %
+                     zone.get_schedule_heat_sp(), debug=debug)
+        util.log_msg("\n", debug=debug)
 
     # cooling status
     if zone.get_system_switch_position() == system_switch_position[COOL_MODE]:
-        print("cool mode=%s" % zone.get_cool_mode())
-        print("cool setpoint=%s" % zone.get_cool_setpoint())
-        # print("cool setpoint raw=%s" % zone.get_cool_setpoint_raw())
-        print("schedule cool sp=%s" % zone.get_schedule_cool_sp())
-        print("\n")
+        util.log_msg("cool mode=%s" % zone.get_cool_mode(), debug=debug)
+        util.log_msg("cool setpoint=%s" %
+                     zone.get_cool_setpoint(), debug=debug)
+        # util.log_msg("cool setpoint raw=%s" %
+        #              zone.get_cool_setpoint_raw(), debug=debug)
+        util.log_msg("schedule cool sp=%s" %
+                     zone.get_schedule_cool_sp(), debug=debug)
+        util.log_msg("\n", debug=debug)
 
     # hold settings
-    print("is in vacation hold mode=%s" % zone.get_is_invacation_hold_mode())
-    print("vacation hold=%s" % zone.get_vacation_hold())
-    print("vacation hold until time=%s" % zone.get_vacation_hold_until_time())
-    print("temporary hold until time=%s" %
-          zone.get_temporary_hold_until_time())
+    util.log_msg("is in vacation hold mode=%s" %
+                 zone.get_is_invacation_hold_mode(), debug=debug)
+    util.log_msg("vacation hold=%s" % zone.get_vacation_hold(), debug=debug)
+    util.log_msg("vacation hold until time=%s" %
+                 zone.get_vacation_hold_until_time(), debug=debug)
+    util.log_msg("temporary hold until time=%s" %
+                 zone.get_temporary_hold_until_time(), debug=debug)
 
 
 def get_current_mode(zone, poll_count, print_status=True,
@@ -389,7 +407,7 @@ def get_current_mode(zone, poll_count, print_status=True,
                                                 strftime("%Y-%m-%d %H:%M:%S"),
                                                 poll_count, mode, status_msg))
     if print_status:
-        print(full_status_msg)
+        util.log_msg(full_status_msg)
 
     # return status
     return_buffer["heat_mode"] = heat_mode
@@ -402,36 +420,40 @@ def get_current_mode(zone, poll_count, print_status=True,
 
 
 def main():
-    print("Honeywell TCC thermostat monitoring service\n")
+    util.log_msg("Honeywell TCC thermostat monitoring service\n")
 
     # session variables
-    print("session settings:")
+    util.log_msg("session settings:")
     debug = False  # verbose debugging information
+
+    # set log file
+    util.log_msg.file_name = "honeywell.txt"
 
     # poll time setting:
     # min practical value is 2 minutes based on empirical test
     # max value is 3, higher settings will cause HTTP errors, why?
     poll_time_sec = 3 * 60
-    print("polling time set to %.1f minutes" % (poll_time_sec / 60.0))
+    util.log_msg("polling time set to %.1f minutes" %
+                 (poll_time_sec / 60.0), debug=debug)
 
     # reconnection time to TCC server:
     connection_time_sec = 8 * 60 * 60
-    print("server re-connect time set to %.1f minutes" %
-          (connection_time_sec / 60.0))
+    util.log_msg("server re-connect time set to %.1f minutes" %
+                 (connection_time_sec / 60.0), debug=debug)
 
     # mode parameters
     revert_thermostat_deviation = True  # revert thermostat if temp deviated
     revert_all_deviations = False  # True will flag all deviations,
     # False will only revert energy consuming deviations
-    print("thermostat %s for %s\n" % (["is being monitored",
-                                       "will be reverted"]
-                                      [revert_thermostat_deviation],
-                                      ["energy consuming deviations\n("
-                                       "e.g. heat setpoint above schedule "
-                                       "setpoint, cool setpoint below schedule"
-                                       " setpoint)",
-                                       "all schedule deviations"]
-                                      [revert_all_deviations]))
+    util.log_msg("thermostat %s for %s\n" %
+                 (["is being monitored", "will be reverted"]
+                  [revert_thermostat_deviation],
+                  ["energy consuming deviations\n("
+                   "e.g. heat setpoint above schedule "
+                   "setpoint, cool setpoint below schedule"
+                   " setpoint)",
+                   "all schedule deviations"]
+                  [revert_all_deviations]), debug=debug)
 
     # starting parameters
     previous_mode = {}
@@ -442,7 +464,8 @@ def main():
         # make connection to thermostat through myTotalConnect Comfort site
         username = os.environ['TCC_USERNAME']
         password = os.environ['TCC_PASSWORD']
-        print("connecting to TCC (session=%s)..." % connection_count)
+        util.log_msg("connecting to TCC (session=%s)..." %
+                     connection_count, debug=debug)
         p = PyHTCC(username, password)  # connect
         t0 = time.time()  # connection timer
 
@@ -479,8 +502,9 @@ def main():
                 email_notification.send_email_alert(
                     subject="heat deviation alert",
                     body=current_mode["status_msg"], debug=True)
-                print("\n*** heat deviation detected, reverting thermostat to"
-                      " heat schedule ***\n")
+                util.log_msg("\n*** heat deviation detected, "
+                             "reverting thermostat to"
+                             " heat schedule ***\n", debug=debug)
                 zone.set_heat_setpoint(zone.get_schedule_heat_sp())
 
             # revert thermostat to schedule if cool override is detected
@@ -489,8 +513,8 @@ def main():
                 email_notification.send_email_alert(
                     subject="cool deviation alert",
                     body=current_mode["status_msg"], debug=False)
-                print("\n*** cool deviation detected, reverting thermostat to "
-                      "cool schedule ***\n")
+                util.log_msg("\n*** cool deviation detected, reverting "
+                             "thermostat to cool schedule ***\n", debug=debug)
                 zone.set_heat_setpoint(zone.get_schedule_cool_sp())
 
             # polling delay
@@ -501,7 +525,7 @@ def main():
 
             # reconnect
             if (time.time() - t0) > connection_time_sec:
-                print("forcing re-connection to server...")
+                util.log_msg("forcing re-connection to server...", debug=debug)
                 del p
                 break  # force reconnection
 

@@ -36,12 +36,11 @@ def get_env_variable(env_key, debug=False):
 
     try:
         return_buffer["value"] = os.environ[env_key]
-        if debug:
-            print("%s: %s=%s" % (get_function_name(),
-                                 env_key, return_buffer["value"]))
+        log_msg("%s=%s" % (env_key, return_buffer["value"]),
+                debug=debug)
     except KeyError:
-        print("FATAL ERROR: required environment variable '%s'"
-              " is missing." % env_key)
+        log_msg("FATAL ERROR: required environment variable '%s'"
+                " is missing." % env_key)
         return_buffer["status"] = ENVIRONMENT_ERROR
     return return_buffer
 
@@ -74,12 +73,16 @@ def log_msg(msg, func_name=-1, debug=False, file_name=None):
         "status": NO_ERROR,
         }
 
+    # define filename
+    if file_name is not None:
+        log_msg.file_name = file_name
+
     # build message string
     if func_name > 0:
         msg = "[%s]: %s" % (get_function_name(func_name), msg)
 
     # build full file name
-    full_path = get_full_file_path(file_name)
+    full_path = get_full_file_path(log_msg.file_name)
 
     # log rotate
     try:

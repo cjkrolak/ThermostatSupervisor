@@ -1,5 +1,5 @@
 """
-Unit tes module for utilities.py.
+Unit test module for utilities.py.
 """
 # built-in imports
 import os
@@ -10,9 +10,10 @@ import utilities as util
 
 
 class Test(unittest.TestCase):
+    """Test functions in utilities.py."""
 
     def setUp(self):
-        pass
+        util.log_msg.file_name = "unit_test.txt"
 
     def tearDown(self):
         pass
@@ -56,6 +57,17 @@ class Test(unittest.TestCase):
         # self.assertEqual(file_size_bytes,
         #                 test_msg1_length + test_msg2_length)
         self.assertGreater(file_size_bytes, 60)
+
+    def testGetEnvVariable(self):
+        """
+        Confirm get_env_variable() can retrieve values.
+        """
+        for env_key in ["GMAIL_USERNAME", "GMAIL_PASSWORD",
+                        "TCC_USERNAME", "TCC_PASSWORD"]:
+            buff = util.get_env_variable(env_key, debug=True)
+            print("env$%s=%s" % (env_key, buff["value"]))
+            self.assertEqual(buff["status"], util.NO_ERROR)
+            self.assertGreater(len(buff["value"]), 0)
 
 
 if __name__ == "__main__":

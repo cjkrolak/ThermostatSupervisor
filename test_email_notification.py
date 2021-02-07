@@ -1,10 +1,13 @@
 """
 Unit tes module for email_notification.py.
 """
-
+# built-in libraries
 import email_notification as eml
 import sys
 import unittest
+
+# local libraries
+import utilities as util
 
 
 class Test(unittest.TestCase):
@@ -19,7 +22,8 @@ class Test(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def testName(self):
+    def testSendEmailAlerts(self):
+        """Test send_email_alerts() functionality."""
         body = "this is a test of the email notification alert."
         print("to_address before test: %s" % self.to_address)
         print("from_address before test: %s" % self.from_address)
@@ -31,13 +35,15 @@ class Test(unittest.TestCase):
                                  subject="(unittest) test email alert",
                                  body=body,
                                  debug=True)
+        self.assertEqual(return_status, util.NO_ERROR)
 
+        body = "this is a test of the email notification alert."
         return_status = \
-        eml.send_email_alert(subject="(unittest) test email alert",
-                             body="this is a test of the email notification alert.",
-                             debug=True)
+            eml.send_email_alert(subject="(unittest) test email alert",
+                                 body=body,
+                                 debug=True)
 
-        self.assertEqual(return_status, eml.NO_ERROR)
+        self.assertEqual(return_status, util.NO_ERROR)
 
 
 if __name__ == "__main__":
