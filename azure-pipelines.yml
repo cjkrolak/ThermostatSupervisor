@@ -47,4 +47,8 @@ steps:
 #  displayName: 'pytest'
 
 # python unit tests
+- script: echo GMAIL username is ${{ variables.GMAIL_USERNAME}}.
+- script: echo GMAIL pwd is ${{ variables.GMAIL_PASSWORD}}.
+- script: echo TCC username is ${{ variables.TCC_USERNAME}}.
+- script: echo TCC password is ${{ variables.TCC_PASSWORD}}.
 - script: python -m unittest test_email_notification.py
