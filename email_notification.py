@@ -47,17 +47,17 @@ def send_email_alert(to_address=None,
         buff = util.get_env_variable('GMAIL_USERNAME', debug)
         to_address = buff["value"]
         if buff["status"] != util.NO_ERROR:
-            return buff["status"] 
+            return buff["status"]
     if not from_address:
         buff = util.get_env_variable('GMAIL_USERNAME', debug)
         from_address = buff["value"]
         if buff["status"] != util.NO_ERROR:
-            return buff["status"] 
+            return buff["status"]
     if not from_password:
         buff = util.get_env_variable('GMAIL_PASSWORD', debug)
         from_password = buff["value"]
         if buff["status"] != util.NO_ERROR:
-            return buff["status"] 
+            return buff["status"]
 
     status = util.NO_ERROR  # default
 
@@ -91,7 +91,7 @@ def send_email_alert(to_address=None,
             smtplib.SMTPNotSupportedError, smtplib.SMTPException):
         if debug:
             util.log_msg(traceback.format_exc(),
-                     func_name=1, debug=debug)
+                         func_name=1, debug=debug)
             util.log_msg("exception during email account authorization "
                          "for account %s" % from_address,
                          func_name=1, debug=debug)
