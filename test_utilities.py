@@ -62,8 +62,8 @@ class Test(unittest.TestCase):
         """
         Confirm get_env_variable() can retrieve values.
         """
-        for env_key in ["GMAIL_USERNAME", "GMP", "GMP4",
-                        "TCC_USERNAME", "TCC_PASSWORD", "GMAIL_PASSWORD"]:
+        for env_key in ["GMAIL_USERNAME", "GMAIL_PASSWORD",
+                        "TCC_USERNAME", "TCC_PASSWORD"]:
             buff = util.get_env_variable(env_key, debug=True)
             print("env$%s=%s" % (env_key, buff["value"]))
             self.assertEqual(buff["status"], util.NO_ERROR)

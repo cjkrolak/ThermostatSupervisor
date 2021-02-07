@@ -8,11 +8,6 @@ trigger:
 
 # pool:
 #   vmImage: ubuntu-default
-#variables:
-#  GMAIL_USERNAME: '$(GMAIL_USERNAME1)'
-#  GMAIL_PASSWORD: '$(GMAIL_PASSWORD1)'
-#  TCC_USERNAME: '$(TCC_USERNAME1)'
-#  TCC_PASSWORD: '$(TCC_PASSWORD1)'
 
 strategy:
   matrix:
@@ -46,22 +41,7 @@ steps:
 #    pytest
 #  displayName: 'pytest'
 
-- script: echo "setting env variables..."
-  env:
-    GMAIL_USERNAME: '$(GMAIL_USERNAME1)'
-    GMAIL_PASSWORD: '$(GMAIL_PASSWORD1)'
-    TCC_USERNAME: '$(TCC_USERNAME1)'
-    TCC_PASSWORD: '$(TCC_PASSWORD1)'
-
-- script: echo $env:GMAIL_USERNAME
-- script: echo $env:GMAIL_PASSWORD
-- script: echo $env:TCC_USERNAME
-- script: echo $env:TCC_PASSWORD
 # python unit tests
-#- script: echo GMAIL username is ${{ variables.GMAIL_USERNAME}}.
-#- script: echo GMAIL pwd is ${{ variables.GMAIL_PASSWORD}}.
-#- script: echo TCC username is ${{ variables.TCC_USERNAME}}.
-#- script: echo TCC password is ${{ variables.TCC_PASSWORD}}.
 - script: |
     python -m unittest test_utilities.py
   displayName: 'Unit Tests'
