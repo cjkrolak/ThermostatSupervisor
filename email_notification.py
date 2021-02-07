@@ -8,19 +8,13 @@ dependencies:
 """
 # built-in libraries
 from email.mime.text import MIMEText
-import os
 import smtplib
 import socket
 import sys
 import traceback
 
-# status flags
-NO_ERROR = 0
-CONNECTION_ERROR = 1
-AUTHORIZATION_ERROR = 2
-EMAIL_SEND_ERROR = 3
-ENVIRONMENT_ERROR = 4
-OTHER_ERROR = 5
+# local libraries
+import utilities as util
 
 # tracing data
 module_name = sys.modules[__name__]
@@ -50,37 +44,22 @@ def send_email_alert(to_address=None,
 
     # default email addresses from env variables
     if not to_address:
-        to_address_default = 'GMAIL_USERNAME'
-        try:
-            to_address = os.environ[to_address_default]
-            if debug:
-                print("to_address=%s" % to_address)
-        except KeyError:
-            print("FATAL ERROR: required environment variable '%s'"
-                  " is missing." % to_address_default)
-            return ENVIRONMENT_ERROR
+        buff = util.get_env_variable('GMAIL_USERNAME', debug)
+        to_address = buff["value"]
+        if buff["status"] != util.NO_ERROR:
+            return buff["status"] 
     if not from_address:
-        from_address_default = 'GMAIL_USERNAME'
-        try:
-            from_address = os.environ[from_address_default]
-            if debug:
-                print("from_address=%s" % from_address)
-        except KeyError:
-            print("FATAL ERROR: required environment variable '%s'"
-                  " is missing." % from_address_default)
-            return ENVIRONMENT_ERROR
+        buff = util.get_env_variable('GMAIL_USERNAME', debug)
+        from_address = buff["value"]
+        if buff["status"] != util.NO_ERROR:
+            return buff["status"] 
     if not from_password:
-        from_pwd_default = 'GMAIL_PASSWORD'
-        try:
-            from_password = os.environ[from_pwd_default]
-            if debug:
-                print("from_password=%s" % from_password)
-        except KeyError:
-            print("FATAL ERROR: required environment variable '%s'"
-                  " is missing." % from_pwd_default)
-            return ENVIRONMENT_ERROR
+        buff = util.get_env_variable('GMAIL_PASSWORD', debug)
+        from_password = buff["value"]
+        if buff["status"] != util.NO_ERROR:
+            return buff["status"] 
 
-    status = NO_ERROR
+    status = util.NO_ERROR  # default
 
     # add trace
     body += "\n\n%s" % email_trace
@@ -91,69 +70,49 @@ def send_email_alert(to_address=None,
     msg['From'] = from_address
     msg['To'] = to_address
 
-    if debug:
-        print("message text=%s" % msg.as_string())
+    util.log_msg("message text=%s" % msg.as_string(),
+                 func_name=1, debug=debug)
 
     try:
         server = smtplib.SMTP_SSL('smtp.gmail.com', 465)
-        if debug:
-            print("smtp connection successful")
-    except Exception:
-        if debug:
-            print("exception during smtp connection")
-        return CONNECTION_ERROR
+        util.log_msg("smtp connection successful",
+                     func_name=1, debug=debug)
+    except ValueError:
+        util.log_msg("exception during smtp connection",
+                     func_name=1, debug=debug)
+        return util.CONNECTION_ERROR
     server.ehlo()
     try:
         server.login(from_address, from_password)
+        util.log_msg("email account authorization "
+                     "for account %s successful" % from_address,
+                     func_name=1, debug=debug)
+    except (smtplib.SMTPHeloError, smtplib.SMTPAuthenticationError,
+            smtplib.SMTPNotSupportedError, smtplib.SMTPException):
         if debug:
-            print("email account authorization "
-                  "for account %s successful" % from_address)
-    except Exception:
-        if debug:
-            print(traceback.format_exc())
-            print("exception during email account authorization "
-                  "for account %s" % from_address)
+            util.log_msg(traceback.format_exc(),
+                     func_name=1, debug=debug)
+            util.log_msg("exception during email account authorization "
+                         "for account %s" % from_address,
+                         func_name=1, debug=debug)
         server.close()
-        return AUTHORIZATION_ERROR
+        return util.AUTHORIZATION_ERROR
     try:
         server.sendmail(from_address, to_address, msg.as_string())
-        if debug:
-            print("mail send was successful")
-    except Exception:
-        if debug:
-            print("exception during mail send")
+        util.log_msg("mail send was successful",
+                     func_name=1, debug=debug)
+    except (smtplib.SMTPHeloError, smtplib.SMTPRecipientsRefused,
+            smtplib.SMTPSenderRefused, smtplib.SMTPDataError,
+            smtplib.SMTPNotSupportedError):
+        util.log_msg("exception during mail send",
+                     func_name=1, debug=debug)
         server.close()
-        return EMAIL_SEND_ERROR
+        return util.EMAIL_SEND_ERROR
     server.close()
-    if debug:
-        print("Email sent!")
+    util.log_msg("Email sent!",
+                 func_name=1, debug=debug)
 
     return status
-
-
-def get_env_variable(env_key, debug=False):
-    """
-    Get env variable.
-
-    inputs:
-       env_key(str): env variable of interest
-       debug(bool): verbose debugging
-    returns:
-       (tuple): (status, value)
-    """
-    # defaults
-    status = NO_ERROR
-    env_value = None
-
-    try:
-        env_value = os.environ[env_key]
-        if debug:
-            print("%s=%s" % (env_key, env_value))
-    except KeyError:
-        print("FATAL ERROR: required environment variable '%s'"
-              " is missing." % env_key)
-        status = ENVIRONMENT_ERROR
-    return (status, env_value)
 
 
 if __name__ == "__main__":
