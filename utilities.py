@@ -105,7 +105,8 @@ def log_msg(msg, mode, func_name=-1, file_name=None):
             file_size_bytes = 0
         if file_size_bytes > max_log_size_bytes:
             # rotate log file
-            current_date = datetime.datetime.today().strftime('%d-%b-%Y-%H-%M-%S')
+            current_date = datetime.datetime.today().strftime(
+                '%d-%b-%Y-%H-%M-%S')
             os.rename(full_path, full_path[:-4] + "-" +
                       str(current_date) + '.txt')
             file_size_bytes = 0
