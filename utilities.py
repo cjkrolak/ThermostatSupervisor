@@ -19,7 +19,7 @@ DATA_LOG = 0x010  # print to data log
 BOTH_LOG = 0x011  # log to both console and data logs
 DEBUG_LOG = 0x100  # print only if debug mode is on
 
-file_path = ".\\data\\"
+file_path = ".\\data"
 max_log_size_bytes = 1024  # logs rotate at this max size
 
 
@@ -42,7 +42,11 @@ def get_env_variable(env_key):
 
     try:
         return_buffer["value"] = os.environ[env_key]
-        log_msg("%s=%s" % (env_key, return_buffer["value"]),
+        if "PASSWORD" in return_buffer["key"]:
+            value_shown = "(hidden)"
+        else:
+            value_shown = return_buffer["value"]
+        log_msg("%s=%s" % (env_key, value_shown),
                 mode=DEBUG_LOG)
     except KeyError:
         log_msg("FATAL ERROR: required environment variable '%s'"
@@ -94,6 +98,11 @@ def log_msg(msg, mode, func_name=-1, file_name=None):
 
     # log to data file
     if (mode & DATA_LOG) and not filter_debug_msg:
+        # create directory if needed
+        if not os.path.exists(file_path):
+            print("data folder '%s' created." % file_path)
+            os.makedirs(file_path)
+
         # build full file name
         full_path = get_full_file_path(log_msg.file_name)
 
@@ -135,7 +144,7 @@ def get_full_file_path(file_name):
     returns:
         (str) full file name and path
     """
-    return file_path + file_name
+    return file_path + "\\" + file_name
 
 
 def utf8len(s):
