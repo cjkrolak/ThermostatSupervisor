@@ -46,4 +46,5 @@ steps:
 #    pytest
 #  displayName: 'pytest'
 
-- script: python -m unittest test_email_notification.py $(GMAIL_USERNAME) $(GMAIL_USERNAME) $(GMAIL_PASSWORD)
+# python unit tests
+- script: python -m unittest test_email_notification.py '$(GMAIL_USERNAME)' '$(GMAIL_USERNAME)' '$(GMAIL_PASSWORD)'
