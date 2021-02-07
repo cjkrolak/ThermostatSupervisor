@@ -63,7 +63,7 @@ def log_msg(msg, func_name=-1, debug=False, file_name=None):
 
     inputs:
         msg(str): message to log
-        func_name(int): if > 1, will include func name from this stack position.
+        func_name(int): if > 1, will include func name from this stack position
         debug(bool): if True, msg is printed to console
         file_name(str): if None will use default name
     returns:
@@ -88,29 +88,29 @@ def log_msg(msg, func_name=-1, debug=False, file_name=None):
         file_size_bytes = 0
     if file_size_bytes > max_log_size_bytes:
         # rotate log file
-        current_date = datetime.datetime.today().strftime ('%d-%b-%Y')
+        current_date = datetime.datetime.today().strftime('%d-%b-%Y')
         os.rename(full_path, full_path[:-4] + str(current_date) + '.txt')
         file_size_bytes = 0
 
     # write to file
     if file_size_bytes == 0:
         f = open(full_path, "w")  # writing
-    else:        
+    else:
         f = open(full_path, "a")  # appending
     f.write(msg + "\n")
     f.close()
-    
+
     # print to console
     if debug:
         print(msg)
-        
+
     return return_buffer
 
 
 def get_full_file_path(file_name):
     """
     Return full file path.
-    
+
     inputs:
         file_name(str): name of file with extension
     returns:
