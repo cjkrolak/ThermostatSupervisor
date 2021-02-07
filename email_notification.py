@@ -12,7 +12,6 @@ import smtplib
 import socket
 import sys
 import traceback
-from pickle import NONE
 
 # status flags
 NO_ERROR = 0
@@ -130,10 +129,11 @@ def send_email_alert(to_address=None,
 
     return status
 
+
 def get_env_variable(env_key, debug=False):
     """
     Get env variable.
-    
+
     inputs:
        env_key(str): env variable of interest
        debug(bool): verbose debugging
@@ -153,7 +153,7 @@ def get_env_variable(env_key, debug=False):
               " is missing." % env_key)
         status = ENVIRONMENT_ERROR
     return (status, env_value)
-    
+
 
 if __name__ == "__main__":
     send_email_alert(subject="test email alert",

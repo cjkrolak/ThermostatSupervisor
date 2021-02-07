@@ -23,7 +23,7 @@ class Test(unittest.TestCase):
         """
         file_name = "unit_test.txt"
         full_path = util.get_full_file_path(file_name)
-        
+
         # delete unit test file if it exists
         try:
             os.remove(full_path)
@@ -37,7 +37,7 @@ class Test(unittest.TestCase):
         return_buffer = util.log_msg(test_msg1,
                                      file_name=file_name)
         self.assertEqual(return_buffer["status"], util.NO_ERROR)
-        
+
         # confirm file exists
         file_size_bytes = os.path.getsize(full_path)
         self.assertEqual(file_size_bytes, test_msg1_length)
@@ -48,11 +48,12 @@ class Test(unittest.TestCase):
         return_buffer = util.log_msg(test_msg2,
                                      file_name=file_name)
         self.assertEqual(return_buffer["status"], util.NO_ERROR)
-        
+
         # confirm file exists
         file_size_bytes = os.path.getsize(full_path)
         self.assertEqual(file_size_bytes,
                          test_msg1_length + test_msg2_length)
+
 
 if __name__ == "__main__":
     unittest.main()
