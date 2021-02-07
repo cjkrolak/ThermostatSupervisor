@@ -65,3 +65,8 @@ steps:
 - script: |
     python -m unittest test_utilities.py
   displayName: 'Unit Tests'
+  env:
+    GMAIL_USERNAME: '$(GMAIL_USERNAME)'
+    GMAIL_PASSWORD: '$(GMAIL_PASSWORD)'
+    TCC_USERNAME: '$(TCC_USERNAME)'
+    TCC_PASSWORD: '$(TCC_PASSWORD)'
