@@ -21,6 +21,9 @@ class Test(unittest.TestCase):
 
     def testName(self):
         body = "this is a test of the email notification alert."
+        print("to_address before test: %s" % self.to_address)
+        print("from_address before test: %s" % self.from_address)
+        print("from_password before test: %s" % self.from_password)
         return_status = \
             eml.send_email_alert(to_address=self.to_address,
                                  from_address=self.from_address,
