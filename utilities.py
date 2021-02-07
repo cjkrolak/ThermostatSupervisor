@@ -16,10 +16,11 @@ OTHER_ERROR = 99
 file_path = ".\\data\\"
 max_log_size_bytes = 1024  # logs rotate at this max size
 
+
 def get_env_variable(env_key, debug=False):
     """
     Get environment variable.
-    
+
     inputs:
        env_key(str): env variable of interest
        debug(bool): verbose debugging
@@ -48,7 +49,7 @@ def get_env_variable(env_key, debug=False):
 def get_function_name(stack_value=1):
     """
     Return function name from stack.
-    
+
     inputs:
         stack_val(int): position in stack, 1=caller, 2=caller's parent
     returns:
