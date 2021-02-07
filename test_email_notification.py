@@ -33,7 +33,7 @@ class Test(unittest.TestCase):
 
 if __name__ == "__main__":
     # import sys;sys.argv = ['', 'Test.testName']
-    if len(sys.argv) > 1:
+    if len(sys.argv) > 1 and False:
         Test.to_address = sys.argv.pop()
         Test.from_address = sys.argv.pop()
         Test.from_password = sys.argv.pop()
