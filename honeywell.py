@@ -173,24 +173,23 @@ def connect(username, password):
     return p
 
 
-def get_all_metadata(p, zone_number=0, debug=False):
+def get_all_metadata(p, zone_number=0):
     """
     Get all the current thermostat metadata
 
     inputs:
       p(object): thermostat object from connection
       zone_number(int): zone number, default=0
-      debug(bool): enable debug print statements
     returns:
       dict
     """
     return_data = get_metadata(p, zone_number, parameter=None)
     util.log_msg("all meta data: %s" % return_data,
-                 func_name=1, debug=debug)
+                 mode=util.DEBUG_LOG + util.CONSOLE_LOG, func_name=1)
     return return_data
 
 
-def get_metadata(p, zone_number=0, parameter=None, debug=False):
+def get_metadata(p, zone_number=0, parameter=None):
     """
     Get the current thermostat metadata settings
 
@@ -198,63 +197,60 @@ def get_metadata(p, zone_number=0, parameter=None, debug=False):
       p(object): thermostat object from connection
       zone_number(int): zone number, default=0
       parameter(str): target parameter, None = all settings
-      debug(bool): enable debug print statements
     returns:
       dict if parameter=None
       str if parameter != None
     """
     zone_info_list = p.get_zones_info()
     # util.log_msg("zone info: %s" % zone_info_list,
-    #             func_name=1, debug=debug)
+    #              mode=util.DEBUG_LOG + util.CONSOLE_LOG, func_name=1)
     if parameter is None:
         return_data = zone_info_list[zone_number]
         util.log_msg("zone%s info: %s" % (zone_number, return_data),
-                     func_name=1, debug=debug)
+                     mode=util.DEBUG_LOG + util.CONSOLE_LOG, func_name=1)
         return return_data
     else:
         return_data = zone_info_list[zone_number].get(parameter)
         util.log_msg("zone%s parameter '%s': %s" %
                      (zone_number, parameter, return_data),
-                     func_name=1, debug=debug)
+                     mode=util.DEBUG_LOG + util.CONSOLE_LOG, func_name=1)
         return return_data
 
 
-def get_latestdata(p, zone_number=0, debug=False):
+def get_latestdata(p, zone_number=0):
     """
     Get the current thermostat latest data
 
     inputs:
       p(object): thermostat object from connection
       zone_number(int): zone number, default=0
-      debug(bool): enable debug print statements
     returns:
       dict if parameter=None
       str if parameter != None
     """
     latest_data_dict = get_metadata(p, zone_number).get('latestData')
     util.log_msg("zone%s latestData: %s" % (zone_number, latest_data_dict),
-                 func_name=1, debug=debug)
+                 mode=util.DEBUG_LOG + util.CONSOLE_LOG, func_name=1)
     return latest_data_dict
 
 
-def get_uiData(p, zone_number=0, debug=False):
+def get_uiData(p, zone_number=0):
     """
     Get the latest thermostat ui data
 
     inputs:
       p(object): thermostat object from connection
       zone_number(int): zone_number, default=0
-      debug(bool): enable debug print statements
     returns:
       dict
     """
-    ui_data_dict = get_latestdata(p, zone_number, debug).get('uiData')
+    ui_data_dict = get_latestdata(p, zone_number).get('uiData')
     util.log_msg("zone%s latestData: %s" % (zone_number, ui_data_dict),
-                 func_name=1, debug=debug)
+                 mode=util.DEBUG_LOG + util.CONSOLE_LOG, func_name=1)
     return ui_data_dict
 
 
-def get_uiData_param(p, zone_number=0, parameter=None, debug=False):
+def get_uiData_param(p, zone_number=0, parameter=None):
     """
     Get the latest thermostat ui data for one specific parameter
 
@@ -262,60 +258,60 @@ def get_uiData_param(p, zone_number=0, parameter=None, debug=False):
       p(object): thermostat object from connection
       zone_number(int): zone_number, default=0
       parameter(str): paramenter name
-      debug(bool): enable debug print statements
     returns:
       dict
     """
-    parameter_data = get_uiData(p, zone_number=0, debug=False).get(parameter)
+    parameter_data = get_uiData(p, zone_number=0).get(parameter)
     util.log_msg("zone%s uiData parameter %s: %s" %
                  (zone_number, parameter, parameter_data),
-                 func_name=1, debug=debug)
+                 mode=util.DEBUG_LOG + util.CONSOLE_LOG,
+                 func_name=1)
     return parameter_data
 
 
-def report_heating_parameters(zone, debug=False):
+def report_heating_parameters(zone):
     """
     Display critical thermostat settings and reading to the screen.
     inputs:
         zone(obj): Zone object
-        debug(bool): debug flag
     returns:
         None
     """
     # current temp as measured by thermostat
     util.log_msg("display temp=%s" % zone.get_display_temp(),
-                 func_name=1, debug=debug)
+                 mode=util.BOTH_LOG, func_name=1)
 
     # heating status
     if zone.get_system_switch_position() == system_switch_position[HEAT_MODE]:
-        util.log_msg("heat mode=%s" % zone.get_heat_mode(), debug=debug)
+        util.log_msg("heat mode=%s" % zone.get_heat_mode(), mode=util.BOTH_LOG)
         util.log_msg("heat setpoint=%s" %
-                     zone.get_heat_setpoint(), debug=debug)
+                     zone.get_heat_setpoint(), mode=util.BOTH_LOG)
         # util.log_msg("heat setpoint raw=%s" %
-        #              zone.get_heat_setpoint_raw(), debug=debug)
+        #              zone.get_heat_setpoint_raw())
         util.log_msg("schedule heat sp=%s" %
-                     zone.get_schedule_heat_sp(), debug=debug)
-        util.log_msg("\n", debug=debug)
+                     zone.get_schedule_heat_sp(), mode=util.BOTH_LOG)
+        util.log_msg("\n", mode=util.BOTH_LOG)
 
     # cooling status
     if zone.get_system_switch_position() == system_switch_position[COOL_MODE]:
-        util.log_msg("cool mode=%s" % zone.get_cool_mode(), debug=debug)
+        util.log_msg("cool mode=%s" % zone.get_cool_mode(), mode=util.BOTH_LOG)
         util.log_msg("cool setpoint=%s" %
-                     zone.get_cool_setpoint(), debug=debug)
+                     zone.get_cool_setpoint(), mode=util.BOTH_LOG)
         # util.log_msg("cool setpoint raw=%s" %
-        #              zone.get_cool_setpoint_raw(), debug=debug)
+        #              zone.get_cool_setpoint_raw(), mode=util.BOTH_LOG)
         util.log_msg("schedule cool sp=%s" %
-                     zone.get_schedule_cool_sp(), debug=debug)
-        util.log_msg("\n", debug=debug)
+                     zone.get_schedule_cool_sp(), mode=util.BOTH_LOG)
+        util.log_msg("\n", mode=util.BOTH_LOG)
 
     # hold settings
     util.log_msg("is in vacation hold mode=%s" %
-                 zone.get_is_invacation_hold_mode(), debug=debug)
-    util.log_msg("vacation hold=%s" % zone.get_vacation_hold(), debug=debug)
+                 zone.get_is_invacation_hold_mode(), mode=util.BOTH_LOG)
+    util.log_msg("vacation hold=%s" % zone.get_vacation_hold(),
+                 mode=util.BOTH_LOG)
     util.log_msg("vacation hold until time=%s" %
-                 zone.get_vacation_hold_until_time(), debug=debug)
+                 zone.get_vacation_hold_until_time(), mode=util.BOTH_LOG)
     util.log_msg("temporary hold until time=%s" %
-                 zone.get_temporary_hold_until_time(), debug=debug)
+                 zone.get_temporary_hold_until_time(), mode=util.BOTH_LOG)
 
 
 def get_current_mode(zone, poll_count, print_status=True,
@@ -407,7 +403,7 @@ def get_current_mode(zone, poll_count, print_status=True,
                                                 strftime("%Y-%m-%d %H:%M:%S"),
                                                 poll_count, mode, status_msg))
     if print_status:
-        util.log_msg(full_status_msg)
+        util.log_msg(full_status_msg, mode=util.BOTH_LOG)
 
     # return status
     return_buffer["heat_mode"] = heat_mode
@@ -420,26 +416,27 @@ def get_current_mode(zone, poll_count, print_status=True,
 
 
 def main():
-    util.log_msg("Honeywell TCC thermostat monitoring service\n")
+    # set log file name
+    util.log_msg.file_name = "honeywell.txt"
+
+    util.log_msg("Honeywell TCC thermostat monitoring service\n",
+                 mode=util.BOTH_LOG)
 
     # session variables
-    util.log_msg("session settings:")
+    util.log_msg("session settings:", mode=util.BOTH_LOG)
     debug = False  # verbose debugging information
-
-    # set log file
-    util.log_msg.file_name = "honeywell.txt"
 
     # poll time setting:
     # min practical value is 2 minutes based on empirical test
     # max value is 3, higher settings will cause HTTP errors, why?
     poll_time_sec = 3 * 60
     util.log_msg("polling time set to %.1f minutes" %
-                 (poll_time_sec / 60.0), debug=debug)
+                 (poll_time_sec / 60.0), mode=util.BOTH_LOG)
 
     # reconnection time to TCC server:
     connection_time_sec = 8 * 60 * 60
     util.log_msg("server re-connect time set to %.1f minutes" %
-                 (connection_time_sec / 60.0), debug=debug)
+                 (connection_time_sec / 60.0), mode=util.BOTH_LOG)
 
     # mode parameters
     revert_thermostat_deviation = True  # revert thermostat if temp deviated
@@ -453,7 +450,7 @@ def main():
                    "setpoint, cool setpoint below schedule"
                    " setpoint)",
                    "all schedule deviations"]
-                  [revert_all_deviations]), debug=debug)
+                  [revert_all_deviations]), mode=util.BOTH_LOG)
 
     # starting parameters
     previous_mode = {}
@@ -465,17 +462,17 @@ def main():
         username = os.environ['TCC_USERNAME']
         password = os.environ['TCC_PASSWORD']
         util.log_msg("connecting to TCC (session=%s)..." %
-                     connection_count, debug=debug)
+                     connection_count, mode=util.BOTH_LOG)
         p = PyHTCC(username, password)  # connect
         t0 = time.time()  # connection timer
 
         # dump all meta data
         if debug:
-            get_all_metadata(p, debug=True)
+            get_all_metadata(p)
 
         # dump uiData in a readable format
         if debug:
-            return_data = get_latestdata(p, debug=True)
+            return_data = get_latestdata(p)
             pp = pprint.PrettyPrinter(indent=4)
             pp.pprint(return_data)
 
@@ -501,10 +498,10 @@ def main():
                     current_mode["heat_deviation"]):
                 email_notification.send_email_alert(
                     subject="heat deviation alert",
-                    body=current_mode["status_msg"], debug=True)
+                    body=current_mode["status_msg"])
                 util.log_msg("\n*** heat deviation detected, "
                              "reverting thermostat to"
-                             " heat schedule ***\n", debug=debug)
+                             " heat schedule ***\n", mode=util.BOTH_LOG)
                 zone.set_heat_setpoint(zone.get_schedule_heat_sp())
 
             # revert thermostat to schedule if cool override is detected
@@ -512,9 +509,10 @@ def main():
                     current_mode["cool_deviation"]):
                 email_notification.send_email_alert(
                     subject="cool deviation alert",
-                    body=current_mode["status_msg"], debug=False)
+                    body=current_mode["status_msg"])
                 util.log_msg("\n*** cool deviation detected, reverting "
-                             "thermostat to cool schedule ***\n", debug=debug)
+                             "thermostat to cool schedule ***\n",
+                             mode=util.BOTH_LOG)
                 zone.set_heat_setpoint(zone.get_schedule_cool_sp())
 
             # polling delay
@@ -525,7 +523,8 @@ def main():
 
             # reconnect
             if (time.time() - t0) > connection_time_sec:
-                util.log_msg("forcing re-connection to server...", debug=debug)
+                util.log_msg("forcing re-connection to server...",
+                             mode=util.BOTH_LOG)
                 del p
                 break  # force reconnection
 
@@ -545,6 +544,7 @@ if __name__ == "__main__":
     if render_flask:  # flask server output
         # show the page in browser
         webbrowser.open('http://localhost:23423')
-        app.run(host='localhost', port=23423, debug=True)
+        app.run(host='localhost', port=23423, debug=False)
     else:  # console output
+        util.log_msg.debug = True
         main()
