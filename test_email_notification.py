@@ -9,6 +9,10 @@ import unittest
 
 class Test(unittest.TestCase):
 
+    to_address = None
+    from_address = None
+    from_password = None
+
     def setUp(self):
         pass
 
@@ -16,19 +20,11 @@ class Test(unittest.TestCase):
         pass
 
     def testName(self):
-        if len(sys.argv) >= 3:
-            to_address = sys.argv[0]
-            from_address = sys.argv[1]
-            from_password = sys.argv[2]
-        else:
-            to_address = None
-            from_address = None
-            from_password = None
         body = "this is a test of the email notification alert."
         return_status = \
-            eml.send_email_alert(to_address=to_address,
-                                 from_address=from_address,
-                                 from_password=from_password,
+            eml.send_email_alert(to_address=self.to_address,
+                                 from_address=self.from_address,
+                                 from_password=self.from_password,
                                  subject="(unittest) test email alert",
                                  body=body,
                                  debug=True)
@@ -37,5 +33,8 @@ class Test(unittest.TestCase):
 
 if __name__ == "__main__":
     # import sys;sys.argv = ['', 'Test.testName']
-
+    if len(sys.argv) > 1:
+        Test.to_address = sys.argv.pop()
+        Test.from_address = sys.argv.pop()
+        Test.from_password = sys.argv.pop()
     unittest.main()
