@@ -8,11 +8,11 @@ trigger:
 
 # pool:
 #   vmImage: ubuntu-default
-#variables:
-#  GMAIL_USERNAME: '$(GMAIL_USERNAME)'
-#  GMAIL_PASSWORD: '$(GMAIL_PASSWORD)'
-#  TCC_USERNAME: '$(TCC_USERNAME)'
-#  TCC_PASSWORD: '$(TCC_PASSWORD)'
+variables:
+  GMAIL_USERNAME: '$(GMAIL_USERNAME1)'
+  GMAIL_PASSWORD: '$(GMAIL_PASSWORD1)'
+  TCC_USERNAME: '$(TCC_USERNAME1)'
+  TCC_PASSWORD: '$(TCC_PASSWORD1)'
 
 strategy:
   matrix:
@@ -47,4 +47,4 @@ steps:
 #  displayName: 'pytest'
 
 # python unit tests
-- script: python -m unittest test_email_notification.py '$(GMAIL_USERNAME)' '$(GMAIL_USERNAME)' '$(GMAIL_PASSWORD)'
+- script: python -m unittest test_email_notification.py
