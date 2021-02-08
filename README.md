@@ -15,7 +15,7 @@ Script can be configured to customize polling interval, force re-logon after per
 2. code only reliably runs with 3 minute poll time
 
 # environment variables required
-# in Linux, define and then export variables
+# in Linux, define and then export variables in ~/.profile
 # in Windows, define env variables in control panel and then re-start IDE
 'TCC_USERNAME':  username to Honeywell TCC website
 
