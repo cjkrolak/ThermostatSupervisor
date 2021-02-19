@@ -3,6 +3,16 @@
 import datetime
 import inspect
 import os
+# sys.path.append(os.path.abspath('../radiotherm'))
+
+# thermostat types
+HONEYWELL = "Honeywell"
+THREEM50 = "THREEM50"
+SUPPORTED_THERMOSTATS = {
+    HONEYWELL: 1,
+    THREEM50: 2,
+    }
+
 
 # error codes
 NO_ERROR = 0
