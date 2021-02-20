@@ -5,9 +5,9 @@ https://pypi.org/project/pyhtcc/
 
 """
 # built-in imports
-# from contextlib import redirect_stdout
 import datetime
 import operator
+import pprint
 import pyhtcc
 
 # local imports
@@ -17,19 +17,30 @@ import utilities as util
 class HoneywellThermostat(pyhtcc.PyHTCC):
     """Extend the PyHTCC class with additional methods."""
 
-    def get_zone_device_ids(self) -> list:
-        """
-        Returns a list of DeviceIDs corresponding with each one corresponding
-        to a particular zone.
-        """
+    def _get_zone_device_ids(self) -> list:
+        """Return a list of zone Device IDs."""
         zone_id_lst = []
         for _, zone in enumerate(self.get_zones_info()):
             zone_id_lst.append(zone['DeviceID'])
         return zone_id_lst
 
+    def get_target_zone_id(self, zone_number=0):
+        """Return the target zone ID."""
+        return self._get_zone_device_ids()[zone_number]
+
+    def get_all_thermostat_metadata(self):
+        """Return initial meta data queried from thermostat."""
+        # dump all meta data
+        self.get_all_metadata()
+
+        # dump uiData in a readable format
+        return_data = self.get_latestdata()
+        pp = pprint.PrettyPrinter(indent=4)
+        pp.pprint(return_data)
+
     def get_all_metadata(self, zone_number=0):
         """
-        Get all the current thermostat metadata
+        Return all the current thermostat metadata.
 
         inputs:
           p(object): thermostat object from connection
@@ -44,7 +55,7 @@ class HoneywellThermostat(pyhtcc.PyHTCC):
 
     def get_metadata(self, zone_number=0, parameter=None):
         """
-        Get the current thermostat metadata settings
+        Return the current thermostat metadata settings.
 
         inputs:
           p(object): thermostat object from connection
@@ -71,14 +82,13 @@ class HoneywellThermostat(pyhtcc.PyHTCC):
 
     def get_latestdata(self, zone_number=0):
         """
-        Get the current thermostat latest data
+        Return the current thermostat latest data.
 
         inputs:
           p(object): thermostat object from connection
           zone_number(int): zone number, default=0
         returns:
-          dict if parameter=None
-          str if parameter != None
+          dict
         """
         latest_data_dict = self.get_metadata(zone_number).get('latestData')
         util.log_msg("zone%s latestData: %s" % (zone_number, latest_data_dict),
@@ -87,7 +97,7 @@ class HoneywellThermostat(pyhtcc.PyHTCC):
 
     def get_uiData(self, zone_number=0):
         """
-        Get the latest thermostat ui data
+        Return the latest thermostat ui data.
 
         inputs:
           p(object): thermostat object from connection
@@ -102,7 +112,7 @@ class HoneywellThermostat(pyhtcc.PyHTCC):
 
     def get_uiData_param(self, zone_number=0, parameter=None):
         """
-        Get the latest thermostat ui data for one specific parameter
+        Return the latest thermostat ui data for one specific parameter.
 
         inputs:
           p(object): thermostat object from connection
@@ -205,6 +215,7 @@ class HoneywellZone(pyhtcc.Zone):
     def set_heat_setpoint(self, temp: int) -> None:
         """
         Sets a new heat setpoint.
+
         This will also attempt to turn the thermostat to 'Heat'
         """
         # logger.info(f"setting heat on with a target temp of: {temp}")
@@ -217,7 +228,8 @@ class HoneywellZone(pyhtcc.Zone):
 
     def set_cool_setpoint(self, temp: int) -> None:
         """
-        Sets a new cool setpoint.
+        Set a new cool setpoint.
+
         This will also attempt to turn the thermostat to 'Cool'
         """
         # logger.info(f"setting heat on with a target temp of: {temp}")

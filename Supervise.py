@@ -2,14 +2,12 @@
 Thermostat Supervisor
 """
 # built ins
-import os
-import pprint
 import sys
 import time
 
 # local imports
 import email_notification
-import Honeywell as h
+import thermostat_api as api
 import utilities as util
 
 
@@ -18,14 +16,15 @@ def main(thermostat_type):
     Thermostat Supervisor Routine.
 
     inputs:
-        thermostat_type(str): currently support "Honeywell".
+        thermostat_type(str): thermostat type, see thermostat_api for list
+                              of supported thermostats.
     returns:
         None
     """
     # set log file name
     util.log_msg.file_name = thermostat_type + ".txt"
 
-    util.log_msg("%s TCC thermostat monitoring service\n" % thermostat_type,
+    util.log_msg("%s thermostat monitoring service\n" % thermostat_type,
                  mode=util.BOTH_LOG)
 
     # session variables
@@ -65,26 +64,22 @@ def main(thermostat_type):
     connection_count = 1
     while True:
         # make connection to thermostat through myTotalConnect Comfort site
-        username = os.environ['TCC_USERNAME']
-        password = os.environ['TCC_PASSWORD']
+        thermostat_constructor = \
+            api.thermostats[thermostat_type]["thermostat_constructor"]
+        args = api.thermostats[thermostat_type]["args"]
         util.log_msg("connecting to thermostat (session=%s)..." %
                      connection_count, mode=util.BOTH_LOG)
-        thermostat = h.HoneywellThermostat(username, password)  # connect
+        thermostat = thermostat_constructor(*args)
         t0 = time.time()  # connection timer
 
         # dump all meta data
         if debug:
-            thermostat.get_all_metadata()
-
-        # dump uiData in a readable format
-        if debug:
-            return_data = thermostat.get_latestdata()
-            pp = pprint.PrettyPrinter(indent=4)
-            pp.pprint(return_data)
+            thermostat.get_all_thermostat_metadata()
 
         # get Zone object based on deviceID
-        device_id = thermostat.get_zone_device_ids()[0]
-        zone = h.HoneywellZone(device_id, thermostat)
+        zone_constructor = api.thermostats[thermostat_type]["zone_constructor"]
+        device_id = thermostat.get_target_zone_id()
+        zone = zone_constructor(device_id, thermostat)
 
         poll_count = 1
         # poll thermostat settings
@@ -119,7 +114,7 @@ def main(thermostat_type):
                 util.log_msg("\n*** cool deviation detected, reverting "
                              "thermostat to cool schedule ***\n",
                              mode=util.BOTH_LOG)
-                zone.set_heat_setpoint(zone.get_schedule_cool_sp())
+                zone.set_cool_setpoint(zone.get_schedule_cool_sp())
 
             # polling delay
             time.sleep(poll_time_sec)
@@ -146,10 +141,10 @@ if __name__ == "__main__":
     util.log_msg.debug = True  # debug mode set
 
     # set thermostat type
-    if len(sys.argv) > 1 and sys.argv[1] in util.SUPPORTED_THERMOSTATS:
+    if len(sys.argv) > 1 and sys.argv[1] in api.SUPPORTED_THERMOSTATS:
         tstat_type = sys.argv[1]
     else:
         # default
-        tstat_type = util.HONEYWELL
+        tstat_type = api.HONEYWELL
 
     main(tstat_type)
