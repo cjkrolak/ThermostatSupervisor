@@ -24,3 +24,19 @@ Script can be configured to customize polling interval, force re-logon after per
 'GMAIL_USERNAME': email account to send notifications from
 
 'GMAIL_PASSWORD': password for GMAIL_USERNAME
+
+
+Supervisor API required methods:
+**thermostat class:**
+get_all_thermostat_metadata(): Return intial thermostat meta data.
+get_target_zone_id(): Return the target zone ID.
+
+**zone class:**
+get_current_mode(): Determine whether thermostat is following schedule or if it has been deviated from schedule.
+report_heating_parameters(): Display critical thermostat settings and reading to the screen.
+set_heat_setpoint():  Sets a new heat setpoint.
+set_cool_setpoint():  Set a new cool setpoint.
+refresh_zone_info():  Refresh the zone_info attribute.
+
+
+
