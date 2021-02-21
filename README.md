@@ -1,9 +1,8 @@
-# ThermostatSupervisor:
-supervisor to detect and correct thermostat deviations
+# ThermostatSupervisor:<br/>
+supervisor to detect and correct thermostat deviations<br/>
 
-# dependencies
-pyhtcc (pip3 install pyhtcc)
-
+# dependencies<br/>
+pyhtcc (pip3 install pyhtcc)<br/>
 
 # honeywell.py:
 1. Script will logon to TCC web site and infinitely poll server at configurable poll interval for current thermostat settings.
@@ -14,24 +13,20 @@ Script can be configured to customize polling interval, force re-logon after per
 1. code currently only supports Honeywell thermostat connected to MyTotalControl web site.
 2. code only reliably runs with 3 minute poll time
 
-# environment variables required
-# in Linux, define and then export variables in ~/.profile
-# in Windows, define env variables in control panel and then re-start IDE
-'TCC_USERNAME':  username to Honeywell TCC website
+# environment variables required<br/>
+# in Linux, define and then export variables in ~/.profile<br/>
+# in Windows, define env variables in control panel and then re-start IDE<br/>
+'TCC_USERNAME':  username to Honeywell TCC website<br/>
+'TCC_PASSWORD':  password for TCC_USERNAME<br/>
+'GMAIL_USERNAME': email account to send notifications from<br/>
+'GMAIL_PASSWORD': password for GMAIL_USERNAME<br/>
 
-'TCC_PASSWORD':  password for TCC_USERNAME
-
-'GMAIL_USERNAME': email account to send notifications from
-
-'GMAIL_PASSWORD': password for GMAIL_USERNAME
-
-
-Supervisor API required methods:
-**thermostat class:**
+Supervisor API required methods:<br/>
+**thermostat class:**<br/>
 * get_all_thermostat_metadata(): Return intial thermostat meta data.
 * get_target_zone_id(): Return the target zone ID.
 
-**zone class:**
+**zone class:**<br/>
 * get_current_mode(): Determine whether thermostat is following schedule or if it has been deviated from schedule.
 * report_heating_parameters(): Display critical thermostat settings and reading to the screen.
 * set_heat_setpoint():  Sets a new heat setpoint.
