@@ -57,7 +57,7 @@ class ThermostatCommonZone():
         mode = "OFF MODE"  # mode for display, "OFF MODE", "HEAT MODE",
         #                    "COOL MODE"
         hold_temporary = bogus_bool  # True if hold will revert on next
-        #                         schedule event
+        #                              schedule event
 
         if flag_all_deviations:
             cool_operator = operator.ne
