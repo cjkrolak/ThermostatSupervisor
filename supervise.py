@@ -31,18 +31,6 @@ def main(thermostat_type):
     util.log_msg("session settings:", mode=util.BOTH_LOG)
     debug = False  # verbose debugging information
 
-    # poll time setting:
-    # min practical value is 2 minutes based on empirical test
-    # max value is 3, higher settings will cause HTTP errors, why?
-    poll_time_sec = 3 * 60
-    util.log_msg("polling time set to %.1f minutes" %
-                 (poll_time_sec / 60.0), mode=util.BOTH_LOG)
-
-    # reconnection time to TCC server:
-    connection_time_sec = 8 * 60 * 60
-    util.log_msg("server re-connect time set to %.1f minutes" %
-                 (connection_time_sec / 60.0), mode=util.BOTH_LOG)
-
     # mode parameters
     revert_thermostat_deviation = True  # revert thermostat if temp deviated
     revert_all_deviations = False  # True will flag all deviations,
@@ -67,9 +55,20 @@ def main(thermostat_type):
         thermostat_constructor = \
             api.thermostats[thermostat_type]["thermostat_constructor"]
         args = api.thermostats[thermostat_type]["args"]
-        util.log_msg("connecting to thermostat (session=%s)..." %
-                     connection_count, mode=util.BOTH_LOG)
+        zone_num = api.thermostats[thermostat_type]["zone"]
+        util.log_msg("connecting to thermostat zone %s (session=%s)..." %
+                     (zone_num, connection_count), mode=util.BOTH_LOG)
         thermostat = thermostat_constructor(*args)
+
+        # poll time setting:
+        util.log_msg("polling time set to %.1f minutes" %
+                     (thermostat.poll_time_sec / 60.0), mode=util.BOTH_LOG)
+
+        # reconnection time to TCC server:
+        util.log_msg("server re-connect time set to %.1f minutes" %
+                     (thermostat.connection_time_sec / 60.0),
+                     mode=util.BOTH_LOG)
+
         t0 = time.time()  # connection timer
 
         # dump all meta data
@@ -117,13 +116,13 @@ def main(thermostat_type):
                 zone.set_cool_setpoint(zone.get_schedule_cool_sp())
 
             # polling delay
-            time.sleep(poll_time_sec)
+            time.sleep(thermostat.poll_time_sec)
 
             # refresh zone info
             zone.refresh_zone_info()
 
             # reconnect
-            if (time.time() - t0) > connection_time_sec:
+            if (time.time() - t0) > thermostat.connection_time_sec:
                 util.log_msg("forcing re-connection to thermostat...",
                              mode=util.BOTH_LOG)
                 del thermostat
@@ -146,5 +145,9 @@ if __name__ == "__main__":
     else:
         # default
         tstat_type = api.HONEYWELL
+        tstat_type = api.MMM50
+
+    # set the monitoring zone
+    api.set_target_zone(1)
 
     main(tstat_type)

@@ -8,27 +8,48 @@ any changes to thermostat configs.
 import os
 
 # local imports
-import Honeywell as h
+import honeywell as h
+import mmm as mmm
+
 
 # thermostat types
-HONEYWELL = "Honeywell"
-THREEM50 = "THREEM50"
+HONEYWELL = "honeywell"
+MMM50 = "MMM50"
 SUPPORTED_THERMOSTATS = {
     HONEYWELL: 1,
-    THREEM50: 2,
+    MMM50: 2,
     }
 
 # thermostat IP addresses (local net)
-MAIN_3M50 = "192.168.86.82"
-BASEMENT_3M50 = "192.168.86.83"
+MAIN_3M50 = 0  # zone 0
+BASEMENT_3M50 = 1  # zone 1
+mmm_ip = {
+    MAIN_3M50: "192.168.86.82",
+    BASEMENT_3M50: "192.168.86.83",
+}
+
+# target zone for monitoring
+zone_number = 0  # default
 
 # Class constructor parameters for each thermostat
 thermostats = {
     HONEYWELL: {
         "thermostat_constructor": h.HoneywellThermostat,
-        "args": (os.environ['TCC_USERNAME'], os.environ['TCC_PASSWORD']),
+        "args": [os.environ['TCC_USERNAME'], os.environ['TCC_PASSWORD']],
         "zone_constructor": h.HoneywellZone,
+        "zone": zone_number
         },
-    THREEM50: {
+    MMM50: {
+        "thermostat_constructor": mmm.MMM50Thermostat,
+        "args": [mmm_ip[zone_number]],
+        "zone_constructor": mmm.MMM50Thermostat,
+        "zone": zone_number
         }
 }
+
+
+def set_target_zone(zone):
+    """Set the target Zone."""
+    # refresh zone information
+    thermostats[MMM50]["args"] = [mmm_ip[zone]]
+    thermostats[MMM50]["zone"] = zone
