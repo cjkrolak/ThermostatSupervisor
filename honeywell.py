@@ -164,12 +164,18 @@ class HoneywellZone(pyhtcc.Zone, tc.ThermostatCommonZone):
         return int(self.zone_info['latestData']['uiData']['StatusCool'])
 
     def get_schedule_heat_sp(self) -> int:  # used
-        """Refresh the cached zone information and return the schedule heat setpoint."""
+        """
+        Refresh the cached zone information and return the
+        schedule heat setpoint.
+        """
         self.refresh_zone_info()
         return int(self.zone_info['latestData']['uiData']['ScheduleHeatSp'])
 
     def get_schedule_cool_sp(self) -> int:
-        """Refresh the cached zone information and return the schedule cool setpoint."""
+        """
+        Refresh the cached zone information and return the
+        schedule cool setpoint.
+        """
         self.refresh_zone_info()
         return int(self.zone_info['latestData']['uiData']['ScheduleCoolSp'])
 
@@ -186,7 +192,7 @@ class HoneywellZone(pyhtcc.Zone, tc.ThermostatCommonZone):
         self.refresh_zone_info()
         return int(self.zone_info['latestData']['uiData']['VacationHold'])
 
-    def get_vacation_hold_until_time(self) -> int: 
+    def get_vacation_hold_until_time(self) -> int:
         """ refreshes the cached zone information and return
             the 'VacationHoldUntilTime' """
         self.refresh_zone_info()
@@ -293,4 +299,3 @@ class HoneywellZone(pyhtcc.Zone, tc.ThermostatCommonZone):
                      self.get_vacation_hold_until_time(), mode=util.BOTH_LOG)
         util.log_msg("temporary hold until time=%s" %
                      self.get_temporary_hold_until_time(), mode=util.BOTH_LOG)
-

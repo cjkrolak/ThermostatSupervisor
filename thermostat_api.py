@@ -53,5 +53,3 @@ def set_target_zone(zone):
     # refresh zone information
     thermostats[MMM50]["args"] = [mmm_ip[zone]]
     thermostats[MMM50]["zone"] = zone
-
-

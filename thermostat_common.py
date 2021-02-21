@@ -15,7 +15,7 @@ bogus_bool = None
 
 class ThermostatCommonZone():
     """Class methods common to all thermostat zones."""
-    
+
     OFF_MODE = "OFF_MODE"
     HEAT_MODE = "HEAT_MODE"
     COOL_MODE = "COOL_MODE"
@@ -69,8 +69,8 @@ class ThermostatCommonZone():
         return_buffer = {
             "heat_mode": bogus_bool,  # in heating mode
             "cool_mode": bogus_bool,  # in cooling mode
-            "heat_deviation": bogus_bool,  # True if heat is deviated above schedule
-            "cool_deviation": bogus_bool,  # True if cool is deviated below schedule
+            "heat_deviation": bogus_bool,  # True if heat is deviated above
+            "cool_deviation": bogus_bool,  # True if cool is deviated below
             "hold_mode": bogus_bool,  # True if hold is enabled
             "status_msg": "",  # status message
             }
@@ -138,37 +138,37 @@ class ThermostatCommonZone():
     def get_display_temp(self) -> int:
         """Return the displayed temperature."""
         return bogus_int  # placeholder
-    
+
     def get_system_switch_position(self) -> int:
         """Return the 'SystemSwitchPosition'
             'SystemSwitchPosition' = 1 for heat, 2 for off
         """
         return bogus_int  # placeholder
-    
+
     def get_heat_setpoint_raw(self) -> int:
         """Return raw heat set point."""
         return bogus_int  # placeholder
-    
+
     def get_schedule_heat_sp(self) -> int:
         """Return the heat setpoint."""
         return bogus_int  # placeholder
-    
+
     def get_cool_setpoint_raw(self) -> int:
         """Return raw cool set point."""
         return bogus_int  # placeholder
-    
+
     def get_schedule_cool_sp(self) -> int:
         """Return the cool setpoint."""
         return bogus_int  # placeholder
-    
+
     def get_is_invacation_hold_mode(self) -> bool:
         """Return the 'IsInVacationHoldMode' setting."""
         return bogus_bool  # placeholder
-    
+
     def get_temporary_hold_until_time(self) -> int:
         """Return the 'TemporaryHoldUntilTime' """
         return bogus_int  # placeholder
-    
+
     def refresh_zone_info(self) -> None:
         """Refreshes zone info."""
         return

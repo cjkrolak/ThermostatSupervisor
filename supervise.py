@@ -60,14 +60,14 @@ def main(thermostat_type):
                      (zone_num, connection_count), mode=util.BOTH_LOG)
         thermostat = thermostat_constructor(*args)
 
-
         # poll time setting:
         util.log_msg("polling time set to %.1f minutes" %
                      (thermostat.poll_time_sec / 60.0), mode=util.BOTH_LOG)
-    
+
         # reconnection time to TCC server:
         util.log_msg("server re-connect time set to %.1f minutes" %
-                     (thermostat.connection_time_sec / 60.0), mode=util.BOTH_LOG)
+                     (thermostat.connection_time_sec / 60.0),
+                     mode=util.BOTH_LOG)
 
         t0 = time.time()  # connection timer
 
