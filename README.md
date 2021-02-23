@@ -3,6 +3,7 @@ supervisor to detect and correct thermostat deviations<br/>
 
 # dependencies<br/>
 pyhtcc (pip3 install pyhtcc)<br/>
+radiotherm repository (mhrivnak/radiotherm)<br/>
 
 # honeywell.py:
 1. Script will logon to TCC web site and infinitely poll server at configurable poll interval for current thermostat settings.
