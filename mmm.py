@@ -8,7 +8,7 @@ import os
 import sys
 sys.path.append(os.path.abspath('../radiotherm'))
 import radiotherm  # noqa F405
-import urllib
+import urllib  # noqa E402
 
 # local imports
 import thermostat_common as tc  # noqa E402
