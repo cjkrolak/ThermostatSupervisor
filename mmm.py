@@ -8,6 +8,7 @@ import os
 import sys
 sys.path.append(os.path.abspath('../radiotherm'))
 import radiotherm  # noqa F405
+import urllib  # noqa E402
 
 # local imports
 import thermostat_common as tc  # noqa E402
@@ -34,7 +35,11 @@ class MMM50Thermostat(tc.ThermostatCommonZone):
         inputs:
             ip_address(str):  ip address of thermostat on local net
         """
-        self.device_id = radiotherm.get_thermostat(ip_address)
+        try:
+            self.device_id = radiotherm.get_thermostat(ip_address)
+        except urllib.error.URLError as e:
+            raise Exception("FATAL ERROR: 3m thermostat not found at "
+                            "ip address: %s" % ip_address) from e
         self.ip_address = ip_address
 
     def get_target_zone_id(self):
