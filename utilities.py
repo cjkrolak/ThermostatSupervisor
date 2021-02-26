@@ -21,7 +21,7 @@ BOTH_LOG = 0x011  # log to both console and data logs
 DEBUG_LOG = 0x100  # print only if debug mode is on
 
 file_path = ".//data"
-max_log_size_bytes = 1024  # logs rotate at this max size
+max_log_size_bytes = 2**20  # logs rotate at this max size
 
 
 def get_env_variable(env_key):
