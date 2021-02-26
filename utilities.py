@@ -20,7 +20,7 @@ DATA_LOG = 0x010  # print to data log
 BOTH_LOG = 0x011  # log to both console and data logs
 DEBUG_LOG = 0x100  # print only if debug mode is on
 
-file_path = ".\\data"
+file_path = ".//data"
 max_log_size_bytes = 1024  # logs rotate at this max size
 
 
@@ -145,7 +145,7 @@ def get_full_file_path(file_name):
     returns:
         (str) full file name and path
     """
-    return file_path + "\\" + file_name
+    return file_path + "//" + file_name
 
 
 def utf8len(s):
