@@ -7,6 +7,9 @@ https://pypi.org/project/pyhtcc/
 # built-in imports
 import pprint
 import pyhtcc
+from json.decoder import JSONDecodeError
+import time
+import traceback
 
 # local imports
 import thermostat_common as tc
@@ -299,3 +302,28 @@ class HoneywellZone(pyhtcc.Zone, tc.ThermostatCommonZone):
                      self.get_vacation_hold_until_time(), mode=util.BOTH_LOG)
         util.log_msg("temporary hold until time=%s" %
                      self.get_temporary_hold_until_time(), mode=util.BOTH_LOG)
+
+    def refresh_zone_info(self) -> None:
+        """
+        Refresh the zone_info attribute.
+
+        Method overridden from base class to add retry on connection errors.
+        """
+        try:
+            all_zones_info = self.pyhtcc.get_zones_info()
+        except JSONDecodeError:  # catching simplejson.errors.JSONDecodeError
+            util.log_msg(traceback.format_exc(),
+                         mode=util.DEBUG_LOG + util.CONSOLE_LOG, func_name=1)
+            util.log_msg("exception during refresh_zone_info, probably a"
+                         " connection issue, waiting 30 seconds and then "
+                         "retrying once...",
+                         mode=util.BOTH_LOG, func_name=1)
+            time.sleep(30)
+            all_zones_info = self.pyhtcc.get_zones_info()  # retry once
+        for z in all_zones_info:
+            if z['DeviceID'] == self.device_id:
+                pyhtcc.logger.debug("Refreshed zone info for {self.device_id}")
+                self.zone_info = z
+                return
+
+        raise pyhtcc.ZoneNotFoundError(f"Missing device: {self.device_id}")
