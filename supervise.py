@@ -97,21 +97,25 @@ def main(thermostat_type):
             if (revert_thermostat_deviation and current_mode["heat_mode"] and
                     current_mode["heat_deviation"]):
                 email_notification.send_email_alert(
-                    subject="heat deviation alert",
+                    subject=("%s heat deviation alert on zone %s" %
+                             (thermostat_type, zone_num)),
                     body=current_mode["status_msg"])
-                util.log_msg("\n*** heat deviation detected, "
-                             "reverting thermostat to"
-                             " heat schedule ***\n", mode=util.BOTH_LOG)
+                util.log_msg("\n*** %s heat deviation detected on zone %s,"
+                             " reverting thermostat to heat schedule ***\n" %
+                             (thermostat_type, zone_num),
+                             mode=util.BOTH_LOG)
                 zone.set_heat_setpoint(zone.get_schedule_heat_sp())
 
             # revert thermostat to schedule if cool override is detected
             if (revert_thermostat_deviation and current_mode["cool_mode"] and
                     current_mode["cool_deviation"]):
                 email_notification.send_email_alert(
-                    subject="cool deviation alert",
+                    subject=("%s cool deviation alert on zone %s" %
+                             (thermostat_type, zone_num)),
                     body=current_mode["status_msg"])
-                util.log_msg("\n*** cool deviation detected, reverting "
-                             "thermostat to cool schedule ***\n",
+                util.log_msg("\n*** %s cool deviation detected on zone %s,"
+                             " reverting thermostat to cool schedule ***\n" %
+                             (thermostat_type, zone_num),
                              mode=util.BOTH_LOG)
                 zone.set_cool_setpoint(zone.get_schedule_cool_sp())
 
