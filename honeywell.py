@@ -137,6 +137,66 @@ class HoneywellThermostat(pyhtcc.PyHTCC):
                      func_name=1)
         return parameter_data
 
+    def get_zones_info(self) -> list:
+        """
+        Return a list of dicts corresponding with each one corresponding to a
+        particular zone.
+
+        Method overridden from base class to add additional debug info.
+        """
+        zones = []
+        for page_num in range(1, 6):
+            pyhtcc.logger.debug("Attempting to get zones for location id, "
+                                f"page: {self._locationId}, {page_num}")
+            result = self._post_zone_list_data(page_num)
+
+            try:
+                data = result.json()
+            except Exception:
+                # we can get a 200 with non-json data if pages aren't needed.
+                # Though the 1st page shouldn't give non-json.
+                if page_num == 1:
+                    pyhtcc.logger.exception("Unable to decode json data "
+                                            "returned by GetZoneList. Data "
+                                            f"was:\n {result.text}")
+                    raise
+                else:
+                    # custom debug code here
+                    pyhtcc.logger.debug("Unable to decode json data returned "
+                                        "by GetZoneList on page {page_num}. "
+                                        f"Data was:\n {result.text}")
+                    data = {}
+
+            # once we go to an empty page, we're done.
+            # Luckily it returns empty json instead of erroring
+            if not data:
+                pyhtcc.logger.debug(f"page {page_num} is empty")
+                break
+
+            zones.extend(data)
+
+        # add name (and additional info) to zone info
+        for idx, zone in enumerate(zones):
+            device_id = zone['DeviceID']
+            name = self._get_name_for_device_id(device_id)
+            zone['Name'] = name
+
+            device_id = zone['DeviceID']
+            result = self._get_check_data_session(device_id)
+
+            try:
+                more_data = result.json()
+            except Exception:
+                pyhtcc.logger.exception("Unable to decode json data returned "
+                                        "by CheckDataSession. Data was:\n "
+                                        f"{result.text}")
+                raise
+
+            zones[idx] = {**zone, **more_data,
+                          **self._get_outdoor_weather_info_for_zone(device_id)}
+
+        return zones
+
 
 class HoneywellZone(pyhtcc.Zone, tc.ThermostatCommonZone):
     """Extend the Zone class with additional methods to get and set
