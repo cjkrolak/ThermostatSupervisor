@@ -37,7 +37,7 @@ in Windows, define env variables in control panel and then re-start IDE<br/>
 * 'GMAIL_USERNAME': email account to send notifications from
 * 'GMAIL_PASSWORD': password for GMAIL_USERNAME
 
-Supervisor API required methods:<br/>
+# Supervisor API required methods:<br/>
 **thermostat class:**<br/>
 * get_all_thermostat_metadata(): Return intial thermostat meta data.
 * get_target_zone_id(): Return the target zone ID.
