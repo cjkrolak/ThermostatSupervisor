@@ -203,35 +203,36 @@ class MMM50Thermostat(tc.ThermostatCommonZone):
             else:
                 # store setpoint corresponding to this time
                 current_sp = todays_setpoint_lst[t + 1]
+        return current_sp
 
-    def get_heat_setpoint(self) -> int:
+    def get_heat_setpoint(self) -> float:
         """
         Return the current heat setpoint.
 
         inputs:
             None
         returns:
-            (int): current heat set point in degrees.
+            (float): current heat set point in degrees.
         """
         result = self.device_id.t_heat['raw']
-        if not isinstance(result, int):
+        if not isinstance(result, float):
             raise Exception("heat set point is type %s, "
-                            "should be int" % type(result))
+                            "should be float" % type(result))
         return result
 
-    def get_heat_setpoint_raw(self) -> int:
+    def get_heat_setpoint_raw(self) -> float:
         """
         Return the current raw heat setpoint.
 
         inputs:
             None
         returns:
-            (int): current raw heat set point in degrees.
+            (float): current raw heat set point in degrees.
         """
         result = self.get_heat_setpoint()
-        if not isinstance(result, int):
+        if not isinstance(result, float):
             raise Exception("heat set point raw is type %s, "
-                            "should be int" % type(result))
+                            "should be float" % type(result))
         return result
 
     def get_cool_setpoint(self) -> int:
