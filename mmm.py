@@ -186,49 +186,89 @@ class MMM50Thermostat(tc.ThermostatCommonZone):
 
     def get_heat_setpoint(self) -> int:
         """Return the current heat setpoint."""
-        return self.device_id.t_heat['raw']
+        result = self.device_id.t_heat['raw']
+        if not isinstance(result, int):
+            raise Exception("heat set point is type %s, "
+                            "should be int" % type(result))
+        return result
 
     def get_heat_setpoint_raw(self) -> int:
         """Return the current raw heat setpoint."""
-        return self.get_heat_setpoint()
+        result = self.get_heat_setpoint()
+        if not isinstance(result, int):
+            raise Exception("heat set point raw is type %s, "
+                            "should be int" % type(result))
+        return result
 
     def get_cool_setpoint(self) -> int:
         """Return the current cool setpoint."""
-        return self.device_id.t_cool['raw']
+        result = self.device_id.t_cool['raw']
+        if not isinstance(result, int):
+            raise Exception("cool set point is type %s, "
+                            "should be int" % type(result))
+        return result
 
     def get_cool_setpoint_raw(self) -> int:
         """Return the current raw cool setpoint."""
-        return self.get_cool_setpoint()
+        result = self.get_cool_setpoint()
+        if not isinstance(result, int):
+            raise Exception("cool setpoint raw is type %s, "
+                            "should be int" % type(result))
+        return result
 
     def get_schedule_program_heat(self) -> int:
-        """Return the scheduled heat setpoint."""
-        return self.device_id.program_heat['raw']
+        """Return the scheduled program heat setpoint."""
+        result = self.device_id.program_heat['raw']
+        if not isinstance(result, int):
+            raise Exception("heat program schedule set point is type %s, "
+                            "should be int" % type(result))
+        return result
 
     def get_schedule_heat_sp(self) -> int:
         """Return the scheduled heat setpoint."""
-        return self.get_schedule_setpoint(self.device_id.program_heat)
+        result = self.get_schedule_setpoint(self.device_id.program_heat)
+        if not isinstance(result, int):
+            raise Exception("schedule heat set point is type %s, "
+                            "should be int" % type(result))
+        return result
 
     def get_schedule_program_cool(self) -> int:
         """Return the sechduled cool setpoint."""
-        return self.device_id.program_cool['raw']
+        result = self.device_id.program_cool['raw']
+        if not isinstance(result, int):
+            raise Exception("schedule program cool set point is type %s, "
+                            "should be int" % type(result))
+        return result
 
     def get_schedule_cool_sp(self) -> int:
         """Return the sechduled cool setpoint."""
-        return self.get_schedule_setpoint(self.device_id.program_cool)
+        result = self.get_schedule_setpoint(self.device_id.program_cool)
+        if not isinstance(result, int):
+            raise Exception("schedule cool set point is type %s, "
+                            "should be int" % type(result))
+        return result
 
     def get_is_invacation_hold_mode(self) -> bool:
         """
         Return the Hold setting.
         0=Disabled, 1=Enabled
         """
-        return bool(self.device_id.hold['raw'])
+        result = bool(self.device_id.hold['raw'])
+        if not isinstance(result, bool):
+            raise Exception("is_invacation_hold_mode is type %s, "
+                            "should be bool" % type(result))
+        return result
 
     def get_vacation_hold(self) -> bool:
         """
         Return the Hold setting.
         0=Disabled, 1=Enabled
         """
-        return self.device_id.override['raw']
+        result = self.device_id.override['raw']
+        if not isinstance(result, bool):
+            raise Exception("get_vacation_hold_mode is type %s, "
+                            "should be bool" % type(result))
+        return result
 
     def get_vacation_hold_until_time(self) -> int:
         """ refreshes the cached zone information and return
@@ -275,7 +315,11 @@ class MMM50Thermostat(tc.ThermostatCommonZone):
             2 : 'Cool',
             3 : 'Auto'
         """
-        return self.device_id.tmode['raw']
+        result = self.device_id.tmode['raw']
+        if not isinstance(result, int):
+            raise Exception("get_system_switch_position is type %s, "
+                            "should be int" % type(result))
+        return result
 
     def set_heat_setpoint(self, temp: int) -> None:
         """
