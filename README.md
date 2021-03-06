@@ -30,12 +30,12 @@ Script can be configured to customize polling interval, force re-logon after per
 3. a few other low frequency intermittent issues exist, refer to issues in github repo for details.
 
 # environment variables required<br/>
-# in Linux, define and then export variables in ~/.profile<br/>
-# in Windows, define env variables in control panel and then re-start IDE<br/>
-'TCC_USERNAME':  username to Honeywell TCC website<br/>
-'TCC_PASSWORD':  password for TCC_USERNAME<br/>
-'GMAIL_USERNAME': email account to send notifications from<br/>
-'GMAIL_PASSWORD': password for GMAIL_USERNAME<br/>
+in Linux, define and then export variables in ~/.profile<br/>
+in Windows, define env variables in control panel and then re-start IDE<br/>
+* 'TCC_USERNAME':  username to Honeywell TCC website
+* 'TCC_PASSWORD':  password for TCC_USERNAME
+* 'GMAIL_USERNAME': email account to send notifications from
+* 'GMAIL_PASSWORD': password for GMAIL_USERNAME
 
 Supervisor API required methods:<br/>
 **thermostat class:**<br/>
