@@ -146,7 +146,7 @@ if __name__ == "__main__":
     # parse thermostat type parameter (argv[1] if present):
     tstat_default = api.HONEYWELL  # default thermostat type
     try:
-        tstat_type = sys.argv[1]
+        tstat_type = sys.argv[1].lower()
     except IndexError:
         tstat_type = tstat_default
     if tstat_type not in api.SUPPORTED_THERMOSTATS:
@@ -157,8 +157,8 @@ if __name__ == "__main__":
     # parse zone number parameter (argv[2] if present):
     zone_default = 0
     try:
-        zone_input = sys.argv[2]
-    except IndexError:
+        zone_input = int(sys.argv[2])
+    except (IndexError, ValueError):
         zone_input = zone_default
     if zone_input not in api.SUPPORTED_THERMOSTATS[tstat_type]["zones"]:
         print("WARNING: zone %s is not a valid choice for %s thermostat, "

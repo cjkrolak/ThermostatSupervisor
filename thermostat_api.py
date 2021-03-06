@@ -14,7 +14,7 @@ import mmm as mmm
 
 # thermostat types
 HONEYWELL = "honeywell"
-MMM50 = "MMM50"
+MMM50 = "mmm50"
 SUPPORTED_THERMOSTATS = {
     HONEYWELL: {"type": 1, "zones": [0]},
     MMM50: {"type": 2, "zones": [0, 1]},
