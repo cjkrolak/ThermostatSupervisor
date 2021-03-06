@@ -143,15 +143,27 @@ if __name__ == "__main__":
 
     util.log_msg.debug = True  # debug mode set
 
-    # set thermostat type
-    if len(sys.argv) > 1 and sys.argv[1] in api.SUPPORTED_THERMOSTATS:
+    # parse thermostat type parameter (argv[1] if present):
+    tstat_default = api.HONEYWELL  # default thermostat type
+    try:
         tstat_type = sys.argv[1]
-    else:
-        # default
-        tstat_type = api.HONEYWELL
-        tstat_type = api.MMM50
+    except IndexError:
+        tstat_type = tstat_default
+    if tstat_type not in api.SUPPORTED_THERMOSTATS:
+        print("WARNING: '%s' is not a valid choice for thermostat, "
+              "using default(%s)" % (tstat_type, tstat_default))
+        tstat_type = tstat_default
 
-    # set the monitoring zone
-    api.set_target_zone(1)
+    # parse zone number parameter (argv[2] if present):
+    zone_default = 0
+    try:
+        zone_input = sys.argv[2]
+    except IndexError:
+        zone_input = zone_default
+    if zone_input not in api.SUPPORTED_THERMOSTATS[tstat_type]["zones"]:
+        print("WARNING: zone %s is not a valid choice for %s thermostat, "
+              "using default(%s)" % (zone_input, tstat_type, zone_default))
+        zone_input = zone_default
+    api.set_target_zone(zone_input)
 
     main(tstat_type)

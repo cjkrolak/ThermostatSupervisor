@@ -16,8 +16,8 @@ import mmm as mmm
 HONEYWELL = "honeywell"
 MMM50 = "MMM50"
 SUPPORTED_THERMOSTATS = {
-    HONEYWELL: 1,
-    MMM50: 2,
+    HONEYWELL: {"type": 1, "zones": [0]},
+    MMM50: {"type": 2, "zones": [0, 1]},
     }
 
 # thermostat IP addresses (local net)
