@@ -29,7 +29,7 @@ Script can be configured to customize polling interval, force re-logon after per
 2. code only reliably runs with 3 minute poll time on Honeywell.
 3. a few other low frequency intermittent issues exist, refer to issues in github repo for details.
 
-# environment variables required<br/>
+# environment variables required:<br/>
 in Linux, define and then export variables in ~/.profile<br/>
 in Windows, define env variables in control panel and then re-start IDE<br/>
 * 'TCC_USERNAME':  username to Honeywell TCC website
