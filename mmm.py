@@ -19,9 +19,7 @@ ip_basement_3m50 = "192.168.86.83"
 
 
 class MMM50Thermostat(tc.ThermostatCommonZone):
-    """3m50 thermostat functions
-
-    """
+    """3m50 thermostat functions."""
     # thermostat poll time interval
     poll_time_sec = 10 * 60
 
@@ -43,28 +41,32 @@ class MMM50Thermostat(tc.ThermostatCommonZone):
         self.ip_address = ip_address
 
     def get_target_zone_id(self):
-        """Return the target zone ID."""
+        """
+        Return the target zone ID.
+
+        inputs:
+            None
+        returns:
+            (str):  IP address of target zone.
+        """
         return self.ip_address
 
     def get_all_metadata(self):
         """
-        Get all the current thermostat metadata
+        Get all the current thermostat metadata.
 
         inputs:
-          p(object): thermostat object from connection
-          zone_number(int): zone number, default=0
+            None
         returns:
-          dict
+            (dict) empty dict.
         """
         return {}  # not yet implemented
 
     def get_metadata(self, parameter=None):
         """
-        Get the current thermostat metadata settings
+        Get the current thermostat metadata settings.
 
         inputs:
-          p(object): thermostat object from connection
-          zone_number(int): zone number, default=0
           parameter(str): target parameter, None = all settings
         returns:
           dict if parameter=None
@@ -77,7 +79,7 @@ class MMM50Thermostat(tc.ThermostatCommonZone):
 
     def get_latestdata(self):
         """
-        Get the current thermostat latest data
+        Get the current thermostat latest data.
 
         inputs:
           p(object): thermostat object from connection
@@ -93,37 +95,55 @@ class MMM50Thermostat(tc.ThermostatCommonZone):
         Get the latest thermostat ui data
 
         inputs:
-          p(object): thermostat object from connection
-          zone_number(int): zone_number, default=0
+          None
         returns:
-          dict
+          (dict) empty dict.
         """
         return {}  # not yet implemented
 
     def get_uiData_param(self):
         """
-        Get the latest thermostat ui data for one specific parameter
+        Get the latest thermostat ui data for one specific parameter.
 
         inputs:
-          p(object): thermostat object from connection
-          zone_number(int): zone_number, default=0
-          parameter(str): paramenter name
+          None
         returns:
-          dict
+          (dict) empty dict.
         """
         return {}  # not yet implemented
 
     def get_display_temp(self) -> int:
-        """Refresh the cached zone information then return DispTemperature"""
+        """
+        Return DispTemperature.
+
+        inputs:
+            None
+        returns:
+            (int): display temp in degrees.
+        """
         return self.device_id.temp['raw']
 
     def get_heat_mode(self) -> int:
-        """Refresh the cached zone information and return the heat mode."""
+        """
+        Return the heat mode.
+
+        inputs:
+            None
+        returns:
+            (int): heat mode.
+        """
         return int(self.device_id.tmode['raw'] ==
                    self.system_switch_position[self.HEAT_MODE])
 
     def get_cool_mode(self) -> int:
-        """Refresh the cached zone information and return the cool mode."""
+        """
+        Return the cool mode.
+
+        inputs:
+            None
+        returns:
+            (int): cool mode.
+        """
         return int(self.device_id.tmode['raw'] ==
                    self.system_switch_position[self.COOL_MODE])
 
@@ -132,7 +152,7 @@ class MMM50Thermostat(tc.ThermostatCommonZone):
         Return list of 4 setpoints for the day.
 
         inputs:
-            sp_dict(dictionary): setpoint dictionary
+            sp_dict(dict): setpoint dictionary
             day(int): day of the week, 0=Monday
         returns:
             list of 8 eleements, representing 4 pairs of elapsed minutes
@@ -149,7 +169,7 @@ class MMM50Thermostat(tc.ThermostatCommonZone):
         Return last setpoint from day before today.
 
         inputs:
-            sp_dict(dictionary): setpoint dictionary
+            sp_dict(dict): setpoint dictionary
         returns:
             (int)last temperature set the day before.
         """
@@ -165,9 +185,9 @@ class MMM50Thermostat(tc.ThermostatCommonZone):
         Return current setpoint.
 
         inputs:
-            sp_dict(dictionary): setpoint dictionary
+            sp_dict(dict): setpoint dictionary
         returns:
-            (int)last temperature set the day before.
+            (int) last temperature set the day before.
         """
         current_sp = self.get_previous_days_setpoint(sp_dict)
         now = datetime.datetime.now()
@@ -185,7 +205,14 @@ class MMM50Thermostat(tc.ThermostatCommonZone):
                 current_sp = todays_setpoint_lst[t + 1]
 
     def get_heat_setpoint(self) -> int:
-        """Return the current heat setpoint."""
+        """
+        Return the current heat setpoint.
+
+        inputs:
+            None
+        returns:
+            (int): current heat set point in degrees.
+        """
         result = self.device_id.t_heat['raw']
         if not isinstance(result, int):
             raise Exception("heat set point is type %s, "
@@ -193,7 +220,14 @@ class MMM50Thermostat(tc.ThermostatCommonZone):
         return result
 
     def get_heat_setpoint_raw(self) -> int:
-        """Return the current raw heat setpoint."""
+        """
+        Return the current raw heat setpoint.
+
+        inputs:
+            None
+        returns:
+            (int): current raw heat set point in degrees.
+        """
         result = self.get_heat_setpoint()
         if not isinstance(result, int):
             raise Exception("heat set point raw is type %s, "
@@ -201,7 +235,14 @@ class MMM50Thermostat(tc.ThermostatCommonZone):
         return result
 
     def get_cool_setpoint(self) -> int:
-        """Return the current cool setpoint."""
+        """
+        Return the current cool setpoint.
+
+        inputs:
+            None
+        returns:
+            (int): current cool set point in degrees.
+        """
         result = self.device_id.t_cool['raw']
         if not isinstance(result, int):
             raise Exception("cool set point is type %s, "
@@ -209,7 +250,15 @@ class MMM50Thermostat(tc.ThermostatCommonZone):
         return result
 
     def get_cool_setpoint_raw(self) -> int:
-        """Return the current raw cool setpoint."""
+        """
+        Return the current raw cool setpoint.
+
+
+        inputs:
+            None
+        returns:
+            (int): current raw cool set point in degrees.
+        """
         result = self.get_cool_setpoint()
         if not isinstance(result, int):
             raise Exception("cool setpoint raw is type %s, "
@@ -217,7 +266,14 @@ class MMM50Thermostat(tc.ThermostatCommonZone):
         return result
 
     def get_schedule_program_heat(self) -> int:
-        """Return the scheduled program heat setpoint."""
+        """
+        Return the scheduled heat setpoint.
+
+        inputs:
+            None
+        returns:
+            (int): scheduled heat set point in degrees.
+        """
         result = self.device_id.program_heat['raw']
         if not isinstance(result, int):
             raise Exception("heat program schedule set point is type %s, "
@@ -225,7 +281,14 @@ class MMM50Thermostat(tc.ThermostatCommonZone):
         return result
 
     def get_schedule_heat_sp(self) -> int:
-        """Return the scheduled heat setpoint."""
+        """
+        Return the scheduled heat setpoint.
+
+        inputs:
+            None
+        returns:
+            (int): current scheduled heat set point in degrees.
+        """
         result = self.get_schedule_setpoint(self.device_id.program_heat)
         if not isinstance(result, int):
             raise Exception("schedule heat set point is type %s, "
@@ -233,7 +296,14 @@ class MMM50Thermostat(tc.ThermostatCommonZone):
         return result
 
     def get_schedule_program_cool(self) -> int:
-        """Return the sechduled cool setpoint."""
+        """
+        Return the sechduled cool setpoint.
+
+        inputs:
+            None
+        returns:
+            (int): current scheduled cool set point in degrees.
+        """
         result = self.device_id.program_cool['raw']
         if not isinstance(result, int):
             raise Exception("schedule program cool set point is type %s, "
@@ -241,7 +311,14 @@ class MMM50Thermostat(tc.ThermostatCommonZone):
         return result
 
     def get_schedule_cool_sp(self) -> int:
-        """Return the sechduled cool setpoint."""
+        """
+        Return the sechduled cool setpoint.
+
+        inputs:
+            None
+        returns:
+            (int): current schedule cool set point in degrees.
+        """
         result = self.get_schedule_setpoint(self.device_id.program_cool)
         if not isinstance(result, int):
             raise Exception("schedule cool set point is type %s, "
@@ -250,8 +327,12 @@ class MMM50Thermostat(tc.ThermostatCommonZone):
 
     def get_is_invacation_hold_mode(self) -> bool:
         """
-        Return the Hold setting.
-        0=Disabled, 1=Enabled
+        Return the in vacation hold status.
+
+        inputs:
+            None
+        returns:
+            (int): 0=Disabled, 1=Enabled
         """
         result = bool(self.device_id.hold['raw'])
         if not isinstance(result, bool):
@@ -262,7 +343,11 @@ class MMM50Thermostat(tc.ThermostatCommonZone):
     def get_vacation_hold(self) -> bool:
         """
         Return the Hold setting.
-        0=Disabled, 1=Enabled
+
+        inputs:
+            None
+        returns:
+            (int): 0=Disabled, 1=Enabled
         """
         result = self.device_id.override['raw']
         if not isinstance(result, bool):
@@ -271,13 +356,25 @@ class MMM50Thermostat(tc.ThermostatCommonZone):
         return result
 
     def get_vacation_hold_until_time(self) -> int:
-        """ refreshes the cached zone information and return
-            the 'VacationHoldUntilTime' """
+        """
+        Return the 'VacationHoldUntilTime'.
+
+        inputs:
+            None
+        returns:
+            (int): vacation hold time in minutes.
+         """
         return -1  # not implemented
 
     def get_temporary_hold_until_time(self) -> int:
-        """ refreshes the cached zone information and return the
-            'TemporaryHoldUntilTime' """
+        """
+        Return the 'TemporaryHoldUntilTime'.
+
+        inputs:
+            None
+        returns:
+            (int): temporary hold time in minutes.
+         """
         if self.get_heat_mode() == 1:
             sp_dict = self.device_id.program_heat
         elif self.get_cool_mode() == 1:
@@ -301,15 +398,24 @@ class MMM50Thermostat(tc.ThermostatCommonZone):
         return int(time_delta)
 
     def get_setpoint_change_allowed(self) -> bool:
-        """ refreshes the cached zone information and return the
-            'SetpointChangeAllowed' setting
-            'SetpointChangeAllowed' will be True in heating mode,
+        """
+        Return the 'SetpointChangeAllowed' setting.
+
+        inputs:
+            None
+        returns:
+            (bool): 'SetpointChangeAllowed' will be True in heating mode,
             False in OFF mode (assume True in cooling mode too)
         """
         return False  # not implemented
 
     def get_system_switch_position(self) -> int:
-        """ Return the thermostat mode
+        """ Return the thermostat mode.
+
+        inputs:
+            None
+        returns:
+            (int): thermostat mode:
             0 : 'Off',
             1 : 'Heat',
             2 : 'Cool',
@@ -323,24 +429,35 @@ class MMM50Thermostat(tc.ThermostatCommonZone):
 
     def set_heat_setpoint(self, temp: int) -> None:
         """
-        Sets a new heat setpoint.
+        Set a new heat setpoint.
+
         This will also attempt to turn the thermostat to 'Heat'
+        inputs:
+            temp(int): desired temperature in degrees.
+        returns:
+            None
         """
         print("setting heat to %s" % temp)
         self.device_id.t_heat = temp
 
     def set_cool_setpoint(self, temp: int) -> None:
         """
-        Sets a new cool setpoint.
+        Set a new cool setpoint.
+
         This will also attempt to turn the thermostat to 'Cool'
+        inputs:
+            temp(int): desired temperature in degrees.
+        returns:
+            None
         """
         self.device_id.t_cool = temp
 
     def report_heating_parameters(self):
         """
         Display critical thermostat settings and reading to the screen.
+
         inputs:
-            zone(obj): Zone object
+            None
         returns:
             None
         """

@@ -27,18 +27,39 @@ class HoneywellThermostat(pyhtcc.PyHTCC):
     connection_time_sec = 8 * 60 * 60
 
     def _get_zone_device_ids(self) -> list:
-        """Return a list of zone Device IDs."""
+        """
+        Return a list of zone Device IDs.
+
+        inputs:
+            None
+        returns:
+            (list): all zone device ids supported.
+        """
         zone_id_lst = []
         for _, zone in enumerate(self.get_zones_info()):
             zone_id_lst.append(zone['DeviceID'])
         return zone_id_lst
 
     def get_target_zone_id(self, zone_number=0):
-        """Return the target zone ID."""
+        """
+        Return the target zone ID.
+
+        inputs:
+            zone_number(int):  zone number.
+        returns:
+            (int): zone device id number
+        """
         return self._get_zone_device_ids()[zone_number]
 
     def get_all_thermostat_metadata(self):
-        """Return initial meta data queried from thermostat."""
+        """
+        Return initial meta data queried from thermostat.
+
+        inputs:
+            None
+        returns:
+            None
+        """
         # dump all meta data
         self.get_all_metadata()
 
@@ -143,6 +164,10 @@ class HoneywellThermostat(pyhtcc.PyHTCC):
         particular zone.
 
         Method overridden from base class to add additional debug info.
+        inputs:
+            None
+        returns:
+            list of zone info.
         """
         zones = []
         for page_num in range(1, 6):
@@ -212,17 +237,38 @@ class HoneywellZone(pyhtcc.Zone, tc.ThermostatCommonZone):
         }
 
     def get_display_temp(self) -> int:  # used
-        """Refresh the cached zone information then return DispTemperature"""
+        """
+        Refresh the cached zone information then return DispTemperature.
+
+        inputs:
+            None
+        returns:
+            (int): display temperature in degrees.
+        """
         self.refresh_zone_info()
         return int(self.zone_info['latestData']['uiData']['DispTemperature'])
 
     def get_heat_mode(self) -> int:
-        """Refresh the cached zone information and return the heat mode."""
+        """
+        Refresh the cached zone information and return the heat mode.
+
+        inputs:
+            None
+        returns:
+            (int) heat mode.
+        """
         self.refresh_zone_info()
         return int(self.zone_info['latestData']['uiData']['StatusHeat'])
 
     def get_cool_mode(self) -> int:
-        """Refresh the cached zone information and return the cool mode."""
+        """
+        Refresh the cached zone information and return the cool mode.
+
+        inputs:
+            None
+        returns:
+            (int): cool mode.
+        """
         self.refresh_zone_info()
         return int(self.zone_info['latestData']['uiData']['StatusCool'])
 
@@ -230,6 +276,11 @@ class HoneywellZone(pyhtcc.Zone, tc.ThermostatCommonZone):
         """
         Refresh the cached zone information and return the
         schedule heat setpoint.
+
+        inputs:
+            None
+        returns:
+            (int): heating set point in degrees.
         """
         self.refresh_zone_info()
         return int(self.zone_info['latestData']['uiData']['ScheduleHeatSp'])
@@ -238,50 +289,95 @@ class HoneywellZone(pyhtcc.Zone, tc.ThermostatCommonZone):
         """
         Refresh the cached zone information and return the
         schedule cool setpoint.
+
+        inputs:
+            None
+        returns:
+            (int): cooling set point in degrees.
         """
         self.refresh_zone_info()
         return int(self.zone_info['latestData']['uiData']['ScheduleCoolSp'])
 
     def get_is_invacation_hold_mode(self) -> bool:  # used
-        """Refresh the cached zone information and return the
-          'IsInVacationHoldMode' setting."""
+        """
+        Refresh the cached zone information and return the
+          'IsInVacationHoldMode' setting.
+
+        inputs:
+            None
+        returns:
+            (booL): True if is in vacation hold mode.
+        """
         self.refresh_zone_info()
         return int(self.zone_info['latestData']['uiData']
                    ['IsInVacationHoldMode'])
 
     def get_vacation_hold(self) -> bool:
-        """ refreshes the cached zone information and return the
-            VacationHold setting """
+        """
+        Refresh the cached zone information and return the
+        VacationHold setting.
+
+        inputs:
+            None
+        returns:
+            (bool): True if vacation hold is set.
+        """
         self.refresh_zone_info()
         return int(self.zone_info['latestData']['uiData']['VacationHold'])
 
     def get_vacation_hold_until_time(self) -> int:
-        """ refreshes the cached zone information and return
-            the 'VacationHoldUntilTime' """
+        """
+        Refresh the cached zone information and return
+        the 'VacationHoldUntilTime'.
+        inputs:
+            None
+        returns:
+            (int) vacation hold time until in minutes
+        """
         self.refresh_zone_info()
         return int(self.zone_info['latestData']['uiData']
                    ['VacationHoldUntilTime'])
 
     def get_temporary_hold_until_time(self) -> int:  # used
-        """ refreshes the cached zone information and return the
-            'TemporaryHoldUntilTime' """
+        """
+        Refresh the cached zone information and return the
+        'TemporaryHoldUntilTime'.
+
+        inputs:
+            None
+        returns:
+            (int) temporary hold time until in minutes.
+        """
         self.refresh_zone_info()
         return int(self.zone_info['latestData']['uiData']
                    ['TemporaryHoldUntilTime'])
 
     def get_setpoint_change_allowed(self) -> bool:
-        """ refreshes the cached zone information and return the
-            'SetpointChangeAllowed' setting
-            'SetpointChangeAllowed' will be True in heating mode,
-            False in OFF mode (assume True in cooling mode too)
+        """
+        Refresh the cached zone information and return the
+        'SetpointChangeAllowed' setting.
+
+        'SetpointChangeAllowed' will be True in heating mode,
+        False in OFF mode (assume True in cooling mode too)
+        inputs:
+            None
+        returns:
+            (bool): True if set point changes are allowed.
         """
         self.refresh_zone_info()
         return int(self.zone_info['latestData']['uiData']
                    ['SetpointChangeAllowed'])
 
     def get_system_switch_position(self) -> int:  # used
-        """ refreshes the cached zone information and return the 'SystemSwitchPosition'
-            'SystemSwitchPosition' = 1 for heat, 2 for off
+        """
+        Refresh the cached zone information and return the
+        'SystemSwitchPosition'.
+
+        'SystemSwitchPosition' = 1 for heat, 2 for off
+        inputs:
+            None
+        returns:
+            None
         """
         self.refresh_zone_info()
         return int(self.zone_info['latestData']['uiData']
@@ -289,9 +385,13 @@ class HoneywellZone(pyhtcc.Zone, tc.ThermostatCommonZone):
 
     def set_heat_setpoint(self, temp: int) -> None:
         """
-        Sets a new heat setpoint.
+        Set a new heat setpoint.
 
         This will also attempt to turn the thermostat to 'Heat'
+        inputs:
+            temp(int): desired temperature.
+        returns:
+            None
         """
         # logger.info(f"setting heat on with a target temp of: {temp}")
         return self.submit_control_changes({
@@ -306,6 +406,10 @@ class HoneywellZone(pyhtcc.Zone, tc.ThermostatCommonZone):
         Set a new cool setpoint.
 
         This will also attempt to turn the thermostat to 'Cool'
+        inputs:
+            temp(int): desired temperature.
+        returns:
+            None
         """
         # logger.info(f"setting heat on with a target temp of: {temp}")
         return self.submit_control_changes({
@@ -318,8 +422,9 @@ class HoneywellZone(pyhtcc.Zone, tc.ThermostatCommonZone):
     def report_heating_parameters(self):
         """
         Display critical thermostat settings and reading to the screen.
+
         inputs:
-            zone(obj): Zone object
+            None
         returns:
             None
         """
@@ -368,6 +473,10 @@ class HoneywellZone(pyhtcc.Zone, tc.ThermostatCommonZone):
         Refresh the zone_info attribute.
 
         Method overridden from base class to add retry on connection errors.
+        inputs:
+            None
+        returns:
+            None
         """
         try:
             all_zones_info = self.pyhtcc.get_zones_info()
