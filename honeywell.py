@@ -480,7 +480,8 @@ class HoneywellZone(pyhtcc.Zone, tc.ThermostatCommonZone):
         """
         try:
             all_zones_info = self.pyhtcc.get_zones_info()
-        except JSONDecodeError:  # catching simplejson.errors.JSONDecodeError
+        except (JSONDecodeError, OSError):
+            # catching simplejson.errors.JSONDecodeError
             util.log_msg(traceback.format_exc(),
                          mode=util.DEBUG_LOG + util.CONSOLE_LOG, func_name=1)
             util.log_msg("exception during refresh_zone_info, probably a"
