@@ -29,6 +29,10 @@ Script can be configured to customize polling interval, force re-logon after per
 2. code only reliably runs with 3 minute poll time on Honeywell.
 3. a few other low frequency intermittent issues exist, refer to issues in github repo for details.
 
+# debug / diagnostics:
+1. Honeywell pyhtcc.txt file in /home/pi/log/pyhtcc/ shows logging specific to pyhtcc class
+2. ./data/ folder contains supervisor logs
+
 # environment variables required:<br/>
 in Linux, define and then export variables in ~/.profile<br/>
 in Windows, define env variables in control panel and then re-start IDE<br/>
