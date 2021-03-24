@@ -174,7 +174,8 @@ class HoneywellThermostat(pyhtcc.PyHTCC):
             pyhtcc.logger.debug("Attempting to get zones for location id, "
                                 f"page: {self._locationId}, {page_num}")
             result = self._post_zone_list_data(page_num)
-
+            pyhtcc.logger.debug("finished get zones for location id, "
+                                f"page: {self._locationId}, {page_num}")
             try:
                 data = result.json()
             except Exception:
@@ -492,7 +493,8 @@ class HoneywellZone(pyhtcc.Zone, tc.ThermostatCommonZone):
             all_zones_info = self.pyhtcc.get_zones_info()  # retry once
         for z in all_zones_info:
             if z['DeviceID'] == self.device_id:
-                pyhtcc.logger.debug("Refreshed zone info for {self.device_id}")
+                pyhtcc.logger.debug(f"Refreshed zone info for \
+                                   {self.device_id}")
                 self.zone_info = z
                 return
 

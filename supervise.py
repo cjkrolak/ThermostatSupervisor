@@ -123,6 +123,7 @@ def main(thermostat_type):
             time.sleep(thermostat.poll_time_sec)
 
             # refresh zone info
+            print("DEBUG: %s: refreshing zone..." % util.get_function_name())
             zone.refresh_zone_info()
 
             # reconnect
