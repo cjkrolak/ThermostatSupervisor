@@ -12,6 +12,12 @@ argv[1] = Thermostat type, currently support "honeywell" and "mmm50".  Default i
 argv[2] = zone, currently support zone 0 on honeywell and zones [0,1] on 3m50.<br/>
 supervise script will call honeywell or mmm50 scripts, detailed below.
 
+# flaskserver.py:
+This module will render supervise.py output on an HTML page using Flask.<br/>
+Same runtime parameters as supervise.py can be specified to override defaults:<br/>
+Flask server rendering currently works through IDE, but not yet through command line.<br/>
+port is currently hard-coded to 80, access at loopback.
+
 # honeywell.py:
 1. Script will logon to TCC web site and infinitely poll server at configurable poll interval for current thermostat settings.
 2. polling is currently set to 3 minutes, longer poll times experience connection errors, shorter poll times are impractical based on emperical data.
