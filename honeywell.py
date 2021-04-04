@@ -5,9 +5,9 @@ https://pypi.org/project/pyhtcc/
 
 """
 # built-in imports
+import json
 import pprint
 import pyhtcc
-from json.decoder import JSONDecodeError
 import time
 import traceback
 
@@ -481,7 +481,7 @@ class HoneywellZone(pyhtcc.Zone, tc.ThermostatCommonZone):
         """
         try:
             all_zones_info = self.pyhtcc.get_zones_info()
-        except (JSONDecodeError, OSError):
+        except (json.JSONDecodeError, OSError):
             # catching simplejson.errors.JSONDecodeError
             util.log_msg(traceback.format_exc(),
                          mode=util.DEBUG_LOG + util.CONSOLE_LOG, func_name=1)
