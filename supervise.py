@@ -49,15 +49,15 @@ def main(thermostat_type):
     previous_mode = {}
 
     # connection timer loop
-    connection_count = 1
+    session_count = 1
     while True:
         # make connection to thermostat through myTotalConnect Comfort site
         thermostat_constructor = \
             api.thermostats[thermostat_type]["thermostat_constructor"]
         args = api.thermostats[thermostat_type]["args"]
         zone_num = api.thermostats[thermostat_type]["zone"]
-        util.log_msg("connecting to thermostat zone %s (session=%s)..." %
-                     (zone_num, connection_count), mode=util.BOTH_LOG)
+        util.log_msg("connecting to thermostat zone %s (session:%s)..." %
+                     (zone_num, session_count), mode=util.BOTH_LOG)
         thermostat = thermostat_constructor(*args)
 
         # poll time setting:
@@ -85,7 +85,8 @@ def main(thermostat_type):
         while True:
             # query TCC for current thermostat settings and set points
             current_mode = zone.get_current_mode(
-                poll_count, flag_all_deviations=revert_all_deviations)
+                session_count, poll_count,
+                flag_all_deviations=revert_all_deviations)
 
             # debug data on change from previous poll
             if current_mode != previous_mode:
@@ -137,7 +138,7 @@ def main(thermostat_type):
             poll_count += 1
 
         # increment connection count
-        connection_count += 1
+        session_count += 1
 
 
 if __name__ == "__main__":
