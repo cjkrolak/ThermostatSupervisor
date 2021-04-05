@@ -33,7 +33,7 @@ class ThermostatCommonZone():
 
         inputs:
             zone(obj):  TCC Zone object
-            session_count(int): session number (connection number) for reporting
+            session_count(int): session number (connection #) for reporting
             poll_count(int): poll number for reporting
             print_status(bool):  True to print status line
             flag_all_deviations(bool):  True: flag all deviations

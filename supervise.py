@@ -84,8 +84,9 @@ def main(thermostat_type):
         # poll thermostat settings
         while True:
             # query TCC for current thermostat settings and set points
-            current_mode = zone.get_current_mode(session_count,
-                poll_count, flag_all_deviations=revert_all_deviations)
+            current_mode = zone.get_current_mode(
+                session_count, poll_count,
+                flag_all_deviations=revert_all_deviations)
 
             # debug data on change from previous poll
             if current_mode != previous_mode:
