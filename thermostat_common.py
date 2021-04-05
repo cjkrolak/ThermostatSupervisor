@@ -115,9 +115,11 @@ class ThermostatCommonZone():
             status_msg += (" (%s)" % ["persistent",
                                       "temporary"][hold_temporary])
         else:
-            status_msg = ("[following schedule] actual=%s, set point=%s,"
-                          " override=%s" %
-                          (display_temp, heat_schedule_point, heat_set_point))
+            status_msg = ("[following schedule] actual=%s" % display_temp)
+            # add setpoints if in heat or cool mode
+            if heat_mode or cool_mode:
+                status_msg += (", set point=%s, override=%s" %
+                               (heat_schedule_point, heat_set_point))
 
         full_status_msg = ("%s: (poll=%s) %s %s" %
                            (datetime.datetime.now().
