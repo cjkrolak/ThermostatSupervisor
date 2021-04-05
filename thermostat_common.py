@@ -25,7 +25,7 @@ class ThermostatCommonZone():
         OFF_MODE: 2,
         }
 
-    def get_current_mode(self, poll_count, print_status=True,
+    def get_current_mode(self, session_count, poll_count, print_status=True,
                          flag_all_deviations=False):
         """
         Determine whether thermostat is following schedule or if it has been
@@ -33,6 +33,7 @@ class ThermostatCommonZone():
 
         inputs:
             zone(obj):  TCC Zone object
+            session_count(int): session number (connection number) for reporting
             poll_count(int): poll number for reporting
             print_status(bool):  True to print status line
             flag_all_deviations(bool):  True: flag all deviations
@@ -121,10 +122,10 @@ class ThermostatCommonZone():
                 status_msg += (", set point=%s, override=%s" %
                                (heat_schedule_point, heat_set_point))
 
-        full_status_msg = ("%s: (poll=%s) %s %s" %
+        full_status_msg = ("%s: (session:%s, poll:%s) %s %s" %
                            (datetime.datetime.now().
                             strftime("%Y-%m-%d %H:%M:%S"),
-                            poll_count, mode, status_msg))
+                            session_count, poll_count, mode, status_msg))
         if print_status:
             util.log_msg(full_status_msg, mode=util.BOTH_LOG)
 
