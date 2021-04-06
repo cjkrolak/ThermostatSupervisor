@@ -10,7 +10,7 @@ This is the main entry point script.<br/>
 runtime parameters can be specified to override defaults:<br/>
 argv[1] = Thermostat type, currently support "honeywell" and "mmm50".  Default is "honeywell".<br/>
 argv[2] = zone, currently support zone 0 on honeywell and zones [0,1] on 3m50.<br/>
-supervise script will call honeywell or mmm50 scripts, detailed below.
+supervise script will call honeywell or mmm50 scripts, detailed below.<br/>
 command line usage:  "python supervise.py <thermostat type> <zone>"
   
 # flaskserver.py:
@@ -30,7 +30,7 @@ Script can be configured to customize polling interval, force re-logon after per
 1. Script will connect to 3m50 thermostat on local network, IP address stored in thermostat_api.mmm_ip
 2. polling is currently set to 10 minutes.
 3. If schedule deviation detected, script will revert thermostat back to scheduled settings.
-Script can be configured to customize polling interval, force re-logon after period of time, and either just alert or alert and revert to schedule.
+Script can be configured to customize polling interval, force re-logon after period of time, and either just alert or alert and revert to schedule.<br/>
 command line usage:  "python mmm.py <zone>"
 
 # errata:
