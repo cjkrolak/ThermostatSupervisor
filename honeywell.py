@@ -5,7 +5,6 @@ https://pypi.org/project/pyhtcc/
 
 """
 # built-in imports
-import json
 import pprint
 import pyhtcc
 import time
@@ -481,8 +480,9 @@ class HoneywellZone(pyhtcc.Zone, tc.ThermostatCommonZone):
         """
         try:
             all_zones_info = self.pyhtcc.get_zones_info()
-        except (json.JSONDecodeError, OSError):
+        except Exception:
             # catching simplejson.errors.JSONDecodeError
+            # using Exception since simplejson is not imported
             util.log_msg(traceback.format_exc(),
                          mode=util.DEBUG_LOG + util.CONSOLE_LOG, func_name=1)
             util.log_msg("exception during refresh_zone_info, probably a"
