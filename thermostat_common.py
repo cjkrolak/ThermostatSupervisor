@@ -20,7 +20,7 @@ class ThermostatCommonZone():
     HEAT_MODE = "HEAT_MODE"
     COOL_MODE = "COOL_MODE"
     system_switch_position = {
-        COOL_MODE: 0,  # assumed, need to verify
+        COOL_MODE: 0,
         HEAT_MODE: 1,
         OFF_MODE: 2,
         }
@@ -76,7 +76,9 @@ class ThermostatCommonZone():
             "status_msg": "",  # status message
             }
 
-        print("DEBUG: %s entrypoint" % util.get_function_name())
+        print("DEBUG: %s entrypoint (switch position=%s)" %
+              (util.get_function_name(),
+               self.get_system_switch_position()))
         # current temperature
         display_temp = self.get_display_temp()
 
@@ -97,6 +99,7 @@ class ThermostatCommonZone():
         # check for cool deviation
         cool_mode = (self.get_system_switch_position() ==
                      self.system_switch_position[self.COOL_MODE])
+
         if cool_mode:
             mode = "COOL MODE"
             cool_set_point = self.get_cool_setpoint_raw()
@@ -109,18 +112,32 @@ class ThermostatCommonZone():
                 cool_deviation = True
 
         # hold cooling
-        if (heat_deviation or cool_deviation and
-                self.get_is_invacation_hold_mode()):
+        if heat_deviation or cool_deviation:
+            print("DEBUG: in vacation hold=%s" %
+                  self.get_is_invacation_hold_mode())
+            print("DEBUG: hold time=%s" %
+                  self.get_temporary_hold_until_time())
             hold_mode = True  # True = not following schedule
-            hold_temporary = self.get_temporary_hold_until_time() > 0
+            # TCC:
+            #   get_is_in_vacation_hold_mode(): always 0 for TCC
+            #   get_temporary_hold_until_time(): > 0 for temp hold
+            #                                   == 0 for perm hold
+            # 3m50:
+            #   get_is_in_vacation_hold_mode(): need to verify
+            #   get_temporary_hold_until_time(): need to verify
+            hold_temporary = (self.get_temporary_hold_until_time() > 0)
+            # or not self.get_is_invacation_hold_mode())
             status_msg += (" (%s)" % ["persistent",
                                       "temporary"][hold_temporary])
         else:
             status_msg = ("[following schedule] actual=%s" % display_temp)
             # add setpoints if in heat or cool mode
-            if heat_mode or cool_mode:
+            if heat_mode:
                 status_msg += (", set point=%s, override=%s" %
                                (heat_schedule_point, heat_set_point))
+            elif cool_mode:
+                status_msg += (", set point=%s, override=%s" %
+                               (cool_schedule_point, cool_set_point))
 
         full_status_msg = ("%s: (session:%s, poll:%s) %s %s" %
                            (datetime.datetime.now().
