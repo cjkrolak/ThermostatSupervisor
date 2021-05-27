@@ -113,8 +113,10 @@ class ThermostatCommonZone():
 
         # hold cooling
         if heat_deviation or cool_deviation:
-            print("DEBUG: in vacation hold=%s" % self.get_is_invacation_hold_mode())
-            print("DEBUG: hold time=%s" % self.get_temporary_hold_until_time())
+            print("DEBUG: in vacation hold=%s" %
+                  self.get_is_invacation_hold_mode())
+            print("DEBUG: hold time=%s" %
+                  self.get_temporary_hold_until_time())
             hold_mode = True  # True = not following schedule
             # TCC:
             #   get_is_in_vacation_hold_mode(): always 0 for TCC
