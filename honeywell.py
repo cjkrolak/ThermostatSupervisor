@@ -231,9 +231,10 @@ class HoneywellZone(pyhtcc.Zone, tc.ThermostatCommonZone):
     HEAT_MODE = "HEAT_MODE"
     COOL_MODE = "COOL_MODE"
     system_switch_position = {
-        COOL_MODE: 0,  # assumed, need to verify
+        COOL_MODE: 3,
         HEAT_MODE: 1,
         OFF_MODE: 2,
+        # what mode is 0?
         }
 
     def get_display_temp(self) -> int:  # used
@@ -398,7 +399,7 @@ class HoneywellZone(pyhtcc.Zone, tc.ThermostatCommonZone):
             'HeatSetpoint': temp,
             'StatusHeat': 0,  # follow schedule
             'StatusCool': 0,  # follow schedule
-            'SystemSwitch': 1,
+            'SystemSwitch': self.system_switch_position[self.HEAT_MODE],
         })
 
     def set_cool_setpoint(self, temp: int) -> None:
@@ -416,7 +417,7 @@ class HoneywellZone(pyhtcc.Zone, tc.ThermostatCommonZone):
             'CoolSetpoint': temp,
             'StatusHeat': 0,  # follow schedule
             'StatusCool': 0,  # follow schedule
-            'SystemSwitch': 1,
+            'SystemSwitch': self.system_switch_position[self.COOL_MODE],
         })
 
     def report_heating_parameters(self):
