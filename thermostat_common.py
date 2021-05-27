@@ -76,7 +76,9 @@ class ThermostatCommonZone():
             "status_msg": "",  # status message
             }
 
-        print("DEBUG: %s entrypoint" % util.get_function_name())
+        print("DEBUG: %s entrypoint (switch position=%s)" %
+              (util.get_function_name(),
+               self.get_system_switch_position()))
         # current temperature
         display_temp = self.get_display_temp()
 
