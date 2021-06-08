@@ -11,6 +11,7 @@ import time
 import traceback
 
 # local imports
+import email_notification
 import thermostat_common as tc
 import utilities as util
 
@@ -479,24 +480,46 @@ class HoneywellZone(pyhtcc.Zone, tc.ThermostatCommonZone):
         returns:
             None
         """
-        try:
-            all_zones_info = self.pyhtcc.get_zones_info()
-        except Exception:
-            # catching simplejson.errors.JSONDecodeError
-            # using Exception since simplejson is not imported
-            util.log_msg(traceback.format_exc(),
-                         mode=util.DEBUG_LOG + util.CONSOLE_LOG, func_name=1)
-            util.log_msg("exception during refresh_zone_info, probably a"
-                         " connection issue, waiting 30 seconds and then "
-                         "retrying once...",
-                         mode=util.BOTH_LOG, func_name=1)
-            time.sleep(30)
-            all_zones_info = self.pyhtcc.get_zones_info()  # retry once
-        for z in all_zones_info:
-            if z['DeviceID'] == self.device_id:
-                pyhtcc.logger.debug(f"Refreshed zone info for \
-                                   {self.device_id}")
-                self.zone_info = z
-                return
+        number_of_retries = 3
+        trial_number = 1
+        while trial_number < number_of_retries:
+            try:
+                all_zones_info = self.pyhtcc.get_zones_info()
+            except Exception:
+                # catching simplejson.errors.JSONDecodeError
+                # using Exception since simplejson is not imported
+                util.log_msg(traceback.format_exc(),
+                             mode=util.DEBUG_LOG + util.CONSOLE_LOG,
+                             func_name=1)
+                util.log_msg("exception during refresh_zone_info, on trial "
+                             "%s of %s, probably a"
+                             " connection issue%s" %
+                             (trial_number, number_of_retries,
+                              ["", ", waiting 30 seconds and then retrying..."]
+                              [trial_number < number_of_retries]),
+                             mode=util.BOTH_LOG, func_name=1)
+                if trial_number < number_of_retries:
+                    time.sleep(30)
+                trial_number += 1
+            else:
+                # log the mitigated failure
+                if trial_number > 1:
+                    email_notification.send_email_alert(
+                        subject=("intermittent JSON decode error "
+                                 "during refresh zone"),
+                        body="%s: trial %s of %s" % (util.get_function_name(),
+                                                     trial_number,
+                                                     number_of_retries))
+                for z in all_zones_info:
+                    if z['DeviceID'] == self.device_id:
+                        pyhtcc.logger.debug(f"Refreshed zone info for \
+                                           {self.device_id}")
+                        self.zone_info = z
+                        return
 
+        # log fatal failure
+        email_notification.send_email_alert(
+            subject=("intermittent JSON decode error during refresh zone"),
+            body="%s: trial %s of %s" % (util.get_function_name(),
+                                         trial_number, number_of_retries))
         raise pyhtcc.ZoneNotFoundError(f"Missing device: {self.device_id}")
