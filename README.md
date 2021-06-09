@@ -5,6 +5,9 @@ supervisor to detect and correct thermostat deviations<br/>
 pyhtcc (pip3 install pyhtcc)<br/>
 radiotherm repository (mhrivnak/radiotherm)<br/>
 
+# Docker Image<br/>
+under construction<br/>
+
 # supervise.py:
 This is the main entry point script.<br/>
 runtime parameters can be specified to override defaults:<br/>
