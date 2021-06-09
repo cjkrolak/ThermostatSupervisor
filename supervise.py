@@ -60,6 +60,9 @@ def main(thermostat_type):
                      (zone_num, session_count), mode=util.BOTH_LOG)
         thermostat = thermostat_constructor(*args)
 
+        # grab meta data
+        thermostat.get_all_thermostat_metadata()
+
         # poll time setting:
         util.log_msg("polling time set to %.1f minutes" %
                      (thermostat.poll_time_sec / 60.0), mode=util.BOTH_LOG)
