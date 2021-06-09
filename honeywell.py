@@ -73,7 +73,6 @@ class HoneywellThermostat(pyhtcc.PyHTCC):
         Return all the current thermostat metadata.
 
         inputs:
-          p(object): thermostat object from connection
           zone_number(int): zone number, default=0
         returns:
           dict
@@ -88,7 +87,6 @@ class HoneywellThermostat(pyhtcc.PyHTCC):
         Return the current thermostat metadata settings.
 
         inputs:
-          p(object): thermostat object from connection
           zone_number(int): zone number, default=0
           parameter(str): target parameter, None = all settings
         returns:
@@ -115,7 +113,6 @@ class HoneywellThermostat(pyhtcc.PyHTCC):
         Return the current thermostat latest data.
 
         inputs:
-          p(object): thermostat object from connection
           zone_number(int): zone number, default=0
         returns:
           dict
@@ -130,7 +127,6 @@ class HoneywellThermostat(pyhtcc.PyHTCC):
         Return the latest thermostat ui data.
 
         inputs:
-          p(object): thermostat object from connection
           zone_number(int): zone_number, default=0
         returns:
           dict
@@ -145,7 +141,6 @@ class HoneywellThermostat(pyhtcc.PyHTCC):
         Return the latest thermostat ui data for one specific parameter.
 
         inputs:
-          p(object): thermostat object from connection
           zone_number(int): zone_number, default=0
           parameter(str): paramenter name
         returns:
