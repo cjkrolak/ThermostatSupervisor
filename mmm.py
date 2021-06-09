@@ -5,6 +5,7 @@ connection to 3m50 thermoststat
 # built-in imports
 import datetime
 import os
+import pprint
 import sys
 sys.path.append(os.path.abspath('../radiotherm'))
 import radiotherm  # noqa F405
@@ -50,6 +51,23 @@ class MMM50Thermostat(tc.ThermostatCommonZone):
             (str):  IP address of target zone.
         """
         return self.ip_address
+
+    def get_all_thermostat_metadata(self):
+        """
+        Return initial meta data queried from thermostat.
+
+        inputs:
+            None
+        returns:
+            None
+        """
+        # dump all meta data
+        self.get_all_metadata()
+
+        # dump uiData in a readable format
+        return_data = self.get_latestdata()
+        pp = pprint.PrettyPrinter(indent=4)
+        pp.pprint(return_data)
 
     def get_all_metadata(self):
         """
