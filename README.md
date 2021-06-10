@@ -1,12 +1,15 @@
-# ThermostatSupervisor:<br/>
+# ThermostatSupervisor:
 supervisor to detect and correct thermostat deviations<br/>
 
-# dependencies<br/>
+# dependencies:
 pyhtcc (pip3 install pyhtcc)<br/>
-radiotherm repository (mhrivnak/radiotherm)<br/>
+radiotherm repository (mhrivnak/radiotherm or pip3 install radiotherm)<br/>
 
-# Docker Image<br/>
-under construction<br/>
+# Docker Image:
+docker run --rm --env-file supervisor-env.txt cjkrolak/thermostatsupervisor <thermostat type> <zone><br/>
+supervisor-env.txt is your environment variables passed in (see below)<br/>
+<thermostat type> is the thermostat type (default=honeywell)<br/>
+<zone> is the thermostat zone (default=0)<br/)
 
 # supervise.py:
 This is the main entry point script.<br/>
