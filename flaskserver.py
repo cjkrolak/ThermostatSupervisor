@@ -10,7 +10,7 @@ from flask import Flask, Response
 app = Flask(__name__)
 
 # port for viewing flask
-flask_port = 80
+flask_port = 5000
 
 
 @app.route('/')
@@ -42,4 +42,4 @@ def index():
 if __name__ == '__main__':
     # show the page in browser
     webbrowser.open('http://127.0.0.1:' + str(flask_port))
-    app.run(host='127.0.0.1', port=flask_port)
+    app.run(host='0.0.0.0', port=flask_port)

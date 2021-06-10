@@ -60,6 +60,11 @@ def main(thermostat_type):
                      (zone_num, session_count), mode=util.BOTH_LOG)
         thermostat = thermostat_constructor(*args)
 
+        # grab meta data
+        print("debug before printing all meta data")
+        thermostat.get_all_thermostat_metadata()
+
+        print("debug before printing polling time")
         # poll time setting:
         util.log_msg("polling time set to %.1f minutes" %
                      (thermostat.poll_time_sec / 60.0), mode=util.BOTH_LOG)
@@ -83,6 +88,7 @@ def main(thermostat_type):
         poll_count = 1
         # poll thermostat settings
         while True:
+            print("debug in while loop")
             # query TCC for current thermostat settings and set points
             current_mode = zone.get_current_mode(
                 session_count, poll_count,
