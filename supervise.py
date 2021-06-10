@@ -21,16 +21,17 @@ def main(thermostat_type):
     returns:
         None
     """
+    print("debug start of main")
     # set log file name
     util.log_msg.file_name = thermostat_type + ".txt"
 
     util.log_msg("%s thermostat monitoring service\n" % thermostat_type,
                  mode=util.BOTH_LOG)
-
+    print("debug after firstlog msg")
     # session variables
     util.log_msg("session settings:", mode=util.BOTH_LOG)
     debug = False  # verbose debugging information
-
+    print("debug 2")
     # mode parameters
     revert_thermostat_deviation = True  # revert thermostat if temp deviated
     revert_all_deviations = False  # True will flag all deviations,
@@ -59,10 +60,10 @@ def main(thermostat_type):
         util.log_msg("connecting to thermostat zone %s (session:%s)..." %
                      (zone_num, session_count), mode=util.BOTH_LOG)
         thermostat = thermostat_constructor(*args)
-
+        print("debug before meta")
         # grab meta data
-        # thermostat.get_all_thermostat_metadata()
-
+        thermostat.get_all_thermostat_metadata()
+        print("debug after meta")
         # poll time setting:
         util.log_msg("polling time set to %.1f minutes" %
                      (thermostat.poll_time_sec / 60.0), mode=util.BOTH_LOG)
