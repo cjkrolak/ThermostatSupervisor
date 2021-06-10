@@ -6,11 +6,15 @@ pyhtcc (pip3 install pyhtcc)<br/>
 radiotherm repository (mhrivnak/radiotherm or pip3 install radiotherm)<br/>
 
 # Docker Image:
-docker run --rm --env-file "envfile" cjkrolak/thermostatsupervisor "thermostat type" "zone"<br/>
-supervisor-env.txt is your environment variables passed in (see below)<br/>
-"envfile" is a text file containing your environment variables<br/>
-"thermostat type" is the thermostat type (default=honeywell)<br/>
-"zone" is the thermostat zone (default=0)<br/>
+docker run --rm --env-file 'envfile' cjkrolak/thermostatsupervisor 'thermostat type' 'zone'<br/>
+* supervisor-env.txt is your environment variables passed in (see below)<br/>
+* 'envfile' is a text file containing your environment variables<br/>
+* 'thermostat type' is the thermostat type (default=honeywell)<br/>
+* 'zone' is the thermostat zone (default=0)<br/>
+
+# GitHub repository environment variables required for docker image build (settings / secrets):
+* 'DOCKER_USERNAME' is your DockerHub username<br/>
+* 'DOCKER_PASSWORD' is your DOckerHub password<br/>
 
 # supervise.py:
 This is the main entry point script.<br/>
