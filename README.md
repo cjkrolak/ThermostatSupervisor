@@ -9,7 +9,7 @@ radiotherm repository (mhrivnak/radiotherm or pip3 install radiotherm)<br/>
 docker run --rm --env-file supervisor-env.txt cjkrolak/thermostatsupervisor "thermostat type" "zone"<br/>
 supervisor-env.txt is your environment variables passed in (see below)<br/>
 "thermostat type" is the thermostat type (default=honeywell)<br/>
-"zone" is the thermostat zone (default=0)<br/)
+"zone" is the thermostat zone (default=0)<br/>
 
 # supervise.py:
 This is the main entry point script.<br/>
