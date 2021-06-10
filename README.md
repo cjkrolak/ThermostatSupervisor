@@ -1,6 +1,13 @@
 # ThermostatSupervisor:
 supervisor to detect and correct thermostat deviations<br/>
 
+# errata:
+1. code currently only supports Honeywell thermostat connected to MyTotalControl web site and 3m50 thermostat connected to local network.
+2. code only reliably runs with 3 minute poll time on Honeywell.
+3. a few other low frequency intermittent issues exist, refer to issues in github repo for details.
+
+## Build Information:
+
 # dependencies:
 pyhtcc (pip3 install pyhtcc)<br/>
 radiotherm repository (mhrivnak/radiotherm or pip3 install radiotherm)<br/>
@@ -15,6 +22,24 @@ docker run --rm --env-file 'envfile' cjkrolak/thermostatsupervisor 'thermostat t
 # GitHub repository environment variables required for docker image build (settings / secrets):
 * 'DOCKER_USERNAME' is your DockerHub username<br/>
 * 'DOCKER_PASSWORD' is your DOckerHub password<br/>
+
+## Execution Information:
+
+# debug / diagnostics:
+1. Honeywell pyhtcc.txt file in /home/pi/log/pyhtcc/ shows logging specific to pyhtcc class
+2. ./data/ folder contains supervisor logs
+
+# environment variables required:<br/>
+for Linux, define and then export variables in ~/.profile<br/>
+for Windows, define env variables in control panel and then re-start IDE<br/>
+for docker image, export the env files to a text file and specify during the docker run command<br/>
+* 'TCC_USERNAME':  username to Honeywell TCC website
+* 'TCC_PASSWORD':  password for TCC_USERNAME
+* 'GMAIL_USERNAME': email account to send notifications from (source)
+* 'GMAIL_PASSWORD': password for GMAIL_USERNAME
+* 'GMAIL_TO_USERNAME': email account to send notifications to (destination)
+
+## Source Code Information:
 
 # supervise.py:
 This is the main entry point script.<br/>
@@ -44,25 +69,6 @@ Script can be configured to customize polling interval, force re-logon after per
 Script can be configured to customize polling interval, force re-logon after period of time, and either just alert or alert and revert to schedule.<br/>
 command line usage:  "*python mmm.py \<zone\>*"
 
-# errata:
-1. code currently only supports Honeywell thermostat connected to MyTotalControl web site and 3m50 thermostat connected to local network.
-2. code only reliably runs with 3 minute poll time on Honeywell.
-3. a few other low frequency intermittent issues exist, refer to issues in github repo for details.
-
-# debug / diagnostics:
-1. Honeywell pyhtcc.txt file in /home/pi/log/pyhtcc/ shows logging specific to pyhtcc class
-2. ./data/ folder contains supervisor logs
-
-# environment variables required:<br/>
-for Linux, define and then export variables in ~/.profile<br/>
-for Windows, define env variables in control panel and then re-start IDE<br/>
-for docker image, export the env files to a text file and specify during the docker run command<br/>
-* 'TCC_USERNAME':  username to Honeywell TCC website
-* 'TCC_PASSWORD':  password for TCC_USERNAME
-* 'GMAIL_USERNAME': email account to send notifications from (source)
-* 'GMAIL_PASSWORD': password for GMAIL_USERNAME
-* 'GMAIL_TO_USERNAME': email account to send notifications to (destination)
-
 # Supervisor API required methods:<br/>
 **thermostat class:**<br/>
 * get_all_thermostat_metadata(): Return intial thermostat meta data.
@@ -74,6 +80,3 @@ for docker image, export the env files to a text file and specify during the doc
 * set_heat_setpoint():  Sets a new heat setpoint.
 * set_cool_setpoint():  Set a new cool setpoint.
 * refresh_zone_info():  Refresh the zone_info attribute.
-
-
-
