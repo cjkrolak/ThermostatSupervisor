@@ -62,7 +62,7 @@ def main(thermostat_type):
         thermostat = thermostat_constructor(*args)
         print("debug before meta")
         # grab meta data
-        thermostat.get_all_thermostat_metadata()
+        # thermostat.get_all_thermostat_metadata()
         print("debug after meta")
         # poll time setting:
         util.log_msg("polling time set to %.1f minutes" %
