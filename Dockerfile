@@ -11,6 +11,8 @@ RUN pip3 install -r requirements.txt
 # copy source code
 COPY . .
 
-# execute the script for Honeywell zone 0
-CMD ["supervise.py", "honeywell", "0"]
-ENTRYPOINT ["python3"]
+# execute the script, default to Honeywell zone 0 if runtime parameters are not provided
+#CMD ["supervise.py", "honeywell", "0"]
+#ENTRYPOINT ["python3"]
+ENTRYPOINT ["python3", "-m", "supervise.py"]
+CMD ["honeywell", "0"]
