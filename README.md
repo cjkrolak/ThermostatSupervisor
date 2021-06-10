@@ -6,8 +6,9 @@ pyhtcc (pip3 install pyhtcc)<br/>
 radiotherm repository (mhrivnak/radiotherm or pip3 install radiotherm)<br/>
 
 # Docker Image:
-docker run --rm --env-file supervisor-env.txt cjkrolak/thermostatsupervisor "thermostat type" "zone"<br/>
+docker run --rm --env-file "envfile" cjkrolak/thermostatsupervisor "thermostat type" "zone"<br/>
 supervisor-env.txt is your environment variables passed in (see below)<br/>
+"envfile" is a text file containing your environment variables<br/>
 "thermostat type" is the thermostat type (default=honeywell)<br/>
 "zone" is the thermostat zone (default=0)<br/>
 
@@ -49,12 +50,14 @@ command line usage:  "*python mmm.py \<zone\>*"
 2. ./data/ folder contains supervisor logs
 
 # environment variables required:<br/>
-in Linux, define and then export variables in ~/.profile<br/>
-in Windows, define env variables in control panel and then re-start IDE<br/>
+for Linux, define and then export variables in ~/.profile<br/>
+for Windows, define env variables in control panel and then re-start IDE<br/>
+for docker image, export the env files to a text file and specify during the docker run command<br/>
 * 'TCC_USERNAME':  username to Honeywell TCC website
 * 'TCC_PASSWORD':  password for TCC_USERNAME
-* 'GMAIL_USERNAME': email account to send notifications from
+* 'GMAIL_USERNAME': email account to send notifications from (source)
 * 'GMAIL_PASSWORD': password for GMAIL_USERNAME
+* 'GMAIL_TO_USERNAME': email account to send notifications to (destination)
 
 # Supervisor API required methods:<br/>
 **thermostat class:**<br/>
