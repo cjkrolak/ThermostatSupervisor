@@ -28,7 +28,7 @@ docker run --rm --env-file 'envfile' 'username'/thermostatsupervisor 'type' 'zon
 2. ./data/ folder contains supervisor logs
 
 ## environment variables required:<br/>
-for Linux, define and then export variables in ~/.profile<br/>
+for Linux, update file ~/.profile and then "source ~/.source" to load the file<br/>
 for Windows, define env variables in control panel and then re-start IDE<br/>
 for docker image, export the env files to a text file and specify during the docker run command<br/>
 * 'TCC_USERNAME':  username to Honeywell TCC website
