@@ -19,13 +19,6 @@ import utilities as util
 class HoneywellThermostat(pyhtcc.PyHTCC):
     """Extend the PyHTCC class with additional methods."""
 
-    # min practical value is 2 minutes based on empirical test
-    # max value is 3, higher settings will cause HTTP errors, why?
-    poll_time_sec = 3 * 60
-
-    # reconnection time to TCC server:
-    connection_time_sec = 8 * 60 * 60
-
     def _get_zone_device_ids(self) -> list:
         """
         Return a list of zone Device IDs.
