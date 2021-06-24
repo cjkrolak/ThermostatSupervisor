@@ -65,12 +65,15 @@ def main(thermostat_type):
         # thermostat.get_all_thermostat_metadata()
         print("debug after meta")
         # poll time setting:
+        poll_time_sec = api.thermostats[thermostat_type]["poll_time_sec"]
         util.log_msg("polling time set to %.1f minutes" %
-                     (thermostat.poll_time_sec / 60.0), mode=util.BOTH_LOG)
+                     (poll_time_sec / 60.0), mode=util.BOTH_LOG)
 
         # reconnection time to TCC server:
+        connection_time_sec = \
+            api.thermostats[thermostat_type]["connection_time_sec"]
         util.log_msg("server re-connect time set to %.1f minutes" %
-                     (thermostat.connection_time_sec / 60.0),
+                     (connection_time_sec / 60.0),
                      mode=util.BOTH_LOG)
 
         t0 = time.time()  # connection timer
@@ -125,14 +128,14 @@ def main(thermostat_type):
                 zone.set_cool_setpoint(zone.get_schedule_cool_sp())
 
             # polling delay
-            time.sleep(thermostat.poll_time_sec)
+            time.sleep(poll_time_sec)
 
             # refresh zone info
             print("DEBUG: %s: refreshing zone..." % util.get_function_name())
             zone.refresh_zone_info()
 
             # reconnect
-            if (time.time() - t0) > thermostat.connection_time_sec:
+            if (time.time() - t0) > connection_time_sec:
                 util.log_msg("forcing re-connection to thermostat...",
                              mode=util.BOTH_LOG)
                 del thermostat
@@ -170,6 +173,32 @@ if __name__ == "__main__":
         print("WARNING: zone %s is not a valid choice for %s thermostat, "
               "using default(%s)" % (zone_input, tstat_type, zone_default))
         zone_input = zone_default
-    api.set_target_zone(zone_input)
+    api.set_target_zone(tstat_type, zone_input)
+
+    # parse the poll time override (argv[3] if present):
+    if len(sys.argv) > 3:
+        poll_time_default = -1
+        try:
+            poll_time_input = int(sys.argv[3])
+        except (IndexError, ValueError):
+            poll_time_input = poll_time_default
+        if poll_time_input <= 0:
+            print("WARNING: poll time override of %s seconds is not a valid "
+                  "value, using default" % poll_time_input)
+        else:
+            api.set_poll_time(tstat_type, poll_time_input)
+
+    # parse the connection time override (argv[4] if present):
+    if len(sys.argv) > 4:
+        connection_time_default = -1
+        try:
+            connection_time_input = int(sys.argv[4])
+        except (IndexError, ValueError):
+            connection_time_input = connection_time_default
+        if connection_time_input <= 0:
+            print("WARNING: connection time override of %s seconds is not "
+                  "a valid value, using default" % connection_time_input)
+        else:
+            api.set_connection_time(tstat_type, connection_time_input)
 
     main(tstat_type)

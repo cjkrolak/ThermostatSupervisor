@@ -12,11 +12,13 @@ pyhtcc (pip3 install pyhtcc)<br/>
 radiotherm repository (mhrivnak/radiotherm or pip3 install radiotherm)<br/>
 
 ## Docker Image:
-docker run --rm --env-file 'envfile' 'username'/thermostatsupervisor 'type' 'zone'<br/>
+docker run --rm --env-file 'envfile' 'username'/thermostatsupervisor 'type' 'zone' 'poll time' 'connection time'<br/>
 * 'envfile' is your environment variables passed in at runtime (see below)<br/>
 * 'username' is your DockerHub username<br/>
 * 'type' is the thermostat type (default=honeywell)<br/>
 * 'zone' is the thermostat zone (default=0)<br/>
+* 'poll time' is the polling time in seconds (default is thermostat-specific)<br/>
+* 'connection time' is the re-connect time in seconds (default is thermostat-specific)<br/>
 
 ## GitHub repository environment variables required for docker image build (settings / secrets):
 * 'DOCKER_USERNAME' is your DockerHub username<br/>
@@ -43,19 +45,21 @@ This is the main entry point script.<br/>
 runtime parameters can be specified to override defaults:<br/>
 argv[1] = Thermostat type, currently support "honeywell" and "mmm50".  Default is "honeywell".<br/>
 argv[2] = zone, currently support zone 0 on honeywell and zones [0,1] on 3m50.<br/>
+argv[3] = poll time in seconds (default is thermostat-specific)<br/>
+argv[4] = re-connect time in seconds (default is thermostat-specific)<br/>
 supervise script will call honeywell or mmm50 scripts, detailed below.<br/>
-command line usage:  "*python supervise.py \<thermostat type\> \<zone\>*"
+command line usage:  "*python supervise.py \<thermostat type\> \<zone\> \<poll time\> \<connection time\>*"
   
 ## flaskserver.py:
 This module will render supervise.py output on an HTML page using Flask.<br/>
 Same runtime parameters as supervise.py can be specified to override defaults:<br/>
 Flask server rendering currently works through IDE, but not yet through command line.<br/>
 port is currently hard-coded to 80, access at loopback.<br/>
-command line usage:  "*python flaskserver.py \<thermostat type\> \<zone\>*"
+command line usage:  "*python flaskserver.py \<thermostat type\> \<zone\> \<poll time\> \<connection time\>*"
 
 ## honeywell.py:
 1. Script will logon to TCC web site and infinitely poll server at configurable poll interval for current thermostat settings.
-2. polling is currently set to 3 minutes, longer poll times experience connection errors, shorter poll times are impractical based on emperical data.
+2. default poll time is currently set to 3 minutes, longer poll times experience connection errors, shorter poll times are impractical based on emperical data.
 3. If schedule deviation detected, script will revert thermostat back to scheduled settings.
 Script can be configured to customize polling interval, force re-logon after period of time, and either just alert or alert and revert to schedule.
 

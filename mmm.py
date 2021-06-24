@@ -21,11 +21,6 @@ ip_basement_3m50 = "192.168.86.83"
 
 class MMM50Thermostat(tc.ThermostatCommonZone):
     """3m50 thermostat functions."""
-    # thermostat poll time interval
-    poll_time_sec = 10 * 60
-
-    # reconnection time to thermostat:
-    connection_time_sec = 8 * 60 * 60
 
     def __init__(self, ip_address, *_, **__):
         """
