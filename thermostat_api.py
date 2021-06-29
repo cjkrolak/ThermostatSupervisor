@@ -38,9 +38,10 @@ thermostats = {
         "args": [os.environ['TCC_USERNAME'], os.environ['TCC_PASSWORD']],
         "zone_constructor": h.HoneywellZone,
         "zone": zone_number,
-        "poll_time_sec": 3 * 60,  # default to 3 minutes
+        "poll_time_sec": 10 * 60,  # default to 10 minutes
         # min practical value is 2 minutes based on empirical test
-        # max value is 3, higher settings will cause HTTP errors, why?
+        # max value was 3, higher settings will cause HTTP errors, why?
+        # not showing error on Pi at 10 minutes, so changed default to 10 min.
         "connection_time_sec": 8 * 60 * 60,  # default to 8 hours
         },
     MMM50: {
