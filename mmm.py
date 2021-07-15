@@ -430,9 +430,9 @@ class MMM50Thermostat(tc.ThermostatCommonZone):
             None
         returns:
             (int): thermostat mode:
-            0 : 'Off',
+            2 : 'Off',
             1 : 'Heat',
-            2 : 'Cool',
+            0 : 'Cool',
             3 : 'Auto'
         """
         result = self.device_id.tmode['raw']

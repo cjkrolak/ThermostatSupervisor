@@ -9,24 +9,36 @@ import os
 
 # local imports
 import honeywell as h
-import mmm as mmm
+import mmm
+import sht31
 
 
 # thermostat types
 HONEYWELL = "honeywell"
 MMM50 = "mmm50"
+SHT31 = "sht31"
 SUPPORTED_THERMOSTATS = {
     HONEYWELL: {"type": 1, "zones": [0]},
     MMM50: {"type": 2, "zones": [0, 1]},
+    SHT31: {"type": 3, "zones": [0]},
     }
 
-# thermostat IP addresses (local net)
+# 3m50 thermostat IP addresses (local net)
 MAIN_3M50 = 0  # zone 0
 BASEMENT_3M50 = 1  # zone 1
 mmm_ip = {
     MAIN_3M50: "192.168.86.82",
     BASEMENT_3M50: "192.168.86.83",
 }
+
+# sht31 thermometer IP addresses (local net)
+LOFT_SHT31 = 0  # zone 0
+sht31_ip = {
+    LOFT_SHT31: "192.168.86.15",
+    }
+sht31_port = {
+    LOFT_SHT31: "5000",
+    }
 
 # target zone for monitoring
 zone_number = 0  # default
@@ -50,6 +62,14 @@ thermostats = {
         "zone_constructor": mmm.MMM50Thermostat,
         "zone": zone_number,
         "poll_time_sec": 10 * 60,  # default to 10 minutes
+        "connection_time_sec": 8 * 60 * 60,  # default to 8 hours
+        },
+    SHT31: {
+        "thermostat_constructor": sht31.SHT31Thermometer,
+        "args": [sht31_ip[zone_number], sht31_port[zone_number]],
+        "zone_constructor": sht31.SHT31Thermometer,
+        "zone": zone_number,
+        "poll_time_sec": 1 * 60,  # default to 10 minutes
         "connection_time_sec": 8 * 60 * 60,  # default to 8 hours
         }
 }
