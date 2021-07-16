@@ -23,6 +23,9 @@ DEBUG_LOG = 0x100  # print only if debug mode is on
 file_path = ".//data"
 max_log_size_bytes = 2**20  # logs rotate at this max size
 
+# API field names
+API_TEMP_FIELD = 'Temp(F) mean'
+
 
 def get_env_variable(env_key):
     """
@@ -92,6 +95,8 @@ def log_msg(msg, mode, func_name=-1, file_name=None):
     # define filename
     if file_name is not None:
         log_msg.file_name = file_name
+    else:
+        log_msg.file_name = "MISSING_FILENAME"
 
     # build message string
     if func_name > 0:

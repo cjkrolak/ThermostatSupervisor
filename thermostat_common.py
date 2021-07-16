@@ -19,11 +19,13 @@ class ThermostatCommonZone():
     OFF_MODE = "OFF_MODE"
     HEAT_MODE = "HEAT_MODE"
     COOL_MODE = "COOL_MODE"
+    AUTO_MODE = "AUTO_MODE"
     system_switch_position = {
-        # COOL_MODE: 0,
-        HEAT_MODE: 1,
-        OFF_MODE: 0,
-        COOL_MODE: 3,  # Honeywell
+        # placeholder, will be tstat-specific
+        HEAT_MODE: bogus_int,
+        OFF_MODE: bogus_int,
+        COOL_MODE: bogus_int,
+        AUTO_MODE: bogus_int,
         }
 
     def get_current_mode(self, session_count, poll_count, print_status=True,
@@ -88,8 +90,9 @@ class ThermostatCommonZone():
                      self.system_switch_position[self.HEAT_MODE])
         if heat_mode:
             mode = "HEAT MODE"
-            heat_set_point = self.get_heat_setpoint_raw()
-            heat_schedule_point = self.get_schedule_heat_sp()
+            # cast integers just in case a set point returns a float
+            heat_set_point = int(self.get_heat_setpoint_raw())
+            heat_schedule_point = int(self.get_schedule_heat_sp())
             if heat_operator(heat_set_point, heat_schedule_point):
                 status_msg = ("[heat deviation] actual=%.1f, set point=%s,"
                               " override=%s" %
@@ -103,8 +106,9 @@ class ThermostatCommonZone():
 
         if cool_mode:
             mode = "COOL MODE"
-            cool_set_point = self.get_cool_setpoint_raw()
-            cool_schedule_point = self.get_schedule_cool_sp()
+            # cast integers just in case a set point returns a float
+            cool_set_point = int(self.get_cool_setpoint_raw())
+            cool_schedule_point = int(self.get_schedule_cool_sp())
             if cool_operator(cool_set_point, cool_schedule_point):
                 status_msg = ("[cool deviation] actual=%.1f, set point=%s,"
                               " override=%s" %
