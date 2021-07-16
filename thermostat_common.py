@@ -20,9 +20,10 @@ class ThermostatCommonZone():
     HEAT_MODE = "HEAT_MODE"
     COOL_MODE = "COOL_MODE"
     system_switch_position = {
-        COOL_MODE: 0,
+        # COOL_MODE: 0,
         HEAT_MODE: 1,
-        OFF_MODE: 2,
+        OFF_MODE: 0,
+        COOL_MODE: 3,  # Honeywell
         }
 
     def get_current_mode(self, session_count, poll_count, print_status=True,
@@ -90,7 +91,7 @@ class ThermostatCommonZone():
             heat_set_point = self.get_heat_setpoint_raw()
             heat_schedule_point = self.get_schedule_heat_sp()
             if heat_operator(heat_set_point, heat_schedule_point):
-                status_msg = ("[heat deviation] actual=%s, set point=%s,"
+                status_msg = ("[heat deviation] actual=%.1f, set point=%s,"
                               " override=%s" %
                               (display_temp, heat_schedule_point,
                                heat_set_point))
@@ -105,7 +106,7 @@ class ThermostatCommonZone():
             cool_set_point = self.get_cool_setpoint_raw()
             cool_schedule_point = self.get_schedule_cool_sp()
             if cool_operator(cool_set_point, cool_schedule_point):
-                status_msg = ("[cool deviation] actual=%s, set point=%s,"
+                status_msg = ("[cool deviation] actual=%.1f, set point=%s,"
                               " override=%s" %
                               (display_temp, cool_schedule_point,
                                cool_set_point))
@@ -130,7 +131,7 @@ class ThermostatCommonZone():
             status_msg += (" (%s)" % ["persistent",
                                       "temporary"][hold_temporary])
         else:
-            status_msg = ("[following schedule] actual=%s" % display_temp)
+            status_msg = ("[following schedule] actual=%.1f" % display_temp)
             # add setpoints if in heat or cool mode
             if heat_mode:
                 status_msg += (", set point=%s, override=%s" %
@@ -156,9 +157,9 @@ class ThermostatCommonZone():
         return return_buffer
 
     # Thermostat-specific methods will be overloaded
-    def get_display_temp(self) -> int:
+    def get_display_temp(self) -> float:
         """Return the displayed temperature."""
-        return bogus_int  # placeholder
+        return float(bogus_int)  # placeholder
 
     def get_system_switch_position(self) -> int:
         """Return the 'SystemSwitchPosition'
