@@ -226,17 +226,17 @@ class HoneywellZone(pyhtcc.Zone, tc.ThermostatCommonZone):
         # what mode is 0?
         }
 
-    def get_display_temp(self) -> int:  # used
+    def get_display_temp(self) -> float:  # used
         """
         Refresh the cached zone information then return DispTemperature.
 
         inputs:
             None
         returns:
-            (int): display temperature in degrees.
+            (float): display temperature in degrees.
         """
         self.refresh_zone_info()
-        return int(self.zone_info['latestData']['uiData']['DispTemperature'])
+        return float(self.zone_info['latestData']['uiData']['DispTemperature'])
 
     def get_heat_mode(self) -> int:
         """

@@ -13,7 +13,6 @@ api = Api(app)
 # SHT31D config
 i2c_address = 0x45
 measurements = 1
-
 # pi0 config
 alert_pin = 17  # yellow wire, GPIO17 (pi pin 11)
 addr_pin = 4  # white wire, GPIO4, low = 0x44, high=0x45 (pi pin 7)

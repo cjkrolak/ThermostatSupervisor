@@ -125,16 +125,16 @@ class MMM50Thermostat(tc.ThermostatCommonZone):
         """
         return {}  # not yet implemented
 
-    def get_display_temp(self) -> int:
+    def get_display_temp(self) -> float:
         """
         Return DispTemperature.
 
         inputs:
             None
         returns:
-            (int): display temp in degrees.
+            (float): display temp in degrees.
         """
-        return self.device_id.temp['raw']
+        return float(self.device_id.temp['raw'])
 
     def get_heat_mode(self) -> int:
         """
@@ -258,9 +258,9 @@ class MMM50Thermostat(tc.ThermostatCommonZone):
             (int): current cool set point in degrees.
         """
         result = self.device_id.t_cool['raw']
-        if not isinstance(result, int):
+        if not isinstance(result, (int, float)):
             raise Exception("cool set point is type %s, "
-                            "should be int" % type(result))
+                            "should be (int, float)" % type(result))
         return result
 
     def get_cool_setpoint_raw(self) -> int:
@@ -274,9 +274,9 @@ class MMM50Thermostat(tc.ThermostatCommonZone):
             (int): current raw cool set point in degrees.
         """
         result = self.get_cool_setpoint()
-        if not isinstance(result, int):
+        if not isinstance(result, (int, float)):
             raise Exception("cool setpoint raw is type %s, "
-                            "should be int" % type(result))
+                            "should be (int, float)" % type(result))
         return result
 
     def get_schedule_program_heat(self) -> int:

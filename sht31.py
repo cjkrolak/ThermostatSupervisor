@@ -88,16 +88,16 @@ class SHT31Thermometer(tc.ThermostatCommonZone):
         else:
             return r.json()[parameter]
 
-    def get_display_temp(self) -> int:
+    def get_display_temp(self) -> float:
         """
         Return DispTemperature.
 
         inputs:
             None
         returns:
-            (int): display temp in degrees.
+            (float): display temp in degrees.
         """
-        return int(self.get_metadata(self.tempfield))
+        return float(self.get_metadata(self.tempfield))
 
     def get_heat_mode(self) -> int:
         """
