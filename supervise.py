@@ -11,27 +11,27 @@ import thermostat_api as api
 import utilities as util
 
 
-def main(thermostat_type):
+def main(thermostat_type, zone_input):
     """
     Thermostat Supervisor Routine.
 
     inputs:
         thermostat_type(str): thermostat type, see thermostat_api for list
                               of supported thermostats.
+        zone_input(str):      zone number
     returns:
         None
     """
-    print("debug start of main")
     # set log file name
-    util.log_msg.file_name = thermostat_type + ".txt"
+    util.log_msg.file_name = (thermostat_type + "_" +
+                              str(zone_input) + ".txt")
 
-    util.log_msg("%s thermostat monitoring service\n" % thermostat_type,
-                 mode=util.BOTH_LOG)
-    print("debug after firstlog msg")
+    util.log_msg("%s thermostat zone %s monitoring service\n" %
+                 (thermostat_type, zone_input), mode=util.BOTH_LOG)
     # session variables
     util.log_msg("session settings:", mode=util.BOTH_LOG)
     debug = False  # verbose debugging information
-    print("debug 2")
+
     # mode parameters
     revert_thermostat_deviation = True  # revert thermostat if temp deviated
     revert_all_deviations = False  # True will flag all deviations,
@@ -60,10 +60,10 @@ def main(thermostat_type):
         util.log_msg("connecting to thermostat zone %s (session:%s)..." %
                      (zone_num, session_count), mode=util.BOTH_LOG)
         thermostat = thermostat_constructor(*args)
-        print("debug before meta")
+
         # grab meta data
         # thermostat.get_all_thermostat_metadata()
-        print("debug after meta")
+
         # poll time setting:
         poll_time_sec = api.thermostats[thermostat_type]["poll_time_sec"]
         util.log_msg("polling time set to %.1f minutes" %
@@ -131,7 +131,7 @@ def main(thermostat_type):
             time.sleep(poll_time_sec)
 
             # refresh zone info
-            print("DEBUG: %s: refreshing zone..." % util.get_function_name())
+            # print("DEBUG: %s: refreshing zone..." % util.get_function_name())
             zone.refresh_zone_info()
 
             # reconnect
@@ -201,4 +201,5 @@ if __name__ == "__main__":
         else:
             api.set_connection_time(tstat_type, connection_time_input)
 
-    main(tstat_type)
+    # main supervise function
+    main(tstat_type, zone_input)

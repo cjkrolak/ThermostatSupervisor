@@ -1,18 +1,22 @@
 # flask API for raspberry pi
-import RPi.GPIO as GPIO  # raspberry pi
-import smbus
+from flask import Flask
+from flask_restful import Resource, Api  # noqa F405
+import RPi.GPIO as GPIO  # noqa F405 raspberry pi GPIO library
+import smbus  # noqa F405
 import statistics
 import time
 
-from flask import Flask
-from flask_restful import Resource, Api
+# local imports
+import utilities as util
+
 
 app = Flask(__name__)
 api = Api(app)
 
 # SHT31D config
 i2c_address = 0x45
-measurements = 1
+measurements = 1  # number of measurements to average
+
 # pi0 config
 alert_pin = 17  # yellow wire, GPIO17 (pi pin 11)
 addr_pin = 4  # white wire, GPIO4, low = 0x44, high=0x45 (pi pin 7)
@@ -76,7 +80,7 @@ class Sensors(object):
                 # return data on API
                 return {
                     'measurements': len(fTemp_lst),  # number of measurements
-                    'Temp(C) mean': statistics.mean(cTemp_lst),
+                    util.API_TEMP_FIELD: statistics.mean(cTemp_lst),
                     'Temp(C) std': statistics.pstdev(cTemp_lst),
                     'Temp(F) mean': statistics.mean(fTemp_lst),
                     'Temp(F) std': statistics.pstdev(fTemp_lst),

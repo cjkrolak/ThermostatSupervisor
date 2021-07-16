@@ -216,14 +216,12 @@ class HoneywellZone(pyhtcc.Zone, tc.ThermostatCommonZone):
     """Extend the Zone class with additional methods to get and set
        uiData parameters."""
 
-    OFF_MODE = "OFF_MODE"
-    HEAT_MODE = "HEAT_MODE"
-    COOL_MODE = "COOL_MODE"
     system_switch_position = {
-        COOL_MODE: 3,
-        HEAT_MODE: 1,
-        OFF_MODE: 2,
-        # what mode is 0?
+        tc.ThermostatCommonZone.COOL_MODE: 3,
+        tc.ThermostatCommonZone.HEAT_MODE: 1,
+        tc.ThermostatCommonZone.OFF_MODE: 2,
+        tc.ThermostatCommonZone.AUTO_MODE: tc.bogus_int,
+        # what mode is 0 on Honeywell?
         }
 
     def get_display_temp(self) -> float:  # used

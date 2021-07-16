@@ -9,15 +9,21 @@ data structure expected:  {'Temp(C)': 22.655451285572596,
 import pprint
 import requests
 import sys
-import urllib  # noqa E402
 
 # local imports
-import thermostat_common as tc  # noqa E402
-import utilities as util  # noqa E402
+import thermostat_common as tc
+import utilities as util
 
 
 class SHT31Thermometer(tc.ThermostatCommonZone):
-    """3m50 thermostat functions."""
+    """SHT31 thermometer functions."""
+
+    system_switch_position = {
+        tc.ThermostatCommonZone.COOL_MODE: tc.bogus_int,
+        tc.ThermostatCommonZone.HEAT_MODE: tc.bogus_int,
+        tc.ThermostatCommonZone.OFF_MODE: 0,
+        tc.ThermostatCommonZone.AUTO_MODE: tc.bogus_int,
+        }
 
     def __init__(self, ip_address, *_, **__):
         """
@@ -28,9 +34,9 @@ class SHT31Thermometer(tc.ThermostatCommonZone):
         """
         self.device_id = 0
         self.ip_address = ip_address
-        self.port = "5000"
+        self.port = "5000"  # Flask server port on SHT31 host
         self.url = "http://" + self.ip_address + ":" + self.port
-        self.tempfield = "Temp(F) mean"  # must match flask API
+        self.tempfield = util.API_TEMP_FIELD  # must match flask API
 
     def get_target_zone_id(self):
         """
@@ -108,7 +114,7 @@ class SHT31Thermometer(tc.ThermostatCommonZone):
         returns:
             (int): heat mode.
         """
-        return 2  # off mode
+        return self.system_switch_position[self.OFF_MODE]
 
     def get_cool_mode(self) -> int:
         """
@@ -119,7 +125,7 @@ class SHT31Thermometer(tc.ThermostatCommonZone):
         returns:
             (int): cool mode.
         """
-        return 2  # off mode
+        return self.system_switch_position[self.OFF_MODE]
 
     def get_system_switch_position(self) -> int:
         """ Return the thermostat mode.
@@ -127,13 +133,9 @@ class SHT31Thermometer(tc.ThermostatCommonZone):
         inputs:
             None
         returns:
-            (int): thermostat mode:
-            2 : 'Off',
-            1 : 'Heat',
-            0 : 'Cool',
-            3 : 'Auto'
+            (int): thermostat mode, see tc.system_switch_position for details.
         """
-        return 2  # off
+        return self.system_switch_position[self.OFF_MODE]
 
 
 if __name__ == "__main__":

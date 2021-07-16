@@ -22,6 +22,13 @@ ip_basement_3m50 = "192.168.86.83"
 class MMM50Thermostat(tc.ThermostatCommonZone):
     """3m50 thermostat functions."""
 
+    system_switch_position = {
+        tc.ThermostatCommonZone.COOL_MODE: 2,
+        tc.ThermostatCommonZone.HEAT_MODE: 1,
+        tc.ThermostatCommonZone.OFF_MODE: 0,
+        tc.ThermostatCommonZone.AUTO_MODE: 3,
+        }
+
     def __init__(self, ip_address, *_, **__):
         """
         Constructor, connect to thermostat.
@@ -429,11 +436,8 @@ class MMM50Thermostat(tc.ThermostatCommonZone):
         inputs:
             None
         returns:
-            (int): thermostat mode:
-            2 : 'Off',
-            1 : 'Heat',
-            0 : 'Cool',
-            3 : 'Auto'
+            (int): thermostat mode, refer to tc.system_swtich position
+            for details.
         """
         result = self.device_id.tmode['raw']
         if not isinstance(result, int):
