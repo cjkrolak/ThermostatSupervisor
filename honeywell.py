@@ -236,6 +236,35 @@ class HoneywellZone(pyhtcc.Zone, tc.ThermostatCommonZone):
         self.refresh_zone_info()
         return float(self.zone_info['latestData']['uiData']['DispTemperature'])
 
+    def get_display_humidity(self) -> float:
+        """
+        Refresh the cached zone information then return IndoorHumidity.
+
+        inputs:
+            None
+        returns:
+            (float): indoor humidity in %RH.
+        """
+        self.refresh_zone_info()
+        return float(self.zone_info['latestData']['uiData']['IndoorHumidity'])
+
+    def get_is_humidity_supported(self) -> bool:  # used
+        """
+        Refresh the cached zone information and return the
+          True if humidity sensor data is trustworthy.
+
+        inputs:
+            None
+        returns:
+            (booL): True if is in humidity sensor is available and not faulted.
+        """
+        self.refresh_zone_info()
+        available = (self.zone_info['latestData']['uiData']
+                     ['IndoorHumiditySensorAvailable'])
+        not_fault = (self.zone_info['latestData']['uiData']
+                     ['IndoorHumiditySensorNotFault'])
+        return available and not_fault
+
     def get_heat_mode(self) -> int:
         """
         Refresh the cached zone information and return the heat mode.

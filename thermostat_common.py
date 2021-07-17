@@ -12,6 +12,8 @@ import utilities as util
 bogus_int = -13
 bogus_bool = None
 
+degree_sign = u"\N{DEGREE SIGN}"
+
 
 class ThermostatCommonZone():
     """Class methods common to all thermostat zones."""
@@ -85,6 +87,10 @@ class ThermostatCommonZone():
         # current temperature
         display_temp = self.get_display_temp()
 
+        # current humidity
+        display_humidity = self.get_display_humidity()
+        humidity_is_available = self.get_is_humidity_supported()
+
         # check for heat deviation
         heat_mode = (self.get_system_switch_position() ==
                      self.system_switch_position[self.HEAT_MODE])
@@ -94,10 +100,14 @@ class ThermostatCommonZone():
             heat_set_point = int(self.get_heat_setpoint_raw())
             heat_schedule_point = int(self.get_schedule_heat_sp())
             if heat_operator(heat_set_point, heat_schedule_point):
-                status_msg = ("[heat deviation] actual=%.1f, set point=%s,"
-                              " override=%s" %
-                              (display_temp, heat_schedule_point,
-                               heat_set_point))
+                status_msg = ("[heat deviation] act temp=%.1f%sF" %
+                              (display_temp, degree_sign))
+                # add humidity if available
+                if humidity_is_available:
+                    status_msg += ", act humidity=%.1f%% RH" % display_humidity
+                # add setpoint and override point
+                status_msg += (", set point=%s, override=%s" %
+                               (heat_schedule_point, heat_set_point))
                 heat_deviation = True
 
         # check for cool deviation
@@ -110,10 +120,14 @@ class ThermostatCommonZone():
             cool_set_point = int(self.get_cool_setpoint_raw())
             cool_schedule_point = int(self.get_schedule_cool_sp())
             if cool_operator(cool_set_point, cool_schedule_point):
-                status_msg = ("[cool deviation] actual=%.1f, set point=%s,"
-                              " override=%s" %
-                              (display_temp, cool_schedule_point,
-                               cool_set_point))
+                status_msg = ("[cool deviation] act temp=%.1f%sF" %
+                              (display_temp, degree_sign))
+                # add humidity if available
+                if humidity_is_available:
+                    status_msg += ", act humidity=%.1f%% RH" % display_humidity
+                # add setpoint and override point
+                status_msg += (", set point=%s, override=%s" %
+                               (cool_schedule_point, cool_set_point))
                 cool_deviation = True
 
         # hold cooling
@@ -135,7 +149,11 @@ class ThermostatCommonZone():
             status_msg += (" (%s)" % ["persistent",
                                       "temporary"][hold_temporary])
         else:
-            status_msg = ("[following schedule] actual=%.1f" % display_temp)
+            status_msg = ("[following schedule] act temp=%.1f%sF" %
+                          (display_temp, degree_sign))
+            # add humidity if available
+            if humidity_is_available:
+                status_msg += ", act humidity=%.1f%% RH" % display_humidity
             # add setpoints if in heat or cool mode
             if heat_mode:
                 status_msg += (", set point=%s, override=%s" %
@@ -164,6 +182,14 @@ class ThermostatCommonZone():
     def get_display_temp(self) -> float:
         """Return the displayed temperature."""
         return float(bogus_int)  # placeholder
+
+    def get_display_humidity(self) -> float:
+        """Return the displayed humidity."""
+        return float(bogus_int)  # placeholder
+
+    def get_is_humidity_supported(self) -> bool:
+        """Return humidity sensor status."""
+        return bogus_bool  # placeholder
 
     def get_system_switch_position(self) -> int:
         """Return the 'SystemSwitchPosition'
@@ -197,4 +223,8 @@ class ThermostatCommonZone():
 
     def refresh_zone_info(self) -> None:
         """Refreshes zone info."""
-        return
+        return  # placeholder
+
+    def report_heating_parameters(self):
+        """Display critical thermostat settings and reading to the screen."""
+        return  # placeholder

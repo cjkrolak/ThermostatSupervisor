@@ -84,8 +84,8 @@ class Sensors(object):
                     'Temp(C) std': statistics.pstdev(cTemp_lst),
                     'Temp(F) mean': statistics.mean(fTemp_lst),
                     'Temp(F) std': statistics.pstdev(fTemp_lst),
-                    'Humidity(%%RH) mean': statistics.mean(humidity_lst),
-                    'Humidity(%%RH) std': statistics.pstdev(humidity_lst),
+                    util.API_HUMIDITY_FIELD: statistics.mean(humidity_lst),
+                    'Humidity(%RH) std': statistics.pstdev(humidity_lst),
                     }
         finally:
             # close the smbus connection

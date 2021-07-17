@@ -1,11 +1,11 @@
 """
-connection to 3m50 thermoststat
-
+connection to 3m50 thermoststat on local net.
 """
 # built-in imports
 import datetime
 import os
 import pprint
+import socket
 import sys
 sys.path.append(os.path.abspath('../radiotherm'))
 import radiotherm  # noqa F405
@@ -71,6 +71,31 @@ class MMM50Thermostat(tc.ThermostatCommonZone):
         pp = pprint.PrettyPrinter(indent=4)
         pp.pprint(return_data)
 
+    def get_meta_data_dict(self):
+        """Build meta data dictionary from list of object attributes.
+
+        inputs:
+            None
+        returns:
+            (dict) of meta data
+        """
+        print("querying thermostat for meta data...")
+        attr_dict = {}
+        ignore_fields = ['get', 'post', 'reboot', 'set_day_program']
+        for attr in dir(self.device_id):
+            if attr[0] != "_" and attr not in ignore_fields:
+                key = attr
+                try:
+                    val = self.device_id.__getattribute__(key)
+                except TypeError:
+                    val = "<attribute is not readable>"
+                except AttributeError as e:
+                    val = e
+                except socket.timeout:
+                    val = "<socket timeout>"
+                attr_dict[key] = val
+        return attr_dict
+
     def get_all_metadata(self):
         """
         Get all the current thermostat metadata.
@@ -78,9 +103,9 @@ class MMM50Thermostat(tc.ThermostatCommonZone):
         inputs:
             None
         returns:
-            (dict) empty dict.
+            (list) of thermostat attributes.
         """
-        return {}  # not yet implemented
+        return self.get_meta_data_dict()
 
     def get_metadata(self, parameter=None):
         """
@@ -93,22 +118,21 @@ class MMM50Thermostat(tc.ThermostatCommonZone):
           str if parameter != None
         """
         if parameter is None:
-            return {}  # not yet implemented
+            return self.get_meta_data_dict()
         else:
-            return ""  # not yet implemented
+            return self.device_id[parameter]['raw']
 
     def get_latestdata(self):
         """
         Get the current thermostat latest data.
 
         inputs:
-          p(object): thermostat object from connection
-          zone_number(int): zone number, default=0
+          None
         returns:
           dict if parameter=None
           str if parameter != None
         """
-        return {}  # not yet implemented
+        return self.get_meta_data_dict()
 
     def get_uiData(self):
         """
@@ -119,18 +143,18 @@ class MMM50Thermostat(tc.ThermostatCommonZone):
         returns:
           (dict) empty dict.
         """
-        return {}  # not yet implemented
+        return self.get_meta_data_dict()
 
-    def get_uiData_param(self):
+    def get_uiData_param(self, parameter):
         """
         Get the latest thermostat ui data for one specific parameter.
 
         inputs:
-          None
+          parameter(str): UI parameter
         returns:
           (dict) empty dict.
         """
-        return {}  # not yet implemented
+        return self.device_id[parameter]['raw']
 
     def get_display_temp(self) -> float:
         """
@@ -142,6 +166,21 @@ class MMM50Thermostat(tc.ThermostatCommonZone):
             (float): display temp in degrees.
         """
         return float(self.device_id.temp['raw'])
+
+    def get_display_humidity(self) -> float:
+        """
+        Return Humidity.
+
+        inputs:
+            None
+        returns:
+            (float): humidity in %RH.
+        """
+        return tc.bogus_int  # not available
+
+    def get_is_humidity_supported(self) -> bool:
+        """Return humidity sensor status."""
+        return False  # not supported
 
     def get_heat_mode(self) -> int:
         """
@@ -229,6 +268,7 @@ class MMM50Thermostat(tc.ThermostatCommonZone):
         """
         Return the current heat setpoint.
 
+        t_heat field is only present if in heat mode.
         inputs:
             None
         returns:
@@ -244,6 +284,7 @@ class MMM50Thermostat(tc.ThermostatCommonZone):
         """
         Return the current raw heat setpoint.
 
+        t_heat field is only present if in heat mode.
         inputs:
             None
         returns:
@@ -259,6 +300,7 @@ class MMM50Thermostat(tc.ThermostatCommonZone):
         """
         Return the current cool setpoint.
 
+        t_cool field is only present if in cool mode.
         inputs:
             None
         returns:
@@ -274,7 +316,7 @@ class MMM50Thermostat(tc.ThermostatCommonZone):
         """
         Return the current raw cool setpoint.
 
-
+        t_cool field is only present if in cool mode.
         inputs:
             None
         returns:
