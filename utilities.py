@@ -95,8 +95,6 @@ def log_msg(msg, mode, func_name=-1, file_name=None):
     # define filename
     if file_name is not None:
         log_msg.file_name = file_name
-    else:
-        log_msg.file_name = "MISSING_FILENAME"
 
     # build message string
     if func_name > 0:
