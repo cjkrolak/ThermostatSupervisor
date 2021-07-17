@@ -10,8 +10,7 @@ supervisor to detect and correct thermostat deviations<br/>
 ## dependencies:
 pyhtcc for Honeywell thermostats (pip3 install pyhtcc)<br/>
 radiotherm for 3m50 thermostats (mhrivnak/radiotherm or pip3 install radiotherm)<br/>
-smbus2 (pip install smbus2), used for SHT31<br/>
-remote-i2c (pip3 install remote-i2c), used for SHT31<br/>
+flask and flask_resful for sht31 flask server<br/>
 
 ## Docker Image:
 docker run --rm --env-file 'envfile' 'username'/thermostatsupervisor 'type' 'zone' 'poll time' 'connection time'<br/>

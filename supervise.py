@@ -11,23 +11,23 @@ import thermostat_api as api
 import utilities as util
 
 
-def main(thermostat_type, zone_input):
+def main(thermostat_type, zone):
     """
     Thermostat Supervisor Routine.
 
     inputs:
         thermostat_type(str): thermostat type, see thermostat_api for list
                               of supported thermostats.
-        zone_input(str):      zone number
+        zone(str):      zone number
     returns:
         None
     """
     # set log file name
     util.log_msg.file_name = (thermostat_type + "_" +
-                              str(zone_input) + ".txt")
+                              str(zone) + ".txt")
 
     util.log_msg("%s thermostat zone %s monitoring service\n" %
-                 (thermostat_type, zone_input), mode=util.BOTH_LOG)
+                 (thermostat_type, zone), mode=util.BOTH_LOG)
     # session variables
     util.log_msg("session settings:", mode=util.BOTH_LOG)
     debug = False  # verbose debugging information
