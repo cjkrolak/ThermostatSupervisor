@@ -25,6 +25,7 @@ max_log_size_bytes = 2**20  # logs rotate at this max size
 
 # API field names
 API_TEMP_FIELD = 'Temp(F) mean'
+API_HUMIDITY_FIELD = 'Humidity(%RH) mean'
 
 
 def get_env_variable(env_key):

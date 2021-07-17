@@ -37,6 +37,7 @@ class SHT31Thermometer(tc.ThermostatCommonZone):
         self.port = "5000"  # Flask server port on SHT31 host
         self.url = "http://" + self.ip_address + ":" + self.port
         self.tempfield = util.API_TEMP_FIELD  # must match flask API
+        self.humidityfield = util.API_HUMIDITY_FIELD  # must match flask API
 
     def get_target_zone_id(self):
         """
@@ -96,14 +97,29 @@ class SHT31Thermometer(tc.ThermostatCommonZone):
 
     def get_display_temp(self) -> float:
         """
-        Return DispTemperature.
+        Return Temperature.
 
         inputs:
             None
         returns:
-            (float): display temp in degrees.
+            (float): temperature in degrees.
         """
         return float(self.get_metadata(self.tempfield))
+
+    def get_display_humidity(self) -> float:
+        """
+        Return Humidity.
+
+        inputs:
+            None
+        returns:
+            (float): humidity in %RH.
+        """
+        return float(self.get_metadata(self.humidityfield))
+
+    def get_is_humidity_supported(self) -> bool:
+        """Return humidity sensor status."""
+        return True
 
     def get_heat_mode(self) -> int:
         """
