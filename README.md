@@ -39,6 +39,7 @@ for docker image, export the env files to a text file and specify during the doc
 * 'GMAIL_USERNAME': email account to send notifications from (source)
 * 'GMAIL_PASSWORD': password for GMAIL_USERNAME
 * 'GMAIL_TO_USERNAME': email account to send notifications to (destination)
+* 'SHT31_REMOTE_IP_ADDRESS_<zone>': remote IP address / URL for SHT31 thermal sensor, <zone> is the zone number.
 
 # Source Code Information:
 ## supervise.py:
