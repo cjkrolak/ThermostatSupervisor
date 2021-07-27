@@ -20,24 +20,28 @@ SHT31 = "sht31"
 SUPPORTED_THERMOSTATS = {
     HONEYWELL: {"type": 1, "zones": [0]},
     MMM50: {"type": 2, "zones": [0, 1]},
-    SHT31: {"type": 3, "zones": [0]},
+    SHT31: {"type": 3, "zones": [0, 1]},
     }
 
 # 3m50 thermostat IP addresses (local net)
 MAIN_3M50 = 0  # zone 0
 BASEMENT_3M50 = 1  # zone 1
 mmm_ip = {
-    MAIN_3M50: "192.168.86.82",
-    BASEMENT_3M50: "192.168.86.83",
+    MAIN_3M50: "192.168.86.82",  # local IP
+    BASEMENT_3M50: "192.168.86.83",  # local IP
 }
 
 # sht31 thermometer IP addresses (local net)
 LOFT_SHT31 = 0  # zone 0
+LOFT_SHT31_REMOTE = 1  # zone 1
+remote_ip_env_str = 'SHT31_REMOTE_IP_ADDRESS' + '_' + str(LOFT_SHT31_REMOTE)
 sht31_ip = {
-    LOFT_SHT31: "192.168.86.15",
+    LOFT_SHT31: "192.168.86.15",  # local IP
+    LOFT_SHT31_REMOTE: os.environ[remote_ip_env_str],  # remote IP
     }
 sht31_port = {
     LOFT_SHT31: "5000",
+    LOFT_SHT31_REMOTE: "5000",
     }
 
 # target zone for monitoring
@@ -76,9 +80,15 @@ thermostats = {
 
 
 def set_target_zone(tstat, zone):
-    """Set the target Zone."""
+    """
+    Set the target Zone.
+
+    For 3m50 and SHT31, the zone is defined by IP.
+    """
     if tstat == MMM50:
         thermostats[tstat]["args"] = [mmm_ip[zone]]
+    elif tstat == SHT31:
+        thermostats[tstat]["args"] = [sht31_ip[zone]]
     thermostats[tstat]["zone"] = zone
 
 

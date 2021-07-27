@@ -1,9 +1,14 @@
 """
 connection to sht31 thermometer over REST API
-data structure expected:  {'Temp(C)': 22.655451285572596,
-                           'Temp(F)': 72.77981231403066,
-                           'Humidity(%%RH)': 47.153429465171286}
-
+data structure expected:
+{
+    "measurements": 1,
+    "Temp(F) mean": 88.55024032959489,
+    "Temp(C) std": 0.0,
+    "Temp(F) std": 0.0,
+    "Humidity(%RH) mean": 49.491111619745176,
+    "Humidity(%RH) std": 0.0
+}
 """
 # built-in imports
 import pprint
@@ -30,9 +35,9 @@ class SHT31Thermometer(tc.ThermostatCommonZone):
         Constructor, connect to thermostat.
 
         inputs:
-            ip_address(str):  ip address of thermostat on local net
+            ip_address(str):  ip address of thermostat
         """
-        self.device_id = 0
+        self.device_id = 0  # not currently used since IP identifies device
         self.ip_address = ip_address
         self.port = "5000"  # Flask server port on SHT31 host
         self.url = "http://" + self.ip_address + ":" + self.port
