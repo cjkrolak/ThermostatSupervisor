@@ -51,7 +51,7 @@ class Test(unittest.TestCase):
             ta.set_connection_time(self.tstat, connection_time_sec)
             self.assertEqual(ta.thermostats[self.tstat]["connection_time_sec"],
                              connection_time_sec)
-    
+
     def generate_random_list(self, count, min_val, max_val):
         """
         Generate a list of random numbers between a range.
