@@ -3,6 +3,7 @@ Unit tes module for email_notification.py.
 """
 # built-in libraries
 import email_notification as eml
+import os
 import sys
 import unittest
 
@@ -22,8 +23,27 @@ class Test(unittest.TestCase):
     def tearDown(self):
         pass
 
+    def testCheckEmailEnvVariables(self):
+        """
+        Verify all required email email env variables are present for tests.
+
+        If this test fails during CI check repository secrets in GitHub.
+        If this test fails during manual run check env variables on local PC.
+        """
+        # make sure email account environmental variables are present
+        for env_key in ['GMAIL_USERNAME', 'GMAIL_PASSWORD',
+                        'GMAIL_TO_USERNAME']:
+            try:
+                _ = os.environ[env_key]
+            except KeyError:
+                fail_msg = ("%s environment variable missing "
+                            "from environment" % env_key)
+                self.fail(fail_msg)
+
     def testSendEmailAlerts(self):
         """Test send_email_alerts() functionality."""
+
+        # send message
         body = "this is a test of the email notification alert."
         print("to_address before test: %s" % self.to_address)
         print("from_address before test: %s" % self.from_address)
