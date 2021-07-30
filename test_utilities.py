@@ -63,7 +63,7 @@ class Test(unittest.TestCase):
                 ]
         result_1 = util.get_function_name(test)
         self.assertTrue(result_1 in ev_1, "test%s: expected values=%s, "
-                         "actual=%s" % (test, ev_1, result_1))
+                        "actual=%s" % (test, ev_1, result_1))
 
     def testLogMsgWrite(self):
         """
