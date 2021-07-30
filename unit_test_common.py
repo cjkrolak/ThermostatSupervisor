@@ -8,4 +8,4 @@ import utilities as util
 
 def print_test_name():
     """Print out the unit test name to the console."""
-    print("testing '%s'" % util.get_function_name())
+    print("testing '%s'" % util.get_function_name(2))
