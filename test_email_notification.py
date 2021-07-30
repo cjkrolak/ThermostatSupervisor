@@ -45,11 +45,14 @@ class Test(unittest.TestCase):
         """Test send_email_alerts() functionality."""
 
         # import environment variables for unit testing.
-        # these env variables come from repo secrets during CI process
+        # These env variables come from repo secrets during CI process
         # or from local machine during manual run.
-        self.from_address = os.environ['GMAIL_USERNAME']
-        self.from_password = os.environ['GMAIL_PASSWORD']
-        self.to_address = os.environ['GMAIL_TO_USERNAME']
+        if self.from_address is None:
+            self.from_address = os.environ['GMAIL_USERNAME']
+        if self.from_password is None:
+            self.from_password = os.environ['GMAIL_PASSWORD']
+        if self.to_address is None:
+            self.to_address = os.environ['GMAIL_TO_USERNAME']
 
         # send message
         body = "this is a test of the email notification alert."
@@ -73,10 +76,5 @@ class Test(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    # import sys;sys.argv = ['', 'Test.testName']
-    if len(sys.argv) > 1 and False:
-        Test.to_address = sys.argv.pop()
-        Test.from_address = sys.argv.pop()
-        Test.from_password = sys.argv.pop()
     util.log_msg.debug = True
     unittest.main()
