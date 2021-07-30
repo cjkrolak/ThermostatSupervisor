@@ -4,7 +4,6 @@ Unit tes module for email_notification.py.
 # built-in libraries
 import email_notification as eml
 import os
-import sys
 import unittest
 
 # local libraries
