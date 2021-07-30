@@ -35,9 +35,11 @@ mmm_ip = {
 LOFT_SHT31 = 0  # zone 0
 LOFT_SHT31_REMOTE = 1  # zone 1
 remote_ip_env_str = 'SHT31_REMOTE_IP_ADDRESS' + '_' + str(LOFT_SHT31_REMOTE)
+sht31_remote_ip = os.environ.get(remote_ip_env_str, "<" +
+                                 remote_ip_env_str + "_KEY_MISSING>")
 sht31_ip = {
     LOFT_SHT31: "192.168.86.15",  # local IP
-    LOFT_SHT31_REMOTE: os.environ[remote_ip_env_str],  # remote IP
+    LOFT_SHT31_REMOTE: sht31_remote_ip,  # remote IP
     }
 sht31_port = {
     LOFT_SHT31: "5000",
@@ -48,10 +50,16 @@ sht31_port = {
 zone_number = 0  # default
 
 # Class constructor parameters for each thermostat
+TCC_UNAME_KEY = 'TCC_USERNAME'
+TCC_PASSWORD_KEY = 'TCC_PASSWORD'
+tcc_uname = os.environ.get(TCC_UNAME_KEY, "<" +
+                           TCC_UNAME_KEY + "_KEY_MISSING>")
+tcc_pwd = os.environ.get(TCC_PASSWORD_KEY, "<" +
+                         TCC_PASSWORD_KEY + "_KEY_MISSING>")
 thermostats = {
     HONEYWELL: {
         "thermostat_constructor": h.HoneywellThermostat,
-        "args": [os.environ['TCC_USERNAME'], os.environ['TCC_PASSWORD']],
+        "args": [tcc_uname, tcc_pwd],
         "zone_constructor": h.HoneywellZone,
         "zone": zone_number,
         "poll_time_sec": 10 * 60,  # default to 10 minutes

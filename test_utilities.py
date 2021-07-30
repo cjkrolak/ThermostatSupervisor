@@ -6,6 +6,7 @@ import os
 import unittest
 
 # local imports
+import unit_test_common as utc
 import utilities as util
 
 
@@ -22,6 +23,7 @@ class Test(unittest.TestCase):
         """
         Confirm log_msg() can write and append to file.
         """
+        utc.print_test_name()
         file_name = "unit_test.txt"
         full_path = util.get_full_file_path(file_name)
 
@@ -62,8 +64,10 @@ class Test(unittest.TestCase):
         """
         Confirm get_env_variable() can retrieve values.
         """
+        utc.print_test_name()
         for env_key in ["GMAIL_USERNAME", "GMAIL_PASSWORD",
-                        "TCC_USERNAME", "TCC_PASSWORD"]:
+                        "GMAIL_TO_USERNAME", "TCC_USERNAME",
+                        "TCC_PASSWORD"]:
             buff = util.get_env_variable(env_key)
             print("env$%s=%s" % (env_key, buff["value"]))
             self.assertEqual(buff["status"], util.NO_ERROR)

@@ -36,7 +36,7 @@ def get_env_variable(env_key):
        env_key(str): env variable of interest
        debug(bool): verbose debugging
     returns:
-       (dict): {status, value}
+       (dict): {status, value, key}
     """
     # defaults
     return_buffer = {
@@ -138,6 +138,10 @@ def log_msg(msg, mode, func_name=-1, file_name=None):
         print(msg)
 
     return return_buffer
+
+
+# global default log file name if none is specified
+log_msg.file_name = "default_log.txt"
 
 
 def get_full_file_path(file_name):
