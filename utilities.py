@@ -36,7 +36,7 @@ def get_env_variable(env_key):
        env_key(str): env variable of interest
        debug(bool): verbose debugging
     returns:
-       (dict): {status, value}
+       (dict): {status, value, key}
     """
     # defaults
     return_buffer = {
