@@ -7,6 +7,7 @@ import os
 import unittest
 
 # local libraries
+import unit_test_common as utc
 import utilities as util
 
 
@@ -29,12 +30,15 @@ class Test(unittest.TestCase):
         If this test fails during CI check repository secrets in GitHub.
         If this test fails during manual run check env variables on local PC.
         """
+        utc.print_test_name()
+
         # make sure email account environmental variables are present
         for env_key in ['GMAIL_USERNAME', 'GMAIL_PASSWORD',
                         'GMAIL_TO_USERNAME']:
             try:
                 print("checking for environment variable key %s" % env_key)
                 _ = os.environ[env_key]
+                print("environment variable key %s was found (PASS)" % env_key)
             except KeyError:
                 fail_msg = ("%s environment variable missing "
                             "from environment" % env_key)
@@ -42,6 +46,7 @@ class Test(unittest.TestCase):
 
     def testSendEmailAlerts(self):
         """Test send_email_alerts() functionality."""
+        utc.print_test_name()
 
         # import environment variables for unit testing.
         # These env variables come from repo secrets during CI process

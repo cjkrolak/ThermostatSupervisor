@@ -7,6 +7,7 @@ import unittest
 
 # local imports
 import thermostat_api as ta
+import unit_test_common as utc
 import utilities as util
 
 
@@ -24,6 +25,7 @@ class Test(unittest.TestCase):
         """
         Confirm target zone can be set and read back.
         """
+        utc.print_test_name()
         test_cases = self.generate_random_list(10, 0, 99)
         for zone in test_cases:
             print("testing set_target_zone(%s)" % zone)
@@ -34,6 +36,7 @@ class Test(unittest.TestCase):
         """
         Confirm poll time can be set and read back.
         """
+        utc.print_test_name()
         test_cases = self.generate_random_list(10, 100, 199)
         for poll_time_sec in test_cases:
             print("testing set_poll_time(%s)" % poll_time_sec)
@@ -45,6 +48,7 @@ class Test(unittest.TestCase):
         """
         Confirm connection time can be set and read back.
         """
+        utc.print_test_name()
         test_cases = self.generate_random_list(10, 200, 299)
         for connection_time_sec in test_cases:
             print("testing set_connection_time(%s)" % connection_time_sec)
