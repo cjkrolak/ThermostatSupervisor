@@ -34,6 +34,7 @@ class Test(unittest.TestCase):
         for env_key in ['GMAIL_USERNAME', 'GMAIL_PASSWORD',
                         'GMAIL_TO_USERNAME']:
             try:
+                print("checking for environment variable key %s" % env_key)
                 _ = os.environ[env_key]
             except KeyError:
                 fail_msg = ("%s environment variable missing "
