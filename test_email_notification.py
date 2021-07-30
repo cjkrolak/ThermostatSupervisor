@@ -48,7 +48,7 @@ class Test(unittest.TestCase):
         # these env variables come from repo secrets during CI process
         # or from local machine during manual run.
         self.from_address = os.environ['GMAIL_USERNAME']
-        # self.from_password = os.environ['GMAIL_PASSWORD']  # do not print out
+        self.from_password = os.environ['GMAIL_PASSWORD']
         self.to_address = os.environ['GMAIL_TO_USERNAME']
 
         # send message
