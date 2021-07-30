@@ -43,10 +43,12 @@ steps:
 
 # python unit tests
 - script: |
-    python -m unittest test_utilities.py
+    python -m unittest discover
   displayName: 'Unit Tests'
   env:
     GMAIL_USERNAME: '$(GMAIL_USERNAME)'
     GMAIL_PASSWORD: '$(GMAIL_PASSWORD)'
     TCC_USERNAME: '$(TCC_USERNAME)'
     TCC_PASSWORD: '$(TCC_PASSWORD)'
+    SHT31_REMOTE_IP_ADDRESS_1: '$(SHT31_REMOTE_IP_ADDRESS_1)'
+ 
