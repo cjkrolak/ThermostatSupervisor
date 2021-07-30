@@ -38,6 +38,7 @@ class Test(unittest.TestCase):
         """
         Confirm get_function_name works as expected.
         """
+        utc.print_test_name()
         # default
         test = "<default>"
         print("testing util.get_function_name(%s)" % test)
@@ -57,10 +58,12 @@ class Test(unittest.TestCase):
         # test 2
         test = 2
         print("testing util.get_function_name(%s)" % test)
-        ev_1 = "_callTestMethod"
+        ev_1 = ["run",  # Linux
+                "_callTestMethod",  # windows
+                ]
         result_1 = util.get_function_name(test)
-        self.assertEqual(ev_1, result_1, "test%s: expected=%s, actual=%s" %
-                         (test, ev_1, result_1))
+        self.assertTrue(result_1 in ev_1, "test%s: expected values=%s, "
+                         "actual=%s" % (test, ev_1, result_1))
 
     def testLogMsgWrite(self):
         """
@@ -107,9 +110,11 @@ class Test(unittest.TestCase):
         """
         Verify get_full_file_path() function.
         """
+        utc.print_test_name()
         file_name = "dummy.txt"
         full_path = util.get_full_file_path(file_name)
         expected_value = util.file_path + "//" + file_name
+        print("full path=%s" % full_path)
         self.assertEqual(expected_value, full_path,
                          "expected=%s, actual=%s" %
                          (expected_value, full_path))
@@ -118,6 +123,7 @@ class Test(unittest.TestCase):
         """
         Verify utf8len().
         """
+        utc.print_test_name()
         for test_case in ["A", "BB", "ccc", "dd_d"]:
             print("testing util.utf8len(%s)" % test_case)
             expected_value = 1 * len(test_case)
