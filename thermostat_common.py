@@ -6,6 +6,7 @@ import datetime
 import operator
 
 # local imports
+import email_notification
 import utilities as util
 
 # bogus values to identify uninitialized data
@@ -29,6 +30,8 @@ class ThermostatCommonZone():
         COOL_MODE: bogus_int,
         AUTO_MODE: bogus_int,
         }
+    max_scheduled_heat_allowed = 74  # warn if scheduled heat value exceeds.
+    min_scheduled_cool_allowed = 68  # warn if scheduled cool value exceeds.
 
     def get_current_mode(self, session_count, poll_count, print_status=True,
                          flag_all_deviations=False):
@@ -110,6 +113,15 @@ class ThermostatCommonZone():
                                (heat_schedule_point, heat_set_point))
                 heat_deviation = True
 
+            # warning email if heat set point is above global max value
+            if heat_set_point > self.max_scheduled_heat_allowed:
+                msg = ("scheduled heat set point (%s) is above "
+                       "max limit (%s)" % (
+                           heat_set_point, self.max_scheduled_heat_allowed))
+                email_notification.send_email_alert(
+                        subject=msg,
+                        body="%s: %s" % (util.get_function_name(), msg))
+
         # check for cool deviation
         cool_mode = (self.get_system_switch_position() ==
                      self.system_switch_position[self.COOL_MODE])
@@ -129,6 +141,15 @@ class ThermostatCommonZone():
                 status_msg += (", set point=%s, override=%s" %
                                (cool_schedule_point, cool_set_point))
                 cool_deviation = True
+
+            # warning email if cool set point is below global min value
+            if cool_set_point < self.min_scheduled_cool_allowed:
+                msg = ("scheduled cool set point (%s) is below "
+                       "min limit (%s)" % (
+                           cool_set_point, self.min_scheduled_cool_allowed))
+                email_notification.send_email_alert(
+                        subject=msg,
+                        body="%s: %s" % (util.get_function_name(), msg))
 
         # hold cooling
         if heat_deviation or cool_deviation:
