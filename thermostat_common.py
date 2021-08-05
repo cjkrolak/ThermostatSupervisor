@@ -114,10 +114,12 @@ class ThermostatCommonZone():
                 heat_deviation = True
 
             # warning email if heat set point is above global max value
-            if heat_set_point > self.max_scheduled_heat_allowed:
+            if heat_schedule_point > self.max_scheduled_heat_allowed:
                 msg = ("scheduled heat set point (%s) is above "
                        "max limit (%s)" % (
-                           heat_set_point, self.max_scheduled_heat_allowed))
+                           heat_schedule_point,
+                           self.max_scheduled_heat_allowed))
+                util.log_msg("WARNING: %s" % msg, mode=util.BOTH_LOG)
                 email_notification.send_email_alert(
                         subject=msg,
                         body="%s: %s" % (util.get_function_name(), msg))
@@ -143,10 +145,12 @@ class ThermostatCommonZone():
                 cool_deviation = True
 
             # warning email if cool set point is below global min value
-            if cool_set_point < self.min_scheduled_cool_allowed:
+            if cool_schedule_point < self.min_scheduled_cool_allowed:
                 msg = ("scheduled cool set point (%s) is below "
                        "min limit (%s)" % (
-                           cool_set_point, self.min_scheduled_cool_allowed))
+                           cool_schedule_point,
+                           self.min_scheduled_cool_allowed))
+                util.log_msg("WARNING: %s" % msg, mode=util.BOTH_LOG)
                 email_notification.send_email_alert(
                         subject=msg,
                         body="%s: %s" % (util.get_function_name(), msg))
