@@ -11,6 +11,7 @@ import os
 import honeywell as h
 import mmm
 import sht31
+import utilities as util
 
 
 # thermostat types
@@ -67,6 +68,13 @@ thermostats = {
         # max value was 3, higher settings will cause HTTP errors, why?
         # not showing error on Pi at 10 minutes, so changed default to 10 min.
         "connection_time_sec": 8 * 60 * 60,  # default to 8 hours
+        "required_env_variables": {
+            "TCC_USERNAME": None,
+            "TCC_PASSWORD": None,
+            "GMAIL_USERNAME": None,
+            "GMAIL_PASSWORD": None,
+            "GMAIL_TO_USERNAME": None,
+            },
         },
     MMM50: {
         "thermostat_constructor": mmm.MMM50Thermostat,
@@ -75,6 +83,11 @@ thermostats = {
         "zone": zone_number,
         "poll_time_sec": 10 * 60,  # default to 10 minutes
         "connection_time_sec": 8 * 60 * 60,  # default to 8 hours
+        "required_env_variables": {
+            "GMAIL_USERNAME": None,
+            "GMAIL_PASSWORD": None,
+            "GMAIL_TO_USERNAME": None,
+            },
         },
     SHT31: {
         "thermostat_constructor": sht31.SHT31Thermometer,
@@ -83,6 +96,13 @@ thermostats = {
         "zone": zone_number,
         "poll_time_sec": 1 * 60,  # default to 10 minutes
         "connection_time_sec": 8 * 60 * 60,  # default to 8 hours
+        "required_env_variables": {
+            "GMAIL_USERNAME": None,
+            "GMAIL_PASSWORD": None,
+            "GMAIL_TO_USERNAME": None,
+            "SHT31_REMOTE_IP_ADDRESS_0": None,
+            "SHT31_REMOTE_IP_ADDRESS_1": None,
+            },
         }
 }
 
@@ -108,3 +128,19 @@ def set_poll_time(tstat, poll_time_sec):
 def set_connection_time(tstat, connection_time_sec):
     """Set the connection time override from runtime."""
     thermostats[tstat]["connection_time_sec"] = connection_time_sec
+
+
+def verify_required_env_variables(tstat):
+    """
+    Verify all required env variables are present for thermostat
+    configuration in use.
+    """
+    for key in thermostats[tstat]["required_env_variables"]:
+        print("checking required environment key: %s..." % key, end='')
+        try:
+            util.env_variables[key] = util.get_env_variable(key)["value"]
+            print("OK")
+        except KeyError:
+            print("NOT FOUND!")
+            raise
+    print("\n")

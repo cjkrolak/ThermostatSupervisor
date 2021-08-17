@@ -28,6 +28,10 @@ def main(thermostat_type, zone):
 
     util.log_msg("%s thermostat zone %s monitoring service\n" %
                  (thermostat_type, zone), mode=util.BOTH_LOG)
+
+    # verify env variables are present
+    api.verify_required_env_variables(thermostat_type)
+
     # session variables
     util.log_msg("session settings:", mode=util.BOTH_LOG)
     debug = False  # verbose debugging information

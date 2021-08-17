@@ -9,10 +9,6 @@ import operator
 import email_notification
 import utilities as util
 
-# bogus values to identify uninitialized data
-bogus_int = -13
-bogus_bool = None
-
 degree_sign = u"\N{DEGREE SIGN}"
 
 
@@ -25,10 +21,10 @@ class ThermostatCommonZone():
     AUTO_MODE = "AUTO_MODE"
     system_switch_position = {
         # placeholder, will be tstat-specific
-        HEAT_MODE: bogus_int,
-        OFF_MODE: bogus_int,
-        COOL_MODE: bogus_int,
-        AUTO_MODE: bogus_int,
+        HEAT_MODE: util.bogus_int,
+        OFF_MODE: util.bogus_int,
+        COOL_MODE: util.bogus_int,
+        AUTO_MODE: util.bogus_int,
         }
     max_scheduled_heat_allowed = 74  # warn if scheduled heat value exceeds.
     min_scheduled_cool_allowed = 68  # warn if scheduled cool value exceeds.
@@ -56,16 +52,16 @@ class ThermostatCommonZone():
             and hold status
         """
         # initialize variables
-        cool_deviation = bogus_bool  # cooling set point deviates from schedule
-        heat_deviation = bogus_bool  # heating set point deviates from schedule
-        hold_mode = bogus_bool  # True if not following schedule
-        heat_schedule_point = bogus_int  # heating schedule set point
-        heat_set_point = bogus_int  # heating current set point
-        cool_schedule_point = bogus_int  # cooling schedule set point
-        cool_set_point = bogus_int  # cooling current set point
+        cool_deviation = util.bogus_bool  # cool set point deviates from sched
+        heat_deviation = util.bogus_bool  # heat set point deviates from sched
+        hold_mode = util.bogus_bool  # True if not following schedule
+        heat_schedule_point = util.bogus_int  # heating schedule set point
+        heat_set_point = util.bogus_int  # heating current set point
+        cool_schedule_point = util.bogus_int  # cooling schedule set point
+        cool_set_point = util.bogus_int  # cooling current set point
         mode = "OFF MODE"  # mode for display, "OFF MODE", "HEAT MODE",
         #                    "COOL MODE"
-        hold_temporary = bogus_bool  # True if hold will revert on next
+        hold_temporary = util.bogus_bool  # True if hold will revert on next
         #                              schedule event
 
         if flag_all_deviations:
@@ -76,11 +72,11 @@ class ThermostatCommonZone():
             heat_operator = operator.gt
 
         return_buffer = {
-            "heat_mode": bogus_bool,  # in heating mode
-            "cool_mode": bogus_bool,  # in cooling mode
-            "heat_deviation": bogus_bool,  # True if heat is deviated above
-            "cool_deviation": bogus_bool,  # True if cool is deviated below
-            "hold_mode": bogus_bool,  # True if hold is enabled
+            "heat_mode": util.bogus_bool,  # in heating mode
+            "cool_mode": util.bogus_bool,  # in cooling mode
+            "heat_deviation": util.bogus_bool,  # True: heat is deviated above
+            "cool_deviation": util.bogus_bool,  # True: cool is deviated below
+            "hold_mode": util.bogus_bool,  # True if hold is enabled
             "status_msg": "",  # status message
             }
 
@@ -206,45 +202,45 @@ class ThermostatCommonZone():
     # Thermostat-specific methods will be overloaded
     def get_display_temp(self) -> float:
         """Return the displayed temperature."""
-        return float(bogus_int)  # placeholder
+        return float(util.bogus_int)  # placeholder
 
     def get_display_humidity(self) -> float:
         """Return the displayed humidity."""
-        return float(bogus_int)  # placeholder
+        return float(util.bogus_int)  # placeholder
 
     def get_is_humidity_supported(self) -> bool:
         """Return humidity sensor status."""
-        return bogus_bool  # placeholder
+        return util.bogus_bool  # placeholder
 
     def get_system_switch_position(self) -> int:
         """Return the 'SystemSwitchPosition'
             'SystemSwitchPosition' = 1 for heat, 2 for off
         """
-        return bogus_int  # placeholder
+        return util.bogus_int  # placeholder
 
     def get_heat_setpoint_raw(self) -> int:
         """Return raw heat set point."""
-        return bogus_int  # placeholder
+        return util.bogus_int  # placeholder
 
     def get_schedule_heat_sp(self) -> int:
         """Return the heat setpoint."""
-        return bogus_int  # placeholder
+        return util.bogus_int  # placeholder
 
     def get_cool_setpoint_raw(self) -> int:
         """Return raw cool set point."""
-        return bogus_int  # placeholder
+        return util.bogus_int  # placeholder
 
     def get_schedule_cool_sp(self) -> int:
         """Return the cool setpoint."""
-        return bogus_int  # placeholder
+        return util.bogus_int  # placeholder
 
     def get_is_invacation_hold_mode(self) -> bool:
         """Return the 'IsInVacationHoldMode' setting."""
-        return bogus_bool  # placeholder
+        return util.bogus_bool  # placeholder
 
     def get_temporary_hold_until_time(self) -> int:
         """Return the 'TemporaryHoldUntilTime' """
-        return bogus_int  # placeholder
+        return util.bogus_int  # placeholder
 
     def refresh_zone_info(self) -> None:
         """Refreshes zone info."""

@@ -14,6 +14,10 @@ ENVIRONMENT_ERROR = 4
 FILE_NOT_FOUND_ERROR = 5
 OTHER_ERROR = 99
 
+# bogus values to identify uninitialized data
+bogus_int = -13
+bogus_bool = None
+
 # logging options
 CONSOLE_LOG = 0x001  # print to console
 DATA_LOG = 0x010  # print to data log
@@ -27,10 +31,23 @@ max_log_size_bytes = 2**20  # logs rotate at this max size
 API_TEMP_FIELD = 'Temp(F) mean'
 API_HUMIDITY_FIELD = 'Humidity(%RH) mean'
 
+# all environment variables required by code should be registered here
+env_variables = {
+    "TCC_USERNAME": None,
+    "TCC_PASSWORD": None,
+    "GMAIL_USERNAME": None,
+    "GMAIL_PASSWORD": None,
+    "GMAIL_TO_USERNAME": None,
+    "SHT31_REMOTE_IP_ADDRESS_0": None,
+    "SHT31_REMOTE_IP_ADDRESS_1": None,
+    }
+
 
 def get_env_variable(env_key):
     """
     Get environment variable.
+
+    Results will be logged but passwords will be masked off.
 
     inputs:
        env_key(str): env variable of interest
@@ -58,6 +75,15 @@ def get_env_variable(env_key):
                 " is missing." % env_key, mode=CONSOLE_LOG + DATA_LOG)
         return_buffer["status"] = ENVIRONMENT_ERROR
     return return_buffer
+
+
+def load_all_env_variables():
+    """
+    Load all environment variables into a dictionary.
+    """
+    for key in env_variables:
+        print("checking key: %s" % key)
+        env_variables[key] = get_env_variable(key)["value"]
 
 
 def get_function_name(stack_value=1):
