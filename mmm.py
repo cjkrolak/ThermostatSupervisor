@@ -176,7 +176,7 @@ class MMM50Thermostat(tc.ThermostatCommonZone):
         returns:
             (float): humidity in %RH.
         """
-        return tc.bogus_int  # not available
+        return util.bogus_int  # not available
 
     def get_is_humidity_supported(self) -> bool:
         """Return humidity sensor status."""

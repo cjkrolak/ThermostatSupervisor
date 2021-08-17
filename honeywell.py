@@ -220,7 +220,7 @@ class HoneywellZone(pyhtcc.Zone, tc.ThermostatCommonZone):
         tc.ThermostatCommonZone.COOL_MODE: 3,
         tc.ThermostatCommonZone.HEAT_MODE: 1,
         tc.ThermostatCommonZone.OFF_MODE: 2,
-        tc.ThermostatCommonZone.AUTO_MODE: tc.bogus_int,
+        tc.ThermostatCommonZone.AUTO_MODE: util.bogus_int,
         # what mode is 0 on Honeywell?
         }
 

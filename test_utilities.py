@@ -34,6 +34,14 @@ class Test(unittest.TestCase):
             self.assertEqual(buff["status"], util.NO_ERROR)
             self.assertGreater(len(buff["value"]), 0)
 
+    def testLoadAllEnvVariables(self):
+        """
+        Confirm all env variables can be loaded.
+        """
+        utc.print_test_name()
+        util.load_all_env_variables()
+        print("env var dict=%s" % util.env_variables)
+
     def testGetFunctionName(self):
         """
         Confirm get_function_name works as expected.

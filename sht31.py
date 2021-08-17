@@ -24,10 +24,10 @@ class SHT31Thermometer(tc.ThermostatCommonZone):
     """SHT31 thermometer functions."""
 
     system_switch_position = {
-        tc.ThermostatCommonZone.COOL_MODE: tc.bogus_int,
-        tc.ThermostatCommonZone.HEAT_MODE: tc.bogus_int,
+        tc.ThermostatCommonZone.COOL_MODE: util.bogus_int,
+        tc.ThermostatCommonZone.HEAT_MODE: util.bogus_int,
         tc.ThermostatCommonZone.OFF_MODE: 0,
-        tc.ThermostatCommonZone.AUTO_MODE: tc.bogus_int,
+        tc.ThermostatCommonZone.AUTO_MODE: util.bogus_int,
         }
 
     def __init__(self, ip_address, *_, **__):
