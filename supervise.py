@@ -30,7 +30,11 @@ def main(thermostat_type, zone):
                  (thermostat_type, zone), mode=util.BOTH_LOG)
 
     # verify env variables are present
-    api.verify_required_env_variables(thermostat_type)
+    if not api.verify_required_env_variables(thermostat_type):
+        util.log_msg("%s: zone %s: FATAL error: one or more required "
+                     "environemental keys are missing, exiing program" %
+                     (thermostat_type, zone), mode=util.BOTH_LOG)
+        return  # abort program
 
     # session variables
     util.log_msg("session settings:", mode=util.BOTH_LOG)
