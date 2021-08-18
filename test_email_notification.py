@@ -33,8 +33,7 @@ class Test(unittest.TestCase):
         utc.print_test_name()
 
         # make sure email account environmental variables are present
-        for env_key in ['GMAIL_USERNAME', 'GMAIL_PASSWORD',
-                        'GMAIL_TO_USERNAME']:
+        for env_key in ['GMAIL_USERNAME', 'GMAIL_PASSWORD']:
             try:
                 print("checking for environment variable key %s" % env_key)
                 _ = os.environ[env_key]
@@ -55,8 +54,6 @@ class Test(unittest.TestCase):
         #     self.from_address = os.environ['GMAIL_USERNAME']
         # if self.from_password is None:
         #     self.from_password = os.environ['GMAIL_PASSWORD']
-        # if self.to_address is None:
-        #     self.to_address = os.environ['GMAIL_TO_USERNAME']
 
         # TODO: GMAIL AUTH IS FAILING, TEST is TEMP DISABLED.
         print("test is temporarily disabled due to gmail auth issue")

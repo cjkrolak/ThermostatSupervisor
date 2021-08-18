@@ -134,13 +134,19 @@ def verify_required_env_variables(tstat):
     """
     Verify all required env variables are present for thermostat
     configuration in use.
+
+    inputs:
+        tstat(int) thermostat type mapping to thermostat_api
+    returns:
+        (bool): True if all keys are present, else False
     """
+    key_status = True  # default, all keys present
     for key in thermostats[tstat]["required_env_variables"]:
         print("checking required environment key: %s..." % key, end='')
-        try:
-            util.env_variables[key] = util.get_env_variable(key)["value"]
+        util.env_variables[key] = util.get_env_variable(key)["value"]
+        if util.env_variables[key] is not None:
             print("OK")
-        except KeyError:
-            print("NOT FOUND!")
-            raise
+        else:
+            key_status = False
     print("\n")
+    return key_status
