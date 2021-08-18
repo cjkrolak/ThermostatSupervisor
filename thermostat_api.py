@@ -73,7 +73,6 @@ thermostats = {
             "TCC_PASSWORD": None,
             "GMAIL_USERNAME": None,
             "GMAIL_PASSWORD": None,
-            "GMAIL_TO_USERNAME": None,
             },
         },
     MMM50: {
@@ -86,7 +85,6 @@ thermostats = {
         "required_env_variables": {
             "GMAIL_USERNAME": None,
             "GMAIL_PASSWORD": None,
-            "GMAIL_TO_USERNAME": None,
             },
         },
     SHT31: {
@@ -99,7 +97,6 @@ thermostats = {
         "required_env_variables": {
             "GMAIL_USERNAME": None,
             "GMAIL_PASSWORD": None,
-            "GMAIL_TO_USERNAME": None,
             "SHT31_REMOTE_IP_ADDRESS_0": None,
             "SHT31_REMOTE_IP_ADDRESS_1": None,
             },

@@ -20,7 +20,6 @@ class Test(unittest.TestCase):
             "required_env_variables": {
                 "GMAIL_USERNAME": None,
                 "GMAIL_PASSWORD": None,
-                "GMAIL_TO_USERNAME": None,
                 },
             }
 
