@@ -11,6 +11,7 @@ data structure expected:
 }
 """
 # built-in imports
+import os
 import pprint
 import requests
 import sys
@@ -23,11 +24,28 @@ import utilities as util
 class SHT31Thermometer(tc.ThermostatCommonZone):
     """SHT31 thermometer functions."""
 
+    # SHT31 is a monitor only, does not support heat/cool modes.
     system_switch_position = {
         tc.ThermostatCommonZone.COOL_MODE: util.bogus_int,
         tc.ThermostatCommonZone.HEAT_MODE: util.bogus_int,
         tc.ThermostatCommonZone.OFF_MODE: 0,
         tc.ThermostatCommonZone.AUTO_MODE: util.bogus_int,
+        }
+
+    # sht31 thermometer IP addresses (local net)
+    LOFT_SHT31 = 0  # zone 0
+    LOFT_SHT31_REMOTE = 1  # zone 1
+    remote_ip_env_str = ('SHT31_REMOTE_IP_ADDRESS' + '_' +
+                         str(LOFT_SHT31_REMOTE))
+    sht31_remote_ip = os.environ.get(remote_ip_env_str, "<" +
+                                     remote_ip_env_str + "_KEY_MISSING>")
+    sht31_ip = {
+        LOFT_SHT31: "192.168.86.15",  # local IP
+        LOFT_SHT31_REMOTE: sht31_remote_ip,  # remote IP
+        }
+    sht31_port = {
+        LOFT_SHT31: "5000",
+        LOFT_SHT31_REMOTE: "5000",
         }
 
     def __init__(self, ip_address, *_, **__):
@@ -37,12 +55,21 @@ class SHT31Thermometer(tc.ThermostatCommonZone):
         inputs:
             ip_address(str):  ip address of thermostat
         """
+        self.zone_constructor = SHT31Thermometer
         self.device_id = 0  # not currently used since IP identifies device
         self.ip_address = ip_address
+        self.zone_number = list(self.sht31_ip.keys())[
+            list(self.sht31_ip.values()).index(ip_address)]
         self.port = "5000"  # Flask server port on SHT31 host
         self.url = "http://" + self.ip_address + ":" + self.port
         self.tempfield = util.API_TEMP_FIELD  # must match flask API
         self.humidityfield = util.API_HUMIDITY_FIELD  # must match flask API
+
+        # runtime defaults
+        self.poll_time_sec = 1 * 60  # default to 1 minute
+        self.connection_time_sec = 8 * 60 * 60  # default to 8 hours
+
+        super(SHT31Thermometer, self).__init__(*_, **__)
 
     def get_target_zone_id(self):
         """

@@ -2,9 +2,9 @@
 connection to Honeywell thermoststat using pyhtcc
 
 https://pypi.org/project/pyhtcc/
-
 """
 # built-in imports
+import os
 import pprint
 import pyhtcc
 import time
@@ -18,6 +18,21 @@ import utilities as util
 
 class HoneywellThermostat(pyhtcc.PyHTCC):
     """Extend the PyHTCC class with additional methods."""
+
+    def __init__(self, *_, **__):
+        # TCC server auth credentials from env vars
+        self.TCC_UNAME_KEY = 'TCC_USERNAME'
+        self.TCC_PASSWORD_KEY = 'TCC_PASSWORD'
+        self.tcc_uname = (os.environ.get(self.TCC_UNAME_KEY, "<" +
+                          self.TCC_UNAME_KEY + "_KEY_MISSING>"))
+        self.tcc_pwd = (os.environ.get(
+            self.TCC_PASSWORD_KEY, "<" +
+            self.TCC_PASSWORD_KEY + "_KEY_MISSING>"))
+        self.args = [self.tcc_uname, self.tcc_pwd]
+
+        self.zone_constructor = HoneywellZone
+
+        super(HoneywellThermostat, self).__init__(*self.args)
 
     def _get_zone_device_ids(self) -> list:
         """
@@ -223,6 +238,16 @@ class HoneywellZone(pyhtcc.Zone, tc.ThermostatCommonZone):
         tc.ThermostatCommonZone.AUTO_MODE: util.bogus_int,
         # what mode is 0 on Honeywell?
         }
+
+    def __init__(self, *_, **__):
+        # runtime parameter defaults
+        self.poll_time_sec = 10 * 60  # default to 10 minutes
+        # min practical value is 2 minutes based on empirical test
+        # max value was 3, higher settings will cause HTTP errors, why?
+        # not showing error on Pi at 10 minutes, so changed default to 10 min.
+        self.connection_time_sec = 8 * 60 * 60  # default to 8 hours
+
+        super(HoneywellZone, self).__init__(*_, **__)
 
     def get_display_temp(self) -> float:  # used
         """

@@ -11,29 +11,29 @@ import thermostat_api as api
 import utilities as util
 
 
-def main(thermostat_type, zone):
+def main(thermostat_type, zone_str):
     """
     Thermostat Supervisor Routine.
 
     inputs:
         thermostat_type(str): thermostat type, see thermostat_api for list
                               of supported thermostats.
-        zone(str):      zone number
+        zone_str(str):        zone number input from user
     returns:
         None
     """
     # set log file name
     util.log_msg.file_name = (thermostat_type + "_" +
-                              str(zone) + ".txt")
+                              str(zone_str) + ".txt")
 
     util.log_msg("%s thermostat zone %s monitoring service\n" %
-                 (thermostat_type, zone), mode=util.BOTH_LOG)
+                 (thermostat_type, zone_str), mode=util.BOTH_LOG)
 
     # verify env variables are present
     if not api.verify_required_env_variables(thermostat_type):
         util.log_msg("%s: zone %s: FATAL error: one or more required "
                      "environemental keys are missing, exiing program" %
-                     (thermostat_type, zone), mode=util.BOTH_LOG)
+                     (thermostat_type, zone_str), mode=util.BOTH_LOG)
         return  # abort program
 
     # session variables
@@ -60,54 +60,53 @@ def main(thermostat_type, zone):
     # connection timer loop
     session_count = 1
     while True:
-        # make connection to thermostat through myTotalConnect Comfort site
+        # make connection to thermostat
         thermostat_constructor = \
             api.thermostats[thermostat_type]["thermostat_constructor"]
-        args = api.thermostats[thermostat_type]["args"]
-        zone_num = api.thermostats[thermostat_type]["zone"]
+        zone_num = api.user_inputs["zone"]
+
         util.log_msg("connecting to thermostat zone %s (session:%s)..." %
                      (zone_num, session_count), mode=util.BOTH_LOG)
-        thermostat = thermostat_constructor(*args)
+        Thermostat = thermostat_constructor()
 
         # grab meta data
-        # thermostat.get_all_thermostat_metadata()
-
-        # poll time setting:
-        poll_time_sec = api.thermostats[thermostat_type]["poll_time_sec"]
-        util.log_msg("polling time set to %.1f minutes" %
-                     (poll_time_sec / 60.0), mode=util.BOTH_LOG)
-
-        # reconnection time to TCC server:
-        connection_time_sec = \
-            api.thermostats[thermostat_type]["connection_time_sec"]
-        util.log_msg("server re-connect time set to %.1f minutes" %
-                     (connection_time_sec / 60.0),
-                     mode=util.BOTH_LOG)
+        # Thermostat.get_all_thermostat_metadata()
 
         t0 = time.time()  # connection timer
 
         # dump all meta data
         if debug:
             print("thermostat meta data:")
-            thermostat.get_all_thermostat_metadata()
+            Thermostat.get_all_thermostat_metadata()
 
         # get Zone object based on deviceID
-        zone_constructor = api.thermostats[thermostat_type]["zone_constructor"]
-        device_id = thermostat.get_target_zone_id()
-        zone = zone_constructor(device_id, thermostat)
+        device_id = Thermostat.get_target_zone_id()
+        Zone = Thermostat.zone_constructor(device_id, Thermostat)
+
+        # update runtime overrides
+        Zone.update_runtime_parameters(api.user_inputs)
+
+        # poll time setting:
+        util.log_msg("polling time set to %.1f minutes" %
+                     (Zone.poll_time_sec / 60.0), mode=util.BOTH_LOG)
+
+        # reconnection time to thermostat server:
+        util.log_msg("server re-connect time set to %.1f minutes" %
+                     (Zone.connection_time_sec / 60.0),
+                     mode=util.BOTH_LOG)
 
         poll_count = 1
         # poll thermostat settings
         while True:
-            # query TCC for current thermostat settings and set points
-            current_mode = zone.get_current_mode(
+            # query thermostat for current settings and set points
+            current_mode = Zone.get_current_mode(
                 session_count, poll_count,
                 flag_all_deviations=revert_all_deviations)
 
             # debug data on change from previous poll
             if current_mode != previous_mode:
                 if debug:
-                    zone.report_heating_parameters()
+                    Zone.report_heating_parameters()
                 previous_mode = current_mode  # latch
 
             # revert thermostat to schedule if heat override is detected
@@ -121,7 +120,7 @@ def main(thermostat_type, zone):
                              " reverting thermostat to heat schedule ***\n" %
                              (thermostat_type, zone_num),
                              mode=util.BOTH_LOG)
-                zone.set_heat_setpoint(zone.get_schedule_heat_sp())
+                Zone.set_heat_setpoint(Zone.get_schedule_heat_sp())
 
             # revert thermostat to schedule if cool override is detected
             if (revert_thermostat_deviation and current_mode["cool_mode"] and
@@ -134,20 +133,20 @@ def main(thermostat_type, zone):
                              " reverting thermostat to cool schedule ***\n" %
                              (thermostat_type, zone_num),
                              mode=util.BOTH_LOG)
-                zone.set_cool_setpoint(zone.get_schedule_cool_sp())
+                Zone.set_cool_setpoint(Zone.get_schedule_cool_sp())
 
             # polling delay
-            time.sleep(poll_time_sec)
+            time.sleep(Zone.poll_time_sec)
 
             # refresh zone info
             # print("DEBUG: %s: refreshing zone..." % util.get_function_name())
-            zone.refresh_zone_info()
+            Zone.refresh_zone_info()
 
             # reconnect
-            if (time.time() - t0) > connection_time_sec:
+            if (time.time() - t0) > Zone.connection_time_sec:
                 util.log_msg("forcing re-connection to thermostat...",
                              mode=util.BOTH_LOG)
-                del thermostat
+                del Thermostat
                 break  # force reconnection
 
             # increment poll count
@@ -163,6 +162,7 @@ if __name__ == "__main__":
 
     # parse thermostat type parameter (argv[1] if present):
     tstat_default = api.HONEYWELL  # default thermostat type
+    tstat_type = None
     try:
         tstat_type = sys.argv[1].lower()
     except IndexError:
@@ -171,8 +171,10 @@ if __name__ == "__main__":
         print("WARNING: '%s' is not a valid choice for thermostat, "
               "using default(%s)" % (tstat_type, tstat_default))
         tstat_type = tstat_default
+    api.user_inputs["thermostat_type"] = tstat_type
 
     # parse zone number parameter (argv[2] if present):
+    zone_input = None
     zone_default = 0
     try:
         zone_input = int(sys.argv[2])
@@ -183,8 +185,10 @@ if __name__ == "__main__":
               "using default(%s)" % (zone_input, tstat_type, zone_default))
         zone_input = zone_default
     api.set_target_zone(tstat_type, zone_input)
+    api.user_inputs["zone"] = zone_input
 
     # parse the poll time override (argv[3] if present):
+    poll_time_input = None
     if len(sys.argv) > 3:
         poll_time_default = -1
         try:
@@ -195,9 +199,10 @@ if __name__ == "__main__":
             print("WARNING: poll time override of %s seconds is not a valid "
                   "value, using default" % poll_time_input)
         else:
-            api.set_poll_time(tstat_type, poll_time_input)
+            api.user_inputs["poll_time_sec"] = poll_time_input
 
     # parse the connection time override (argv[4] if present):
+    connection_time_input = None
     if len(sys.argv) > 4:
         connection_time_default = -1
         try:
@@ -208,7 +213,7 @@ if __name__ == "__main__":
             print("WARNING: connection time override of %s seconds is not "
                   "a valid value, using default" % connection_time_input)
         else:
-            api.set_connection_time(tstat_type, connection_time_input)
+            api.user_inputs["connection_time_sec"] = connection_time_input
 
     # main supervise function
     main(tstat_type, zone_input)
