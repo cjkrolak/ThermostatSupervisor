@@ -15,9 +15,6 @@ import urllib  # noqa E402
 import thermostat_common as tc  # noqa E402
 import utilities as util  # noqa E402
 
-ip_main_3m50 = "192.168.86.82"
-ip_basement_3m50 = "192.168.86.83"
-
 
 class MMM50Thermostat(tc.ThermostatCommonZone):
     """3m50 thermostat functions."""
@@ -29,6 +26,14 @@ class MMM50Thermostat(tc.ThermostatCommonZone):
         tc.ThermostatCommonZone.AUTO_MODE: 3,
         }
 
+    # 3m50 thermostat IP addresses (local net)
+    MAIN_3M50 = 0  # zone 0
+    BASEMENT_3M50 = 1  # zone 1
+    mmm_ip = {
+        MAIN_3M50: "192.168.86.82",  # local IP
+        BASEMENT_3M50: "192.168.86.83",  # local IP
+    }
+
     def __init__(self, ip_address, *_, **__):
         """
         Constructor, connect to thermostat.
@@ -36,12 +41,20 @@ class MMM50Thermostat(tc.ThermostatCommonZone):
         inputs:
             ip_address(str):  ip address of thermostat on local net
         """
+        super(MMM50Thermostat, self).__init__(*_, **__)
+        self.zone_constructor = MMM50Thermostat
         try:
             self.device_id = radiotherm.get_thermostat(ip_address)
         except urllib.error.URLError as e:
             raise Exception("FATAL ERROR: 3m thermostat not found at "
                             "ip address: %s" % ip_address) from e
         self.ip_address = ip_address
+        self.zone_number = list(self.mmm_ip.keys())[
+            list(self.mmm_ip.values()).index(ip_address)]
+
+        # runtime parameter defaults
+        self.poll_time_sec = 10 * 60  # default to 10 minutes
+        self.connection_time_sec = 8 * 60 * 60  # default to 8 hours
 
     def get_target_zone_id(self):
         """
@@ -527,6 +540,9 @@ class MMM50Thermostat(tc.ThermostatCommonZone):
 if __name__ == "__main__":
 
     util.log_msg.debug = True  # debug mode set
+
+    ip_main_3m50 = "192.168.86.82"
+    ip_basement_3m50 = "192.168.86.83"
 
     # set ip address
     if len(sys.argv) > 1 and sys.argv[1] in [ip_main_3m50, ip_basement_3m50]:

@@ -37,31 +37,6 @@ class Test(unittest.TestCase):
             api.set_target_zone(self.tstat, zone)
             self.assertEqual(api.thermostats[self.tstat]["zone"], zone)
 
-    def testSetPollTime(self):
-        """
-        Confirm poll time can be set and read back.
-        """
-        utc.print_test_name()
-        test_cases = self.generate_random_list(10, 100, 199)
-        for poll_time_sec in test_cases:
-            print("testing set_poll_time(%s)" % poll_time_sec)
-            api.set_poll_time(self.tstat, poll_time_sec)
-            self.assertEqual(api.thermostats[self.tstat]["poll_time_sec"],
-                             poll_time_sec)
-
-    def testSetConnectionTime(self):
-        """
-        Confirm connection time can be set and read back.
-        """
-        utc.print_test_name()
-        test_cases = self.generate_random_list(10, 200, 299)
-        for connection_time_sec in test_cases:
-            print("testing set_connection_time(%s)" % connection_time_sec)
-            api.set_connection_time(self.tstat, connection_time_sec)
-            self.assertEqual(api.thermostats[self.tstat]
-                             ["connection_time_sec"],
-                             connection_time_sec)
-
     def testVerifyRequiredEnvVariables(self):
         """
         Verify test verify_required_env_variables() passes in nominal

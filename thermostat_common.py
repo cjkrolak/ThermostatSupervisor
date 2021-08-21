@@ -19,6 +19,7 @@ class ThermostatCommonZone():
     HEAT_MODE = "HEAT_MODE"
     COOL_MODE = "COOL_MODE"
     AUTO_MODE = "AUTO_MODE"
+
     system_switch_position = {
         # placeholder, will be tstat-specific
         HEAT_MODE: util.bogus_int,
@@ -29,6 +30,12 @@ class ThermostatCommonZone():
     max_scheduled_heat_allowed = 74  # warn if scheduled heat value exceeds.
     min_scheduled_cool_allowed = 68  # warn if scheduled cool value exceeds.
 
+    def __init__(self, *_, **__):
+        self.zone_number = util.bogus_int  # placeholder
+        self.thermostat_type = "unknown"  # placeholder
+        self.poll_time_sec = util.bogus_int
+        self.connection_time_sec = util.bogus_int
+
     def get_current_mode(self, session_count, poll_count, print_status=True,
                          flag_all_deviations=False):
         """
@@ -36,7 +43,6 @@ class ThermostatCommonZone():
         deviated from schedule.
 
         inputs:
-            zone(obj):  TCC Zone object
             session_count(int): session number (connection #) for reporting
             poll_count(int): poll number for reporting
             print_status(bool):  True to print status line
@@ -249,3 +255,25 @@ class ThermostatCommonZone():
     def report_heating_parameters(self):
         """Display critical thermostat settings and reading to the screen."""
         return  # placeholder
+
+    def set_zone_number(self, zone_number):
+        """Store the zone number for reporting purposes."""
+        self.zone_number = zone_number
+
+    def update_runtime_parameters(self, user_inputs):
+        """use runtime parameter overrides.
+
+        inputs:
+            user_inputs(dict): runtime overrides.
+        returns:
+            None, updates class variables.
+        """
+        zone_input = user_inputs.get("zone")
+        if zone_input is not None:
+            self.zone_number = zone_input
+        poll_time_input = user_inputs.get("poll_time_sec")
+        if poll_time_input is not None:
+            self.poll_time_sec = poll_time_input
+        connection_time_input = user_inputs.get("connection_time_sec")
+        if connection_time_input is not None:
+            self.connection_time_sec = connection_time_input

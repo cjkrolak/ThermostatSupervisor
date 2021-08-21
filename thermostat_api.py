@@ -50,24 +50,21 @@ sht31_port = {
 # target zone for monitoring
 zone_number = 0  # default
 
-# Class constructor parameters for each thermostat
-TCC_UNAME_KEY = 'TCC_USERNAME'
-TCC_PASSWORD_KEY = 'TCC_PASSWORD'
-tcc_uname = os.environ.get(TCC_UNAME_KEY, "<" +
-                           TCC_UNAME_KEY + "_KEY_MISSING>")
-tcc_pwd = os.environ.get(TCC_PASSWORD_KEY, "<" +
-                         TCC_PASSWORD_KEY + "_KEY_MISSING>")
+# Honeywell TCC authorization credentials from env vars.
+# TCC_UNAME_KEY = 'TCC_USERNAME'
+# TCC_PASSWORD_KEY = 'TCC_PASSWORD'
+# tcc_uname = os.environ.get(TCC_UNAME_KEY, "<" +
+#                            TCC_UNAME_KEY + "_KEY_MISSING>")
+# tcc_pwd = os.environ.get(TCC_PASSWORD_KEY, "<" +
+#                          TCC_PASSWORD_KEY + "_KEY_MISSING>")
+
+# thermostats dict contains static thermostat parameters that
+# are required outside of the thermostat class.
 thermostats = {
     HONEYWELL: {
         "thermostat_constructor": h.HoneywellThermostat,
-        "args": [tcc_uname, tcc_pwd],
-        "zone_constructor": h.HoneywellZone,
+        # "args": [tcc_uname, tcc_pwd],  # args passed into constructor
         "zone": zone_number,
-        "poll_time_sec": 10 * 60,  # default to 10 minutes
-        # min practical value is 2 minutes based on empirical test
-        # max value was 3, higher settings will cause HTTP errors, why?
-        # not showing error on Pi at 10 minutes, so changed default to 10 min.
-        "connection_time_sec": 8 * 60 * 60,  # default to 8 hours
         "required_env_variables": {
             "TCC_USERNAME": None,
             "TCC_PASSWORD": None,
@@ -77,11 +74,8 @@ thermostats = {
         },
     MMM50: {
         "thermostat_constructor": mmm.MMM50Thermostat,
-        "args": [mmm_ip[zone_number]],
-        "zone_constructor": mmm.MMM50Thermostat,
+        "args": [mmm_ip[zone_number]],  # args passed into constructor
         "zone": zone_number,
-        "poll_time_sec": 10 * 60,  # default to 10 minutes
-        "connection_time_sec": 8 * 60 * 60,  # default to 8 hours
         "required_env_variables": {
             "GMAIL_USERNAME": None,
             "GMAIL_PASSWORD": None,
@@ -90,10 +84,7 @@ thermostats = {
     SHT31: {
         "thermostat_constructor": sht31.SHT31Thermometer,
         "args": [sht31_ip[zone_number], sht31_port[zone_number]],
-        "zone_constructor": sht31.SHT31Thermometer,
         "zone": zone_number,
-        "poll_time_sec": 1 * 60,  # default to 10 minutes
-        "connection_time_sec": 8 * 60 * 60,  # default to 8 hours
         "required_env_variables": {
             "GMAIL_USERNAME": None,
             "GMAIL_PASSWORD": None,
@@ -103,28 +94,33 @@ thermostats = {
         }
 }
 
+# runtime overrides
+# dict values will be populated in supervise.main
+user_inputs = {
+    "thermostat_type": None,
+    "zone": None,
+    "poll_time_sec": None,
+    "connection_time_sec": None,
+    }
+
 
 def set_target_zone(tstat, zone):
     """
     Set the target Zone.
 
     For 3m50 and SHT31, the zone is defined by IP.
+    For all other thermostats zone number is passed thru.
+
+    inputs:
+        zone(int):  zone number
+    returns:
+        None, updates thermostat dict.
     """
     if tstat == MMM50:
         thermostats[tstat]["args"] = [mmm_ip[zone]]
     elif tstat == SHT31:
         thermostats[tstat]["args"] = [sht31_ip[zone]]
     thermostats[tstat]["zone"] = zone
-
-
-def set_poll_time(tstat, poll_time_sec):
-    """Set the poll time override from runtime."""
-    thermostats[tstat]["poll_time_sec"] = poll_time_sec
-
-
-def set_connection_time(tstat, connection_time_sec):
-    """Set the connection time override from runtime."""
-    thermostats[tstat]["connection_time_sec"] = connection_time_sec
 
 
 def verify_required_env_variables(tstat):
