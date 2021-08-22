@@ -38,7 +38,7 @@ docker run --rm --env-file 'envfile' 'username'/thermostatsupervisor 'type' 'zon
 Environment variables required depend on the thermostat being used.<br/>
 * All configurations require the GMAIL env vars.
 * Honeywell thermostat requires the 'TCC' env vars,
-* SHT31 temp sensor requires the 'SHT31' env vars.
+* SHT31 temp sensor requires the 'SHT31' env vars.<br/>
 for Linux, update file ~/.profile and then "source ~/.profile" to load the file<br/>
 for Windows, define env variables in control panel and then re-start IDE<br/>
 for docker image, export the env files to a text file and specify during the docker run command<br/>
