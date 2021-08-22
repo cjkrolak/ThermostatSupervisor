@@ -42,7 +42,6 @@ class HoneywellThermostat(pyhtcc.PyHTCC):
         self.zone_constructor = HoneywellZone
         self.device_id = self.get_target_zone_id()
 
-
     def _get_zone_device_ids(self) -> list:
         """
         Return a list of zone Device IDs.
