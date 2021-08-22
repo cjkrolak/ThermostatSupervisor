@@ -67,7 +67,7 @@ def main(thermostat_type, zone_str):
 
         util.log_msg("connecting to thermostat zone %s (session:%s)..." %
                      (zone_num, session_count), mode=util.BOTH_LOG)
-        Thermostat = thermostat_constructor()
+        Thermostat = thermostat_constructor(zone_num)
 
         # grab meta data
         # Thermostat.get_all_thermostat_metadata()
@@ -80,8 +80,7 @@ def main(thermostat_type, zone_str):
             Thermostat.get_all_thermostat_metadata()
 
         # get Zone object based on deviceID
-        device_id = Thermostat.get_target_zone_id()
-        Zone = Thermostat.zone_constructor(device_id, Thermostat)
+        Zone = Thermostat.zone_constructor(Thermostat.zone_device_id, Thermostat)
 
         # update runtime overrides
         Zone.update_runtime_parameters(api.user_inputs)

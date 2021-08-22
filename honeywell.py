@@ -19,7 +19,11 @@ import utilities as util
 class HoneywellThermostat(pyhtcc.PyHTCC):
     """Extend the PyHTCC class with additional methods."""
 
-    def __init__(self, *_, **__):
+    def __init__(self, zone, *_, **__):
+        """
+        inputs:
+            zone(str):  zone number
+        """
         # TCC server auth credentials from env vars
         self.TCC_UNAME_KEY = 'TCC_USERNAME'
         self.TCC_PASSWORD_KEY = 'TCC_PASSWORD'
@@ -30,9 +34,14 @@ class HoneywellThermostat(pyhtcc.PyHTCC):
             self.TCC_PASSWORD_KEY + "_KEY_MISSING>"))
         self.args = [self.tcc_uname, self.tcc_pwd]
 
-        self.zone_constructor = HoneywellZone
-
+        # construct the superclass
         super(HoneywellThermostat, self).__init__(*self.args)
+
+        # configure zone info
+        self.zone_number = int(zone)
+        self.zone_constructor = HoneywellZone
+        self.device_id = self.get_target_zone_id()
+
 
     def _get_zone_device_ids(self) -> list:
         """
