@@ -25,12 +25,12 @@ SUPPORTED_THERMOSTATS = {
     }
 
 # 3m50 thermostat IP addresses (local net)
-MAIN_3M50 = 0  # zone 0
-BASEMENT_3M50 = 1  # zone 1
-mmm_ip = {
-    MAIN_3M50: "192.168.86.82",  # local IP
-    BASEMENT_3M50: "192.168.86.83",  # local IP
-}
+# MAIN_3M50 = 0  # zone 0
+# BASEMENT_3M50 = 1  # zone 1
+# mmm_ip = {
+#     MAIN_3M50: "192.168.86.82",  # local IP
+#     BASEMENT_3M50: "192.168.86.83",  # local IP
+# }
 
 # sht31 thermometer IP addresses (local net)
 LOFT_SHT31 = 0  # zone 0
@@ -74,7 +74,7 @@ thermostats = {
         },
     MMM50: {
         "thermostat_constructor": mmm.MMM50Thermostat,
-        "args": [mmm_ip[zone_number]],  # args passed into constructor
+        # "args": [mmm_ip[zone_number]],  # args passed into constructor
         "zone": zone_number,
         "required_env_variables": {
             "GMAIL_USERNAME": None,
@@ -104,23 +104,23 @@ user_inputs = {
     }
 
 
-def set_target_zone(tstat, zone):
-    """
-    Set the target Zone.
-
-    For 3m50 and SHT31, the zone is defined by IP.
-    For all other thermostats zone number is passed thru.
-
-    inputs:
-        zone(int):  zone number
-    returns:
-        None, updates thermostat dict.
-    """
-    if tstat == MMM50:
-        thermostats[tstat]["args"] = [mmm_ip[zone]]
-    elif tstat == SHT31:
-        thermostats[tstat]["args"] = [sht31_ip[zone]]
-    thermostats[tstat]["zone"] = zone
+# def set_target_zone(tstat, zone):
+#     """
+#     Set the target Zone.
+#
+#     For 3m50 and SHT31, the zone is defined by IP.
+#     For all other thermostats zone number is passed thru.
+#
+#     inputs:
+#         zone(int):  zone number
+#     returns:
+#         None, updates thermostat dict.
+#     """
+#     if tstat == MMM50:
+#         thermostats[tstat]["args"] = [mmm_ip[zone]]
+#     elif tstat == SHT31:
+#         thermostats[tstat]["args"] = [sht31_ip[zone]]
+#     thermostats[tstat]["zone"] = zone
 
 
 def verify_required_env_variables(tstat):

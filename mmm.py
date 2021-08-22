@@ -34,38 +34,61 @@ class MMM50Thermostat(tc.ThermostatCommonZone):
         BASEMENT_3M50: "192.168.86.83",  # local IP
     }
 
-    def __init__(self, ip_address, *_, **__):
+    def __init__(self, zone_str, *_, **__):
         """
         Constructor, connect to thermostat.
 
         inputs:
-            ip_address(str):  ip address of thermostat on local net
+            zone_str(str):  zone of thermostat on local net.
+            mmm_ip dict above must have correct local IP address for each
+            zone.
         """
+        # construct the superclass
         super(MMM50Thermostat, self).__init__(*_, **__)
+
+        # zone info
         self.zone_constructor = MMM50Thermostat
+        self.zone_number = self.get_target_zone_number(zone_str)
+        self.ip_address = self.get_target_zone_id(self.zone_number)
         try:
-            self.device_id = radiotherm.get_thermostat(ip_address)
+            self.device_id = radiotherm.get_thermostat(self.ip_address)
         except urllib.error.URLError as e:
             raise Exception("FATAL ERROR: 3m thermostat not found at "
-                            "ip address: %s" % ip_address) from e
-        self.ip_address = ip_address
-        self.zone_number = list(self.mmm_ip.keys())[
-            list(self.mmm_ip.values()).index(ip_address)]
+                            "ip address: %s" % self.ip_address) from e
 
         # runtime parameter defaults
         self.poll_time_sec = 10 * 60  # default to 10 minutes
         self.connection_time_sec = 8 * 60 * 60  # default to 8 hours
 
-    def get_target_zone_id(self):
+    def get_target_zone_number(self, zone_str):
         """
-        Return the target zone ID.
+        Return the target zone number from the zone provided.
 
         inputs:
-            None
+            zone_str(str): specified zone, could be index or IP address
+        returns:
+            (int):  zone number.
+        """
+        if '.' in str(zone_str):
+            # assume zone == IP address
+            zone_number = list(self.mmm_ip.keys())[
+                list(self.mmm_ip.values()).index(zone_str)]
+        else:
+            # assume index
+            zone_number = int(zone_str)
+        return zone_number
+
+    def get_target_zone_id(self, zone_number=0):
+        """
+        Return the target zone ID (aka IP address for 3m50) from the
+        zone number provided.
+
+        inputs:
+            zone_number(int): specified zone number
         returns:
             (str):  IP address of target zone.
         """
-        return self.ip_address
+        return self.mmm_ip[zone_number]
 
     def get_all_thermostat_metadata(self):
         """

@@ -26,16 +26,16 @@ class Test(unittest.TestCase):
     def tearDown(self):
         del api.thermostats[self.tstat]
 
-    def testSetTargetZone(self):
-        """
-        Confirm target zone can be set and read back.
-        """
-        utc.print_test_name()
-        test_cases = self.generate_random_list(10, 0, 99)
-        for zone in test_cases:
-            print("testing set_target_zone(%s)" % zone)
-            api.set_target_zone(self.tstat, zone)
-            self.assertEqual(api.thermostats[self.tstat]["zone"], zone)
+    # def testSetTargetZone(self):
+    #     """
+    #     Confirm target zone can be set and read back.
+    #     """
+    #     utc.print_test_name()
+    #     test_cases = self.generate_random_list(10, 0, 99)
+    #     for zone in test_cases:
+    #         print("testing set_target_zone(%s)" % zone)
+    #         api.set_target_zone(self.tstat, zone)
+    #         self.assertEqual(api.thermostats[self.tstat]["zone"], zone)
 
     def testVerifyRequiredEnvVariables(self):
         """

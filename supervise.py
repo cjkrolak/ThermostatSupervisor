@@ -67,7 +67,7 @@ def main(thermostat_type, zone_str):
 
         util.log_msg("connecting to thermostat zone %s (session:%s)..." %
                      (zone_num, session_count), mode=util.BOTH_LOG)
-        Thermostat = thermostat_constructor()
+        Thermostat = thermostat_constructor(zone_num)
 
         # grab meta data
         # Thermostat.get_all_thermostat_metadata()
@@ -80,8 +80,8 @@ def main(thermostat_type, zone_str):
             Thermostat.get_all_thermostat_metadata()
 
         # get Zone object based on deviceID
-        device_id = Thermostat.get_target_zone_id()
-        Zone = Thermostat.zone_constructor(device_id, Thermostat)
+        Zone = Thermostat.zone_constructor(Thermostat.device_id,
+                                           Thermostat)
 
         # update runtime overrides
         Zone.update_runtime_parameters(api.user_inputs)
@@ -184,7 +184,7 @@ if __name__ == "__main__":
         print("WARNING: zone %s is not a valid choice for %s thermostat, "
               "using default(%s)" % (zone_input, tstat_type, zone_default))
         zone_input = zone_default
-    api.set_target_zone(tstat_type, zone_input)
+    # api.set_target_zone(tstat_type, zone_input)
     api.user_inputs["zone"] = zone_input
 
     # parse the poll time override (argv[3] if present):
