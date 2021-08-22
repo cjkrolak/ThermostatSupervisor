@@ -46,9 +46,9 @@ Environment variables required depend on the thermostat being used.<br/>
   * 'SHT31_REMOTE_IP_ADDRESS_'zone'': remote IP address / URL for SHT31 thermal sensor, 'zone' is the zone number.
 
 ## updating environment variables:<br/>
-for Linux, update file ~/.profile and then "source ~/.profile" to load the file<br/>
-for Windows, define env variables in control panel and then re-start IDE<br/>
-for docker image, export the env files to a text file and specify during the docker run command<br/>
+* Linux: update file ~/.profile and then "source ~/.profile" to load the file<br/>
+* Windows: define env variables in control panel and then re-start IDE<br/>
+* docker image: export the env files to a text file and specify during the docker run command<br/>
 
 # Source Code Information:
 ## supervise.py:
