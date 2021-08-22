@@ -37,13 +37,13 @@ docker run --rm --env-file 'envfile' 'username'/thermostatsupervisor 'type' 'zon
 ## required environment variables:<br/>
 Environment variables required depend on the thermostat being used.<br/>
 * All configurations require the GMAIL env vars:
-* * 'GMAIL_USERNAME': email account to send notifications from (source) and to (destination)
-* * 'GMAIL_PASSWORD': password for GMAIL_USERNAME
+  * 'GMAIL_USERNAME': email account to send notifications from (source) and to (destination)
+  * 'GMAIL_PASSWORD': password for GMAIL_USERNAME
 * Honeywell thermostat requires the 'TCC' env vars:
-* * 'TCC_USERNAME':  username to Honeywell TCC website
-* * 'TCC_PASSWORD':  password for TCC_USERNAME
+  * 'TCC_USERNAME':  username to Honeywell TCC website
+  * 'TCC_PASSWORD':  password for TCC_USERNAME
 * SHT31 temp sensor requires the 'SHT31' env vars:
-* * 'SHT31_REMOTE_IP_ADDRESS_'zone'': remote IP address / URL for SHT31 thermal sensor, 'zone' is the zone number.
+  * 'SHT31_REMOTE_IP_ADDRESS_'zone'': remote IP address / URL for SHT31 thermal sensor, 'zone' is the zone number.
 
 ## updating environment variables:<br/>
 for Linux, update file ~/.profile and then "source ~/.profile" to load the file<br/>
