@@ -34,19 +34,21 @@ docker run --rm --env-file 'envfile' 'username'/thermostatsupervisor 'type' 'zon
 1. Honeywell pyhtcc.txt file in /home/pi/log/pyhtcc/ shows logging specific to pyhtcc class
 2. ./data/ folder contains supervisor logs
 
-## environment variables required:<br/>
+## required environment variables:<br/>
 Environment variables required depend on the thermostat being used.<br/>
-* All configurations require the GMAIL env vars.
-* Honeywell thermostat requires the 'TCC' env vars,
-* SHT31 temp sensor requires the 'SHT31' env vars.<br/>
+* All configurations require the GMAIL env vars:
+* * 'GMAIL_USERNAME': email account to send notifications from (source) and to (destination)
+* * 'GMAIL_PASSWORD': password for GMAIL_USERNAME
+* Honeywell thermostat requires the 'TCC' env vars:
+* * 'TCC_USERNAME':  username to Honeywell TCC website
+* * 'TCC_PASSWORD':  password for TCC_USERNAME
+* SHT31 temp sensor requires the 'SHT31' env vars:
+* * 'SHT31_REMOTE_IP_ADDRESS_'zone'': remote IP address / URL for SHT31 thermal sensor, 'zone' is the zone number.
+
+## updating environment variables:<br/>
 for Linux, update file ~/.profile and then "source ~/.profile" to load the file<br/>
 for Windows, define env variables in control panel and then re-start IDE<br/>
 for docker image, export the env files to a text file and specify during the docker run command<br/>
-* 'TCC_USERNAME':  username to Honeywell TCC website
-* 'TCC_PASSWORD':  password for TCC_USERNAME
-* 'GMAIL_USERNAME': email account to send notifications from (source) and to (destination)
-* 'GMAIL_PASSWORD': password for GMAIL_USERNAME
-* 'SHT31_REMOTE_IP_ADDRESS_'zone'': remote IP address / URL for SHT31 thermal sensor, 'zone' is the zone number.
 
 # Source Code Information:
 ## supervise.py:
