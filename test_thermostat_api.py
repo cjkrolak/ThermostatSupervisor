@@ -59,6 +59,10 @@ class Test(unittest.TestCase):
                 self.tstat, "0"),
                              "test passed with missing key '%s',"
                              " should have failed" % missing_key)
+        except KeyError:
+            print("KeyError raised as expected for missing key")
+        else:
+            self.fail("expected KeyError but exception did not occur")
         finally:
             api.thermostats[self.tstat][
                 "required_env_variables"].pop(missing_key)
