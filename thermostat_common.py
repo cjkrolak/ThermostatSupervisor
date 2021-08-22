@@ -117,8 +117,9 @@ class ThermostatCommonZone():
 
             # warning email if heat set point is above global max value
             if heat_schedule_point > self.max_scheduled_heat_allowed:
-                msg = ("scheduled heat set point (%s) is above "
+                msg = ("%s zone %s: scheduled heat set point (%s) is above "
                        "max limit (%s)" % (
+                           self.thermostat_type, self.zone_number,
                            heat_schedule_point,
                            self.max_scheduled_heat_allowed))
                 util.log_msg("WARNING: %s" % msg, mode=util.BOTH_LOG)
@@ -148,8 +149,9 @@ class ThermostatCommonZone():
 
             # warning email if cool set point is below global min value
             if cool_schedule_point < self.min_scheduled_cool_allowed:
-                msg = ("scheduled cool set point (%s) is below "
+                msg = ("%s zone %s: scheduled cool set point (%s) is below "
                        "min limit (%s)" % (
+                           self.thermostat_type, self.zone_number,
                            cool_schedule_point,
                            self.min_scheduled_cool_allowed))
                 util.log_msg("WARNING: %s" % msg, mode=util.BOTH_LOG)
