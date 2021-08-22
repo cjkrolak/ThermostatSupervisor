@@ -34,7 +34,7 @@ class HoneywellThermostat(pyhtcc.PyHTCC):
             self.TCC_PASSWORD_KEY + "_KEY_MISSING>"))
         self.args = [self.tcc_uname, self.tcc_pwd]
 
-        # construct the superclass
+        # construct the superclass, requires auth setup first
         super(HoneywellThermostat, self).__init__(*self.args)
 
         # configure zone info

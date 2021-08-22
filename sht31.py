@@ -17,8 +17,22 @@ import requests
 import sys
 
 # local imports
+import thermostat_api as api  # used for standalone runs only
 import thermostat_common as tc
 import utilities as util
+
+
+# sht31 thermometer IP addresses
+LOFT_SHT31 = 0  # zone 0
+LOFT_SHT31_REMOTE = 1  # zone 1
+sht31_ip = {
+    LOFT_SHT31: "192.168.86.15",  # local IP
+    LOFT_SHT31_REMOTE: util.bogus_str,  # placeholder, remote IP
+    }
+sht31_port = {
+    LOFT_SHT31: "5000",
+    LOFT_SHT31_REMOTE: "5000",
+    }
 
 
 class SHT31Thermometer(tc.ThermostatCommonZone):
@@ -32,34 +46,25 @@ class SHT31Thermometer(tc.ThermostatCommonZone):
         tc.ThermostatCommonZone.AUTO_MODE: util.bogus_int,
         }
 
-    # sht31 thermometer IP addresses (local net)
-    LOFT_SHT31 = 0  # zone 0
-    LOFT_SHT31_REMOTE = 1  # zone 1
-    remote_ip_env_str = ('SHT31_REMOTE_IP_ADDRESS' + '_' +
-                         str(LOFT_SHT31_REMOTE))
-    sht31_remote_ip = os.environ.get(remote_ip_env_str, "<" +
-                                     remote_ip_env_str + "_KEY_MISSING>")
-    sht31_ip = {
-        LOFT_SHT31: "192.168.86.15",  # local IP
-        LOFT_SHT31_REMOTE: sht31_remote_ip,  # remote IP
-        }
-    sht31_port = {
-        LOFT_SHT31: "5000",
-        LOFT_SHT31_REMOTE: "5000",
-        }
-
-    def __init__(self, ip_address, *_, **__):
+    def __init__(self, zone_str, *_, **__):
         """
         Constructor, connect to thermostat.
 
         inputs:
-            ip_address(str):  ip address of thermostat
+            zone_str(str):  zone of thermostat.
+            sht31_ip dict above must have correct IP address for each
+            zone.
         """
+        # construct the superclass
+        super(SHT31Thermometer, self).__init__(*_, **__)
+
+        # zone configuration
         self.zone_constructor = SHT31Thermometer
-        self.device_id = 0  # not currently used since IP identifies device
-        self.ip_address = ip_address
-        self.zone_number = list(self.sht31_ip.keys())[
-            list(self.sht31_ip.values()).index(ip_address)]
+        self.zone_number = self.get_target_zone_number(zone_str)
+        self.ip_address = self.get_target_zone_id(self.zone_number)
+        self.device_id = self.zone_number
+
+        # URL and port configuration
         self.port = "5000"  # Flask server port on SHT31 host
         self.url = "http://" + self.ip_address + ":" + self.port
         self.tempfield = util.API_TEMP_FIELD  # must match flask API
@@ -69,18 +74,39 @@ class SHT31Thermometer(tc.ThermostatCommonZone):
         self.poll_time_sec = 1 * 60  # default to 1 minute
         self.connection_time_sec = 8 * 60 * 60  # default to 8 hours
 
-        super(SHT31Thermometer, self).__init__(*_, **__)
-
-    def get_target_zone_id(self):
+    def get_target_zone_number(self, zone_str):
         """
-        Return the target zone ID.
+        Return the target zone number from the zone provided.
 
         inputs:
-            None
+            zone_str(str): specified zone, could be index or IP address
+        returns:
+            (int):  zone number.
+        """
+        if '.' in str(zone_str):
+            # assume zone == IP address
+            zone_number = list(sht31_ip.keys())[
+                list(sht31_ip.values()).index(zone_str)]
+        else:
+            # assume index
+            zone_number = int(zone_str)
+        return zone_number
+
+    def get_target_zone_id(self, zone_number=0):
+        """
+        Return the target zone ID (aka IP address for sht31) from the
+        zone number provided.
+
+        inputs:
+            zone_number(int): specified zone number
         returns:
             (str):  IP address of target zone.
         """
-        return self.ip_address
+        # update IP dict based on env key
+        env_str = get_env_key(zone_number)
+        ip_address = get_ip_address(env_str)
+        sht31_ip[zone_number] = ip_address
+        return ip_address
 
     def get_all_thermostat_metadata(self):
         """
@@ -186,25 +212,58 @@ class SHT31Thermometer(tc.ThermostatCommonZone):
         return self.system_switch_position[self.OFF_MODE]
 
 
+def get_env_key(zone_str):
+    """
+    Return env key for the zone specified.
+
+    inputs:
+        zone_str(str or int): zone number
+    returns:
+        (str): env var key
+    """
+    return ('SHT31_REMOTE_IP_ADDRESS' + '_' + str(zone_str))
+
+
+def get_ip_address(env_key):
+    """
+    Return IP address from env key and cache value in dict.
+
+    inputs:
+        env_key(str): env var key.
+    returns:
+        (str):  IP address
+    """
+    return os.environ.get(env_key, "<" + env_key + "_KEY_MISSING>")
+
+
 if __name__ == "__main__":
 
-    ip_main_sht31 = "192.168.86.15"
     util.log_msg.debug = True  # debug mode set
 
-    # set ip address
-    if len(sys.argv) > 1 and sys.argv[1] in [ip_main_sht31, ip_main_sht31]:
-        ip = sys.argv[1]
+    # get zone from user input
+    if (len(sys.argv) > 1 and
+            int(sys.argv[1]) in api.SUPPORTED_THERMOSTATS[api.SHT31]["zones"]):
+        zone_input = sys.argv[1]
     else:
         # default
-        ip = ip_main_sht31
+        print("using default zone 0")
+        zone_input = "0"
+    # verify required env vars
+    api.verify_required_env_variables(api.SHT31, zone_input)
 
-    tstat = SHT31Thermometer(ip)
-    zone = SHT31Thermometer(ip, tstat)
+    # save zone info
+    api.user_inputs["zone"] = zone_input
+
+    Thermostat = SHT31Thermometer(zone_input)
+    print("thermostat meta data:")
+    Thermostat.get_all_thermostat_metadata()
+    Zone = SHT31Thermometer(Thermostat.device_id, Thermostat)
     print("current thermostat settings...")
-    print("tmode1: %s" % zone.get_system_switch_position())
-    print("heat mode=%s" % zone.get_heat_mode())
-    print("cool mode=%s" % zone.get_cool_mode())
-    print("temporary hold minutes=%s" % zone.get_temporary_hold_until_time())
-    print("thermostat meta data=%s" % tstat.get_all_metadata())
-    print("thermostat tempF=%s" % tstat.get_metadata(tstat.tempfield))
-    print("thermostat display tempF=%s" % tstat.get_display_temp())
+    print("tmode1: %s" % Zone.get_system_switch_position())
+    print("heat mode=%s" % Zone.get_heat_mode())
+    print("cool mode=%s" % Zone.get_cool_mode())
+    print("temporary hold minutes=%s" % Zone.get_temporary_hold_until_time())
+    print("thermostat meta data=%s" % Thermostat.get_all_metadata())
+    print("thermostat tempF=%s" %
+          Thermostat.get_metadata(Thermostat.tempfield))
+    print("thermostat display tempF=%s" % Thermostat.get_display_temp())

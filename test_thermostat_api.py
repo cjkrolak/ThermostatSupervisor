@@ -46,7 +46,7 @@ class Test(unittest.TestCase):
         utc.print_test_name()
         # nominal condition, should pass
         print("testing nominal condition, will pass if gmail keys are present")
-        self.assertTrue(api.verify_required_env_variables(self.tstat),
+        self.assertTrue(api.verify_required_env_variables(self.tstat, "0"),
                         "test failed because one or more gmail keys "
                         "are missing")
 
@@ -55,7 +55,8 @@ class Test(unittest.TestCase):
         api.thermostats[self.tstat][
             "required_env_variables"][missing_key] = "bogus_value"
         try:
-            self.assertFalse(api.verify_required_env_variables(self.tstat),
+            self.assertFalse(api.verify_required_env_variables(
+                self.tstat, "0"),
                              "test passed with missing key '%s',"
                              " should have failed" % missing_key)
         finally:
