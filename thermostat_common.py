@@ -258,10 +258,6 @@ class ThermostatCommonZone():
         """Display critical thermostat settings and reading to the screen."""
         return  # placeholder
 
-    def set_zone_number(self, zone_number):
-        """Store the zone number for reporting purposes."""
-        self.zone_number = zone_number
-
     def update_runtime_parameters(self, user_inputs):
         """use runtime parameter overrides.
 
