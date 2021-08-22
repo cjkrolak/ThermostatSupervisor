@@ -30,11 +30,7 @@ def main(thermostat_type, zone_str):
                  (thermostat_type, zone_str), mode=util.BOTH_LOG)
 
     # verify env variables are present
-    if not api.verify_required_env_variables(thermostat_type):
-        util.log_msg("%s: zone %s: FATAL error: one or more required "
-                     "environemental keys are missing, exiing program" %
-                     (thermostat_type, zone_str), mode=util.BOTH_LOG)
-        return  # abort program
+    api.verify_required_env_variables(thermostat_type, zone_str)
 
     # session variables
     util.log_msg("session settings:", mode=util.BOTH_LOG)
@@ -184,7 +180,6 @@ if __name__ == "__main__":
         print("WARNING: zone %s is not a valid choice for %s thermostat, "
               "using default(%s)" % (zone_input, tstat_type, zone_default))
         zone_input = zone_default
-    # api.set_target_zone(tstat_type, zone_input)
     api.user_inputs["zone"] = zone_input
 
     # parse the poll time override (argv[3] if present):
