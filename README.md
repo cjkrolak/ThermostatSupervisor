@@ -1,10 +1,14 @@
 # ThermostatSupervisor:
 supervisor to detect and correct thermostat deviations<br/>
 
+# Thermostat & Temperature Monitor Support:
+1. Honeywell thermostat through TCC web site (user must configure TCC web site credentials as environment variables).
+2. 3M50 thermostat on local net (user must provide local IP address of each 3m50 thermostat zone).
+3. SHT31 temperature sensor either locally or remote (user must provide local/remote IP address in environment variables and setup firewall port routing if remote).
+
 # errata:
-1. code currently only supports Honeywell thermostat connected to MyTotalControl web site and 3m50 thermostat connected to local network.
-2. code only reliably runs with 3 minute poll time on Honeywell.
-3. a few other low frequency intermittent issues exist, refer to issues in github repo for details.
+1. Honeywell thermostat support through TCC web site requires 3 minute poll time (or longer).  Default for this thermostat is set to 10 minutes.
+2. a few other low frequency intermittent issues exist, refer to issues in github repo for details.
 
 # Build Information:
 ## dependencies:
@@ -31,6 +35,10 @@ docker run --rm --env-file 'envfile' 'username'/thermostatsupervisor 'type' 'zon
 2. ./data/ folder contains supervisor logs
 
 ## environment variables required:<br/>
+Environment variables required depend on the thermostat being used.<br/>
+* All configurations require the GMAIL env vars.
+* Honeywell thermostat requires the 'TCC' env vars,
+* SHT31 temp sensor requires the 'SHT31' env vars.
 for Linux, update file ~/.profile and then "source ~/.profile" to load the file<br/>
 for Windows, define env variables in control panel and then re-start IDE<br/>
 for docker image, export the env files to a text file and specify during the docker run command<br/>
