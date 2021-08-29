@@ -29,6 +29,7 @@ class ThermostatCommonZone():
         }
     max_scheduled_heat_allowed = 74  # warn if scheduled heat value exceeds.
     min_scheduled_cool_allowed = 68  # warn if scheduled cool value exceeds.
+    tolerance_to_schedule = 2  # allowed override vs. the scheduled value.
 
     def __init__(self, *_, **__):
         self.zone_number = util.bogus_int  # placeholder
@@ -73,6 +74,7 @@ class ThermostatCommonZone():
         if flag_all_deviations:
             cool_operator = operator.ne
             heat_operator = operator.ne
+            self.tolerance_to_schedule = 0  # disable tolerance
         else:
             cool_operator = operator.lt
             heat_operator = operator.gt
@@ -104,15 +106,17 @@ class ThermostatCommonZone():
             # cast integers just in case a set point returns a float
             heat_set_point = int(self.get_heat_setpoint_raw())
             heat_schedule_point = int(self.get_schedule_heat_sp())
-            if heat_operator(heat_set_point, heat_schedule_point):
+            if heat_operator(heat_set_point, heat_schedule_point +
+                             self.tolerance_to_schedule):
                 status_msg = ("[heat deviation] act temp=%.1f%sF" %
                               (display_temp, degree_sign))
                 # add humidity if available
                 if humidity_is_available:
                     status_msg += ", act humidity=%.1f%% RH" % display_humidity
                 # add setpoint and override point
-                status_msg += (", set point=%s, override=%s" %
-                               (heat_schedule_point, heat_set_point))
+                status_msg += (", set point=%s, tolerance=%s, override=%s" %
+                               (heat_schedule_point,
+                                self.tolerance_to_schedule, heat_set_point))
                 heat_deviation = True
 
             # warning email if heat set point is above global max value
@@ -136,15 +140,17 @@ class ThermostatCommonZone():
             # cast integers just in case a set point returns a float
             cool_set_point = int(self.get_cool_setpoint_raw())
             cool_schedule_point = int(self.get_schedule_cool_sp())
-            if cool_operator(cool_set_point, cool_schedule_point):
+            if cool_operator(cool_set_point, cool_schedule_point -
+                             self.tolerance_to_schedule):
                 status_msg = ("[cool deviation] act temp=%.1f%sF" %
                               (display_temp, degree_sign))
                 # add humidity if available
                 if humidity_is_available:
                     status_msg += ", act humidity=%.1f%% RH" % display_humidity
                 # add setpoint and override point
-                status_msg += (", set point=%s, override=%s" %
-                               (cool_schedule_point, cool_set_point))
+                status_msg += (", set point=%s, tolernace=%s, override=%s" %
+                               (cool_schedule_point,
+                                self.tolerance_to_schedule, cool_set_point))
                 cool_deviation = True
 
             # warning email if cool set point is below global min value
@@ -185,11 +191,13 @@ class ThermostatCommonZone():
                 status_msg += ", act humidity=%.1f%% RH" % display_humidity
             # add setpoints if in heat or cool mode
             if heat_mode:
-                status_msg += (", set point=%s, override=%s" %
-                               (heat_schedule_point, heat_set_point))
+                status_msg += (", set point=%s, tolerance=%s, override=%s" %
+                               (heat_schedule_point,
+                                self.tolerance_to_schedule, heat_set_point))
             elif cool_mode:
-                status_msg += (", set point=%s, override=%s" %
-                               (cool_schedule_point, cool_set_point))
+                status_msg += (", set point=%s, tolerance=%s, override=%s" %
+                               (cool_schedule_point,
+                                self.tolerance_to_schedule, cool_set_point))
 
         full_status_msg = ("%s: (session:%s, poll:%s) %s %s" %
                            (datetime.datetime.now().
