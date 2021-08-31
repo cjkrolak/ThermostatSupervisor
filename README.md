@@ -58,6 +58,7 @@ argv[1] = Thermostat type, currently support "honeywell" and "mmm50".  Default i
 argv[2] = zone, currently support zone 0 on honeywell and zones [0,1] on 3m50.<br/>
 argv[3] = poll time in seconds (default is thermostat-specific)<br/>
 argv[4] = re-connect time in seconds (default is thermostat-specific)<br/>
+argv[5] = tolerance from setpoint allowed in degrees (default is 2 degrees)<br/>
 supervise script will call honeywell or mmm50 scripts, detailed below.<br/>
 command line usage:  "*python supervise.py \<thermostat type\> \<zone\> \<poll time\> \<connection time\>*"
   
