@@ -58,6 +58,7 @@ user_inputs = {
     "zone": None,
     "poll_time_sec": None,
     "connection_time_sec": None,
+    "tolerance_degrees": None,
     }
 
 

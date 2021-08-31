@@ -12,6 +12,7 @@ import radiotherm  # noqa F405
 import urllib  # noqa E402
 
 # local imports
+import thermostat_api as api  # noqa E402
 import thermostat_common as tc  # noqa E402
 import utilities as util  # noqa E402
 
@@ -47,6 +48,7 @@ class MMM50Thermostat(tc.ThermostatCommonZone):
         super(MMM50Thermostat, self).__init__(*_, **__)
 
         # zone info
+        self.thermostat_type = api.MMM50
         self.zone_constructor = MMM50Thermostat
         self.zone_number = self.get_target_zone_number(zone_str)
         self.ip_address = self.get_target_zone_id(self.zone_number)

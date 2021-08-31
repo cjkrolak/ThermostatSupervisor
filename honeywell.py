@@ -12,6 +12,7 @@ import traceback
 
 # local imports
 import email_notification
+import thermostat_api as api
 import thermostat_common as tc
 import utilities as util
 
@@ -38,6 +39,7 @@ class HoneywellThermostat(pyhtcc.PyHTCC):
         super(HoneywellThermostat, self).__init__(*self.args)
 
         # configure zone info
+        self.thermostat_type = api.HONEYWELL
         self.zone_number = int(zone)
         self.zone_constructor = HoneywellZone
         self.device_id = self.get_target_zone_id()
@@ -247,7 +249,15 @@ class HoneywellZone(pyhtcc.Zone, tc.ThermostatCommonZone):
         # what mode is 0 on Honeywell?
         }
 
-    def __init__(self, *_, **__):
+    def __init__(self, zone_str, *_, **__):
+        # call both parent class __init__
+        pyhtcc.Zone.__init__(self, zone_str, *_, **__)
+        tc.ThermostatCommonZone.__init__(self, *_, **__)
+
+        # zone info
+        self.thermostat_type = api.HONEYWELL
+        self.zone_number = self.get_target_zone_number(zone_str)
+
         # runtime parameter defaults
         self.poll_time_sec = 10 * 60  # default to 10 minutes
         # min practical value is 2 minutes based on empirical test
@@ -255,7 +265,16 @@ class HoneywellZone(pyhtcc.Zone, tc.ThermostatCommonZone):
         # not showing error on Pi at 10 minutes, so changed default to 10 min.
         self.connection_time_sec = 8 * 60 * 60  # default to 8 hours
 
-        super(HoneywellZone, self).__init__(*_, **__)
+    def get_target_zone_number(self, zone_str):
+        """
+        Return the target zone number from the zone provided.
+
+        inputs:
+            zone_str(str): specified zone
+        returns:
+            (int):  zone number.
+        """
+        return int(zone_str)
 
     def get_display_temp(self) -> float:  # used
         """
