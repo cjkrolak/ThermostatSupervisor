@@ -154,77 +154,66 @@ def main(thermostat_type, zone_str):
         session_count += 1
 
 
+def parse_runtime_parameter(key, position, datatype, default_value,
+                            valid_range, input_list=None):
+    """
+    Parse the runtime parameter.
+
+    inputs:
+        key(str): name of runtime parameter in api.user_input dict.
+        position(int): position of runtime variable in command line.
+        datatype(int or str): data type to cast input str to.
+        default_value(int or str):  default value.
+        valid_range(list):  range of valid values for input parameter.
+        input_list(list):  list of input variables, if None will use args.
+    returns:
+        (int or str): input value
+    """
+    if input_list is None:
+        target = sys.argv[position].lower()
+    else:
+        target = input_list[position].lower()
+
+    try:
+        result = datatype(target)
+    except IndexError:
+        result = default_value
+    if result not in valid_range:
+        print("WARNING: '%s' is not a valid choice for '%s', "
+              "using default(%s)" % (result, key, default_value))
+        result = default_value
+
+    # populate the user_input dictionary
+    api.user_inputs[key] = result
+    return result
+
+
 if __name__ == "__main__":
 
     util.log_msg.debug = True  # debug mode set
 
     # parse thermostat type parameter (argv[1] if present):
-    tstat_default = api.HONEYWELL  # default thermostat type
-    tstat_type = None
-    try:
-        tstat_type = sys.argv[1].lower()
-    except IndexError:
-        tstat_type = tstat_default
-    if tstat_type not in api.SUPPORTED_THERMOSTATS:
-        print("WARNING: '%s' is not a valid choice for thermostat, "
-              "using default(%s)" % (tstat_type, tstat_default))
-        tstat_type = tstat_default
-    api.user_inputs["thermostat_type"] = tstat_type
+    tstat_type = parse_runtime_parameter("thermostat_type", 1, str,
+                                         api.HONEYWELL,
+                                         api.SUPPORTED_THERMOSTATS)
 
     # parse zone number parameter (argv[2] if present):
-    zone_input = None
-    zone_default = 0
-    try:
-        zone_input = int(sys.argv[2])
-    except (IndexError, ValueError):
-        zone_input = zone_default
-    if zone_input not in api.SUPPORTED_THERMOSTATS[tstat_type]["zones"]:
-        print("WARNING: zone %s is not a valid choice for %s thermostat, "
-              "using default(%s)" % (zone_input, tstat_type, zone_default))
-        zone_input = zone_default
-    api.user_inputs["zone"] = zone_input
+    zone_input = parse_runtime_parameter("zone", 2, int, 0,
+                                         api.SUPPORTED_THERMOSTATS[
+                                             tstat_type]["zones"])
 
     # parse the poll time override (argv[3] if present):
-    poll_time_input = None
-    if len(sys.argv) > 3:
-        poll_time_default = -1
-        try:
-            poll_time_input = int(sys.argv[3])
-        except (IndexError, ValueError):
-            poll_time_input = poll_time_default
-        if poll_time_input <= 0:
-            print("WARNING: poll time override of %s seconds is not a valid "
-                  "value, using default" % poll_time_input)
-        else:
-            api.user_inputs["poll_time_sec"] = poll_time_input
+    poll_time_input = parse_runtime_parameter("poll_time_sec", 3, int, 10 * 60,
+                                              range(0, 24 * 60 * 60))
 
     # parse the connection time override (argv[4] if present):
-    connection_time_input = None
-    if len(sys.argv) > 4:
-        connection_time_default = -1
-        try:
-            connection_time_input = int(sys.argv[4])
-        except (IndexError, ValueError):
-            connection_time_input = connection_time_default
-        if connection_time_input <= 0:
-            print("WARNING: connection time override of %s seconds is not "
-                  "a valid value, using default" % connection_time_input)
-        else:
-            api.user_inputs["connection_time_sec"] = connection_time_input
+    connection_time_input = parse_runtime_parameter("connection_time_sec", 4,
+                                                    int, 8 * 60 * 60,
+                                                    range(0, 24 * 60 * 60))
 
     # parse the tolerance override (argv[5] if present):
-    tolerance_degrees_input = None
-    if len(sys.argv) > 5:
-        tolerance_degrees_default = -1
-        try:
-            tolerance_degrees_input = int(sys.argv[5])
-        except (IndexError, ValueError):
-            tolerance_degrees_input = connection_time_default
-        if tolerance_degrees_input <= 0:
-            print("WARNING: tolerance override of %s degrees is not "
-                  "a valid value, using default" % tolerance_degrees_input)
-        else:
-            api.user_inputs["tolerance_degrees"] = tolerance_degrees_input
+    tolerance_degrees_input = parse_runtime_parameter("tolerance_degrees", 5,
+                                                      int, 2, range(0, 10))
 
     # main supervise function
     main(tstat_type, zone_input)
