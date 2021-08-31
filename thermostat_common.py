@@ -29,12 +29,14 @@ class ThermostatCommonZone():
         }
     max_scheduled_heat_allowed = 74  # warn if scheduled heat value exceeds.
     min_scheduled_cool_allowed = 68  # warn if scheduled cool value exceeds.
+    tolerance_degrees_default = 2  # allowed override vs. the scheduled value.
 
     def __init__(self, *_, **__):
         self.zone_number = util.bogus_int  # placeholder
         self.thermostat_type = "unknown"  # placeholder
-        self.poll_time_sec = util.bogus_int
-        self.connection_time_sec = util.bogus_int
+        self.poll_time_sec = util.bogus_int  # placeholder
+        self.connection_time_sec = util.bogus_int  # placeholder
+        self.tolerance_degrees = self.tolerance_degrees_default
 
     def get_current_mode(self, session_count, poll_count, print_status=True,
                          flag_all_deviations=False):
@@ -73,6 +75,7 @@ class ThermostatCommonZone():
         if flag_all_deviations:
             cool_operator = operator.ne
             heat_operator = operator.ne
+            self.tolerance_degrees = 0  # disable tolerance
         else:
             cool_operator = operator.lt
             heat_operator = operator.gt
@@ -104,15 +107,17 @@ class ThermostatCommonZone():
             # cast integers just in case a set point returns a float
             heat_set_point = int(self.get_heat_setpoint_raw())
             heat_schedule_point = int(self.get_schedule_heat_sp())
-            if heat_operator(heat_set_point, heat_schedule_point):
+            if heat_operator(heat_set_point, heat_schedule_point +
+                             self.tolerance_degrees):
                 status_msg = ("[heat deviation] act temp=%.1f%sF" %
                               (display_temp, degree_sign))
                 # add humidity if available
                 if humidity_is_available:
                     status_msg += ", act humidity=%.1f%% RH" % display_humidity
                 # add setpoint and override point
-                status_msg += (", set point=%s, override=%s" %
-                               (heat_schedule_point, heat_set_point))
+                status_msg += (", set point=%s, tolerance=%s, override=%s" %
+                               (heat_schedule_point,
+                                self.tolerance_degrees, heat_set_point))
                 heat_deviation = True
 
             # warning email if heat set point is above global max value
@@ -136,15 +141,17 @@ class ThermostatCommonZone():
             # cast integers just in case a set point returns a float
             cool_set_point = int(self.get_cool_setpoint_raw())
             cool_schedule_point = int(self.get_schedule_cool_sp())
-            if cool_operator(cool_set_point, cool_schedule_point):
+            if cool_operator(cool_set_point, cool_schedule_point -
+                             self.tolerance_degrees):
                 status_msg = ("[cool deviation] act temp=%.1f%sF" %
                               (display_temp, degree_sign))
                 # add humidity if available
                 if humidity_is_available:
                     status_msg += ", act humidity=%.1f%% RH" % display_humidity
                 # add setpoint and override point
-                status_msg += (", set point=%s, override=%s" %
-                               (cool_schedule_point, cool_set_point))
+                status_msg += (", set point=%s, tolernace=%s, override=%s" %
+                               (cool_schedule_point,
+                                self.tolerance_degrees, cool_set_point))
                 cool_deviation = True
 
             # warning email if cool set point is below global min value
@@ -185,11 +192,13 @@ class ThermostatCommonZone():
                 status_msg += ", act humidity=%.1f%% RH" % display_humidity
             # add setpoints if in heat or cool mode
             if heat_mode:
-                status_msg += (", set point=%s, override=%s" %
-                               (heat_schedule_point, heat_set_point))
+                status_msg += (", set point=%s, tolerance=%s, override=%s" %
+                               (heat_schedule_point,
+                                self.tolerance_degrees, heat_set_point))
             elif cool_mode:
-                status_msg += (", set point=%s, override=%s" %
-                               (cool_schedule_point, cool_set_point))
+                status_msg += (", set point=%s, tolerance=%s, override=%s" %
+                               (cool_schedule_point,
+                                self.tolerance_degrees, cool_set_point))
 
         full_status_msg = ("%s: (session:%s, poll:%s) %s %s" %
                            (datetime.datetime.now().
@@ -266,12 +275,18 @@ class ThermostatCommonZone():
         returns:
             None, updates class variables.
         """
-        zone_input = user_inputs.get("zone")
-        if zone_input is not None:
-            self.zone_number = zone_input
-        poll_time_input = user_inputs.get("poll_time_sec")
-        if poll_time_input is not None:
-            self.poll_time_sec = poll_time_input
-        connection_time_input = user_inputs.get("connection_time_sec")
-        if connection_time_input is not None:
-            self.connection_time_sec = connection_time_input
+        # map user input keys to class methods
+        # "thermostat_type is not overwritten
+        user_input_to_class_mapping = {
+            "thermostat_type": "thermostat_type",
+            "zone": "zone_number",
+            "poll_time_sec": "poll_time_sec",
+            "connection_time_sec": "connection_time_sec",
+            "tolerance_degrees": "tolerance_degrees",
+            }
+
+        for inp, cls_method in user_input_to_class_mapping.items():
+            user_input = user_inputs.get(inp)
+            if user_input is not None:
+                setattr(self, cls_method, user_input)
+                print("%s=%s" % (inp, user_input))

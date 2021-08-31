@@ -17,7 +17,7 @@ import requests
 import sys
 
 # local imports
-import thermostat_api as api  # used for standalone runs only
+import thermostat_api as api
 import thermostat_common as tc
 import utilities as util
 
@@ -59,6 +59,7 @@ class SHT31Thermometer(tc.ThermostatCommonZone):
         super(SHT31Thermometer, self).__init__(*_, **__)
 
         # zone configuration
+        self.thermostat_type = api.SHT31
         self.zone_constructor = SHT31Thermometer
         self.zone_number = self.get_target_zone_number(zone_str)
         self.ip_address = self.get_target_zone_id(self.zone_number)

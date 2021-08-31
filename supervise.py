@@ -65,9 +65,6 @@ def main(thermostat_type, zone_str):
                      (zone_num, session_count), mode=util.BOTH_LOG)
         Thermostat = thermostat_constructor(zone_num)
 
-        # grab meta data
-        # Thermostat.get_all_thermostat_metadata()
-
         t0 = time.time()  # connection timer
 
         # dump all meta data
@@ -89,6 +86,11 @@ def main(thermostat_type, zone_str):
         # reconnection time to thermostat server:
         util.log_msg("server re-connect time set to %.1f minutes" %
                      (Zone.connection_time_sec / 60.0),
+                     mode=util.BOTH_LOG)
+
+        # tolerance to set point:
+        util.log_msg("tolerance to set point is set to %d degrees" %
+                     (Zone.tolerance_degrees),
                      mode=util.BOTH_LOG)
 
         poll_count = 1
@@ -209,6 +211,20 @@ if __name__ == "__main__":
                   "a valid value, using default" % connection_time_input)
         else:
             api.user_inputs["connection_time_sec"] = connection_time_input
+
+    # parse the tolerance override (argv[5] if present):
+    tolerance_degrees_input = None
+    if len(sys.argv) > 5:
+        tolerance_degrees_default = -1
+        try:
+            tolerance_degrees_input = int(sys.argv[5])
+        except (IndexError, ValueError):
+            tolerance_degrees_input = connection_time_default
+        if tolerance_degrees_input <= 0:
+            print("WARNING: tolerance override of %s degrees is not "
+                  "a valid value, using default" % tolerance_degrees_input)
+        else:
+            api.user_inputs["tolerance_degrees"] = tolerance_degrees_input
 
     # main supervise function
     main(tstat_type, zone_input)
