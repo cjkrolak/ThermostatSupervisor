@@ -170,12 +170,12 @@ def parse_runtime_parameter(key, position, datatype, default_value,
         (int or str): input value
     """
     if input_list is None:
-        target = sys.argv[position].lower()
+        target = sys.argv
     else:
-        target = input_list[position].lower()
+        target = input_list
 
     try:
-        result = datatype(target)
+        result = datatype(target[position].lower())
     except IndexError:
         result = default_value
     if result not in valid_range:
