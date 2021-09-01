@@ -566,25 +566,21 @@ if __name__ == "__main__":
 
     util.log_msg.debug = True  # debug mode set
 
-    ip_main_3m50 = "192.168.86.82"
-    ip_basement_3m50 = "192.168.86.83"
+    # get zone from user input
+    zone_input = api.parse_all_runtime_parameters()[1]
 
-    # set ip address
-    if len(sys.argv) > 1 and sys.argv[1] in [ip_main_3m50, ip_basement_3m50]:
-        ip = sys.argv[1]
-    else:
-        # default
-        ip = ip_main_3m50
+    # verify required env vars
+    api.verify_required_env_variables(api.MMM50, zone_input)
 
-    tstat = MMM50Thermostat(ip)
-    zone = MMM50Thermostat(ip, tstat)
+    Thermostat = MMM50Thermostat(zone_input)
+    Zone = MMM50Thermostat(zone_input, Thermostat)
     print("current thermostat settings...")
-    print("tmode1: %s" % zone.get_system_switch_position())
-    print("heat set point=%s" % zone.get_heat_setpoint())
-    print("cool set point=%s" % zone.get_cool_setpoint())
-    print("(schedule) heat program=%s" % zone.get_schedule_program_heat())
-    print("(schedule) cool program=%s" % zone.get_schedule_program_cool())
-    print("hold=%s" % zone.get_vacation_hold())
-    print("heat mode=%s" % zone.get_heat_mode())
-    print("cool mode=%s" % zone.get_cool_mode())
-    print("temporary hold minutes=%s" % zone.get_temporary_hold_until_time())
+    print("tmode1: %s" % Zone.get_system_switch_position())
+    print("heat set point=%s" % Zone.get_heat_setpoint())
+    print("cool set point=%s" % Zone.get_cool_setpoint())
+    print("(schedule) heat program=%s" % Zone.get_schedule_program_heat())
+    print("(schedule) cool program=%s" % Zone.get_schedule_program_cool())
+    print("hold=%s" % Zone.get_vacation_hold())
+    print("heat mode=%s" % Zone.get_heat_mode())
+    print("cool mode=%s" % Zone.get_cool_mode())
+    print("temporary hold minutes=%s" % Zone.get_temporary_hold_until_time())

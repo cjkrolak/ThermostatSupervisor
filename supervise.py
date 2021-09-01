@@ -2,7 +2,6 @@
 Thermostat Supervisor
 """
 # built ins
-import sys
 import time
 
 # local imports
@@ -154,66 +153,14 @@ def main(thermostat_type, zone_str):
         session_count += 1
 
 
-def parse_runtime_parameter(key, position, datatype, default_value,
-                            valid_range, input_list=None):
-    """
-    Parse the runtime parameter.
-
-    inputs:
-        key(str): name of runtime parameter in api.user_input dict.
-        position(int): position of runtime variable in command line.
-        datatype(int or str): data type to cast input str to.
-        default_value(int or str):  default value.
-        valid_range(list):  range of valid values for input parameter.
-        input_list(list):  list of input variables, if None will use args.
-    returns:
-        (int or str): input value
-    """
-    if input_list is None:
-        target = sys.argv
-    else:
-        target = input_list
-
-    try:
-        result = datatype(target[position].lower())
-    except IndexError:
-        result = default_value
-    if result not in valid_range:
-        print("WARNING: '%s' is not a valid choice for '%s', "
-              "using default(%s)" % (result, key, default_value))
-        result = default_value
-
-    # populate the user_input dictionary
-    api.user_inputs[key] = result
-    return result
-
-
 if __name__ == "__main__":
 
     util.log_msg.debug = True  # debug mode set
 
-    # parse thermostat type parameter (argv[1] if present):
-    tstat_type = parse_runtime_parameter("thermostat_type", 1, str,
-                                         api.HONEYWELL,
-                                         api.SUPPORTED_THERMOSTATS)
-
-    # parse zone number parameter (argv[2] if present):
-    zone_input = parse_runtime_parameter("zone", 2, int, 0,
-                                         api.SUPPORTED_THERMOSTATS[
-                                             tstat_type]["zones"])
-
-    # parse the poll time override (argv[3] if present):
-    poll_time_input = parse_runtime_parameter("poll_time_sec", 3, int, 10 * 60,
-                                              range(0, 24 * 60 * 60))
-
-    # parse the connection time override (argv[4] if present):
-    connection_time_input = parse_runtime_parameter("connection_time_sec", 4,
-                                                    int, 8 * 60 * 60,
-                                                    range(0, 24 * 60 * 60))
-
-    # parse the tolerance override (argv[5] if present):
-    tolerance_degrees_input = parse_runtime_parameter("tolerance_degrees", 5,
-                                                      int, 2, range(0, 10))
+    # parse all runtime parameters
+    user_inputs = api.parse_all_runtime_parameters()
+    tstat_type = user_inputs[0]
+    zone_input = user_inputs[1]
 
     # main supervise function
     main(tstat_type, zone_input)
