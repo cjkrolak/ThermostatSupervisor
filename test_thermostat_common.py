@@ -31,6 +31,7 @@ class Test(unittest.TestCase):
             }
 
         self.Thermostat = tc.ThermostatCommonZone()
+        self.Thermostat.update_runtime_parameters(api.user_inputs)
 
     def tearDown(self):
         del api.thermostats[self.tstat]

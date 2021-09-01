@@ -246,7 +246,11 @@ class ThermostatCommonZone():
 
     def get_schedule_heat_sp(self) -> int:
         """Return the heat setpoint."""
-        return util.bogus_int  # placeholder
+        if self.thermostat_type == "UNITTEST":
+            # unit test mode, return global min
+            return self.max_scheduled_heat_allowed
+        else:
+            return util.bogus_int  # placeholder
 
     def get_cool_setpoint_raw(self) -> int:
         """Return raw cool set point."""
@@ -259,7 +263,11 @@ class ThermostatCommonZone():
 
     def get_schedule_cool_sp(self) -> int:
         """Return the cool setpoint."""
-        return util.bogus_int  # placeholder
+        if self.thermostat_type == "UNITTEST":
+            # unit test mode, return global min
+            return self.min_scheduled_cool_allowed
+        else:
+            return util.bogus_int  # placeholder
 
     def get_is_invacation_hold_mode(self) -> bool:
         """Return the 'IsInVacationHoldMode' setting."""
