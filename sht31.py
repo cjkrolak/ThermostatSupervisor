@@ -14,7 +14,6 @@ data structure expected:
 import os
 import pprint
 import requests
-import sys
 
 # local imports
 import thermostat_api as api
@@ -242,19 +241,12 @@ if __name__ == "__main__":
     util.log_msg.debug = True  # debug mode set
 
     # get zone from user input
-    if (len(sys.argv) > 1 and
-            int(sys.argv[1]) in api.SUPPORTED_THERMOSTATS[api.SHT31]["zones"]):
-        zone_input = sys.argv[1]
-    else:
-        # default
-        print("using default zone 0")
-        zone_input = "0"
+    zone_input = api.parse_all_runtime_parameters()[1]
+
     # verify required env vars
     api.verify_required_env_variables(api.SHT31, zone_input)
 
-    # save zone info
-    api.user_inputs["zone"] = zone_input
-
+    # test out the class object
     Thermostat = SHT31Thermometer(zone_input)
     print("thermostat meta data:")
     Thermostat.get_all_thermostat_metadata()

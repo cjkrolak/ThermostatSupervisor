@@ -590,3 +590,28 @@ class HoneywellZone(pyhtcc.Zone, tc.ThermostatCommonZone):
             body="%s: trial %s of %s" % (util.get_function_name(),
                                          trial_number, number_of_retries))
         raise pyhtcc.ZoneNotFoundError(f"Missing device: {self.device_id}")
+
+
+if __name__ == "__main__":
+
+    util.log_msg.debug = True  # debug mode set
+
+    # get zone from user input
+    zone_input = api.parse_all_runtime_parameters()[1]
+
+    # verify required env vars
+    api.verify_required_env_variables(api.MMM50, zone_input)
+
+    Thermostat = HoneywellThermostat(zone_input)
+    Thermostat.get_all_thermostat_metadata()
+    Zone = HoneywellZone(zone_input, Thermostat)
+    print("current thermostat settings...")
+    print("tmode1: %s" % Zone.get_system_switch_position())
+    print("heat set point=%s" % Zone.get_heat_setpoint())
+    print("cool set point=%s" % Zone.get_cool_setpoint())
+    print("(schedule) heat program=%s" % Zone.get_schedule_program_heat())
+    print("(schedule) cool program=%s" % Zone.get_schedule_program_cool())
+    print("hold=%s" % Zone.get_vacation_hold())
+    print("heat mode=%s" % Zone.get_heat_mode())
+    print("cool mode=%s" % Zone.get_cool_mode())
+    print("temporary hold minutes=%s" % Zone.get_temporary_hold_until_time())
