@@ -9,6 +9,7 @@ import operator
 import email_notification
 import utilities as util
 
+
 degree_sign = u"\N{DEGREE SIGN}"
 
 
@@ -100,9 +101,7 @@ class ThermostatCommonZone():
         humidity_is_available = self.get_is_humidity_supported()
 
         # check for heat deviation
-        heat_mode = (self.get_system_switch_position() ==
-                     self.system_switch_position[self.HEAT_MODE])
-        if heat_mode:
+        if self.is_heat_mode():
             mode = "HEAT MODE"
             # cast integers just in case a set point returns a float
             heat_set_point = int(self.get_heat_setpoint_raw())
@@ -121,22 +120,12 @@ class ThermostatCommonZone():
                 heat_deviation = True
 
             # warning email if heat set point is above global max value
-            if heat_schedule_point > self.max_scheduled_heat_allowed:
-                msg = ("%s zone %s: scheduled heat set point (%s) is above "
-                       "max limit (%s)" % (
-                           self.thermostat_type, self.zone_number,
-                           heat_schedule_point,
-                           self.max_scheduled_heat_allowed))
-                util.log_msg("WARNING: %s" % msg, mode=util.BOTH_LOG)
-                email_notification.send_email_alert(
-                        subject=msg,
-                        body="%s: %s" % (util.get_function_name(), msg))
+            self.warn_if_outside_global_limit(heat_schedule_point,
+                                              self.max_scheduled_heat_allowed,
+                                              operator.gt, "heat")
 
         # check for cool deviation
-        cool_mode = (self.get_system_switch_position() ==
-                     self.system_switch_position[self.COOL_MODE])
-
-        if cool_mode:
+        if self.is_cool_mode():
             mode = "COOL MODE"
             # cast integers just in case a set point returns a float
             cool_set_point = int(self.get_cool_setpoint_raw())
@@ -155,16 +144,9 @@ class ThermostatCommonZone():
                 cool_deviation = True
 
             # warning email if cool set point is below global min value
-            if cool_schedule_point < self.min_scheduled_cool_allowed:
-                msg = ("%s zone %s: scheduled cool set point (%s) is below "
-                       "min limit (%s)" % (
-                           self.thermostat_type, self.zone_number,
-                           cool_schedule_point,
-                           self.min_scheduled_cool_allowed))
-                util.log_msg("WARNING: %s" % msg, mode=util.BOTH_LOG)
-                email_notification.send_email_alert(
-                        subject=msg,
-                        body="%s: %s" % (util.get_function_name(), msg))
+            self.warn_if_outside_global_limit(cool_schedule_point,
+                                              self.min_scheduled_cool_allowed,
+                                              operator.lt, "cool")
 
         # hold cooling
         if heat_deviation or cool_deviation:
@@ -191,11 +173,11 @@ class ThermostatCommonZone():
             if humidity_is_available:
                 status_msg += ", act humidity=%.1f%% RH" % display_humidity
             # add setpoints if in heat or cool mode
-            if heat_mode:
+            if self.is_heat_mode():
                 status_msg += (", set point=%s, tolerance=%s, override=%s" %
                                (heat_schedule_point,
                                 self.tolerance_degrees, heat_set_point))
-            elif cool_mode:
+            elif self.is_cool_mode():
                 status_msg += (", set point=%s, tolerance=%s, override=%s" %
                                (cool_schedule_point,
                                 self.tolerance_degrees, cool_set_point))
@@ -208,13 +190,52 @@ class ThermostatCommonZone():
             util.log_msg(full_status_msg, mode=util.BOTH_LOG)
 
         # return status
-        return_buffer["heat_mode"] = heat_mode
-        return_buffer["cool_mode"] = cool_mode
+        return_buffer["heat_mode"] = self.is_heat_mode()
+        return_buffer["cool_mode"] = self.is_cool_mode()
         return_buffer["heat_deviation"] = heat_deviation
         return_buffer["cool_deviation"] = cool_deviation
         return_buffer["hold_mode"] = hold_mode
         return_buffer["status_msg"] = full_status_msg
         return return_buffer
+
+    def warn_if_outside_global_limit(self, setpoint, limit_value, oper, label):
+        """
+        Send warning email if setpoint is outside of global limits.
+
+        inputs:
+            setpoint(int): setpoint value.
+            limit_value(int): the limit value
+            oper(operator):  the operator, either operator.gt or operator.lt
+            label(str): label for warning message denoting the mode
+        returns:
+            (bool): result of check
+        """
+        if oper == operator.gt:  # pylint: disable=W0143
+            level = "above max"
+        else:
+            level = "below min"
+        if oper(setpoint, limit_value):
+            msg = ("%s zone %s: scheduled %s set point (%s) is "
+                   "%s limit (%s)" % (
+                       self.thermostat_type, self.zone_number, label,
+                       setpoint, level, limit_value))
+            util.log_msg("WARNING: %s" % msg, mode=util.BOTH_LOG)
+            email_notification.send_email_alert(
+                    subject=msg,
+                    body="%s: %s" % (util.get_function_name(), msg))
+            return True
+        else:
+            return False
+
+    def is_heat_mode(self):
+        """Return True if in heat mode."""
+        return (self.get_system_switch_position() ==
+                self.system_switch_position[self.HEAT_MODE])
+
+    def is_cool_mode(self):
+        """Return True if in heat mode."""
+        return (self.get_system_switch_position() ==
+                self.system_switch_position[self.COOL_MODE])
 
     # Thermostat-specific methods will be overloaded
     def get_display_temp(self) -> float:

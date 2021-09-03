@@ -2,6 +2,7 @@
 Tests for thermostat_common.py
 """
 # built-in imports
+import operator
 import unittest
 
 # local imports
@@ -45,7 +46,11 @@ class Test(unittest.TestCase):
         func_dict = {
             "get_current_mode": {
                 "key": self.Thermostat.get_current_mode,
-                "args": [1, 1],
+                "args": [1, 1],  # flag_all_deviations==False
+                "return_type": dict},
+            "Get_current_mode": {  # Capitalize for unique key
+                "key": self.Thermostat.get_current_mode,
+                "args": [1, 1, True, True],  # flag_all_deviations==True
                 "return_type": dict},
             "get_display_temp": {
                 "key": self.Thermostat.get_display_temp,
@@ -113,46 +118,66 @@ class Test(unittest.TestCase):
                             "func=%s, expected type=%s, actual type=%s" %
                             (k, expected_type, type(return_val)))
 
-    # def test_GetCurrentMode(self):
-    #     utc.print_test_name()
-    #     self.Thermostat.get_current_mode(session_count=1, poll_count=1)
-    #
-    # def test_GetDisplayTemp(self):
-    #     utc.print_test_name()
-    #     return_val = self.Thermostat.get_display_temp()
-    #     expected_type = float
-    #     self.assertTrue(isinstance(return_val, expected_type),
-    #                     "expected type=%s, actual type=%s" %
-    #                     (expected_type, type(return_val)))
-    #
-    # def test_GetDisplayHumidity(self):
-    #     utc.print_test_name()
-    #     return_val = self.Thermostat.get_display_humidity()
-    #     expected_type = float
-    #     self.assertTrue(isinstance(return_val, expected_type),
-    #                     "expected type=%s, actual type=%s" %
-    #                     (expected_type, type(return_val)))
-    #
-    # def test_GetIsHumiditySupported(self):
-    #     utc.print_test_name()
-    #     return_val = self.Thermostat.get_is_humidity_supported()
-    #     expected_type = bool
-    #     self.assertTrue(isinstance(return_val, expected_type),
-    #                     "expected type=%s, actual type=%s" %
-    #                     (expected_type, type(return_val)))
-    #
-    # def test_GetSystemSwitchPosition(self):
-    #     utc.print_test_name()
-    #     return_val = self.Thermostat.get_system_switch_position()
-    #     expected_type = int
-    #     self.assertTrue(isinstance(return_val, expected_type),
-    #                     "expected type=%s, actual type=%s" %
-    #                     (expected_type, type(return_val)))
-    #
-    # def test_GetHeatSetpointRaw(self):
-    #     utc.print_test_name()
-    #     return_val = self.Thermostat.get_heat_setpoint_raw()
-    #     self.assertTrue(isinstance(return_val, int))
+    def test_WarnIfOutsideGlobalLimit(self):
+        """Test warn_if_outside_global_limit() function."""
+        self.assertTrue(self.Thermostat.warn_if_outside_global_limit(
+            2, 1, operator.gt, "heat"),
+            "function result should have been True")
+        self.assertFalse(self.Thermostat.warn_if_outside_global_limit(
+            2, 3, operator.gt, "heat"),
+            "function result should have been False")
+        self.assertTrue(self.Thermostat.warn_if_outside_global_limit(
+            2, 3, operator.lt, "cool"),
+            "function result should have been True")
+        self.assertFalse(self.Thermostat.warn_if_outside_global_limit(
+            2, 1, operator.lt, "cool"),
+            "function result should have been False")
+
+    def test_GetCurrentMode(self):
+        """
+        Verify get_current_mode runs in all permutations.
+
+        test cases:
+        heat mode and following schedule
+        heat mode and deviation
+        cool mode and following schedule
+        cool mode and cool deviation
+        """
+        utc.print_test_name()
+        return  # test is not ready
+        self.backup_functions()
+        try:
+            # heat mode and following schedule
+            self.Thermostat.get_system_switch_position = \
+                (lambda *_, **__:
+                 self.Thermostat.system_switch_position[
+                     self.Thermostat.HEAT_MODE])
+            ret_dict = self.Thermostat.get_current_mode(1, 1, True, False)
+
+            # heat mode and deviation
+            self.Thermostat.get_system_switch_position = \
+                (lambda *_, **__:
+                 self.Thermostat.system_switch_position[
+                     self.Thermostat.HEAT_MODE])
+            ret_dict = self.Thermostat.get_current_mode(1, 1, True, False)
+            # cool mode and following schedule
+            # self.Thermostat.get_system_switch_position() = \
+            #    self.Thermostat.system_switch_position[self.COOL_MODE]
+            ret_dict = self.Thermostat.get_current_mode(1, 1, True, False)
+            print("%s" % ret_dict)
+            # cool mode and cool deviation
+        finally:
+            self.restore_functions()
+
+    def backup_functions(self):
+        """Backup functions prior to mocking return values."""
+        self.switch_pos_bckup = self.Thermostat.get_system_switch_position
+        self.heat_raw_bckup = self.Thermostat.get_heat_setpoint_raw
+        self.schedule_heat_sp_bckup = self.Thermostat.get_schedule_heat_sp
+
+    def restore_functions(self):
+        """Restore backed up functions."""
+        pass
 
 
 if __name__ == "__main__":
