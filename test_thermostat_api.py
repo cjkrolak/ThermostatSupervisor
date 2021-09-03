@@ -42,7 +42,7 @@ class Test(unittest.TestCase):
         Verify test verify_required_env_variables() passes in nominal
         condition and fails with missing key.
         """
-        missing_key = "agrfg"  # bogus key should be missing
+        missing_key = "agrfg_"  # bogus key should be missing
         utc.print_test_name()
         # nominal condition, should pass
         print("testing nominal condition, will pass if gmail keys are present")
