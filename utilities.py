@@ -16,7 +16,8 @@ OTHER_ERROR = 99
 
 # bogus values to identify uninitialized data
 bogus_int = -13
-bogus_bool = None
+bogus_bool = False
+bogus_str = "<missing value>"
 
 # logging options
 CONSOLE_LOG = 0x001  # print to console

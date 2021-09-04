@@ -12,47 +12,59 @@ import radiotherm  # noqa F405
 import urllib  # noqa E402
 
 # local imports
+import thermostat_api as api  # noqa E402
 import thermostat_common as tc  # noqa E402
 import utilities as util  # noqa E402
 
-ip_main_3m50 = "192.168.86.82"
-ip_basement_3m50 = "192.168.86.83"
+
+# 3m50 thermostat IP addresses (local net)
+MAIN_3M50 = 0  # zone 0
+BASEMENT_3M50 = 1  # zone 1
+mmm_ip = {
+    MAIN_3M50: "192.168.86.82",  # local IP
+    BASEMENT_3M50: "192.168.86.83",  # local IP
+}
 
 
 class MMM50Thermostat(tc.ThermostatCommonZone):
-    """3m50 thermostat functions."""
+    """3m50 thermostat zone functions."""
 
-    system_switch_position = {
-        tc.ThermostatCommonZone.COOL_MODE: 2,
-        tc.ThermostatCommonZone.HEAT_MODE: 1,
-        tc.ThermostatCommonZone.OFF_MODE: 0,
-        tc.ThermostatCommonZone.AUTO_MODE: 3,
-        }
-
-    def __init__(self, ip_address, *_, **__):
+    def __init__(self, zone, *_, **__):
         """
         Constructor, connect to thermostat.
 
         inputs:
-            ip_address(str):  ip address of thermostat on local net
+            zone(str):  zone of thermostat on local net.
+            mmm_ip dict above must have correct local IP address for each
+            zone.
         """
-        try:
-            self.device_id = radiotherm.get_thermostat(ip_address)
-        except urllib.error.URLError as e:
-            raise Exception("FATAL ERROR: 3m thermostat not found at "
-                            "ip address: %s" % ip_address) from e
-        self.ip_address = ip_address
+        # construct the superclass
+        super(MMM50Thermostat, self).__init__(*_, **__)
+        self.thermostat_type = api.MMM50
+
+        # configure zone info
+        self.zone_number = int(zone)
+        self.ip_address = mmm_ip[self.zone_number]
+        self.device_id = self.get_target_zone_id()
+        self.zone_constructor = MMM50ThermostatZone
 
     def get_target_zone_id(self):
         """
-        Return the target zone ID.
+        Return the target zone ID from the
+        zone number provided.
 
         inputs:
             None
         returns:
-            (str):  IP address of target zone.
+            (obj):  device object.
         """
-        return self.ip_address
+        # verify thermostat exists on network
+        try:
+            self.device_id = radiotherm.get_thermostat(self.ip_address)
+        except urllib.error.URLError as e:
+            raise Exception("FATAL ERROR: 3m thermostat not found at "
+                            "ip address: %s" % self.ip_address) from e
+        return self.device_id
 
     def get_all_thermostat_metadata(self):
         """
@@ -155,6 +167,57 @@ class MMM50Thermostat(tc.ThermostatCommonZone):
           (dict) empty dict.
         """
         return self.device_id[parameter]['raw']
+
+
+class MMM50ThermostatZone(tc.ThermostatCommonZone):
+    """3m50 thermostat zone functions."""
+
+    system_switch_position = {
+        tc.ThermostatCommonZone.COOL_MODE: 2,
+        tc.ThermostatCommonZone.HEAT_MODE: 1,
+        tc.ThermostatCommonZone.OFF_MODE: 0,
+        tc.ThermostatCommonZone.AUTO_MODE: 3,
+        }
+
+    def __init__(self, device_id, *_, **__):
+        """
+        Constructor, connect to thermostat.
+
+        inputs:
+            zone_str(str):  zone of thermostat on local net.
+            mmm_ip dict above must have correct local IP address for each
+            zone.
+        """
+        # construct the superclass
+        super(MMM50ThermostatZone, self).__init__(*_, **__)
+
+        # zone info
+        self.thermostat_type = api.MMM50
+        self.device_id = device_id
+
+        # runtime parameter defaults
+        self.poll_time_sec = 10 * 60  # default to 10 minutes
+        self.connection_time_sec = 8 * 60 * 60  # default to 8 hours
+
+    def get_target_zone_number(self, zone_str):
+        """
+        Return the target zone number from the zone provided.
+
+        inputs:
+            zone_str(str): specified zone, could be index or IP address
+        returns:
+            (int):  zone number.
+        """
+        # determine if zone_str is an IP address
+        if ('.' in str(zone_str) and ' ' not in str(zone_str)
+                and len(str(zone_str)) <= 15):
+            # assume zone == IP address
+            zone_number = list(mmm_ip.keys())[
+                list(mmm_ip.values()).index(zone_str)]
+        else:
+            # assume index
+            zone_number = int(zone_str)
+        return zone_number
 
     def get_display_temp(self) -> float:
         """
@@ -528,22 +591,29 @@ if __name__ == "__main__":
 
     util.log_msg.debug = True  # debug mode set
 
-    # set ip address
-    if len(sys.argv) > 1 and sys.argv[1] in [ip_main_3m50, ip_basement_3m50]:
-        ip = sys.argv[1]
-    else:
-        # default
-        ip = ip_main_3m50
+    # get zone from user input
+    zone_input = api.parse_all_runtime_parameters()[1]
 
-    tstat = MMM50Thermostat(ip)
-    zone = MMM50Thermostat(ip, tstat)
+    # verify required env vars
+    api.verify_required_env_variables(api.MMM50, zone_input)
+
+    Thermostat = MMM50Thermostat(zone_input)
+    print("DEBUG: Thermostat=%s" % Thermostat)
+
+    # get zone based on device_id
+    Zone = Thermostat.zone_constructor(Thermostat.device_id,
+                                       Thermostat)
+
+    # update runtime overrides
+    Zone.update_runtime_parameters(api.user_inputs)
+
     print("current thermostat settings...")
-    print("tmode1: %s" % zone.get_system_switch_position())
-    print("heat set point=%s" % zone.get_heat_setpoint())
-    print("cool set point=%s" % zone.get_cool_setpoint())
-    print("(schedule) heat program=%s" % zone.get_schedule_program_heat())
-    print("(schedule) cool program=%s" % zone.get_schedule_program_cool())
-    print("hold=%s" % zone.get_vacation_hold())
-    print("heat mode=%s" % zone.get_heat_mode())
-    print("cool mode=%s" % zone.get_cool_mode())
-    print("temporary hold minutes=%s" % zone.get_temporary_hold_until_time())
+    print("tmode1: %s" % Zone.get_system_switch_position())
+    print("heat set point=%s" % Zone.get_heat_setpoint())
+    print("cool set point=%s" % Zone.get_cool_setpoint())
+    print("(schedule) heat program=%s" % Zone.get_schedule_program_heat())
+    print("(schedule) cool program=%s" % Zone.get_schedule_program_cool())
+    print("hold=%s" % Zone.get_vacation_hold())
+    print("heat mode=%s" % Zone.get_heat_mode())
+    print("cool mode=%s" % Zone.get_cool_mode())
+    print("temporary hold minutes=%s" % Zone.get_temporary_hold_until_time())

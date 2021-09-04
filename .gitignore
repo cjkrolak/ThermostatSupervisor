@@ -3,3 +3,5 @@
 **/debug
 **/doc
 supervisor-env.txt
+**/htmlcov
+.coverage

@@ -2,9 +2,9 @@
 connection to Honeywell thermoststat using pyhtcc
 
 https://pypi.org/project/pyhtcc/
-
 """
 # built-in imports
+import os
 import pprint
 import pyhtcc
 import time
@@ -12,12 +12,37 @@ import traceback
 
 # local imports
 import email_notification
+import thermostat_api as api
 import thermostat_common as tc
 import utilities as util
 
 
 class HoneywellThermostat(pyhtcc.PyHTCC):
     """Extend the PyHTCC class with additional methods."""
+
+    def __init__(self, zone, *_, **__):
+        """
+        inputs:
+            zone(str):  zone number
+        """
+        # TCC server auth credentials from env vars
+        self.TCC_UNAME_KEY = 'TCC_USERNAME'
+        self.TCC_PASSWORD_KEY = 'TCC_PASSWORD'
+        self.tcc_uname = (os.environ.get(self.TCC_UNAME_KEY, "<" +
+                          self.TCC_UNAME_KEY + "_KEY_MISSING>"))
+        self.tcc_pwd = (os.environ.get(
+            self.TCC_PASSWORD_KEY, "<" +
+            self.TCC_PASSWORD_KEY + "_KEY_MISSING>"))
+        self.args = [self.tcc_uname, self.tcc_pwd]
+
+        # construct the superclass, requires auth setup first
+        super(HoneywellThermostat, self).__init__(*self.args)
+
+        # configure zone info
+        self.thermostat_type = api.HONEYWELL
+        self.zone_number = int(zone)
+        self.zone_constructor = HoneywellZone
+        self.device_id = self.get_target_zone_id()
 
     def _get_zone_device_ids(self) -> list:
         """
@@ -223,6 +248,33 @@ class HoneywellZone(pyhtcc.Zone, tc.ThermostatCommonZone):
         tc.ThermostatCommonZone.AUTO_MODE: util.bogus_int,
         # what mode is 0 on Honeywell?
         }
+
+    def __init__(self, zone_str, *_, **__):
+        # call both parent class __init__
+        pyhtcc.Zone.__init__(self, zone_str, *_, **__)
+        tc.ThermostatCommonZone.__init__(self, *_, **__)
+
+        # zone info
+        self.thermostat_type = api.HONEYWELL
+        # self.zone_number = self.get_target_zone_number(zone_str) - not needed
+
+        # runtime parameter defaults
+        self.poll_time_sec = 10 * 60  # default to 10 minutes
+        # min practical value is 2 minutes based on empirical test
+        # max value was 3, higher settings will cause HTTP errors, why?
+        # not showing error on Pi at 10 minutes, so changed default to 10 min.
+        self.connection_time_sec = 8 * 60 * 60  # default to 8 hours
+
+    def get_target_zone_number(self, zone_str):
+        """
+        Return the target zone number from the zone provided.
+
+        inputs:
+            zone_str(str): specified zone
+        returns:
+            (int):  zone number.
+        """
+        return int(zone_str)
 
     def get_display_temp(self) -> float:  # used
         """
@@ -538,3 +590,28 @@ class HoneywellZone(pyhtcc.Zone, tc.ThermostatCommonZone):
             body="%s: trial %s of %s" % (util.get_function_name(),
                                          trial_number, number_of_retries))
         raise pyhtcc.ZoneNotFoundError(f"Missing device: {self.device_id}")
+
+
+if __name__ == "__main__":
+
+    util.log_msg.debug = True  # debug mode set
+
+    # get zone from user input
+    zone_input = api.parse_all_runtime_parameters()[1]
+
+    # verify required env vars
+    api.verify_required_env_variables(api.MMM50, zone_input)
+
+    Thermostat = HoneywellThermostat(zone_input)
+    Thermostat.get_all_thermostat_metadata()
+    Zone = HoneywellZone(zone_input, Thermostat)
+    print("current thermostat settings...")
+    print("tmode1: %s" % Zone.get_system_switch_position())
+    print("heat set point=%s" % Zone.get_heat_setpoint())
+    print("cool set point=%s" % Zone.get_cool_setpoint())
+    print("(schedule) heat program=%s" % Zone.get_schedule_program_heat())
+    print("(schedule) cool program=%s" % Zone.get_schedule_program_cool())
+    print("hold=%s" % Zone.get_vacation_hold())
+    print("heat mode=%s" % Zone.get_heat_mode())
+    print("cool mode=%s" % Zone.get_cool_mode())
+    print("temporary hold minutes=%s" % Zone.get_temporary_hold_until_time())

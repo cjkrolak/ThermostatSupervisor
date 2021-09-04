@@ -1,10 +1,14 @@
 # ThermostatSupervisor:
 supervisor to detect and correct thermostat deviations<br/>
 
+# Thermostat & Temperature Monitor Support:
+1. Honeywell thermostat through TCC web site (user must configure TCC web site credentials as environment variables).
+2. 3M50 thermostat on local net (user must provide local IP address of each 3m50 thermostat zone).
+3. SHT31 temperature sensor either locally or remote (user must provide local/remote IP address in environment variables and setup firewall port routing if remote).
+
 # errata:
-1. code currently only supports Honeywell thermostat connected to MyTotalControl web site and 3m50 thermostat connected to local network.
-2. code only reliably runs with 3 minute poll time on Honeywell.
-3. a few other low frequency intermittent issues exist, refer to issues in github repo for details.
+1. Honeywell thermostat support through TCC web site requires 3 minute poll time (or longer).  Default for this thermostat is set to 10 minutes.
+2. a few other low frequency intermittent issues exist, refer to issues in github repo for details.
 
 # Build Information:
 ## dependencies:
@@ -30,15 +34,21 @@ docker run --rm --env-file 'envfile' 'username'/thermostatsupervisor 'type' 'zon
 1. Honeywell pyhtcc.txt file in /home/pi/log/pyhtcc/ shows logging specific to pyhtcc class
 2. ./data/ folder contains supervisor logs
 
-## environment variables required:<br/>
-for Linux, update file ~/.profile and then "source ~/.profile" to load the file<br/>
-for Windows, define env variables in control panel and then re-start IDE<br/>
-for docker image, export the env files to a text file and specify during the docker run command<br/>
-* 'TCC_USERNAME':  username to Honeywell TCC website
-* 'TCC_PASSWORD':  password for TCC_USERNAME
-* 'GMAIL_USERNAME': email account to send notifications from (source) and to (destination)
-* 'GMAIL_PASSWORD': password for GMAIL_USERNAME
-* 'SHT31_REMOTE_IP_ADDRESS_'zone'': remote IP address / URL for SHT31 thermal sensor, 'zone' is the zone number.
+## required environment variables:<br/>
+Environment variables required depend on the thermostat being used.<br/>
+* All configurations require the GMAIL env vars:
+  * 'GMAIL_USERNAME': email account to send notifications from (source) and to (destination)
+  * 'GMAIL_PASSWORD': password for GMAIL_USERNAME
+* Honeywell thermostat requires the 'TCC' env vars:
+  * 'TCC_USERNAME':  username to Honeywell TCC website
+  * 'TCC_PASSWORD':  password for TCC_USERNAME
+* SHT31 temp sensor requires the 'SHT31' env vars:
+  * 'SHT31_REMOTE_IP_ADDRESS_'zone'': remote IP address / URL for SHT31 thermal sensor, 'zone' is the zone number.
+
+## updating environment variables:<br/>
+* Linux: update file ~/.profile and then "source ~/.profile" to load the file<br/>
+* Windows: define env variables in control panel and then re-start IDE<br/>
+* docker image: export the env files to a text file and specify during the docker run command<br/>
 
 # Source Code Information:
 ## supervise.py:
@@ -48,6 +58,7 @@ argv[1] = Thermostat type, currently support "honeywell" and "mmm50".  Default i
 argv[2] = zone, currently support zone 0 on honeywell and zones [0,1] on 3m50.<br/>
 argv[3] = poll time in seconds (default is thermostat-specific)<br/>
 argv[4] = re-connect time in seconds (default is thermostat-specific)<br/>
+argv[5] = tolerance from setpoint allowed in degrees (default is 2 degrees)<br/>
 supervise script will call honeywell or mmm50 scripts, detailed below.<br/>
 command line usage:  "*python supervise.py \<thermostat type\> \<zone\> \<poll time\> \<connection time\>*"
   
