@@ -256,7 +256,7 @@ class HoneywellZone(pyhtcc.Zone, tc.ThermostatCommonZone):
 
         # zone info
         self.thermostat_type = api.HONEYWELL
-        self.zone_number = self.get_target_zone_number(zone_str)
+        # self.zone_number = self.get_target_zone_number(zone_str) - not needed
 
         # runtime parameter defaults
         self.poll_time_sec = 10 * 60  # default to 10 minutes
