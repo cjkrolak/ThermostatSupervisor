@@ -1,9 +1,9 @@
 """Common utilitity functions and globals."""
 
+# built-in libraries
 import datetime
 import inspect
 import os
-# sys.path.append(os.path.abspath('../radiotherm'))
 
 # error codes
 NO_ERROR = 0
