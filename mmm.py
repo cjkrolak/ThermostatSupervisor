@@ -27,9 +27,11 @@ import utilities as util  # noqa E402
 # 3m50 thermostat IP addresses (local net)
 MAIN_3M50 = 0  # zone 0
 BASEMENT_3M50 = 1  # zone 1
-mmm_ip = {
-    MAIN_3M50: "192.168.86.82",  # local IP
-    BASEMENT_3M50: "192.168.86.83",  # local IP
+mmm_metadata = {
+    MAIN_3M50: {"ip_address": "192.168.86.82",  # local IP
+                "device_id": None},  # placeholder
+    BASEMENT_3M50: {"ip_address": "192.168.86.83",  # local IP
+                    "device_id": None},  # placeholder
 }
 
 
@@ -42,7 +44,7 @@ class MMM50Thermostat(tc.ThermostatCommonZone):
 
         inputs:
             zone(str):  zone of thermostat on local net.
-            mmm_ip dict above must have correct local IP address for each
+            mmm_metadata dict above must have correct local IP address for each
             zone.
         """
         # construct the superclass
@@ -51,8 +53,9 @@ class MMM50Thermostat(tc.ThermostatCommonZone):
 
         # configure zone info
         self.zone_number = int(zone)
-        self.ip_address = mmm_ip[self.zone_number]
+        self.ip_address = mmm_metadata[self.zone_number]["ip_address"]
         self.device_id = self.get_target_zone_id()
+        mmm_metadata[self.zone_number]["device_id"] = self.device_id
         self.zone_constructor = MMM50ThermostatZone
 
     def get_target_zone_id(self):
@@ -73,7 +76,7 @@ class MMM50Thermostat(tc.ThermostatCommonZone):
                             "ip address: %s" % self.ip_address) from e
         return self.device_id
 
-    def get_all_thermostat_metadata(self):
+    def print_all_thermostat_metadata(self):
         """
         Return initial meta data queried from thermostat.
 
@@ -191,8 +194,8 @@ class MMM50ThermostatZone(tc.ThermostatCommonZone):
         Constructor, connect to thermostat.
 
         inputs:
-            zone_str(str):  zone of thermostat on local net.
-            mmm_ip dict above must have correct local IP address for each
+            device_id(obj):  3m50 device object class.
+            mmm_metadata dict above must have correct local IP address for each
             zone.
         """
         # construct the superclass
@@ -201,29 +204,27 @@ class MMM50ThermostatZone(tc.ThermostatCommonZone):
         # zone info
         self.thermostat_type = api.MMM50
         self.device_id = device_id
+        self.zone_number = self.get_target_zone_number(device_id)
 
         # runtime parameter defaults
         self.poll_time_sec = 10 * 60  # default to 10 minutes
         self.connection_time_sec = 8 * 60 * 60  # default to 8 hours
 
-    def get_target_zone_number(self, zone_str):
+    def get_target_zone_number(self, device_id):
         """
-        Return the target zone number from the zone provided.
+        Return the target zone number based on the device_id.
 
         inputs:
-            zone_str(str): specified zone, could be index or IP address
+            device_id(obj): 3m50 device id object.
         returns:
             (int):  zone number.
         """
-        # determine if zone_str is an IP address
-        if ('.' in str(zone_str) and ' ' not in str(zone_str)
-                and len(str(zone_str)) <= 15):
-            # assume zone == IP address
-            zone_number = list(mmm_ip.keys())[
-                list(mmm_ip.values()).index(zone_str)]
-        else:
-            # assume index
-            zone_number = int(zone_str)
+        zone_number = -1
+        for zone in mmm_metadata:
+            print("key=%s" % zone)
+            if mmm_metadata[zone]["device_id"] == device_id:
+                zone_number = zone
+                break
         return zone_number
 
     def get_display_temp(self) -> float:

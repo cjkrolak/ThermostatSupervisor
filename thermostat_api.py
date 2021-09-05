@@ -106,7 +106,7 @@ def parse_runtime_parameter(key, position, datatype, default_value,
         position(int): position of runtime variable in command line.
         datatype(int or str): data type to cast input str to.
         default_value(int or str):  default value.
-        valid_range(list):  range of valid values for input parameter.
+        valid_range(list, dict, range): set of valid values.
         input_list(list):  list of input variables, if None will use args.
     returns:
         (int or str): input value
@@ -120,7 +120,7 @@ def parse_runtime_parameter(key, position, datatype, default_value,
         result = datatype(target[position].lower())
     except IndexError:
         result = default_value
-    if result not in valid_range:
+    if result != default_value and result not in valid_range:
         print("WARNING: '%s' is not a valid choice for '%s', "
               "using default(%s)" % (result, key, default_value))
         result = default_value
@@ -142,7 +142,7 @@ def parse_all_runtime_parameters():
     # parse thermostat type parameter (argv[1] if present):
     tstat_type = parse_runtime_parameter("thermostat_type", 1, str,
                                          HONEYWELL,
-                                         SUPPORTED_THERMOSTATS)
+                                         list(SUPPORTED_THERMOSTATS.keys()))
 
     # parse zone number parameter (argv[2] if present):
     zone_input = parse_runtime_parameter("zone", 2, int, 0,
@@ -150,16 +150,16 @@ def parse_all_runtime_parameters():
                                              tstat_type]["zones"])
 
     # parse the poll time override (argv[3] if present):
-    poll_time_input = parse_runtime_parameter("poll_time_sec", 3, int, 10 * 60,
+    poll_time_input = parse_runtime_parameter("poll_time_sec", 3, int, None,
                                               range(0, 24 * 60 * 60))
 
     # parse the connection time override (argv[4] if present):
     connection_time_input = parse_runtime_parameter("connection_time_sec", 4,
-                                                    int, 8 * 60 * 60,
+                                                    int, None,
                                                     range(0, 24 * 60 * 60))
 
     # parse the tolerance override (argv[5] if present):
     tolerance_degrees_input = parse_runtime_parameter("tolerance_degrees", 5,
-                                                      int, 2, range(0, 10))
+                                                      int, None, range(0, 10))
     return [tstat_type, zone_input, poll_time_input, connection_time_input,
             tolerance_degrees_input]

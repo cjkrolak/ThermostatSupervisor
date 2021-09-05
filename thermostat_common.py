@@ -13,6 +13,29 @@ import utilities as util
 degree_sign = u"\N{DEGREE SIGN}"
 
 
+class ThermostatCommon():
+    """Class methods common to all thermostat objects."""
+
+    def __init__(self, *_, **__):
+        self.thermostat_type = "unknown"  # placeholder
+        self.zone_number = util.bogus_int  # placeholder
+        self.device_id = util.bogus_int  # placeholder
+        self.ip_address = None  # placeholder
+        self.zone_constructor = None  # placeholder
+
+    def print_all_thermostat_metadata(self):
+        """
+        Print initial meta data queried from thermostat.
+
+        inputs:
+            None
+        returns:
+            None
+        """
+        print("WARNING: print_all_thermostat_metatdata() not yet "
+              "implemented for this thermostat type")
+
+
 class ThermostatCommonZone():
     """Class methods common to all thermostat zones."""
 
@@ -33,8 +56,9 @@ class ThermostatCommonZone():
     tolerance_degrees_default = 2  # allowed override vs. the scheduled value.
 
     def __init__(self, *_, **__):
-        self.zone_number = util.bogus_int  # placeholder
         self.thermostat_type = "unknown"  # placeholder
+        self.zone_number = util.bogus_int  # placeholder
+        self.device_id = util.bogus_int  # placeholder
         self.poll_time_sec = util.bogus_int  # placeholder
         self.connection_time_sec = util.bogus_int  # placeholder
         self.tolerance_degrees = self.tolerance_degrees_default
