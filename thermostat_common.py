@@ -148,7 +148,7 @@ class ThermostatCommonZone():
                                               self.min_scheduled_cool_allowed,
                                               operator.lt, "cool")
 
-        # hold cooling
+        # persistent or temporary deviation detected.
         if heat_deviation or cool_deviation:
             print("DEBUG: in vacation hold=%s" %
                   self.get_is_invacation_hold_mode())
