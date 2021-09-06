@@ -11,9 +11,11 @@ data structure expected:
 }
 """
 # built-in imports
+import json
 import os
 import pprint
 import requests
+import traceback
 
 # local imports
 import thermostat_api as api
@@ -105,7 +107,14 @@ class SHT31Thermometer(tc.ThermostatCommon):
             (dict) empty dict.
         """
         r = requests.get(self.url)
-        return r.json()
+        try:
+            return r.json()
+        except json.decoder.JSONDecodeError as e:
+            util.log_msg(traceback.format_exc(),
+                 mode=util.DEBUG_LOG + util.CONSOLE_LOG, func_name=1)
+            raise Exception("FATAL ERROR: SHT31 server "
+                            "is not responding") from e
+            
 
 
 class SHT31ThermometerZone(tc.ThermostatCommonZone):
@@ -172,9 +181,21 @@ class SHT31ThermometerZone(tc.ThermostatCommonZone):
         """
         r = requests.get(self.url)
         if parameter is None:
-            return r.json()
+            try:
+                return r.json()
+            except json.decoder.JSONDecodeError as e:
+                util.log_msg(traceback.format_exc(),
+                     mode=util.DEBUG_LOG + util.CONSOLE_LOG, func_name=1)
+                raise Exception("FATAL ERROR: SHT31 server "
+                                "is not responding") from e
         else:
-            return r.json()[parameter]
+            try:
+                return r.json()[parameter]
+            except json.decoder.JSONDecodeError as e:
+                util.log_msg(traceback.format_exc(),
+                     mode=util.DEBUG_LOG + util.CONSOLE_LOG, func_name=1)
+                raise Exception("FATAL ERROR: SHT31 server "
+                                "is not responding") from e
 
     def get_display_temp(self) -> float:
         """
