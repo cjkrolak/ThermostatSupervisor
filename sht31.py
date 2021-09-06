@@ -111,10 +111,10 @@ class SHT31Thermometer(tc.ThermostatCommon):
             return r.json()
         except json.decoder.JSONDecodeError as e:
             util.log_msg(traceback.format_exc(),
-                 mode=util.DEBUG_LOG + util.CONSOLE_LOG, func_name=1)
+                         mode=util.DEBUG_LOG + util.CONSOLE_LOG,
+                         func_name=1)
             raise Exception("FATAL ERROR: SHT31 server "
                             "is not responding") from e
-            
 
 
 class SHT31ThermometerZone(tc.ThermostatCommonZone):
@@ -185,7 +185,8 @@ class SHT31ThermometerZone(tc.ThermostatCommonZone):
                 return r.json()
             except json.decoder.JSONDecodeError as e:
                 util.log_msg(traceback.format_exc(),
-                     mode=util.DEBUG_LOG + util.CONSOLE_LOG, func_name=1)
+                             mode=util.DEBUG_LOG + util.CONSOLE_LOG,
+                             func_name=1)
                 raise Exception("FATAL ERROR: SHT31 server "
                                 "is not responding") from e
         else:
@@ -193,7 +194,8 @@ class SHT31ThermometerZone(tc.ThermostatCommonZone):
                 return r.json()[parameter]
             except json.decoder.JSONDecodeError as e:
                 util.log_msg(traceback.format_exc(),
-                     mode=util.DEBUG_LOG + util.CONSOLE_LOG, func_name=1)
+                             mode=util.DEBUG_LOG + util.CONSOLE_LOG,
+                             func_name=1)
                 raise Exception("FATAL ERROR: SHT31 server "
                                 "is not responding") from e
 
