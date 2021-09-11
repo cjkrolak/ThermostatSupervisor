@@ -178,10 +178,10 @@ class ThermostatCommonZone():
 
         # persistent or temporary deviation detected.
         if heat_deviation or cool_deviation:
-            print("DEBUG: in vacation hold=%s" %
-                  self.get_is_invacation_hold_mode())
-            print("DEBUG: hold time=%s" %
-                  self.get_temporary_hold_until_time())
+            # print("DEBUG: in vacation hold=%s" %
+            #       self.get_is_invacation_hold_mode())
+            # print("DEBUG: hold time=%s" %
+            #       self.get_temporary_hold_until_time())
             hold_mode = True  # True = not following schedule
             # TCC:
             #   get_is_in_vacation_hold_mode(): always 0 for TCC
@@ -261,9 +261,20 @@ class ThermostatCommonZone():
                 self.system_switch_position[self.HEAT_MODE])
 
     def is_cool_mode(self):
-        """Return True if in heat mode."""
+        """Return True if in cool mode."""
+        return (self.get_system_switch_position() in [
+                self.system_switch_position[self.COOL_MODE],
+                self.system_switch_position[self.DRY_MODE]])
+
+    def is_dry_mode(self):
+        """Return True if in dry mode."""
         return (self.get_system_switch_position() ==
-                self.system_switch_position[self.COOL_MODE])
+                self.system_switch_position[self.DRY_MODE])
+
+    def is_auto_mode(self):
+        """Return True if in auto mode."""
+        return (self.get_system_switch_position() ==
+                self.system_switch_position[self.AUTO_MODE])
 
     # Thermostat-specific methods will be overloaded
     def get_display_temp(self) -> float:
