@@ -15,6 +15,8 @@ supervisor to detect and correct thermostat deviations<br/>
 pyhtcc for Honeywell thermostats (pip3 install pyhtcc)<br/>
 radiotherm for 3m50 thermostats (mhrivnak/radiotherm or pip3 install radiotherm)<br/>
 flask and flask_resful for sht31 flask server<br/>
+pykumo for kumocloud<br/>
+coverage for code coverage analysis<br/>
 
 ## Docker Image:
 docker run --rm --env-file 'envfile' 'username'/thermostatsupervisor 'type' 'zone' 'poll time' 'connection time'<br/>
