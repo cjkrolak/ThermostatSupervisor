@@ -11,6 +11,7 @@ import sys
 import honeywell as h
 import mmm
 import sht31
+import kumocloud
 import utilities as util
 
 
@@ -18,10 +19,12 @@ import utilities as util
 HONEYWELL = "honeywell"
 MMM50 = "mmm50"
 SHT31 = "sht31"
+KUMOCLOUD = "kumocloud"
 SUPPORTED_THERMOSTATS = {
     HONEYWELL: {"type": 1, "zones": [0]},
     MMM50: {"type": 2, "zones": [0, 1]},
     SHT31: {"type": 3, "zones": [0, 1]},
+    KUMOCLOUD: {"type": 4, "zones": [0, 1]},
     }
 
 # target zone for monitoring
@@ -50,6 +53,15 @@ thermostats = {
             "GMAIL_USERNAME": None,
             "GMAIL_PASSWORD": None,
             "SHT31_REMOTE_IP_ADDRESS_": None,  # prefix only, excludes zone
+            },
+        },
+    KUMOCLOUD: {
+        "thermostat_constructor": kumocloud.KumoCloud,
+        "required_env_variables": {
+            "GMAIL_USERNAME": None,
+            "GMAIL_PASSWORD": None,
+            'KUMO_USERNAME': None,
+            'KUMO_PASSWORD': None,
             },
         }
 }

@@ -43,6 +43,8 @@ class ThermostatCommonZone():
     HEAT_MODE = "HEAT_MODE"
     COOL_MODE = "COOL_MODE"
     AUTO_MODE = "AUTO_MODE"
+    DRY_MODE = "DRY_MODE"
+    UNKNOWN_MODE = "UNKNOWN_MODE"
 
     system_switch_position = {
         # placeholder, will be tstat-specific
@@ -50,6 +52,8 @@ class ThermostatCommonZone():
         OFF_MODE: util.bogus_int,
         COOL_MODE: util.bogus_int,
         AUTO_MODE: util.bogus_int,
+        DRY_MODE: util.bogus_int,
+        UNKNOWN_MODE: util.bogus_int,
         }
     max_scheduled_heat_allowed = 74  # warn if scheduled heat value exceeds.
     min_scheduled_cool_allowed = 68  # warn if scheduled cool value exceeds.
@@ -329,6 +333,17 @@ class ThermostatCommonZone():
     def report_heating_parameters(self):
         """Display critical thermostat settings and reading to the screen."""
         return  # placeholder
+
+    def get_vacation_hold_until_time(self) -> int:
+        """
+        Return the 'VacationHoldUntilTime'.
+
+        inputs:
+            None
+        returns:
+            (int): vacation hold time in minutes.
+         """
+        return util.bogus_int  # not implemented
 
     def update_runtime_parameters(self, user_inputs):
         """use runtime parameter overrides.
