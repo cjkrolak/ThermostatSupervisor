@@ -2,6 +2,7 @@
 import os
 # import pprint
 import pykumo
+import time
 
 # local imports
 import thermostat_api as api
@@ -42,16 +43,17 @@ class KumoCloud(pykumo.KumoCloudAccount):
             self.KC_PASSWORD_KEY, "<" +
             self.KC_PASSWORD_KEY + "_KEY_MISSING>"))
         self.args = [self.kc_uname, self.kc_pwd]
-        print("DEBUG before super")
+
         # construct the superclass
         super(KumoCloud, self).__init__(*self.args)
         self.thermostat_type = api.KUMOCLOUD
-        print("DEBUG after super")
+
         # configure zone info
         self.zone_number = int(zone)
         # self.ip_address = mmm_metadata[self.zone_number]["ip_address"]
         # self.device_id = self.get_target_zone_id()
         # mmm_metadata[self.zone_number]["device_id"] = self.device_id
+        self.device_id = None  # initialize
         self.device_id = self.get_target_zone_id()
         self.zone_constructor = KumoZone
 
@@ -64,7 +66,6 @@ class KumoCloud(pykumo.KumoCloudAccount):
         returns:
             (int): zone device id number
         """
-        print("DEBUG in get_target_zone_id")
         # populate the zone dictionary
         kumos = self.make_pykumos()
         # print("\nkumos=%s (type=%s)" % (kumos, type(kumos)))
@@ -75,8 +76,14 @@ class KumoCloud(pykumo.KumoCloudAccount):
             kc_metadata[zone_number]["zone_name"] = zone_name
             if zone_number == self.zone_number:
                 target_zone_name = zone_name
+                # print zone name the first time it is known
+                if self.device_id is None:
+                    util.log_msg("zone %s name = '%s'" %
+                                 (zone_number, zone_name),
+                                 mode=util.DEBUG_LOG + util.CONSOLE_LOG,
+                                 func_name=1)
             zone_number += 1
-        print("DEBUG end of get target zone id")
+
         # return the target zone object
         return kumos[target_zone_name]
 
@@ -112,7 +119,6 @@ class KumoZone(tc.ThermostatCommonZone):
 
         # zone info
         self.thermostat_type = api.KUMOCLOUD
-        print("\nDEBUG device_id type=%s\n" % type(device_id))
         self.device_id = device_id
         self.Thermostat = Tstat
         self.zone_number = self.get_target_zone_number(device_id)
@@ -123,6 +129,8 @@ class KumoZone(tc.ThermostatCommonZone):
         # max value was 3, higher settings will cause HTTP errors, why?
         # not showing error on Pi at 10 minutes, so changed default to 10 min.
         self.connection_time_sec = 8 * 60 * 60  # default to 8 hours
+        self.fetch_interval_sec = 10  # age of server data before refresh
+        self.last_fetch_time = time.time() - 2 * self.fetch_interval_sec
 
     def get_target_zone_number(self, device_id):
         """
@@ -301,8 +309,7 @@ class KumoZone(tc.ThermostatCommonZone):
         returns:
             None
         """
-        status = self.device_id.set_heat_setpoint(self._f_to_c(temp))
-        print("DEBUG: set_heat_setpoint status=%s" % status)
+        self.device_id.set_heat_setpoint(self._f_to_c(temp))
 
     def set_cool_setpoint(self, temp: int) -> None:
         """
@@ -314,12 +321,21 @@ class KumoZone(tc.ThermostatCommonZone):
         returns:
             None
         """
-        status = self.device_id.set_cool_setpoint(self._f_to_c(temp))
-        print("DEBUG: set_cool_setpoint status=%s" % status)
+        self.device_id.set_cool_setpoint(self._f_to_c(temp))
 
     def refresh_zone_info(self):
         """Refresh zone info from KumoCloud."""
-        self.Thermostat._fetch_if_needed()
+        now_time = time.time()
+        # print("DEBUG: in refresh_zone_info: %s" % now_time)
+        if now_time >= (self.last_fetch_time + self.fetch_interval_sec):
+            self.Thermostat._need_fetch = True \
+                # pylint: disable=protected-access
+            self.Thermostat._fetch_if_needed() \
+                # pylint: disable=protected-access
+            self.last_fetch_time = now_time
+            # refresh device object
+            self.device_id = \
+                self.Thermostat.get_target_zone_id(self.zone_number)
 
     def report_heating_parameters(self):
         """
