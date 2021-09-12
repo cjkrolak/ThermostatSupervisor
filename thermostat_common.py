@@ -262,9 +262,8 @@ class ThermostatCommonZone():
 
     def is_cool_mode(self):
         """Return True if in cool mode."""
-        return (self.get_system_switch_position() in [
-                self.system_switch_position[self.COOL_MODE],
-                self.system_switch_position[self.DRY_MODE]])
+        return (self.get_system_switch_position() ==
+                self.system_switch_position[self.COOL_MODE])
 
     def is_dry_mode(self):
         """Return True if in dry mode."""

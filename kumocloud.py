@@ -150,12 +150,18 @@ class KumoZone(tc.ThermostatCommonZone):
         return zone_number
 
     def _c_to_f(self, tempc):
-        """Convert from Celsius to Farenheight."""
-        return tempc * 9 / 5 + 32
+        """Convert from Celsius to Fahrenheit."""
+        if isinstance(tempc, (int, float)):
+            return tempc * 9 / 5 + 32
+        else:
+            return tempc  # pass-thru
 
     def _f_to_c(self, tempf):
-        """Convert from Ferenheight to Celsius."""
-        return (tempf - 32) * 5 / 9
+        """Convert from Fahrenheit to Celsius."""
+        if isinstance(tempf, (int, float)):
+            return (tempf - 32) * 5 / 9
+        else:
+            return tempf  # pass-thru
 
     def get_display_temp(self) -> float:  # used
         """
