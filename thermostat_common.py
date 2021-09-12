@@ -166,7 +166,7 @@ class ThermostatCommonZone():
                 if humidity_is_available:
                     status_msg += ", act humidity=%.1f%% RH" % display_humidity
                 # add setpoint and override point
-                status_msg += (", set point=%s, tolernace=%s, override=%s" %
+                status_msg += (", set point=%s, tolerance=%s, override=%s" %
                                (cool_schedule_point,
                                 self.tolerance_degrees, cool_set_point))
                 cool_deviation = True
@@ -336,8 +336,15 @@ class ThermostatCommonZone():
         """Return the 'TemporaryHoldUntilTime' """
         return util.bogus_int  # placeholder
 
-    def refresh_zone_info(self) -> None:
-        """Refreshes zone info."""
+    def refresh_zone_info(self, force_refresh=False) -> None:
+        """
+        Refresh zone info.
+
+        inputs:
+            force_refresh(bool): if True, ignore expiration timer.
+        returns:
+            None, cached data is refreshed.
+        """
         return  # placeholder
 
     def report_heating_parameters(self):
