@@ -1,6 +1,6 @@
 """KumoCloud integration"""
 import os
-# import pprint
+import pprint
 import pykumo
 import time
 
@@ -50,9 +50,6 @@ class KumoCloud(pykumo.KumoCloudAccount):
 
         # configure zone info
         self.zone_number = int(zone)
-        # self.ip_address = mmm_metadata[self.zone_number]["ip_address"]
-        # self.device_id = self.get_target_zone_id()
-        # mmm_metadata[self.zone_number]["device_id"] = self.device_id
         self.device_id = None  # initialize
         self.device_id = self.get_target_zone_id()
         self.zone_constructor = KumoZone
@@ -68,10 +65,8 @@ class KumoCloud(pykumo.KumoCloudAccount):
         """
         # populate the zone dictionary
         kumos = self.make_pykumos()
-        # print("\nkumos=%s (type=%s)" % (kumos, type(kumos)))
         zone_number = 0
         for zone_name in kumos:
-            # print("kumos zone %s=%s" % (zone_name, kumos[zone_name]))
             kc_metadata[zone_number]["device_id"] = kumos[zone_name]
             kc_metadata[zone_number]["zone_name"] = zone_name
             if zone_number == self.zone_number:
@@ -86,6 +81,18 @@ class KumoCloud(pykumo.KumoCloudAccount):
 
         # return the target zone object
         return kumos[target_zone_name]
+
+    def print_all_thermostat_metadata(self):
+        """Print all metadata to the screen."""
+        units = Thermostat.get_indoor_units()  # will also query unit
+        print("Units: %s" % str(units))
+        for unit in units:
+            print("Unit %s: address: %s credentials: %s" %
+                  (Thermostat.get_name(unit), Thermostat.get_address(unit),
+                   Thermostat.get_credentials(unit)))
+        raw_json = Thermostat.get_raw_json()  # does not fetch results,
+        pp = pprint.PrettyPrinter(indent=4)
+        pp.pprint(raw_json)
 
 
 class KumoZone(tc.ThermostatCommonZone):
@@ -113,9 +120,8 @@ class KumoZone(tc.ThermostatCommonZone):
                              this is the same as the zone number.
             Thermostat(obj): Thermostat object.
         """
-        # call both parent class __init__
-        # pykumo.KumoCloudAccount.__init__(self, None, None, device_id)
-        tc.ThermostatCommonZone.__init__(self, *_, **__)
+        # construct the superclass, requires auth setup first
+        super(KumoZone, self).__init__(*_, **__)
 
         # zone info
         self.thermostat_type = api.KUMOCLOUD
@@ -125,10 +131,9 @@ class KumoZone(tc.ThermostatCommonZone):
 
         # runtime parameter defaults
         self.poll_time_sec = 10 * 60  # default to 10 minutes
-        # min practical value is 2 minutes based on empirical test
-        # max value was 3, higher settings will cause HTTP errors, why?
-        # not showing error on Pi at 10 minutes, so changed default to 10 min.
         self.connection_time_sec = 8 * 60 * 60  # default to 8 hours
+
+        # server data cache experation parameters
         self.fetch_interval_sec = 10  # age of server data before refresh
         self.last_fetch_time = time.time() - 2 * self.fetch_interval_sec
 
@@ -149,23 +154,37 @@ class KumoZone(tc.ThermostatCommonZone):
                 break
         return zone_number
 
-    def _c_to_f(self, tempc):
-        """Convert from Celsius to Fahrenheit."""
+    def _c_to_f(self, tempc) -> float:
+        """
+        Convert from Celsius to Fahrenheit.
+
+        inputs:
+            tempc(int, float): temp in deg c.
+        returns:
+            (float): temp in deg f.
+        """
         if isinstance(tempc, (int, float)):
-            return tempc * 9 / 5 + 32
+            return tempc * 9.0 / 5 + 32
         else:
             return tempc  # pass-thru
 
-    def _f_to_c(self, tempf):
-        """Convert from Fahrenheit to Celsius."""
+    def _f_to_c(self, tempf) -> float:
+        """
+        Convert from Fahrenheit to Celsius.
+
+        inputs:
+            tempc(int, float): temp in deg f.
+        returns:
+            (float): temp in deg c.
+        """
         if isinstance(tempf, (int, float)):
-            return (tempf - 32) * 5 / 9
+            return (tempf - 32) * 5 / 9.0
         else:
             return tempf  # pass-thru
 
     def get_display_temp(self) -> float:  # used
         """
-        Return Indoor Temp in Deg F
+        Refresh the cached zone information and return Indoor Temp in Deg F.
 
         inputs:
             None
@@ -177,7 +196,7 @@ class KumoZone(tc.ThermostatCommonZone):
 
     def get_display_humidity(self) -> float:
         """
-        Return IndoorHumidity.
+        Refresh the cached zone information and return IndoorHumidity.
 
         inputs:
             None
@@ -206,10 +225,11 @@ class KumoZone(tc.ThermostatCommonZone):
         inputs:
             None
         returns:
-            (int) heat mode.
+            (int) heat mode, 1=enabled, 0=disabled.
         """
         self.refresh_zone_info()
-        return int(self.device_id.get_mode() == "heat")
+        return int(self.device_id.get_mode() ==
+                   tc.ThermostatCommonZone.HEAT_MODE)
 
     def get_cool_mode(self) -> int:
         """
@@ -218,14 +238,28 @@ class KumoZone(tc.ThermostatCommonZone):
         inputs:
             None
         returns:
-            (int): cool mode.
+            (int): cool mode, 1=enabled, 0=disabled.
         """
         self.refresh_zone_info()
-        return int(self.device_id.get_mode() == "cool")
+        return int(self.device_id.get_mode() ==
+                   tc.ThermostatCommonZone.COOL_MODE)
+
+    def get_dry_mode(self) -> int:
+        """
+        Refresh the cached zone information and return the dry mode.
+
+        inputs:
+            None
+        returns:
+            (int): cool mode, 1=enabled, 0=disabled.
+        """
+        self.refresh_zone_info()
+        return int(self.device_id.get_mode() ==
+                   tc.ThermostatCommonZone.DRY_MODE)
 
     def get_heat_setpoint_raw(self) -> int:  # used
         """
-        Return the heat setpoint.
+        Refresh the cached zone information and return the heat setpoint.
 
         inputs:
             None
@@ -242,7 +276,7 @@ class KumoZone(tc.ThermostatCommonZone):
         inputs:
             None
         returns:
-            (int): heating set point in degrees.
+            (int): scheduled heating set point in degrees.
         """
         return 72  # max heat set point allowed
 
@@ -253,7 +287,7 @@ class KumoZone(tc.ThermostatCommonZone):
         inputs:
             None
         returns:
-            (int): cooling set point in degrees F.
+            (int): scheduled cooling set point in degrees F.
         """
         return 70  # min cool set point allowed
 
@@ -329,11 +363,20 @@ class KumoZone(tc.ThermostatCommonZone):
         """
         self.device_id.set_cool_setpoint(self._f_to_c(temp))
 
-    def refresh_zone_info(self):
-        """Refresh zone info from KumoCloud."""
+    def refresh_zone_info(self, force_refresh=False):
+        """
+        Refresh zone info from KumoCloud.
+
+        inputs:
+            force_refresh(bool): if True, ignore expiration timer.
+        returns:
+            None, device_id object is refreshed.
+        """
         now_time = time.time()
-        # print("DEBUG: in refresh_zone_info: %s" % now_time)
-        if now_time >= (self.last_fetch_time + self.fetch_interval_sec):
+        # refresh if past expiration date or force_refresh option
+        if (force_refresh or (now_time >=
+                              (self.last_fetch_time +
+                               self.fetch_interval_sec))):
             self.Thermostat._need_fetch = True \
                 # pylint: disable=protected-access
             self.Thermostat._fetch_if_needed() \
@@ -363,8 +406,6 @@ class KumoZone(tc.ThermostatCommonZone):
                          mode=util.BOTH_LOG)
             util.log_msg("heat setpoint=%s" %
                          self.get_heat_setpoint_raw(), mode=util.BOTH_LOG)
-            # util.log_msg("heat setpoint raw=%s" %
-            #              zone.get_heat_setpoint_raw())
             util.log_msg("schedule heat sp=%s" %
                          self.get_schedule_heat_sp(), mode=util.BOTH_LOG)
             util.log_msg("\n", mode=util.BOTH_LOG)
@@ -376,8 +417,6 @@ class KumoZone(tc.ThermostatCommonZone):
                          mode=util.BOTH_LOG)
             util.log_msg("cool setpoint=%s" %
                          self.get_cool_setpoint_raw(), mode=util.BOTH_LOG)
-            # util.log_msg("cool setpoint raw=%s" %
-            #              zone.get_cool_setpoint_raw(), mode=util.BOTH_LOG)
             util.log_msg("schedule cool sp=%s" %
                          self.get_schedule_cool_sp(), mode=util.BOTH_LOG)
             util.log_msg("\n", mode=util.BOTH_LOG)
@@ -404,61 +443,9 @@ if __name__ == "__main__":
     api.verify_required_env_variables(api.KUMOCLOUD, zone_input)
 
     Thermostat = KumoCloud(zone_input)
-    # print("\nThermostat dict=%s\n" % dir(Thermostat))
-    print("\ndevice_id type=%s\n" % type(Thermostat.device_id))
-    print("\ndevice_id dict=%s\n" % dir(Thermostat.device_id))
-    # print("\nelement2 children=%s\n" % Thermostat.device_id[2]['children'])
-    units = Thermostat.get_indoor_units()  # will also query unit
-    # print("Units: %s" % str(units))
-    # for unit in units:
-    #    print("Unit %s: address: %s credentials: %s" %
-    #          (Thermostat.get_name(unit), Thermostat.get_address(unit),
-    #          Thermostat.get_credentials(unit)))
-    # raw_json = Thermostat.get_raw_json()  # does not fetch results,
-    # pp = pprint.PrettyPrinter(indent=4)
-    # pp.pprint(raw_json)
-
-    # t = raw_json[2]['children']
-    # print("length=%s" % len(t))
-    # print("\n\nsubstring=%s\n\n" % t[0])
-    # print("length t0=%s" % len(t[0]))
-    # for tt in t[0]:
-    #     print("\n\ntt=%s\n" % tt)
-    # x = 0
-    # for r in raw_json:
-    #     print("\n*** ELEMENT %s: %s\n" % (x, r))
-    #     if x == 2:
-    #         xsub = 0
-    #         for s in r['children']:
-    #             print("\n*** SUB-ELEMENT %s: %s\n" % (xsub, s))
-    #             xsub += 1
-    #     x += 1
-    # # print("raw json=%s" % raw_json)
+    Thermostat.print_all_thermostat_metadata()
     Zone = KumoZone(Thermostat.device_id, Thermostat)
-    # print("\nZone dict=%s\n" % dir(Zone))
 
-    # so require a call before this.
-    # # parsed_json = tstat._parse_unit(raw_json)
-    # print("\n\nindoor units=%s\n\n" % name)
-    # # print("raw_json=%s" % raw_json)
-    # # print("parsed_json=%s" % parsed_json)
-    # # for x in raw_json:  # list
-    # #     print("element=%s" % (x))
-    # #     if 'lastScheduleChange' in x:
-    # #         for y, yval in x.items():
-    # #             print("sub-elements=%s, val=%s" % (y, yval))
-    # #             if 'children' in y:
-    # #                 for z in yval:
-    # #                     print("sub-sub-element=%s" % (z))
-    # kumos = tstat.make_pykumos()
-    # print("\nkumos=%s (type=%s)" % (kumos, type(kumos)))
-    # for zone_num in kumos:
-    #     print("kumos zone %s=%s" % (zone_num, kumos[zone_num]))
-    #
-    # print("kumo dict=%s" % dir(kumos['Main Level']))
-    # Zone = KumoZone(kumos['Main Level'])
-    #
-    # # # zone = MMM50Thermostat(ip, tstat)
     print("current thermostat settings...")
     print("tmode1: %s" % Zone.get_system_switch_position())
     print("current temp: %s" % Zone.get_display_temp())
@@ -472,5 +459,5 @@ if __name__ == "__main__":
     print("hold=%s" % Zone.get_vacation_hold())
     print("heat mode=%s" % Zone.get_heat_mode())
     print("cool mode=%s" % Zone.get_cool_mode())
+    print("dry mode=%s" % Zone.get_dry_mode())
     print("temporary hold minutes=%s" % Zone.get_temporary_hold_until_time())
-    # #

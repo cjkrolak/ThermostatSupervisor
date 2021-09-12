@@ -40,6 +40,8 @@ env_variables = {
     "GMAIL_PASSWORD": None,
     "SHT31_REMOTE_IP_ADDRESS_0": None,
     "SHT31_REMOTE_IP_ADDRESS_1": None,
+    "KUMO_USERNAME": None,
+    "KUMO_PASSWORD": None,
     }
 
 
