@@ -239,7 +239,7 @@ class ThermostatCommonZone():
             (int, float): pass thru value if numeric, else raise exception.
         """
         if not isinstance(input_val, (int, float)):
-            raise TypeError("value returned for parameter %s is type %s, "
+            raise TypeError("value returned for parameter '%s' is type %s, "
                             "expected int or float" %
                             (parameter_name, type(input_val)))
         return input_val

@@ -121,6 +121,7 @@ class Test(unittest.TestCase):
     def test_ValidateNumeric(self):
         """Test validate_numeric() function."""
         for test_case in [1, 1.0, "1", True]:
+            print("test case=%s" % type(test_case))
             if isinstance(test_case, (int, float)):
                 expected_val = test_case
                 actual_val = self.Thermostat.validate_numeric(test_case,
