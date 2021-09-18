@@ -131,8 +131,8 @@ class Test(unittest.TestCase):
                     "type(%s)" % (expected_val, type(expected_val), actual_val,
                                   type(actual_val)))
             else:
-                self.assertRaises(self.Thermostat.validate_numeric(
-                    test_case, "test_case"), TypeError)
+                self.assertRaises(TypeError, self.Thermostat.validate_numeric(
+                    test_case, "test_case"))
 
     def test_WarnIfOutsideGlobalLimit(self):
         """Test warn_if_outside_global_limit() function."""
