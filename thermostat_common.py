@@ -126,8 +126,7 @@ class ThermostatCommonZone():
                                              "get_display_temp")
 
         # current humidity
-        display_humidity = self.validate_numeric(self.get_display_humidity(),
-                                                 "get_display_humidity")
+        display_humidity = self.get_display_humidity()
         humidity_is_available = self.get_is_humidity_supported()
 
         # check for heat deviation

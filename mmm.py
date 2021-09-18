@@ -238,20 +238,20 @@ class MMM50ThermostatZone(tc.ThermostatCommonZone):
         """
         return float(self.device_id.temp['raw'])
 
-    def get_display_humidity(self) -> float:
+    def get_display_humidity(self) -> (float, None):
         """
         Return Humidity.
 
         inputs:
             None
         returns:
-            (float): humidity in %RH.
+            (float, None): humidity in %RH, return None if not supported.
         """
-        return util.bogus_int  # not available
+        return None  # not available
 
     def get_is_humidity_supported(self) -> bool:
         """Return humidity sensor status."""
-        return False  # not supported
+        return self.get_display_humidity() is not None
 
     def get_heat_mode(self) -> int:
         """

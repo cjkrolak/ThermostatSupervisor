@@ -210,20 +210,24 @@ class SHT31ThermometerZone(tc.ThermostatCommonZone):
         """
         return float(self.get_metadata(self.tempfield))
 
-    def get_display_humidity(self) -> float:
+    def get_display_humidity(self) -> (float, None):
         """
         Return Humidity.
 
         inputs:
             None
         returns:
-            (float): humidity in %RH.
+            (float, None): humidity in %RH, None if not supported.
         """
-        return float(self.get_metadata(self.humidityfield))
+        raw_humidity = self.get_metadata(self.humidityfield)
+        if raw_humidity is not None:
+            return float(raw_humidity)
+        else:
+            return raw_humidity
 
     def get_is_humidity_supported(self) -> bool:
         """Return humidity sensor status."""
-        return True
+        return self.get_display_humidity() is not None
 
     def get_heat_mode(self) -> int:
         """

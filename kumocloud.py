@@ -64,7 +64,9 @@ class KumoCloud(pykumo.KumoCloudAccount):
             (int): zone device id number
         """
         # populate the zone dictionary
+        print("DEBUG in get_target_zone")
         kumos = self.make_pykumos()
+        print("DEBUG in get_target_zone after make_pykumos")
         zone_number = 0
         for zone_name in kumos:
             kc_metadata[zone_number]["device_id"] = kumos[zone_name]
@@ -194,14 +196,14 @@ class KumoZone(tc.ThermostatCommonZone):
         self.refresh_zone_info()
         return self._c_to_f(self.device_id.get_current_temperature())
 
-    def get_display_humidity(self) -> float:
+    def get_display_humidity(self) -> (float, None):
         """
         Refresh the cached zone information and return IndoorHumidity.
 
         inputs:
             None
         returns:
-            (float): indoor humidity in %RH.
+            (float, None): indoor humidity in %RH, None if not supported.
         """
         self.refresh_zone_info()
         return self.device_id.get_current_humidity()
