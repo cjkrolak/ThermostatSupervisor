@@ -63,6 +63,7 @@ def main(thermostat_type, zone_str):
         util.log_msg("connecting to thermostat zone %s (session:%s)..." %
                      (zone_num, session_count), mode=util.BOTH_LOG)
         Thermostat = thermostat_constructor(zone_num)
+        print("DEBUG: thermostat constructor complete")
 
         t0 = time.time()  # connection timer
 
