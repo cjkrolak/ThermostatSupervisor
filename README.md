@@ -63,10 +63,10 @@ This is the main entry point script.<br/>
 runtime parameters can be specified to override defaults:<br/>
 * argv[1] = Thermostat type, currently support "honeywell", "mmm50", "sht31", and "kumocloud".  Default is "honeywell".
 * argv[2] = zone, currently support:
-** honeywell = zone 0 only
-** 3m50 = zones [0,1] on local net
-** sht31: 0 = local net, 1 = remote URL
-** kumocloud: [0,1] on local net
+  * honeywell = zone 0 only
+  * 3m50 = zones [0,1] on local net
+  * sht31: 0 = local net, 1 = remote URL
+  * kumocloud: [0,1] on local net
 * argv[3] = poll time in seconds (default is thermostat-specific)
 * argv[4] = re-connect time in seconds (default is thermostat-specific)
 * argv[5] = tolerance from setpoint allowed in degrees (default is 2 degrees)
