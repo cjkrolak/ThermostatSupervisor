@@ -66,7 +66,7 @@ argv[2] = zone, currently support:<br/>
 * honeywell = zone 0 only
 * 3m50 = zones [0,1] on local net
 * sht31: 0 = local net, 1 = remote URL
-* kumocloud: [0,1] on local net<br/>
+* kumocloud: [0,1] on local net<br/><br/>
 argv[3] = poll time in seconds (default is thermostat-specific)<br/>
 argv[4] = re-connect time in seconds (default is thermostat-specific)<br/>
 argv[5] = tolerance from setpoint allowed in degrees (default is 2 degrees)<br/>
