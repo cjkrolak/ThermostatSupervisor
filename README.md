@@ -61,8 +61,12 @@ Environment variables required depend on the thermostat being used.<br/>
 ## supervise.py:
 This is the main entry point script.<br/>
 runtime parameters can be specified to override defaults:<br/>
-argv[1] = Thermostat type, currently support "honeywell" and "mmm50".  Default is "honeywell".<br/>
-argv[2] = zone, currently support zone 0 on honeywell and zones [0,1] on 3m50.<br/>
+argv[1] = Thermostat type, currently support "honeywell", "mmm50", "sht31", and "kumocloud".  Default is "honeywell".<br/>
+argv[2] = zone, currently support:<br/>
+* honeywell = zone 0 only
+* 3m50 = zones [0,1] on local net
+* sht31: 0 = local net, 1 = remote URL
+* kumocloud: [0,1] on local net
 argv[3] = poll time in seconds (default is thermostat-specific)<br/>
 argv[4] = re-connect time in seconds (default is thermostat-specific)<br/>
 argv[5] = tolerance from setpoint allowed in degrees (default is 2 degrees)<br/>
