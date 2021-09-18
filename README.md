@@ -5,11 +5,12 @@ supervisor to detect and correct thermostat deviations<br/>
 1. Honeywell thermostat through TCC web site (user must configure TCC web site credentials as environment variables).
 2. 3M50 thermostat on local net (user must provide local IP address of each 3m50 thermostat zone).
 3. SHT31 temperature sensor either locally or remote (user must provide local/remote IP address in environment variables and setup firewall port routing if remote).
-4. Mitsubishi ductless thermostat through Kumocloud.
+4. Mitsubishi ductless thermostat through Kumocloud on local network.
 
 # errata:
 1. Honeywell thermostat support through TCC web site requires 3 minute poll time (or longer).  Default for this thermostat is set to 10 minutes.
 2. a few other low frequency intermittent issues exist, refer to issues in github repo for details.
+3. KumoCloud connection currently only works on local net, cannot use remotely.
 
 # Build Information:
 ## dependencies:
@@ -96,7 +97,7 @@ Script can be configured to customize polling interval, force re-logon after per
 command line usage:  "*python sht31.py \<thermostat type\> \<zone\> \<poll time\> \<connection time\>*
 
 ## kumocloud.py:
-1. Script will connect to Mitsubishi ductless thermostat through kumocloud account.
+1. Script will connect to Mitsubishi ductless thermostat through kumocloud account on local network.
 2. polling is currently set to 10 minutes.
 3. Zone number refers to the thermostat order in kumocloud, 0=first thermostat data returned, 1=second thermostat, etc.
 4. If schedule deviation detected, script will revert thermostat back to scheduled settings.
@@ -104,13 +105,15 @@ Script can be configured to customize polling interval, force re-logon after per
 command line usage:  "*python kumocloud.py \<thermostat type\> \<zone\> \<poll time\> \<connection time\>*
 
 ## Supervisor API required methods:<br/>
-**thermostat class:**<br/>
-* get_all_thermostat_metadata(): Return intial thermostat meta data.
+**Thermostat class:**<br/>
+* print_all_thermostat_metadata(): Print all thermostat meta data.
 * get_target_zone_id(): Return the target zone ID.
 
-**zone class:**<br/>
+**Zone class:**<br/>
 * get_current_mode(): Determine whether thermostat is following schedule or if it has been deviated from schedule.
 * report_heating_parameters(): Display critical thermostat settings and reading to the screen.
+* get_schedule_heat_sp(): Retrieve the scheduled heat setpoint.
 * set_heat_setpoint():  Sets a new heat setpoint.
+* get_schedule_cool_sp(): Retrieve the scheduled cool setpoint.
 * set_cool_setpoint():  Set a new cool setpoint.
 * refresh_zone_info():  Refresh the zone_info attribute.
