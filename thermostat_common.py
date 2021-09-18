@@ -122,10 +122,12 @@ class ThermostatCommonZone():
               (util.get_function_name(),
                self.get_system_switch_position()))
         # current temperature
-        display_temp = self.get_display_temp()
+        display_temp = self.validate_numeric(self.get_display_temp(),
+                                             "get_display_temp")
 
         # current humidity
-        display_humidity = self.get_display_humidity()
+        display_humidity = self.validate_numeric(self.get_display_humidity(),
+                                                 "get_display_humidity")
         humidity_is_available = self.get_is_humidity_supported()
 
         # check for heat deviation
@@ -225,6 +227,22 @@ class ThermostatCommonZone():
         return_buffer["hold_mode"] = hold_mode
         return_buffer["status_msg"] = full_status_msg
         return return_buffer
+
+    def validate_numeric(self, input_val, parameter_name):
+        """
+        Validate value returned is numeric, otherwise raise exception.
+
+        inputs:
+            input_val: input value of unknown type.
+            parameter_name(str): parameter name.
+        returns:
+            (int, float): pass thru value if numeric, else raise exception.
+        """
+        if not isinstance(input_val, (int, float)):
+            raise TypeError("value returned for parameter %s is type %s, "
+                            "expected int or float" %
+                            (parameter_name, type(input_val)))
+        return input_val
 
     def warn_if_outside_global_limit(self, setpoint, limit_value, oper, label):
         """
