@@ -26,15 +26,18 @@ import utilities as util
 # SHT31 thermometer device IDs
 LOFT_SHT31 = 0  # zone 0
 LOFT_SHT31_REMOTE = 1  # zone 1
+UNITTEST_SHT31 = 99  # unit test emulator
 
 # SHT31 IP address and port info
 sht31_ip = {
     LOFT_SHT31: "192.168.86.15",  # local IP
     LOFT_SHT31_REMOTE: util.bogus_str,  # placeholder, remote IP
+    UNITTEST_SHT31: "127.0.0.1",
     }
 sht31_port = {
     LOFT_SHT31: "5000",
     LOFT_SHT31_REMOTE: "5000",
+    UNITTEST_SHT31: "5000",
     }
 
 
@@ -89,10 +92,7 @@ class SHT31Thermometer(tc.ThermostatCommon):
         returns:
             None
         """
-        # dump all meta data
-        self.get_all_metadata()
-
-        # dump uiData in a readable format
+        # dump metadata in a readable format
         return_data = self.get_all_metadata()
         pp = pprint.PrettyPrinter(indent=4)
         pp.pprint(return_data)
