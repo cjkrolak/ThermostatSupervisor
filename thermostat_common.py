@@ -324,7 +324,7 @@ class ThermostatCommonZone():
         returns:
             (dict): scheduled heat set points and times in degrees.
         """
-        return util.bogus_dict # placeholder
+        return util.bogus_dict  # placeholder
 
     def get_schedule_heat_sp(self) -> int:
         """Return the heat setpoint."""
@@ -347,7 +347,7 @@ class ThermostatCommonZone():
         returns:
             (dict): scheduled cool set points and times in degrees.
         """
-        return util.bogus_dict # placeholder
+        return util.bogus_dict  # placeholder
 
     def get_schedule_cool_sp(self) -> int:
         """Return the cool setpoint."""
