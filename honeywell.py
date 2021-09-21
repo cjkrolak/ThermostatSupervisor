@@ -257,6 +257,10 @@ class HoneywellZone(pyhtcc.Zone, tc.ThermostatCommonZone):
             device_id(int):  Honeywell device_id on the account,
                              this is the same as the zone number.
         """
+        if not isinstance(device_id, int):
+            raise TypeError("device_id is type %s, "
+                            "expected type 'int'" % type(device_id))
+
         # call both parent class __init__
         pyhtcc.Zone.__init__(self, device_id, *_, **__)
         tc.ThermostatCommonZone.__init__(self, *_, **__)
@@ -613,10 +617,9 @@ if __name__ == "__main__":
 
     # verify required env vars
     api.verify_required_env_variables(api.MMM50, zone_input)
-
     Thermostat = HoneywellThermostat(zone_input)
     Thermostat.print_all_thermostat_metadata()
-    Zone = HoneywellZone(zone_input, Thermostat)
+    Zone = HoneywellZone(Thermostat.device_id, Thermostat)
 
     # update runtime overrides
     Zone.update_runtime_parameters(api.user_inputs)
