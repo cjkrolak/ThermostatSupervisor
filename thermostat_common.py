@@ -315,10 +315,16 @@ class ThermostatCommonZone():
         """Return raw heat set point."""
         return util.bogus_int  # placeholder
 
-    def get_schedule_program_heat(self) -> int:
-        """Return the program heat schedule setpoint."""
-        # todo is this redundant with the method below?
-        return util.bogus_int  # placeholder
+    def get_schedule_program_heat(self) -> dict:
+        """
+        Return the heat setpoint schedule.
+
+        inputs:
+            None
+        returns:
+            (dict): scheduled heat set points and times in degrees.
+        """
+        return util.bogus_dict  # placeholder
 
     def get_schedule_heat_sp(self) -> int:
         """Return the heat setpoint."""
@@ -332,10 +338,16 @@ class ThermostatCommonZone():
         """Return raw cool set point."""
         return util.bogus_int  # placeholder
 
-    def get_schedule_program_cool(self) -> int:
-        """Return the program cool schedule setpoint."""
-        # todo is this redundant with the method below?
-        return util.bogus_int  # placeholder
+    def get_schedule_program_cool(self) -> dict:
+        """
+        Return the cool setpoint schedule.
+
+        inputs:
+            None
+        returns:
+            (dict): scheduled cool set points and times in degrees.
+        """
+        return util.bogus_dict  # placeholder
 
     def get_schedule_cool_sp(self) -> int:
         """Return the cool setpoint."""
