@@ -11,9 +11,11 @@ data structure expected:
 }
 """
 # built-in imports
+import json
 import os
 import pprint
 import requests
+import traceback
 
 # local imports
 import thermostat_api as api
@@ -21,36 +23,33 @@ import thermostat_common as tc
 import utilities as util
 
 
-# sht31 thermometer IP addresses
+# SHT31 thermometer device IDs
 LOFT_SHT31 = 0  # zone 0
 LOFT_SHT31_REMOTE = 1  # zone 1
+UNITTEST_SHT31 = 99  # unit test emulator
+
+# SHT31 IP address and port info
 sht31_ip = {
     LOFT_SHT31: "192.168.86.15",  # local IP
     LOFT_SHT31_REMOTE: util.bogus_str,  # placeholder, remote IP
+    UNITTEST_SHT31: "127.0.0.1",
     }
 sht31_port = {
     LOFT_SHT31: "5000",
     LOFT_SHT31_REMOTE: "5000",
+    UNITTEST_SHT31: "5000",
     }
 
 
-class SHT31Thermometer(tc.ThermostatCommonZone):
+class SHT31Thermometer(tc.ThermostatCommon):
     """SHT31 thermometer functions."""
 
-    # SHT31 is a monitor only, does not support heat/cool modes.
-    system_switch_position = {
-        tc.ThermostatCommonZone.COOL_MODE: util.bogus_int,
-        tc.ThermostatCommonZone.HEAT_MODE: util.bogus_int,
-        tc.ThermostatCommonZone.OFF_MODE: 0,
-        tc.ThermostatCommonZone.AUTO_MODE: util.bogus_int,
-        }
-
-    def __init__(self, zone_str, *_, **__):
+    def __init__(self, zone, *_, **__):
         """
         Constructor, connect to thermostat.
 
         inputs:
-            zone_str(str):  zone of thermostat.
+            zone(str):  zone of thermostat.
             sht31_ip dict above must have correct IP address for each
             zone.
         """
@@ -59,38 +58,14 @@ class SHT31Thermometer(tc.ThermostatCommonZone):
 
         # zone configuration
         self.thermostat_type = api.SHT31
-        self.zone_constructor = SHT31Thermometer
-        self.zone_number = self.get_target_zone_number(zone_str)
+        self.zone_constructor = SHT31ThermometerZone
+        self.zone_number = int(zone)
         self.ip_address = self.get_target_zone_id(self.zone_number)
-        self.device_id = self.zone_number
 
         # URL and port configuration
         self.port = "5000"  # Flask server port on SHT31 host
         self.url = "http://" + self.ip_address + ":" + self.port
-        self.tempfield = util.API_TEMP_FIELD  # must match flask API
-        self.humidityfield = util.API_HUMIDITY_FIELD  # must match flask API
-
-        # runtime defaults
-        self.poll_time_sec = 1 * 60  # default to 1 minute
-        self.connection_time_sec = 8 * 60 * 60  # default to 8 hours
-
-    def get_target_zone_number(self, zone_str):
-        """
-        Return the target zone number from the zone provided.
-
-        inputs:
-            zone_str(str): specified zone, could be index or IP address
-        returns:
-            (int):  zone number.
-        """
-        if '.' in str(zone_str):
-            # assume zone == IP address
-            zone_number = list(sht31_ip.keys())[
-                list(sht31_ip.values()).index(zone_str)]
-        else:
-            # assume index
-            zone_number = int(zone_str)
-        return zone_number
+        self.device_id = self.url
 
     def get_target_zone_id(self, zone_number=0):
         """
@@ -108,19 +83,16 @@ class SHT31Thermometer(tc.ThermostatCommonZone):
         sht31_ip[zone_number] = ip_address
         return ip_address
 
-    def get_all_thermostat_metadata(self):
+    def print_all_thermostat_metadata(self):
         """
-        Return initial meta data queried from thermostat.
+        Print initial meta data queried from thermostat.
 
         inputs:
             None
         returns:
             None
         """
-        # dump all meta data
-        self.get_all_metadata()
-
-        # dump uiData in a readable format
+        # dump metadata in a readable format
         return_data = self.get_all_metadata()
         pp = pprint.PrettyPrinter(indent=4)
         pp.pprint(return_data)
@@ -135,7 +107,67 @@ class SHT31Thermometer(tc.ThermostatCommonZone):
             (dict) empty dict.
         """
         r = requests.get(self.url)
-        return r.json()
+        try:
+            return r.json()
+        except json.decoder.JSONDecodeError as e:
+            util.log_msg(traceback.format_exc(),
+                         mode=util.DEBUG_LOG + util.CONSOLE_LOG,
+                         func_name=1)
+            raise Exception("FATAL ERROR: SHT31 server "
+                            "is not responding") from e
+
+
+class SHT31ThermometerZone(tc.ThermostatCommonZone):
+    """SHT31 thermometer zone functions."""
+
+    # SHT31 is a monitor only, does not support heat/cool modes.
+    system_switch_position = {
+        tc.ThermostatCommonZone.COOL_MODE: util.bogus_int,
+        tc.ThermostatCommonZone.HEAT_MODE: util.bogus_int,
+        tc.ThermostatCommonZone.OFF_MODE: 0,
+        tc.ThermostatCommonZone.AUTO_MODE: util.bogus_int,
+        }
+
+    def __init__(self, device_id, *_, **__):
+        """
+        Constructor, connect to thermostat.
+
+        inputs:
+            device_id(str): device id, aka URL for this thermostat.
+        """
+        # construct the superclass
+        super(SHT31ThermometerZone, self).__init__(*_, **__)
+
+        # zone configuration
+        self.thermostat_type = api.SHT31
+        self.device_id = device_id
+        self.url = device_id
+        self.zone_number = self.get_target_zone_number(device_id)
+
+        # runtime defaults
+        self.poll_time_sec = 1 * 60  # default to 1 minute
+        self.connection_time_sec = 8 * 60 * 60  # default to 8 hours
+
+        self.tempfield = util.API_TEMP_FIELD  # must match flask API
+        self.humidityfield = util.API_HUMIDITY_FIELD  # must match flask API
+
+    def get_target_zone_number(self, device_id):
+        """
+        Return the target zone number from the device id provided.
+
+        inputs:
+            device_id(str): full URL with port.
+        returns:
+            (int):  zone number.
+        """
+        # strip off https header
+        ip_address = device_id[device_id.find("//")+2:]
+        # strip off port information from URL
+        ip_address = ip_address[:ip_address.rfind(":")]
+        zone_number = list(sht31_ip.keys())[
+            list(sht31_ip.values()).index(ip_address)]
+
+        return zone_number
 
     def get_metadata(self, parameter=None):
         """
@@ -149,9 +181,23 @@ class SHT31Thermometer(tc.ThermostatCommonZone):
         """
         r = requests.get(self.url)
         if parameter is None:
-            return r.json()
+            try:
+                return r.json()
+            except json.decoder.JSONDecodeError as e:
+                util.log_msg(traceback.format_exc(),
+                             mode=util.DEBUG_LOG + util.CONSOLE_LOG,
+                             func_name=1)
+                raise Exception("FATAL ERROR: SHT31 server "
+                                "is not responding") from e
         else:
-            return r.json()[parameter]
+            try:
+                return r.json()[parameter]
+            except json.decoder.JSONDecodeError as e:
+                util.log_msg(traceback.format_exc(),
+                             mode=util.DEBUG_LOG + util.CONSOLE_LOG,
+                             func_name=1)
+                raise Exception("FATAL ERROR: SHT31 server "
+                                "is not responding") from e
 
     def get_display_temp(self) -> float:
         """
@@ -164,20 +210,24 @@ class SHT31Thermometer(tc.ThermostatCommonZone):
         """
         return float(self.get_metadata(self.tempfield))
 
-    def get_display_humidity(self) -> float:
+    def get_display_humidity(self) -> (float, None):
         """
         Return Humidity.
 
         inputs:
             None
         returns:
-            (float): humidity in %RH.
+            (float, None): humidity in %RH, None if not supported.
         """
-        return float(self.get_metadata(self.humidityfield))
+        raw_humidity = self.get_metadata(self.humidityfield)
+        if raw_humidity is not None:
+            return float(raw_humidity)
+        else:
+            return raw_humidity
 
     def get_is_humidity_supported(self) -> bool:
         """Return humidity sensor status."""
-        return True
+        return self.get_display_humidity() is not None
 
     def get_heat_mode(self) -> int:
         """
@@ -242,6 +292,7 @@ if __name__ == "__main__":
 
     # get zone from user input
     zone_input = api.parse_all_runtime_parameters()[1]
+    print("Zone %s selected" % zone_input)
 
     # verify required env vars
     api.verify_required_env_variables(api.SHT31, zone_input)
@@ -249,14 +300,16 @@ if __name__ == "__main__":
     # test out the class object
     Thermostat = SHT31Thermometer(zone_input)
     print("thermostat meta data:")
-    Thermostat.get_all_thermostat_metadata()
-    Zone = SHT31Thermometer(Thermostat.device_id, Thermostat)
+    Thermostat.print_all_thermostat_metadata()
+    Zone = SHT31ThermometerZone(Thermostat.device_id, Thermostat)
+
+    # update runtime overrides
+    Zone.update_runtime_parameters(api.user_inputs)
+
     print("current thermostat settings...")
     print("tmode1: %s" % Zone.get_system_switch_position())
     print("heat mode=%s" % Zone.get_heat_mode())
     print("cool mode=%s" % Zone.get_cool_mode())
     print("temporary hold minutes=%s" % Zone.get_temporary_hold_until_time())
     print("thermostat meta data=%s" % Thermostat.get_all_metadata())
-    print("thermostat tempF=%s" %
-          Thermostat.get_metadata(Thermostat.tempfield))
-    print("thermostat display tempF=%s" % Thermostat.get_display_temp())
+    print("thermostat display tempF=%s" % Zone.get_display_temp())

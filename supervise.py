@@ -63,13 +63,14 @@ def main(thermostat_type, zone_str):
         util.log_msg("connecting to thermostat zone %s (session:%s)..." %
                      (zone_num, session_count), mode=util.BOTH_LOG)
         Thermostat = thermostat_constructor(zone_num)
+        print("DEBUG: thermostat constructor complete")
 
         t0 = time.time()  # connection timer
 
         # dump all meta data
         if debug:
             print("thermostat meta data:")
-            Thermostat.get_all_thermostat_metadata()
+            Thermostat.print_all_thermostat_metadata()
 
         # get Zone object based on deviceID
         Zone = Thermostat.zone_constructor(Thermostat.device_id,

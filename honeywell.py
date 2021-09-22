@@ -41,8 +41,8 @@ class HoneywellThermostat(pyhtcc.PyHTCC):
         # configure zone info
         self.thermostat_type = api.HONEYWELL
         self.zone_number = int(zone)
-        self.zone_constructor = HoneywellZone
         self.device_id = self.get_target_zone_id()
+        self.zone_constructor = HoneywellZone
 
     def _get_zone_device_ids(self) -> list:
         """
@@ -69,7 +69,7 @@ class HoneywellThermostat(pyhtcc.PyHTCC):
         """
         return self._get_zone_device_ids()[zone_number]
 
-    def get_all_thermostat_metadata(self):
+    def print_all_thermostat_metadata(self):
         """
         Return initial meta data queried from thermostat.
 
@@ -249,14 +249,26 @@ class HoneywellZone(pyhtcc.Zone, tc.ThermostatCommonZone):
         # what mode is 0 on Honeywell?
         }
 
-    def __init__(self, zone_str, *_, **__):
+    def __init__(self, device_id, *_, **__):
+        """
+        Zone constructor.
+
+        inputs:
+            device_id(int):  Honeywell device_id on the account,
+                             this is the same as the zone number.
+        """
+        if not isinstance(device_id, int):
+            raise TypeError("device_id is type %s, "
+                            "expected type 'int'" % type(device_id))
+
         # call both parent class __init__
-        pyhtcc.Zone.__init__(self, zone_str, *_, **__)
+        pyhtcc.Zone.__init__(self, device_id, *_, **__)
         tc.ThermostatCommonZone.__init__(self, *_, **__)
 
         # zone info
         self.thermostat_type = api.HONEYWELL
-        # self.zone_number = self.get_target_zone_number(zone_str) - not needed
+        self.device_id = device_id
+        self.zone_number = self.get_target_zone_number(device_id)
 
         # runtime parameter defaults
         self.poll_time_sec = 10 * 60  # default to 10 minutes
@@ -265,16 +277,16 @@ class HoneywellZone(pyhtcc.Zone, tc.ThermostatCommonZone):
         # not showing error on Pi at 10 minutes, so changed default to 10 min.
         self.connection_time_sec = 8 * 60 * 60  # default to 8 hours
 
-    def get_target_zone_number(self, zone_str):
+    def get_target_zone_number(self, device_id):
         """
-        Return the target zone number from the zone provided.
+        Return the target zone number from the device id provided.
 
         inputs:
-            zone_str(str): specified zone
+            device_id(str or int): specified device id
         returns:
             (int):  zone number.
         """
-        return int(zone_str)
+        return int(device_id)
 
     def get_display_temp(self) -> float:  # used
         """
@@ -288,17 +300,21 @@ class HoneywellZone(pyhtcc.Zone, tc.ThermostatCommonZone):
         self.refresh_zone_info()
         return float(self.zone_info['latestData']['uiData']['DispTemperature'])
 
-    def get_display_humidity(self) -> float:
+    def get_display_humidity(self) -> (float, None):
         """
         Refresh the cached zone information then return IndoorHumidity.
 
         inputs:
             None
         returns:
-            (float): indoor humidity in %RH.
+            (float, None): indoor humidity in %RH, None if not supported.
         """
         self.refresh_zone_info()
-        return float(self.zone_info['latestData']['uiData']['IndoorHumidity'])
+        raw_humidity = self.zone_info['latestData']['uiData']['IndoorHumidity']
+        if raw_humidity is not None:
+            return float(raw_humidity)
+        else:
+            return raw_humidity
 
     def get_is_humidity_supported(self) -> bool:  # used
         """
@@ -601,10 +617,13 @@ if __name__ == "__main__":
 
     # verify required env vars
     api.verify_required_env_variables(api.MMM50, zone_input)
-
     Thermostat = HoneywellThermostat(zone_input)
-    Thermostat.get_all_thermostat_metadata()
-    Zone = HoneywellZone(zone_input, Thermostat)
+    Thermostat.print_all_thermostat_metadata()
+    Zone = HoneywellZone(Thermostat.device_id, Thermostat)
+
+    # update runtime overrides
+    Zone.update_runtime_parameters(api.user_inputs)
+
     print("current thermostat settings...")
     print("tmode1: %s" % Zone.get_system_switch_position())
     print("heat set point=%s" % Zone.get_heat_setpoint())

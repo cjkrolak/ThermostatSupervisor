@@ -118,6 +118,24 @@ class Test(unittest.TestCase):
                             "func=%s, expected type=%s, actual type=%s" %
                             (k, expected_type, type(return_val)))
 
+    def test_ValidateNumeric(self):
+        """Test validate_numeric() function."""
+        for test_case in [1, 1.0, "1", True]:
+            print("test case=%s" % type(test_case))
+            if isinstance(test_case, (int, float)):
+                expected_val = test_case
+                actual_val = self.Thermostat.validate_numeric(test_case,
+                                                              "test_case")
+                self.assertEqual(
+                    expected_val, actual_val,
+                    "expected return value=%s, type(%s), actual=%s,"
+                    "type(%s)" % (expected_val, type(expected_val), actual_val,
+                                  type(actual_val)))
+            else:
+                with self.assertRaises(TypeError):
+                    self.Thermostat.validate_numeric(
+                        test_case, "test_case")
+
     def test_WarnIfOutsideGlobalLimit(self):
         """Test warn_if_outside_global_limit() function."""
         self.assertTrue(self.Thermostat.warn_if_outside_global_limit(
@@ -177,7 +195,9 @@ class Test(unittest.TestCase):
 
     def restore_functions(self):
         """Restore backed up functions."""
-        pass
+        self.Thermostat.get_system_switch_position = self.switch_pos_bckup
+        self.Thermostat.get_heat_setpoint_raw = self.heat_raw_bckup
+        self.Thermostat.get_schedule_heat_sp = self.schedule_heat_sp_bckup
 
 
 if __name__ == "__main__":

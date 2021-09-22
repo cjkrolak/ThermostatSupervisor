@@ -1,9 +1,9 @@
 """Common utilitity functions and globals."""
 
+# built-in libraries
 import datetime
 import inspect
 import os
-# sys.path.append(os.path.abspath('../radiotherm'))
 
 # error codes
 NO_ERROR = 0
@@ -18,6 +18,7 @@ OTHER_ERROR = 99
 bogus_int = -13
 bogus_bool = False
 bogus_str = "<missing value>"
+bogus_dict = {}
 
 # logging options
 CONSOLE_LOG = 0x001  # print to console
@@ -40,6 +41,8 @@ env_variables = {
     "GMAIL_PASSWORD": None,
     "SHT31_REMOTE_IP_ADDRESS_0": None,
     "SHT31_REMOTE_IP_ADDRESS_1": None,
+    "KUMO_USERNAME": None,
+    "KUMO_PASSWORD": None,
     }
 
 

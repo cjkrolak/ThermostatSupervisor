@@ -7,8 +7,15 @@ import os
 import pprint
 import socket
 import sys
+
+# add github version of radiotherm to path
 sys.path.append(os.path.abspath('../radiotherm'))
+# insert gitub version of radiotherm to front of path for debugging
+# sys.path.insert(0, os.path.abspath('../radiotherm'))  # front of path list
 import radiotherm  # noqa F405
+# print("path=%s" % sys.path)
+# print("radiotherm=%s" % radiotherm)  # show imported object
+
 import urllib  # noqa E402
 
 # local imports
@@ -20,9 +27,11 @@ import utilities as util  # noqa E402
 # 3m50 thermostat IP addresses (local net)
 MAIN_3M50 = 0  # zone 0
 BASEMENT_3M50 = 1  # zone 1
-mmm_ip = {
-    MAIN_3M50: "192.168.86.82",  # local IP
-    BASEMENT_3M50: "192.168.86.83",  # local IP
+mmm_metadata = {
+    MAIN_3M50: {"ip_address": "192.168.86.82",  # local IP
+                "device_id": None},  # placeholder
+    BASEMENT_3M50: {"ip_address": "192.168.86.83",  # local IP
+                    "device_id": None},  # placeholder
 }
 
 
@@ -35,7 +44,7 @@ class MMM50Thermostat(tc.ThermostatCommonZone):
 
         inputs:
             zone(str):  zone of thermostat on local net.
-            mmm_ip dict above must have correct local IP address for each
+            mmm_metadata dict above must have correct local IP address for each
             zone.
         """
         # construct the superclass
@@ -44,8 +53,9 @@ class MMM50Thermostat(tc.ThermostatCommonZone):
 
         # configure zone info
         self.zone_number = int(zone)
-        self.ip_address = mmm_ip[self.zone_number]
+        self.ip_address = mmm_metadata[self.zone_number]["ip_address"]
         self.device_id = self.get_target_zone_id()
+        mmm_metadata[self.zone_number]["device_id"] = self.device_id
         self.zone_constructor = MMM50ThermostatZone
 
     def get_target_zone_id(self):
@@ -66,7 +76,7 @@ class MMM50Thermostat(tc.ThermostatCommonZone):
                             "ip address: %s" % self.ip_address) from e
         return self.device_id
 
-    def get_all_thermostat_metadata(self):
+    def print_all_thermostat_metadata(self):
         """
         Return initial meta data queried from thermostat.
 
@@ -184,8 +194,8 @@ class MMM50ThermostatZone(tc.ThermostatCommonZone):
         Constructor, connect to thermostat.
 
         inputs:
-            zone_str(str):  zone of thermostat on local net.
-            mmm_ip dict above must have correct local IP address for each
+            device_id(obj):  3m50 device object class.
+            mmm_metadata dict above must have correct local IP address for each
             zone.
         """
         # construct the superclass
@@ -194,29 +204,26 @@ class MMM50ThermostatZone(tc.ThermostatCommonZone):
         # zone info
         self.thermostat_type = api.MMM50
         self.device_id = device_id
+        self.zone_number = self.get_target_zone_number(device_id)
 
         # runtime parameter defaults
         self.poll_time_sec = 10 * 60  # default to 10 minutes
         self.connection_time_sec = 8 * 60 * 60  # default to 8 hours
 
-    def get_target_zone_number(self, zone_str):
+    def get_target_zone_number(self, device_id):
         """
-        Return the target zone number from the zone provided.
+        Return the target zone number based on the device_id.
 
         inputs:
-            zone_str(str): specified zone, could be index or IP address
+            device_id(obj): 3m50 device id object.
         returns:
             (int):  zone number.
         """
-        # determine if zone_str is an IP address
-        if ('.' in str(zone_str) and ' ' not in str(zone_str)
-                and len(str(zone_str)) <= 15):
-            # assume zone == IP address
-            zone_number = list(mmm_ip.keys())[
-                list(mmm_ip.values()).index(zone_str)]
-        else:
-            # assume index
-            zone_number = int(zone_str)
+        zone_number = -1
+        for zone in mmm_metadata:
+            if mmm_metadata[zone]["device_id"] == device_id:
+                zone_number = zone
+                break
         return zone_number
 
     def get_display_temp(self) -> float:
@@ -230,20 +237,20 @@ class MMM50ThermostatZone(tc.ThermostatCommonZone):
         """
         return float(self.device_id.temp['raw'])
 
-    def get_display_humidity(self) -> float:
+    def get_display_humidity(self) -> (float, None):
         """
         Return Humidity.
 
         inputs:
             None
         returns:
-            (float): humidity in %RH.
+            (float, None): humidity in %RH, return None if not supported.
         """
-        return util.bogus_int  # not available
+        return None  # not available
 
     def get_is_humidity_supported(self) -> bool:
         """Return humidity sensor status."""
-        return False  # not supported
+        return self.get_display_humidity() is not None
 
     def get_heat_mode(self) -> int:
         """
@@ -391,19 +398,19 @@ class MMM50ThermostatZone(tc.ThermostatCommonZone):
                             "should be (int, float)" % type(result))
         return result
 
-    def get_schedule_program_heat(self) -> int:
+    def get_schedule_program_heat(self) -> dict:
         """
-        Return the scheduled heat setpoint.
+        Return the scheduled heat program, times and settings.
 
         inputs:
             None
         returns:
-            (int): scheduled heat set point in degrees.
+            (dict): scheduled heat set points and times in degrees.
         """
         result = self.device_id.program_heat['raw']
-        if not isinstance(result, int):
+        if not isinstance(result, dict):
             raise Exception("heat program schedule set point is type %s, "
-                            "should be int" % type(result))
+                            "should be dict" % type(result))
         return result
 
     def get_schedule_heat_sp(self) -> int:
@@ -421,19 +428,19 @@ class MMM50ThermostatZone(tc.ThermostatCommonZone):
                             "should be int" % type(result))
         return result
 
-    def get_schedule_program_cool(self) -> int:
+    def get_schedule_program_cool(self) -> dict:
         """
         Return the sechduled cool setpoint.
 
         inputs:
             None
         returns:
-            (int): current scheduled cool set point in degrees.
+            (dict): current scheduled cool set point in degrees.
         """
         result = self.device_id.program_cool['raw']
-        if not isinstance(result, int):
+        if not isinstance(result, dict):
             raise Exception("schedule program cool set point is type %s, "
-                            "should be int" % type(result))
+                            "should be dict" % type(result))
         return result
 
     def get_schedule_cool_sp(self) -> int:
@@ -475,7 +482,7 @@ class MMM50ThermostatZone(tc.ThermostatCommonZone):
         returns:
             (int): 0=Disabled, 1=Enabled
         """
-        result = self.device_id.override['raw']
+        result = bool(self.device_id.override['raw'])
         if not isinstance(result, bool):
             raise Exception("get_vacation_hold_mode is type %s, "
                             "should be bool" % type(result))
@@ -506,7 +513,11 @@ class MMM50ThermostatZone(tc.ThermostatCommonZone):
         elif self.get_cool_mode() == 1:
             sp_dict = self.device_id.program_cool
         else:
-            raise Exception("unknown heat/cool mode")
+            # off mode, use dummy dict.
+            sp_dict = {'raw': {'0': [0] * 8, '1': [0] * 8, '2': [0] * 8,
+                               '3': [0] * 8, '4': [0] * 8, '5': [0] * 8,
+                               '6': [0] * 8}}
+            # raise Exception("unknown heat/cool mode")
         now = datetime.datetime.now()
         minutes_since_midnight = (
             now - now.replace(hour=0, minute=0, second=0,
@@ -587,6 +598,16 @@ class MMM50ThermostatZone(tc.ThermostatCommonZone):
         return  # not yet implemented
 
 
+# monkeypatch radiotherm.thermostat.Thermostat __init__ method with longer
+# socket.timeout delay, based on radiotherm version 2.1
+def __init__(self, host, timeout=10):  # changed from 4 to 10
+    self.host = host
+    self.timeout = timeout
+
+
+radiotherm.thermostat.Thermostat.__init__ = __init__
+# end of monkeypatch radiotherm.thermostat.Thermostst __init__
+
 if __name__ == "__main__":
 
     util.log_msg.debug = True  # debug mode set
@@ -598,7 +619,6 @@ if __name__ == "__main__":
     api.verify_required_env_variables(api.MMM50, zone_input)
 
     Thermostat = MMM50Thermostat(zone_input)
-    print("DEBUG: Thermostat=%s" % Thermostat)
 
     # get zone based on device_id
     Zone = Thermostat.zone_constructor(Thermostat.device_id,
