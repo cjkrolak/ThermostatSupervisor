@@ -150,7 +150,6 @@ class KumoZone(tc.ThermostatCommonZone):
         """
         zone_number = -1
         for zone in kc_metadata:
-            print("key=%s" % zone)
             if kc_metadata[zone]["device_id"] == device_id:
                 zone_number = zone
                 break

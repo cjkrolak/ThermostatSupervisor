@@ -221,7 +221,6 @@ class MMM50ThermostatZone(tc.ThermostatCommonZone):
         """
         zone_number = -1
         for zone in mmm_metadata:
-            print("key=%s" % zone)
             if mmm_metadata[zone]["device_id"] == device_id:
                 zone_number = zone
                 break

@@ -18,6 +18,7 @@ OTHER_ERROR = 99
 bogus_int = -13
 bogus_bool = False
 bogus_str = "<missing value>"
+bogus_dict = {}
 
 # logging options
 CONSOLE_LOG = 0x001  # print to console
