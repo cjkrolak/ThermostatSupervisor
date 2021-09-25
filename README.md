@@ -73,32 +73,39 @@ runtime parameters can be specified to override defaults:<br/>
 supervise script will call honeywell or mmm50 scripts, detailed below.<br/>
 command line usage:  "*python supervise.py \<thermostat type\> \<zone\> \<poll time\> \<connection time\>*"
   
-## flaskserver.py:
+## supervisor_flask_server.py:
 This module will render supervise.py output on an HTML page using Flask.<br/>
 Same runtime parameters as supervise.py can be specified to override defaults:<br/>
-Flask server rendering currently works through IDE, but not yet through command line.<br/>
 port is currently hard-coded to 80, access at loopback.<br/>
-command line usage:  "*python supervisor_flask_server.py \<thermostat type\> \<zone\> \<poll time\> \<connection time\>*"
+command line usage:  "*python supervisor_flask_server.py \<runtime parameters\>*"
 
 ## honeywell.py:
 1. Script will logon to TCC web site and infinitely poll server at configurable poll interval for current thermostat settings.
 2. default poll time is currently set to 3 minutes, longer poll times experience connection errors, shorter poll times are impractical based on emperical data.
 3. If schedule deviation detected, script will revert thermostat back to scheduled settings.
 Script can be configured to customize polling interval, force re-logon after period of time, and either just alert or alert and revert to schedule.
-command line usage:  "*python honeywell.py \<thermostat type\> \<zone\> \<poll time\> \<connection time\>*
+command line usage:  "*python honeywell.py \<thermostat type\> \<zone\> \<poll time\> \<connection time\>*"
 
 ## mmm50.py:
 1. Script will connect to 3m50 thermostat on local network, IP address stored in thermostat_api.mmm_ip
 2. polling is currently set to 10 minutes.
 3. If schedule deviation detected, script will revert thermostat back to scheduled settings.
 Script can be configured to customize polling interval, force re-logon after period of time, and either just alert or alert and revert to schedule.<br/>
-command line usage:  "*python mmm.py \<thermostat type\> \<zone\> \<poll time\> \<connection time\>*
+command line usage:  "*python mmm.py \<thermostat type\> \<zone\> \<poll time\> \<connection time\>*"
 
 ## sht31.py:
 1. Script will connect to sht31 thermometer at URL specified (can be local IP or remote URL).
 2. polling is currently set to 1 minute.
 Script can be configured to customize polling interval, force re-logon after period of time, and either just alert or alert and revert to schedule.<br/>
-command line usage:  "*python sht31.py \<thermostat type\> \<zone\> \<poll time\> \<connection time\>*
+command line usage:  "*python sht31.py \<thermostat type\> \<zone\> \<poll time\> \<connection time\>*"
+
+## sht31_flask_server.py:
+This module will render sht31 sensor output on an HTML page using Flask.<br/>
+port is currently hard-coded to 5000.<br/>
+command line usage:  "*python sht31_flask_server.py \<mode\> \<measurements\> \<debug\>*"<br/>
+* argv[1] = mode (str): "unittest" will run unit test mode with fabricated output, anything else will run production mode (default).
+* argv[2] = measurements (int): number of measurements to average, default is 1.
+* argv[3] = debug (bool): True to enable Flask debug mode, False is default.
 
 ## kumocloud.py:
 1. Script will connect to Mitsubishi ductless thermostat through kumocloud account on local network.
@@ -106,7 +113,7 @@ command line usage:  "*python sht31.py \<thermostat type\> \<zone\> \<poll time\
 3. Zone number refers to the thermostat order in kumocloud, 0=first thermostat data returned, 1=second thermostat, etc.
 4. If schedule deviation detected, script will revert thermostat back to scheduled settings.
 Script can be configured to customize polling interval, force re-logon after period of time, and either just alert or alert and revert to schedule.<br/>
-command line usage:  "*python kumocloud.py \<thermostat type\> \<zone\> \<poll time\> \<connection time\>*
+command line usage:  "*python kumocloud.py \<thermostat type\> \<zone\> \<poll time\> \<connection time\>*"
 
 ## Supervisor API required methods:<br/>
 **Thermostat class:**<br/>
