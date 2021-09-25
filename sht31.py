@@ -58,7 +58,6 @@ class ThermostatClass(tc.ThermostatCommon):
 
         # zone configuration
         self.thermostat_type = api.SHT31
-        self.zone_constructor = ThermostatZone
         self.zone_number = int(zone)
         self.ip_address = self.get_target_zone_id(self.zone_number)
 

@@ -52,7 +52,6 @@ class ThermostatClass(pykumo.KumoCloudAccount):
         self.zone_number = int(zone)
         self.device_id = None  # initialize
         self.device_id = self.get_target_zone_id()
-        self.zone_constructor = ThermostatZone
 
     def get_target_zone_id(self, zone_number=0):
         """

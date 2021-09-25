@@ -56,7 +56,6 @@ class ThermostatClass(tc.ThermostatCommonZone):
         self.ip_address = mmm_metadata[self.zone_number]["ip_address"]
         self.device_id = self.get_target_zone_id()
         mmm_metadata[self.zone_number]["device_id"] = self.device_id
-        self.zone_constructor = ThermostatZone
 
     def get_target_zone_id(self):
         """

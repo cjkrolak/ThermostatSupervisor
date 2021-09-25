@@ -42,7 +42,6 @@ class ThermostatClass(pyhtcc.PyHTCC):
         self.thermostat_type = api.HONEYWELL
         self.zone_number = int(zone)
         self.device_id = self.get_target_zone_id()
-        self.zone_constructor = ThermostatZone
 
     def _get_zone_device_ids(self) -> list:
         """
