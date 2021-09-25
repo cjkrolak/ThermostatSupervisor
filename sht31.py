@@ -41,7 +41,7 @@ sht31_port = {
     }
 
 
-class SHT31Thermometer(tc.ThermostatCommon):
+class ThermostatClass(tc.ThermostatCommon):
     """SHT31 thermometer functions."""
 
     def __init__(self, zone, *_, **__):
@@ -54,11 +54,11 @@ class SHT31Thermometer(tc.ThermostatCommon):
             zone.
         """
         # construct the superclass
-        super(SHT31Thermometer, self).__init__(*_, **__)
+        super(ThermostatClass, self).__init__(*_, **__)
 
         # zone configuration
         self.thermostat_type = api.SHT31
-        self.zone_constructor = SHT31ThermometerZone
+        self.zone_constructor = ThermostatZone
         self.zone_number = int(zone)
         self.ip_address = self.get_target_zone_id(self.zone_number)
 
@@ -117,7 +117,7 @@ class SHT31Thermometer(tc.ThermostatCommon):
                             "is not responding") from e
 
 
-class SHT31ThermometerZone(tc.ThermostatCommonZone):
+class ThermostatZone(tc.ThermostatCommonZone):
     """SHT31 thermometer zone functions."""
 
     # SHT31 is a monitor only, does not support heat/cool modes.
@@ -136,7 +136,7 @@ class SHT31ThermometerZone(tc.ThermostatCommonZone):
             device_id(str): device id, aka URL for this thermostat.
         """
         # construct the superclass
-        super(SHT31ThermometerZone, self).__init__(*_, **__)
+        super(ThermostatZone, self).__init__(*_, **__)
 
         # zone configuration
         self.thermostat_type = api.SHT31
@@ -292,16 +292,19 @@ if __name__ == "__main__":
 
     # get zone from user input
     zone_input = api.parse_all_runtime_parameters()[1]
-    print("Zone %s selected" % zone_input)
 
     # verify required env vars
     api.verify_required_env_variables(api.SHT31, zone_input)
 
-    # test out the class object
-    Thermostat = SHT31Thermometer(zone_input)
-    print("thermostat meta data:")
+    # import hardware module
+    mod = api.load_hardware_library(api.SHT31)
+
+    # create Thermostat object
+    Thermostat = ThermostatClass(zone_input)
     Thermostat.print_all_thermostat_metadata()
-    Zone = SHT31ThermometerZone(Thermostat.device_id, Thermostat)
+
+    # create Zone object
+    Zone = ThermostatZone(Thermostat.device_id, Thermostat)
 
     # update runtime overrides
     Zone.update_runtime_parameters(api.user_inputs)
