@@ -123,7 +123,10 @@ def parse_runtime_parameter(key, position, datatype, default_value,
         target = sys.argv
     else:
         target = input_list
-
+    if not isinstance(position, int):
+        raise TypeError("'position' argument must be an int, "
+                        "actual=%s is type(%s)" %
+                        (position, type(position)))
     try:
         result = datatype(target[position].lower())
     except IndexError:

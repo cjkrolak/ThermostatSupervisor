@@ -15,6 +15,7 @@ import json
 import os
 import pprint
 import requests
+import time
 import traceback
 
 # local imports
@@ -65,6 +66,7 @@ class ThermostatClass(tc.ThermostatCommon):
         self.port = "5000"  # Flask server port on SHT31 host
         self.url = "http://" + self.ip_address + ":" + self.port
         self.device_id = self.url
+        self.retry_delay = 60  # delay before retrying a bad reading
 
     def get_target_zone_id(self, zone_number=0):
         """
@@ -96,12 +98,12 @@ class ThermostatClass(tc.ThermostatCommon):
         pp = pprint.PrettyPrinter(indent=4)
         pp.pprint(return_data)
 
-    def get_all_metadata(self):
+    def get_all_metadata(self, retry=True):
         """
         Get all the current thermostat metadata.
 
         inputs:
-            None
+            retry(bool): if True will retry once.
         returns:
             (dict) empty dict.
         """
@@ -112,8 +114,14 @@ class ThermostatClass(tc.ThermostatCommon):
             util.log_msg(traceback.format_exc(),
                          mode=util.DEBUG_LOG + util.CONSOLE_LOG,
                          func_name=1)
-            raise Exception("FATAL ERROR: SHT31 server "
-                            "is not responding") from e
+            if retry:
+                print("waiting %s seconds and retrying SHT31 measurement "
+                      "one time..." % self.retry_delay)
+                time.sleep(self.retry_delay)
+                self.get_all_metadata(retry=False)
+            else:
+                raise Exception("FATAL ERROR: SHT31 server "
+                                "is not responding") from e
 
 
 class ThermostatZone(tc.ThermostatCommonZone):
@@ -127,12 +135,13 @@ class ThermostatZone(tc.ThermostatCommonZone):
         tc.ThermostatCommonZone.AUTO_MODE: util.bogus_int,
         }
 
-    def __init__(self, device_id, *_, **__):
+    def __init__(self, device_id, Thermostat_obj, *_, **__):
         """
         Constructor, connect to thermostat.
 
         inputs:
             device_id(str): device id, aka URL for this thermostat.
+            Thermostat_obj(obj): associated Thermostat_obj
         """
         # construct the superclass
         super(ThermostatZone, self).__init__(*_, **__)
@@ -149,6 +158,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
 
         self.tempfield = util.API_TEMP_FIELD  # must match flask API
         self.humidityfield = util.API_HUMIDITY_FIELD  # must match flask API
+        self.retry_delay = Thermostat_obj.retry_delay
 
     def get_target_zone_number(self, device_id):
         """
@@ -168,17 +178,19 @@ class ThermostatZone(tc.ThermostatCommonZone):
 
         return zone_number
 
-    def get_metadata(self, parameter=None):
+    def get_metadata(self, parameter=None, retry=True):
         """
         Get the current thermostat metadata settings.
 
         inputs:
           parameter(str): target parameter, None = all settings
+          retry(bool): if True, will retry on Exception
         returns:
           dict if parameter=None
           str if parameter != None
         """
         r = requests.get(self.url)
+        print("DEBUG: raw response(retry=%s)=%s" % (retry, r))
         if parameter is None:
             try:
                 return r.json()
@@ -186,8 +198,14 @@ class ThermostatZone(tc.ThermostatCommonZone):
                 util.log_msg(traceback.format_exc(),
                              mode=util.DEBUG_LOG + util.CONSOLE_LOG,
                              func_name=1)
-                raise Exception("FATAL ERROR: SHT31 server "
-                                "is not responding") from e
+                if retry:
+                    print("waiting %s seconds and retrying SHT31 measurement "
+                          "one time..." % self.retry_delay)
+                    time.sleep(self.retry_delay)
+                    self.get_metadata(parameter=None, retry=False)
+                else:
+                    raise Exception("FATAL ERROR: SHT31 server "
+                                    "is not responding") from e
         else:
             try:
                 return r.json()[parameter]
@@ -195,8 +213,31 @@ class ThermostatZone(tc.ThermostatCommonZone):
                 util.log_msg(traceback.format_exc(),
                              mode=util.DEBUG_LOG + util.CONSOLE_LOG,
                              func_name=1)
-                raise Exception("FATAL ERROR: SHT31 server "
-                                "is not responding") from e
+                if retry:
+                    print("waiting %s seconds and retrying SHT31 measurement "
+                          "one time..." % self.retry_delay)
+                    time.sleep(self.retry_delay)
+                    self.get_metadata(parameter, retry=False)
+                else:
+                    raise Exception("FATAL ERROR: SHT31 server "
+                                    "is not responding") from e
+            except KeyError as e:
+                util.log_msg(traceback.format_exc(),
+                             mode=util.DEBUG_LOG + util.CONSOLE_LOG,
+                             func_name=1)
+                if "message" in r.json():
+                    print("WARNING in Flask response: '%s'" %
+                          r.json()["message"])
+                if retry:
+                    print("waiting %s seconds and retrying SHT31 measurement "
+                          "one time..." % self.retry_delay)
+                    time.sleep(self.retry_delay)
+                    self.get_metadata(parameter, retry=False)
+                else:
+                    raise Exception("FATAL ERROR: SHT31 server "
+                                    "response did not contain key '%s'"
+                                    ", raw response=%s" %
+                                    (parameter, r.json())) from e
 
     def get_display_temp(self) -> float:
         """
