@@ -21,7 +21,6 @@ class ThermostatCommon():
         self.zone_number = util.bogus_int  # placeholder
         self.device_id = util.bogus_int  # placeholder
         self.ip_address = None  # placeholder
-        self.zone_constructor = None  # placeholder
 
     def print_all_thermostat_metadata(self):
         """

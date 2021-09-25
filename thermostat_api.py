@@ -5,13 +5,10 @@ This file should be updated for any new thermostats supported and
 any changes to thermostat configs.
 """
 # built ins
+import imp
 import sys
 
 # local imports
-import honeywell as h
-import mmm
-import sht31
-import kumocloud
 import utilities as util
 
 
@@ -21,10 +18,13 @@ MMM50 = "mmm50"
 SHT31 = "sht31"
 KUMOCLOUD = "kumocloud"
 SUPPORTED_THERMOSTATS = {
-    HONEYWELL: {"type": 1, "zones": [0]},
-    MMM50: {"type": 2, "zones": [0, 1]},
-    SHT31: {"type": 3, "zones": [0, 1]},
-    KUMOCLOUD: {"type": 4, "zones": [0, 1]},
+    # "module" = module to import
+    # "type" = thermostat type index number
+    # "zones" = zone numbers supported
+    HONEYWELL: {"module": "honeywell", "type": 1, "zones": [0]},
+    MMM50: {"module": "mmm", "type": 2, "zones": [0, 1]},
+    SHT31: {"module": "sht31", "type": 3, "zones": [0, 1]},
+    KUMOCLOUD: {"module": "kumocloud", "type": 4, "zones": [0, 1]},
     }
 
 # target zone for monitoring
@@ -32,7 +32,6 @@ zone_number = 0  # default
 
 thermostats = {
     HONEYWELL: {
-        "thermostat_constructor": h.HoneywellThermostat,
         "required_env_variables": {
             "TCC_USERNAME": None,
             "TCC_PASSWORD": None,
@@ -41,14 +40,12 @@ thermostats = {
             },
         },
     MMM50: {
-        "thermostat_constructor": mmm.MMM50Thermostat,
         "required_env_variables": {
             "GMAIL_USERNAME": None,
             "GMAIL_PASSWORD": None,
             },
         },
     SHT31: {
-        "thermostat_constructor": sht31.SHT31Thermometer,
         "required_env_variables": {
             "GMAIL_USERNAME": None,
             "GMAIL_PASSWORD": None,
@@ -56,7 +53,6 @@ thermostats = {
             },
         },
     KUMOCLOUD: {
-        "thermostat_constructor": kumocloud.KumoCloud,
         "required_env_variables": {
             "GMAIL_USERNAME": None,
             "GMAIL_PASSWORD": None,
@@ -175,3 +171,39 @@ def parse_all_runtime_parameters():
                                                       int, None, range(0, 10))
     return [tstat_type, zone_input, poll_time_input, connection_time_input,
             tolerance_degrees_input]
+
+
+# dynamic import
+def dynamic_imp(name):
+
+    # find_module() method is used
+    # to find the module and return
+    # its description and path
+    try:
+        fp, path, desc = imp.find_module(name)
+    except ImportError:
+        print("module not found: " + name)
+
+    try:
+        # load_modules loads the module
+        # dynamically ans takes the filepath
+        # module and description as parameter
+        example_package = imp.load_module(name, fp,
+                                          path, desc)
+    except Exception as e:
+        print(e)
+
+    return example_package
+
+
+def load_hardware_library(thermostat_type):
+    """
+    Dynamic load library for requested hardware type.
+
+    inputs:
+        thermostat_type(str): thermostat type
+    returns:
+        module
+    """
+    mod = dynamic_imp(SUPPORTED_THERMOSTATS[thermostat_type]["module"])
+    return mod

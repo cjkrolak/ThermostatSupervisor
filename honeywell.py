@@ -17,7 +17,7 @@ import thermostat_common as tc
 import utilities as util
 
 
-class HoneywellThermostat(pyhtcc.PyHTCC):
+class ThermostatClass(pyhtcc.PyHTCC):
     """Extend the PyHTCC class with additional methods."""
 
     def __init__(self, zone, *_, **__):
@@ -36,13 +36,12 @@ class HoneywellThermostat(pyhtcc.PyHTCC):
         self.args = [self.tcc_uname, self.tcc_pwd]
 
         # construct the superclass, requires auth setup first
-        super(HoneywellThermostat, self).__init__(*self.args)
+        super(ThermostatClass, self).__init__(*self.args)
 
         # configure zone info
         self.thermostat_type = api.HONEYWELL
         self.zone_number = int(zone)
         self.device_id = self.get_target_zone_id()
-        self.zone_constructor = HoneywellZone
 
     def _get_zone_device_ids(self) -> list:
         """
@@ -237,7 +236,7 @@ class HoneywellThermostat(pyhtcc.PyHTCC):
         return zones
 
 
-class HoneywellZone(pyhtcc.Zone, tc.ThermostatCommonZone):
+class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
     """Extend the Zone class with additional methods to get and set
        uiData parameters."""
 
@@ -616,10 +615,17 @@ if __name__ == "__main__":
     zone_input = api.parse_all_runtime_parameters()[1]
 
     # verify required env vars
-    api.verify_required_env_variables(api.MMM50, zone_input)
-    Thermostat = HoneywellThermostat(zone_input)
+    api.verify_required_env_variables(api.HONEYWELL, zone_input)
+
+    # import hardware module
+    mod = api.load_hardware_library(api.HONEYWELL)
+
+    # create Thermostat object
+    Thermostat = ThermostatClass(zone_input)
     Thermostat.print_all_thermostat_metadata()
-    Zone = HoneywellZone(Thermostat.device_id, Thermostat)
+
+    # create Zone object
+    Zone = ThermostatZone(Thermostat.device_id, Thermostat)
 
     # update runtime overrides
     Zone.update_runtime_parameters(api.user_inputs)

@@ -35,7 +35,7 @@ mmm_metadata = {
 }
 
 
-class MMM50Thermostat(tc.ThermostatCommonZone):
+class ThermostatClass(tc.ThermostatCommonZone):
     """3m50 thermostat zone functions."""
 
     def __init__(self, zone, *_, **__):
@@ -48,7 +48,7 @@ class MMM50Thermostat(tc.ThermostatCommonZone):
             zone.
         """
         # construct the superclass
-        super(MMM50Thermostat, self).__init__(*_, **__)
+        super(ThermostatClass, self).__init__(*_, **__)
         self.thermostat_type = api.MMM50
 
         # configure zone info
@@ -56,7 +56,6 @@ class MMM50Thermostat(tc.ThermostatCommonZone):
         self.ip_address = mmm_metadata[self.zone_number]["ip_address"]
         self.device_id = self.get_target_zone_id()
         mmm_metadata[self.zone_number]["device_id"] = self.device_id
-        self.zone_constructor = MMM50ThermostatZone
 
     def get_target_zone_id(self):
         """
@@ -179,7 +178,7 @@ class MMM50Thermostat(tc.ThermostatCommonZone):
         return self.device_id[parameter]['raw']
 
 
-class MMM50ThermostatZone(tc.ThermostatCommonZone):
+class ThermostatZone(tc.ThermostatCommonZone):
     """3m50 thermostat zone functions."""
 
     system_switch_position = {
@@ -199,7 +198,7 @@ class MMM50ThermostatZone(tc.ThermostatCommonZone):
             zone.
         """
         # construct the superclass
-        super(MMM50ThermostatZone, self).__init__(*_, **__)
+        super(ThermostatZone, self).__init__(*_, **__)
 
         # zone info
         self.thermostat_type = api.MMM50
@@ -618,11 +617,15 @@ if __name__ == "__main__":
     # verify required env vars
     api.verify_required_env_variables(api.MMM50, zone_input)
 
-    Thermostat = MMM50Thermostat(zone_input)
+    # import hardware module
+    mod = api.load_hardware_library(api.MMM50)
 
-    # get zone based on device_id
-    Zone = Thermostat.zone_constructor(Thermostat.device_id,
-                                       Thermostat)
+    # create Thermostat object
+    Thermostat = ThermostatClass(zone_input)
+    Thermostat.print_all_thermostat_metadata()
+
+    # create Zone object
+    Zone = ThermostatZone(Thermostat.device_id, Thermostat)
 
     # update runtime overrides
     Zone.update_runtime_parameters(api.user_inputs)
