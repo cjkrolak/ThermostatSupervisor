@@ -7,6 +7,7 @@ any changes to thermostat configs.
 # built ins
 import imp
 import sys
+import traceback
 
 # local imports
 import utilities as util
@@ -177,26 +178,33 @@ def parse_all_runtime_parameters():
 
 
 # dynamic import
-def dynamic_imp(name):
+def dynamic_module_import(name):
 
     # find_module() method is used
     # to find the module and return
     # its description and path
     try:
         fp, path, desc = imp.find_module(name)
-    except ImportError:
+    except ImportError as e:
+        util.log_msg(traceback.format_exc(),
+                     mode=util.DEBUG_LOG + util.CONSOLE_LOG, func_name=1)
         print("module not found: " + name)
+        raise e
 
     try:
         # load_modules loads the module
-        # dynamically ans takes the filepath
+        # dynamically and takes the filepath
         # module and description as parameter
-        example_package = imp.load_module(name, fp,
-                                          path, desc)
+        mod = imp.load_module(name, fp, path, desc)
     except Exception as e:
-        print(e)
+        util.log_msg(traceback.format_exc(),
+                     mode=util.DEBUG_LOG + util.CONSOLE_LOG, func_name=1)
+        print("module load failed: " + name)
+        raise e
+    finally:
+        fp.close
 
-    return example_package
+    return mod
 
 
 def load_hardware_library(thermostat_type):
@@ -208,5 +216,6 @@ def load_hardware_library(thermostat_type):
     returns:
         module
     """
-    mod = dynamic_imp(SUPPORTED_THERMOSTATS[thermostat_type]["module"])
+    mod = dynamic_module_import(
+        SUPPORTED_THERMOSTATS[thermostat_type]["module"])
     return mod

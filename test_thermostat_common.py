@@ -31,8 +31,8 @@ class Test(unittest.TestCase):
             "connection_time_sec": 155,
             }
 
-        self.Thermostat = tc.ThermostatCommonZone()
-        self.Thermostat.update_runtime_parameters(api.user_inputs)
+        self.Zone = tc.ThermostatCommonZone()
+        self.Zone.update_runtime_parameters(api.user_inputs)
 
     def tearDown(self):
         del api.thermostats[self.tstat]
@@ -45,63 +45,63 @@ class Test(unittest.TestCase):
         utc.print_test_name()
         func_dict = {
             "get_current_mode": {
-                "key": self.Thermostat.get_current_mode,
+                "key": self.Zone.get_current_mode,
                 "args": [1, 1],  # flag_all_deviations==False
                 "return_type": dict},
             "Get_current_mode": {  # Capitalize for unique key
-                "key": self.Thermostat.get_current_mode,
+                "key": self.Zone.get_current_mode,
                 "args": [1, 1, True, True],  # flag_all_deviations==True
                 "return_type": dict},
             "get_display_temp": {
-                "key": self.Thermostat.get_display_temp,
+                "key": self.Zone.get_display_temp,
                 "args": None,
                 "return_type": float},
             "get_display_humidity": {
-                "key": self.Thermostat.get_display_humidity,
+                "key": self.Zone.get_display_humidity,
                 "args": None,
                 "return_type": float},
             "get_is_humidity_supported": {
-                "key": self.Thermostat.get_is_humidity_supported,
+                "key": self.Zone.get_is_humidity_supported,
                 "args": None,
                 "return_type": bool},
             "get_system_switch_position": {
-                "key": self.Thermostat.get_system_switch_position,
+                "key": self.Zone.get_system_switch_position,
                 "args": None,
                 "return_type": int},
             "get_heat_setpoint_raw": {
-                "key": self.Thermostat.get_heat_setpoint_raw,
+                "key": self.Zone.get_heat_setpoint_raw,
                 "args": None,
                 "return_type": int},
             "get_schedule_heat_sp": {
-                "key": self.Thermostat.get_schedule_heat_sp,
+                "key": self.Zone.get_schedule_heat_sp,
                 "args": None,
                 "return_type": int},
             "get_cool_setpoint_raw": {
-                "key": self.Thermostat.get_cool_setpoint_raw,
+                "key": self.Zone.get_cool_setpoint_raw,
                 "args": None,
                 "return_type": int},
             "get_schedule_cool_sp": {
-                "key": self.Thermostat.get_schedule_cool_sp,
+                "key": self.Zone.get_schedule_cool_sp,
                 "args": None,
                 "return_type": int},
             "get_is_invacation_hold_mode": {
-                "key": self.Thermostat.get_is_invacation_hold_mode,
+                "key": self.Zone.get_is_invacation_hold_mode,
                 "args": None,
                 "return_type": bool},
             "get_temporary_hold_until_time": {
-                "key": self.Thermostat.get_temporary_hold_until_time,
+                "key": self.Zone.get_temporary_hold_until_time,
                 "args": None,
                 "return_type": int},
             "refresh_zone_info": {
-                "key": self.Thermostat.refresh_zone_info,
+                "key": self.Zone.refresh_zone_info,
                 "args": None,
                 "return_type": type(None)},
             "report_heating_parameters": {
-                "key": self.Thermostat.report_heating_parameters,
+                "key": self.Zone.report_heating_parameters,
                 "args": None,
                 "return_type": type(None)},
             "update_runtime_parameters": {
-                "key": self.Thermostat.update_runtime_parameters,
+                "key": self.Zone.update_runtime_parameters,
                 "args": [{"zone": 1}],
                 "return_type": type(None)},
             }
@@ -124,8 +124,8 @@ class Test(unittest.TestCase):
             print("test case=%s" % type(test_case))
             if isinstance(test_case, (int, float)):
                 expected_val = test_case
-                actual_val = self.Thermostat.validate_numeric(test_case,
-                                                              "test_case")
+                actual_val = self.Zone.validate_numeric(test_case,
+                                                        "test_case")
                 self.assertEqual(
                     expected_val, actual_val,
                     "expected return value=%s, type(%s), actual=%s,"
@@ -133,21 +133,21 @@ class Test(unittest.TestCase):
                                   type(actual_val)))
             else:
                 with self.assertRaises(TypeError):
-                    self.Thermostat.validate_numeric(
+                    self.Zone.validate_numeric(
                         test_case, "test_case")
 
     def test_WarnIfOutsideGlobalLimit(self):
         """Test warn_if_outside_global_limit() function."""
-        self.assertTrue(self.Thermostat.warn_if_outside_global_limit(
+        self.assertTrue(self.Zone.warn_if_outside_global_limit(
             2, 1, operator.gt, "heat"),
             "function result should have been True")
-        self.assertFalse(self.Thermostat.warn_if_outside_global_limit(
+        self.assertFalse(self.Zone.warn_if_outside_global_limit(
             2, 3, operator.gt, "heat"),
             "function result should have been False")
-        self.assertTrue(self.Thermostat.warn_if_outside_global_limit(
+        self.assertTrue(self.Zone.warn_if_outside_global_limit(
             2, 3, operator.lt, "cool"),
             "function result should have been True")
-        self.assertFalse(self.Thermostat.warn_if_outside_global_limit(
+        self.assertFalse(self.Zone.warn_if_outside_global_limit(
             2, 1, operator.lt, "cool"),
             "function result should have been False")
 
@@ -156,32 +156,33 @@ class Test(unittest.TestCase):
         Verify get_current_mode runs in all permutations.
 
         test cases:
-        heat mode and following schedule
-        heat mode and deviation
-        cool mode and following schedule
-        cool mode and cool deviation
+        1. heat mode and following schedule
+        2. heat mode and deviation
+        3. cool mode and following schedule
+        4. cool mode and cool deviation
+        5. humidity is available
         """
         utc.print_test_name()
         return  # test is not ready
         self.backup_functions()
         try:
             # heat mode and following schedule
-            self.Thermostat.get_system_switch_position = \
+            self.Zone.get_system_switch_position = \
                 (lambda *_, **__:
-                 self.Thermostat.system_switch_position[
-                     self.Thermostat.HEAT_MODE])
-            ret_dict = self.Thermostat.get_current_mode(1, 1, True, False)
+                 self.Zone.system_switch_position[
+                     self.Zone.HEAT_MODE])
+            ret_dict = self.Zone.get_current_mode(1, 1, True, False)
 
             # heat mode and deviation
-            self.Thermostat.get_system_switch_position = \
+            self.Zone.get_system_switch_position = \
                 (lambda *_, **__:
-                 self.Thermostat.system_switch_position[
-                     self.Thermostat.HEAT_MODE])
-            ret_dict = self.Thermostat.get_current_mode(1, 1, True, False)
+                 self.Zone.system_switch_position[
+                     self.Zone.HEAT_MODE])
+            ret_dict = self.Zone.get_current_mode(1, 1, True, False)
             # cool mode and following schedule
-            # self.Thermostat.get_system_switch_position() = \
-            #    self.Thermostat.system_switch_position[self.COOL_MODE]
-            ret_dict = self.Thermostat.get_current_mode(1, 1, True, False)
+            # self.Zone.get_system_switch_position() = \
+            #    self.Zone.system_switch_position[self.COOL_MODE]
+            ret_dict = self.Zone.get_current_mode(1, 1, True, False)
             print("%s" % ret_dict)
             # cool mode and cool deviation
         finally:
@@ -189,15 +190,15 @@ class Test(unittest.TestCase):
 
     def backup_functions(self):
         """Backup functions prior to mocking return values."""
-        self.switch_pos_bckup = self.Thermostat.get_system_switch_position
-        self.heat_raw_bckup = self.Thermostat.get_heat_setpoint_raw
-        self.schedule_heat_sp_bckup = self.Thermostat.get_schedule_heat_sp
+        self.switch_pos_bckup = self.Zone.get_system_switch_position
+        self.heat_raw_bckup = self.Zone.get_heat_setpoint_raw
+        self.schedule_heat_sp_bckup = self.Zone.get_schedule_heat_sp
 
     def restore_functions(self):
         """Restore backed up functions."""
-        self.Thermostat.get_system_switch_position = self.switch_pos_bckup
-        self.Thermostat.get_heat_setpoint_raw = self.heat_raw_bckup
-        self.Thermostat.get_schedule_heat_sp = self.schedule_heat_sp_bckup
+        self.Zone.get_system_switch_position = self.switch_pos_bckup
+        self.Zone.get_heat_setpoint_raw = self.heat_raw_bckup
+        self.Zone.get_schedule_heat_sp = self.schedule_heat_sp_bckup
 
 
 if __name__ == "__main__":
