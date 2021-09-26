@@ -190,7 +190,6 @@ class ThermostatZone(tc.ThermostatCommonZone):
           str if parameter != None
         """
         r = requests.get(self.url)
-        print("DEBUG: raw response(retry=%s)=%s" % (retry, r))
         if parameter is None:
             try:
                 return r.json()
