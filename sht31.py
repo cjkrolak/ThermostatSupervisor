@@ -135,12 +135,11 @@ class ThermostatZone(tc.ThermostatCommonZone):
         tc.ThermostatCommonZone.AUTO_MODE: util.bogus_int,
         }
 
-    def __init__(self, device_id, Thermostat_obj, *_, **__):
+    def __init__(self, Thermostat_obj, *_, **__):
         """
         Constructor, connect to thermostat.
 
         inputs:
-            device_id(str): device id, aka URL for this thermostat.
             Thermostat_obj(obj): associated Thermostat_obj
         """
         # construct the superclass
@@ -148,9 +147,9 @@ class ThermostatZone(tc.ThermostatCommonZone):
 
         # zone configuration
         self.thermostat_type = api.SHT31
-        self.device_id = device_id
-        self.url = device_id
-        self.zone_number = self.get_target_zone_number(device_id)
+        self.device_id = Thermostat_obj.device_id
+        self.url = Thermostat_obj.device_id
+        self.zone_number = Thermostat_obj.zone_number
 
         # runtime defaults
         self.poll_time_sec = 1 * 60  # default to 1 minute
@@ -159,24 +158,6 @@ class ThermostatZone(tc.ThermostatCommonZone):
         self.tempfield = util.API_TEMP_FIELD  # must match flask API
         self.humidityfield = util.API_HUMIDITY_FIELD  # must match flask API
         self.retry_delay = Thermostat_obj.retry_delay
-
-    def get_target_zone_number(self, device_id):
-        """
-        Return the target zone number from the device id provided.
-
-        inputs:
-            device_id(str): full URL with port.
-        returns:
-            (int):  zone number.
-        """
-        # strip off https header
-        ip_address = device_id[device_id.find("//")+2:]
-        # strip off port information from URL
-        ip_address = ip_address[:ip_address.rfind(":")]
-        zone_number = list(sht31_ip.keys())[
-            list(sht31_ip.values()).index(ip_address)]
-
-        return zone_number
 
     def get_metadata(self, parameter=None, retry=True):
         """
@@ -343,7 +324,7 @@ if __name__ == "__main__":
     Thermostat.print_all_thermostat_metadata()
 
     # create Zone object
-    Zone = ThermostatZone(Thermostat.device_id, Thermostat)
+    Zone = ThermostatZone(Thermostat)
 
     # update runtime overrides
     Zone.update_runtime_parameters(api.user_inputs)
