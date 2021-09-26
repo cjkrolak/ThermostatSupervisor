@@ -26,7 +26,7 @@ class Test(unittest.TestCase):
     def tearDown(self):
         del api.thermostats[self.tstat]
 
-    # def testSetTargetZone(self):
+    # def test_SetTargetZone(self):
     #     """
     #     Confirm target zone can be set and read back.
     #     """
@@ -37,9 +37,9 @@ class Test(unittest.TestCase):
     #         api.set_target_zone(self.tstat, zone)
     #         self.assertEqual(api.thermostats[self.tstat]["zone"], zone)
 
-    def testVerifyRequiredEnvVariables(self):
+    def test_VerifyRequiredEnvVariables(self):
         """
-        Verify test verify_required_env_variables() passes in nominal
+        Verify verify_required_env_variables() passes in nominal
         condition and fails with missing key.
         """
         missing_key = "agrfg_"  # bogus key should be missing
@@ -84,7 +84,7 @@ class Test(unittest.TestCase):
             random_list.append(n)
         return random_list
 
-    def testParseRuntimeParameter(self):
+    def test_ParseRuntimeParameter(self):
         """
         Verify test parse_runtime_parameter() returns expected
         values when input known values.
@@ -164,7 +164,7 @@ class Test(unittest.TestCase):
         finally:
             input_list = input_list_backup  # restore original
 
-    def testParseAllRuntimeParameters(self):
+    def test_ParseAllRuntimeParameters(self):
         """
         Verify test parse_all_runtime_parameters() runs without error
         and return values match user_inputs dict.
@@ -178,6 +178,40 @@ class Test(unittest.TestCase):
         self.assertEqual(return_list[3],
                          api.user_inputs["connection_time_sec"])
         self.assertEqual(return_list[4], api.user_inputs["tolerance_degrees"])
+
+    def test_DynamicModuleImport(self):
+        """
+        Verify dynamic_module_import() runs without error
+        """
+        utc.print_test_name()
+
+        # test successful case
+        pkg = api.dynamic_module_import(api.HONEYWELL)
+        print("api.HONEYWELL returned package type %s" % type(pkg))
+        self.assertTrue(isinstance(pkg, object),
+                        "api.dynamic_module_import() returned type(%s),"
+                        " expected an object" % type(pkg))
+        del pkg
+
+        # test failing case
+        with self.assertRaises(ImportError):
+            pkg = api.dynamic_module_import("bogus")
+            print("'bogus' module returned package type %s" % type(pkg))
+
+    def ttest_LoadHardwareLibrary(self):
+        """
+        Verify load_hardware_library() runs without error
+        """
+        # test successful case
+        pkg = api.load_hardware_library(api.HONEYWELL)
+        print("api.HONEYWELL returned package type %s" % type(pkg))
+        del pkg
+
+        # test failing case
+        with self.assertRaises(KeyError):
+            pkg = api.load_hardware_library("bogus")
+            print("'bogus' returned package type %s" % type(pkg))
+            del pkg
 
 
 if __name__ == "__main__":

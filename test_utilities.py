@@ -3,6 +3,7 @@ Unit test module for utilities.py.
 """
 # built-in imports
 import os
+import shutil
 import unittest
 
 # local imports
@@ -19,7 +20,7 @@ class Test(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def testGetEnvVariable(self):
+    def test_GetEnvVariable(self):
         """
         Confirm get_env_variable() can retrieve values.
         """
@@ -33,7 +34,7 @@ class Test(unittest.TestCase):
             self.assertEqual(buff["status"], util.NO_ERROR)
             self.assertGreater(len(buff["value"]), 0)
 
-    def testLoadAllEnvVariables(self):
+    def test_LoadAllEnvVariables(self):
         """
         Confirm all env variables can be loaded.
         """
@@ -41,7 +42,7 @@ class Test(unittest.TestCase):
         util.load_all_env_variables()
         print("env var dict=%s" % util.env_variables)
 
-    def testGetFunctionName(self):
+    def test_GetFunctionName(self):
         """
         Confirm get_function_name works as expected.
         """
@@ -49,7 +50,7 @@ class Test(unittest.TestCase):
         # default
         test = "<default>"
         print("testing util.get_function_name(%s)" % test)
-        ev_1 = "testGetFunctionName"
+        ev_1 = "test_GetFunctionName"
         result_1 = util.get_function_name()
         self.assertEqual(ev_1, result_1, "expected=%s, actual=%s" %
                          (ev_1, result_1))
@@ -57,7 +58,7 @@ class Test(unittest.TestCase):
         # test 1
         test = 1
         print("testing util.get_function_name(%s)" % test)
-        ev_1 = "testGetFunctionName"
+        ev_1 = "test_GetFunctionName"
         result_1 = util.get_function_name(test)
         self.assertEqual(ev_1, result_1, "test%s: expected=%s, actual=%s" %
                          (test, ev_1, result_1))
@@ -72,7 +73,72 @@ class Test(unittest.TestCase):
         self.assertTrue(result_1 in ev_1, "test%s: expected values=%s, "
                         "actual=%s" % (test, ev_1, result_1))
 
-    def testLogMsgWrite(self):
+    def test_LogMsgCreateFolder(self):
+        """
+        Confirm log_msg() will create folder if needed
+        """
+        utc.print_test_name()
+        # override data file path
+        path_backup = util.file_path
+        util.file_path = ".//unittest_data"
+
+        file_name = "unit_test.txt"
+        full_path = util.get_full_file_path(file_name)
+        try:
+            # remove directory if it already exists
+            if os.path.exists(util.file_path):
+                shutil.rmtree(util.file_path)
+
+            # write to file and path that does not exist
+            test_msg1 = "first test message from unit test"
+            # test_msg1_length = util.utf8len(test_msg1 + "\n") + 1
+            return_buffer = util.log_msg(test_msg1, mode=util.BOTH_LOG,
+                                         file_name=file_name)
+            self.assertEqual(return_buffer["status"], util.NO_ERROR)
+
+            # confirm file exists
+            file_size_bytes = os.path.getsize(full_path)
+            # self.assertEqual(file_size_bytes, test_msg1_length)
+            self.assertGreater(file_size_bytes, 30)
+        finally:
+            # remove the directory
+            shutil.rmtree(util.file_path)
+            # restore original data file name
+            util.file_path = path_backup
+
+    def test_LogMsgRotate(self):
+        """
+        Verify log rotates at max_log_size_bytes.
+        """
+        utc.print_test_name()
+        return  # test is not yet ready
+        # override rotate size
+        size_backup = util.max_log_size_bytes
+        util.file_path = ".//unittest_data"
+
+        file_name = "unit_test.txt"
+        full_path = util.get_full_file_path(file_name)
+        try:
+            # remove directory if it already exists
+            if os.path.exists(util.file_path):
+                os.removedirs(util.file_path)
+
+            # write to file and path that does not exist
+            test_msg1 = "first test message from unit test"
+            # test_msg1_length = util.utf8len(test_msg1 + "\n") + 1
+            return_buffer = util.log_msg(test_msg1, mode=util.BOTH_LOG,
+                                         file_name=file_name)
+            self.assertEqual(return_buffer["status"], util.NO_ERROR)
+
+            # confirm file exists
+            file_size_bytes = os.path.getsize(full_path)
+            # self.assertEqual(file_size_bytes, test_msg1_length)
+            self.assertGreater(file_size_bytes, 30)
+        finally:
+            # restore original log max size
+            util.max_log_size_bytes = size_backup
+
+    def test_LogMsgWrite(self):
         """
         Confirm log_msg() can write and append to file.
         """
@@ -113,7 +179,7 @@ class Test(unittest.TestCase):
         #                 test_msg1_length + test_msg2_length)
         self.assertGreater(file_size_bytes, 60)
 
-    def testGetFullFilePath(self):
+    def test_GetFullFilePath(self):
         """
         Verify get_full_file_path() function.
         """
@@ -126,7 +192,7 @@ class Test(unittest.TestCase):
                          "expected=%s, actual=%s" %
                          (expected_value, full_path))
 
-    def testutf8len(self):
+    def test_utf8len(self):
         """
         Verify utf8len().
         """
