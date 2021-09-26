@@ -112,23 +112,21 @@ class ThermostatZone(tc.ThermostatCommonZone):
         tc.ThermostatCommonZone.UNKNOWN_MODE: -1,
         }
 
-    def __init__(self, device_id, Tstat, *_, **__):
+    def __init__(self, Thermostat_obj, *_, **__):
         """
         Zone constructor.
 
         inputs:
-            device_id(int):  Honeywell device_id on the account,
-                             this is the same as the zone number.
-            Thermostat(obj): Thermostat object.
+            Thermostat(obj): Thermostat class instance.
         """
         # construct the superclass, requires auth setup first
         super(ThermostatZone, self).__init__(*_, **__)
 
         # zone info
         self.thermostat_type = api.KUMOCLOUD
-        self.device_id = device_id
-        self.Thermostat = Tstat
-        self.zone_number = self.get_target_zone_number(device_id)
+        self.device_id = Thermostat_obj.device_id
+        self.Thermostat = Thermostat_obj
+        self.zone_number = Thermostat_obj.zone_number
 
         # runtime parameter defaults
         self.poll_time_sec = 10 * 60  # default to 10 minutes
@@ -137,22 +135,6 @@ class ThermostatZone(tc.ThermostatCommonZone):
         # server data cache experation parameters
         self.fetch_interval_sec = 10  # age of server data before refresh
         self.last_fetch_time = time.time() - 2 * self.fetch_interval_sec
-
-    def get_target_zone_number(self, device_id):
-        """
-        Return the target zone number based on the device_id.
-
-        inputs:
-            device_id(obj): 3m50 device id object.
-        returns:
-            (int):  zone number.
-        """
-        zone_number = -1
-        for zone in kc_metadata:
-            if kc_metadata[zone]["device_id"] == device_id:
-                zone_number = zone
-                break
-        return zone_number
 
     def _c_to_f(self, tempc) -> float:
         """
@@ -450,7 +432,7 @@ if __name__ == "__main__":
     Thermostat.print_all_thermostat_metadata()
 
     # create Zone object
-    Zone = ThermostatZone(Thermostat.device_id, Thermostat)
+    Zone = ThermostatZone(Thermostat)
 
     # update runtime overrides
     Zone.update_runtime_parameters(api.user_inputs)

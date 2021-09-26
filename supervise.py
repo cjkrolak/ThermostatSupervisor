@@ -72,8 +72,7 @@ def main(thermostat_type, zone_str):
             Thermostat.print_all_thermostat_metadata()
 
         # get Zone object based on deviceID
-        Zone = mod.ThermostatZone(Thermostat.device_id,
-                                  Thermostat)
+        Zone = mod.ThermostatZone(Thermostat)
 
         # update runtime overrides
         Zone.update_runtime_parameters(api.user_inputs)

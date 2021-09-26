@@ -41,7 +41,7 @@ class ThermostatClass(pyhtcc.PyHTCC):
         # configure zone info
         self.thermostat_type = api.HONEYWELL
         self.zone_number = int(zone)
-        self.device_id = self.get_target_zone_id()
+        self.device_id = self.get_target_zone_id(self.zone_number)
 
     def _get_zone_device_ids(self) -> list:
         """
@@ -248,26 +248,29 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
         # what mode is 0 on Honeywell?
         }
 
-    def __init__(self, device_id, *_, **__):
+    def __init__(self, Thermostat_obj, *_, **__):
         """
         Zone constructor.
 
         inputs:
-            device_id(int):  Honeywell device_id on the account,
-                             this is the same as the zone number.
+            Thermostat_obj(obj): Thermostat class object.
+        returns:
+            None
         """
-        if not isinstance(device_id, int):
+        if not isinstance(Thermostat_obj.device_id, int):
             raise TypeError("device_id is type %s, "
-                            "expected type 'int'" % type(device_id))
+                            "expected type 'int'" %
+                            type(Thermostat_obj.device_id))
 
         # call both parent class __init__
-        pyhtcc.Zone.__init__(self, device_id, *_, **__)
+        pyhtcc.Zone.__init__(self, Thermostat_obj.device_id,
+                             Thermostat_obj, *_, **__)
         tc.ThermostatCommonZone.__init__(self, *_, **__)
 
         # zone info
         self.thermostat_type = api.HONEYWELL
-        self.device_id = device_id
-        self.zone_number = self.get_target_zone_number(device_id)
+        self.device_id = Thermostat_obj.device_id
+        self.zone_number = Thermostat_obj.zone_number
 
         # runtime parameter defaults
         self.poll_time_sec = 10 * 60  # default to 10 minutes
@@ -275,17 +278,6 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
         # max value was 3, higher settings will cause HTTP errors, why?
         # not showing error on Pi at 10 minutes, so changed default to 10 min.
         self.connection_time_sec = 8 * 60 * 60  # default to 8 hours
-
-    def get_target_zone_number(self, device_id):
-        """
-        Return the target zone number from the device id provided.
-
-        inputs:
-            device_id(str or int): specified device id
-        returns:
-            (int):  zone number.
-        """
-        return int(device_id)
 
     def get_display_temp(self) -> float:  # used
         """
@@ -625,7 +617,7 @@ if __name__ == "__main__":
     Thermostat.print_all_thermostat_metadata()
 
     # create Zone object
-    Zone = ThermostatZone(Thermostat.device_id, Thermostat)
+    Zone = ThermostatZone(Thermostat)
 
     # update runtime overrides
     Zone.update_runtime_parameters(api.user_inputs)

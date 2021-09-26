@@ -188,12 +188,12 @@ class ThermostatZone(tc.ThermostatCommonZone):
         tc.ThermostatCommonZone.AUTO_MODE: 3,
         }
 
-    def __init__(self, device_id, *_, **__):
+    def __init__(self, Thermostat_obj, *_, **__):
         """
         Constructor, connect to thermostat.
 
         inputs:
-            device_id(obj):  3m50 device object class.
+            Thermostat_obj(obj):  Thermostat class instance.
             mmm_metadata dict above must have correct local IP address for each
             zone.
         """
@@ -202,28 +202,12 @@ class ThermostatZone(tc.ThermostatCommonZone):
 
         # zone info
         self.thermostat_type = api.MMM50
-        self.device_id = device_id
-        self.zone_number = self.get_target_zone_number(device_id)
+        self.device_id = Thermostat_obj.device_id
+        self.zone_number = Thermostat_obj.zone_number
 
         # runtime parameter defaults
         self.poll_time_sec = 10 * 60  # default to 10 minutes
         self.connection_time_sec = 8 * 60 * 60  # default to 8 hours
-
-    def get_target_zone_number(self, device_id):
-        """
-        Return the target zone number based on the device_id.
-
-        inputs:
-            device_id(obj): 3m50 device id object.
-        returns:
-            (int):  zone number.
-        """
-        zone_number = -1
-        for zone in mmm_metadata:
-            if mmm_metadata[zone]["device_id"] == device_id:
-                zone_number = zone
-                break
-        return zone_number
 
     def get_display_temp(self) -> float:
         """
@@ -625,7 +609,7 @@ if __name__ == "__main__":
     Thermostat.print_all_thermostat_metadata()
 
     # create Zone object
-    Zone = ThermostatZone(Thermostat.device_id, Thermostat)
+    Zone = ThermostatZone(Thermostat)
 
     # update runtime overrides
     Zone.update_runtime_parameters(api.user_inputs)
