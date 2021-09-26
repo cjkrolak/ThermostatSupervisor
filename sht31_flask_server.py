@@ -128,11 +128,14 @@ app = create_app()
 if __name__ == "__main__":
 
     unit_test_mode = False
+    print("SHT31 sensor Flask server")
 
     # parse runtime parameters, argv[1] is unittest mode
     if len(sys.argv) > 1 and sys.argv[1] == "unittest":
         unit_test_mode = True
+        print("Running in unit test mode (fabricated output)", file=sys.stderr)
     else:
+        print("Running in production mode (real output)", file=sys.stderr)
         # raise exception if pi libaries failed to load
         if pi_library_exception is not None:
             raise pi_library_exception
@@ -142,6 +145,8 @@ if __name__ == "__main__":
         measurements = int(sys.argv[2])
     else:
         measurements = 1  # default
+    print("Averaging %s measurement for each reading" %
+          measurements, file=sys.stderr)
 
     # argv[3] is flask server debug mode
     debug = False  # default
@@ -149,6 +154,7 @@ if __name__ == "__main__":
         argv3_str = sys.argv[3]
         if argv3_str.lower() in ["1", "true"]:
             debug = True
+            print("Flask debug mode is enabled", file=sys.stderr)
 
     # launch the Flask API
     app.run(debug=debug, host='0.0.0.0')
