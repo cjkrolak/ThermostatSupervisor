@@ -373,6 +373,7 @@ class ThermostatCommonZone():
         returns:
             None, cached data is refreshed.
         """
+        del force_refresh  # not used in this template.
         return  # placeholder
 
     def report_heating_parameters(self):

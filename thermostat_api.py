@@ -118,7 +118,7 @@ def parse_runtime_parameter(key, position, datatype, default_value,
         valid_range(list, dict, range): set of valid values.
         input_list(list):  list of input variables, if None will use args.
     returns:
-        (int or str): input value
+        (int or str): user input runtime value.
     """
     if input_list is None:
         target = sys.argv
@@ -179,7 +179,6 @@ def parse_all_runtime_parameters():
 
 # dynamic import
 def dynamic_module_import(name):
-
     # find_module() method is used
     # to find the module and return
     # its description and path

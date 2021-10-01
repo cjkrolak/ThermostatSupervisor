@@ -32,8 +32,8 @@ def send_email_alert(to_address=None,
     Send an email alert on gmail.
 
     inputs:
-        to(list):      list of email addresses
-        from(str):     from gmail address
+        to_address(list): list of email addresses
+        from_address(str):  from gmail address
         from_password(str): password for from gmail address
         subject(str):  email subject text
         body(str):     email body text
