@@ -14,20 +14,18 @@ MAIN_KUMO = 0  # zone 0
 BASEMENT_KUMO = 1  # zone 1
 kc_metadata = {
     MAIN_KUMO: {"ip_address": "192.168.86.82",  # local IP
-                "device_id": None,  # placeholder
-                "zone_object": None,
-                "zone_name": None},
+                "zone_name": "MAIN_LEVEL",  # customize for your site.
+                },
     BASEMENT_KUMO: {"ip_address": "192.168.86.83",  # local IP
-                    "device_id": None,  # placeholder
-                    "zone_object": None,
-                    "zone_name": None},
+                    "zone_name": "BASEMENT",  # customize for your site.
+                    },
 }
 
 
 class ThermostatClass(pykumo.KumoCloudAccount):
     """KumoCloud thermostat functions."""
 
-    def __init__(self, zone, *_, **__):
+    def __init__(self, zone):
         """
         Constructor, connect to thermostat.
 
@@ -62,26 +60,22 @@ class ThermostatClass(pykumo.KumoCloudAccount):
         returns:
             (int): zone device id number
         """
+        self.zone_name = kc_metadata[zone_number]["zone_name"]
         # populate the zone dictionary
         print("DEBUG in get_target_zone")
         kumos = self.make_pykumos()
         print("DEBUG in get_target_zone after make_pykumos")
-        zone_number = 0
-        for zone_name in kumos:
-            kc_metadata[zone_number]["device_id"] = kumos[zone_name]
-            kc_metadata[zone_number]["zone_name"] = zone_name
-            if zone_number == self.zone_number:
-                target_zone_name = zone_name
-                # print zone name the first time it is known
-                if self.device_id is None:
-                    util.log_msg("zone %s name = '%s'" %
-                                 (zone_number, zone_name),
-                                 mode=util.DEBUG_LOG + util.CONSOLE_LOG,
-                                 func_name=1)
-            zone_number += 1
+        device_id = kumos[self.zone_name]
+        # print zone name the first time it is known
+        if self.device_id is None:
+            util.log_msg("zone %s name = '%s', device_id=%s" %
+                         (zone_number, self.zone_name, device_id),
+                         mode=util.DEBUG_LOG + util.CONSOLE_LOG,
+                         func_name=1)
+        self.device_id = device_id
 
         # return the target zone object
-        return kumos[target_zone_name]
+        return self.device_id
 
     def print_all_thermostat_metadata(self):
         """Print all metadata to the screen."""
@@ -112,7 +106,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         tc.ThermostatCommonZone.UNKNOWN_MODE: -1,
         }
 
-    def __init__(self, Thermostat_obj, *_, **__):
+    def __init__(self, Thermostat_obj):
         """
         Zone constructor.
 
@@ -120,7 +114,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
             Thermostat(obj): Thermostat class instance.
         """
         # construct the superclass, requires auth setup first
-        super(ThermostatZone, self).__init__(*_, **__)
+        super(ThermostatZone, self).__init__()
 
         # zone info
         self.thermostat_type = api.KUMOCLOUD

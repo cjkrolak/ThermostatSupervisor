@@ -2,7 +2,6 @@
 Unit test module for thermostat_api.py.
 """
 # built-in imports
-import random
 import unittest
 
 # local imports
@@ -25,17 +24,6 @@ class Test(unittest.TestCase):
 
     def tearDown(self):
         del api.thermostats[self.tstat]
-
-    # def test_SetTargetZone(self):
-    #     """
-    #     Confirm target zone can be set and read back.
-    #     """
-    #     utc.print_test_name()
-    #     test_cases = self.generate_random_list(10, 0, 99)
-    #     for zone in test_cases:
-    #         print("testing set_target_zone(%s)" % zone)
-    #         api.set_target_zone(self.tstat, zone)
-    #         self.assertEqual(api.thermostats[self.tstat]["zone"], zone)
 
     def test_VerifyRequiredEnvVariables(self):
         """
@@ -66,23 +54,6 @@ class Test(unittest.TestCase):
         finally:
             api.thermostats[self.tstat][
                 "required_env_variables"].pop(missing_key)
-
-    def generate_random_list(self, count, min_val, max_val):
-        """
-        Generate a list of random numbers between a range.
-
-        inputs:
-            count(int): number of values
-            min_val(int): lower end of range
-            max_val(int): upper end of range.
-        returns:
-            list
-        """
-        random_list = []
-        for _ in range(0, count):
-            n = random.randint(min_val, max_val)
-            random_list.append(n)
-        return random_list
 
     def test_ParseRuntimeParameter(self):
         """
@@ -198,13 +169,16 @@ class Test(unittest.TestCase):
             pkg = api.dynamic_module_import("bogus")
             print("'bogus' module returned package type %s" % type(pkg))
 
-    def ttest_LoadHardwareLibrary(self):
+    def test_LoadHardwareLibrary(self):
         """
         Verify load_hardware_library() runs without error
         """
         # test successful case
         pkg = api.load_hardware_library(api.HONEYWELL)
         print("api.HONEYWELL returned package type %s" % type(pkg))
+        self.assertTrue(isinstance(pkg, object),
+                        "api.dynamic_module_import() returned type(%s),"
+                        " expected an object" % type(pkg))
         del pkg
 
         # test failing case

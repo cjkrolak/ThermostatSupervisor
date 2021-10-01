@@ -79,10 +79,32 @@ class ThermostatClass(tc.ThermostatCommon):
             (str):  IP address of target zone.
         """
         # update IP dict based on env key
-        env_str = get_env_key(zone_number)
-        ip_address = get_ip_address(env_str)
+        env_str = self.get_env_key(zone_number)
+        ip_address = self.get_ip_address(env_str)
         sht31_ip[zone_number] = ip_address
         return ip_address
+
+    def get_env_key(self, zone_str):
+        """
+        Return env key for the zone specified.
+
+        inputs:
+            zone_str(str or int): zone number
+        returns:
+            (str): env var key
+        """
+        return ('SHT31_REMOTE_IP_ADDRESS' + '_' + str(zone_str))
+
+    def get_ip_address(self, env_key):
+        """
+        Return IP address from env key and cache value in dict.
+
+        inputs:
+            env_key(str): env var key.
+        returns:
+            (str):  IP address
+        """
+        return os.environ.get(env_key, "<" + env_key + "_KEY_MISSING>")
 
     def print_all_thermostat_metadata(self):
         """
@@ -280,30 +302,6 @@ class ThermostatZone(tc.ThermostatCommonZone):
             (int): thermostat mode, see tc.system_switch_position for details.
         """
         return self.system_switch_position[self.OFF_MODE]
-
-
-def get_env_key(zone_str):
-    """
-    Return env key for the zone specified.
-
-    inputs:
-        zone_str(str or int): zone number
-    returns:
-        (str): env var key
-    """
-    return ('SHT31_REMOTE_IP_ADDRESS' + '_' + str(zone_str))
-
-
-def get_ip_address(env_key):
-    """
-    Return IP address from env key and cache value in dict.
-
-    inputs:
-        env_key(str): env var key.
-    returns:
-        (str):  IP address
-    """
-    return os.environ.get(env_key, "<" + env_key + "_KEY_MISSING>")
 
 
 if __name__ == "__main__":
