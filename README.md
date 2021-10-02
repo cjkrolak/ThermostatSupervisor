@@ -70,21 +70,20 @@ runtime parameters can be specified to override defaults:<br/>
 * argv[3] = poll time in seconds (default is thermostat-specific)
 * argv[4] = re-connect time in seconds (default is thermostat-specific)
 * argv[5] = tolerance from setpoint allowed in degrees (default is 2 degrees)
-* argv[6] = target thermostat mode (e.g. OFF_MODE, COOL_MODE, HEAT_MODE, DRY_MODE, etc.), not yet fully functional.<br/>
-<br/>
+* argv[6] = target thermostat mode (e.g. OFF_MODE, COOL_MODE, HEAT_MODE, DRY_MODE, etc.), not yet fully functional.<br/><br/>
 command line usage:  "*python supervise.py \<thermostat type\> \<zone\> \<poll time\> \<connection time\> \<target mode\>*"
   
 ## supervisor_flask_server.py:
 This module will render supervise.py output on an HTML page using Flask.<br/>
 Same runtime parameters as supervise.py can be specified to override defaults:<br/>
-port is currently hard-coded to 80, access at loopback.<br/>
+port is currently hard-coded to 80, access at loopback.<br/><br/>
 command line usage:  "*python supervisor_flask_server.py \<runtime parameters\>*"
 
 ## honeywell.py:
 1. Script will logon to TCC web site and infinitely poll server at configurable poll interval for current thermostat settings.
 2. default poll time is currently set to 3 minutes, longer poll times experience connection errors, shorter poll times are impractical based on emperical data.
 3. If schedule deviation detected, script will revert thermostat back to scheduled settings.
-Script can be configured to customize polling interval, force re-logon after period of time, and either just alert or alert and revert to schedule.
+Script can be configured to customize polling interval, force re-logon after period of time, and either just alert or alert and revert to schedule.<br/>
 command line usage:  "*python honeywell.py \<thermostat type\> \<zone\> \<poll time\> \<connection time\> \<target mode\>*"
 
 ## mmm50.py:
