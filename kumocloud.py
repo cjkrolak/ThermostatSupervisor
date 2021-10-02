@@ -9,14 +9,14 @@ import thermostat_api as api
 import thermostat_common as tc
 import utilities as util
 
-# 3m50 thermostat IP addresses (local net)
+# Kumocloud zone configuration (on local net)
 MAIN_KUMO = 0  # zone 0
 BASEMENT_KUMO = 1  # zone 1
 kc_metadata = {
-    MAIN_KUMO: {"ip_address": "192.168.86.82",  # local IP
+    MAIN_KUMO: {"ip_address": "192.168.86.82",  # local IP, for ref only.
                 "zone_name": "Main Level",  # customize for your site.
                 },
-    BASEMENT_KUMO: {"ip_address": "192.168.86.83",  # local IP
+    BASEMENT_KUMO: {"ip_address": "192.168.86.83",  # local IP, for ref only.
                     "zone_name": "Basement",  # customize for your site.
                     },
 }
