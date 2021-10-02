@@ -1,5 +1,6 @@
 """
-connection to Honeywell thermoststat using pyhtcc
+Connection to Honeywell thermoststat via TotalConnectComfort web site
+using pyhtcc library.
 
 https://pypi.org/project/pyhtcc/
 """
@@ -17,10 +18,10 @@ import thermostat_common as tc
 import utilities as util
 
 
-class HoneywellThermostat(pyhtcc.PyHTCC):
+class ThermostatClass(pyhtcc.PyHTCC):
     """Extend the PyHTCC class with additional methods."""
 
-    def __init__(self, zone, *_, **__):
+    def __init__(self, zone):
         """
         inputs:
             zone(str):  zone number
@@ -36,13 +37,12 @@ class HoneywellThermostat(pyhtcc.PyHTCC):
         self.args = [self.tcc_uname, self.tcc_pwd]
 
         # construct the superclass, requires auth setup first
-        super(HoneywellThermostat, self).__init__(*self.args)
+        super(ThermostatClass, self).__init__(*self.args)
 
         # configure zone info
         self.thermostat_type = api.HONEYWELL
         self.zone_number = int(zone)
-        self.device_id = self.get_target_zone_id()
-        self.zone_constructor = HoneywellZone
+        self.device_id = self.get_target_zone_id(self.zone_number)
 
     def _get_zone_device_ids(self) -> list:
         """
@@ -58,7 +58,7 @@ class HoneywellThermostat(pyhtcc.PyHTCC):
             zone_id_lst.append(zone['DeviceID'])
         return zone_id_lst
 
-    def get_target_zone_id(self, zone_number=0):
+    def get_target_zone_id(self, zone_number=0) -> int:
         """
         Return the target zone ID.
 
@@ -76,7 +76,7 @@ class HoneywellThermostat(pyhtcc.PyHTCC):
         inputs:
             None
         returns:
-            None
+            None, prints data to the stdout.
         """
         # dump all meta data
         self.get_all_metadata()
@@ -86,21 +86,21 @@ class HoneywellThermostat(pyhtcc.PyHTCC):
         pp = pprint.PrettyPrinter(indent=4)
         pp.pprint(return_data)
 
-    def get_all_metadata(self, zone_number=0):
+    def get_all_metadata(self, zone_number=0) -> dict:
         """
         Return all the current thermostat metadata.
 
         inputs:
           zone_number(int): zone number, default=0
         returns:
-          dict
+          (dict) thermostat meta data.
         """
         return_data = self.get_metadata(zone_number, parameter=None)
         util.log_msg("all meta data: %s" % return_data,
                      mode=util.DEBUG_LOG + util.CONSOLE_LOG, func_name=1)
         return return_data
 
-    def get_metadata(self, zone_number=0, parameter=None):
+    def get_metadata(self, zone_number=0, parameter=None) -> (dict, str):
         """
         Return the current thermostat metadata settings.
 
@@ -112,8 +112,6 @@ class HoneywellThermostat(pyhtcc.PyHTCC):
           str if parameter != None
         """
         zone_info_list = self.get_zones_info()
-        # util.log_msg("zone info: %s" % zone_info_list,
-        #              mode=util.DEBUG_LOG + util.CONSOLE_LOG, func_name=1)
         if parameter is None:
             return_data = zone_info_list[zone_number]
             util.log_msg("zone%s info: %s" % (zone_number, return_data),
@@ -126,35 +124,35 @@ class HoneywellThermostat(pyhtcc.PyHTCC):
                          mode=util.DEBUG_LOG + util.CONSOLE_LOG, func_name=1)
             return return_data
 
-    def get_latestdata(self, zone_number=0):
+    def get_latestdata(self, zone_number=0) -> dict:
         """
         Return the current thermostat latest data.
 
         inputs:
           zone_number(int): zone number, default=0
         returns:
-          dict
+          (dict) latest data from thermostat.
         """
         latest_data_dict = self.get_metadata(zone_number).get('latestData')
         util.log_msg("zone%s latestData: %s" % (zone_number, latest_data_dict),
                      mode=util.DEBUG_LOG + util.CONSOLE_LOG, func_name=1)
         return latest_data_dict
 
-    def get_uiData(self, zone_number=0):
+    def get_uiData(self, zone_number=0) -> dict:
         """
         Return the latest thermostat ui data.
 
         inputs:
           zone_number(int): zone_number, default=0
         returns:
-          dict
+          (dict) ui data from thermostat.
         """
         ui_data_dict = self.get_latestdata(zone_number).get('uiData')
         util.log_msg("zone%s latestData: %s" % (zone_number, ui_data_dict),
                      mode=util.DEBUG_LOG + util.CONSOLE_LOG, func_name=1)
         return ui_data_dict
 
-    def get_uiData_param(self, zone_number=0, parameter=None):
+    def get_uiData_param(self, zone_number=0, parameter=None) -> dict:
         """
         Return the latest thermostat ui data for one specific parameter.
 
@@ -162,7 +160,7 @@ class HoneywellThermostat(pyhtcc.PyHTCC):
           zone_number(int): zone_number, default=0
           parameter(str): paramenter name
         returns:
-          dict
+          (dict)  # need to verify return data type.
         """
         parameter_data = self.get_uiData(zone_number=0).get(parameter)
         util.log_msg("zone%s uiData parameter %s: %s" %
@@ -237,38 +235,39 @@ class HoneywellThermostat(pyhtcc.PyHTCC):
         return zones
 
 
-class HoneywellZone(pyhtcc.Zone, tc.ThermostatCommonZone):
+class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
     """Extend the Zone class with additional methods to get and set
        uiData parameters."""
 
-    system_switch_position = {
-        tc.ThermostatCommonZone.COOL_MODE: 3,
-        tc.ThermostatCommonZone.HEAT_MODE: 1,
-        tc.ThermostatCommonZone.OFF_MODE: 2,
-        tc.ThermostatCommonZone.AUTO_MODE: util.bogus_int,
-        # what mode is 0 on Honeywell?
-        }
-
-    def __init__(self, device_id, *_, **__):
+    def __init__(self, Thermostat_obj):
         """
         Zone constructor.
 
         inputs:
-            device_id(int):  Honeywell device_id on the account,
-                             this is the same as the zone number.
+            Thermostat_obj(obj): Thermostat class object instance.
+        returns:
+            None
         """
-        if not isinstance(device_id, int):
+        if not isinstance(Thermostat_obj.device_id, int):
             raise TypeError("device_id is type %s, "
-                            "expected type 'int'" % type(device_id))
+                            "expected type 'int'" %
+                            type(Thermostat_obj.device_id))
 
         # call both parent class __init__
-        pyhtcc.Zone.__init__(self, device_id, *_, **__)
-        tc.ThermostatCommonZone.__init__(self, *_, **__)
+        pyhtcc.Zone.__init__(self, Thermostat_obj.device_id,
+                             Thermostat_obj)
+        tc.ThermostatCommonZone.__init__(self)
+
+        # switch config for this thermostat
+        self.system_switch_position[tc.ThermostatCommonZone.COOL_MODE] = 3
+        self.system_switch_position[tc.ThermostatCommonZone.HEAT_MODE] = 1
+        self.system_switch_position[tc.ThermostatCommonZone.OFF_MODE] = 2
+        # TODO: what mode is 0 on Honeywell?
 
         # zone info
         self.thermostat_type = api.HONEYWELL
-        self.device_id = device_id
-        self.zone_number = self.get_target_zone_number(device_id)
+        self.device_id = Thermostat_obj.device_id
+        self.zone_number = Thermostat_obj.zone_number
 
         # runtime parameter defaults
         self.poll_time_sec = 10 * 60  # default to 10 minutes
@@ -277,17 +276,6 @@ class HoneywellZone(pyhtcc.Zone, tc.ThermostatCommonZone):
         # not showing error on Pi at 10 minutes, so changed default to 10 min.
         self.connection_time_sec = 8 * 60 * 60  # default to 8 hours
 
-    def get_target_zone_number(self, device_id):
-        """
-        Return the target zone number from the device id provided.
-
-        inputs:
-            device_id(str or int): specified device id
-        returns:
-            (int):  zone number.
-        """
-        return int(device_id)
-
     def get_display_temp(self) -> float:  # used
         """
         Refresh the cached zone information then return DispTemperature.
@@ -295,7 +283,7 @@ class HoneywellZone(pyhtcc.Zone, tc.ThermostatCommonZone):
         inputs:
             None
         returns:
-            (float): display temperature in degrees.
+            (float): display temperature in degrees F.
         """
         self.refresh_zone_info()
         return float(self.zone_info['latestData']['uiData']['DispTemperature'])
@@ -504,7 +492,7 @@ class HoneywellZone(pyhtcc.Zone, tc.ThermostatCommonZone):
             'SystemSwitch': self.system_switch_position[self.COOL_MODE],
         })
 
-    def report_heating_parameters(self):
+    def report_heating_parameters(self) -> None:
         """
         Display critical thermostat settings and reading to the screen.
 
@@ -616,10 +604,17 @@ if __name__ == "__main__":
     zone_input = api.parse_all_runtime_parameters()[1]
 
     # verify required env vars
-    api.verify_required_env_variables(api.MMM50, zone_input)
-    Thermostat = HoneywellThermostat(zone_input)
+    api.verify_required_env_variables(api.HONEYWELL, zone_input)
+
+    # import hardware module
+    mod = api.load_hardware_library(api.HONEYWELL)
+
+    # create Thermostat object
+    Thermostat = ThermostatClass(zone_input)
     Thermostat.print_all_thermostat_metadata()
-    Zone = HoneywellZone(Thermostat.device_id, Thermostat)
+
+    # create Zone object
+    Zone = ThermostatZone(Thermostat)
 
     # update runtime overrides
     Zone.update_runtime_parameters(api.user_inputs)

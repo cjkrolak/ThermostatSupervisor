@@ -9,7 +9,7 @@ import utilities as util
 
 
 class Test(unittest.TestCase):
-    """Test functions in utilities.py."""
+    """Test functions in supervise.py."""
     tstat = "UNITTEST"
 
     def setUp(self):

@@ -56,13 +56,12 @@ def main(thermostat_type, zone_str):
     session_count = 1
     while True:
         # make connection to thermostat
-        thermostat_constructor = \
-            api.thermostats[thermostat_type]["thermostat_constructor"]
+        mod = api.load_hardware_library(thermostat_type)
         zone_num = api.user_inputs["zone"]
 
         util.log_msg("connecting to thermostat zone %s (session:%s)..." %
                      (zone_num, session_count), mode=util.BOTH_LOG)
-        Thermostat = thermostat_constructor(zone_num)
+        Thermostat = mod.ThermostatClass(zone_num)
         print("DEBUG: thermostat constructor complete")
 
         t0 = time.time()  # connection timer
@@ -73,8 +72,7 @@ def main(thermostat_type, zone_str):
             Thermostat.print_all_thermostat_metadata()
 
         # get Zone object based on deviceID
-        Zone = Thermostat.zone_constructor(Thermostat.device_id,
-                                           Thermostat)
+        Zone = mod.ThermostatZone(Thermostat)
 
         # update runtime overrides
         Zone.update_runtime_parameters(api.user_inputs)
@@ -106,6 +104,11 @@ def main(thermostat_type, zone_str):
                 if debug:
                     Zone.report_heating_parameters()
                 previous_mode = current_mode  # latch
+
+            # revert thermostat mode if not matching target
+            if not Zone.verify_current_mode(api.user_inputs["target_mode"]):
+                api.user_inputs["target_mode"] = \
+                    Zone.revert_thermostat_mode(api.user_inputs["target_mode"])
 
             # revert thermostat to schedule if heat override is detected
             if (revert_thermostat_deviation and current_mode["heat_mode"] and

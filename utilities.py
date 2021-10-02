@@ -83,6 +83,11 @@ def get_env_variable(env_key):
 def load_all_env_variables():
     """
     Load all environment variables into a dictionary.
+
+    inputs:
+        None
+    returns:
+        None, populates env_variables dict.
     """
     for key in env_variables:
         print("checking key: %s" % key)
@@ -186,5 +191,12 @@ def get_full_file_path(file_name):
 
 
 def utf8len(s):
-    """Return length of string in bytes."""
+    """
+    Return length of string in bytes.
+
+    inputs:
+        s(str): input string.
+    returns:
+        (int): length of string in bytes.
+    """
     return len(s.encode('utf-8'))

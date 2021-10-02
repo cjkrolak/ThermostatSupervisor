@@ -29,16 +29,16 @@ MAIN_3M50 = 0  # zone 0
 BASEMENT_3M50 = 1  # zone 1
 mmm_metadata = {
     MAIN_3M50: {"ip_address": "192.168.86.82",  # local IP
-                "device_id": None},  # placeholder
+                },
     BASEMENT_3M50: {"ip_address": "192.168.86.83",  # local IP
-                    "device_id": None},  # placeholder
+                    }
 }
 
 
-class MMM50Thermostat(tc.ThermostatCommonZone):
+class ThermostatClass(tc.ThermostatCommonZone):
     """3m50 thermostat zone functions."""
 
-    def __init__(self, zone, *_, **__):
+    def __init__(self, zone):
         """
         Constructor, connect to thermostat.
 
@@ -48,17 +48,15 @@ class MMM50Thermostat(tc.ThermostatCommonZone):
             zone.
         """
         # construct the superclass
-        super(MMM50Thermostat, self).__init__(*_, **__)
+        super(ThermostatClass, self).__init__()
         self.thermostat_type = api.MMM50
 
         # configure zone info
         self.zone_number = int(zone)
         self.ip_address = mmm_metadata[self.zone_number]["ip_address"]
         self.device_id = self.get_target_zone_id()
-        mmm_metadata[self.zone_number]["device_id"] = self.device_id
-        self.zone_constructor = MMM50ThermostatZone
 
-    def get_target_zone_id(self):
+    def get_target_zone_id(self) -> object:
         """
         Return the target zone ID from the
         zone number provided.
@@ -76,7 +74,7 @@ class MMM50Thermostat(tc.ThermostatCommonZone):
                             "ip address: %s" % self.ip_address) from e
         return self.device_id
 
-    def print_all_thermostat_metadata(self):
+    def print_all_thermostat_metadata(self) -> None:
         """
         Return initial meta data queried from thermostat.
 
@@ -93,7 +91,7 @@ class MMM50Thermostat(tc.ThermostatCommonZone):
         pp = pprint.PrettyPrinter(indent=4)
         pp.pprint(return_data)
 
-    def get_meta_data_dict(self):
+    def get_meta_data_dict(self) -> dict:
         """Build meta data dictionary from list of object attributes.
 
         inputs:
@@ -118,7 +116,7 @@ class MMM50Thermostat(tc.ThermostatCommonZone):
                 attr_dict[key] = val
         return attr_dict
 
-    def get_all_metadata(self):
+    def get_all_metadata(self) -> list:
         """
         Get all the current thermostat metadata.
 
@@ -129,7 +127,7 @@ class MMM50Thermostat(tc.ThermostatCommonZone):
         """
         return self.get_meta_data_dict()
 
-    def get_metadata(self, parameter=None):
+    def get_metadata(self, parameter=None) -> (dict, str):
         """
         Get the current thermostat metadata settings.
 
@@ -144,7 +142,7 @@ class MMM50Thermostat(tc.ThermostatCommonZone):
         else:
             return self.device_id[parameter]['raw']
 
-    def get_latestdata(self):
+    def get_latestdata(self) -> (dict, str):
         """
         Get the current thermostat latest data.
 
@@ -156,75 +154,59 @@ class MMM50Thermostat(tc.ThermostatCommonZone):
         """
         return self.get_meta_data_dict()
 
-    def get_uiData(self):
+    def get_uiData(self) -> dict:
         """
         Get the latest thermostat ui data
 
         inputs:
           None
         returns:
-          (dict) empty dict.
+          (dict)
         """
         return self.get_meta_data_dict()
 
-    def get_uiData_param(self, parameter):
+    def get_uiData_param(self, parameter) -> dict:
         """
         Get the latest thermostat ui data for one specific parameter.
 
         inputs:
           parameter(str): UI parameter
         returns:
-          (dict) empty dict.
+          (dict)
         """
         return self.device_id[parameter]['raw']
 
 
-class MMM50ThermostatZone(tc.ThermostatCommonZone):
+class ThermostatZone(tc.ThermostatCommonZone):
     """3m50 thermostat zone functions."""
 
-    system_switch_position = {
-        tc.ThermostatCommonZone.COOL_MODE: 2,
-        tc.ThermostatCommonZone.HEAT_MODE: 1,
-        tc.ThermostatCommonZone.OFF_MODE: 0,
-        tc.ThermostatCommonZone.AUTO_MODE: 3,
-        }
-
-    def __init__(self, device_id, *_, **__):
+    def __init__(self, Thermostat_obj):
         """
         Constructor, connect to thermostat.
 
-        inputs:
-            device_id(obj):  3m50 device object class.
-            mmm_metadata dict above must have correct local IP address for each
+        mmm_metadata dict above must have correct local IP address for each
             zone.
+
+        inputs:
+            Thermostat_obj(obj):  Thermostat class instance.
         """
         # construct the superclass
-        super(MMM50ThermostatZone, self).__init__(*_, **__)
+        super(ThermostatZone, self).__init__()
+
+        # switch config for this thermostat
+        self.system_switch_position[tc.ThermostatCommonZone.COOL_MODE] = 2
+        self.system_switch_position[tc.ThermostatCommonZone.HEAT_MODE] = 1
+        self.system_switch_position[tc.ThermostatCommonZone.OFF_MODE] = 0
+        self.system_switch_position[tc.ThermostatCommonZone.AUTO_MODE] = 3
 
         # zone info
         self.thermostat_type = api.MMM50
-        self.device_id = device_id
-        self.zone_number = self.get_target_zone_number(device_id)
+        self.device_id = Thermostat_obj.device_id
+        self.zone_number = Thermostat_obj.zone_number
 
         # runtime parameter defaults
         self.poll_time_sec = 10 * 60  # default to 10 minutes
         self.connection_time_sec = 8 * 60 * 60  # default to 8 hours
-
-    def get_target_zone_number(self, device_id):
-        """
-        Return the target zone number based on the device_id.
-
-        inputs:
-            device_id(obj): 3m50 device id object.
-        returns:
-            (int):  zone number.
-        """
-        zone_number = -1
-        for zone in mmm_metadata:
-            if mmm_metadata[zone]["device_id"] == device_id:
-                zone_number = zone
-                break
-        return zone_number
 
     def get_display_temp(self) -> float:
         """
@@ -249,7 +231,14 @@ class MMM50ThermostatZone(tc.ThermostatCommonZone):
         return None  # not available
 
     def get_is_humidity_supported(self) -> bool:
-        """Return humidity sensor status."""
+        """
+        Return humidity sensor status.
+
+        inputs:
+            None
+        returns:
+            (bool): True if humidity is supported.
+        """
         return self.get_display_humidity() is not None
 
     def get_heat_mode(self) -> int:
@@ -271,12 +260,12 @@ class MMM50ThermostatZone(tc.ThermostatCommonZone):
         inputs:
             None
         returns:
-            (int): cool mode.
+            (int): 1=cool mode enabled, 0=disabled.
         """
         return int(self.device_id.tmode['raw'] ==
                    self.system_switch_position[self.COOL_MODE])
 
-    def get_setpoint_list(self, sp_dict, day) -> int:
+    def get_setpoint_list(self, sp_dict, day) -> list:
         """
         Return list of 4 setpoints for the day.
 
@@ -284,7 +273,7 @@ class MMM50ThermostatZone(tc.ThermostatCommonZone):
             sp_dict(dict): setpoint dictionary
             day(int): day of the week, 0=Monday
         returns:
-            list of 8 eleements, representing 4 pairs of elapsed minutes
+            list of 8 elements, representing 4 pairs of elapsed minutes
             and setpoint
         """
         sp_lst = sp_dict['raw'][str(day)]
@@ -571,7 +560,6 @@ class MMM50ThermostatZone(tc.ThermostatCommonZone):
         returns:
             None
         """
-        print("setting heat to %s" % temp)
         self.device_id.t_heat = temp
 
     def set_cool_setpoint(self, temp: int) -> None:
@@ -618,11 +606,15 @@ if __name__ == "__main__":
     # verify required env vars
     api.verify_required_env_variables(api.MMM50, zone_input)
 
-    Thermostat = MMM50Thermostat(zone_input)
+    # import hardware module
+    mod = api.load_hardware_library(api.MMM50)
 
-    # get zone based on device_id
-    Zone = Thermostat.zone_constructor(Thermostat.device_id,
-                                       Thermostat)
+    # create Thermostat object
+    Thermostat = ThermostatClass(zone_input)
+    Thermostat.print_all_thermostat_metadata()
+
+    # create Zone object
+    Zone = ThermostatZone(Thermostat)
 
     # update runtime overrides
     Zone.update_runtime_parameters(api.user_inputs)

@@ -38,7 +38,7 @@ def index():
                    bufsize=1, universal_newlines=True, shell=True) as p:
             i = 0
             for line in p.stdout:
-                print("DEBUG: line %s: %s" % (i, line))
+                print("DEBUG: line %s: %s" % (i, line), file=sys.stderr)
                 i += 1
                 yield "<code>{}</code>".format(html.escape(line.rstrip("\n")))
                 yield "<br>\n"

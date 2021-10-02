@@ -2,7 +2,6 @@
 Unit test module for thermostat_api.py.
 """
 # built-in imports
-import random
 import unittest
 
 # local imports
@@ -26,20 +25,9 @@ class Test(unittest.TestCase):
     def tearDown(self):
         del api.thermostats[self.tstat]
 
-    # def testSetTargetZone(self):
-    #     """
-    #     Confirm target zone can be set and read back.
-    #     """
-    #     utc.print_test_name()
-    #     test_cases = self.generate_random_list(10, 0, 99)
-    #     for zone in test_cases:
-    #         print("testing set_target_zone(%s)" % zone)
-    #         api.set_target_zone(self.tstat, zone)
-    #         self.assertEqual(api.thermostats[self.tstat]["zone"], zone)
-
-    def testVerifyRequiredEnvVariables(self):
+    def test_VerifyRequiredEnvVariables(self):
         """
-        Verify test verify_required_env_variables() passes in nominal
+        Verify verify_required_env_variables() passes in nominal
         condition and fails with missing key.
         """
         missing_key = "agrfg_"  # bogus key should be missing
@@ -67,33 +55,18 @@ class Test(unittest.TestCase):
             api.thermostats[self.tstat][
                 "required_env_variables"].pop(missing_key)
 
-    def generate_random_list(self, count, min_val, max_val):
-        """
-        Generate a list of random numbers between a range.
-
-        inputs:
-            count(int): number of values
-            min_val(int): lower end of range
-            max_val(int): upper end of range.
-        returns:
-            list
-        """
-        random_list = []
-        for _ in range(0, count):
-            n = random.randint(min_val, max_val)
-            random_list.append(n)
-        return random_list
-
-    def testParseRuntimeParameter(self):
+    def test_ParseRuntimeParameter(self):
         """
         Verify test parse_runtime_parameter() returns expected
         values when input known values.
         """
         utc.print_test_name()
-        input_list = ["supervise.py", "honeywell", "0", "9", "90", "3"]
+        input_list = ["supervise.py", "honeywell", "0", "9", "90", "3",
+                      "HEAT_MODE"]
 
         # parse thermostat type parameter (argv[1] if present):
-        tstat_type = api.parse_runtime_parameter("thermostat_type", 1, str,
+        tstat_type = api.parse_runtime_parameter(api.user_input_list[0],
+                                                 1, str,
                                                  api.HONEYWELL,
                                                  api.SUPPORTED_THERMOSTATS,
                                                  input_list)
@@ -102,7 +75,7 @@ class Test(unittest.TestCase):
 
         # parse zone number parameter (argv[2] if present):
         zone_input = \
-            api.parse_runtime_parameter("zone", 2, int, 0,
+            api.parse_runtime_parameter(api.user_input_list[1], 2, int, 0,
                                         api.SUPPORTED_THERMOSTATS[
                                             tstat_type]["zones"],
                                         input_list)
@@ -110,7 +83,8 @@ class Test(unittest.TestCase):
                          (zone_input, 0))
 
         # parse the poll time override (argv[3] if present):
-        poll_time_input = api.parse_runtime_parameter("poll_time_sec", 3, int,
+        poll_time_input = api.parse_runtime_parameter(api.user_input_list[2],
+                                                      3, int,
                                                       10 * 60,
                                                       range(0, 24 * 60 * 60),
                                                       input_list)
@@ -119,7 +93,7 @@ class Test(unittest.TestCase):
 
         # parse the connection time override (argv[4] if present):
         connection_time_input = \
-            api.parse_runtime_parameter("connection_time_sec", 4,
+            api.parse_runtime_parameter(api.user_input_list[3], 4,
                                         int, 8 * 60 * 60,
                                         range(0, 24 * 60 * 60), input_list)
         self.assertEqual(connection_time_input, 90, "actual=%s, expected=%s" %
@@ -127,10 +101,19 @@ class Test(unittest.TestCase):
 
         # parse the tolerance override (argv[5] if present):
         tolerance_degrees_input = \
-            api.parse_runtime_parameter("tolerance_degrees", 5,
+            api.parse_runtime_parameter(api.user_input_list[4], 5,
                                         int, 2, range(0, 10), input_list)
         self.assertEqual(tolerance_degrees_input, 3, "actual=%s, expected=%s" %
                          (tolerance_degrees_input, 3))
+
+        # parse the target mode override (argv[6] if present):
+        target_mode_input = \
+            api.parse_runtime_parameter(api.user_input_list[5], 6,
+                                        str, None, api.SUPPORTED_THERMOSTATS[
+                                            tstat_type]["modes"], input_list)
+        self.assertEqual(target_mode_input, "HEAT_MODE", "actual=%s, "
+                         "expected=%s" %
+                         (target_mode_input, "HEAT_MODE"))
 
         # test out of range parameter
         # parse the tolerance override (argv[5] if present):
@@ -138,7 +121,7 @@ class Test(unittest.TestCase):
         try:
             input_list[5] = "-1"  # out of range value
             tolerance_degrees_input = \
-                api.parse_runtime_parameter("tolerance_degrees", 5,
+                api.parse_runtime_parameter(api.user_input_list[4], 5,
                                             int, 2, range(0, 10), input_list)
             # defaults should be used
             default_value = 2
@@ -152,9 +135,10 @@ class Test(unittest.TestCase):
         # parse the tolerance override (argv[5] if present):
         input_list_backup = input_list
         try:
-            input_list.pop(5)  # pop 5th element
+            input_list.pop()  # pop last element
             tolerance_degrees_input = \
-                api.parse_runtime_parameter("tolerance_degrees", 5,
+                api.parse_runtime_parameter(api.user_input_list[-1],
+                                            len(api.user_input_list),
                                             int, 2, range(0, 10), input_list)
             # defaults should be used
             default_value = 2
@@ -164,7 +148,7 @@ class Test(unittest.TestCase):
         finally:
             input_list = input_list_backup  # restore original
 
-    def testParseAllRuntimeParameters(self):
+    def test_ParseAllRuntimeParameters(self):
         """
         Verify test parse_all_runtime_parameters() runs without error
         and return values match user_inputs dict.
@@ -178,6 +162,44 @@ class Test(unittest.TestCase):
         self.assertEqual(return_list[3],
                          api.user_inputs["connection_time_sec"])
         self.assertEqual(return_list[4], api.user_inputs["tolerance_degrees"])
+        self.assertEqual(return_list[5], api.user_inputs["target_mode"])
+
+    def test_DynamicModuleImport(self):
+        """
+        Verify dynamic_module_import() runs without error
+        """
+        utc.print_test_name()
+
+        # test successful case
+        pkg = api.dynamic_module_import(api.HONEYWELL)
+        print("api.HONEYWELL returned package type %s" % type(pkg))
+        self.assertTrue(isinstance(pkg, object),
+                        "api.dynamic_module_import() returned type(%s),"
+                        " expected an object" % type(pkg))
+        del pkg
+
+        # test failing case
+        with self.assertRaises(ImportError):
+            pkg = api.dynamic_module_import("bogus")
+            print("'bogus' module returned package type %s" % type(pkg))
+
+    def test_LoadHardwareLibrary(self):
+        """
+        Verify load_hardware_library() runs without error
+        """
+        # test successful case
+        pkg = api.load_hardware_library(api.HONEYWELL)
+        print("api.HONEYWELL returned package type %s" % type(pkg))
+        self.assertTrue(isinstance(pkg, object),
+                        "api.dynamic_module_import() returned type(%s),"
+                        " expected an object" % type(pkg))
+        del pkg
+
+        # test failing case
+        with self.assertRaises(KeyError):
+            pkg = api.load_hardware_library("bogus")
+            print("'bogus' returned package type %s" % type(pkg))
+            del pkg
 
 
 if __name__ == "__main__":

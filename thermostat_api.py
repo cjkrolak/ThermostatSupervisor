@@ -5,13 +5,11 @@ This file should be updated for any new thermostats supported and
 any changes to thermostat configs.
 """
 # built ins
+import imp
 import sys
+import traceback
 
 # local imports
-import honeywell as h
-import mmm
-import sht31
-import kumocloud
 import utilities as util
 
 
@@ -21,10 +19,18 @@ MMM50 = "mmm50"
 SHT31 = "sht31"
 KUMOCLOUD = "kumocloud"
 SUPPORTED_THERMOSTATS = {
-    HONEYWELL: {"type": 1, "zones": [0]},
-    MMM50: {"type": 2, "zones": [0, 1]},
-    SHT31: {"type": 3, "zones": [0, 1]},
-    KUMOCLOUD: {"type": 4, "zones": [0, 1]},
+    # "module" = module to import
+    # "type" = thermostat type index number
+    # "zones" = zone numbers supported
+    HONEYWELL: {"module": "honeywell", "type": 1, "zones": [0],
+                "modes": ["OFF_MODE", "HEAT_MODE", "COOL_MODE"]},
+    MMM50: {"module": "mmm", "type": 2, "zones": [0, 1],
+            "modes": ["OFF_MODE", "HEAT_MODE", "COOL_MODE"]},
+    SHT31: {"module": "sht31", "type": 3, "zones": [0, 1],
+            "modes": ["OFF_MODE"]},
+    KUMOCLOUD: {"module": "kumocloud", "type": 4, "zones": [0, 1],
+                "modes": ["OFF_MODE", "HEAT_MODE", "COOL_MODE",
+                          "DRY_MODE", "AUTO_MODE"]},
     }
 
 # target zone for monitoring
@@ -32,7 +38,6 @@ zone_number = 0  # default
 
 thermostats = {
     HONEYWELL: {
-        "thermostat_constructor": h.HoneywellThermostat,
         "required_env_variables": {
             "TCC_USERNAME": None,
             "TCC_PASSWORD": None,
@@ -41,14 +46,12 @@ thermostats = {
             },
         },
     MMM50: {
-        "thermostat_constructor": mmm.MMM50Thermostat,
         "required_env_variables": {
             "GMAIL_USERNAME": None,
             "GMAIL_PASSWORD": None,
             },
         },
     SHT31: {
-        "thermostat_constructor": sht31.SHT31Thermometer,
         "required_env_variables": {
             "GMAIL_USERNAME": None,
             "GMAIL_PASSWORD": None,
@@ -56,7 +59,6 @@ thermostats = {
             },
         },
     KUMOCLOUD: {
-        "thermostat_constructor": kumocloud.KumoCloud,
         "required_env_variables": {
             "GMAIL_USERNAME": None,
             "GMAIL_PASSWORD": None,
@@ -68,13 +70,14 @@ thermostats = {
 
 # runtime overrides
 # dict values will be populated in supervise.main
-user_inputs = {
-    "thermostat_type": None,
-    "zone": None,
-    "poll_time_sec": None,
-    "connection_time_sec": None,
-    "tolerance_degrees": None,
-    }
+user_input_list = ["thermostat_type",
+                   "zone",
+                   "poll_time_sec",
+                   "connection_time_sec",
+                   "tolerance_degrees",
+                   "target_mode",
+                   ]
+user_inputs = dict.fromkeys(user_input_list, None)
 
 
 def verify_required_env_variables(tstat, zone_str):
@@ -121,15 +124,25 @@ def parse_runtime_parameter(key, position, datatype, default_value,
         valid_range(list, dict, range): set of valid values.
         input_list(list):  list of input variables, if None will use args.
     returns:
-        (int or str): input value
+        (int or str): user input runtime value.
     """
+    # cast input for these keys into uppercase
+    # all other keys are cast lowercase.
+    uppercase_key_list = ["target_mode"]
+
     if input_list is None:
         target = sys.argv
     else:
         target = input_list
-
+    if not isinstance(position, int):
+        raise TypeError("'position' argument must be an int, "
+                        "actual=%s is type(%s)" %
+                        (position, type(position)))
     try:
-        result = datatype(target[position].lower())
+        if key in uppercase_key_list:
+            result = datatype(target[position].upper())
+        else:
+            result = datatype(target[position].lower())
     except IndexError:
         result = default_value
     if result != default_value and result not in valid_range:
@@ -173,5 +186,55 @@ def parse_all_runtime_parameters():
     # parse the tolerance override (argv[5] if present):
     tolerance_degrees_input = parse_runtime_parameter("tolerance_degrees", 5,
                                                       int, None, range(0, 10))
+
+    # parse the target mode (argv[6] if present):
+    target_mode_input = parse_runtime_parameter("target_mode", 6,
+                                                str, None,
+                                                SUPPORTED_THERMOSTATS[
+                                                    tstat_type]["modes"])
+
     return [tstat_type, zone_input, poll_time_input, connection_time_input,
-            tolerance_degrees_input]
+            tolerance_degrees_input, target_mode_input]
+
+
+# dynamic import
+def dynamic_module_import(name):
+    # find_module() method is used
+    # to find the module and return
+    # its description and path
+    try:
+        fp, path, desc = imp.find_module(name)
+    except ImportError as e:
+        util.log_msg(traceback.format_exc(),
+                     mode=util.DEBUG_LOG + util.CONSOLE_LOG, func_name=1)
+        print("module not found: " + name)
+        raise e
+
+    try:
+        # load_modules loads the module
+        # dynamically and takes the filepath
+        # module and description as parameter
+        mod = imp.load_module(name, fp, path, desc)
+    except Exception as e:
+        util.log_msg(traceback.format_exc(),
+                     mode=util.DEBUG_LOG + util.CONSOLE_LOG, func_name=1)
+        print("module load failed: " + name)
+        raise e
+    finally:
+        fp.close
+
+    return mod
+
+
+def load_hardware_library(thermostat_type):
+    """
+    Dynamic load library for requested hardware type.
+
+    inputs:
+        thermostat_type(str): thermostat type
+    returns:
+        module
+    """
+    mod = dynamic_module_import(
+        SUPPORTED_THERMOSTATS[thermostat_type]["module"])
+    return mod
