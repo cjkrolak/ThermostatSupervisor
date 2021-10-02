@@ -22,10 +22,15 @@ SUPPORTED_THERMOSTATS = {
     # "module" = module to import
     # "type" = thermostat type index number
     # "zones" = zone numbers supported
-    HONEYWELL: {"module": "honeywell", "type": 1, "zones": [0]},
-    MMM50: {"module": "mmm", "type": 2, "zones": [0, 1]},
-    SHT31: {"module": "sht31", "type": 3, "zones": [0, 1]},
-    KUMOCLOUD: {"module": "kumocloud", "type": 4, "zones": [0, 1]},
+    HONEYWELL: {"module": "honeywell", "type": 1, "zones": [0],
+                "modes": ["OFF_MODE", "HEAT_MODE", "COOL_MODE"]},
+    MMM50: {"module": "mmm", "type": 2, "zones": [0, 1],
+            "modes": ["OFF_MODE", "HEAT_MODE", "COOL_MODE"]},
+    SHT31: {"module": "sht31", "type": 3, "zones": [0, 1],
+            "modes": ["OFF_MODE"]},
+    KUMOCLOUD: {"module": "kumocloud", "type": 4, "zones": [0, 1],
+                "modes": ["OFF_MODE", "HEAT_MODE", "COOL_MODE",
+                          "DRY_MODE", "AUTO_MODE"]},
     }
 
 # target zone for monitoring
@@ -65,13 +70,14 @@ thermostats = {
 
 # runtime overrides
 # dict values will be populated in supervise.main
-user_inputs = {
-    "thermostat_type": None,
-    "zone": None,
-    "poll_time_sec": None,
-    "connection_time_sec": None,
-    "tolerance_degrees": None,
-    }
+user_input_list = ["thermostat_type",
+                   "zone",
+                   "poll_time_sec",
+                   "connection_time_sec",
+                   "tolerance_degrees",
+                   "target_mode",
+                   ]
+user_inputs = dict.fromkeys(user_input_list, None)
 
 
 def verify_required_env_variables(tstat, zone_str):
@@ -120,6 +126,10 @@ def parse_runtime_parameter(key, position, datatype, default_value,
     returns:
         (int or str): user input runtime value.
     """
+    # cast input for these keys into uppercase
+    # all other keys are cast lowercase.
+    uppercase_key_list = ["target_mode"]
+
     if input_list is None:
         target = sys.argv
     else:
@@ -129,7 +139,10 @@ def parse_runtime_parameter(key, position, datatype, default_value,
                         "actual=%s is type(%s)" %
                         (position, type(position)))
     try:
-        result = datatype(target[position].lower())
+        if key in uppercase_key_list:
+            result = datatype(target[position].upper())
+        else:
+            result = datatype(target[position].lower())
     except IndexError:
         result = default_value
     if result != default_value and result not in valid_range:
@@ -173,8 +186,15 @@ def parse_all_runtime_parameters():
     # parse the tolerance override (argv[5] if present):
     tolerance_degrees_input = parse_runtime_parameter("tolerance_degrees", 5,
                                                       int, None, range(0, 10))
+
+    # parse the target mode (argv[6] if present):
+    target_mode_input = parse_runtime_parameter("target_mode", 6,
+                                                str, None,
+                                                SUPPORTED_THERMOSTATS[
+                                                    tstat_type]["modes"])
+
     return [tstat_type, zone_input, poll_time_input, connection_time_input,
-            tolerance_degrees_input]
+            tolerance_degrees_input, target_mode_input]
 
 
 # dynamic import

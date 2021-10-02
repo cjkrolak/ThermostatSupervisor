@@ -105,6 +105,11 @@ def main(thermostat_type, zone_str):
                     Zone.report_heating_parameters()
                 previous_mode = current_mode  # latch
 
+            # revert thermostat mode if not matching target
+            if not Zone.verify_current_mode(api.user_inputs["target_mode"]):
+                api.user_inputs["target_mode"] = \
+                    Zone.revert_thermostat_mode(api.user_inputs["target_mode"])
+
             # revert thermostat to schedule if heat override is detected
             if (revert_thermostat_deviation and current_mode["heat_mode"] and
                     current_mode["heat_deviation"]):
