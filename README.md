@@ -50,7 +50,7 @@ Environment variables required depend on the thermostat being used.<br/>
   * 'SHT31_REMOTE_IP_ADDRESS_'zone'': remote IP address / URL for SHT31 thermal sensor, 'zone' is the zone number.
 * Mitsubishi ductless requires the 'KUMOCLOUD' env vars:
   * 'KUMO_USERNAME': username for Kumocloud account
-    'KUMO_PASSWORD': password for Kumocloud account
+  * 'KUMO_PASSWORD': password for Kumocloud account
 
 ## updating environment variables:<br/>
 * Linux: update file ~/.profile and then "source ~/.profile" to load the file<br/>
