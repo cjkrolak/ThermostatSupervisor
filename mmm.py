@@ -24,7 +24,8 @@ import thermostat_common as tc  # noqa E402
 import utilities as util  # noqa E402
 
 
-# 3m50 thermostat IP addresses (local net)
+# 3m50 thermostat IP addresses (on local net)
+# user should configure these zones and IP addresses for their application.
 MAIN_3M50 = 0  # zone 0
 BASEMENT_3M50 = 1  # zone 1
 mmm_metadata = {

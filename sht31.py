@@ -24,28 +24,16 @@ import thermostat_common as tc
 import utilities as util
 
 
-# SHT31 thermometer device IDs
-LOFT_SHT31 = 0  # zone 0
+# SHT31 thermometer zones
+LOFT_SHT31 = 0  # zone 0, local IP 192.168.86.15
 LOFT_SHT31_REMOTE = 1  # zone 1
-UNITTEST_SHT31 = 99  # unit test emulator
-
-# SHT31 IP address and port info
-sht31_ip = {
-    LOFT_SHT31: "192.168.86.15",  # local IP
-    LOFT_SHT31_REMOTE: util.bogus_str,  # placeholder, remote IP
-    UNITTEST_SHT31: "127.0.0.1",
-    }
-sht31_port = {
-    LOFT_SHT31: "5000",
-    LOFT_SHT31_REMOTE: "5000",
-    UNITTEST_SHT31: "5000",
-    }
+UNITTEST_SHT31 = 99  # unit test emulator, local IP 127.0.0.1
 
 
 class ThermostatClass(tc.ThermostatCommon):
     """SHT31 thermometer functions."""
 
-    def __init__(self, zone, *_, **__):
+    def __init__(self, zone):
         """
         Constructor, connect to thermostat.
 
@@ -55,7 +43,7 @@ class ThermostatClass(tc.ThermostatCommon):
             zone.
         """
         # construct the superclass
-        super(ThermostatClass, self).__init__(*_, **__)
+        super(ThermostatClass, self).__init__()
 
         # zone configuration
         self.thermostat_type = api.SHT31
@@ -81,7 +69,6 @@ class ThermostatClass(tc.ThermostatCommon):
         # update IP dict based on env key
         env_str = self.get_env_key(zone_number)
         ip_address = self.get_ip_address(env_str)
-        sht31_ip[zone_number] = ip_address
         return ip_address
 
     def get_env_key(self, zone_str):
@@ -149,7 +136,7 @@ class ThermostatClass(tc.ThermostatCommon):
 class ThermostatZone(tc.ThermostatCommonZone):
     """SHT31 thermometer zone functions."""
 
-    def __init__(self, Thermostat_obj, *_, **__):
+    def __init__(self, Thermostat_obj):
         """
         Constructor, connect to thermostat.
 
@@ -157,7 +144,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
             Thermostat_obj(obj): associated Thermostat_obj
         """
         # construct the superclass
-        super(ThermostatZone, self).__init__(*_, **__)
+        super(ThermostatZone, self).__init__()
 
         # switch config for this thermostat
         # SHT31 is a monitor only, does not support heat/cool modes.
