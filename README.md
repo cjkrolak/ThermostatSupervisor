@@ -71,7 +71,7 @@ runtime parameters can be specified to override defaults:<br/>
 * argv[4] = re-connect time in seconds (default is thermostat-specific)
 * argv[5] = tolerance from setpoint allowed in degrees (default is 2 degrees)
 * argv[6] = target thermostat mode (e.g. OFF_MODE, COOL_MODE, HEAT_MODE, DRY_MODE, etc.), not yet fully functional.<br/>
-supervise script will call honeywell or mmm50 scripts, detailed below.<br/>
+<br/>
 command line usage:  "*python supervise.py \<thermostat type\> \<zone\> \<poll time\> \<connection time\> \<target mode\>*"
   
 ## supervisor_flask_server.py:
