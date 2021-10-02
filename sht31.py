@@ -149,14 +149,6 @@ class ThermostatClass(tc.ThermostatCommon):
 class ThermostatZone(tc.ThermostatCommonZone):
     """SHT31 thermometer zone functions."""
 
-    # SHT31 is a monitor only, does not support heat/cool modes.
-    system_switch_position = {
-        tc.ThermostatCommonZone.COOL_MODE: util.bogus_int,
-        tc.ThermostatCommonZone.HEAT_MODE: util.bogus_int,
-        tc.ThermostatCommonZone.OFF_MODE: 0,
-        tc.ThermostatCommonZone.AUTO_MODE: util.bogus_int,
-        }
-
     def __init__(self, Thermostat_obj, *_, **__):
         """
         Constructor, connect to thermostat.
@@ -166,6 +158,10 @@ class ThermostatZone(tc.ThermostatCommonZone):
         """
         # construct the superclass
         super(ThermostatZone, self).__init__(*_, **__)
+
+        # switch config for this thermostat
+        # SHT31 is a monitor only, does not support heat/cool modes.
+        self.system_switch_position[tc.ThermostatCommonZone.OFF_MODE] = 0
 
         # zone configuration
         self.thermostat_type = api.SHT31

@@ -14,10 +14,10 @@ MAIN_KUMO = 0  # zone 0
 BASEMENT_KUMO = 1  # zone 1
 kc_metadata = {
     MAIN_KUMO: {"ip_address": "192.168.86.82",  # local IP
-                "zone_name": "MAIN_LEVEL",  # customize for your site.
+                "zone_name": "Main Level",  # customize for your site.
                 },
     BASEMENT_KUMO: {"ip_address": "192.168.86.83",  # local IP
-                    "zone_name": "BASEMENT",  # customize for your site.
+                    "zone_name": "Basement",  # customize for your site.
                     },
 }
 
@@ -49,7 +49,7 @@ class ThermostatClass(pykumo.KumoCloudAccount):
         # configure zone info
         self.zone_number = int(zone)
         self.device_id = None  # initialize
-        self.device_id = self.get_target_zone_id()
+        self.device_id = self.get_target_zone_id(self.zone_number)
 
     def get_target_zone_id(self, zone_number=0):
         """
@@ -64,7 +64,8 @@ class ThermostatClass(pykumo.KumoCloudAccount):
         # populate the zone dictionary
         print("DEBUG in get_target_zone")
         kumos = self.make_pykumos()
-        print("DEBUG in get_target_zone after make_pykumos")
+        print("DEBUG in get_target_zone_id after make_pykumos, kumos=%s" %
+              kumos)
         device_id = kumos[self.zone_name]
         # print zone name the first time it is known
         if self.device_id is None:
@@ -97,15 +98,6 @@ class ThermostatZone(tc.ThermostatCommonZone):
     Class needs to be updated for multi-zone support.
     """
 
-    system_switch_position = {
-        tc.ThermostatCommonZone.COOL_MODE: "cool",
-        tc.ThermostatCommonZone.HEAT_MODE: "heat",
-        tc.ThermostatCommonZone.OFF_MODE: "off",
-        tc.ThermostatCommonZone.AUTO_MODE: "auto",
-        tc.ThermostatCommonZone.DRY_MODE: "dry",
-        tc.ThermostatCommonZone.UNKNOWN_MODE: -1,
-        }
-
     def __init__(self, Thermostat_obj):
         """
         Zone constructor.
@@ -115,6 +107,13 @@ class ThermostatZone(tc.ThermostatCommonZone):
         """
         # construct the superclass, requires auth setup first
         super(ThermostatZone, self).__init__()
+
+        # switch config for this thermostat
+        self.system_switch_position[tc.ThermostatCommonZone.COOL_MODE] = "cool"
+        self.system_switch_position[tc.ThermostatCommonZone.HEAT_MODE] = "heat"
+        self.system_switch_position[tc.ThermostatCommonZone.OFF_MODE] = "off"
+        self.system_switch_position[tc.ThermostatCommonZone.DRY_MODE] = "auto"
+        self.system_switch_position[tc.ThermostatCommonZone.AUTO_MODE] = "dry"
 
         # zone info
         self.thermostat_type = api.KUMOCLOUD

@@ -180,13 +180,6 @@ class ThermostatClass(tc.ThermostatCommonZone):
 class ThermostatZone(tc.ThermostatCommonZone):
     """3m50 thermostat zone functions."""
 
-    system_switch_position = {
-        tc.ThermostatCommonZone.COOL_MODE: 2,
-        tc.ThermostatCommonZone.HEAT_MODE: 1,
-        tc.ThermostatCommonZone.OFF_MODE: 0,
-        tc.ThermostatCommonZone.AUTO_MODE: 3,
-        }
-
     def __init__(self, Thermostat_obj):
         """
         Constructor, connect to thermostat.
@@ -199,6 +192,12 @@ class ThermostatZone(tc.ThermostatCommonZone):
         """
         # construct the superclass
         super(ThermostatZone, self).__init__()
+
+        # switch config for this thermostat
+        self.system_switch_position[tc.ThermostatCommonZone.COOL_MODE] = 2
+        self.system_switch_position[tc.ThermostatCommonZone.HEAT_MODE] = 1
+        self.system_switch_position[tc.ThermostatCommonZone.OFF_MODE] = 0
+        self.system_switch_position[tc.ThermostatCommonZone.AUTO_MODE] = 3
 
         # zone info
         self.thermostat_type = api.MMM50

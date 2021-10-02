@@ -65,6 +65,7 @@ class ThermostatCommonZone():
         self.poll_time_sec = util.bogus_int  # placeholder
         self.connection_time_sec = util.bogus_int  # placeholder
         self.tolerance_degrees = self.tolerance_degrees_default
+        self.current_mode = None  # placeholder
 
     def get_current_mode(self, session_count, poll_count, print_status=True,
                          flag_all_deviations=False):
@@ -217,6 +218,8 @@ class ThermostatCommonZone():
         if print_status:
             util.log_msg(full_status_msg, mode=util.BOTH_LOG)
 
+        self.store_current_mode()
+
         # return status
         return_buffer["heat_mode"] = self.is_heat_mode()
         return_buffer["cool_mode"] = self.is_cool_mode()
@@ -225,6 +228,31 @@ class ThermostatCommonZone():
         return_buffer["hold_mode"] = hold_mode
         return_buffer["status_msg"] = full_status_msg
         return return_buffer
+
+    def set_mode(self, target_mode):
+        """
+        Set the thermostat mode.
+
+        inputs:
+            target_mode(str):  target mode
+        returns:
+            True if successful, else False
+        """
+        print("DEBUG in set_mode, target_mode=%s, doing nothing" % target_mode)
+        return False
+
+    def store_current_mode(self):
+        """Save the current mode to cache."""
+        if self.is_heat_mode():
+            self.current_mode = self.HEAT_MODE
+        elif self.is_cool_mode():
+            self.current_mode = self.COOL_MODE
+        elif self.is_dry_mode():
+            self.current_mode = self.DRY_MODE
+        elif self.is_auto_mode():
+            self.current_mode = self.DRY_MODE
+        else:
+            self.current_mode = self.OFF_MODE
 
     def validate_numeric(self, input_val, parameter_name):
         """
@@ -407,6 +435,7 @@ class ThermostatCommonZone():
             "poll_time_sec": "poll_time_sec",
             "connection_time_sec": "connection_time_sec",
             "tolerance_degrees": "tolerance_degrees",
+            "target_mode": "target_mode",
             }
 
         for inp, cls_method in user_input_to_class_mapping.items():
@@ -414,3 +443,52 @@ class ThermostatCommonZone():
             if user_input is not None:
                 setattr(self, cls_method, user_input)
                 print("%s=%s" % (inp, user_input))
+
+    def verify_current_mode(self, target_mode):
+        """
+        Verify current mode matches target mode.
+
+        inputs:
+            target_mode(str): target mode override
+        returns:
+            (bool): True if current mode matches target mode,
+                    or target mode is not specified.
+        """
+        if target_mode is None:
+            return True
+        else:
+            if self.current_mode == target_mode:
+                return True
+            else:
+                return False
+
+    def revert_thermostat_mode(self, target_mode):
+        """
+        Revert thermostat mode to target mode.
+
+        inputs:
+            target_mode(str): target mode override
+        returns:
+            target_mode(str) target_mode, which may get updated by
+            this function.
+        """
+        heat_modes = [self.HEAT_MODE, self.AUTO_MODE]
+        cool_modes = [self.COOL_MODE, self.DRY_MODE, self.AUTO_MODE]
+        # do not switch directly from hot to cold
+        if (self.current_mode in heat_modes and target_mode in cool_modes):
+            print("WARNING: target mode=%s, switching from %s mode to OFF_MODE"
+                  " to prevent damage to HVAC" %
+                  (target_mode, self.current_mode))
+            target_mode = self.OFF_MODE
+
+        # do not switch directly from cold to hot
+        elif (self.current_mode in cool_modes and target_mode in heat_modes):
+            print("WARNING: target mode=%s, switching from %s mode to OFF_MODE"
+                  " to prevent damage to HVAC" %
+                  (target_mode, self.current_mode))
+            target_mode = self.OFF_MODE
+
+        # revert the mode to target
+        self.set_mode(target_mode)
+
+        return target_mode

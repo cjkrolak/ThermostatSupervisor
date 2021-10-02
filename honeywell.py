@@ -239,14 +239,6 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
     """Extend the Zone class with additional methods to get and set
        uiData parameters."""
 
-    system_switch_position = {
-        tc.ThermostatCommonZone.COOL_MODE: 3,
-        tc.ThermostatCommonZone.HEAT_MODE: 1,
-        tc.ThermostatCommonZone.OFF_MODE: 2,
-        tc.ThermostatCommonZone.AUTO_MODE: util.bogus_int,
-        # what mode is 0 on Honeywell?
-        }
-
     def __init__(self, Thermostat_obj):
         """
         Zone constructor.
@@ -265,6 +257,12 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
         pyhtcc.Zone.__init__(self, Thermostat_obj.device_id,
                              Thermostat_obj)
         tc.ThermostatCommonZone.__init__(self)
+
+        # switch config for this thermostat
+        self.system_switch_position[tc.ThermostatCommonZone.COOL_MODE] = 3
+        self.system_switch_position[tc.ThermostatCommonZone.HEAT_MODE] = 1
+        self.system_switch_position[tc.ThermostatCommonZone.OFF_MODE] = 2
+        # TODO: what mode is 0 on Honeywell?
 
         # zone info
         self.thermostat_type = api.HONEYWELL
