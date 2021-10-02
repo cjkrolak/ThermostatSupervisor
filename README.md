@@ -70,8 +70,9 @@ runtime parameters can be specified to override defaults:<br/>
 * argv[3] = poll time in seconds (default is thermostat-specific)
 * argv[4] = re-connect time in seconds (default is thermostat-specific)
 * argv[5] = tolerance from setpoint allowed in degrees (default is 2 degrees)
+* argv[6] = target thermostat mode (e.g. OFF_MODE, COOL_MODE, HEAT_MODE, DRY_MODE, etc.), not yet fully functional.
 supervise script will call honeywell or mmm50 scripts, detailed below.<br/>
-command line usage:  "*python supervise.py \<thermostat type\> \<zone\> \<poll time\> \<connection time\>*"
+command line usage:  "*python supervise.py \<thermostat type\> \<zone\> \<poll time\> \<connection time\> \<target mode\>*"
   
 ## supervisor_flask_server.py:
 This module will render supervise.py output on an HTML page using Flask.<br/>
@@ -84,20 +85,20 @@ command line usage:  "*python supervisor_flask_server.py \<runtime parameters\>*
 2. default poll time is currently set to 3 minutes, longer poll times experience connection errors, shorter poll times are impractical based on emperical data.
 3. If schedule deviation detected, script will revert thermostat back to scheduled settings.
 Script can be configured to customize polling interval, force re-logon after period of time, and either just alert or alert and revert to schedule.
-command line usage:  "*python honeywell.py \<thermostat type\> \<zone\> \<poll time\> \<connection time\>*"
+command line usage:  "*python honeywell.py \<thermostat type\> \<zone\> \<poll time\> \<connection time\> \<target mode\>*"
 
 ## mmm50.py:
 1. Script will connect to 3m50 thermostat on local network, IP address stored in thermostat_api.mmm_ip
 2. polling is currently set to 10 minutes.
 3. If schedule deviation detected, script will revert thermostat back to scheduled settings.
 Script can be configured to customize polling interval, force re-logon after period of time, and either just alert or alert and revert to schedule.<br/>
-command line usage:  "*python mmm.py \<thermostat type\> \<zone\> \<poll time\> \<connection time\>*"
+command line usage:  "*python mmm.py \<thermostat type\> \<zone\> \<poll time\> \<connection time\> \<target mode\>*"
 
 ## sht31.py:
 1. Script will connect to sht31 thermometer at URL specified (can be local IP or remote URL).
 2. polling is currently set to 1 minute.
 Script can be configured to customize polling interval, force re-logon after period of time, and either just alert or alert and revert to schedule.<br/>
-command line usage:  "*python sht31.py \<thermostat type\> \<zone\> \<poll time\> \<connection time\>*"
+command line usage:  "*python sht31.py \<thermostat type\> \<zone\> \<poll time\> \<connection time\> \<target mode\>*"
 
 ## sht31_flask_server.py:
 This module will render sht31 sensor output on an HTML page using Flask.<br/>
@@ -113,7 +114,7 @@ command line usage:  "*python sht31_flask_server.py \<mode\> \<measurements\> \<
 3. Zone number refers to the thermostat order in kumocloud, 0=first thermostat data returned, 1=second thermostat, etc.
 4. If schedule deviation detected, script will revert thermostat back to scheduled settings.
 Script can be configured to customize polling interval, force re-logon after period of time, and either just alert or alert and revert to schedule.<br/>
-command line usage:  "*python kumocloud.py \<thermostat type\> \<zone\> \<poll time\> \<connection time\>*"
+command line usage:  "*python kumocloud.py \<thermostat type\> \<zone\> \<poll time\> \<connection time\> \<target mode\>*"
 
 ## Supervisor API required methods:<br/>
 **Thermostat class:**<br/>
