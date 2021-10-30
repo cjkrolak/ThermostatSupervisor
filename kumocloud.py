@@ -204,7 +204,8 @@ class ThermostatZone(tc.ThermostatCommonZone):
         """
         self.refresh_zone_info()
         return int(self.device_id.get_mode() ==
-                   tc.ThermostatCommonZone.HEAT_MODE)
+                   self.system_switch_position[
+                       tc.ThermostatCommonZone.HEAT_MODE])
 
     def get_cool_mode(self) -> int:
         """
@@ -217,7 +218,8 @@ class ThermostatZone(tc.ThermostatCommonZone):
         """
         self.refresh_zone_info()
         return int(self.device_id.get_mode() ==
-                   tc.ThermostatCommonZone.COOL_MODE)
+                   self.system_switch_position[
+                       tc.ThermostatCommonZone.COOL_MODE])
 
     def get_dry_mode(self) -> int:
         """
@@ -230,7 +232,8 @@ class ThermostatZone(tc.ThermostatCommonZone):
         """
         self.refresh_zone_info()
         return int(self.device_id.get_mode() ==
-                   tc.ThermostatCommonZone.DRY_MODE)
+                   self.system_switch_position[
+                       tc.ThermostatCommonZone.DRY_MODE])
 
     def get_heat_setpoint_raw(self) -> int:  # used
         """
