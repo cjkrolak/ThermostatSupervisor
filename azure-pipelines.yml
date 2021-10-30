@@ -8,7 +8,7 @@ trigger:
 - develop
 
 # pool:
-#   vmImage: ubuntu-default
+  # vmImage: ubuntu-default
 
 strategy:
   matrix:
@@ -49,8 +49,9 @@ steps:
   env:
     GMAIL_USERNAME: '$(GMAIL_USERNAME)'
     GMAIL_PASSWORD: '$(GMAIL_PASSWORD)'
-    GMAIL_TO_USERNAME: '$(GMAIL_TO_USERNAME)'
     TCC_USERNAME: '$(TCC_USERNAME)'
     TCC_PASSWORD: '$(TCC_PASSWORD)'
     SHT31_REMOTE_IP_ADDRESS_1: '$(SHT31_REMOTE_IP_ADDRESS_1)'
+    KUMO_USERNAME: '$(KUMO_USERNAME)'
+    KUMO_PASSWORD: '$(KUMO_PASSWORD)'
  
