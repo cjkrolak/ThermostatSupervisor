@@ -199,9 +199,23 @@ def parse_all_runtime_parameters():
 
 # dynamic import
 def dynamic_module_import(name):
-    # find_module() method is used
-    # to find the module and return
-    # its description and path
+    """Find and load python module."""
+    fp, path, desc = find_module(name)
+    mod = load_module(name, fp, path, desc)
+    return mod
+
+
+def find_module(name):
+    """
+    Find the module and return its description and path.
+
+    inputs:
+        name(str): module name
+    returns:
+        fp(file pointer)
+        path(str): path to file
+        desc(tuple): file descriptor
+    """
     try:
         fp, path, desc = imp.find_module(name)
     except ImportError as e:
@@ -209,7 +223,20 @@ def dynamic_module_import(name):
                      mode=util.DEBUG_LOG + util.CONSOLE_LOG, func_name=1)
         print("module not found: " + name)
         raise e
+    return fp, path, desc
 
+
+def load_module(name, fp, path, desc):
+    """
+    Load the module into memory.
+
+    inputs:
+        fp(file pointer)
+        path(str): path to file
+        desc(tuple): file descriptor
+    returns:
+        mod(python module)
+    """
     try:
         # load_modules loads the module
         # dynamically and takes the filepath
@@ -222,7 +249,6 @@ def dynamic_module_import(name):
         raise e
     finally:
         fp.close
-
     return mod
 
 

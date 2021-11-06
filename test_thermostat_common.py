@@ -31,12 +31,75 @@ class Test(unittest.TestCase):
             "connection_time_sec": 155,
             }
 
+        self.Thermostat = tc.ThermostatCommon()
         self.Zone = tc.ThermostatCommonZone()
         self.Zone.update_runtime_parameters(api.user_inputs)
 
     def tearDown(self):
         del api.thermostats[self.tstat]
         api.user_inputs = self.user_inputs_backup
+
+    def test_PrintAllThermostatMetaData(self):
+        """
+        Verify print_all_thermostat_metadata() runs without error.
+        """
+        utc.print_test_name()
+        self.Thermostat.print_all_thermostat_metadata()
+
+    def test_SetMode(self):
+        """
+        Verify set_mode() runs without error.
+        """
+        utc.print_test_name()
+        result = self.Zone.set_mode("bogus_mode")
+        self.assertFalse(result, "Zone.set_mode() should have returned False")
+
+    def test_StoreCurrentMode(self):
+        """
+        Verify store_current_mode() runs without error.
+        """
+        utc.print_test_name()
+
+        def dummy_true(): return True
+
+        dummy_func = None
+        test_cases = [["is_heat_mode", self.Zone.HEAT_MODE],
+                      ["is_cool_mode", self.Zone.COOL_MODE],
+                      ["is_dry_mode", self.Zone.DRY_MODE],
+                      ["is_auto_mode", self.Zone.AUTO_MODE],
+                      [dummy_func, self.Zone.OFF_MODE]]
+        for test_case in test_cases:
+            print("testing %s" % test_case[0])
+            try:
+                # mock up the is_X_mode() functions
+                if test_case[0]:
+                    backup_func = getattr(self.Zone, test_case[0])
+                    setattr(self.Zone, test_case[0], dummy_true)
+
+                # store the current mode and check cache
+                self.Zone.store_current_mode()
+                print("current mode=%s" % self.Zone.current_mode)
+                self.assertEqual(test_case[1], self.Zone.current_mode,
+                                 "Zone.set_current_mode() failed to "
+                                 "cache mode=%s" % test_case[1])
+
+                # confirm verify_current_mode()
+                none_act = self.Zone.verify_current_mode(None)
+                self.assertTrue(none_act,
+                                "verify_current_mode(None) failed "
+                                "to return True")
+                curr_act = self.Zone.verify_current_mode(test_case[1])
+                self.assertTrue(curr_act,
+                                "verify_current_mode() doesn't match "
+                                "current test mode")
+                dummy_act = self.Zone.verify_current_mode("dummy_mode")
+                self.assertFalse(dummy_act,
+                                 "verify_current_mode('dummy_mode') returned "
+                                 "True, should have returned False")
+            finally:
+                # restore mocked function
+                if test_case[0]:
+                    setattr(self.Zone, test_case[0], backup_func)
 
     def test_CheckReturnTypes(self):
         """
@@ -104,6 +167,18 @@ class Test(unittest.TestCase):
                 "key": self.Zone.update_runtime_parameters,
                 "args": [{"zone": 1}],
                 "return_type": type(None)},
+            "get_schedule_program_heat": {
+                "key": self.Zone.get_schedule_program_heat,
+                "args": None,
+                "return_type": dict},
+            "get_schedule_program_cool": {
+                "key": self.Zone.get_schedule_program_cool,
+                "args": None,
+                "return_type": dict},
+            "get_vacation_hold_until_time": {
+                "key": self.Zone.get_vacation_hold_until_time,
+                "args": None,
+                "return_type": int},
             }
         for k, v in func_dict.items():
             print("key=%s" % k)
@@ -152,6 +227,20 @@ class Test(unittest.TestCase):
         self.assertFalse(self.Zone.warn_if_outside_global_limit(
             2, 1, operator.lt, "cool"),
             "function result should have been False")
+
+    def test_RevertThermostatMode(self):
+        """
+        Test the revert_thermostat_mode() function.
+        """
+        utc.print_test_name()
+        for test_case in [self.Zone.HEAT_MODE, self.Zone.COOL_MODE,
+                          self.Zone.DRY_MODE, self.Zone.AUTO_MODE,
+                          self.Zone.OFF_MODE]:
+            print("reverting to '%s' mode" % test_case)
+            new_mode = self.Zone.revert_thermostat_mode(test_case)
+            self.assertEqual(new_mode, test_case,
+                             "reverting to %s mode failed, "
+                             "new mode is '%s'" % (test_case, new_mode))
 
     def test_GetCurrentMode(self):
         """

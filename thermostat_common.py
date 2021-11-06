@@ -32,7 +32,7 @@ class ThermostatCommon():
             None
         """
         print("WARNING: print_all_thermostat_metatdata() not yet "
-              "implemented for this thermostat type")
+              "implemented for this thermostat type\n")
 
 
 class ThermostatCommonZone():
@@ -47,12 +47,12 @@ class ThermostatCommonZone():
 
     system_switch_position = {
         # placeholder, will be tstat-specific
-        HEAT_MODE: util.bogus_int,
-        OFF_MODE: util.bogus_int,
-        COOL_MODE: util.bogus_int,
-        AUTO_MODE: util.bogus_int,
-        DRY_MODE: util.bogus_int,
-        UNKNOWN_MODE: util.bogus_int,
+        HEAT_MODE: util.bogus_int - 1,
+        OFF_MODE: util.bogus_int - 2,
+        COOL_MODE: util.bogus_int - 3,
+        AUTO_MODE: util.bogus_int - 4,
+        DRY_MODE: util.bogus_int - 5,
+        UNKNOWN_MODE: util.bogus_int - 6,
         }
     max_scheduled_heat_allowed = 74  # warn if scheduled heat value exceeds.
     min_scheduled_cool_allowed = 68  # warn if scheduled cool value exceeds.
@@ -250,7 +250,7 @@ class ThermostatCommonZone():
         elif self.is_dry_mode():
             self.current_mode = self.DRY_MODE
         elif self.is_auto_mode():
-            self.current_mode = self.DRY_MODE
+            self.current_mode = self.AUTO_MODE
         else:
             self.current_mode = self.OFF_MODE
 

@@ -148,6 +148,14 @@ class Test(unittest.TestCase):
         finally:
             input_list = input_list_backup  # restore original
 
+        # test bad data type for position input parameter (should be int)
+        with self.assertRaises(TypeError):
+            tstat_type = api.parse_runtime_parameter(api.user_input_list[0],
+                                                     "1", str,
+                                                     api.HONEYWELL,
+                                                     api.SUPPORTED_THERMOSTATS,
+                                                     input_list)
+
     def test_ParseAllRuntimeParameters(self):
         """
         Verify test parse_all_runtime_parameters() runs without error
@@ -183,10 +191,54 @@ class Test(unittest.TestCase):
             pkg = api.dynamic_module_import("bogus")
             print("'bogus' module returned package type %s" % type(pkg))
 
+    def test_FindModule(self):
+        """
+        Verify find_module() runs without error
+        """
+        utc.print_test_name()
+
+        # test successful case
+        fp, path, desc = api.find_module(api.HONEYWELL)
+        print("api.HONEYWELL returned path %s" % path)
+        self.assertTrue(isinstance(path, str),
+                        "api.find_module() returned type(%s),"
+                        " for path, expected a string" % type(path))
+        self.assertTrue(isinstance(desc, tuple),
+                        "api.find_module() returned type(%s),"
+                        " for desc, expected a string" % type(desc))
+        del fp
+
+        # test failing case
+        with self.assertRaises(ImportError):
+            fp, path, desc = api.find_module("bogus")
+            print("'bogus' module returned fp=%s, path=%s, desc=%s, "
+                  "expected an exception" % (fp, path, desc))
+
+    def test_LoadModule(self):
+        """
+        Verify load_module() runs without error
+        """
+        utc.print_test_name()
+
+        # test successful case
+        fp, path, desc = api.find_module(api.HONEYWELL)
+        pkg = api.load_module(api.HONEYWELL, fp, path, desc)
+        print("api.HONEYWELL returned package type %s" % type(pkg))
+        self.assertTrue(isinstance(pkg, object),
+                        "api.load_module() returned type(%s),"
+                        " expected an object" % type(pkg))
+        del pkg
+
+        # test failing case
+        with self.assertRaises(FileNotFoundError):
+            pkg = api.load_module(api.HONEYWELL, fp, "", desc)
+            print("'bogus' module returned package type %s" % type(pkg))
+
     def test_LoadHardwareLibrary(self):
         """
         Verify load_hardware_library() runs without error
         """
+        utc.print_test_name()
         # test successful case
         pkg = api.load_hardware_library(api.HONEYWELL)
         print("api.HONEYWELL returned package type %s" % type(pkg))
@@ -198,7 +250,8 @@ class Test(unittest.TestCase):
         # test failing case
         with self.assertRaises(KeyError):
             pkg = api.load_hardware_library("bogus")
-            print("'bogus' returned package type %s" % type(pkg))
+            print("'bogus' returned package type %s, "
+                  "exception should have been raised" % type(pkg))
             del pkg
 
 
