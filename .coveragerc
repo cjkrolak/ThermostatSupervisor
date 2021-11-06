@@ -4,3 +4,5 @@ omit =
     */site-packages/*
     */distutils/*
     tests/*
+    test_*
+    *_test_*
