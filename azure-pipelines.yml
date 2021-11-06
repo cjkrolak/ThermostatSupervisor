@@ -8,7 +8,7 @@ trigger:
 - develop
 
 # pool:
-  # vmImage: ubuntu-default
+  vmImage: ubuntu-latest
 
 strategy:
   matrix:
