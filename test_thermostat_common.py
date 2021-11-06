@@ -278,7 +278,6 @@ class Test(unittest.TestCase):
         Mock heat setting by overriding switch position function.
 
         Make sure to backup and restore methods if using this function.
-
         inputs:
             mock_mode(str): mode string
         returns:
