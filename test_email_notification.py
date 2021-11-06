@@ -23,7 +23,7 @@ class Test(unittest.TestCase):
     def tearDown(self):
         pass
 
-    def testCheckEmailEnvVariables(self):
+    def test_CheckEmailEnvVariables(self):
         """
         Verify all required email email env variables are present for tests.
 
@@ -43,7 +43,7 @@ class Test(unittest.TestCase):
                             "from environment" % env_key)
                 self.fail(fail_msg)
 
-    def testSendEmailAlerts(self):
+    def test_SendEmailAlerts(self):
         """Test send_email_alerts() functionality."""
         utc.print_test_name()
 
