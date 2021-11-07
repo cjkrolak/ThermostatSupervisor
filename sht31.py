@@ -88,6 +88,9 @@ class ThermostatClass(tc.ThermostatCommon):
             ip = '127.0.0.1'
         finally:
             s.close()
+        # force localhost for Azure
+        if '192.' not in ip:
+            ip = '127.0.0.1'
         return ip
 
     def get_env_key(self, zone_str):
