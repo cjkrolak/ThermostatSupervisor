@@ -1,5 +1,8 @@
 """
 Unit test module for sht31_flask_server.py.
+
+Flask server tests currently do not work on Azure pipelines
+because ports cannot be opened on shared pool.
 """
 # built-in imports
 import threading
@@ -24,28 +27,36 @@ class Test(unittest.TestCase):
         sht31_fs.measurements = 10
         sht31_fs.unit_test_mode = True
         util.log_msg.file_name = "unit_test.txt"
-        print("starting sht31 server thread...")
-        self.fs = threading.Thread(target=sht31_fs.app.run,
-                                   args=('0.0.0.0', 5000, False))
-        self.fs.daemon = True  # make thread daemonic
-        self.fs.start()
-        print("thread alive status=%s" % self.fs.is_alive())
-        print("Flask server setup is complete")
+        if not utc.is_azure_environment():
+            print("starting sht31 server thread...")
+            self.fs = threading.Thread(target=sht31_fs.app.run,
+                                       args=('0.0.0.0', 5000, False))
+            self.fs.daemon = True  # make thread daemonic
+            self.fs.start()
+            print("thread alive status=%s" % self.fs.is_alive())
+            print("Flask server setup is complete")
+        else:
+            print("WARNING: flask server tests not currently supported on "
+                  "Azure pipelines, doing nothing")
 
     def tearDown(self):
-        print("thread alive status=%s" % self.fs.is_alive())
-        if self.fs.daemon:
-            print("flask server is daemon thread, "
-                  "thread will terminate when main thread terminates")
-        else:
-            print("WARNING: flask server is not daemon thread, "
-                  "thread may still be active")
+        if not utc.is_azure_environment():
+            print("thread alive status=%s" % self.fs.is_alive())
+            if self.fs.daemon:
+                print("flask server is daemon thread, "
+                      "thread will terminate when main thread terminates")
+            else:
+                print("WARNING: flask server is not daemon thread, "
+                      "thread may still be active")
 
     def test_FlaskServer(self):
         """
         Confirm Flask server returns valid data.
         """
         utc.print_test_name()
+        if utc.is_azure_environment():
+            print("this test not supported on Azure Pipelines, exiting")
+            return
         print("creating thermostat object...")
         Thermostat = sht31.ThermostatClass(sht31.UNITTEST_SHT31)
         print("printing thermostat meta data:")

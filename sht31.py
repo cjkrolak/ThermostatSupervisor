@@ -15,7 +15,6 @@ import json
 import os
 import pprint
 import requests
-import socket
 import time
 import traceback
 
@@ -70,28 +69,12 @@ class ThermostatClass(tc.ThermostatCommon):
         # update IP dict based on env key
         if zone_number == UNITTEST_SHT31:
             # unittest will serve on local IP address
-            ip_address = self.get_local_ip()
+            ip_address = util.get_local_ip()
             print("UNITTEST: local ip=%s" % ip_address)
         else:
             env_str = self.get_env_key(zone_number)
             ip_address = self.get_ip_address(env_str)
         return ip_address
-
-    def get_local_ip(self):
-        """Get local IP address for this PC."""
-        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        try:
-            # doesn't even have to be reachable
-            s.connect(('10.255.255.255', 1))
-            ip = s.getsockname()[0]
-        except Exception:
-            ip = '127.0.0.1'
-        finally:
-            s.close()
-        # force localhost for Azure
-        if '192.' not in ip:
-            ip = '127.0.0.1'
-        return ip
 
     def get_env_key(self, zone_str):
         """
