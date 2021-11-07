@@ -27,7 +27,7 @@ import utilities as util
 # SHT31 thermometer zones
 LOFT_SHT31 = 0  # zone 0, local IP 192.168.86.15
 LOFT_SHT31_REMOTE = 1  # zone 1
-UNITTEST_SHT31 = 99  # unit test emulator, local IP 127.0.0.1
+UNITTEST_SHT31 = 99  # unit test emulator, will host on local IP
 
 
 class ThermostatClass(tc.ThermostatCommon):
@@ -67,8 +67,13 @@ class ThermostatClass(tc.ThermostatCommon):
             (str):  IP address of target zone.
         """
         # update IP dict based on env key
-        env_str = self.get_env_key(zone_number)
-        ip_address = self.get_ip_address(env_str)
+        if zone_number == UNITTEST_SHT31:
+            # unittest will serve on local IP address
+            ip_address = util.get_local_ip()
+            print("UNITTEST: local ip=%s" % ip_address)
+        else:
+            env_str = self.get_env_key(zone_number)
+            ip_address = self.get_ip_address(env_str)
         return ip_address
 
     def get_env_key(self, zone_str):
@@ -311,7 +316,7 @@ if __name__ == "__main__":
     Zone.update_runtime_parameters(api.user_inputs)
 
     print("current thermostat settings...")
-    print("tmode1: %s" % Zone.get_system_switch_position())
+    print("system switch position: %s" % Zone.get_system_switch_position())
     print("heat mode=%s" % Zone.get_heat_mode())
     print("cool mode=%s" % Zone.get_cool_mode())
     print("temporary hold minutes=%s" % Zone.get_temporary_hold_until_time())

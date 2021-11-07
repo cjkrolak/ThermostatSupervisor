@@ -434,7 +434,7 @@ if __name__ == "__main__":
     Zone.update_runtime_parameters(api.user_inputs)
 
     print("current thermostat settings...")
-    print("tmode1: %s" % Zone.get_system_switch_position())
+    print("system switch position: %s" % Zone.get_system_switch_position())
     print("current temp: %s" % Zone.get_display_temp())
     print("current humidity: %s" % Zone.get_display_humidity())
     print("heat set point=%s" % Zone.get_heat_setpoint_raw())

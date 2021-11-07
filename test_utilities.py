@@ -205,6 +205,17 @@ class Test(unittest.TestCase):
                              "expected=%s, actual=%s" %
                              (expected_value, actual_value))
 
+    def test_GetLocalIP(self):
+        """
+        Verify get_local_ip().
+        """
+        return_val = util.get_local_ip()
+        self.assertTrue(isinstance(return_val, str),
+                        "get_local_ip() returned '%s' which is not a string")
+        self.assertTrue(7 <= len(return_val) <= 15,
+                        "get_local_ip() returned '%s' which is not "
+                        "between 7 and 15 chars")
+
 
 if __name__ == "__main__":
     util.log_msg.debug = True
