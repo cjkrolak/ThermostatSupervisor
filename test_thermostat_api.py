@@ -171,6 +171,7 @@ class Test(unittest.TestCase):
                          api.user_inputs["connection_time_sec"])
         self.assertEqual(return_list[4], api.user_inputs["tolerance_degrees"])
         self.assertEqual(return_list[5], api.user_inputs["target_mode"])
+        self.assertEqual(return_list[6], api.user_inputs["measurements"])
 
     def test_DynamicModuleImport(self):
         """
@@ -253,6 +254,35 @@ class Test(unittest.TestCase):
             print("'bogus' returned package type %s, "
                   "exception should have been raised" % type(pkg))
             del pkg
+
+    def test_max_measurement_count_exceeded(self):
+        """
+        Verify max_measurement_count_exceeded() runs as expected.
+        """
+        utc.print_test_name()
+        test_cases = {
+            "within_range": {"measurement": 13, "max_measurements": 14,
+                             "exp_result": False},
+            "at_range": {"measurement": 17, "max_measurements": 17,
+                         "exp_result": False},
+            "over_range": {"measurement": 15, "max_measurements": 14,
+                           "exp_result": True},
+            "default": {"measurement": 13, "max_measurements": None,
+                        "exp_result": False},
+            }
+        max_measurement_bkup = api.user_inputs["measurements"]
+        try:
+            for test_case, parameters in test_cases.items():
+                api.user_inputs["measurements"] = \
+                    parameters["max_measurements"]
+                act_result = api.max_measurement_count_exceeded(
+                    parameters["measurement"])
+                exp_result = parameters["exp_result"]
+                self.assertEqual(exp_result, act_result,
+                                 "test case '%s', expected=%s, actual=%s" %
+                                 (test_case, exp_result, act_result))
+        finally:
+            api.user_inputs["measurements"] = max_measurement_bkup
 
 
 if __name__ == "__main__":

@@ -193,8 +193,12 @@ def parse_all_runtime_parameters():
                                                 SUPPORTED_THERMOSTATS[
                                                     tstat_type]["modes"])
 
+    # parse the number of measurements (argv[7] if present):
+    measurements = parse_runtime_parameter("measurements", 7,
+                                           int, None, range(1, 10))
+
     return [tstat_type, zone_input, poll_time_input, connection_time_input,
-            tolerance_degrees_input, target_mode_input]
+            tolerance_degrees_input, target_mode_input, measurements]
 
 
 # dynamic import
@@ -264,3 +268,21 @@ def load_hardware_library(thermostat_type):
     mod = dynamic_module_import(
         SUPPORTED_THERMOSTATS[thermostat_type]["module"])
     return mod
+
+
+def max_measurement_count_exceeded(measurement):
+    """
+    Return True if max measurement reached.
+
+    inputs:
+        measurement(int): current measurement value
+    returns:
+        (bool): True if max measurement reached.
+    """
+    max_measurements = user_inputs["measurements"]
+    if max_measurements is None:
+        return False
+    elif measurement > max_measurements:
+        return True
+    else:
+        return False

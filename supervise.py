@@ -54,7 +54,8 @@ def main(thermostat_type, zone_str):
 
     # connection timer loop
     session_count = 1
-    while True:
+    measurement = 1
+    while not api.max_measurement_count_exceeded(measurement):
         # make connection to thermostat
         mod = api.load_hardware_library(thermostat_type)
         zone_num = api.user_inputs["zone"]
@@ -93,7 +94,7 @@ def main(thermostat_type, zone_str):
 
         poll_count = 1
         # poll thermostat settings
-        while True:
+        while not api.max_measurement_count_exceeded(measurement):
             # query thermostat for current settings and set points
             current_mode = Zone.get_current_mode(
                 session_count, poll_count,
@@ -152,9 +153,13 @@ def main(thermostat_type, zone_str):
 
             # increment poll count
             poll_count += 1
+            measurement += 1
 
         # increment connection count
         session_count += 1
+
+    util.log_msg("\n %s measurements completed, exiting program\n" %
+                 measurement, mode=util.BOTH_LOG)
 
 
 if __name__ == "__main__":
