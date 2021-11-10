@@ -70,7 +70,7 @@ runtime parameters can be specified to override defaults:<br/>
 * argv[3] = poll time in seconds (default is thermostat-specific)
 * argv[4] = re-connect time in seconds (default is thermostat-specific)
 * argv[5] = tolerance from setpoint allowed in degrees (default is 2 degrees)
-* argv[6] = target thermostat mode (e.g. OFF_MODE, COOL_MODE, HEAT_MODE, DRY_MODE, etc.), not yet fully functional.<br/><br/>
+* argv[6] = target thermostat mode (e.g. OFF_MODE, COOL_MODE, HEAT_MODE, DRY_MODE, etc.), not yet fully functional.
 * argv[7] = number of measurements (default is infinitity).<br/><br/>
 command line usage:  "*python supervise.py \<thermostat type\> \<zone\> \<poll time\> \<connection time\> \<target mode\>*"
   
