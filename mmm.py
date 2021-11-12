@@ -34,6 +34,7 @@ mmm_metadata = {
     BASEMENT_3M50: {"ip_address": "192.168.86.83",  # local IP
                     }
 }
+socket_timeout = 30  # http socket timeout override
 
 
 class ThermostatClass(tc.ThermostatCommonZone):
@@ -589,7 +590,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
 
 # monkeypatch radiotherm.thermostat.Thermostat __init__ method with longer
 # socket.timeout delay, based on radiotherm version 2.1
-def __init__(self, host, timeout=10):  # changed from 4 to 10
+def __init__(self, host, timeout=socket_timeout):  # changed from 4 (default)
     self.host = host
     self.timeout = timeout
 
@@ -630,3 +631,10 @@ if __name__ == "__main__":
     print("heat mode=%s" % Zone.get_heat_mode())
     print("cool mode=%s" % Zone.get_cool_mode())
     print("temporary hold minutes=%s" % Zone.get_temporary_hold_until_time())
+
+    # measure thermostat response time
+    measurements = 100
+    print("Thermostat response times for %s measurements..." % measurements)
+    meas_data = Zone.measure_thermostat_response_time(measurements)
+    ppp = pprint.PrettyPrinter(indent=4)
+    ppp.pprint(meas_data)
