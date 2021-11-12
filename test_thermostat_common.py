@@ -3,6 +3,7 @@ Tests for thermostat_common.py
 """
 # built-in imports
 import operator
+import pprint
 import unittest
 
 # local imports
@@ -241,6 +242,26 @@ class Test(unittest.TestCase):
             self.assertEqual(new_mode, test_case,
                              "reverting to %s mode failed, "
                              "new mode is '%s'" % (test_case, new_mode))
+
+    def test_MeasureThermostatResponseTime(self):
+        """
+        Test the measure_thermostat_response_time() function.
+        """
+        utc.print_test_name()
+        # measure thermostat response time
+        measurements = 3
+        print("Thermostat response times for %s measurements..." %
+              measurements)
+        meas_data = self.Zone.measure_thermostat_response_time(measurements)
+        ppp = pprint.PrettyPrinter(indent=4)
+        ppp.pprint(meas_data)
+        self.assertTrue(isinstance(meas_data, dict),
+                        "return data is type(%s), expected a dict" %
+                        type(meas_data))
+        self.assertEqual(meas_data["measurements"], measurements,
+                         "number of measurements in return data(%s) doesn't "
+                         "match number of masurements requested(%s)" %
+                         (meas_data["measurements"], measurements))
 
     def test_GetCurrentMode(self):
         """

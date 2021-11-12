@@ -4,6 +4,8 @@ Common Thermostat Class
 # built-ins
 import datetime
 import operator
+import time
+import statistics
 
 # local imports
 import email_notification
@@ -492,3 +494,36 @@ class ThermostatCommonZone():
         self.set_mode(target_mode)
 
         return target_mode
+
+    def measure_thermostat_response_time(self, measurements=30):
+        """
+        Measure Thermostat response time and report statistics.
+
+        inputs:
+            measurements(int): number of measurements
+        returns:
+            (dict): measurement statistics.
+        """
+        delta_lst = []
+        stats = {}
+        for n in range(measurements):
+            t0 = time.time()
+            self.get_schedule_heat_sp()  # arbitrary command
+            t1 = time.time()
+
+            # accumulate stats
+            tdelta = t1 - t0
+            delta_lst.append(tdelta)
+            print("measurement %s=%.1f seconds" % (n, tdelta))
+
+        # calc stats
+        stats["measurements"] = measurements
+        stats["mean"] = round(statistics.mean(delta_lst), 1)
+        stats["stdev"] = round(statistics.stdev(delta_lst), 1)
+        stats["min"] = round(min(delta_lst), 1)
+        stats["max"] = round(max(delta_lst), 1)
+        stats["3sigma_upper"] = round((3.0 * stats["stdev"] +
+                                      stats["mean"]), 1)
+        stats["6sigma_upper"] = round((6.0 * stats["stdev"] +
+                                       stats["mean"]), 1)
+        return stats
