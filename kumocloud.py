@@ -13,10 +13,10 @@ import utilities as util
 MAIN_KUMO = 0  # zone 0
 BASEMENT_KUMO = 1  # zone 1
 kc_metadata = {
-    MAIN_KUMO: {"ip_address": "192.168.86.82",  # local IP, for ref only.
+    MAIN_KUMO: {"ip_address": "192.168.86.229",  # local IP, for ref only.
                 "zone_name": "Main Level",  # customize for your site.
                 },
-    BASEMENT_KUMO: {"ip_address": "192.168.86.83",  # local IP, for ref only.
+    BASEMENT_KUMO: {"ip_address": "192.168.86.236",  # local IP, for ref only.
                     "zone_name": "Basement",  # customize for your site.
                     },
 }
@@ -50,6 +50,7 @@ class ThermostatClass(pykumo.KumoCloudAccount):
         self.zone_number = int(zone)
         self.device_id = None  # initialize
         self.device_id = self.get_target_zone_id(self.zone_number)
+        self.serial_number = None  # will be populated when unit is queried.
 
     def get_target_zone_id(self, zone_number=0):
         """
@@ -78,15 +79,29 @@ class ThermostatClass(pykumo.KumoCloudAccount):
         # return the target zone object
         return self.device_id
 
-    def print_all_thermostat_metadata(self):
-        """Print all metadata to the screen."""
-        units = self.get_indoor_units()  # will also query unit
-        print("Units: %s" % str(units))
-        for unit in units:
+    def print_all_thermostat_metadata(self, zone=None):
+        """Print all metadata to the screen.
+
+        inputs:
+            zone(): specified zone, if None will print all zones.
+        returns:
+            None, prints result to screen
+        """
+        units = list(self.get_indoor_units())  # will also query unit
+        print("indoor unit serial numbers: %s" % str(units))
+        for serial_number in units:
             print("Unit %s: address: %s credentials: %s" %
-                  (self.get_name(unit), self.get_address(unit),
-                   self.get_credentials(unit)))
-        raw_json = self.get_raw_json()  # does not fetch results,
+                  (self.get_name(serial_number),
+                   self.get_address(serial_number),
+                   self.get_credentials(serial_number)))
+        if zone is None:
+            # returned cached raw data for all zones
+            raw_json = self.get_raw_json()  # does not fetch results,
+        else:
+            # return cached raw data for specified zone
+            self.serial_number = units[zone]
+            raw_json = self.get_raw_json()[2]['children'][0][
+                'zoneTable'][units[zone]]
         pp = pprint.PrettyPrinter(indent=4)
         pp.pprint(raw_json)
 
@@ -425,7 +440,7 @@ if __name__ == "__main__":
 
     # create Thermostat object
     Thermostat = ThermostatClass(zone_input)
-    Thermostat.print_all_thermostat_metadata()
+    Thermostat.print_all_thermostat_metadata(Thermostat.zone_number)
 
     # create Zone object
     Zone = ThermostatZone(Thermostat)
