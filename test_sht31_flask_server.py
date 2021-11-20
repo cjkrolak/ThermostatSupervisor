@@ -18,7 +18,7 @@ import utilities as util
 
 
 class Test(unittest.TestCase):
-    """Test functions in utilities.py."""
+    """Test functions in sht31_flask_server.py."""
 
     app = sht31_fs.create_app()
 

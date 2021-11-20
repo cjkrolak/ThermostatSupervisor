@@ -114,11 +114,11 @@ class Controller(Resource):
 
 def create_app():
 
-    app = Flask(__name__)
-    api = Api(app)
+    app_ = Flask(__name__)
+    api = Api(app_)
 
     api.add_resource(Controller, "/")
-    return app
+    return app_
 
 
 # create the flask app

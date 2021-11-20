@@ -9,6 +9,8 @@ import email_notification
 import thermostat_api as api
 import utilities as util
 
+argv = None  # runtime parameter override
+
 
 def main(thermostat_type, zone_str):
     """
@@ -63,7 +65,6 @@ def main(thermostat_type, zone_str):
         util.log_msg("connecting to thermostat zone %s (session:%s)..." %
                      (zone_num, session_count), mode=util.BOTH_LOG)
         Thermostat = mod.ThermostatClass(zone_num)
-        print("DEBUG: thermostat constructor complete")
 
         t0 = time.time()  # connection timer
 
@@ -167,7 +168,7 @@ if __name__ == "__main__":
     util.log_msg.debug = True  # debug mode set
 
     # parse all runtime parameters
-    user_inputs = api.parse_all_runtime_parameters()
+    user_inputs = api.parse_all_runtime_parameters(argv)
     tstat_type = user_inputs[0]
     zone_input = user_inputs[1]
 
