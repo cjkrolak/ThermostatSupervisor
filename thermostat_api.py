@@ -18,6 +18,7 @@ HONEYWELL = "honeywell"
 MMM50 = "mmm50"
 SHT31 = "sht31"
 KUMOCLOUD = "kumocloud"
+KUMOLOCAL = "kumolocal"
 SUPPORTED_THERMOSTATS = {
     # "module" = module to import
     # "type" = thermostat type index number
@@ -29,6 +30,9 @@ SUPPORTED_THERMOSTATS = {
     SHT31: {"module": "sht31", "type": 3, "zones": [0, 1],
             "modes": ["OFF_MODE"]},
     KUMOCLOUD: {"module": "kumocloud", "type": 4, "zones": [0, 1],
+                "modes": ["OFF_MODE", "HEAT_MODE", "COOL_MODE",
+                          "DRY_MODE", "AUTO_MODE"]},
+    KUMOLOCAL: {"module": "kumolocal", "type": 5, "zones": [0, 1],
                 "modes": ["OFF_MODE", "HEAT_MODE", "COOL_MODE",
                           "DRY_MODE", "AUTO_MODE"]},
     }
@@ -59,6 +63,14 @@ thermostats = {
             },
         },
     KUMOCLOUD: {
+        "required_env_variables": {
+            "GMAIL_USERNAME": None,
+            "GMAIL_PASSWORD": None,
+            'KUMO_USERNAME': None,
+            'KUMO_PASSWORD': None,
+            },
+        },
+    KUMOLOCAL: {
         "required_env_variables": {
             "GMAIL_USERNAME": None,
             "GMAIL_PASSWORD": None,
@@ -155,47 +167,56 @@ def parse_runtime_parameter(key, position, datatype, default_value,
     return result
 
 
-def parse_all_runtime_parameters():
+def parse_all_runtime_parameters(input_list=None):
     """
     Parse all possible runtime parameters.
 
     inputs:
-        None
+        input_list(list): list of argv overrides
     returns:
         (list) of all runtime parameters.
     """
+    if input_list is not None:
+        print("parse_all_runtime_parameters: %s" % input_list)
     # parse thermostat type parameter (argv[1] if present):
     tstat_type = parse_runtime_parameter("thermostat_type", 1, str,
                                          HONEYWELL,
-                                         list(SUPPORTED_THERMOSTATS.keys()))
+                                         list(SUPPORTED_THERMOSTATS.keys()),
+                                         input_list=input_list)
 
     # parse zone number parameter (argv[2] if present):
     zone_input = parse_runtime_parameter("zone", 2, int, 0,
                                          SUPPORTED_THERMOSTATS[
-                                             tstat_type]["zones"])
+                                             tstat_type]["zones"],
+                                         input_list=input_list)
 
     # parse the poll time override (argv[3] if present):
     poll_time_input = parse_runtime_parameter("poll_time_sec", 3, int, None,
-                                              range(0, 24 * 60 * 60))
+                                              range(0, 24 * 60 * 60),
+                                              input_list=input_list)
 
     # parse the connection time override (argv[4] if present):
     connection_time_input = parse_runtime_parameter("connection_time_sec", 4,
                                                     int, None,
-                                                    range(0, 24 * 60 * 60))
+                                                    range(0, 24 * 60 * 60),
+                                                    input_list=input_list)
 
     # parse the tolerance override (argv[5] if present):
     tolerance_degrees_input = parse_runtime_parameter("tolerance_degrees", 5,
-                                                      int, None, range(0, 10))
+                                                      int, None, range(0, 10),
+                                                      input_list=input_list)
 
     # parse the target mode (argv[6] if present):
     target_mode_input = parse_runtime_parameter("target_mode", 6,
                                                 str, None,
                                                 SUPPORTED_THERMOSTATS[
-                                                    tstat_type]["modes"])
+                                                    tstat_type]["modes"],
+                                                input_list=input_list)
 
     # parse the number of measurements (argv[7] if present):
     measurements = parse_runtime_parameter("measurements", 7,
-                                           int, None, range(1, 10))
+                                           int, None, range(1, 11),
+                                           input_list=input_list)
 
     return [tstat_type, zone_input, poll_time_input, connection_time_input,
             tolerance_degrees_input, target_mode_input, measurements]

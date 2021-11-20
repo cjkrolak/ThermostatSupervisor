@@ -527,3 +527,31 @@ class ThermostatCommonZone():
         stats["6sigma_upper"] = round((6.0 * stats["stdev"] +
                                        stats["mean"]), 1)
         return stats
+
+    def _c_to_f(self, tempc) -> float:
+        """
+        Convert from Celsius to Fahrenheit.
+
+        inputs:
+            tempc(int, float): temp in deg c.
+        returns:
+            (float): temp in deg f.
+        """
+        if isinstance(tempc, (int, float)):
+            return tempc * 9.0 / 5 + 32
+        else:
+            return tempc  # pass-thru
+
+    def _f_to_c(self, tempf) -> float:
+        """
+        Convert from Fahrenheit to Celsius.
+
+        inputs:
+            tempc(int, float): temp in deg f.
+        returns:
+            (float): temp in deg c.
+        """
+        if isinstance(tempf, (int, float)):
+            return (tempf - 32) * 5 / 9.0
+        else:
+            return tempf  # pass-thru
