@@ -355,8 +355,11 @@ class ThermostatZone(tc.ThermostatCommonZone):
                                self.fetch_interval_sec))):
             self.Thermostat._need_fetch = True \
                 # pylint: disable=protected-access
-            self.Thermostat._fetch_if_needed() \
-                # pylint: disable=protected-access
+            try:
+                self.Thermostat._fetch_if_needed() \
+                    # pylint: disable=protected-access
+            except UnboundLocalError:  # patch for issue #205
+                print("WARNING: Kumocloud refresh failed due to timeout")
             self.last_fetch_time = now_time
             # refresh device object
             self.device_id = \

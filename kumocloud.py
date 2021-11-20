@@ -406,8 +406,11 @@ class ThermostatZone(tc.ThermostatCommonZone):
             print("DEBUG: refreshing data from cloud")
             self.Thermostat._need_fetch = True \
                 # pylint: disable=protected-access
-            self.Thermostat._fetch_if_needed() \
-                # pylint: disable=protected-access
+            try:
+                self.Thermostat._fetch_if_needed() \
+                    # pylint: disable=protected-access
+            except UnboundLocalError:  # patch for issue #205
+                print("WARNING: Kumocloud refresh failed due to timeout")
             self.last_fetch_time = now_time
             # refresh device object
             self.zone_data = self.Thermostat.get_all_thermostat_metadata(
@@ -474,7 +477,8 @@ if __name__ == "__main__":
 
     # create Thermostat object
     Thermostat = ThermostatClass(zone_input)
-    Thermostat.print_all_thermostat_metadata(Thermostat.zone_number)
+    Thermostat.print_all_thermostat_metadata()
+    # Thermostat.print_all_thermostat_metadata(Thermostat.zone_number)
 
     # create Zone object
     Zone = ThermostatZone(Thermostat)
