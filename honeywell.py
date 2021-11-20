@@ -450,7 +450,8 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
         inputs:
             None
         returns:
-            None
+            (int) current mode for unit, should match value
+                  in self.system_switch_position
         """
         self.refresh_zone_info()
         return int(self.zone_info['latestData']['uiData']
