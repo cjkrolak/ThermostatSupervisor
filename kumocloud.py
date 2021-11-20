@@ -50,8 +50,7 @@ class ThermostatClass(pykumo.KumoCloudAccount):
         # configure zone info
         self.zone_number = int(zone)
         self.zone_name = None  # initialize
-        self.device_id = None  # initialize
-        # self.device_id = self.get_target_zone_id(self.zone_number)
+        self.device_id = self.get_target_zone_id(self.zone_number)
         self.serial_number = None  # will be populated when unit is queried.
 
     def get_target_zone_id(self, zone_number=0):
@@ -61,27 +60,9 @@ class ThermostatClass(pykumo.KumoCloudAccount):
         inputs:
             zone_number(int):  zone number.
         returns:
-            (obj): PyKumo object
+            (int): device_id
         """
-        self.zone_name = kc_metadata[zone_number]["zone_name"]
-        # populate the zone dictionary
-        print("DEBUG in get_target_zone")
-
-        # establish local interface to kumos, must be on local net
-        kumos = self.make_pykumos()
-        print("DEBUG in get_target_zone_id after make_pykumos, kumos=%s" %
-              kumos)
-        device_id = kumos[self.zone_name]
-        # print zone name the first time it is known
-        if self.device_id is None:
-            util.log_msg("zone %s name = '%s', device_id=%s" %
-                         (zone_number, self.zone_name, device_id),
-                         mode=util.DEBUG_LOG + util.CONSOLE_LOG,
-                         func_name=1)
-        self.device_id = device_id
-
-        # return the target zone object
-        return self.device_id
+        return zone_number
 
     def get_all_thermostat_metadata(self, zone=None, debug=False):
         """Get all thermostat meta data for zone from kumocloud.
