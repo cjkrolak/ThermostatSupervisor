@@ -88,6 +88,7 @@ user_input_list = ["thermostat_type",
                    "connection_time_sec",
                    "tolerance_degrees",
                    "target_mode",
+                   "measurements",
                    ]
 user_inputs = dict.fromkeys(user_input_list, None)
 
@@ -124,7 +125,7 @@ def verify_required_env_variables(tstat, zone_str):
 
 
 def parse_runtime_parameter(key, position, datatype, default_value,
-                            valid_range, input_list=None):
+                            valid_range, input_list=[]):
     """
     Parse the runtime parameter.
 
@@ -142,7 +143,7 @@ def parse_runtime_parameter(key, position, datatype, default_value,
     # all other keys are cast lowercase.
     uppercase_key_list = ["target_mode"]
 
-    if input_list is None:
+    if not input_list:
         target = sys.argv
     else:
         target = input_list
@@ -168,60 +169,60 @@ def parse_runtime_parameter(key, position, datatype, default_value,
     return result
 
 
-def parse_all_runtime_parameters(input_list=None):
+def parse_all_runtime_parameters(input_list=[]):
     """
     Parse all possible runtime parameters.
 
     inputs:
         input_list(list): list of argv overrides
     returns:
-        (list) of all runtime parameters.
+        (dict) of all runtime parameters.
     """
-    if input_list is not None:
-        util.log_msg("parse_all_runtime_parameters: %s" % input_list,
+    param = {}
+    if input_list:
+        util.log_msg("parse_all_runtime_parameters from list: %s" % input_list,
                      mode=util.DEBUG_LOG + util.CONSOLE_LOG, func_name=1)
+    else:
+        util.log_msg("parse_all_runtime_parameters from sys.argv: %s" %
+                     sys.argv, mode=util.DEBUG_LOG + util.CONSOLE_LOG,
+                     func_name=1)
     # parse thermostat type parameter (argv[1] if present):
-    tstat_type = parse_runtime_parameter("thermostat_type", 1, str,
-                                         HONEYWELL,
-                                         list(SUPPORTED_THERMOSTATS.keys()),
-                                         input_list=input_list)
+    param["thermostat_type"] = parse_runtime_parameter(
+        "thermostat_type", 1, str, HONEYWELL,
+        list(SUPPORTED_THERMOSTATS.keys()), input_list=input_list)
 
     # parse zone number parameter (argv[2] if present):
-    zone_input = parse_runtime_parameter("zone", 2, int, 0,
-                                         SUPPORTED_THERMOSTATS[
-                                             tstat_type]["zones"],
-                                         input_list=input_list)
+    param["zone"] = parse_runtime_parameter(
+        "zone", 2, int, 0, SUPPORTED_THERMOSTATS[
+            param["thermostat_type"]]["zones"],
+        input_list=input_list)
 
     # parse the poll time override (argv[3] if present):
-    poll_time_input = parse_runtime_parameter("poll_time_sec", 3, int, None,
-                                              range(0, 24 * 60 * 60),
-                                              input_list=input_list)
+    param["poll_time_sec"] = parse_runtime_parameter(
+        "poll_time_sec", 3, int, None, range(0, 24 * 60 * 60),
+        input_list=input_list)
 
     # parse the connection time override (argv[4] if present):
-    connection_time_input = parse_runtime_parameter("connection_time_sec", 4,
-                                                    int, None,
-                                                    range(0, 24 * 60 * 60),
-                                                    input_list=input_list)
+    param["connection_time_sec"] = parse_runtime_parameter(
+        "connection_time_sec", 4, int, None, range(0, 24 * 60 * 60),
+        input_list=input_list)
 
     # parse the tolerance override (argv[5] if present):
-    tolerance_degrees_input = parse_runtime_parameter("tolerance_degrees", 5,
-                                                      int, None, range(0, 10),
-                                                      input_list=input_list)
+    param["tolerance_degrees"] = parse_runtime_parameter(
+        "tolerance_degrees", 5, int, None, range(0, 10),
+        input_list=input_list)
 
     # parse the target mode (argv[6] if present):
-    target_mode_input = parse_runtime_parameter("target_mode", 6,
-                                                str, None,
-                                                SUPPORTED_THERMOSTATS[
-                                                    tstat_type]["modes"],
-                                                input_list=input_list)
+    param["target_mode"] = parse_runtime_parameter(
+        "target_mode", 6, str, None, SUPPORTED_THERMOSTATS[
+            param["thermostat_type"]]["modes"], input_list=input_list)
 
     # parse the number of measurements (argv[7] if present):
-    measurements = parse_runtime_parameter("measurements", 7,
-                                           int, None, range(1, 11),
-                                           input_list=input_list)
+    param["measurements"] = parse_runtime_parameter(
+        "measurements", 7, int, 1e9, range(1, 11),
+        input_list=input_list)
 
-    return [tstat_type, zone_input, poll_time_input, connection_time_input,
-            tolerance_degrees_input, target_mode_input, measurements]
+    return param
 
 
 # dynamic import

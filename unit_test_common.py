@@ -5,6 +5,16 @@ Common functions used in multiple unit tests.
 # local imports
 import utilities as util
 
+unit_test_argv = ["supervise.py",  # module
+                  "sht31",  # thermostat
+                  "0",  # zone
+                  "59",  # poll time in sec
+                  "359",  # reconnect time in sec
+                  "3",  # tolerance
+                  "OFF_MODE",  # thermostat mode
+                  "2",  # number of measurements
+                  ]
+
 
 def print_test_name():
     """Print out the unit test name to the console."""
