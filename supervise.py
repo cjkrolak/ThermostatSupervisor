@@ -9,7 +9,7 @@ import email_notification
 import thermostat_api as api
 import utilities as util
 
-argv = None  # runtime parameter override
+argv = []  # runtime parameter override
 
 
 def main(thermostat_type, zone_str):
@@ -169,9 +169,8 @@ if __name__ == "__main__":
     util.log_msg.debug = True  # debug mode set
 
     # parse all runtime parameters
-    user_inputs = api.parse_all_runtime_parameters(argv)
-    tstat_type = user_inputs[0]
-    zone_input = user_inputs[1]
+    api.user_inputs = api.parse_all_runtime_parameters(argv)
+    print("DEBUG: api.user_inputs=%s" % api.user_inputs)
 
     # main supervise function
-    main(tstat_type, zone_input)
+    main(api.user_inputs["thermostat_type"], api.user_inputs["zone"])

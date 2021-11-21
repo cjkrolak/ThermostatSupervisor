@@ -163,15 +163,20 @@ class Test(unittest.TestCase):
         """
         utc.print_test_name()
 
-        return_list = api.parse_all_runtime_parameters()
-        self.assertEqual(return_list[0], api.user_inputs["thermostat_type"])
-        self.assertEqual(return_list[1], api.user_inputs["zone"])
-        self.assertEqual(return_list[2], api.user_inputs["poll_time_sec"])
-        self.assertEqual(return_list[3],
+        return_list = api.parse_all_runtime_parameters(utc.unit_test_argv)
+        self.assertEqual(return_list["thermostat_type"],
+                         api.user_inputs["thermostat_type"])
+        self.assertEqual(return_list["zone"], api.user_inputs["zone"])
+        self.assertEqual(return_list["poll_time_sec"],
+                         api.user_inputs["poll_time_sec"])
+        self.assertEqual(return_list["connection_time_sec"],
                          api.user_inputs["connection_time_sec"])
-        self.assertEqual(return_list[4], api.user_inputs["tolerance_degrees"])
-        self.assertEqual(return_list[5], api.user_inputs["target_mode"])
-        self.assertEqual(return_list[6], api.user_inputs["measurements"])
+        self.assertEqual(return_list["tolerance_degrees"],
+                         api.user_inputs["tolerance_degrees"])
+        self.assertEqual(return_list["target_mode"],
+                         api.user_inputs["target_mode"])
+        self.assertEqual(return_list["measurements"],
+                         api.user_inputs["measurements"])
 
     def test_DynamicModuleImport(self):
         """

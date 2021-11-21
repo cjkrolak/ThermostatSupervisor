@@ -49,7 +49,7 @@ class Test(unittest.TestCase):
                 print("WARNING: flask server is not daemon thread, "
                       "thread may still be active")
 
-    def test_FlaskServer(self):
+    def test_SHT31_FlaskServer(self):
         """
         Confirm Flask server returns valid data.
         """
