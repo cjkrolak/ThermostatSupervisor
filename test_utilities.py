@@ -111,6 +111,7 @@ class Test(unittest.TestCase):
         Verify log rotates at max_log_size_bytes.
         """
         utc.print_test_name()
+        print("WARNING: test is aborting early, unfinished code.")
         return  # test is not yet ready
         # override rotate size
         size_backup = util.max_log_size_bytes
@@ -215,6 +216,13 @@ class Test(unittest.TestCase):
         self.assertTrue(7 <= len(return_val) <= 15,
                         "get_local_ip() returned '%s' which is not "
                         "between 7 and 15 chars")
+
+    def test_is_interactive_environment(self):
+        """
+        Verify is_interactive_environment().
+        """
+        return_val = util.is_interactive_environment()
+        self.assertTrue(isinstance(return_val, bool))
 
 
 if __name__ == "__main__":

@@ -1,5 +1,6 @@
 coverage==5.5
 flask_restful==0.3.9
+psutil=5.8.0
 pyhtcc==0.1.6
 pykumo==0.1.12
 radiotherm==2.1.0
