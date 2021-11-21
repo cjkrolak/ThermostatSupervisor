@@ -89,7 +89,7 @@ def send_email_alert(to_address=None,
     except (smtplib.SMTPHeloError, smtplib.SMTPAuthenticationError,
             smtplib.SMTPNotSupportedError, smtplib.SMTPException):
         util.log_msg(traceback.format_exc(),
-                     mode=util.DEBUG_LOG + util.CONSOLE_LOG, func_name=1)
+                     mode=util.BOTH_LOG, func_name=1)
         util.log_msg("exception during email account authorization "
                      "for account %s" % from_address,
                      mode=util.BOTH_LOG, func_name=1)

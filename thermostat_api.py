@@ -158,8 +158,9 @@ def parse_runtime_parameter(key, position, datatype, default_value,
     except IndexError:
         result = default_value
     if result != default_value and result not in valid_range:
-        print("WARNING: '%s' is not a valid choice for '%s', "
-              "using default(%s)" % (result, key, default_value))
+        util.log_msg("WARNING: '%s' is not a valid choice for '%s', "
+                     "using default(%s)" % (result, key, default_value),
+                     mode=util.BOTH_LOG, func_name=1)
         result = default_value
 
     # populate the user_input dictionary
@@ -177,7 +178,8 @@ def parse_all_runtime_parameters(input_list=None):
         (list) of all runtime parameters.
     """
     if input_list is not None:
-        print("parse_all_runtime_parameters: %s" % input_list)
+        util.log_msg("parse_all_runtime_parameters: %s" % input_list,
+                     mode=util.DEBUG_LOG + util.CONSOLE_LOG, func_name=1)
     # parse thermostat type parameter (argv[1] if present):
     tstat_type = parse_runtime_parameter("thermostat_type", 1, str,
                                          HONEYWELL,
@@ -245,8 +247,9 @@ def find_module(name):
         fp, path, desc = imp.find_module(name)
     except ImportError as e:
         util.log_msg(traceback.format_exc(),
-                     mode=util.DEBUG_LOG + util.CONSOLE_LOG, func_name=1)
-        print("module not found: " + name)
+                     mode=util.BOTH_LOG, func_name=1)
+        util.log_msg("module not found: " + name,
+                     mode=util.BOTH_LOG, func_name=1)
         raise e
     return fp, path, desc
 
@@ -269,8 +272,9 @@ def load_module(name, fp, path, desc):
         mod = imp.load_module(name, fp, path, desc)
     except Exception as e:
         util.log_msg(traceback.format_exc(),
-                     mode=util.DEBUG_LOG + util.CONSOLE_LOG, func_name=1)
-        print("module load failed: " + name)
+                     mode=util.BOTH_LOG, func_name=1)
+        util.log_msg("module load failed: " + name,
+                     mode=util.BOTH_LOG, func_name=1)
         raise e
     finally:
         fp.close

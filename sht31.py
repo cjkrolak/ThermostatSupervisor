@@ -70,7 +70,8 @@ class ThermostatClass(tc.ThermostatCommon):
         if zone_number == UNITTEST_SHT31:
             # unittest will serve on local IP address
             ip_address = util.get_local_ip()
-            print("UNITTEST: local ip=%s" % ip_address)
+            util.log_msg("UNITTEST: local ip=%s" % ip_address,
+                         mode=util.BOTH_LOG, func_name=1)
         else:
             env_str = self.get_env_key(zone_number)
             ip_address = self.get_ip_address(env_str)
@@ -126,11 +127,13 @@ class ThermostatClass(tc.ThermostatCommon):
             return r.json()
         except json.decoder.JSONDecodeError as e:
             util.log_msg(traceback.format_exc(),
-                         mode=util.DEBUG_LOG + util.CONSOLE_LOG,
+                         mode=util.BOTH_LOG,
                          func_name=1)
             if retry:
-                print("waiting %s seconds and retrying SHT31 measurement "
-                      "one time..." % self.retry_delay)
+                util.log_msg("waiting %s seconds and retrying SHT31 "
+                             "measurement one time..." %
+                             self.retry_delay, mode=util.BOTH_LOG,
+                             func_name=1)
                 time.sleep(self.retry_delay)
                 self.get_all_metadata(retry=False)
             else:
@@ -186,11 +189,13 @@ class ThermostatZone(tc.ThermostatCommonZone):
                 return r.json()
             except json.decoder.JSONDecodeError as e:
                 util.log_msg(traceback.format_exc(),
-                             mode=util.DEBUG_LOG + util.CONSOLE_LOG,
+                             mode=util.BOTH_LOG,
                              func_name=1)
                 if retry:
-                    print("waiting %s seconds and retrying SHT31 measurement "
-                          "one time..." % self.retry_delay)
+                    util.log_msg("waiting %s seconds and retrying SHT31 "
+                                 "measurement one time..." %
+                                 self.retry_delay, mode=util.BOTH_LOG,
+                                 func_name=1)
                     time.sleep(self.retry_delay)
                     self.get_metadata(parameter=None, retry=False)
                 else:
@@ -201,11 +206,13 @@ class ThermostatZone(tc.ThermostatCommonZone):
                 return r.json()[parameter]
             except json.decoder.JSONDecodeError as e:
                 util.log_msg(traceback.format_exc(),
-                             mode=util.DEBUG_LOG + util.CONSOLE_LOG,
+                             mode=util.BOTH_LOG,
                              func_name=1)
                 if retry:
-                    print("waiting %s seconds and retrying SHT31 measurement "
-                          "one time..." % self.retry_delay)
+                    util.log_msg("waiting %s seconds and retrying SHT31 "
+                                 "measurement one time..." %
+                                 self.retry_delay, mode=util.BOTH_LOG,
+                                 func_name=1)
                     time.sleep(self.retry_delay)
                     self.get_metadata(parameter, retry=False)
                 else:
@@ -213,14 +220,17 @@ class ThermostatZone(tc.ThermostatCommonZone):
                                     "is not responding") from e
             except KeyError as e:
                 util.log_msg(traceback.format_exc(),
-                             mode=util.DEBUG_LOG + util.CONSOLE_LOG,
+                             mode=util.BOTH_LOG,
                              func_name=1)
                 if "message" in r.json():
-                    print("WARNING in Flask response: '%s'" %
-                          r.json()["message"])
+                    util.log_msg("WARNING in Flask response: '%s'" %
+                                 r.json()["message"], mode=util.BOTH_LOG,
+                                 func_name=1)
                 if retry:
-                    print("waiting %s seconds and retrying SHT31 measurement "
-                          "one time..." % self.retry_delay)
+                    util.log_msg("waiting %s seconds and retrying SHT31 "
+                                 "measurement one time..." %
+                                 self.retry_delay, mode=util.BOTH_LOG,
+                                 func_name=1)
                     time.sleep(self.retry_delay)
                     self.get_metadata(parameter, retry=False)
                 else:

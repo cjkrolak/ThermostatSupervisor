@@ -33,8 +33,9 @@ class ThermostatCommon():
         returns:
             None
         """
-        print("WARNING: print_all_thermostat_metatdata() not yet "
-              "implemented for this thermostat type\n")
+        util.log_msg("WARNING: print_all_thermostat_metatdata() not yet "
+                     "implemented for this thermostat type\n",
+                     mode=util.BOTH_LOG, func_name=1)
 
 
 class ThermostatCommonZone():
@@ -444,7 +445,8 @@ class ThermostatCommonZone():
             user_input = user_inputs.get(inp)
             if user_input is not None:
                 setattr(self, cls_method, user_input)
-                print("%s=%s" % (inp, user_input))
+                util.log_msg("%s=%s" % (inp, user_input),
+                             mode=util.BOTH_LOG, func_name=1)
 
     def verify_current_mode(self, target_mode):
         """
@@ -478,16 +480,18 @@ class ThermostatCommonZone():
         cool_modes = [self.COOL_MODE, self.DRY_MODE, self.AUTO_MODE]
         # do not switch directly from hot to cold
         if (self.current_mode in heat_modes and target_mode in cool_modes):
-            print("WARNING: target mode=%s, switching from %s mode to OFF_MODE"
-                  " to prevent damage to HVAC" %
-                  (target_mode, self.current_mode))
+            util.log_msg("WARNING: target mode=%s, switching from %s mode to "
+                         "OFF_MODE to prevent damage to HVAC" %
+                         (target_mode, self.current_mode),
+                         mode=util.BOTH_LOG, func_name=1)
             target_mode = self.OFF_MODE
 
         # do not switch directly from cold to hot
         elif (self.current_mode in cool_modes and target_mode in heat_modes):
-            print("WARNING: target mode=%s, switching from %s mode to OFF_MODE"
-                  " to prevent damage to HVAC" %
-                  (target_mode, self.current_mode))
+            util.log_msg("WARNING: target mode=%s, switching from %s mode to "
+                         "OFF_MODE to prevent damage to HVAC" %
+                         (target_mode, self.current_mode),
+                         mode=util.BOTH_LOG, func_name=1)
             target_mode = self.OFF_MODE
 
         # revert the mode to target
@@ -514,7 +518,8 @@ class ThermostatCommonZone():
             # accumulate stats
             tdelta = t1 - t0
             delta_lst.append(tdelta)
-            print("measurement %s=%.1f seconds" % (n, tdelta))
+            util.log_msg("measurement %s=%.1f seconds" % (n, tdelta),
+                         mode=util.BOTH_LOG, func_name=1)
 
         # calc stats
         stats["measurements"] = measurements

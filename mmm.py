@@ -101,7 +101,8 @@ class ThermostatClass(tc.ThermostatCommonZone):
         returns:
             (dict) of meta data
         """
-        print("querying thermostat for meta data...")
+        util.log_msg("querying thermostat for meta data...",
+                     mode=util.BOTH_LOG, func_name=1)
         attr_dict = {}
         ignore_fields = ['get', 'post', 'reboot', 'set_day_program']
         for attr in dir(self.device_id):
