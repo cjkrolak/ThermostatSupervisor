@@ -73,9 +73,16 @@ class ThermostatClass(pykumo.KumoCloudAccount):
         returns:
             (dict): JSON dict
         """
-        units = list(self.get_indoor_units())  # will also query unit
-        util.log_msg("indoor unit serial numbers: %s" % str(units),
-                     mode=util.DEBUG_LOG + util.CONSOLE_LOG, func_name=1)
+        try:
+            units = list(self.get_indoor_units())  # will also query unit
+        except UnboundLocalError:  # patch for issue #205
+            util.log_msg("WARNING: Kumocloud refresh failed due to "
+                         "timeout", mode=util.BOTH_LOG, func_name=1)
+            time.sleep(10)
+            units = list(self.get_indoor_units())  # retry
+        if debug:
+            util.log_msg("indoor unit serial numbers: %s" % str(units),
+                         mode=util.DEBUG_LOG + util.CONSOLE_LOG, func_name=1)
         for serial_number in units:
             util.log_msg("Unit %s: address: %s credentials: %s" %
                          (self.get_name(serial_number),
