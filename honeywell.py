@@ -561,7 +561,7 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
                 # catching simplejson.errors.JSONDecodeError
                 # using Exception since simplejson is not imported
                 util.log_msg(traceback.format_exc(),
-                             mode=util.DEBUG_LOG + util.CONSOLE_LOG,
+                             mode=util.BOTH_LOG,
                              func_name=1)
                 util.log_msg("exception during refresh_zone_info, on trial "
                              "%s of %s, probably a"

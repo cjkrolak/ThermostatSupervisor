@@ -70,7 +70,8 @@ def main(thermostat_type, zone_str):
 
         # dump all meta data
         if debug:
-            print("thermostat meta data:")
+            util.log_msg("thermostat meta data:", mode=util.BOTH_LOG,
+                         func_name=1)
             Thermostat.print_all_thermostat_metadata()
 
         # get Zone object based on deviceID

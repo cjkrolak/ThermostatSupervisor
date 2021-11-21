@@ -74,14 +74,14 @@ class ThermostatClass(pykumo.KumoCloudAccount):
             (dict): JSON dict
         """
         units = list(self.get_indoor_units())  # will also query unit
-        if debug:
-            print("indoor unit serial numbers: %s" % str(units))
+        util.log_msg("indoor unit serial numbers: %s" % str(units),
+                     mode=util.DEBUG_LOG + util.CONSOLE_LOG, func_name=1)
         for serial_number in units:
-            if debug:
-                print("Unit %s: address: %s credentials: %s" %
-                      (self.get_name(serial_number),
-                       self.get_address(serial_number),
-                       self.get_credentials(serial_number)))
+            util.log_msg("Unit %s: address: %s credentials: %s" %
+                         (self.get_name(serial_number),
+                          self.get_address(serial_number),
+                          self.get_credentials(serial_number)),
+                         mode=util.DEBUG_LOG + util.CONSOLE_LOG, func_name=1)
         if zone is None:
             # returned cached raw data for all zones
             raw_json = self.get_raw_json()  # does not fetch results,
@@ -368,8 +368,9 @@ class ThermostatZone(tc.ThermostatCommonZone):
         # self.device_id.set_heat_setpoint(self._f_to_c(temp))
         # TODO needs implementation
         del temp
-        print("WARNING %s not implemented yet for this thermostat type" %
-              util.get_function_name())
+        util.log_msg("WARNING: this method not implemented yet for this "
+                     "thermostat type",
+                     mode=util.BOTH_LOG, func_name=1)
         return
 
     def set_cool_setpoint(self, temp: int) -> None:
@@ -385,8 +386,9 @@ class ThermostatZone(tc.ThermostatCommonZone):
         # self.device_id.set_cool_setpoint(self._f_to_c(temp))
         # TODO needs implementation
         del temp
-        print("WARNING %s not implemented yet for this thermostat type" %
-              util.get_function_name())
+        util.log_msg("WARNING: this method not implemented yet for this "
+                     "thermostat type",
+                     mode=util.BOTH_LOG, func_name=1)
         return
 
     def refresh_zone_info(self, force_refresh=False):
@@ -410,7 +412,8 @@ class ThermostatZone(tc.ThermostatCommonZone):
                 self.Thermostat._fetch_if_needed() \
                     # pylint: disable=protected-access
             except UnboundLocalError:  # patch for issue #205
-                print("WARNING: Kumocloud refresh failed due to timeout")
+                util.log_msg("WARNING: Kumocloud refresh failed due to "
+                             "timeout", mode=util.BOTH_LOG, func_name=1)
             self.last_fetch_time = now_time
             # refresh device object
             self.zone_data = self.Thermostat.get_all_thermostat_metadata(

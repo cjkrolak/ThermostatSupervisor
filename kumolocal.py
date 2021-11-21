@@ -87,12 +87,14 @@ class ThermostatClass(pykumo.KumoCloudAccount):
             (dict): JSON dict
         """
         units = list(self.get_indoor_units())  # will also query unit
-        print("indoor unit serial numbers: %s" % str(units))
+        util.log_msg("indoor unit serial numbers: %s" % str(units),
+                     mode=util.DEBUG_LOG+util.CONSOLE_LOG, func_name=1)
         for serial_number in units:
-            print("Unit %s: address: %s credentials: %s" %
-                  (self.get_name(serial_number),
-                   self.get_address(serial_number),
-                   self.get_credentials(serial_number)))
+            util.log_msg("Unit %s: address: %s credentials: %s" %
+                         (self.get_name(serial_number),
+                          self.get_address(serial_number),
+                          self.get_credentials(serial_number)),
+                         mode=util.DEBUG_LOG+util.CONSOLE_LOG, func_name=1)
         if zone is None:
             # returned cached raw data for all zones
             raw_json = self.get_raw_json()  # does not fetch results,
@@ -359,7 +361,8 @@ class ThermostatZone(tc.ThermostatCommonZone):
                 self.Thermostat._fetch_if_needed() \
                     # pylint: disable=protected-access
             except UnboundLocalError:  # patch for issue #205
-                print("WARNING: Kumocloud refresh failed due to timeout")
+                util.log_msg("WARNING: Kumocloud refresh failed due to "
+                             "timeout", mode=util.BOTH_LOG, func_name=1)
             self.last_fetch_time = now_time
             # refresh device object
             self.device_id = \

@@ -91,7 +91,8 @@ def load_all_env_variables():
         None, populates env_variables dict.
     """
     for key in env_variables:
-        print("checking key: %s" % key)
+        log_msg("checking key: %s" % key,
+                mode=BOTH_LOG, func_name=1)
         env_variables[key] = get_env_variable(key)["value"]
 
 
