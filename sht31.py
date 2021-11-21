@@ -27,7 +27,6 @@ import utilities as util
 # SHT31 thermometer zones
 LOFT_SHT31 = 0  # zone 0, local IP 192.168.86.15
 LOFT_SHT31_REMOTE = 1  # zone 1
-UNITTEST_SHT31 = 99  # unit test emulator, will host on local IP
 
 
 class ThermostatClass(tc.ThermostatCommon):
@@ -67,7 +66,7 @@ class ThermostatClass(tc.ThermostatCommon):
             (str):  IP address of target zone.
         """
         # update IP dict based on env key
-        if zone_number == UNITTEST_SHT31:
+        if zone_number == util.UNIT_TEST_ZONE:
             # unittest will serve on local IP address
             ip_address = util.get_local_ip()
             util.log_msg("UNITTEST: local ip=%s" % ip_address,

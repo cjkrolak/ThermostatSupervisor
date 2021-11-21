@@ -7,8 +7,8 @@ import utilities as util
 
 unit_test_argv = ["supervise.py",  # module
                   "sht31",  # thermostat
-                  "0",  # zone
-                  "59",  # poll time in sec
+                  "1",  # str(util.UNIT_TEST_ZONE),  # zone
+                  "19",  # poll time in sec
                   "359",  # reconnect time in sec
                   "3",  # tolerance
                   "OFF_MODE",  # thermostat mode

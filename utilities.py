@@ -4,7 +4,11 @@
 import datetime
 import inspect
 import os
+import psutil
 import socket
+
+# zone number for unit testing
+UNIT_TEST_ZONE = 99
 
 # error codes
 NO_ERROR = 0
@@ -42,6 +46,7 @@ env_variables = {
     "GMAIL_PASSWORD": None,
     "SHT31_REMOTE_IP_ADDRESS_0": None,
     "SHT31_REMOTE_IP_ADDRESS_1": None,
+    "SHT31_REMOTE_IP_ADDRESS_" + str(UNIT_TEST_ZONE): None,
     "KUMO_USERNAME": None,
     "KUMO_PASSWORD": None,
     }
@@ -216,3 +221,15 @@ def get_local_ip():
     finally:
         s.close()
     return ip
+
+
+def is_interactive_environment():
+    """Return True if script is run through IDE."""
+    parent = psutil.Process(os.getpid()).parent().name()
+    if parent == "cmd.exe":
+        return False
+    elif parent == "eclipse.exe":
+        return True
+    else:
+        print("DEBUG: parent process=%s" % parent)
+        return True

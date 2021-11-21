@@ -58,7 +58,7 @@ class Test(unittest.TestCase):
             print("this test not supported on Azure Pipelines, exiting")
             return
         print("creating thermostat object...")
-        Thermostat = sht31.ThermostatClass(sht31.UNITTEST_SHT31)
+        Thermostat = sht31.ThermostatClass(util.UNIT_TEST_ZONE)
         print("printing thermostat meta data:")
         Thermostat.print_all_thermostat_metadata()
 

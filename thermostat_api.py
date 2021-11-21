@@ -19,6 +19,7 @@ MMM50 = "mmm50"
 SHT31 = "sht31"
 KUMOCLOUD = "kumocloud"
 KUMOLOCAL = "kumolocal"
+
 SUPPORTED_THERMOSTATS = {
     # "module" = module to import
     # "type" = thermostat type index number
@@ -27,7 +28,7 @@ SUPPORTED_THERMOSTATS = {
                 "modes": ["OFF_MODE", "HEAT_MODE", "COOL_MODE"]},
     MMM50: {"module": "mmm", "type": 2, "zones": [0, 1],
             "modes": ["OFF_MODE", "HEAT_MODE", "COOL_MODE"]},
-    SHT31: {"module": "sht31", "type": 3, "zones": [0, 1],
+    SHT31: {"module": "sht31", "type": 3, "zones": [0, 1, util.UNIT_TEST_ZONE],
             "modes": ["OFF_MODE"]},
     KUMOCLOUD: {"module": "kumocloud", "type": 4, "zones": [0, 1],
                 "modes": ["OFF_MODE", "HEAT_MODE", "COOL_MODE",
@@ -125,7 +126,7 @@ def verify_required_env_variables(tstat, zone_str):
 
 
 def parse_runtime_parameter(key, position, datatype, default_value,
-                            valid_range, input_list=[]):
+                            valid_range, input_list=None):
     """
     Parse the runtime parameter.
 
@@ -139,6 +140,8 @@ def parse_runtime_parameter(key, position, datatype, default_value,
     returns:
         (int or str): user input runtime value.
     """
+    if input_list is None:
+        input_list = []
     # cast input for these keys into uppercase
     # all other keys are cast lowercase.
     uppercase_key_list = ["target_mode"]
@@ -169,7 +172,7 @@ def parse_runtime_parameter(key, position, datatype, default_value,
     return result
 
 
-def parse_all_runtime_parameters(input_list=[]):
+def parse_all_runtime_parameters(input_list=None):
     """
     Parse all possible runtime parameters.
 
@@ -178,6 +181,8 @@ def parse_all_runtime_parameters(input_list=[]):
     returns:
         (dict) of all runtime parameters.
     """
+    if input_list is None:
+        input_list = []
     param = {}
     if input_list:
         util.log_msg("parse_all_runtime_parameters from list: %s" % input_list,
