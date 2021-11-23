@@ -217,16 +217,20 @@ class Test(unittest.TestCase):
         """Test warn_if_outside_global_limit() function."""
         utc.print_test_name()
         self.assertTrue(self.Zone.warn_if_outside_global_limit(
-            2, 1, operator.gt, "heat"),
+            self.Zone.max_scheduled_heat_allowed + 1,
+            self.Zone.max_scheduled_heat_allowed, operator.gt, "heat"),
             "function result should have been True")
         self.assertFalse(self.Zone.warn_if_outside_global_limit(
-            2, 3, operator.gt, "heat"),
+            self.Zone.max_scheduled_heat_allowed - 1,
+            self.Zone.max_scheduled_heat_allowed, operator.gt, "heat"),
             "function result should have been False")
         self.assertTrue(self.Zone.warn_if_outside_global_limit(
-            2, 3, operator.lt, "cool"),
+            self.Zone.min_scheduled_cool_allowed - 1,
+            self.Zone.min_scheduled_cool_allowed, operator.lt, "cool"),
             "function result should have been True")
         self.assertFalse(self.Zone.warn_if_outside_global_limit(
-            2, 1, operator.lt, "cool"),
+            self.Zone.min_scheduled_cool_allowed + 1,
+            self.Zone.min_scheduled_cool_allowed, operator.lt, "cool"),
             "function result should have been False")
 
     def test_RevertThermostatMode(self):
