@@ -1,11 +1,17 @@
 """
 File to automate unit test coverage.
 
-To run all unit tests and compute code coverage:
+dependencies:
 pip install coverage (one time install)
-python unit_test_coverage.py
+
+to run this module:
+from command prompt:  'python unit_test_coverage.py'
+or from IDE: 'Run / Run As / 1. Python Run'
+note: this module will not run properly as a unit test.
+
+coverage results:
 session window will contain high level coverage report
-open /htmlcov/index.html to see the html report.
+open /htmlcov/index.html to see the html report index.
 """
 import coverage
 import unittest
