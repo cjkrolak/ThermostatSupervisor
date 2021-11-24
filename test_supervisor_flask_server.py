@@ -75,10 +75,10 @@ class Test(unittest.TestCase):
 
         # delay for page load and initial data posting
         wait_delay_sec = 10
-        polling_interval_sec = 3
+        polling_interval_sec = 4
         while wait_delay_sec > 0:
-            print("waiting %.2f minutes for initial supervisor page to "
-                  "be populated..." % (wait_delay_sec / 60.0))
+            print("waiting %d seconds for initial supervisor page to "
+                  "be populated..." % wait_delay_sec)
             wait_delay_sec -= polling_interval_sec
             time.sleep(polling_interval_sec)  # polling interval
 

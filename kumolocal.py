@@ -425,7 +425,7 @@ if __name__ == "__main__":
     util.log_msg.debug = True  # debug mode set
 
     # get zone from user input
-    zone_input = api.parse_all_runtime_parameters()[1]
+    zone_input = api.parse_all_runtime_parameters()["zone"]
 
     # verify required env vars
     api.verify_required_env_variables(api.KUMOCLOUD, zone_input)
