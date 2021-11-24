@@ -5,14 +5,12 @@ Flask server tests currently do not work on Azure pipelines
 because ports cannot be opened on shared pool.
 """
 # built-in imports
-import threading
 import unittest
 
 # local imports
 # thermostat_api is imported but not used to avoid a circular import
 import thermostat_api as api  # pylint: disable=unused-import.
 import sht31
-import sht31_flask_server as sht31_fs
 import unit_test_common as utc
 import utilities as util
 
@@ -20,34 +18,15 @@ import utilities as util
 class Test(unittest.TestCase):
     """Test functions in sht31_flask_server.py."""
 
-    app = sht31_fs.create_app()
+    # app = sht31_fs.create_app()
 
     def setUp(self):
-        sht31_fs.debug = False
-        sht31_fs.measurements = 10
-        sht31_fs.unit_test_mode = True
-        util.log_msg.file_name = "unit_test.txt"
-        if not utc.is_azure_environment():
-            print("starting sht31 server thread...")
-            self.fs = threading.Thread(target=sht31_fs.app.run,
-                                       args=('0.0.0.0', 5000, False))
-            self.fs.daemon = True  # make thread daemonic
-            self.fs.start()
-            print("thread alive status=%s" % self.fs.is_alive())
-            print("Flask server setup is complete")
-        else:
-            print("WARNING: flask server tests not currently supported on "
-                  "Azure pipelines, doing nothing")
+        # sht31 flask server is automatically spawned in sht31
+        # Thermostat class if unit test zone is being used.
+        pass
 
     def tearDown(self):
-        if not utc.is_azure_environment():
-            print("thread alive status=%s" % self.fs.is_alive())
-            if self.fs.daemon:
-                print("flask server is daemon thread, "
-                      "thread will terminate when main thread terminates")
-            else:
-                print("WARNING: flask server is not daemon thread, "
-                      "thread may still be active")
+        pass
 
     def test_SHT31_FlaskServer(self):
         """

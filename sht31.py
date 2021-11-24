@@ -12,13 +12,14 @@ data structure expected:
 """
 # built-in imports
 import json
-import os
 import pprint
 import requests
+import threading
 import time
 import traceback
 
 # local imports
+import sht31_flask_server as sht31_fs
 import thermostat_api as api
 import thermostat_common as tc
 import utilities as util
@@ -55,6 +56,10 @@ class ThermostatClass(tc.ThermostatCommon):
         self.device_id = self.url
         self.retry_delay = 60  # delay before retrying a bad reading
 
+        # if in unit test mode, spawn flask server with emulated data
+        if self.zone_number == util.UNIT_TEST_ZONE:
+            self.spawn_flask_server()
+
     def get_target_zone_id(self, zone_number=0):
         """
         Return the target zone ID (aka IP address for sht31) from the
@@ -65,15 +70,8 @@ class ThermostatClass(tc.ThermostatCommon):
         returns:
             (str):  IP address of target zone.
         """
-        # update IP dict based on env key
-        if zone_number == util.UNIT_TEST_ZONE:
-            # unittest will serve on local IP address
-            ip_address = util.get_local_ip()
-            util.log_msg("UNITTEST: local ip=%s" % ip_address,
-                         mode=util.BOTH_LOG, func_name=1)
-        else:
-            env_str = self.get_env_key(zone_number)
-            ip_address = self.get_ip_address(env_str)
+        env_str = self.get_env_key(zone_number)
+        ip_address = self.get_ip_address(env_str)
         return ip_address
 
     def get_env_key(self, zone_str):
@@ -96,7 +94,29 @@ class ThermostatClass(tc.ThermostatCommon):
         returns:
             (str):  IP address
         """
-        return os.environ.get(env_key, "<" + env_key + "_KEY_MISSING>")
+        return util.get_env_variable(env_key)["value"]
+
+    def spawn_flask_server(self):
+        """
+        Spawn a local flask server for unit testing.
+
+        inputs: None
+        returns:
+        """
+        # app = sht31_fs.create_app()
+        sht31_fs.debug = False
+        sht31_fs.measurements = 10
+        sht31_fs.unit_test_mode = True
+        self.flask_server = threading.Thread(target=sht31_fs.app.run,
+                                             args=('0.0.0.0', 5000,
+                                                   False))
+        self.flask_server.daemon = True  # make thread daemonic
+        self.flask_server.start()
+        util.log_msg("thread alive status=%s" %
+                     self.flask_server.is_alive(),
+                     mode=util.BOTH_LOG, func_name=1)
+        util.log_msg("Flask server setup is complete",
+                     mode=util.BOTH_LOG, func_name=1)
 
     def print_all_thermostat_metadata(self):
         """
@@ -121,7 +141,13 @@ class ThermostatClass(tc.ThermostatCommon):
         returns:
             (dict) empty dict.
         """
-        r = requests.get(self.url)
+        try:
+            r = requests.get(self.url)
+        except requests.exceptions.ConnectionError as e:
+            util.log_msg("FATAL ERROR: unable to connect to sht31 "
+                         "thermometer at url '%s'" %
+                         self.url, mode=util.BOTH_LOG, func_name=1)
+            raise e
         try:
             return r.json()
         except json.decoder.JSONDecodeError as e:
@@ -182,7 +208,13 @@ class ThermostatZone(tc.ThermostatCommonZone):
           dict if parameter=None
           str if parameter != None
         """
-        r = requests.get(self.url)
+        try:
+            r = requests.get(self.url)
+        except requests.exceptions.ConnectionError as e:
+            util.log_msg("FATAL ERROR: unable to connect to sht31 "
+                         "thermometer at url '%s'" %
+                         self.url, mode=util.BOTH_LOG, func_name=1)
+            raise e
         if parameter is None:
             try:
                 return r.json()
@@ -306,7 +338,7 @@ if __name__ == "__main__":
     util.log_msg.debug = True  # debug mode set
 
     # get zone from user input
-    zone_input = api.parse_all_runtime_parameters()[1]
+    zone_input = api.parse_all_runtime_parameters()["zone"]
 
     # verify required env vars
     api.verify_required_env_variables(api.SHT31, zone_input)
