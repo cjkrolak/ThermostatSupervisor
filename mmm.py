@@ -622,16 +622,7 @@ if __name__ == "__main__":
     # update runtime overrides
     Zone.update_runtime_parameters(api.user_inputs)
 
-    print("current thermostat settings...")
-    print("system switch position: %s" % Zone.get_system_switch_position())
-    print("heat set point=%s" % Zone.get_heat_setpoint())
-    print("cool set point=%s" % Zone.get_cool_setpoint())
-    print("(schedule) heat program=%s" % Zone.get_schedule_program_heat())
-    print("(schedule) cool program=%s" % Zone.get_schedule_program_cool())
-    print("hold=%s" % Zone.get_vacation_hold())
-    print("heat mode=%s" % Zone.get_heat_mode())
-    print("cool mode=%s" % Zone.get_cool_mode())
-    print("temporary hold minutes=%s" % Zone.get_temporary_hold_until_time())
+    Zone.display_basic_thermostat_summary()
 
     # measure thermostat response time
     measurements = 100

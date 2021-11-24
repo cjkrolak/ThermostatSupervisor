@@ -457,6 +457,11 @@ class Test(unittest.TestCase):
         self.Zone.get_schedule_cool_sp = self.schedule_cool_sp_bckup
         self.Zone.get_is_humidity_supported = self.get_humid_support_bckup
 
+    def test_DisplayBasicThermostatSummary(self):
+        """Confirm print_basic_thermostat_summary() works without error."""
+        utc.print_test_name()
+        self.Zone.display_basic_thermostat_summary()
+
 
 if __name__ == "__main__":
     util.log_msg.debug = True
