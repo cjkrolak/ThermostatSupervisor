@@ -302,6 +302,18 @@ class ThermostatCommonZone():
         else:
             return False
 
+    def get_heat_mode(self):
+        """Return 1 if heat mode enabled, else 0."""
+        return util.bogus_int
+
+    def get_cool_mode(self):
+        """Return 1 if cool mode enabled, else 0."""
+        return util.bogus_int
+
+    def get_dry_mode(self):
+        """Return 1 if dry mode enabled, else 0."""
+        return util.bogus_int
+
     def is_heat_mode(self):
         """Return True if in heat mode."""
         return (self.get_system_switch_position() ==
@@ -342,7 +354,11 @@ class ThermostatCommonZone():
         return util.bogus_int  # placeholder
 
     def get_heat_setpoint_raw(self) -> int:
-        """Return raw heat set point."""
+        """Return raw heat set point(number only, no units)."""
+        return util.bogus_int  # placeholder
+
+    def get_heat_setpoint(self) -> int:
+        """Return raw heat set point(number and units)."""
         return util.bogus_int  # placeholder
 
     def get_schedule_program_heat(self) -> dict:
@@ -365,7 +381,11 @@ class ThermostatCommonZone():
             return util.bogus_int  # placeholder
 
     def get_cool_setpoint_raw(self) -> int:
-        """Return raw cool set point."""
+        """Return raw cool set point (number only, no units)."""
+        return util.bogus_int  # placeholder
+
+    def get_cool_setpoint(self) -> int:
+        """Return raw cool set point (number and units)."""
         return util.bogus_int  # placeholder
 
     def get_schedule_program_cool(self) -> dict:
@@ -386,6 +406,10 @@ class ThermostatCommonZone():
             return self.min_scheduled_cool_allowed
         else:
             return util.bogus_int  # placeholder
+
+    def get_vacation_hold(self) -> bool:
+        """Return True if thermostat is in vacation hold mode."""
+        return util.bogus_bool  # placeholder
 
     def get_is_invacation_hold_mode(self) -> bool:
         """Return the 'IsInVacationHoldMode' setting."""
@@ -560,3 +584,52 @@ class ThermostatCommonZone():
             return (tempf - 32) * 5 / 9.0
         else:
             return tempf  # pass-thru
+
+    def display_basic_thermostat_summary(self, mode=util.CONSOLE_LOG):
+        """
+        Display basic thermostat summary.
+
+        inputs:
+            mode(int): target log for data.
+        returns:
+            None, prints data to log and/or console.
+        """
+        util.log_msg("current thermostat settings...",
+                     mode=mode, func_name=1)
+        util.log_msg("system switch position: %s (%s)" %
+                     (self.get_system_switch_position(),
+                      util.get_key_from_value(
+                          self.system_switch_position,
+                          self.get_system_switch_position())),
+                     mode=mode, func_name=1)
+        util.log_msg("thermostat display temp=%s" %
+                     util.temp_value_with_units(self.get_display_temp()),
+                     mode=mode, func_name=1)
+        util.log_msg("thermostat display humidity=%s RH" %
+                     self.get_display_humidity(),
+                     mode=mode, func_name=1)
+        util.log_msg("heat set point=%s" % self.get_heat_setpoint(),
+                     mode=mode, func_name=1)
+        util.log_msg("cool set point=%s" % self.get_cool_setpoint(),
+                     mode=mode, func_name=1)
+        util.log_msg("heat schedule set point=%s" %
+                     self.get_schedule_heat_sp(), mode=mode, func_name=1)
+        util.log_msg("cool schedule set point=%s" %
+                     self.get_schedule_cool_sp(), mode=mode, func_name=1)
+        util.log_msg("(schedule) heat program=%s" %
+                     self.get_schedule_program_heat(),
+                     mode=mode, func_name=1)
+        util.log_msg("(schedule) cool program=%s" %
+                     self.get_schedule_program_cool(),
+                     mode=mode, func_name=1)
+        util.log_msg("heat mode=%s" % self.get_heat_mode(),
+                     mode=mode, func_name=1)
+        util.log_msg("cool mode=%s" % self.get_cool_mode(),
+                     mode=mode, func_name=1)
+        util.log_msg("dry mode=%s" % self.get_dry_mode(),
+                     mode=mode, func_name=1)
+        util.log_msg("hold=%s" % self.get_vacation_hold(),
+                     mode=mode, func_name=1)
+        util.log_msg("temporary hold minutes=%s" %
+                     self.get_temporary_hold_until_time(),
+                     mode=mode, func_name=1)

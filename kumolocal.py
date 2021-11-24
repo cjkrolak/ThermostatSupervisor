@@ -233,7 +233,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         inputs:
             None
         returns:
-            (int): cool mode, 1=enabled, 0=disabled.
+            (int): dry mode, 1=enabled, 0=disabled.
         """
         self.refresh_zone_info()
         return int(self.device_id.get_mode() ==
@@ -251,6 +251,10 @@ class ThermostatZone(tc.ThermostatCommonZone):
         """
         self.refresh_zone_info()
         return self._c_to_f(self.device_id.get_heat_setpoint())
+
+    def get_heat_setpoint(self) -> str:
+        """Return heat setpoint with units as a string."""
+        return util.temp_value_with_units(self.get_heat_setpoint_raw())
 
     def get_schedule_heat_sp(self) -> int:  # used
         """
@@ -285,6 +289,10 @@ class ThermostatZone(tc.ThermostatCommonZone):
         """
         self.refresh_zone_info()
         return self._c_to_f(self.device_id.get_cool_setpoint())
+
+    def get_cool_setpoint(self) -> str:
+        """Return cool setpoint with units as a string."""
+        return util.temp_value_with_units(self.get_cool_setpoint_raw())
 
     def get_is_invacation_hold_mode(self) -> bool:  # used
         """
@@ -444,18 +452,4 @@ if __name__ == "__main__":
     # update runtime overrides
     Zone.update_runtime_parameters(api.user_inputs)
 
-    print("current thermostat settings...")
-    print("system switch position: %s" % Zone.get_system_switch_position())
-    print("current temp: %s" % Zone.get_display_temp())
-    print("current humidity: %s" % Zone.get_display_humidity())
-    print("heat set point=%s" % Zone.get_heat_setpoint_raw())
-    print("cool set point=%s" % Zone.get_cool_setpoint_raw())
-    print("heat schedule set point=%s" % Zone.get_schedule_heat_sp())
-    print("cool schedule set point=%s" % Zone.get_schedule_cool_sp())
-    print("(schedule) heat program=%s" % Zone.get_schedule_program_heat())
-    print("(schedule) cool program=%s" % Zone.get_schedule_program_cool())
-    print("hold=%s" % Zone.get_vacation_hold())
-    print("heat mode=%s" % Zone.get_heat_mode())
-    print("cool mode=%s" % Zone.get_cool_mode())
-    print("dry mode=%s" % Zone.get_dry_mode())
-    print("temporary hold minutes=%s" % Zone.get_temporary_hold_until_time())
+    Zone.display_basic_thermostat_summary()

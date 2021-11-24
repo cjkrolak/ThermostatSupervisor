@@ -245,3 +245,26 @@ def is_interactive_environment():
     else:
         print("DEBUG: parent process=%s" % parent)
         return True
+
+
+def temp_value_with_units(raw) -> str:
+    """takes the raw and adds a degree F sign and a unit."""
+    disp_unit = 'F'
+    return f'{raw}°{disp_unit}'
+
+
+def get_key_from_value(input_dict, val):
+    """
+    Return first key found in dict from value provided.
+
+    inputs:
+        input_dict(dict): target dictionary
+        val(str or int):  value
+    returns:
+        (str or int): dictionary key
+    """
+    for key, value in input_dict.items():
+        if val == value:
+            return key
+    raise KeyError("key not found in dict '%s' with value='%s'" %
+                   (input_dict, val))

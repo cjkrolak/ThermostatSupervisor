@@ -224,6 +224,41 @@ class Test(unittest.TestCase):
         return_val = util.is_interactive_environment()
         self.assertTrue(isinstance(return_val, bool))
 
+    def test_TempValueWithUnits(self):
+        """Verify function attaches units as expected."""
+        disp_unit = 'F'
+
+        for test_case in [44, -1, 101, 2]:
+            expected_val = f'{test_case}°{disp_unit}'
+            actual_val = util.temp_value_with_units(test_case)
+            self.assertEqual(expected_val, actual_val,
+                             "test case: %s, expected_val=%s, actual_val=%s" %
+                             (test_case, expected_val, actual_val))
+
+    def test_GetKeyFromValue(self):
+        """Verify get_key_from_value()."""
+        test_dict = {'A': 1, 'B': 2, 'C': 1}
+
+        # test keys with distinctvalue, determinant case
+        test_case = 2
+        expected_val = ['B']
+        actual_val = util.get_key_from_value(test_dict, test_case)
+        self.assertTrue(actual_val in expected_val,
+                        "test case: %s, expected_val=%s, actual_val=%s" %
+                        (test_case, expected_val, actual_val))
+
+        # test keys with same value, indeterminant case
+        test_case = 1
+        expected_val = ['A', 'C']
+        actual_val = util.get_key_from_value(test_dict, test_case)
+        self.assertTrue(actual_val in expected_val,
+                        "test case: %s, expected_val=%s, actual_val=%s" %
+                        (test_case, expected_val, actual_val))
+
+        # test key not found
+        with self.assertRaises(KeyError):
+            actual_val = util.get_key_from_value(test_dict, "bogus_value")
+
 
 if __name__ == "__main__":
     util.log_msg.debug = True

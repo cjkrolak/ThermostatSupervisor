@@ -322,6 +322,17 @@ class ThermostatZone(tc.ThermostatCommonZone):
         """
         return self.system_switch_position[self.OFF_MODE]
 
+    def get_dry_mode(self) -> int:
+        """
+        Return the dry mode.
+
+        inputs:
+            None
+        returns:
+            (int): dry mode, 1=enabled, 0=disabled.
+        """
+        return self.system_switch_position[self.OFF_MODE]
+
     def get_system_switch_position(self) -> int:
         """ Return the thermostat mode.
 
@@ -356,10 +367,5 @@ if __name__ == "__main__":
     # update runtime overrides
     Zone.update_runtime_parameters(api.user_inputs)
 
-    print("current thermostat settings...")
-    print("system switch position: %s" % Zone.get_system_switch_position())
-    print("heat mode=%s" % Zone.get_heat_mode())
-    print("cool mode=%s" % Zone.get_cool_mode())
-    print("temporary hold minutes=%s" % Zone.get_temporary_hold_until_time())
-    print("thermostat meta data=%s" % Thermostat.get_all_metadata())
-    print("thermostat display tempF=%s" % Zone.get_display_temp())
+    print("thermostat meta data=%s\n" % Thermostat.get_all_metadata())
+    Zone.display_basic_thermostat_summary()
