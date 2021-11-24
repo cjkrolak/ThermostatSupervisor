@@ -460,7 +460,16 @@ class Test(unittest.TestCase):
     def test_DisplayBasicThermostatSummary(self):
         """Confirm print_basic_thermostat_summary() works without error."""
         utc.print_test_name()
-        self.Zone.display_basic_thermostat_summary()
+
+        # override switch position function to be determinant
+        self.switch_position_backup = self.Zone.get_system_switch_position
+        try:
+            self.Zone.get_system_switch_position = \
+                (lambda *_, **__: self.Zone.system_switch_position[
+                    tc.ThermostatCommonZone.DRY_MODE])
+            self.Zone.display_basic_thermostat_summary()
+        finally:
+            self.Zone.get_system_switch_position = self.switch_position_backup
 
 
 if __name__ == "__main__":
