@@ -601,28 +601,9 @@ radiotherm.thermostat.Thermostat.__init__ = __init__
 
 if __name__ == "__main__":
 
-    util.log_msg.debug = True  # debug mode set
-
-    # get zone from user input
-    zone_input = api.parse_all_runtime_parameters()["zone"]
-
-    # verify required env vars
-    api.verify_required_env_variables(api.MMM50, zone_input)
-
-    # import hardware module
-    mod = api.load_hardware_library(api.MMM50)
-
-    # create Thermostat object
-    Thermostat = ThermostatClass(zone_input)
-    Thermostat.print_all_thermostat_metadata()
-
-    # create Zone object
-    Zone = ThermostatZone(Thermostat)
-
-    # update runtime overrides
-    Zone.update_runtime_parameters(api.user_inputs)
-
-    Zone.display_basic_thermostat_summary()
+    _, Zone = tc.thermostat_basic_checkout(api, api.MMM50,
+                                           ThermostatClass,
+                                           ThermostatZone)
 
     # measure thermostat response time
     measurements = 100

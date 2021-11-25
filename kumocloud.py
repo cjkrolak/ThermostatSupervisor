@@ -484,26 +484,6 @@ class ThermostatZone(tc.ThermostatCommonZone):
 
 if __name__ == "__main__":
 
-    util.log_msg.debug = True  # debug mode set
-
-    # get zone from user input
-    zone_input = api.parse_all_runtime_parameters()["zone"]
-
-    # verify required env vars
-    api.verify_required_env_variables(api.KUMOCLOUD, zone_input)
-
-    # import hardware module
-    mod = api.load_hardware_library(api.KUMOCLOUD)
-
-    # create Thermostat object
-    Thermostat = ThermostatClass(zone_input)
-    Thermostat.print_all_thermostat_metadata()
-    # Thermostat.print_all_thermostat_metadata(Thermostat.zone_number)
-
-    # create Zone object
-    Zone = ThermostatZone(Thermostat)
-
-    # update runtime overrides
-    Zone.update_runtime_parameters(api.user_inputs)
-
-    Zone.display_basic_thermostat_summary()
+    tc.thermostat_basic_checkout(api, api.KUMOCLOUD,
+                                 ThermostatClass,
+                                 ThermostatZone)

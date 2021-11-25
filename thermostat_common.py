@@ -50,12 +50,12 @@ class ThermostatCommonZone():
 
     system_switch_position = {
         # placeholder, will be tstat-specific
+        UNKNOWN_MODE: util.bogus_int,
         HEAT_MODE: util.bogus_int - 1,
         OFF_MODE: util.bogus_int - 2,
         COOL_MODE: util.bogus_int - 3,
         AUTO_MODE: util.bogus_int - 4,
         DRY_MODE: util.bogus_int - 5,
-        UNKNOWN_MODE: util.bogus_int - 6,
         }
     max_scheduled_heat_allowed = 74  # warn if scheduled heat value exceeds.
     min_scheduled_cool_allowed = 68  # warn if scheduled cool value exceeds.
@@ -633,3 +633,44 @@ class ThermostatCommonZone():
         util.log_msg("temporary hold minutes=%s" %
                      self.get_temporary_hold_until_time(),
                      mode=mode, func_name=1)
+
+
+def thermostat_basic_checkout(api, thermostat_type,
+                              ThermostatClass, ThermostatZone):
+    """
+    Perform basic Thermostat checkout.
+
+    inputs:
+        api(module): thermostat_api module.
+        tstat(int):  thermostat_type
+        ThermostatClass(cls): Thermostat class
+        ThermostatZone(cls): ThermostatZone class
+    returns:
+        Thermostat(obj): Thermostat object
+        Zone(obj):  Zone object
+    """
+    util.log_msg.debug = True  # debug mode set
+
+    # get zone from user input
+    zone_input = api.parse_all_runtime_parameters()["zone"]
+
+    # verify required env vars
+    api.verify_required_env_variables(thermostat_type, zone_input)
+
+    # import hardware module
+    api.load_hardware_library(thermostat_type)
+
+    # create Thermostat object
+    Thermostat = ThermostatClass(zone_input)
+    Thermostat.print_all_thermostat_metadata()
+
+    # create Zone object
+    Zone = ThermostatZone(Thermostat)
+
+    # update runtime overrides
+    Zone.update_runtime_parameters(api.user_inputs)
+
+    # print("thermostat meta data=%s\n" % Thermostat.get_all_metadata())
+    Zone.display_basic_thermostat_summary()
+
+    return Thermostat, Zone
