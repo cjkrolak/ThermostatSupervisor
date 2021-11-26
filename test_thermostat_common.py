@@ -4,7 +4,6 @@ Tests for thermostat_common.py
 # built-in imports
 import operator
 import pprint
-import sys
 import unittest
 
 # local imports
