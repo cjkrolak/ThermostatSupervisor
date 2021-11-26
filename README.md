@@ -20,7 +20,7 @@ flask and flask_resful for sht31 flask server<br/>
 pykumo for kumocloud<br/>
 coverage for code coverage analysis<br/>
 
-## Docker Image:
+## Run the Docker Image:
 docker run --rm --env-file 'envfile' 'username'/thermostatsupervisor 'runtime parameters'<br/>
 * 'envfile' is your environment variables passed in at runtime (see below)<br/>
 * 'username' is your DockerHub username<br/>
