@@ -5,18 +5,19 @@ Unit test module for supervise.py.
 import unittest
 
 # local imports
+import unit_test_common as utc
 import utilities as util
 
 
-class Test(unittest.TestCase):
+class Test(utc.UnitTestCommon):
     """Test functions in supervise.py."""
     tstat = "UNITTEST"
 
     def setUp(self):
-        pass
+        self.print_test_name()
 
     def tearDown(self):
-        pass
+        self.print_test_result()
 
 
 if __name__ == "__main__":

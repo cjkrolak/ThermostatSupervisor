@@ -15,7 +15,7 @@ import unit_test_common as utc
 import utilities as util
 
 
-class Test(unittest.TestCase):
+class Test(utc.UnitTestCommon):
     """Test functions in sht31_flask_server.py."""
 
     # app = sht31_fs.create_app()
@@ -23,16 +23,15 @@ class Test(unittest.TestCase):
     def setUp(self):
         # sht31 flask server is automatically spawned in sht31
         # Thermostat class if unit test zone is being used.
-        pass
+        self.print_test_name()
 
     def tearDown(self):
-        pass
+        self.print_test_result()
 
     def test_SHT31_FlaskServer(self):
         """
         Confirm Flask server returns valid data.
         """
-        utc.print_test_name()
         if utc.is_azure_environment():
             print("this test not supported on Azure Pipelines, exiting")
             return

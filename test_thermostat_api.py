@@ -10,11 +10,12 @@ import unit_test_common as utc
 import utilities as util
 
 
-class Test(unittest.TestCase):
+class Test(utc.UnitTestCommon):
     """Test functions in utilities.py."""
     tstat = "UNITTEST"
 
     def setUp(self):
+        self.print_test_name()
         api.thermostats[self.tstat] = {  # dummy unit test thermostat
             "required_env_variables": {
                 "GMAIL_USERNAME": None,
@@ -24,6 +25,7 @@ class Test(unittest.TestCase):
 
     def tearDown(self):
         del api.thermostats[self.tstat]
+        self.print_test_result()
 
     def test_VerifyRequiredEnvVariables(self):
         """
@@ -31,7 +33,7 @@ class Test(unittest.TestCase):
         condition and fails with missing key.
         """
         missing_key = "agrfg_"  # bogus key should be missing
-        utc.print_test_name()
+
         # nominal condition, should pass
         print("testing nominal condition, will pass if gmail keys are present")
         self.assertTrue(api.verify_required_env_variables(self.tstat, "0"),
@@ -60,7 +62,6 @@ class Test(unittest.TestCase):
         Verify test parse_runtime_parameter() returns expected
         values when input known values.
         """
-        utc.print_test_name()
         input_list = ["supervise.py", "honeywell", "0", "9", "90", "3",
                       "HEAT_MODE"]
 
@@ -163,7 +164,6 @@ class Test(unittest.TestCase):
         Verify test parse_all_runtime_parameters() runs without error
         and return values match user_inputs dict.
         """
-        utc.print_test_name()
 
         return_list = api.parse_all_runtime_parameters(utc.unit_test_argv)
         self.assertEqual(return_list["thermostat_type"],
@@ -184,7 +184,6 @@ class Test(unittest.TestCase):
         """
         Verify dynamic_module_import() runs without error
         """
-        utc.print_test_name()
 
         # test successful case
         pkg = api.dynamic_module_import(api.HONEYWELL)
@@ -196,14 +195,15 @@ class Test(unittest.TestCase):
 
         # test failing case
         with self.assertRaises(ImportError):
+            print("attempting to open bogus package name, expect exception...")
             pkg = api.dynamic_module_import("bogus")
             print("'bogus' module returned package type %s" % type(pkg))
+        print("test passed")
 
     def test_FindModule(self):
         """
         Verify find_module() runs without error
         """
-        utc.print_test_name()
 
         # test successful case
         fp, path, desc = api.find_module(api.HONEYWELL)
@@ -214,7 +214,7 @@ class Test(unittest.TestCase):
         self.assertTrue(isinstance(desc, tuple),
                         "api.find_module() returned type(%s),"
                         " for desc, expected a string" % type(desc))
-        del fp
+        fp.close()
 
         # test failing case
         with self.assertRaises(ImportError):
@@ -223,12 +223,12 @@ class Test(unittest.TestCase):
             fp, path, desc = api.find_module("bogus")
             print("'bogus' module returned fp=%s, path=%s, desc=%s, "
                   "expected an exception" % (fp, path, desc))
+        print("test passed")
 
     def test_LoadModule(self):
         """
         Verify load_module() runs without error
         """
-        utc.print_test_name()
 
         # test successful case
         fp, path, desc = api.find_module(api.HONEYWELL)
@@ -244,12 +244,12 @@ class Test(unittest.TestCase):
             print("attempting to load 'bogus' module, expect exception...")
             pkg = api.load_module(api.HONEYWELL, fp, "", desc)
             print("'bogus' module returned package type %s" % type(pkg))
+        print("test passed")
 
     def test_LoadHardwareLibrary(self):
         """
         Verify load_hardware_library() runs without error
         """
-        utc.print_test_name()
         # test successful case
         pkg = api.load_hardware_library(api.HONEYWELL)
         print("api.HONEYWELL returned package type %s" % type(pkg))
@@ -266,12 +266,12 @@ class Test(unittest.TestCase):
             print("'bogus' returned package type %s, "
                   "exception should have been raised" % type(pkg))
             del pkg
+        print("test passed")
 
     def test_max_measurement_count_exceeded(self):
         """
         Verify max_measurement_count_exceeded() runs as expected.
         """
-        utc.print_test_name()
         test_cases = {
             "within_range": {"measurement": 13, "max_measurements": 14,
                              "exp_result": False},

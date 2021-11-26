@@ -18,12 +18,13 @@ import unit_test_common as utc
 import utilities as util
 
 
-class Test(unittest.TestCase):
+class Test(utc.UnitTestCommon):
     """Test functions in supervisor_flask_server.py."""
 
     app = sfs.create_app()
 
     def setUp(self):
+        self.print_test_name()
         sfs.debug = False
         sfs.measurements = 10
         sfs.unit_test_mode = True
@@ -52,6 +53,7 @@ class Test(unittest.TestCase):
             else:
                 print("WARNING: flask server is not daemon thread, "
                       "thread may still be active")
+        self.print_test_result()
 
     def test_Supervisor_FlaskServer(self):
         """
@@ -60,7 +62,6 @@ class Test(unittest.TestCase):
         This test requires a live thermostat connection to run the
         supervise routine on.
         """
-        utc.print_test_name()
         if utc.is_azure_environment():
             print("WARNING, TEST ABORT: this test not supported on "
                   "Azure Pipelines, exiting")
