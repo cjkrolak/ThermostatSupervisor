@@ -25,8 +25,7 @@ class Test(unittest.TestCase):
         Confirm get_env_variable() can retrieve values.
         """
         utc.print_test_name()
-        for env_key in ["GMAIL_USERNAME", "GMAIL_PASSWORD",
-                        "TCC_USERNAME", "TCC_PASSWORD"]:
+        for env_key in ["GMAIL_USERNAME", "GMAIL_PASSWORD"]:
             buff = util.get_env_variable(env_key)
             print("env$%s=%s" % (env_key,
                                  [buff["value"],
