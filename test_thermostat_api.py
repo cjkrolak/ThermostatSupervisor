@@ -214,7 +214,7 @@ class Test(unittest.TestCase):
         self.assertTrue(isinstance(desc, tuple),
                         "api.find_module() returned type(%s),"
                         " for desc, expected a string" % type(desc))
-        del fp
+        fp.close()
 
         # test failing case
         with self.assertRaises(ImportError):
