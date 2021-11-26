@@ -45,25 +45,16 @@ def send_email_alert(to_address=None,
     if not to_address:
         buff = util.get_env_variable('GMAIL_USERNAME')
         to_address = buff["value"]
-        print("DEBUG: to_address=%s, len=%s, %s" %
-              (to_address, len(to_address),
-               to_address == "cjkrolak2@gmail.com"))
         if buff["status"] != util.NO_ERROR:
             return buff["status"]
     if not from_address:
         buff = util.get_env_variable('GMAIL_USERNAME')
         from_address = buff["value"]
-        print("DEBUG: from_address=%s, len=%s, %s" %
-              (from_address, len(from_address),
-               from_address == "cjkrolak2@gmail.com"))
         if buff["status"] != util.NO_ERROR:
             return buff["status"]
     if not from_password:
         buff = util.get_env_variable('GMAIL_PASSWORD')
         from_password = buff["value"]
-        print("DEBUG: from_password=%s, len=%s, type=%s" %
-              (from_password, len(from_password),
-               type(from_password)))
         if buff["status"] != util.NO_ERROR:
             return buff["status"]
 

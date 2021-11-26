@@ -11,17 +11,17 @@ import unit_test_common as utc
 import utilities as util
 
 
-class Test(unittest.TestCase):
+class Test(utc.UnitTestCommon):
 
     to_address = None
     from_address = None
     from_password = None
 
     def setUp(self):
-        pass
+        self.print_test_name()
 
     def tearDown(self):
-        pass
+        self.print_test_result()
 
     def test_CheckEmailEnvVariables(self):
         """
@@ -30,8 +30,6 @@ class Test(unittest.TestCase):
         If this test fails during CI check repository secrets in GitHub.
         If this test fails during manual run check env variables on local PC.
         """
-        utc.print_test_name()
-
         # make sure email account environmental variables are present
         for env_key in ['GMAIL_USERNAME', 'GMAIL_PASSWORD']:
             try:
@@ -45,7 +43,6 @@ class Test(unittest.TestCase):
 
     def test_SendEmailAlerts(self):
         """Test send_email_alerts() functionality."""
-        utc.print_test_name()
 
         # import environment variables for unit testing.
         # These env variables come from repo secrets during CI process

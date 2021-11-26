@@ -13,7 +13,7 @@ import unit_test_common as utc
 import utilities as util
 
 
-class Test(unittest.TestCase):
+class Test(utc.UnitTestCommon):
     """Test functions in utilities.py."""
     tstat = "UNITTEST"
 
@@ -29,6 +29,7 @@ class Test(unittest.TestCase):
     switch_position_backup = None
 
     def setUp(self):
+        self.print_test_name()
         api.thermostats[self.tstat] = {  # dummy unit test thermostat
             "required_env_variables": {
                 "GMAIL_USERNAME": None,
@@ -50,19 +51,18 @@ class Test(unittest.TestCase):
     def tearDown(self):
         del api.thermostats[self.tstat]
         api.user_inputs = self.user_inputs_backup
+        self.print_test_result()
 
     def test_PrintAllThermostatMetaData(self):
         """
         Verify print_all_thermostat_metadata() runs without error.
         """
-        utc.print_test_name()
         self.Thermostat.print_all_thermostat_metadata()
 
     def test_SetMode(self):
         """
         Verify set_mode() runs without error.
         """
-        utc.print_test_name()
         result = self.Zone.set_mode("bogus_mode")
         self.assertFalse(result, "Zone.set_mode() should have returned False")
 
@@ -70,8 +70,6 @@ class Test(unittest.TestCase):
         """
         Verify store_current_mode() runs without error.
         """
-        utc.print_test_name()
-
         def dummy_true(): return True
 
         dummy_func = None
@@ -117,7 +115,6 @@ class Test(unittest.TestCase):
         """
         Verify return type of each function is as expected.
         """
-        utc.print_test_name()
         func_dict = {
             "get_current_mode": {
                 "key": self.Zone.get_current_mode,
@@ -207,7 +204,6 @@ class Test(unittest.TestCase):
 
     def test_ValidateNumeric(self):
         """Test validate_numeric() function."""
-        utc.print_test_name()
         for test_case in [1, 1.0, "1", True]:
             print("test case=%s" % type(test_case))
             if isinstance(test_case, (int, float)):
@@ -228,7 +224,6 @@ class Test(unittest.TestCase):
 
     def test_WarnIfOutsideGlobalLimit(self):
         """Test warn_if_outside_global_limit() function."""
-        utc.print_test_name()
         self.assertTrue(self.Zone.warn_if_outside_global_limit(
             self.Zone.max_scheduled_heat_allowed + 1,
             self.Zone.max_scheduled_heat_allowed, operator.gt, "heat"),
@@ -250,7 +245,6 @@ class Test(unittest.TestCase):
         """
         Test the revert_thermostat_mode() function.
         """
-        utc.print_test_name()
         for test_case in [self.Zone.HEAT_MODE, self.Zone.COOL_MODE,
                           self.Zone.DRY_MODE, self.Zone.AUTO_MODE,
                           self.Zone.OFF_MODE]:
@@ -264,7 +258,6 @@ class Test(unittest.TestCase):
         """
         Test the measure_thermostat_response_time() function.
         """
-        utc.print_test_name()
         # measure thermostat response time
         measurements = 3
         print("Thermostat response times for %s measurements..." %
@@ -365,7 +358,7 @@ class Test(unittest.TestCase):
                 "hold_mode": True,
                 },
             }
-        utc.print_test_name()
+
         # return  # test is not ready
         self.backup_functions()
         try:
@@ -472,7 +465,6 @@ class Test(unittest.TestCase):
 
     def test_DisplayBasicThermostatSummary(self):
         """Confirm print_basic_thermostat_summary() works without error."""
-        utc.print_test_name()
 
         # override switch position function to be determinant
         self.switch_position_backup = self.Zone.get_system_switch_position
@@ -486,7 +478,6 @@ class Test(unittest.TestCase):
 
     def test_ThermostatBasicCheckout(self):
         """Verify thermostat_basic_checkout()."""
-        utc.print_test_name()
 
         # override switch position function to be determinant
         self.switch_position_backup = self.Zone.get_system_switch_position

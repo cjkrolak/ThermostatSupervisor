@@ -11,20 +11,20 @@ import unit_test_common as utc
 import utilities as util
 
 
-class Test(unittest.TestCase):
+class Test(utc.UnitTestCommon):
     """Test functions in utilities.py."""
 
     def setUp(self):
+        self.print_test_name()
         util.log_msg.file_name = "unit_test.txt"
 
     def tearDown(self):
-        pass
+        self.print_test_result()
 
     def test_GetEnvVariable(self):
         """
         Confirm get_env_variable() can retrieve values.
         """
-        utc.print_test_name()
         for env_key in ["GMAIL_USERNAME", "GMAIL_PASSWORD"]:
             buff = util.get_env_variable(env_key)
             print("env$%s=%s" % (env_key,
@@ -37,7 +37,6 @@ class Test(unittest.TestCase):
         """
         Confirm all env variables can be loaded.
         """
-        utc.print_test_name()
         util.load_all_env_variables()
         print("env var dict=%s" % util.env_variables)
 
@@ -45,7 +44,6 @@ class Test(unittest.TestCase):
         """
         Confirm get_function_name works as expected.
         """
-        utc.print_test_name()
         # default
         test = "<default>"
         print("testing util.get_function_name(%s)" % test)
@@ -76,7 +74,6 @@ class Test(unittest.TestCase):
         """
         Confirm log_msg() will create folder if needed
         """
-        utc.print_test_name()
         # override data file path
         path_backup = util.file_path
         util.file_path = ".//unittest_data"
@@ -109,7 +106,6 @@ class Test(unittest.TestCase):
         """
         Verify log rotates at max_log_size_bytes.
         """
-        utc.print_test_name()
         print("WARNING: test is aborting early, unfinished code.")
         return  # test is not yet ready
         # override rotate size
@@ -142,7 +138,6 @@ class Test(unittest.TestCase):
         """
         Confirm log_msg() can write and append to file.
         """
-        utc.print_test_name()
         file_name = "unit_test.txt"
         full_path = util.get_full_file_path(file_name)
 
@@ -183,7 +178,6 @@ class Test(unittest.TestCase):
         """
         Verify get_full_file_path() function.
         """
-        utc.print_test_name()
         file_name = "dummy.txt"
         full_path = util.get_full_file_path(file_name)
         expected_value = util.file_path + "//" + file_name
@@ -196,7 +190,6 @@ class Test(unittest.TestCase):
         """
         Verify utf8len().
         """
-        utc.print_test_name()
         for test_case in ["A", "BB", "ccc", "dd_d"]:
             print("testing util.utf8len(%s)" % test_case)
             expected_value = 1 * len(test_case)
