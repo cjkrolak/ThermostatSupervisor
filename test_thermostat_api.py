@@ -196,8 +196,10 @@ class Test(unittest.TestCase):
 
         # test failing case
         with self.assertRaises(ImportError):
+            print("attempting to open bogus package name, expect exception...")
             pkg = api.dynamic_module_import("bogus")
             print("'bogus' module returned package type %s" % type(pkg))
+        print("test passed")
 
     def test_FindModule(self):
         """
@@ -223,6 +225,7 @@ class Test(unittest.TestCase):
             fp, path, desc = api.find_module("bogus")
             print("'bogus' module returned fp=%s, path=%s, desc=%s, "
                   "expected an exception" % (fp, path, desc))
+        print("test passed")
 
     def test_LoadModule(self):
         """
@@ -244,6 +247,7 @@ class Test(unittest.TestCase):
             print("attempting to load 'bogus' module, expect exception...")
             pkg = api.load_module(api.HONEYWELL, fp, "", desc)
             print("'bogus' module returned package type %s" % type(pkg))
+        print("test passed")
 
     def test_LoadHardwareLibrary(self):
         """
@@ -266,6 +270,7 @@ class Test(unittest.TestCase):
             print("'bogus' returned package type %s, "
                   "exception should have been raised" % type(pkg))
             del pkg
+        print("test passed")
 
     def test_max_measurement_count_exceeded(self):
         """
