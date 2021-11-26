@@ -56,8 +56,8 @@ class Test(unittest.TestCase):
         #     self.from_password = os.environ['GMAIL_PASSWORD']
 
         # TODO: GMAIL AUTH IS FAILING, TEST is TEMP DISABLED.
-        print("test is temporarily disabled due to gmail auth issue")
-        return
+        # print("test is temporarily disabled due to gmail auth issue")
+        # return
 
         # send message
         body = "this is a test of the email notification alert."
