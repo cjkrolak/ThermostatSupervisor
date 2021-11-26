@@ -46,9 +46,9 @@ steps:
 - script: |
     python -m unittest discover -v
   displayName: 'Unit Tests'
-  # env:
-    # GMAIL_USERNAME: '$(GMAIL_USERNAME)'
-    # GMAIL_PASSWORD: '$(GMAIL_PASSWORD)'
+  env:
+    GMAIL_USERNAME: '$(GMAIL_USERNAME)'  # used for some unit tests
+    GMAIL_PASSWORD: '$(GMAIL_PASSWORD)'  # used for some unit test
     # TCC_USERNAME: '$(TCC_USERNAME)'
     # TCC_PASSWORD: '$(TCC_PASSWORD)'
     # SHT31_REMOTE_IP_ADDRESS_1: '$(SHT31_REMOTE_IP_ADDRESS_1)'
