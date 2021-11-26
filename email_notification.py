@@ -53,8 +53,9 @@ def send_email_alert(to_address=None,
     if not from_address:
         buff = util.get_env_variable('GMAIL_USERNAME')
         from_address = buff["value"]
-        print("DEBUG: from_address=%s, len=%s" %
-              (from_address, len(from_address)))
+        print("DEBUG: from_address=%s, len=%s, %s" %
+              (from_address, len(from_address),
+               from_address == "cjkrolak2@gmail.com"))
         if buff["status"] != util.NO_ERROR:
             return buff["status"]
     if not from_password:
