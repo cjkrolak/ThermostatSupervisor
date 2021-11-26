@@ -636,7 +636,8 @@ class ThermostatCommonZone():
 
 
 def thermostat_basic_checkout(api, thermostat_type,
-                              ThermostatClass, ThermostatZone):
+                              ThermostatClass, ThermostatZone,
+                              input_list=None):
     """
     Perform basic Thermostat checkout.
 
@@ -645,6 +646,7 @@ def thermostat_basic_checkout(api, thermostat_type,
         tstat(int):  thermostat_type
         ThermostatClass(cls): Thermostat class
         ThermostatZone(cls): ThermostatZone class
+        input_list(list): runtime parameter overrides
     returns:
         Thermostat(obj): Thermostat object
         Zone(obj):  Zone object
@@ -652,7 +654,7 @@ def thermostat_basic_checkout(api, thermostat_type,
     util.log_msg.debug = True  # debug mode set
 
     # get zone from user input
-    zone_input = api.parse_all_runtime_parameters()["zone"]
+    zone_input = api.parse_all_runtime_parameters(input_list)["zone"]
 
     # verify required env vars
     api.verify_required_env_variables(thermostat_type, zone_input)

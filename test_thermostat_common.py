@@ -221,6 +221,8 @@ class Test(unittest.TestCase):
                                   type(actual_val)))
             else:
                 with self.assertRaises(TypeError):
+                    print("attempting to input bad parameter type, "
+                          "expect exception...")
                     self.Zone.validate_numeric(
                         test_case, "test_case")
 
@@ -495,7 +497,7 @@ class Test(unittest.TestCase):
             Thermostat, Zone = \
                 tc.thermostat_basic_checkout(
                     api, api.SHT31, tc.ThermostatCommon,
-                    tc.ThermostatCommonZone)
+                    tc.ThermostatCommonZone, utc.unit_test_argv)
             print("thermotat=%s" % type(Thermostat))
             print("thermotat=%s" % type(Zone))
         finally:

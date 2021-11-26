@@ -150,6 +150,8 @@ class Test(unittest.TestCase):
 
         # test bad data type for position input parameter (should be int)
         with self.assertRaises(TypeError):
+            print("attempting to invalid parameter type, "
+                  "expect exception...")
             tstat_type = api.parse_runtime_parameter(api.user_input_list[0],
                                                      "1", str,
                                                      api.HONEYWELL,
@@ -216,6 +218,8 @@ class Test(unittest.TestCase):
 
         # test failing case
         with self.assertRaises(ImportError):
+            print("attempting to open invalid file, "
+                  "expect exception...")
             fp, path, desc = api.find_module("bogus")
             print("'bogus' module returned fp=%s, path=%s, desc=%s, "
                   "expected an exception" % (fp, path, desc))
@@ -237,6 +241,7 @@ class Test(unittest.TestCase):
 
         # test failing case
         with self.assertRaises(FileNotFoundError):
+            print("attempting to load 'bogus' module, expect exception...")
             pkg = api.load_module(api.HONEYWELL, fp, "", desc)
             print("'bogus' module returned package type %s" % type(pkg))
 
@@ -255,6 +260,8 @@ class Test(unittest.TestCase):
 
         # test failing case
         with self.assertRaises(KeyError):
+            print("attempting to access 'bogus' dictionary key, "
+                  "expect exception...")
             pkg = api.load_hardware_library("bogus")
             print("'bogus' returned package type %s, "
                   "exception should have been raised" % type(pkg))
