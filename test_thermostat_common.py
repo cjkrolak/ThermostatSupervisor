@@ -17,6 +17,17 @@ class Test(unittest.TestCase):
     """Test functions in utilities.py."""
     tstat = "UNITTEST"
 
+    # initialization
+    switch_pos_bckup = None
+    is_heat_mode_bckup = None
+    is_cool_mode_bckup = None
+    heat_raw_bckup = None
+    schedule_heat_sp_bckup = None
+    cool_raw_bckup = None
+    schedule_cool_sp_bckup = None
+    get_humid_support_bckup = None
+    switch_position_backup = None
+
     def setUp(self):
         api.thermostats[self.tstat] = {  # dummy unit test thermostat
             "required_env_variables": {
@@ -210,6 +221,8 @@ class Test(unittest.TestCase):
                                   type(actual_val)))
             else:
                 with self.assertRaises(TypeError):
+                    print("attempting to input bad parameter type, "
+                          "expect exception...")
                     self.Zone.validate_numeric(
                         test_case, "test_case")
 
@@ -471,7 +484,26 @@ class Test(unittest.TestCase):
         finally:
             self.Zone.get_system_switch_position = self.switch_position_backup
 
+    def test_ThermostatBasicCheckout(self):
+        """Verify thermostat_basic_checkout()."""
+        utc.print_test_name()
+
+        # override switch position function to be determinant
+        self.switch_position_backup = self.Zone.get_system_switch_position
+        try:
+            self.Zone.get_system_switch_position = \
+                (lambda *_, **__: self.Zone.system_switch_position[
+                    tc.ThermostatCommonZone.DRY_MODE])
+            Thermostat, Zone = \
+                tc.thermostat_basic_checkout(
+                    api, api.SHT31, tc.ThermostatCommon,
+                    tc.ThermostatCommonZone, utc.unit_test_argv)
+            print("thermotat=%s" % type(Thermostat))
+            print("thermotat=%s" % type(Zone))
+        finally:
+            self.Zone.get_system_switch_position = self.switch_position_backup
+
 
 if __name__ == "__main__":
     util.log_msg.debug = True
-    unittest.main()
+    unittest.main(verbosity=2)
