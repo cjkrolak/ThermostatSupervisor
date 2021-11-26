@@ -4,6 +4,7 @@ Tests for thermostat_common.py
 # built-in imports
 import operator
 import pprint
+import sys
 import unittest
 
 # local imports
@@ -482,7 +483,7 @@ class Test(unittest.TestCase):
         finally:
             self.Zone.get_system_switch_position = self.switch_position_backup
 
-    def test_thermostat_basic_checkout(self):
+    def test_ThermostatBasicCheckout(self):
         """Verify thermostat_basic_checkout()."""
         utc.print_test_name()
 
@@ -492,8 +493,10 @@ class Test(unittest.TestCase):
             self.Zone.get_system_switch_position = \
                 (lambda *_, **__: self.Zone.system_switch_position[
                     tc.ThermostatCommonZone.DRY_MODE])
-            Thermostat, Zone = tc.thermostat_basic_checkout(
-                api, api.SHT31, tc.ThermostatCommon, tc.ThermostatCommonZone)
+            Thermostat, Zone = \
+                tc.thermostat_basic_checkout(
+                    api, api.SHT31, tc.ThermostatCommon,
+                    tc.ThermostatCommonZone)
             print("thermotat=%s" % type(Thermostat))
             print("thermotat=%s" % type(Zone))
         finally:
@@ -502,4 +505,4 @@ class Test(unittest.TestCase):
 
 if __name__ == "__main__":
     util.log_msg.debug = True
-    unittest.main()
+    unittest.main(verbosity=2)

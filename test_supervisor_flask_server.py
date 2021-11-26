@@ -102,4 +102,4 @@ class Test(unittest.TestCase):
 
 if __name__ == "__main__":
     util.log_msg.debug = True
-    unittest.main()
+    unittest.main(verbosity=2)

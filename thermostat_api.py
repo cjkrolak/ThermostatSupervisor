@@ -232,7 +232,14 @@ def parse_all_runtime_parameters(input_list=None):
 
 # dynamic import
 def dynamic_module_import(name):
-    """Find and load python module."""
+    """
+    Find and load python module.
+
+    inputs:
+        name(str): module name
+    returns:
+        mod(module): module object
+    """
     fp, path, desc = find_module(name)
     mod = load_module(name, fp, path, desc)
     return mod
@@ -245,7 +252,7 @@ def find_module(name):
     inputs:
         name(str): module name
     returns:
-        fp(file pointer)
+        fp(_io.TextIOWrapper): file pointer
         path(str): path to file
         desc(tuple): file descriptor
     """
@@ -265,7 +272,7 @@ def load_module(name, fp, path, desc):
     Load the module into memory.
 
     inputs:
-        fp(file pointer)
+        fp(_io.TextIOWrapper): file pointer
         path(str): path to file
         desc(tuple): file descriptor
     returns:
@@ -283,7 +290,7 @@ def load_module(name, fp, path, desc):
                      mode=util.BOTH_LOG, func_name=1)
         raise e
     finally:
-        fp.close
+        fp.close()
     return mod
 
 
