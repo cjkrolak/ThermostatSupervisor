@@ -24,7 +24,8 @@ import thermostat_common as tc  # noqa E402
 import utilities as util  # noqa E402
 
 
-# 3m50 thermostat IP addresses (local net)
+# 3m50 thermostat IP addresses (on local net)
+# user should configure these zones and IP addresses for their application.
 MAIN_3M50 = 0  # zone 0
 BASEMENT_3M50 = 1  # zone 1
 mmm_metadata = {
@@ -33,6 +34,7 @@ mmm_metadata = {
     BASEMENT_3M50: {"ip_address": "192.168.86.83",  # local IP
                     }
 }
+socket_timeout = 30  # http socket timeout override
 
 
 class ThermostatClass(tc.ThermostatCommonZone):
@@ -99,7 +101,8 @@ class ThermostatClass(tc.ThermostatCommonZone):
         returns:
             (dict) of meta data
         """
-        print("querying thermostat for meta data...")
+        util.log_msg("querying thermostat for meta data...",
+                     mode=util.BOTH_LOG, func_name=1)
         attr_dict = {}
         ignore_fields = ['get', 'post', 'reboot', 'set_day_program']
         for attr in dir(self.device_id):
@@ -588,7 +591,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
 
 # monkeypatch radiotherm.thermostat.Thermostat __init__ method with longer
 # socket.timeout delay, based on radiotherm version 2.1
-def __init__(self, host, timeout=10):  # changed from 4 to 10
+def __init__(self, host, timeout=socket_timeout):  # changed from 4 (default)
     self.host = host
     self.timeout = timeout
 
@@ -598,34 +601,13 @@ radiotherm.thermostat.Thermostat.__init__ = __init__
 
 if __name__ == "__main__":
 
-    util.log_msg.debug = True  # debug mode set
+    _, Zone = tc.thermostat_basic_checkout(api, api.MMM50,
+                                           ThermostatClass,
+                                           ThermostatZone)
 
-    # get zone from user input
-    zone_input = api.parse_all_runtime_parameters()[1]
-
-    # verify required env vars
-    api.verify_required_env_variables(api.MMM50, zone_input)
-
-    # import hardware module
-    mod = api.load_hardware_library(api.MMM50)
-
-    # create Thermostat object
-    Thermostat = ThermostatClass(zone_input)
-    Thermostat.print_all_thermostat_metadata()
-
-    # create Zone object
-    Zone = ThermostatZone(Thermostat)
-
-    # update runtime overrides
-    Zone.update_runtime_parameters(api.user_inputs)
-
-    print("current thermostat settings...")
-    print("tmode1: %s" % Zone.get_system_switch_position())
-    print("heat set point=%s" % Zone.get_heat_setpoint())
-    print("cool set point=%s" % Zone.get_cool_setpoint())
-    print("(schedule) heat program=%s" % Zone.get_schedule_program_heat())
-    print("(schedule) cool program=%s" % Zone.get_schedule_program_cool())
-    print("hold=%s" % Zone.get_vacation_hold())
-    print("heat mode=%s" % Zone.get_heat_mode())
-    print("cool mode=%s" % Zone.get_cool_mode())
-    print("temporary hold minutes=%s" % Zone.get_temporary_hold_until_time())
+    # measure thermostat response time
+    measurements = 100
+    print("Thermostat response times for %s measurements..." % measurements)
+    meas_data = Zone.measure_thermostat_response_time(measurements)
+    ppp = pprint.PrettyPrinter(indent=4)
+    ppp.pprint(meas_data)

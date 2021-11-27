@@ -4,6 +4,12 @@
 import datetime
 import inspect
 import os
+import psutil
+import socket
+
+# zone number for unit testing
+UNIT_TEST_ZONE = 99
+UNIT_TEST_ENV_KEY = "SHT31_REMOTE_IP_ADDRESS_" + str(UNIT_TEST_ZONE)
 
 # error codes
 NO_ERROR = 0
@@ -41,9 +47,28 @@ env_variables = {
     "GMAIL_PASSWORD": None,
     "SHT31_REMOTE_IP_ADDRESS_0": None,
     "SHT31_REMOTE_IP_ADDRESS_1": None,
+    UNIT_TEST_ENV_KEY: None,
     "KUMO_USERNAME": None,
     "KUMO_PASSWORD": None,
     }
+
+
+def get_local_ip():
+    """Get local IP address for this PC."""
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    try:
+        # doesn't even have to be reachable
+        s.connect(('10.255.255.255', 1))
+        ip = s.getsockname()[0]
+    except Exception:
+        ip = '127.0.0.1'
+    finally:
+        s.close()
+    return ip
+
+
+# set unit test IP address, same as client
+unit_test_ip_address = get_local_ip()
 
 
 def get_env_variable(env_key):
@@ -66,11 +91,18 @@ def get_env_variable(env_key):
         }
 
     try:
-        return_buffer["value"] = os.environ[env_key]
+        # unit test key is not required to be in env var list
+        if env_key == UNIT_TEST_ENV_KEY:
+            return_buffer["value"] = unit_test_ip_address
+        else:
+            return_buffer["value"] = os.environ[env_key]
+
+        # mask off any password keys
         if "PASSWORD" in return_buffer["key"]:
             value_shown = "(hidden)"
         else:
             value_shown = return_buffer["value"]
+
         log_msg("%s=%s" % (env_key, value_shown),
                 mode=DEBUG_LOG)
     except KeyError:
@@ -90,7 +122,8 @@ def load_all_env_variables():
         None, populates env_variables dict.
     """
     for key in env_variables:
-        print("checking key: %s" % key)
+        log_msg("checking key: %s" % key,
+                mode=BOTH_LOG, func_name=1)
         env_variables[key] = get_env_variable(key)["value"]
 
 
@@ -200,3 +233,38 @@ def utf8len(s):
         (int): length of string in bytes.
     """
     return len(s.encode('utf-8'))
+
+
+def is_interactive_environment():
+    """Return True if script is run through IDE."""
+    parent = psutil.Process(os.getpid()).parent().name()
+    if parent == "cmd.exe":
+        return False
+    elif parent == "eclipse.exe":
+        return True
+    else:
+        print("DEBUG: parent process=%s" % parent)
+        return True
+
+
+def temp_value_with_units(raw) -> str:
+    """takes the raw and adds a degree F sign and a unit."""
+    disp_unit = 'F'
+    return f'{raw}°{disp_unit}'
+
+
+def get_key_from_value(input_dict, val):
+    """
+    Return first key found in dict from value provided.
+
+    inputs:
+        input_dict(dict): target dictionary
+        val(str or int):  value
+    returns:
+        (str or int): dictionary key
+    """
+    for key, value in input_dict.items():
+        if val == value:
+            return key
+    raise KeyError("key not found in dict '%s' with value='%s'" %
+                   (input_dict, val))

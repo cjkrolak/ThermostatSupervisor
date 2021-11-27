@@ -9,28 +9,52 @@ import sys
 import webbrowser
 
 # local imports
+import supervise as sup
 import thermostat_api as api
 
 # flask server
-app = Flask(__name__)
 flask_ip_address = '127.0.0.1'
 flask_port = 80
 flask_url = 'http://' + flask_ip_address + ':' + str(flask_port)
+
+argv = []  # supervisor runtime args list
+
+
+def create_app():
+
+    app_ = Flask(__name__)
+    # api = Api(app)
+
+    # api.add_resource(Controller, "/")
+    return app_
+
+
+# create the flask app
+app = create_app()
 
 
 @app.route('/')
 def index():
     def run_supervise():
-        user_inputs = api.parse_all_runtime_parameters()
-        thermostat_type = user_inputs[0]
-        zone = user_inputs[1]
-        title = "%s thermostat zone %s" % (thermostat_type, zone)
+        sup.argv = argv  # pass runtime overrides to supervise
+        print("DEBUG: in run_supervise, argv=%s" % argv)
+        user_inputs = api.parse_all_runtime_parameters(argv)
+        print("DEBUG: in run_supervise, user_inputs=%s" %
+              user_inputs)
+        thermostat_type = user_inputs["thermostat_type"]
+        zone = user_inputs["zone"]
+        measurements = user_inputs["measurements"]
+        title = ("%s thermostat zone %s, %s measurements" %
+                 (thermostat_type, zone, measurements))
         yield "<!doctype html><title>%s</title>" % title
 
-        # runtime variables
+        # runtime variabless
         executable = "python"
         script = "supervise.py"
-        if len(sys.argv) > 1:
+        if argv:
+            # argv list override for unit testing
+            arg_list = [executable, script] + argv[1:]
+        elif len(sys.argv) > 1:
             arg_list = [executable, script] + sys.argv[1:]
         else:
             arg_list = [executable, script]

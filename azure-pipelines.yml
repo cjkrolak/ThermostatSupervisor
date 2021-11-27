@@ -7,8 +7,8 @@ trigger:
 - main
 - develop
 
-# pool:
-#   vmImage: ubuntu-default
+pool:
+  vmImage: ubuntu-latest
 
 strategy:
   matrix:
@@ -44,13 +44,15 @@ steps:
 
 # python unit tests
 - script: |
-    python -m unittest discover
+    python -m unittest discover -v
   displayName: 'Unit Tests'
   env:
-    GMAIL_USERNAME: '$(GMAIL_USERNAME)'
-    GMAIL_PASSWORD: '$(GMAIL_PASSWORD)'
-    GMAIL_TO_USERNAME: '$(GMAIL_TO_USERNAME)'
-    TCC_USERNAME: '$(TCC_USERNAME)'
-    TCC_PASSWORD: '$(TCC_PASSWORD)'
-    SHT31_REMOTE_IP_ADDRESS_1: '$(SHT31_REMOTE_IP_ADDRESS_1)'
+    GMAIL_USERNAME: '$(GMAIL_USERNAME)'  # used for some unit tests
+    GMAIL_PASSWORD: '$(GMAIL_PASSWORD)'  # used for some unit test
+    # TCC_USERNAME: '$(TCC_USERNAME)'
+    # TCC_PASSWORD: '$(TCC_PASSWORD)'
+    # SHT31_REMOTE_IP_ADDRESS_1: '$(SHT31_REMOTE_IP_ADDRESS_1)'
+    # SHT31_REMOTE_IP_ADDRESS_99: '$(SHT31_REMOTE_IP_ADDRESS_99)'
+    # KUMO_USERNAME: '$(KUMO_USERNAME)'
+    # KUMO_PASSWORD: '$(KUMO_PASSWORD)'
  

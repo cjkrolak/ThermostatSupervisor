@@ -11,27 +11,27 @@ import unit_test_common as utc
 import utilities as util
 
 
-class Test(unittest.TestCase):
+class Test(utc.UnitTestCommon):
 
     to_address = None
     from_address = None
     from_password = None
 
     def setUp(self):
-        pass
+        self.print_test_name()
 
     def tearDown(self):
-        pass
+        self.print_test_result()
 
-    def testCheckEmailEnvVariables(self):
+    def test_CheckEmailEnvVariables(self):
         """
         Verify all required email email env variables are present for tests.
 
-        If this test fails during CI check repository secrets in GitHub.
-        If this test fails during manual run check env variables on local PC.
+        If this test fails during AzDO CI, check repository secrets stored
+        in Azure DevOps variables and also check yml file.
+        If this test fails during manual run check env variables in
+        local PC environment variables.
         """
-        utc.print_test_name()
-
         # make sure email account environmental variables are present
         for env_key in ['GMAIL_USERNAME', 'GMAIL_PASSWORD']:
             try:
@@ -43,43 +43,42 @@ class Test(unittest.TestCase):
                             "from environment" % env_key)
                 self.fail(fail_msg)
 
-    def testSendEmailAlerts(self):
+    def test_SendEmailAlerts(self):
         """Test send_email_alerts() functionality."""
-        utc.print_test_name()
 
-        # import environment variables for unit testing.
-        # These env variables come from repo secrets during CI process
-        # or from local machine during manual run.
-        # if self.from_address is None:
-        #     self.from_address = os.environ['GMAIL_USERNAME']
-        # if self.from_password is None:
-        #     self.from_password = os.environ['GMAIL_PASSWORD']
-
-        # TODO: GMAIL AUTH IS FAILING, TEST is TEMP DISABLED.
-        print("test is temporarily disabled due to gmail auth issue")
-        return
-
-        # send message
+        # send message with no inputs, UTIL.NO_ERROR expected
         body = "this is a test of the email notification alert."
-        print("to_address before test: %s" % self.to_address)
-        print("from_address before test: %s" % self.from_address)
-        print("from_password before test: %s" % self.from_password)
-        return_status = \
-            eml.send_email_alert(to_address=self.to_address,
-                                 from_address=self.from_address,
-                                 from_password=self.from_password,
-                                 subject="(unittest) test email alert",
-                                 body=body)
-        self.assertEqual(return_status, util.NO_ERROR)
-
-        body = "this is a test of the email notification alert."
-        return_status = \
+        return_status, return_status_msg = \
             eml.send_email_alert(subject="(unittest) test email alert",
                                  body=body)
 
-        self.assertEqual(return_status, util.NO_ERROR)
+        fail_msg = ("send email with defaults failed for status code: %s: %s" %
+                    (return_status, return_status_msg))
+        self.assertEqual(return_status, util.NO_ERROR, fail_msg)
+
+        # send message with bad port, UTIL.CONNECTION_ERROR expected
+        body = ("this is a test of the email notification alert with bad "
+                "SMTP port input, should fail.")
+        return_status, return_status_msg = \
+            eml.send_email_alert(server_port=13,
+                                 subject="(unittest) test email alert "
+                                 "(bad port)", body=body)
+        fail_msg = ("send email with bad server port failed for status code"
+                    ": %s: %s" % (return_status, return_status_msg))
+        self.assertEqual(return_status, util.CONNECTION_ERROR, fail_msg)
+
+        # send message with bad email addre, util.AUTHORIZATION_ERROR expected
+        body = ("this is a test of the email notification alert with bad "
+                "sender email address, should fail.")
+        return_status, return_status_msg = \
+            eml.send_email_alert(from_address="bogus@gmail.com",
+                                 subject="(unittest) test email alert "
+                                 "(bad from address)", body=body)
+        fail_msg = ("send email with bad from addresss failed for status code"
+                    ": %s: %s" % (return_status, return_status_msg))
+        self.assertEqual(return_status, util.AUTHORIZATION_ERROR, fail_msg)
 
 
 if __name__ == "__main__":
     util.log_msg.debug = True
-    unittest.main()
+    unittest.main(verbosity=2)

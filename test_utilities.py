@@ -11,22 +11,21 @@ import unit_test_common as utc
 import utilities as util
 
 
-class Test(unittest.TestCase):
+class Test(utc.UnitTestCommon):
     """Test functions in utilities.py."""
 
     def setUp(self):
+        self.print_test_name()
         util.log_msg.file_name = "unit_test.txt"
 
     def tearDown(self):
-        pass
+        self.print_test_result()
 
     def test_GetEnvVariable(self):
         """
         Confirm get_env_variable() can retrieve values.
         """
-        utc.print_test_name()
-        for env_key in ["GMAIL_USERNAME", "GMAIL_PASSWORD",
-                        "TCC_USERNAME", "TCC_PASSWORD"]:
+        for env_key in ["GMAIL_USERNAME", "GMAIL_PASSWORD"]:
             buff = util.get_env_variable(env_key)
             print("env$%s=%s" % (env_key,
                                  [buff["value"],
@@ -38,7 +37,6 @@ class Test(unittest.TestCase):
         """
         Confirm all env variables can be loaded.
         """
-        utc.print_test_name()
         util.load_all_env_variables()
         print("env var dict=%s" % util.env_variables)
 
@@ -46,7 +44,6 @@ class Test(unittest.TestCase):
         """
         Confirm get_function_name works as expected.
         """
-        utc.print_test_name()
         # default
         test = "<default>"
         print("testing util.get_function_name(%s)" % test)
@@ -77,7 +74,6 @@ class Test(unittest.TestCase):
         """
         Confirm log_msg() will create folder if needed
         """
-        utc.print_test_name()
         # override data file path
         path_backup = util.file_path
         util.file_path = ".//unittest_data"
@@ -110,7 +106,7 @@ class Test(unittest.TestCase):
         """
         Verify log rotates at max_log_size_bytes.
         """
-        utc.print_test_name()
+        print("WARNING: test is aborting early, unfinished code.")
         return  # test is not yet ready
         # override rotate size
         size_backup = util.max_log_size_bytes
@@ -142,7 +138,6 @@ class Test(unittest.TestCase):
         """
         Confirm log_msg() can write and append to file.
         """
-        utc.print_test_name()
         file_name = "unit_test.txt"
         full_path = util.get_full_file_path(file_name)
 
@@ -183,7 +178,6 @@ class Test(unittest.TestCase):
         """
         Verify get_full_file_path() function.
         """
-        utc.print_test_name()
         file_name = "dummy.txt"
         full_path = util.get_full_file_path(file_name)
         expected_value = util.file_path + "//" + file_name
@@ -196,7 +190,6 @@ class Test(unittest.TestCase):
         """
         Verify utf8len().
         """
-        utc.print_test_name()
         for test_case in ["A", "BB", "ccc", "dd_d"]:
             print("testing util.utf8len(%s)" % test_case)
             expected_value = 1 * len(test_case)
@@ -205,7 +198,62 @@ class Test(unittest.TestCase):
                              "expected=%s, actual=%s" %
                              (expected_value, actual_value))
 
+    def test_GetLocalIP(self):
+        """
+        Verify get_local_ip().
+        """
+        return_val = util.get_local_ip()
+        self.assertTrue(isinstance(return_val, str),
+                        "get_local_ip() returned '%s' which is not a string")
+        self.assertTrue(7 <= len(return_val) <= 15,
+                        "get_local_ip() returned '%s' which is not "
+                        "between 7 and 15 chars")
+
+    def test_is_interactive_environment(self):
+        """
+        Verify is_interactive_environment().
+        """
+        return_val = util.is_interactive_environment()
+        self.assertTrue(isinstance(return_val, bool))
+
+    def test_TempValueWithUnits(self):
+        """Verify function attaches units as expected."""
+        disp_unit = 'F'
+
+        for test_case in [44, -1, 101, 2]:
+            expected_val = f'{test_case}°{disp_unit}'
+            actual_val = util.temp_value_with_units(test_case)
+            self.assertEqual(expected_val, actual_val,
+                             "test case: %s, expected_val=%s, actual_val=%s" %
+                             (test_case, expected_val, actual_val))
+
+    def test_GetKeyFromValue(self):
+        """Verify get_key_from_value()."""
+        test_dict = {'A': 1, 'B': 2, 'C': 1}
+
+        # test keys with distinctvalue, determinant case
+        test_case = 2
+        expected_val = ['B']
+        actual_val = util.get_key_from_value(test_dict, test_case)
+        self.assertTrue(actual_val in expected_val,
+                        "test case: %s, expected_val=%s, actual_val=%s" %
+                        (test_case, expected_val, actual_val))
+
+        # test keys with same value, indeterminant case
+        test_case = 1
+        expected_val = ['A', 'C']
+        actual_val = util.get_key_from_value(test_dict, test_case)
+        self.assertTrue(actual_val in expected_val,
+                        "test case: %s, expected_val=%s, actual_val=%s" %
+                        (test_case, expected_val, actual_val))
+
+        # test key not found
+        with self.assertRaises(KeyError):
+            print("attempting to input bad dictionary key, "
+                  "expect exception...")
+            actual_val = util.get_key_from_value(test_dict, "bogus_value")
+
 
 if __name__ == "__main__":
     util.log_msg.debug = True
-    unittest.main()
+    unittest.main(verbosity=2)

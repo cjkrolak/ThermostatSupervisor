@@ -12,40 +12,28 @@ data structure expected:
 """
 # built-in imports
 import json
-import os
 import pprint
 import requests
+import threading
 import time
 import traceback
 
 # local imports
+import sht31_flask_server as sht31_fs
 import thermostat_api as api
 import thermostat_common as tc
 import utilities as util
 
 
-# SHT31 thermometer device IDs
-LOFT_SHT31 = 0  # zone 0
+# SHT31 thermometer zones
+LOFT_SHT31 = 0  # zone 0, local IP 192.168.86.15
 LOFT_SHT31_REMOTE = 1  # zone 1
-UNITTEST_SHT31 = 99  # unit test emulator
-
-# SHT31 IP address and port info
-sht31_ip = {
-    LOFT_SHT31: "192.168.86.15",  # local IP
-    LOFT_SHT31_REMOTE: util.bogus_str,  # placeholder, remote IP
-    UNITTEST_SHT31: "127.0.0.1",
-    }
-sht31_port = {
-    LOFT_SHT31: "5000",
-    LOFT_SHT31_REMOTE: "5000",
-    UNITTEST_SHT31: "5000",
-    }
 
 
 class ThermostatClass(tc.ThermostatCommon):
     """SHT31 thermometer functions."""
 
-    def __init__(self, zone, *_, **__):
+    def __init__(self, zone):
         """
         Constructor, connect to thermostat.
 
@@ -55,7 +43,7 @@ class ThermostatClass(tc.ThermostatCommon):
             zone.
         """
         # construct the superclass
-        super(ThermostatClass, self).__init__(*_, **__)
+        super(ThermostatClass, self).__init__()
 
         # zone configuration
         self.thermostat_type = api.SHT31
@@ -68,6 +56,10 @@ class ThermostatClass(tc.ThermostatCommon):
         self.device_id = self.url
         self.retry_delay = 60  # delay before retrying a bad reading
 
+        # if in unit test mode, spawn flask server with emulated data
+        if self.zone_number == util.UNIT_TEST_ZONE:
+            self.spawn_flask_server()
+
     def get_target_zone_id(self, zone_number=0):
         """
         Return the target zone ID (aka IP address for sht31) from the
@@ -78,10 +70,8 @@ class ThermostatClass(tc.ThermostatCommon):
         returns:
             (str):  IP address of target zone.
         """
-        # update IP dict based on env key
         env_str = self.get_env_key(zone_number)
         ip_address = self.get_ip_address(env_str)
-        sht31_ip[zone_number] = ip_address
         return ip_address
 
     def get_env_key(self, zone_str):
@@ -104,7 +94,29 @@ class ThermostatClass(tc.ThermostatCommon):
         returns:
             (str):  IP address
         """
-        return os.environ.get(env_key, "<" + env_key + "_KEY_MISSING>")
+        return util.get_env_variable(env_key)["value"]
+
+    def spawn_flask_server(self):
+        """
+        Spawn a local flask server for unit testing.
+
+        inputs: None
+        returns:
+        """
+        # app = sht31_fs.create_app()
+        sht31_fs.debug = False
+        sht31_fs.measurements = 10
+        sht31_fs.unit_test_mode = True
+        self.flask_server = threading.Thread(target=sht31_fs.app.run,
+                                             args=('0.0.0.0', 5000,
+                                                   False))
+        self.flask_server.daemon = True  # make thread daemonic
+        self.flask_server.start()
+        util.log_msg("thread alive status=%s" %
+                     self.flask_server.is_alive(),
+                     mode=util.BOTH_LOG, func_name=1)
+        util.log_msg("Flask server setup is complete",
+                     mode=util.BOTH_LOG, func_name=1)
 
     def print_all_thermostat_metadata(self):
         """
@@ -129,16 +141,24 @@ class ThermostatClass(tc.ThermostatCommon):
         returns:
             (dict) empty dict.
         """
-        r = requests.get(self.url)
+        try:
+            r = requests.get(self.url)
+        except requests.exceptions.ConnectionError as e:
+            util.log_msg("FATAL ERROR: unable to connect to sht31 "
+                         "thermometer at url '%s'" %
+                         self.url, mode=util.BOTH_LOG, func_name=1)
+            raise e
         try:
             return r.json()
         except json.decoder.JSONDecodeError as e:
             util.log_msg(traceback.format_exc(),
-                         mode=util.DEBUG_LOG + util.CONSOLE_LOG,
+                         mode=util.BOTH_LOG,
                          func_name=1)
             if retry:
-                print("waiting %s seconds and retrying SHT31 measurement "
-                      "one time..." % self.retry_delay)
+                util.log_msg("waiting %s seconds and retrying SHT31 "
+                             "measurement one time..." %
+                             self.retry_delay, mode=util.BOTH_LOG,
+                             func_name=1)
                 time.sleep(self.retry_delay)
                 self.get_all_metadata(retry=False)
             else:
@@ -149,7 +169,7 @@ class ThermostatClass(tc.ThermostatCommon):
 class ThermostatZone(tc.ThermostatCommonZone):
     """SHT31 thermometer zone functions."""
 
-    def __init__(self, Thermostat_obj, *_, **__):
+    def __init__(self, Thermostat_obj):
         """
         Constructor, connect to thermostat.
 
@@ -157,7 +177,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
             Thermostat_obj(obj): associated Thermostat_obj
         """
         # construct the superclass
-        super(ThermostatZone, self).__init__(*_, **__)
+        super(ThermostatZone, self).__init__()
 
         # switch config for this thermostat
         # SHT31 is a monitor only, does not support heat/cool modes.
@@ -188,17 +208,25 @@ class ThermostatZone(tc.ThermostatCommonZone):
           dict if parameter=None
           str if parameter != None
         """
-        r = requests.get(self.url)
+        try:
+            r = requests.get(self.url)
+        except requests.exceptions.ConnectionError as e:
+            util.log_msg("FATAL ERROR: unable to connect to sht31 "
+                         "thermometer at url '%s'" %
+                         self.url, mode=util.BOTH_LOG, func_name=1)
+            raise e
         if parameter is None:
             try:
                 return r.json()
             except json.decoder.JSONDecodeError as e:
                 util.log_msg(traceback.format_exc(),
-                             mode=util.DEBUG_LOG + util.CONSOLE_LOG,
+                             mode=util.BOTH_LOG,
                              func_name=1)
                 if retry:
-                    print("waiting %s seconds and retrying SHT31 measurement "
-                          "one time..." % self.retry_delay)
+                    util.log_msg("waiting %s seconds and retrying SHT31 "
+                                 "measurement one time..." %
+                                 self.retry_delay, mode=util.BOTH_LOG,
+                                 func_name=1)
                     time.sleep(self.retry_delay)
                     self.get_metadata(parameter=None, retry=False)
                 else:
@@ -209,11 +237,13 @@ class ThermostatZone(tc.ThermostatCommonZone):
                 return r.json()[parameter]
             except json.decoder.JSONDecodeError as e:
                 util.log_msg(traceback.format_exc(),
-                             mode=util.DEBUG_LOG + util.CONSOLE_LOG,
+                             mode=util.BOTH_LOG,
                              func_name=1)
                 if retry:
-                    print("waiting %s seconds and retrying SHT31 measurement "
-                          "one time..." % self.retry_delay)
+                    util.log_msg("waiting %s seconds and retrying SHT31 "
+                                 "measurement one time..." %
+                                 self.retry_delay, mode=util.BOTH_LOG,
+                                 func_name=1)
                     time.sleep(self.retry_delay)
                     self.get_metadata(parameter, retry=False)
                 else:
@@ -221,14 +251,17 @@ class ThermostatZone(tc.ThermostatCommonZone):
                                     "is not responding") from e
             except KeyError as e:
                 util.log_msg(traceback.format_exc(),
-                             mode=util.DEBUG_LOG + util.CONSOLE_LOG,
+                             mode=util.BOTH_LOG,
                              func_name=1)
                 if "message" in r.json():
-                    print("WARNING in Flask response: '%s'" %
-                          r.json()["message"])
+                    util.log_msg("WARNING in Flask response: '%s'" %
+                                 r.json()["message"], mode=util.BOTH_LOG,
+                                 func_name=1)
                 if retry:
-                    print("waiting %s seconds and retrying SHT31 measurement "
-                          "one time..." % self.retry_delay)
+                    util.log_msg("waiting %s seconds and retrying SHT31 "
+                                 "measurement one time..." %
+                                 self.retry_delay, mode=util.BOTH_LOG,
+                                 func_name=1)
                     time.sleep(self.retry_delay)
                     self.get_metadata(parameter, retry=False)
                 else:
@@ -289,6 +322,17 @@ class ThermostatZone(tc.ThermostatCommonZone):
         """
         return self.system_switch_position[self.OFF_MODE]
 
+    def get_dry_mode(self) -> int:
+        """
+        Return the dry mode.
+
+        inputs:
+            None
+        returns:
+            (int): dry mode, 1=enabled, 0=disabled.
+        """
+        return self.system_switch_position[self.OFF_MODE]
+
     def get_system_switch_position(self) -> int:
         """ Return the thermostat mode.
 
@@ -302,31 +346,6 @@ class ThermostatZone(tc.ThermostatCommonZone):
 
 if __name__ == "__main__":
 
-    util.log_msg.debug = True  # debug mode set
-
-    # get zone from user input
-    zone_input = api.parse_all_runtime_parameters()[1]
-
-    # verify required env vars
-    api.verify_required_env_variables(api.SHT31, zone_input)
-
-    # import hardware module
-    mod = api.load_hardware_library(api.SHT31)
-
-    # create Thermostat object
-    Thermostat = ThermostatClass(zone_input)
-    Thermostat.print_all_thermostat_metadata()
-
-    # create Zone object
-    Zone = ThermostatZone(Thermostat)
-
-    # update runtime overrides
-    Zone.update_runtime_parameters(api.user_inputs)
-
-    print("current thermostat settings...")
-    print("tmode1: %s" % Zone.get_system_switch_position())
-    print("heat mode=%s" % Zone.get_heat_mode())
-    print("cool mode=%s" % Zone.get_cool_mode())
-    print("temporary hold minutes=%s" % Zone.get_temporary_hold_until_time())
-    print("thermostat meta data=%s" % Thermostat.get_all_metadata())
-    print("thermostat display tempF=%s" % Zone.get_display_temp())
+    tc.thermostat_basic_checkout(api, api.SHT31,
+                                 ThermostatClass,
+                                 ThermostatZone)

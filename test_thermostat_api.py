@@ -10,11 +10,12 @@ import unit_test_common as utc
 import utilities as util
 
 
-class Test(unittest.TestCase):
+class Test(utc.UnitTestCommon):
     """Test functions in utilities.py."""
     tstat = "UNITTEST"
 
     def setUp(self):
+        self.print_test_name()
         api.thermostats[self.tstat] = {  # dummy unit test thermostat
             "required_env_variables": {
                 "GMAIL_USERNAME": None,
@@ -24,6 +25,7 @@ class Test(unittest.TestCase):
 
     def tearDown(self):
         del api.thermostats[self.tstat]
+        self.print_test_result()
 
     def test_VerifyRequiredEnvVariables(self):
         """
@@ -31,7 +33,7 @@ class Test(unittest.TestCase):
         condition and fails with missing key.
         """
         missing_key = "agrfg_"  # bogus key should be missing
-        utc.print_test_name()
+
         # nominal condition, should pass
         print("testing nominal condition, will pass if gmail keys are present")
         self.assertTrue(api.verify_required_env_variables(self.tstat, "0"),
@@ -60,7 +62,6 @@ class Test(unittest.TestCase):
         Verify test parse_runtime_parameter() returns expected
         values when input known values.
         """
-        utc.print_test_name()
         input_list = ["supervise.py", "honeywell", "0", "9", "90", "3",
                       "HEAT_MODE"]
 
@@ -148,27 +149,41 @@ class Test(unittest.TestCase):
         finally:
             input_list = input_list_backup  # restore original
 
+        # test bad data type for position input parameter (should be int)
+        with self.assertRaises(TypeError):
+            print("attempting to invalid parameter type, "
+                  "expect exception...")
+            tstat_type = api.parse_runtime_parameter(api.user_input_list[0],
+                                                     "1", str,
+                                                     api.HONEYWELL,
+                                                     api.SUPPORTED_THERMOSTATS,
+                                                     input_list)
+
     def test_ParseAllRuntimeParameters(self):
         """
         Verify test parse_all_runtime_parameters() runs without error
         and return values match user_inputs dict.
         """
-        utc.print_test_name()
 
-        return_list = api.parse_all_runtime_parameters()
-        self.assertEqual(return_list[0], api.user_inputs["thermostat_type"])
-        self.assertEqual(return_list[1], api.user_inputs["zone"])
-        self.assertEqual(return_list[2], api.user_inputs["poll_time_sec"])
-        self.assertEqual(return_list[3],
+        return_list = api.parse_all_runtime_parameters(utc.unit_test_argv)
+        self.assertEqual(return_list["thermostat_type"],
+                         api.user_inputs["thermostat_type"])
+        self.assertEqual(return_list["zone"], api.user_inputs["zone"])
+        self.assertEqual(return_list["poll_time_sec"],
+                         api.user_inputs["poll_time_sec"])
+        self.assertEqual(return_list["connection_time_sec"],
                          api.user_inputs["connection_time_sec"])
-        self.assertEqual(return_list[4], api.user_inputs["tolerance_degrees"])
-        self.assertEqual(return_list[5], api.user_inputs["target_mode"])
+        self.assertEqual(return_list["tolerance_degrees"],
+                         api.user_inputs["tolerance_degrees"])
+        self.assertEqual(return_list["target_mode"],
+                         api.user_inputs["target_mode"])
+        self.assertEqual(return_list["measurements"],
+                         api.user_inputs["measurements"])
 
     def test_DynamicModuleImport(self):
         """
         Verify dynamic_module_import() runs without error
         """
-        utc.print_test_name()
 
         # test successful case
         pkg = api.dynamic_module_import(api.HONEYWELL)
@@ -180,8 +195,56 @@ class Test(unittest.TestCase):
 
         # test failing case
         with self.assertRaises(ImportError):
+            print("attempting to open bogus package name, expect exception...")
             pkg = api.dynamic_module_import("bogus")
             print("'bogus' module returned package type %s" % type(pkg))
+        print("test passed")
+
+    def test_FindModule(self):
+        """
+        Verify find_module() runs without error
+        """
+
+        # test successful case
+        fp, path, desc = api.find_module(api.HONEYWELL)
+        print("api.HONEYWELL returned path %s" % path)
+        self.assertTrue(isinstance(path, str),
+                        "api.find_module() returned type(%s),"
+                        " for path, expected a string" % type(path))
+        self.assertTrue(isinstance(desc, tuple),
+                        "api.find_module() returned type(%s),"
+                        " for desc, expected a string" % type(desc))
+        fp.close()
+
+        # test failing case
+        with self.assertRaises(ImportError):
+            print("attempting to open invalid file, "
+                  "expect exception...")
+            fp, path, desc = api.find_module("bogus")
+            print("'bogus' module returned fp=%s, path=%s, desc=%s, "
+                  "expected an exception" % (fp, path, desc))
+        print("test passed")
+
+    def test_LoadModule(self):
+        """
+        Verify load_module() runs without error
+        """
+
+        # test successful case
+        fp, path, desc = api.find_module(api.HONEYWELL)
+        pkg = api.load_module(api.HONEYWELL, fp, path, desc)
+        print("api.HONEYWELL returned package type %s" % type(pkg))
+        self.assertTrue(isinstance(pkg, object),
+                        "api.load_module() returned type(%s),"
+                        " expected an object" % type(pkg))
+        del pkg
+
+        # test failing case
+        with self.assertRaises(FileNotFoundError):
+            print("attempting to load 'bogus' module, expect exception...")
+            pkg = api.load_module(api.HONEYWELL, fp, "", desc)
+            print("'bogus' module returned package type %s" % type(pkg))
+        print("test passed")
 
     def test_LoadHardwareLibrary(self):
         """
@@ -197,11 +260,43 @@ class Test(unittest.TestCase):
 
         # test failing case
         with self.assertRaises(KeyError):
+            print("attempting to access 'bogus' dictionary key, "
+                  "expect exception...")
             pkg = api.load_hardware_library("bogus")
-            print("'bogus' returned package type %s" % type(pkg))
+            print("'bogus' returned package type %s, "
+                  "exception should have been raised" % type(pkg))
             del pkg
+        print("test passed")
+
+    def test_max_measurement_count_exceeded(self):
+        """
+        Verify max_measurement_count_exceeded() runs as expected.
+        """
+        test_cases = {
+            "within_range": {"measurement": 13, "max_measurements": 14,
+                             "exp_result": False},
+            "at_range": {"measurement": 17, "max_measurements": 17,
+                         "exp_result": False},
+            "over_range": {"measurement": 15, "max_measurements": 14,
+                           "exp_result": True},
+            "default": {"measurement": 13, "max_measurements": None,
+                        "exp_result": False},
+            }
+        max_measurement_bkup = api.user_inputs["measurements"]
+        try:
+            for test_case, parameters in test_cases.items():
+                api.user_inputs["measurements"] = \
+                    parameters["max_measurements"]
+                act_result = api.max_measurement_count_exceeded(
+                    parameters["measurement"])
+                exp_result = parameters["exp_result"]
+                self.assertEqual(exp_result, act_result,
+                                 "test case '%s', expected=%s, actual=%s" %
+                                 (test_case, exp_result, act_result))
+        finally:
+            api.user_inputs["measurements"] = max_measurement_bkup
 
 
 if __name__ == "__main__":
     util.log_msg.debug = True
-    unittest.main()
+    unittest.main(verbosity=2)

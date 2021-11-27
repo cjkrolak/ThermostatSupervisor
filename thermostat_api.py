@@ -18,6 +18,8 @@ HONEYWELL = "honeywell"
 MMM50 = "mmm50"
 SHT31 = "sht31"
 KUMOCLOUD = "kumocloud"
+KUMOLOCAL = "kumolocal"
+
 SUPPORTED_THERMOSTATS = {
     # "module" = module to import
     # "type" = thermostat type index number
@@ -26,9 +28,12 @@ SUPPORTED_THERMOSTATS = {
                 "modes": ["OFF_MODE", "HEAT_MODE", "COOL_MODE"]},
     MMM50: {"module": "mmm", "type": 2, "zones": [0, 1],
             "modes": ["OFF_MODE", "HEAT_MODE", "COOL_MODE"]},
-    SHT31: {"module": "sht31", "type": 3, "zones": [0, 1],
+    SHT31: {"module": "sht31", "type": 3, "zones": [0, 1, util.UNIT_TEST_ZONE],
             "modes": ["OFF_MODE"]},
     KUMOCLOUD: {"module": "kumocloud", "type": 4, "zones": [0, 1],
+                "modes": ["OFF_MODE", "HEAT_MODE", "COOL_MODE",
+                          "DRY_MODE", "AUTO_MODE"]},
+    KUMOLOCAL: {"module": "kumolocal", "type": 5, "zones": [0, 1],
                 "modes": ["OFF_MODE", "HEAT_MODE", "COOL_MODE",
                           "DRY_MODE", "AUTO_MODE"]},
     }
@@ -65,6 +70,14 @@ thermostats = {
             'KUMO_USERNAME': None,
             'KUMO_PASSWORD': None,
             },
+        },
+    KUMOLOCAL: {
+        "required_env_variables": {
+            "GMAIL_USERNAME": None,
+            "GMAIL_PASSWORD": None,
+            'KUMO_USERNAME': None,
+            'KUMO_PASSWORD': None,
+            },
         }
 }
 
@@ -76,6 +89,7 @@ user_input_list = ["thermostat_type",
                    "connection_time_sec",
                    "tolerance_degrees",
                    "target_mode",
+                   "measurements",
                    ]
 user_inputs = dict.fromkeys(user_input_list, None)
 
@@ -126,11 +140,13 @@ def parse_runtime_parameter(key, position, datatype, default_value,
     returns:
         (int or str): user input runtime value.
     """
+    if input_list is None:
+        input_list = []
     # cast input for these keys into uppercase
     # all other keys are cast lowercase.
     uppercase_key_list = ["target_mode"]
 
-    if input_list is None:
+    if not input_list:
         target = sys.argv
     else:
         target = input_list
@@ -146,8 +162,9 @@ def parse_runtime_parameter(key, position, datatype, default_value,
     except IndexError:
         result = default_value
     if result != default_value and result not in valid_range:
-        print("WARNING: '%s' is not a valid choice for '%s', "
-              "using default(%s)" % (result, key, default_value))
+        util.log_msg("WARNING: '%s' is not a valid choice for '%s', "
+                     "using default(%s)" % (result, key, default_value),
+                     mode=util.BOTH_LOG, func_name=1)
         result = default_value
 
     # populate the user_input dictionary
@@ -155,61 +172,112 @@ def parse_runtime_parameter(key, position, datatype, default_value,
     return result
 
 
-def parse_all_runtime_parameters():
+def parse_all_runtime_parameters(input_list=None):
     """
     Parse all possible runtime parameters.
 
     inputs:
-        None
+        input_list(list): list of argv overrides
     returns:
-        (list) of all runtime parameters.
+        (dict) of all runtime parameters.
     """
+    if input_list is None:
+        input_list = []
+    param = {}
+    if input_list:
+        util.log_msg("parse_all_runtime_parameters from list: %s" % input_list,
+                     mode=util.DEBUG_LOG + util.CONSOLE_LOG, func_name=1)
+    else:
+        util.log_msg("parse_all_runtime_parameters from sys.argv: %s" %
+                     sys.argv, mode=util.DEBUG_LOG + util.CONSOLE_LOG,
+                     func_name=1)
     # parse thermostat type parameter (argv[1] if present):
-    tstat_type = parse_runtime_parameter("thermostat_type", 1, str,
-                                         HONEYWELL,
-                                         list(SUPPORTED_THERMOSTATS.keys()))
+    param["thermostat_type"] = parse_runtime_parameter(
+        "thermostat_type", 1, str, HONEYWELL,
+        list(SUPPORTED_THERMOSTATS.keys()), input_list=input_list)
 
     # parse zone number parameter (argv[2] if present):
-    zone_input = parse_runtime_parameter("zone", 2, int, 0,
-                                         SUPPORTED_THERMOSTATS[
-                                             tstat_type]["zones"])
+    param["zone"] = parse_runtime_parameter(
+        "zone", 2, int, 0, SUPPORTED_THERMOSTATS[
+            param["thermostat_type"]]["zones"],
+        input_list=input_list)
 
     # parse the poll time override (argv[3] if present):
-    poll_time_input = parse_runtime_parameter("poll_time_sec", 3, int, None,
-                                              range(0, 24 * 60 * 60))
+    param["poll_time_sec"] = parse_runtime_parameter(
+        "poll_time_sec", 3, int, None, range(0, 24 * 60 * 60),
+        input_list=input_list)
 
     # parse the connection time override (argv[4] if present):
-    connection_time_input = parse_runtime_parameter("connection_time_sec", 4,
-                                                    int, None,
-                                                    range(0, 24 * 60 * 60))
+    param["connection_time_sec"] = parse_runtime_parameter(
+        "connection_time_sec", 4, int, None, range(0, 24 * 60 * 60),
+        input_list=input_list)
 
     # parse the tolerance override (argv[5] if present):
-    tolerance_degrees_input = parse_runtime_parameter("tolerance_degrees", 5,
-                                                      int, None, range(0, 10))
+    param["tolerance_degrees"] = parse_runtime_parameter(
+        "tolerance_degrees", 5, int, None, range(0, 10),
+        input_list=input_list)
 
     # parse the target mode (argv[6] if present):
-    target_mode_input = parse_runtime_parameter("target_mode", 6,
-                                                str, None,
-                                                SUPPORTED_THERMOSTATS[
-                                                    tstat_type]["modes"])
+    param["target_mode"] = parse_runtime_parameter(
+        "target_mode", 6, str, None, SUPPORTED_THERMOSTATS[
+            param["thermostat_type"]]["modes"], input_list=input_list)
 
-    return [tstat_type, zone_input, poll_time_input, connection_time_input,
-            tolerance_degrees_input, target_mode_input]
+    # parse the number of measurements (argv[7] if present):
+    param["measurements"] = parse_runtime_parameter(
+        "measurements", 7, int, 1e9, range(1, 11),
+        input_list=input_list)
+
+    return param
 
 
 # dynamic import
 def dynamic_module_import(name):
-    # find_module() method is used
-    # to find the module and return
-    # its description and path
+    """
+    Find and load python module.
+
+    inputs:
+        name(str): module name
+    returns:
+        mod(module): module object
+    """
+    fp, path, desc = find_module(name)
+    mod = load_module(name, fp, path, desc)
+    return mod
+
+
+def find_module(name):
+    """
+    Find the module and return its description and path.
+
+    inputs:
+        name(str): module name
+    returns:
+        fp(_io.TextIOWrapper): file pointer
+        path(str): path to file
+        desc(tuple): file descriptor
+    """
     try:
         fp, path, desc = imp.find_module(name)
     except ImportError as e:
         util.log_msg(traceback.format_exc(),
-                     mode=util.DEBUG_LOG + util.CONSOLE_LOG, func_name=1)
-        print("module not found: " + name)
+                     mode=util.BOTH_LOG, func_name=1)
+        util.log_msg("module not found: " + name,
+                     mode=util.BOTH_LOG, func_name=1)
         raise e
+    return fp, path, desc
 
+
+def load_module(name, fp, path, desc):
+    """
+    Load the module into memory.
+
+    inputs:
+        fp(_io.TextIOWrapper): file pointer
+        path(str): path to file
+        desc(tuple): file descriptor
+    returns:
+        mod(python module)
+    """
     try:
         # load_modules loads the module
         # dynamically and takes the filepath
@@ -217,12 +285,12 @@ def dynamic_module_import(name):
         mod = imp.load_module(name, fp, path, desc)
     except Exception as e:
         util.log_msg(traceback.format_exc(),
-                     mode=util.DEBUG_LOG + util.CONSOLE_LOG, func_name=1)
-        print("module load failed: " + name)
+                     mode=util.BOTH_LOG, func_name=1)
+        util.log_msg("module load failed: " + name,
+                     mode=util.BOTH_LOG, func_name=1)
         raise e
     finally:
-        fp.close
-
+        fp.close()
     return mod
 
 
@@ -238,3 +306,21 @@ def load_hardware_library(thermostat_type):
     mod = dynamic_module_import(
         SUPPORTED_THERMOSTATS[thermostat_type]["module"])
     return mod
+
+
+def max_measurement_count_exceeded(measurement):
+    """
+    Return True if max measurement reached.
+
+    inputs:
+        measurement(int): current measurement value
+    returns:
+        (bool): True if max measurement reached.
+    """
+    max_measurements = user_inputs["measurements"]
+    if max_measurements is None:
+        return False
+    elif measurement > max_measurements:
+        return True
+    else:
+        return False

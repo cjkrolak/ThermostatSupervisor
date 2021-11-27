@@ -1,4 +1,4 @@
-"""KumoCloud integration"""
+"""KumoCloud integration using local API for data."""
 import os
 import pprint
 import pykumo
@@ -43,13 +43,13 @@ class ThermostatClass(pykumo.KumoCloudAccount):
         self.args = [self.kc_uname, self.kc_pwd]
 
         # construct the superclass
-        self._need_fetch = True  # force data fetch
         super(ThermostatClass, self).__init__(*self.args)
         self.thermostat_type = api.KUMOCLOUD
 
         # configure zone info
         self.zone_number = int(zone)
         self.zone_name = None  # initialize
+        self.device_id = None  # initialize
         self.device_id = self.get_target_zone_id(self.zone_number)
         self.serial_number = None  # will be populated when unit is queried.
 
@@ -60,16 +60,29 @@ class ThermostatClass(pykumo.KumoCloudAccount):
         inputs:
             zone_number(int):  zone number.
         returns:
-            (int): device_id
+            (obj): PyKumo object
         """
-        return zone_number
+        self.zone_name = kc_metadata[zone_number]["zone_name"]
+        # populate the zone dictionary
+        # establish local interface to kumos, must be on local net
+        kumos = self.make_pykumos()
+        device_id = kumos[self.zone_name]
+        # print zone name the first time it is known
+        if self.device_id is None:
+            util.log_msg("zone %s name = '%s', device_id=%s" %
+                         (zone_number, self.zone_name, device_id),
+                         mode=util.DEBUG_LOG + util.CONSOLE_LOG,
+                         func_name=1)
+        self.device_id = device_id
 
-    def get_all_thermostat_metadata(self, zone=None, debug=False):
+        # return the target zone object
+        return self.device_id
+
+    def get_all_thermostat_metadata(self, zone=None):
         """Get all thermostat meta data for zone from kumocloud.
 
         inputs:
-            zone(int): specified zone, if None will print all zones.
-            debug(bool): if True will print unit details.
+            zone(): specified zone, if None will print all zones.
         returns:
             (dict): JSON dict
         """
@@ -78,19 +91,16 @@ class ThermostatClass(pykumo.KumoCloudAccount):
         except UnboundLocalError:  # patch for issue #205
             util.log_msg("WARNING: Kumocloud refresh failed due to "
                          "timeout", mode=util.BOTH_LOG, func_name=1)
-            time.sleep(30)
+            time.sleep(10)
             units = list(self.get_indoor_units())  # retry
-        if debug:
-            util.log_msg("indoor unit serial numbers: %s" % str(units),
-                         mode=util.DEBUG_LOG + util.CONSOLE_LOG, func_name=1)
+        util.log_msg("indoor unit serial numbers: %s" % str(units),
+                     mode=util.DEBUG_LOG+util.CONSOLE_LOG, func_name=1)
         for serial_number in units:
-            if debug:
-                util.log_msg("Unit %s: address: %s credentials: %s" %
-                             (self.get_name(serial_number),
-                              self.get_address(serial_number),
-                              self.get_credentials(serial_number)),
-                             mode=util.DEBUG_LOG + util.CONSOLE_LOG,
-                             func_name=1)
+            util.log_msg("Unit %s: address: %s credentials: %s" %
+                         (self.get_name(serial_number),
+                          self.get_address(serial_number),
+                          self.get_credentials(serial_number)),
+                         mode=util.DEBUG_LOG+util.CONSOLE_LOG, func_name=1)
         if zone is None:
             # returned cached raw data for all zones
             raw_json = self.get_raw_json()  # does not fetch results,
@@ -101,23 +111,22 @@ class ThermostatClass(pykumo.KumoCloudAccount):
                 'zoneTable'][units[zone]]
         return raw_json
 
-    def print_all_thermostat_metadata(self, zone=None, debug=False):
+    def print_all_thermostat_metadata(self, zone=None):
         """Print all metadata for zone to the screen.
 
         inputs:
-            zone(int): specified zone, if None will print all zones.
-            debug(bool): debug flag
+            zone(): specified zone, if None will print all zones.
         returns:
             None, prints result to screen
         """
-        raw_json = self.get_all_thermostat_metadata(zone, debug=debug)
+        raw_json = self.get_all_thermostat_metadata(zone)
         pp = pprint.PrettyPrinter(indent=4)
         pp.pprint(raw_json)
 
 
 class ThermostatZone(tc.ThermostatCommonZone):
     """
-    KumoCloud single zone from kumocloud.
+    KumoCloud single zone on local network.
 
     Class needs to be updated for multi-zone support.
     """
@@ -133,22 +142,17 @@ class ThermostatZone(tc.ThermostatCommonZone):
         super(ThermostatZone, self).__init__()
 
         # switch config for this thermostat
-        self.system_switch_position[
-            tc.ThermostatCommonZone.HEAT_MODE] = 1  # "Heat"
-        self.system_switch_position[
-            tc.ThermostatCommonZone.OFF_MODE] = 16  # "Off"
-        # TODO - these modes need verification
-        self.system_switch_position[tc.ThermostatCommonZone.COOL_MODE] = "Cool"
-        self.system_switch_position[tc.ThermostatCommonZone.DRY_MODE] = "Auto"
-        self.system_switch_position[tc.ThermostatCommonZone.AUTO_MODE] = "Dry"
+        self.system_switch_position[tc.ThermostatCommonZone.COOL_MODE] = "cool"
+        self.system_switch_position[tc.ThermostatCommonZone.HEAT_MODE] = "heat"
+        self.system_switch_position[tc.ThermostatCommonZone.OFF_MODE] = "off"
+        self.system_switch_position[tc.ThermostatCommonZone.DRY_MODE] = "auto"
+        self.system_switch_position[tc.ThermostatCommonZone.AUTO_MODE] = "dry"
 
         # zone info
         self.thermostat_type = api.KUMOCLOUD
         self.device_id = Thermostat_obj.device_id
         self.Thermostat = Thermostat_obj
         self.zone_number = Thermostat_obj.zone_number
-        self.zone_data = Thermostat_obj.get_all_thermostat_metadata(
-            Thermostat_obj.zone_number)
 
         # runtime parameter defaults
         self.poll_time_sec = 10 * 60  # default to 10 minutes
@@ -157,39 +161,6 @@ class ThermostatZone(tc.ThermostatCommonZone):
         # server data cache expiration parameters
         self.fetch_interval_sec = 10  # age of server data before refresh
         self.last_fetch_time = time.time() - 2 * self.fetch_interval_sec
-
-    def get_parameter(self, key, parent_key=None, grandparent_key=None,
-                      default_val=None):
-        """
-        Get parameter from zone dictionary.
-
-        inputs:
-            target_key(str): target dict key
-            parent_key(str): first level dict key
-            grandparent_key(str): second level dict key
-            default_val(str, int, float): default value on key errors
-        """
-        return_val = default_val
-        if grandparent_key is not None:
-            try:
-                # check parent keys
-                grandparent_dict = self.zone_data[grandparent_key]
-                parent_dict = grandparent_dict[parent_key]
-                return_val = parent_dict[key]
-            except KeyError as e:
-                raise e
-        elif parent_key is not None:
-            try:
-                parent_dict = self.zone_data[parent_key]
-                return_val = parent_dict[key]
-            except KeyError as e:
-                raise e
-        else:
-            try:
-                return_val = self.zone_data[key]
-            except KeyError as e:
-                raise e
-        return return_val
 
     def get_display_temp(self) -> float:  # used
         """
@@ -201,8 +172,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
             (float): indoor temp in deg F.
         """
         self.refresh_zone_info()
-        return self._c_to_f(self.get_parameter('room_temp',
-                                               'reportedCondition'))
+        return self._c_to_f(self.device_id.get_current_temperature())
 
     def get_display_humidity(self) -> (float, None):
         """
@@ -214,12 +184,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
             (float, None): indoor humidity in %RH, None if not supported.
         """
         self.refresh_zone_info()
-        if not self.get_is_humidity_supported():
-            return None
-        else:
-            # untested, don't have humidity support
-            return self._c_to_f(self.get_parameter('humidity',
-                                                   'reportedCondition'))
+        return self.device_id.get_current_humidity()
 
     def get_is_humidity_supported(self) -> bool:  # used
         """
@@ -231,8 +196,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         returns:
             (booL): True if is in humidity sensor is available and not faulted.
         """
-        return self.get_parameter('humidistat', 'inputs',
-                                  'acoilSettings')
+        return self.get_display_humidity() is not None
 
     def get_heat_mode(self) -> int:
         """
@@ -244,7 +208,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
             (int) heat mode, 1=enabled, 0=disabled.
         """
         self.refresh_zone_info()
-        return int(self.get_system_switch_position() ==
+        return int(self.device_id.get_mode() ==
                    self.system_switch_position[
                        tc.ThermostatCommonZone.HEAT_MODE])
 
@@ -258,7 +222,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
             (int): cool mode, 1=enabled, 0=disabled.
         """
         self.refresh_zone_info()
-        return int(self.get_system_switch_position() ==
+        return int(self.device_id.get_mode() ==
                    self.system_switch_position[
                        tc.ThermostatCommonZone.COOL_MODE])
 
@@ -272,7 +236,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
             (int): dry mode, 1=enabled, 0=disabled.
         """
         self.refresh_zone_info()
-        return int(self.get_system_switch_position() ==
+        return int(self.device_id.get_mode() ==
                    self.system_switch_position[
                        tc.ThermostatCommonZone.DRY_MODE])
 
@@ -286,8 +250,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
             (int): heating set point in degrees F.
         """
         self.refresh_zone_info()
-        return self._c_to_f(self.get_parameter('sp_heat',
-                                               'reportedCondition'))
+        return self._c_to_f(self.device_id.get_heat_setpoint())
 
     def get_heat_setpoint(self) -> str:
         """Return heat setpoint with units as a string."""
@@ -325,8 +288,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
             (int): cooling set point in degrees F.
         """
         self.refresh_zone_info()
-        return self._c_to_f(self.get_parameter('sp_cool',
-                                               'reportedCondition'))
+        return self._c_to_f(self.device_id.get_cool_setpoint())
 
     def get_cool_setpoint(self) -> str:
         """Return cool setpoint with units as a string."""
@@ -358,7 +320,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
 
     def get_system_switch_position(self) -> str:  # used
         """
-        Return the system switch position.
+        Return the system switch position, same as mode.
 
         inputs:
             None
@@ -367,10 +329,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
                   in self.system_switch_position
         """
         self.refresh_zone_info()
-        # return self.get_parameter('operation_mode_text', 'more',
-        #                           'reportedCondition')
-        return self.get_parameter('operation_mode',
-                                  'reportedCondition')
+        return self.device_id.get_mode()
 
     def set_heat_setpoint(self, temp: int) -> None:
         """
@@ -382,13 +341,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         returns:
             None
         """
-        # self.device_id.set_heat_setpoint(self._f_to_c(temp))
-        # TODO needs implementation
-        del temp
-        util.log_msg("WARNING: this method not implemented yet for this "
-                     "thermostat type",
-                     mode=util.BOTH_LOG, func_name=1)
-        return
+        self.device_id.set_heat_setpoint(self._f_to_c(temp))
 
     def set_cool_setpoint(self, temp: int) -> None:
         """
@@ -400,13 +353,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         returns:
             None
         """
-        # self.device_id.set_cool_setpoint(self._f_to_c(temp))
-        # TODO needs implementation
-        del temp
-        util.log_msg("WARNING: this method not implemented yet for this "
-                     "thermostat type",
-                     mode=util.BOTH_LOG, func_name=1)
-        return
+        self.device_id.set_cool_setpoint(self._f_to_c(temp))
 
     def refresh_zone_info(self, force_refresh=False):
         """
@@ -415,14 +362,13 @@ class ThermostatZone(tc.ThermostatCommonZone):
         inputs:
             force_refresh(bool): if True, ignore expiration timer.
         returns:
-            None, zone_data is refreshed.
+            None, device_id object is refreshed.
         """
         now_time = time.time()
         # refresh if past expiration date or force_refresh option
         if (force_refresh or (now_time >=
                               (self.last_fetch_time +
                                self.fetch_interval_sec))):
-            print("DEBUG: refreshing data from cloud")
             self.Thermostat._need_fetch = True \
                 # pylint: disable=protected-access
             try:
@@ -433,8 +379,8 @@ class ThermostatZone(tc.ThermostatCommonZone):
                              "timeout", mode=util.BOTH_LOG, func_name=1)
             self.last_fetch_time = now_time
             # refresh device object
-            self.zone_data = self.Thermostat.get_all_thermostat_metadata(
-                self.zone_number)
+            self.device_id = \
+                self.Thermostat.get_target_zone_id(self.zone_number)
 
     def report_heating_parameters(self):
         """
@@ -484,6 +430,6 @@ class ThermostatZone(tc.ThermostatCommonZone):
 
 if __name__ == "__main__":
 
-    tc.thermostat_basic_checkout(api, api.KUMOCLOUD,
+    tc.thermostat_basic_checkout(api, api.KUMOLOCAL,
                                  ThermostatClass,
                                  ThermostatZone)

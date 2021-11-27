@@ -345,6 +345,17 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
         self.refresh_zone_info()
         return int(self.zone_info['latestData']['uiData']['StatusCool'])
 
+    def get_dry_mode(self) -> int:
+        """
+        Return the dry mode.
+
+        inputs:
+            None
+        returns:
+            (int): dry mode, 1=enabled, 0=disabled.
+        """
+        return 0  # dry mode not supported on Honeywell
+
     def get_schedule_heat_sp(self) -> int:  # used
         """
         Refresh the cached zone information and return the
@@ -450,7 +461,8 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
         inputs:
             None
         returns:
-            None
+            (int) current mode for unit, should match value
+                  in self.system_switch_position
         """
         self.refresh_zone_info()
         return int(self.zone_info['latestData']['uiData']
@@ -560,7 +572,7 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
                 # catching simplejson.errors.JSONDecodeError
                 # using Exception since simplejson is not imported
                 util.log_msg(traceback.format_exc(),
-                             mode=util.DEBUG_LOG + util.CONSOLE_LOG,
+                             mode=util.BOTH_LOG,
                              func_name=1)
                 util.log_msg("exception during refresh_zone_info, on trial "
                              "%s of %s, probably a"
@@ -601,7 +613,7 @@ if __name__ == "__main__":
     util.log_msg.debug = True  # debug mode set
 
     # get zone from user input
-    zone_input = api.parse_all_runtime_parameters()[1]
+    zone_input = api.parse_all_runtime_parameters()["zone"]
 
     # verify required env vars
     api.verify_required_env_variables(api.HONEYWELL, zone_input)
@@ -619,13 +631,4 @@ if __name__ == "__main__":
     # update runtime overrides
     Zone.update_runtime_parameters(api.user_inputs)
 
-    print("current thermostat settings...")
-    print("tmode1: %s" % Zone.get_system_switch_position())
-    print("heat set point=%s" % Zone.get_heat_setpoint())
-    print("cool set point=%s" % Zone.get_cool_setpoint())
-    print("(schedule) heat program=%s" % Zone.get_schedule_program_heat())
-    print("(schedule) cool program=%s" % Zone.get_schedule_program_cool())
-    print("hold=%s" % Zone.get_vacation_hold())
-    print("heat mode=%s" % Zone.get_heat_mode())
-    print("cool mode=%s" % Zone.get_cool_mode())
-    print("temporary hold minutes=%s" % Zone.get_temporary_hold_until_time())
+    Zone.display_basic_thermostat_summary()
