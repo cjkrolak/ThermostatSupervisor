@@ -96,7 +96,10 @@ def send_email_alert(to_address=None,
         server = smtplib.SMTP_SSL(server_url, server_port)
         util.log_msg("smtp connection successful",
                      mode=util.DEBUG_LOG + util.CONSOLE_LOG, func_name=1)
-    except (ValueError, TimeoutError) as e:
+    except (ValueError,  # not sure if this exception will be raised here
+            TimeoutError,  # observed on Windows for bad port
+            OSError  # on AzDO with bad port
+            ) as e:
         util.log_msg("exception during smtp connection: %s" % str(e),
                      mode=util.BOTH_LOG, func_name=1)
         return (util.CONNECTION_ERROR, return_status_msg_dict[status])
