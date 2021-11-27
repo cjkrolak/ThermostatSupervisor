@@ -19,11 +19,9 @@ import time
 import traceback
 
 # local imports
-import sht31_flask_server as sht31_fs
 import thermostat_api as api
 import thermostat_common as tc
 import utilities as util
-
 
 # SHT31 thermometer zones
 LOFT_SHT31 = 0  # zone 0, local IP 192.168.86.15
@@ -103,7 +101,9 @@ class ThermostatClass(tc.ThermostatCommon):
         inputs: None
         returns:
         """
-        # app = sht31_fs.create_app()
+        # flask server used in unit test mode
+        import sht31_flask_server as sht31_fs  # noqa E402
+
         sht31_fs.debug = False
         sht31_fs.measurements = 10
         sht31_fs.unit_test_mode = True
