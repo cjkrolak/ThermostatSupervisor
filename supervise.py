@@ -5,7 +5,6 @@ Thermostat Supervisor
 import time
 
 # local imports
-import email_notification
 import thermostat_api as api
 import utilities as util
 
@@ -150,32 +149,7 @@ def main(thermostat_type, zone_str):
 
             # revert thermostat to schedule if heat override is detected
             if revert_thermostat_deviation:
-                Zone.revert_thermostat_deviation()
-
-            if (revert_thermostat_deviation and current_mode["heat_mode"] and
-                    current_mode["heat_deviation"]):
-                email_notification.send_email_alert(
-                    subject=("%s heat deviation alert on zone %s" %
-                             (thermostat_type, zone_num)),
-                    body=current_mode["status_msg"])
-                util.log_msg("\n*** %s heat deviation detected on zone %s,"
-                             " reverting thermostat to heat schedule ***\n" %
-                             (thermostat_type, zone_num),
-                             mode=util.BOTH_LOG)
-                Zone.set_heat_setpoint(Zone.get_schedule_heat_sp())
-
-            # revert thermostat to schedule if cool override is detected
-            if (revert_thermostat_deviation and current_mode["cool_mode"] and
-                    current_mode["cool_deviation"]):
-                email_notification.send_email_alert(
-                    subject=("%s cool deviation alert on zone %s" %
-                             (thermostat_type, zone_num)),
-                    body=current_mode["status_msg"])
-                util.log_msg("\n*** %s cool deviation detected on zone %s,"
-                             " reverting thermostat to cool schedule ***\n" %
-                             (thermostat_type, zone_num),
-                             mode=util.BOTH_LOG)
-                Zone.set_cool_setpoint(Zone.get_schedule_cool_sp())
+                Zone.revert_thermostat_deviation(current_mode["status_msg"])
 
             # polling delay
             time.sleep(Zone.poll_time_sec)
@@ -208,7 +182,6 @@ if __name__ == "__main__":
 
     # parse all runtime parameters
     api.user_inputs = api.parse_all_runtime_parameters(argv)
-    print("DEBUG: api.user_inputs=%s" % api.user_inputs)
 
     # main supervise function
     main(api.user_inputs["thermostat_type"], api.user_inputs["zone"])

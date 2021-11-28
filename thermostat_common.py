@@ -161,13 +161,9 @@ class ThermostatCommonZone():
             self.global_operator = operator.ne
             self.revert_setpoint_func = None
 
-        self.temperature_is_deviated = self.is_temp_deviated()
+        self.temperature_is_deviated = self.is_temp_deviated_from_schedule()
 
-    def is_temp_deviated(self):
-        print("DEBUG: current_setpoint=%s" % self.current_setpoint)
-        print("DEBUG: sched setpoint=%s" % self.schedule_point)
-        print("DEBUG: tolerance sign=%s" % self.tolerance_sign)
-        print("DEBUG: tolerance degrees=%s" % self.tolerance_degrees)
+    def is_temp_deviated_from_schedule(self):
         return self.operator(self.current_setpoint, self.schedule_point +
                              self.tolerance_sign * self.tolerance_degrees)
 
@@ -211,7 +207,7 @@ class ThermostatCommonZone():
                                           self.global_operator,
                                           self.current_mode_str)
 
-        if self.is_temp_deviated():
+        if self.is_temp_deviated_from_schedule():
             status_msg = ("[%s deviation] act temp=%.1f%sF" %
                           (self.current_mode_str, self.display_temp,
                            degree_sign))
@@ -224,7 +220,7 @@ class ThermostatCommonZone():
             status_msg += ", act humidity=%.1f%% RH" % self.display_humidity
 
         # add hold information
-        if self.is_temp_deviated():
+        if self.is_temp_deviated_from_schedule():
             self.hold_mode = True  # True = not following schedule
             self.hold_temporary = (self.get_temporary_hold_until_time() > 0)
             status_msg += (" (%s)" % ["persistent",
@@ -388,7 +384,7 @@ class ThermostatCommonZone():
         returns:
             (bool): True if deviation exists.
         """
-        return self.is_heat_mode() and self.is_temp_deviated()
+        return self.is_heat_mode() and self.is_temp_deviated_from_schedule()
 
     def is_cool_mode(self):
         """Return True if in cool mode."""
@@ -404,7 +400,7 @@ class ThermostatCommonZone():
         returns:
             (bool): True if deviation exists.
         """
-        return self.is_cool_mode() and self.is_temp_deviated()
+        return self.is_cool_mode() and self.is_temp_deviated_from_schedule()
 
     def is_dry_mode(self):
         """Return True if in dry mode."""
@@ -719,7 +715,7 @@ class ThermostatCommonZone():
     def revert_thermostat_deviation(self, msg):
         """
         """
-        if self.is_temp_deviated():
+        if self.is_temp_deviated_from_schedule():
             eml.send_email_alert(
                 subject=("%s %s deviation alert on zone %s" %
                          (self.thermostat_type, self.current_mode_str,
