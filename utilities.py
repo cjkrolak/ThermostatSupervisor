@@ -178,33 +178,78 @@ def log_msg(msg, mode, func_name=-1, file_name=None):
         # build full file name
         full_path = get_full_file_path(log_msg.file_name)
 
-        # log rotate
-        try:
-            file_size_bytes = os.path.getsize(full_path)
-        except FileNotFoundError:
-            # file does not exist
-            file_size_bytes = 0
-        if file_size_bytes > max_log_size_bytes:
-            # rotate log file
-            current_date = datetime.datetime.today().strftime(
-                '%d-%b-%Y-%H-%M-%S')
-            os.rename(full_path, full_path[:-4] + "-" +
-                      str(current_date) + '.txt')
-            file_size_bytes = 0
+        # check file size and rotate if necessary
+        file_size_bytes = get_file_size_bytes(full_path)
+        file_size_bytes = log_rotate_file(full_path, file_size_bytes,
+                                          max_log_size_bytes)
 
         # write to file
-        if file_size_bytes == 0:
-            f = open(full_path, "w")  # writing
-        else:
-            f = open(full_path, "a")  # appending
-        f.write(msg + "\n")
-        f.close()
+        write_to_file(full_path, file_size_bytes, msg)
 
     # print to console
     if (mode & CONSOLE_LOG) and not filter_debug_msg:
         print(msg)
 
     return return_buffer
+
+
+def get_file_size_bytes(full_path):
+    """
+    Get the file size for the specified log file.
+
+    inputs:
+        full_path(str): full file name and path.
+    returns:
+        file_size_bytes(int): file size in bytes
+    """
+    try:
+        file_size_bytes = os.path.getsize(full_path)
+    except FileNotFoundError:
+        # file does not exist
+        file_size_bytes = 0
+    return file_size_bytes
+
+
+def log_rotate_file(full_path, file_size_bytes, max_size_bytes):
+    """
+    Rotate log file to prevent file from getting too large.
+
+    inputs:
+        full_path(str): full file name and path.
+        file_size_bytes(int): file size in bytes
+        max_size_bytes(int): max allowable file size.
+    returns:
+        file_size_bytes(int): file size in bytes
+    """
+    if file_size_bytes > max_size_bytes:
+        # rotate log file
+        current_date = datetime.datetime.today().strftime(
+            '%d-%b-%Y-%H-%M-%S')
+        os.rename(full_path, full_path[:-4] + "-" +
+                  str(current_date) + '.txt')
+        file_size_bytes = 0
+    return file_size_bytes
+
+
+def write_to_file(full_path, file_size_bytes, msg):
+    """
+    Rotate log file to prevent file from getting too large.
+
+    inputs:
+        full_path(str): full file name and path.
+        file_size_bytes(int): file size in bytes
+        msg(str): message to write.
+    returns:
+        (int): number of bytes written to file.
+    """
+    if file_size_bytes == 0:
+        f = open(full_path, "w")  # writing
+    else:
+        f = open(full_path, "a")  # appending
+    msg_to_write = msg + "\n"
+    f.write(msg_to_write)
+    f.close()
+    return utf8len(msg_to_write)
 
 
 # global default log file name if none is specified
