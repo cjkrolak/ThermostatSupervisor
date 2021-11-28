@@ -4,6 +4,7 @@
 import datetime
 import inspect
 import os
+import platform
 import psutil
 import socket
 
@@ -193,6 +194,10 @@ def log_msg(msg, mode, func_name=-1, file_name=None):
     return return_buffer
 
 
+# global default log file name if none is specified
+log_msg.file_name = "default_log.txt"
+
+
 def get_file_size_bytes(full_path):
     """
     Get the file size for the specified log file.
@@ -252,8 +257,9 @@ def write_to_file(full_path, file_size_bytes, msg):
     return utf8len(msg_to_write)
 
 
-# global default log file name if none is specified
-log_msg.file_name = "default_log.txt"
+def is_windows_environment():
+    """Return True if running on Windows PC."""
+    return 'WINDOWS' in platform.system().upper()
 
 
 def get_full_file_path(file_name):

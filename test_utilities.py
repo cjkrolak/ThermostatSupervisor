@@ -198,7 +198,7 @@ class Test(utc.UnitTestCommon):
 
         # write to non-existing file, bytes written + EOF == bytes read
         bytes_written = util.write_to_file(full_path, 0, msg)
-        bytes_expected = bytes_written + 1  # add EOF
+        bytes_expected = bytes_written + [0, 1][util.is_windows_environment()]
         bytes_present = util.get_file_size_bytes(full_path)
         self.assertEqual(bytes_expected, bytes_present,
                          "writing to non-existent file, bytes written=%s, "
@@ -206,7 +206,7 @@ class Test(utc.UnitTestCommon):
 
         # write to existing file with reset, bytes written == bytes read
         bytes_written = util.write_to_file(full_path, 0, msg)
-        bytes_expected = bytes_written + 1  # add EOF
+        bytes_expected = bytes_written + [0, 1][util.is_windows_environment()]
         bytes_present = util.get_file_size_bytes(full_path)
         self.assertEqual(bytes_expected, bytes_present,
                          "writing to existing file with override option, "
@@ -216,7 +216,8 @@ class Test(utc.UnitTestCommon):
         # write to existing file, bytes written < bytes read
         file_size_bytes = util.get_file_size_bytes(full_path)
         bytes_written = util.write_to_file(full_path, file_size_bytes, msg)
-        bytes_expected = bytes_written + file_size_bytes + 1  # add EOF
+        bytes_expected = (bytes_written + file_size_bytes +
+                          [0, 1][util.is_windows_environment()])
         bytes_present = util.get_file_size_bytes(full_path)
         self.assertEqual(bytes_expected, bytes_present,
                          "writing to existent file, bytes expected=%s, "
