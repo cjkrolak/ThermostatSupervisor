@@ -12,6 +12,66 @@ import utilities as util
 argv = []  # runtime parameter override
 
 
+def display_session_settings(thermostat_type, zone,
+                             revert_setting, revert_all_setting):
+    """
+    Display session settings to console.
+
+    inputs:
+        thermostat_type(int): thermostat type
+        zone(str or int):  zone
+        revert_setting(bool): True to revert deviation
+                              False to just monitor
+        revert_all_setting(bool): True to revert above and below deviations
+                                  False to just revert energy wasting
+                                  deviations.
+    returns:
+        None
+    """
+    # set log file name
+    util.log_msg.file_name = (thermostat_type + "_" +
+                              str(zone) + ".txt")
+
+    util.log_msg("%s thermostat zone %s monitoring service\n" %
+                 (thermostat_type, zone), mode=util.BOTH_LOG)
+
+    util.log_msg("session settings:", mode=util.BOTH_LOG)
+
+    util.log_msg("thermostat %s for %s\n" %
+                 (["is being monitored", "will be reverted"]
+                  [revert_setting],
+                  ["energy consuming deviations\n("
+                   "e.g. heat setpoint above schedule "
+                   "setpoint, cool setpoint below schedule"
+                   " setpoint)",
+                   "all schedule deviations"]
+                  [revert_all_setting]), mode=util.BOTH_LOG)
+
+
+def display_runtime_settings(Zone):
+    """
+    Display runtime settings to console.
+
+    inputs:
+        Zone(obj): thermostat zone object
+    returns:
+        None
+    """
+    # poll time setting:
+    util.log_msg("polling time set to %.1f minutes" %
+                 (Zone.poll_time_sec / 60.0), mode=util.BOTH_LOG)
+
+    # reconnection time to thermostat server:
+    util.log_msg("server re-connect time set to %.1f minutes" %
+                 (Zone.connection_time_sec / 60.0),
+                 mode=util.BOTH_LOG)
+
+    # tolerance to set point:
+    util.log_msg("tolerance to set point is set to %d degrees" %
+                 (Zone.tolerance_degrees),
+                 mode=util.BOTH_LOG)
+
+
 def main(thermostat_type, zone_str):
     """
     Thermostat Supervisor Routine.
@@ -23,33 +83,19 @@ def main(thermostat_type, zone_str):
     returns:
         None
     """
-    # set log file name
-    util.log_msg.file_name = (thermostat_type + "_" +
-                              str(zone_str) + ".txt")
-
-    util.log_msg("%s thermostat zone %s monitoring service\n" %
-                 (thermostat_type, zone_str), mode=util.BOTH_LOG)
-
-    # verify env variables are present
-    api.verify_required_env_variables(thermostat_type, zone_str)
-
-    # session variables
-    util.log_msg("session settings:", mode=util.BOTH_LOG)
+    # session variables:
     debug = False  # verbose debugging information
-
-    # mode parameters
     revert_thermostat_deviation = True  # revert thermostat if temp deviated
     revert_all_deviations = False  # True will flag all deviations,
     # False will only revert energy consuming deviations
-    util.log_msg("thermostat %s for %s\n" %
-                 (["is being monitored", "will be reverted"]
-                  [revert_thermostat_deviation],
-                  ["energy consuming deviations\n("
-                   "e.g. heat setpoint above schedule "
-                   "setpoint, cool setpoint below schedule"
-                   " setpoint)",
-                   "all schedule deviations"]
-                  [revert_all_deviations]), mode=util.BOTH_LOG)
+
+    # display banner and session settings
+    display_session_settings(thermostat_type, zone_str,
+                             revert_thermostat_deviation,
+                             revert_all_deviations)
+
+    # verify env variables are present
+    api.verify_required_env_variables(thermostat_type, zone_str)
 
     # starting parameters
     previous_mode = {}
@@ -80,19 +126,8 @@ def main(thermostat_type, zone_str):
         # update runtime overrides
         Zone.update_runtime_parameters(api.user_inputs)
 
-        # poll time setting:
-        util.log_msg("polling time set to %.1f minutes" %
-                     (Zone.poll_time_sec / 60.0), mode=util.BOTH_LOG)
-
-        # reconnection time to thermostat server:
-        util.log_msg("server re-connect time set to %.1f minutes" %
-                     (Zone.connection_time_sec / 60.0),
-                     mode=util.BOTH_LOG)
-
-        # tolerance to set point:
-        util.log_msg("tolerance to set point is set to %d degrees" %
-                     (Zone.tolerance_degrees),
-                     mode=util.BOTH_LOG)
+        # display runtime settings
+        display_runtime_settings(Zone)
 
         poll_count = 1
         # poll thermostat settings
@@ -114,6 +149,9 @@ def main(thermostat_type, zone_str):
                     Zone.revert_thermostat_mode(api.user_inputs["target_mode"])
 
             # revert thermostat to schedule if heat override is detected
+            if revert_thermostat_deviation:
+                Zone.revert_thermostat_deviation()
+
             if (revert_thermostat_deviation and current_mode["heat_mode"] and
                     current_mode["heat_deviation"]):
                 email_notification.send_email_alert(
