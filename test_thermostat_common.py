@@ -14,8 +14,7 @@ import utilities as util
 
 
 class Test(utc.UnitTestCommon):
-    """Test functions in utilities.py."""
-    tstat = "UNITTEST"
+    """Test functions in thermostat_common.py."""
 
     # initialization
     switch_pos_bckup = None
@@ -30,27 +29,10 @@ class Test(utc.UnitTestCommon):
 
     def setUp(self):
         self.print_test_name()
-        api.thermostats[self.tstat] = {  # dummy unit test thermostat
-            "required_env_variables": {
-                "GMAIL_USERNAME": None,
-                "GMAIL_PASSWORD": None,
-                },
-            }
-        self.user_inputs_backup = api.user_inputs
-        api.user_inputs = {
-            "thermostat_type": self.tstat,
-            "zone": 1,
-            "poll_time_sec": 55,
-            "connection_time_sec": 155,
-            }
-
-        self.Thermostat = tc.ThermostatCommon()
-        self.Zone = tc.ThermostatCommonZone()
-        self.Zone.update_runtime_parameters(api.user_inputs)
+        self.setUp_mock_thermostat_zone()
 
     def tearDown(self):
-        del api.thermostats[self.tstat]
-        api.user_inputs = self.user_inputs_backup
+        self.tearDown_mock_thermostat_zone()
         self.print_test_result()
 
     def test_PrintAllThermostatMetaData(self):

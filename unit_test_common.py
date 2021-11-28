@@ -5,6 +5,8 @@ Common functions used in multiple unit tests.
 import unittest
 
 # local imports
+import thermostat_api as api
+import thermostat_common as tc
 import utilities as util
 
 unit_test_argv = ["supervise.py",  # module
@@ -20,6 +22,35 @@ unit_test_argv = ["supervise.py",  # module
 
 class UnitTestCommon(unittest.TestCase):
     """Extensions to unit test framework."""
+
+    thermostat_type = "UNITTEST"
+    zone = 1
+    user_inputs_backup = None
+    Thermostat = None
+    Zone = None
+
+    def setUp_mock_thermostat_zone(self):
+        api.thermostats[self.thermostat_type] = {  # dummy unit test thermostat
+            "required_env_variables": {
+                "GMAIL_USERNAME": None,
+                "GMAIL_PASSWORD": None,
+                },
+            }
+        self.user_inputs_backup = api.user_inputs
+        api.user_inputs = {
+            "thermostat_type": self.thermostat_type,
+            "zone": self.zone,
+            "poll_time_sec": 55,
+            "connection_time_sec": 155,
+            }
+
+        self.Thermostat = tc.ThermostatCommon()
+        self.Zone = tc.ThermostatCommonZone()
+        self.Zone.update_runtime_parameters(api.user_inputs)
+
+    def tearDown_mock_thermostat_zone(self):
+        del api.thermostats[self.thermostat_type]
+        api.user_inputs = self.user_inputs_backup
 
     def print_test_result(self):
         if hasattr(self, '_outcome'):  # Python 3.4+
