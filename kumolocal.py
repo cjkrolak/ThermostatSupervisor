@@ -172,7 +172,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
             (float): indoor temp in deg F.
         """
         self.refresh_zone_info()
-        return self._c_to_f(self.device_id.get_current_temperature())
+        return util.c_to_f(self.device_id.get_current_temperature())
 
     def get_display_humidity(self) -> (float, None):
         """
@@ -250,7 +250,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
             (int): heating set point in degrees F.
         """
         self.refresh_zone_info()
-        return self._c_to_f(self.device_id.get_heat_setpoint())
+        return util.c_to_f(self.device_id.get_heat_setpoint())
 
     def get_heat_setpoint(self) -> str:
         """Return heat setpoint with units as a string."""
@@ -288,7 +288,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
             (int): cooling set point in degrees F.
         """
         self.refresh_zone_info()
-        return self._c_to_f(self.device_id.get_cool_setpoint())
+        return util.c_to_f(self.device_id.get_cool_setpoint())
 
     def get_cool_setpoint(self) -> str:
         """Return cool setpoint with units as a string."""
@@ -341,7 +341,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         returns:
             None
         """
-        self.device_id.set_heat_setpoint(self._f_to_c(temp))
+        self.device_id.set_heat_setpoint(util.f_to_c(temp))
 
     def set_cool_setpoint(self, temp: int) -> None:
         """
@@ -353,7 +353,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         returns:
             None
         """
-        self.device_id.set_cool_setpoint(self._f_to_c(temp))
+        self.device_id.set_cool_setpoint(util.f_to_c(temp))
 
     def refresh_zone_info(self, force_refresh=False):
         """

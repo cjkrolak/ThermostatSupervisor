@@ -302,6 +302,24 @@ class Test(utc.UnitTestCommon):
                   "expect exception...")
             actual_val = util.get_key_from_value(test_dict, "bogus_value")
 
+    def test_CtoF(self):
+        """Verify C to F calculations."""
+        for tempc in [0, -19, 34, 101, -44.1]:
+            tempf = util.c_to_f(tempc)
+            expected_tempf = tempc * 9.0 / 5 + 32
+            self.assertEqual(expected_tempf, tempf, "test case %s: "
+                             "expected=%s, actual=%s" %
+                             (tempc, expected_tempf, tempf))
+
+    def test_FtoC(self):
+        """Verify F to C calculations."""
+        for tempf in [0, -19, 34, 101, -44.1]:
+            tempc = util.f_to_c(tempf)
+            expected_tempc = (tempf - 32) * 5 / 9.0
+            self.assertEqual(expected_tempc, tempc, "test case %s: "
+                             "expected=%s, actual=%s" %
+                             (tempf, expected_tempc, tempc))
+
     def delete_test_file(self, full_path):
         """Delete the test file.
 
