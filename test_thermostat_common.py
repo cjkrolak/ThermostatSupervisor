@@ -4,6 +4,7 @@ Tests for thermostat_common.py
 # built-in imports
 import operator
 import pprint
+import random
 import unittest
 
 # local imports
@@ -170,6 +171,14 @@ class Test(utc.UnitTestCommon):
                 "key": self.Zone.get_vacation_hold_until_time,
                 "args": None,
                 "return_type": int},
+            "set_heat_setpoint": {
+                "key": self.Zone.set_heat_setpoint,
+                "args": [0],
+                "return_type": type(None)},
+            "set_cool_setpoint": {
+                "key": self.Zone.set_cool_setpoint,
+                "args": [0],
+                "return_type": type(None)},
             }
         for k, v in func_dict.items():
             print("key=%s" % k)
@@ -227,14 +236,25 @@ class Test(utc.UnitTestCommon):
         """
         Test the revert_thermostat_mode() function.
         """
-        for test_case in [self.Zone.HEAT_MODE, self.Zone.COOL_MODE,
-                          self.Zone.DRY_MODE, self.Zone.AUTO_MODE,
-                          self.Zone.OFF_MODE]:
-            print("reverting to '%s' mode" % test_case)
+        test_cases = [self.Zone.HEAT_MODE, self.Zone.COOL_MODE,
+                      self.Zone.DRY_MODE, self.Zone.AUTO_MODE,
+                      self.Zone.OFF_MODE]
+        for test_case in random.choices(test_cases, k=20):
+            if ((self.Zone.current_mode in self.Zone.heat_modes and
+                 test_case in self.Zone.cool_modes)
+                or (self.Zone.current_mode in self.Zone.cool_modes and
+                    test_case in self.Zone.heat_modes)):
+                expected_mode = self.Zone.OFF_MODE
+            else:
+                expected_mode = test_case
+            print("reverting to '%s' mode, expected mode=%s" %
+                  (test_case, expected_mode))
             new_mode = self.Zone.revert_thermostat_mode(test_case)
-            self.assertEqual(new_mode, test_case,
+            self.assertEqual(new_mode, expected_mode,
                              "reverting to %s mode failed, "
-                             "new mode is '%s'" % (test_case, new_mode))
+                             "new mode is '%s', expected '%s'" %
+                             (test_case, new_mode, expected_mode))
+            self.Zone.current_mode = test_case
 
     def test_MeasureThermostatResponseTime(self):
         """

@@ -319,3 +319,33 @@ def get_key_from_value(input_dict, val):
             return key
     raise KeyError("key not found in dict '%s' with value='%s'" %
                    (input_dict, val))
+
+
+def c_to_f(tempc) -> float:
+    """
+    Convert from Celsius to Fahrenheit.
+
+    inputs:
+        tempc(int, float): temp in deg c.
+    returns:
+        (float): temp in deg f.
+    """
+    if isinstance(tempc, (int, float)):
+        return tempc * 9.0 / 5 + 32
+    else:
+        return tempc  # pass-thru
+
+
+def f_to_c(tempf) -> float:
+    """
+    Convert from Fahrenheit to Celsius.
+
+    inputs:
+        tempc(int, float): temp in deg f.
+    returns:
+        (float): temp in deg c.
+    """
+    if isinstance(tempf, (int, float)):
+        return (tempf - 32) * 5 / 9.0
+    else:
+        return tempf  # pass-thru

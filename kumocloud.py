@@ -201,8 +201,8 @@ class ThermostatZone(tc.ThermostatCommonZone):
             (float): indoor temp in deg F.
         """
         self.refresh_zone_info()
-        return self._c_to_f(self.get_parameter('room_temp',
-                                               'reportedCondition'))
+        return util.c_to_f(self.get_parameter('room_temp',
+                                              'reportedCondition'))
 
     def get_display_humidity(self) -> (float, None):
         """
@@ -218,8 +218,8 @@ class ThermostatZone(tc.ThermostatCommonZone):
             return None
         else:
             # untested, don't have humidity support
-            return self._c_to_f(self.get_parameter('humidity',
-                                                   'reportedCondition'))
+            return util.c_to_f(self.get_parameter('humidity',
+                                                  'reportedCondition'))
 
     def get_is_humidity_supported(self) -> bool:  # used
         """
@@ -286,8 +286,8 @@ class ThermostatZone(tc.ThermostatCommonZone):
             (int): heating set point in degrees F.
         """
         self.refresh_zone_info()
-        return self._c_to_f(self.get_parameter('sp_heat',
-                                               'reportedCondition'))
+        return util.c_to_f(self.get_parameter('sp_heat',
+                                              'reportedCondition'))
 
     def get_heat_setpoint(self) -> str:
         """Return heat setpoint with units as a string."""
@@ -325,8 +325,8 @@ class ThermostatZone(tc.ThermostatCommonZone):
             (int): cooling set point in degrees F.
         """
         self.refresh_zone_info()
-        return self._c_to_f(self.get_parameter('sp_cool',
-                                               'reportedCondition'))
+        return util.c_to_f(self.get_parameter('sp_cool',
+                                              'reportedCondition'))
 
     def get_cool_setpoint(self) -> str:
         """Return cool setpoint with units as a string."""

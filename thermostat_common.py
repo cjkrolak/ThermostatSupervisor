@@ -48,6 +48,9 @@ class ThermostatCommonZone():
     DRY_MODE = "DRY_MODE"
     UNKNOWN_MODE = "UNKNOWN_MODE"
 
+    heat_modes = [HEAT_MODE, AUTO_MODE]
+    cool_modes = [COOL_MODE, DRY_MODE, AUTO_MODE]
+
     system_switch_position = {
         # placeholder, will be tstat-specific
         UNKNOWN_MODE: util.bogus_int,
@@ -347,7 +350,7 @@ class ThermostatCommonZone():
             None
         """
         del temp
-        util.log_msg("WARNING: function is not yet implemented on this "
+        util.log_msg("WARNING: %s: function is not yet implemented on this "
                      "thermostat, doing nothing" %
                      util.get_function_name(), mode=util.BOTH_LOG,
                      func_name=1)
@@ -364,7 +367,7 @@ class ThermostatCommonZone():
             None
         """
         del temp
-        util.log_msg("WARNING: function is not yet implemented on this "
+        util.log_msg("WARNING: %s: function is not yet implemented on this "
                      "thermostat, doing nothing" %
                      util.get_function_name(), mode=util.BOTH_LOG,
                      func_name=1)
@@ -578,10 +581,9 @@ class ThermostatCommonZone():
             target_mode(str) target_mode, which may get updated by
             this function.
         """
-        heat_modes = [self.HEAT_MODE, self.AUTO_MODE]
-        cool_modes = [self.COOL_MODE, self.DRY_MODE, self.AUTO_MODE]
         # do not switch directly from hot to cold
-        if (self.current_mode in heat_modes and target_mode in cool_modes):
+        if (self.current_mode in self.heat_modes and
+                target_mode in self.cool_modes):
             util.log_msg("WARNING: target mode=%s, switching from %s mode to "
                          "OFF_MODE to prevent damage to HVAC" %
                          (target_mode, self.current_mode),
@@ -589,7 +591,8 @@ class ThermostatCommonZone():
             target_mode = self.OFF_MODE
 
         # do not switch directly from cold to hot
-        elif (self.current_mode in cool_modes and target_mode in heat_modes):
+        elif (self.current_mode in self.cool_modes and
+              target_mode in self.heat_modes):
             util.log_msg("WARNING: target mode=%s, switching from %s mode to "
                          "OFF_MODE to prevent damage to HVAC" %
                          (target_mode, self.current_mode),
@@ -634,34 +637,6 @@ class ThermostatCommonZone():
         stats["6sigma_upper"] = round((6.0 * stats["stdev"] +
                                        stats["mean"]), 1)
         return stats
-
-    def _c_to_f(self, tempc) -> float:
-        """
-        Convert from Celsius to Fahrenheit.
-
-        inputs:
-            tempc(int, float): temp in deg c.
-        returns:
-            (float): temp in deg f.
-        """
-        if isinstance(tempc, (int, float)):
-            return tempc * 9.0 / 5 + 32
-        else:
-            return tempc  # pass-thru
-
-    def _f_to_c(self, tempf) -> float:
-        """
-        Convert from Fahrenheit to Celsius.
-
-        inputs:
-            tempc(int, float): temp in deg f.
-        returns:
-            (float): temp in deg c.
-        """
-        if isinstance(tempf, (int, float)):
-            return (tempf - 32) * 5 / 9.0
-        else:
-            return tempf  # pass-thru
 
     def display_basic_thermostat_summary(self, mode=util.CONSOLE_LOG):
         """
