@@ -298,9 +298,19 @@ def is_interactive_environment():
         return True
 
 
-def temp_value_with_units(raw) -> str:
-    """takes the raw and adds a degree F sign and a unit."""
-    disp_unit = 'F'
+def temp_value_with_units(raw, disp_unit='F') -> str:
+    """
+    Return string representing temperature and units.
+
+    inputs:
+        raw(int or float): temperature value.
+        disp_unit(str): display unit character.
+    returns:
+        (str): temperature and units.
+    """
+    if disp_unit.upper() not in ['C', 'F', 'K']:
+        raise Exception("%s: '%s' is not a valid temperature unit" %
+                        get_function_name())
     return f'{raw}°{disp_unit}'
 
 
