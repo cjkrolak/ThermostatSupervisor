@@ -250,7 +250,8 @@ class ThermostatCommonZone():
         full_status_msg = ("%s: (session:%s, poll:%s) %s_MODE %s" %
                            (datetime.datetime.now().
                             strftime("%Y-%m-%d %H:%M:%S"),
-                            session_count, poll_count, self.current_mode.upper(),
+                            session_count, poll_count,
+                            self.current_mode.upper(),
                             status_msg))
         if print_status:
             util.log_msg(full_status_msg, mode=util.BOTH_LOG)
