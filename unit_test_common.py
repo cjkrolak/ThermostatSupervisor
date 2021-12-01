@@ -47,6 +47,7 @@ class UnitTestCommon(unittest.TestCase):
         self.Thermostat = tc.ThermostatCommon()
         self.Zone = tc.ThermostatCommonZone()
         self.Zone.update_runtime_parameters(api.user_inputs)
+        self.Zone.current_mode = self.Zone.HEAT_MODE
 
     def tearDown_mock_thermostat_zone(self):
         del api.thermostats[self.thermostat_type]

@@ -84,13 +84,16 @@ def main(thermostat_type, zone_str):
     """
     # session variables:
     debug = False  # verbose debugging information
-    revert_thermostat_deviation = True  # revert thermostat if temp deviated
-    revert_all_deviations = False  # True will flag all deviations,
-    # False will only revert energy consuming deviations
+
+    # Revert deviation or just monitor and alert deviations:
+    revert_deviations = True
+
+    # Revert all deviations or just those that waste energy
+    revert_all_deviations = False
 
     # display banner and session settings
     display_session_settings(thermostat_type, zone_str,
-                             revert_thermostat_deviation,
+                             revert_deviations,
                              revert_all_deviations)
 
     # verify env variables are present
@@ -148,8 +151,9 @@ def main(thermostat_type, zone_str):
                     Zone.revert_thermostat_mode(api.user_inputs["target_mode"])
 
             # revert thermostat to schedule if heat override is detected
-            if revert_thermostat_deviation:
-                Zone.revert_thermostat_deviation(current_mode["status_msg"])
+            if (revert_deviations and
+                Zone.is_temp_deviated_from_schedule()):
+                Zone.revert_temperature_deviation(current_mode["status_msg"])
 
             # polling delay
             time.sleep(Zone.poll_time_sec)
