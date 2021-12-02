@@ -56,8 +56,14 @@ class ThermostatCommonZone():
     DRY_MODE = "dry"
     UNKNOWN_MODE = "unknown"
 
+    # modes where heat is applied
     heat_modes = [HEAT_MODE, AUTO_MODE]
+
+    # modes where cooling is applied
     cool_modes = [COOL_MODE, DRY_MODE, AUTO_MODE]
+
+    # modes in which setpoints apply
+    controlled_modes = [HEAT_MODE, AUTO_MODE, COOL_MODE]
 
     system_switch_position = {
         # placeholder, will be tstat-specific
@@ -89,7 +95,7 @@ class ThermostatCommonZone():
         # abstraction vars and funcs, defined in query_thermostat_zone
         self.current_mode = None  # integer representing mode
         self.current_setpoint = util.bogus_int  # current setpoint
-        self.schedule_point = util.bogus_int  # current scheduled setpoint
+        self.schedule_setpoint = util.bogus_int  # current scheduled setpoint
         self.tolerance_sign = 1  # +1 for heat, -1 for cool
         self.operator = operator.ne  # operator for deviation check
         self.tolerance_degrees = self.tolerance_degrees_default
@@ -113,7 +119,7 @@ class ThermostatCommonZone():
         if self.is_heat_mode():
             self.current_mode = self.HEAT_MODE
             self.current_setpoint = int(self.get_heat_setpoint_raw())
-            self.schedule_point = int(self.get_schedule_heat_sp())
+            self.schedule_setpoint = int(self.get_schedule_heat_sp())
             self.tolerance_sign = 1
             if self.flag_all_deviations:
                 self.operator = operator.ne
@@ -127,7 +133,7 @@ class ThermostatCommonZone():
         elif self.is_cool_mode():
             self.current_mode = self.COOL_MODE
             self.current_setpoint = int(self.get_cool_setpoint_raw())
-            self.schedule_point = int(self.get_schedule_cool_sp())
+            self.schedule_setpoint = int(self.get_schedule_cool_sp())
             self.tolerance_sign = -1
             if self.flag_all_deviations:
                 self.operator = operator.ne
@@ -141,7 +147,7 @@ class ThermostatCommonZone():
         elif self.is_dry_mode():
             self.current_mode = self.DRY_MODE
             self.current_setpoint = int(self.get_cool_setpoint_raw())
-            self.schedule_point = int(self.get_schedule_cool_sp())
+            self.schedule_setpoint = int(self.get_schedule_cool_sp())
             self.tolerance_sign = -1
             if self.flag_all_deviations:
                 self.operator = operator.ne
@@ -155,7 +161,7 @@ class ThermostatCommonZone():
         elif self.is_auto_mode():
             self.current_mode = self.AUTO_MODE
             self.current_setpoint = util.bogus_int
-            self.schedule_point = util.bogus_int
+            self.schedule_setpoint = util.bogus_int
             self.tolerance_sign = 1
             self.operator = operator.ne
             self.global_limit = util.bogus_int
@@ -165,7 +171,7 @@ class ThermostatCommonZone():
         else:
             self.current_mode = self.OFF_MODE
             self.current_setpoint = util.bogus_int
-            self.schedule_point = util.bogus_int
+            self.schedule_setpoint = util.bogus_int
             self.tolerance_sign = 1
             self.operator = operator.ne
             self.global_limit = util.bogus_int
@@ -176,8 +182,10 @@ class ThermostatCommonZone():
         self.temperature_is_deviated = self.is_temp_deviated_from_schedule()
 
     def is_temp_deviated_from_schedule(self):
-        return self.operator(self.current_setpoint, self.schedule_point +
-                             self.tolerance_sign * self.tolerance_degrees)
+        """Return True if temperature is deviated from current schedule."""
+        return self.operator(self.current_setpoint, self.schedule_setpoint
+                             + self.tolerance_sign
+                             * self.tolerance_degrees)
 
     def get_current_mode(self, session_count, poll_count, print_status=True,
                          flag_all_deviations=False):
@@ -219,20 +227,23 @@ class ThermostatCommonZone():
                                           self.global_operator,
                                           self.current_mode)
 
-        if self.is_temp_deviated_from_schedule():
-            status_msg = ("[%s_MODE deviation] act temp=%.1f%sF" %
+        if self.is_temp_deviated_from_schedule() and self.is_controlled_mode():
+            status_msg = ("[%s_MODE deviation] act temp=%s" %
                           (self.current_mode.upper(),
-                           self.display_temp, degree_sign))
+                           util.temp_value_with_units(self.display_temp)))
         else:
-            status_msg = ("[following schedule] act temp=%.1f%sF" %
-                          (self.display_temp, degree_sign))
+            status_msg = ("[following schedule] act temp=%s" %
+                          util.temp_value_with_units(
+                              self.display_temp))
 
         # add humidity if available
         if self.humidity_is_available:
-            status_msg += ", act humidity=%.1f%% RH" % self.display_humidity
+            status_msg += (", act humidity=%s" %
+                           util.humidity_value_with_units(
+                               self.display_humidity))
 
         # add hold information
-        if self.is_temp_deviated_from_schedule():
+        if self.is_temp_deviated_from_schedule() and self.is_controlled_mode():
             self.hold_mode = True  # True = not following schedule
             self.hold_temporary = (self.get_temporary_hold_until_time() > 0)
             status_msg += (" (%s)" % ["persistent",
@@ -244,7 +255,7 @@ class ThermostatCommonZone():
         # add setpoints if in heat or cool mode
         if self.is_heat_mode() or self.is_cool_mode():
             status_msg += (", set point=%s, tolerance=%s, override=%s" %
-                           (self.schedule_point,
+                           (self.schedule_setpoint,
                             self.tolerance_degrees, self.current_setpoint))
 
         full_status_msg = ("%s: (session:%s, poll:%s) %s_MODE %s" %
@@ -424,6 +435,10 @@ class ThermostatCommonZone():
         """Return True if in auto mode."""
         return (self.get_system_switch_position() ==
                 self.system_switch_position[self.AUTO_MODE])
+
+    def is_controlled_mode(self):
+        """Return True if mode is being controlled."""
+        return self.current_mode in self.controlled_modes
 
     # Thermostat-specific methods will be overloaded
     def get_display_temp(self) -> float:

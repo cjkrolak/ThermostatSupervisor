@@ -298,20 +298,40 @@ def is_interactive_environment():
         return True
 
 
-def temp_value_with_units(raw, disp_unit='F') -> str:
+def temp_value_with_units(raw, disp_unit='F', precision=1) -> str:
     """
     Return string representing temperature and units.
 
     inputs:
         raw(int or float): temperature value.
         disp_unit(str): display unit character.
+        precision(int): number of digits after decimal.
     returns:
         (str): temperature and units.
     """
     if disp_unit.upper() not in ['C', 'F', 'K']:
         raise Exception("%s: '%s' is not a valid temperature unit" %
-                        get_function_name())
-    return f'{raw}°{disp_unit}'
+                        (get_function_name(), disp_unit))
+    formatted = "%.*f" % (precision, raw)
+    return f'{formatted}°{disp_unit}'
+
+
+def humidity_value_with_units(raw, disp_unit='RH', precision=1) -> str:
+    """
+    Return string representing humidity and units.
+
+    inputs:
+        raw(int or float): humidity value.
+        disp_unit(str): display unit character.
+        precision(int): number of digits after decimal.
+    returns:
+        (str): temperature and units.
+    """
+    if disp_unit.upper() not in ['RH']:
+        raise Exception("%s: '%s' is not a valid humidity unit" %
+                        (get_function_name(), disp_unit))
+    formatted = "%.*f" % (precision, raw)
+    return f'{formatted}%{disp_unit}'
 
 
 def get_key_from_value(input_dict, val):
