@@ -267,14 +267,35 @@ class Test(utc.UnitTestCommon):
 
     def test_TempValueWithUnits(self):
         """Verify function attaches units as expected."""
-        disp_unit = 'F'
 
         for test_case in [44, -1, 101, 2]:
-            expected_val = f'{test_case}°{disp_unit}'
-            actual_val = util.temp_value_with_units(test_case)
-            self.assertEqual(expected_val, actual_val,
-                             "test case: %s, expected_val=%s, actual_val=%s" %
-                             (test_case, expected_val, actual_val))
+            for precision in [0, 1, 2]:
+                for disp_unit in ['F', 'c']:
+                    formatted = "%.*f" % (precision, test_case)
+                    expected_val = f'{formatted}°{disp_unit}'
+                    actual_val = util.temp_value_with_units(test_case,
+                                                            disp_unit,
+                                                            precision)
+                    self.assertEqual(expected_val, actual_val,
+                                     "test case: %s, expected_val=%s, "
+                                     "actual_val=%s" %
+                                     (test_case, expected_val, actual_val))
+
+    def test_HumidityValueWithUnits(self):
+        """Verify function attaches units as expected."""
+
+        for test_case in [44, -1, 101, 2]:
+            for precision in [0, 1, 2]:
+                for disp_unit in ['RH']:
+                    formatted = "%.*f" % (precision, test_case)
+                    expected_val = f'{formatted}%{disp_unit}'
+                    actual_val = util.humidity_value_with_units(test_case,
+                                                                disp_unit,
+                                                                precision)
+                    self.assertEqual(expected_val, actual_val,
+                                     "test case: %s, expected_val=%s, "
+                                     "actual_val=%s" %
+                                     (test_case, expected_val, actual_val))
 
     def test_GetKeyFromValue(self):
         """Verify get_key_from_value()."""

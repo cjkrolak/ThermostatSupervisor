@@ -311,7 +311,7 @@ def temp_value_with_units(raw, disp_unit='F', precision=1) -> str:
     """
     if disp_unit.upper() not in ['C', 'F', 'K']:
         raise Exception("%s: '%s' is not a valid temperature unit" %
-                        get_function_name())
+                        (get_function_name(), disp_unit))
     formatted = "%.*f" % (precision, raw)
     return f'{formatted}°{disp_unit}'
 
@@ -329,7 +329,7 @@ def humidity_value_with_units(raw, disp_unit='RH', precision=1) -> str:
     """
     if disp_unit.upper() not in ['RH']:
         raise Exception("%s: '%s' is not a valid humidity unit" %
-                        get_function_name())
+                        (get_function_name(), disp_unit))
     formatted = "%.*f" % (precision, raw)
     return f'{formatted}%{disp_unit}'
 
