@@ -151,7 +151,7 @@ def main(thermostat_type, zone_str):
                     Zone.revert_thermostat_mode(api.user_inputs["target_mode"])
 
             # revert thermostat to schedule if heat override is detected
-            if (revert_deviations and
+            if (revert_deviations and Zone.is_controlled_mode() and
                     Zone.is_temp_deviated_from_schedule()):
                 Zone.revert_temperature_deviation(current_mode["status_msg"])
 

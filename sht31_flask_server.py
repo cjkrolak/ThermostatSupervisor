@@ -84,7 +84,8 @@ class Sensors(object):
                 # print("\nmeasurement #%s of %s" % (n, measurements))
                 # print("Temperature in celsius is: %.2f C" % cTemp)
                 # print("Temperature in Fahrenheit is: %.2f F" % fTemp)
-                # print("Relative Humidty is: %.2f %%RH" % humidity)
+                # print("Relative Humidty is: %s" %
+                #       util.humidity_with_units(humidity))
 
             # return data on API
             return {
