@@ -19,6 +19,7 @@ MMM50 = "mmm50"
 SHT31 = "sht31"
 KUMOCLOUD = "kumocloud"
 KUMOLOCAL = "kumolocal"
+DEFAULT_THERMOSTAT = HONEYWELL
 
 SUPPORTED_THERMOSTATS = {
     # "module" = module to import
@@ -193,7 +194,7 @@ def parse_all_runtime_parameters(input_list=None):
                      func_name=1)
     # parse thermostat type parameter (argv[1] if present):
     param["thermostat_type"] = parse_runtime_parameter(
-        "thermostat_type", 1, str, HONEYWELL,
+        "thermostat_type", 1, str, DEFAULT_THERMOSTAT,
         list(SUPPORTED_THERMOSTATS.keys()), input_list=input_list)
 
     # parse zone number parameter (argv[2] if present):

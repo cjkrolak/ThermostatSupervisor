@@ -325,6 +325,8 @@ class Test(utc.UnitTestCommon):
 
     def test_CtoF(self):
         """Verify C to F calculations."""
+
+        # int and float cases
         for tempc in [0, -19, 34, 101, -44.1]:
             tempf = util.c_to_f(tempc)
             expected_tempf = tempc * 9.0 / 5 + 32
@@ -332,11 +334,29 @@ class Test(utc.UnitTestCommon):
                              "expected=%s, actual=%s" %
                              (tempc, expected_tempf, tempf))
 
+        # verify pass-thru case
+        for tempc in ['0', None, "", "*"]:
+            tempf = util.c_to_f(tempc)
+            expected_tempf = tempc
+            self.assertEqual(expected_tempf, tempf, "test case %s: "
+                             "expected=%s, actual=%s" %
+                             (tempc, expected_tempf, tempf))
+
     def test_FtoC(self):
         """Verify F to C calculations."""
+
+        # int and float cases
         for tempf in [0, -19, 34, 101, -44.1]:
             tempc = util.f_to_c(tempf)
             expected_tempc = (tempf - 32) * 5 / 9.0
+            self.assertEqual(expected_tempc, tempc, "test case %s: "
+                             "expected=%s, actual=%s" %
+                             (tempf, expected_tempc, tempc))
+
+        # verify pass-thru case
+        for tempf in ['0', None, "", "*"]:
+            tempc = util.f_to_c(tempf)
+            expected_tempc = tempf  # pass-thru
             self.assertEqual(expected_tempc, tempc, "test case %s: "
                              "expected=%s, actual=%s" %
                              (tempf, expected_tempc, tempc))
