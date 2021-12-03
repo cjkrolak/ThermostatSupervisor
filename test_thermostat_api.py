@@ -197,7 +197,7 @@ class Test(utc.UnitTestCommon):
         print("argv list=%s" % sys.argv)
         if utc.is_azure_environment():
             # parsing should fail since argv list is unit test-specific
-            with self.assertRaises(TypeError, ValueError):
+            with self.assertRaises((TypeError, ValueError)):
                 print("attempting to run parse_all_runtime_parameters with "
                       " no argv input list in Azure pipeline, "
                       "should raise exception...")
