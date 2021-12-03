@@ -2,6 +2,7 @@
 Unit test module for thermostat_api.py.
 """
 # built-in imports
+import sys
 import unittest
 
 # local imports
@@ -62,17 +63,18 @@ class Test(utc.UnitTestCommon):
         Verify test parse_runtime_parameter() returns expected
         values when input known values.
         """
-        input_list = ["supervise.py", "honeywell", "0", "9", "90", "3",
-                      "HEAT_MODE"]
+        input_list = ["supervise.py", api.DEFAULT_THERMOSTAT, "0", "9",
+                      "90", "3", "HEAT_MODE"]
 
         # parse thermostat type parameter (argv[1] if present):
         tstat_type = api.parse_runtime_parameter(api.user_input_list[0],
                                                  1, str,
-                                                 api.HONEYWELL,
+                                                 api.DEFAULT_THERMOSTAT,
                                                  api.SUPPORTED_THERMOSTATS,
                                                  input_list)
-        self.assertEqual(tstat_type, api.HONEYWELL, "actual=%s, expected=%s" %
-                         (tstat_type, api.HONEYWELL))
+        self.assertEqual(tstat_type, api.DEFAULT_THERMOSTAT,
+                         "actual=%s, expected=%s" %
+                         (tstat_type, api.DEFAULT_THERMOSTAT))
 
         # parse zone number parameter (argv[2] if present):
         zone_input = \
@@ -155,9 +157,20 @@ class Test(utc.UnitTestCommon):
                   "expect exception...")
             tstat_type = api.parse_runtime_parameter(api.user_input_list[0],
                                                      "1", str,
-                                                     api.HONEYWELL,
+                                                     api.DEFAULT_THERMOSTAT,
                                                      api.SUPPORTED_THERMOSTATS,
                                                      input_list)
+
+        # test default behavior with input_list == None
+        print("argv list=%s" % sys.argv)
+        expected_result = [api.DEFAULT_THERMOSTAT]
+        argv0 = api.parse_runtime_parameter(api.user_input_list[0],
+                                            0, str,
+                                            api.DEFAULT_THERMOSTAT,
+                                            expected_result,
+                                            input_list=None)
+        self.assertTrue(argv0 in expected_result, "actual=%s, expected=%s" %
+                        (argv0, expected_result))
 
     def test_ParseAllRuntimeParameters(self):
         """
@@ -180,14 +193,37 @@ class Test(utc.UnitTestCommon):
         self.assertEqual(return_list["measurements"],
                          api.user_inputs["measurements"])
 
+        # test default case
+        print("argv list=%s" % sys.argv)
+        if utc.is_azure_environment():
+            # parsing should fail since argv list is unit test-specific
+            with self.assertRaises(TypeError):
+                print("attempting to run parse_all_runtime_parameters with "
+                      " no argv input list in Azure pipeline, "
+                      "should raise exception...")
+                return_list = api.parse_all_runtime_parameters()
+                print("parsed input parameter list=%s" % return_list)
+        else:
+            if len(sys.argv) > 1:
+                # argv list > 1
+                expected_result = [sys.argv[0]]
+            else:
+                # argv list is 1 element, thermostat_type will default
+                expected_result = [api.DEFAULT_THERMOSTAT]
+            return_list = api.parse_all_runtime_parameters()
+
+            self.assertTrue(return_list["thermostat_type"] in expected_result,
+                            "actual=%s, expected=%s" %
+                            (return_list["thermostat_type"], expected_result))
+
     def test_DynamicModuleImport(self):
         """
         Verify dynamic_module_import() runs without error
         """
 
         # test successful case
-        pkg = api.dynamic_module_import(api.HONEYWELL)
-        print("api.HONEYWELL returned package type %s" % type(pkg))
+        pkg = api.dynamic_module_import(api.DEFAULT_THERMOSTAT)
+        print("default thermostat returned package type %s" % type(pkg))
         self.assertTrue(isinstance(pkg, object),
                         "api.dynamic_module_import() returned type(%s),"
                         " expected an object" % type(pkg))
@@ -206,8 +242,8 @@ class Test(utc.UnitTestCommon):
         """
 
         # test successful case
-        fp, path, desc = api.find_module(api.HONEYWELL)
-        print("api.HONEYWELL returned path %s" % path)
+        fp, path, desc = api.find_module(api.DEFAULT_THERMOSTAT)
+        print("default thermostat returned path %s" % path)
         self.assertTrue(isinstance(path, str),
                         "api.find_module() returned type(%s),"
                         " for path, expected a string" % type(path))
@@ -231,9 +267,9 @@ class Test(utc.UnitTestCommon):
         """
 
         # test successful case
-        fp, path, desc = api.find_module(api.HONEYWELL)
-        pkg = api.load_module(api.HONEYWELL, fp, path, desc)
-        print("api.HONEYWELL returned package type %s" % type(pkg))
+        fp, path, desc = api.find_module(api.DEFAULT_THERMOSTAT)
+        pkg = api.load_module(api.DEFAULT_THERMOSTAT, fp, path, desc)
+        print("default thermostat returned package type %s" % type(pkg))
         self.assertTrue(isinstance(pkg, object),
                         "api.load_module() returned type(%s),"
                         " expected an object" % type(pkg))
@@ -242,7 +278,7 @@ class Test(utc.UnitTestCommon):
         # test failing case
         with self.assertRaises(FileNotFoundError):
             print("attempting to load 'bogus' module, expect exception...")
-            pkg = api.load_module(api.HONEYWELL, fp, "", desc)
+            pkg = api.load_module(api.DEFAULT_THERMOSTAT, fp, "", desc)
             print("'bogus' module returned package type %s" % type(pkg))
         print("test passed")
 
@@ -251,8 +287,8 @@ class Test(utc.UnitTestCommon):
         Verify load_hardware_library() runs without error
         """
         # test successful case
-        pkg = api.load_hardware_library(api.HONEYWELL)
-        print("api.HONEYWELL returned package type %s" % type(pkg))
+        pkg = api.load_hardware_library(api.DEFAULT_THERMOSTAT)
+        print("default thermostat returned package type %s" % type(pkg))
         self.assertTrue(isinstance(pkg, object),
                         "api.dynamic_module_import() returned type(%s),"
                         " expected an object" % type(pkg))
@@ -268,7 +304,7 @@ class Test(utc.UnitTestCommon):
             del pkg
         print("test passed")
 
-    def test_max_measurement_count_exceeded(self):
+    def test_MaxMeasurementCountExceeded(self):
         """
         Verify max_measurement_count_exceeded() runs as expected.
         """

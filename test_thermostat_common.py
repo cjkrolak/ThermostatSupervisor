@@ -584,6 +584,24 @@ class Test(utc.UnitTestCommon):
                                  "expected=%s" % (util.temp_value_with_units(
                                      actual_setpoint),
                                      util.temp_value_with_units(new_setpoint)))
+
+            # verify function default behavior
+            new_setpoint = self.Zone.current_setpoint = 56
+
+            # revert setpoint
+            msg = ("reverting setpoint from %s to %s" %
+                   (util.temp_value_with_units(actual_setpoint),
+                    util.temp_value_with_units(new_setpoint)))
+            self.Zone.revert_temperature_deviation(msg=msg)
+
+            # verify setpoint
+            actual_setpoint = self.Zone.current_setpoint
+            self.assertEqual(new_setpoint, actual_setpoint,
+                             "reverting setpoint failed, actual=%s, "
+                             "expected=%s" % (util.temp_value_with_units(
+                                 actual_setpoint),
+                                 util.temp_value_with_units(new_setpoint)))
+
         finally:
             self.restore_functions()
 
