@@ -101,9 +101,9 @@ command line usage:  "*python sht31.py \<thermostat type\> \<zone\> \<poll time\
 This module will render sht31 sensor output on an HTML page using Flask.<br/>
 port is currently hard-coded to 5000.<br/>
 production data is at root, unit test data is at /unit, and fault register data is at /diag<br/>
-server command line usage:  "*python sht31_flask_server.py \<debug\>*"<br/>
+# server command line usage:  "*python sht31_flask_server.py \<debug\>*"<br/>
 * argv[1] = debug (bool): True to enable Flask debug mode, False is default.<br/>
-client URL usage:<br/>
+# client URL usage:<br/>
 * production: "\<ip\>:\<port\>?measurements=\<measurements\>"
 * unit test: "\<ip\>:\<port\>/unit?measurements=\<measurements\>&seed=\<seed\>"
 * diag: "\<ip\>:\<port\>/diag"<br/>
