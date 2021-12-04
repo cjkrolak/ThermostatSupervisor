@@ -13,6 +13,7 @@ import traceback
 
 # local imports
 import email_notification
+import honeywell_config
 import thermostat_api as api
 import thermostat_common as tc
 import utilities as util
@@ -40,7 +41,7 @@ class ThermostatClass(pyhtcc.PyHTCC):
         super(ThermostatClass, self).__init__(*self.args)
 
         # configure zone info
-        self.thermostat_type = api.HONEYWELL
+        self.thermostat_type = honeywell_config.ALIAS
         self.zone_number = int(zone)
         self.device_id = self.get_target_zone_id(self.zone_number)
 
@@ -265,7 +266,7 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
         # TODO: what mode is 0 on Honeywell?
 
         # zone info
-        self.thermostat_type = api.HONEYWELL
+        self.thermostat_type = honeywell_config.ALIAS
         self.device_id = Thermostat_obj.device_id
         self.zone_number = Thermostat_obj.zone_number
 
@@ -610,25 +611,6 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
 
 if __name__ == "__main__":
 
-    util.log_msg.debug = True  # debug mode set
-
-    # get zone from user input
-    zone_input = api.parse_all_runtime_parameters()["zone"]
-
-    # verify required env vars
-    api.verify_required_env_variables(api.HONEYWELL, zone_input)
-
-    # import hardware module
-    mod = api.load_hardware_library(api.HONEYWELL)
-
-    # create Thermostat object
-    Thermostat = ThermostatClass(zone_input)
-    Thermostat.print_all_thermostat_metadata()
-
-    # create Zone object
-    Zone = ThermostatZone(Thermostat)
-
-    # update runtime overrides
-    Zone.update_runtime_parameters(api.user_inputs)
-
-    Zone.display_basic_thermostat_summary()
+    tc.thermostat_basic_checkout(api, honeywell_config.ALIAS,
+                                 ThermostatClass,
+                                 ThermostatZone)
