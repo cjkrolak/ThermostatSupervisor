@@ -10,23 +10,21 @@ import sys
 import traceback
 
 # local imports
+import honeywell_config
 import sht31_config
 import utilities as util
 
 
 # thermostat types
-HONEYWELL = "honeywell"
 MMM50 = "mmm50"
 KUMOCLOUD = "kumocloud"
 KUMOLOCAL = "kumolocal"
-DEFAULT_THERMOSTAT = HONEYWELL
+DEFAULT_THERMOSTAT = honeywell_config.ALIAS
 
 SUPPORTED_THERMOSTATS = {
     # "module" = module to import
     # "type" = thermostat type index number
     # "zones" = zone numbers supported
-    HONEYWELL: {"module": "honeywell", "type": 1, "zones": [0],
-                "modes": ["OFF_MODE", "HEAT_MODE", "COOL_MODE"]},
     MMM50: {"module": "mmm", "type": 2, "zones": [0, 1],
             "modes": ["OFF_MODE", "HEAT_MODE", "COOL_MODE"]},
     KUMOCLOUD: {"module": "kumocloud", "type": 4, "zones": [0, 1],
@@ -37,19 +35,16 @@ SUPPORTED_THERMOSTATS = {
                           "DRY_MODE", "AUTO_MODE"]},
     }
 SUPPORTED_THERMOSTATS.update(
+    {honeywell_config.ALIAS: honeywell_config.supported_configs})
+SUPPORTED_THERMOSTATS.update(
     {sht31_config.ALIAS: sht31_config.supported_configs})
 
 # target zone for monitoring
 zone_number = 0  # default
 
 thermostats = {
-    HONEYWELL: {
-        "required_env_variables": {
-            "TCC_USERNAME": None,
-            "TCC_PASSWORD": None,
-            "GMAIL_USERNAME": None,
-            "GMAIL_PASSWORD": None,
-            },
+    honeywell_config.ALIAS: {
+        "required_env_variables": honeywell_config.required_env_variables,
         },
     MMM50: {
         "required_env_variables": {
