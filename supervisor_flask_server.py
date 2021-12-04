@@ -12,9 +12,13 @@ import webbrowser
 # local imports
 import supervise as sup
 import thermostat_api as api
+import utilities as util
 
 # flask server
-flask_ip_address = '127.0.0.1'
+if util.is_windows_environment():
+    flask_ip_address = '127.0.0.1'
+else:
+    flask_ip_address = util.get_local_ip()
 flask_port = 80
 flask_url = 'http://' + flask_ip_address + ':' + str(flask_port)
 
