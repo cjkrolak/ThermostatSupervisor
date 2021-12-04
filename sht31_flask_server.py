@@ -90,7 +90,8 @@ class Sensors(object):
             fTemp(float): temp in deg F
             humidity(float): humidity in %RH
         """
-        print("DEBUG: data struct is type %s" % type(data))
+        print("DEBUG: data struct is type %s" % type(data),
+              file=sys.stderr)
         # convert the data
         temp = data[0] * 256 + data[1]
         cTemp = -45 + (175 * temp / 65535.0)
@@ -146,9 +147,9 @@ class Sensors(object):
         try:
             bus.write_i2c_block_data(i2c_address, register, data)
         except OSError as e:
-            print("FATAL ERROR(%s): i2c device at address %s is "
+            print("FATAL ERROR(%s): i2c device at address 0x%s is "
                   "not responding" %
-                  (util.get_function_name(), i2c_address))
+                  (util.get_function_name(), hex(i2c_address)))
             raise e
         time.sleep(0.5)
 
@@ -167,17 +168,19 @@ class Sensors(object):
         # humidity LSB, humidity CRC
         # read_i2c_block_data(i2c_addr, register, length,
         #                     force=None)
-        print("DEBUG: bus data type=%s" % type(bus))
+        print("DEBUG: bus data type=%s" % type(bus),
+              file=sys.stderr)
         try:
             response = bus.read_i2c_block_data(i2c_address,
                                                register,
                                                length)
         except OSError as e:
-            print("FATAL ERROR(%s): i2c device at address %s is "
+            print("FATAL ERROR(%s): i2c device at address 0x%s is "
                   "not responding" %
-                  (util.get_function_name(), i2c_address))
+                  (util.get_function_name(), hex(i2c_address)))
             raise e
-        print("DEBUG: response data type=%s" % type(response))
+        print("DEBUG: response data type=%s" % type(response),
+              file=sys.stderr)
         return response
 
     def get_unit_test(self):
