@@ -11,6 +11,7 @@ import unittest
 # thermostat_api is imported but not used to avoid a circular import
 import thermostat_api as api  # pylint: disable=unused-import.
 import sht31
+import sht31_config
 import unit_test_common as utc
 import utilities as util
 
@@ -35,8 +36,24 @@ class Test(utc.UnitTestCommon):
         if utc.is_azure_environment():
             print("this test not supported on Azure Pipelines, exiting")
             return
+
+        measurements_bckup = sht31_config.measurements
+        try:
+            for sht31_config.measurements in [1, 10, 100, 1000]:
+                print("\ntesting SHT31 flask server with %s %s..." %
+                      (sht31_config.measurements,
+                       ["measurement", "measurements"][
+                           sht31_config.measurements > 1]))
+                self.validate_flask_server()
+        finally:
+            sht31_config.measurements = measurements_bckup
+
+    def validate_flask_server(self):
+        """
+        Launch SHT31 Flask server and validate data.
+        """
         print("creating thermostat object...")
-        Thermostat = sht31.ThermostatClass(util.UNIT_TEST_ZONE)
+        Thermostat = sht31.ThermostatClass(sht31_config.UNIT_TEST_ZONE)
         print("printing thermostat meta data:")
         Thermostat.print_all_thermostat_metadata()
 
@@ -52,8 +69,16 @@ class Test(utc.UnitTestCommon):
         print("cool mode=%s" % Zone.get_cool_mode())
         print("temporary hold minutes=%s" %
               Zone.get_temporary_hold_until_time())
-        print("thermostat meta data=%s" % Thermostat.get_all_metadata())
+        meta_data = Thermostat.get_all_metadata()
+        print("thermostat meta data=%s" % meta_data)
         print("thermostat display tempF=%s" % Zone.get_display_temp())
+
+        # verify measurements
+        self.assertEqual(meta_data["measurements"],
+                         sht31_config.measurements,
+                         "measurements: actual=%s, expected=%s" %
+                         (meta_data["measurements"],
+                          sht31_config.measurements))
 
         # verify metadata
         test_cases = {
@@ -69,6 +94,9 @@ class Test(utc.UnitTestCommon):
             self.assertTrue(min_val <= return_val <= max_val,
                             "'%s'=%s, not between %s and %s" %
                             (param, return_val, min_val, max_val))
+        # cleanup
+        del Zone
+        del Thermostat
 
 
 if __name__ == "__main__":

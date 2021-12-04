@@ -8,9 +8,8 @@ import platform
 import psutil
 import socket
 
-# zone number for unit testing
-UNIT_TEST_ZONE = 99
-UNIT_TEST_ENV_KEY = "SHT31_REMOTE_IP_ADDRESS_" + str(UNIT_TEST_ZONE)
+# local imports
+import sht31_config
 
 # error codes
 NO_ERROR = 0
@@ -36,22 +35,16 @@ DEBUG_LOG = 0x100  # print only if debug mode is on
 file_path = ".//data"
 max_log_size_bytes = 2**20  # logs rotate at this max size
 
-# API field names
-API_TEMP_FIELD = 'Temp(F) mean'
-API_HUMIDITY_FIELD = 'Humidity(%RH) mean'
-
 # all environment variables required by code should be registered here
 env_variables = {
     "TCC_USERNAME": None,
     "TCC_PASSWORD": None,
     "GMAIL_USERNAME": None,
     "GMAIL_PASSWORD": None,
-    "SHT31_REMOTE_IP_ADDRESS_0": None,
-    "SHT31_REMOTE_IP_ADDRESS_1": None,
-    UNIT_TEST_ENV_KEY: None,
     "KUMO_USERNAME": None,
     "KUMO_PASSWORD": None,
     }
+env_variables.update(sht31_config.env_variables)
 
 
 def get_local_ip():
@@ -93,7 +86,7 @@ def get_env_variable(env_key):
 
     try:
         # unit test key is not required to be in env var list
-        if env_key == UNIT_TEST_ENV_KEY:
+        if env_key == sht31_config.UNIT_TEST_ENV_KEY:
             return_buffer["value"] = unit_test_ip_address
         else:
             return_buffer["value"] = os.environ[env_key]
