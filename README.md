@@ -100,10 +100,15 @@ command line usage:  "*python sht31.py \<thermostat type\> \<zone\> \<poll time\
 ## sht31_flask_server.py:
 This module will render sht31 sensor output on an HTML page using Flask.<br/>
 port is currently hard-coded to 5000.<br/>
-command line usage:  "*python sht31_flask_server.py \<mode\> \<measurements\> \<debug\>*"<br/>
-* argv[1] = mode (str): "unittest" will run unit test mode with fabricated output, anything else will run production mode (default).
-* argv[2] = measurements (int): number of measurements to average, default is 1.
-* argv[3] = debug (bool): True to enable Flask debug mode, False is default.
+production data is at root, unit test data is at /unit, and fault register data is at /diag<br/>
+server command line usage:  "*python sht31_flask_server.py \<debug\>*"<br/>
+* argv[1] = debug (bool): True to enable Flask debug mode, False is default.
+client URL usage:
+* production: "\<ip\>:\<port\>?measurements=\<measurements\>"
+* unit test: "\<ip\>:\<port\>/unit?measurements=\<measurements\>&seed=\<seed\>"
+* diag: "\<ip\>:\<port\>/diag"
+measurements=number of measurements to average (default=10)<br/>
+seed=seed value for fabricated data in unit test mode (default=0x7F)<br/>
 
 ## kumocloud.py:
 1. Script will connect to Mitsubishi ductless thermostat through kumocloud account only.
