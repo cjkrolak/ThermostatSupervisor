@@ -5,21 +5,10 @@ import pykumo
 import time
 
 # local imports
+import kumocloud_config
 import thermostat_api as api
 import thermostat_common as tc
 import utilities as util
-
-# Kumocloud zone configuration (on local net)
-MAIN_KUMO = 0  # zone 0
-BASEMENT_KUMO = 1  # zone 1
-kc_metadata = {
-    MAIN_KUMO: {"ip_address": "192.168.86.229",  # local IP, for ref only.
-                "zone_name": "Main Level",  # customize for your site.
-                },
-    BASEMENT_KUMO: {"ip_address": "192.168.86.236",  # local IP, for ref only.
-                    "zone_name": "Basement",  # customize for your site.
-                    },
-}
 
 
 class ThermostatClass(pykumo.KumoCloudAccount):
@@ -45,7 +34,7 @@ class ThermostatClass(pykumo.KumoCloudAccount):
         # construct the superclass
         self._need_fetch = True  # force data fetch
         super(ThermostatClass, self).__init__(*self.args)
-        self.thermostat_type = api.KUMOCLOUD
+        self.thermostat_type = kumocloud_config.ALIAS
 
         # configure zone info
         self.zone_number = int(zone)
@@ -143,7 +132,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         self.system_switch_position[tc.ThermostatCommonZone.AUTO_MODE] = "Dry"
 
         # zone info
-        self.thermostat_type = api.KUMOCLOUD
+        self.thermostat_type = kumocloud_config.ALIAS
         self.device_id = Thermostat_obj.device_id
         self.Thermostat = Thermostat_obj
         self.zone_number = Thermostat_obj.zone_number
@@ -484,6 +473,6 @@ class ThermostatZone(tc.ThermostatCommonZone):
 
 if __name__ == "__main__":
 
-    tc.thermostat_basic_checkout(api, api.KUMOCLOUD,
+    tc.thermostat_basic_checkout(api, kumocloud_config.ALIAS,
                                  ThermostatClass,
                                  ThermostatZone)

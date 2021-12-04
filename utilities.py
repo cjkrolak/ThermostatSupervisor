@@ -10,6 +10,7 @@ import socket
 
 # local imports
 import honeywell_config
+import kumocloud_config
 import sht31_config
 
 # error codes
@@ -40,10 +41,9 @@ max_log_size_bytes = 2**20  # logs rotate at this max size
 env_variables = {
     "GMAIL_USERNAME": None,
     "GMAIL_PASSWORD": None,
-    "KUMO_USERNAME": None,
-    "KUMO_PASSWORD": None,
     }
 env_variables.update(honeywell_config.env_variables)
+env_variables.update(kumocloud_config.env_variables)
 env_variables.update(sht31_config.env_variables)
 
 
