@@ -2,7 +2,7 @@
 flask API for raspberry pi
 example from http://www.pibits.net/code/raspberry-pi-sht31-sensor-example.php
 """
-from flask import Flask
+from flask import Flask, request
 from flask_restful import Resource, Api  # noqa F405
 from flask_wtf.csrf import CSRFProtect
 
@@ -120,6 +120,11 @@ class Sensors(object):
 
     def get_unit_test(self):
         """Get fabricated data for unit testing."""
+
+        # get runtime parameters
+        measurements = request.args.get('measurements', 1)
+        seed = request.args.get('seed', 0x7F)
+
         # data structure
         fTemp_lst = []
         cTemp_lst = []
@@ -129,7 +134,7 @@ class Sensors(object):
         for m in range(measurements):
 
             # fabricated data for unit testing
-            data = [0x7F + m % 2] * 5  # almost mid range
+            data = [seed + m % 2] * 5  # almost mid range
 
             # convert the data
             _, cTemp, fTemp, humidity = self.convert_data(data)
