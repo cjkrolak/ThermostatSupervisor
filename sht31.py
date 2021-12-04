@@ -51,15 +51,15 @@ class ThermostatClass(tc.ThermostatCommon):
         # URL and port configuration
         self.port = "5000"  # Flask server port on SHT31 host
         if self.zone_number == util.UNIT_TEST_ZONE:
-            self.dir = "/diag"
-            # self.dir = util.FLASK_UNIT_TEST_FOLDER  # unit test directory
+            # self.dir = "/diag"
+            self.path = util.FLASK_UNIT_TEST_FOLDER  # unit test directory
         else:
-            self.dir = ""
-        self.url = "http://" + self.ip_address + ":" + self.port + self.dir
+            self.path = ""
+        self.url = "http://" + self.ip_address + ":" + self.port + self.path
         self.device_id = self.url
         self.retry_delay = 60  # delay before retrying a bad reading
 
-        # if in unit test mode, spawn flask server with emulated data
+        # if in unit test mode, spawn flask server with emulated data on client
         if self.zone_number == util.UNIT_TEST_ZONE:
             self.spawn_flask_server()
 
@@ -110,8 +110,6 @@ class ThermostatClass(tc.ThermostatCommon):
         import sht31_flask_server as sht31_fs  # noqa E402
 
         sht31_fs.debug = False
-        sht31_fs.measurements = 10
-        sht31_fs.unit_test_mode = True
         self.flask_server = threading.Thread(target=sht31_fs.app.run,
                                              args=('0.0.0.0', 5000,
                                                    False))

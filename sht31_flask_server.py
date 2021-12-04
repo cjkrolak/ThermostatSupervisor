@@ -85,11 +85,12 @@ class Sensors(object):
         inputs:
             data: data structure
         returns:
-            temp(float): raw temp
+            temp(int): raw temp data in bits.
             cTemp(float): temp on deg C
             fTemp(float): temp in deg F
             humidity(float): humidity in %RH
         """
+        print("DEBUG: data struct is type %s" % type(data))
         # convert the data
         temp = data[0] * 256 + data[1]
         cTemp = -45 + (175 * temp / 65535.0)
@@ -108,8 +109,7 @@ class Sensors(object):
         returns:
             (dict): data structure.
         """
-        return {
-                'measurements': len(fTemp_lst),  # number of measurements
+        return {'measurements': len(fTemp_lst),  # number of measurements
                 'Temp(C) mean':  statistics.mean(cTemp_lst),
                 'Temp(C) std': statistics.pstdev(cTemp_lst),
                 util.API_TEMP_FIELD: statistics.mean(fTemp_lst),
@@ -118,8 +118,74 @@ class Sensors(object):
                 'Humidity(%RH) std': statistics.pstdev(humidity_lst),
                 }
 
+    def set_sht31_address(self):
+        """Set the address for the sht31."""
+        # set address pin on SHT31
+        GPIO.setmode(GPIO.BCM)  # broadcom pin numbering
+        GPIO.setup(addr_pin, GPIO.OUT)  # address pin set as output
+        GPIO.setup(alert_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+        if i2c_address == 0x45:
+            GPIO.output(addr_pin, GPIO.HIGH)
+        else:
+            GPIO.output(addr_pin, GPIO.LOW)
+
+    def send_i2c_cmd(self, bus, i2c_command):
+        """
+        Send the i2c command to the sht31.
+
+        inputs:
+            bus(obj?): i2c bus object
+            i2c_command(tuple): (register, [data])
+        returns:
+            None
+        """
+        # write_i2c_block_data(i2c_addr, register, data,
+        #                      force=None)
+        register = i2c_command[0]
+        data = i2c_command[1]
+        try:
+            bus.write_i2c_block_data(i2c_address, register, data)
+        except OSError as e:
+            print("FATAL ERROR(%s): i2c device at address %s is "
+                  "not responding" %
+                  (util.get_function_name(), i2c_address))
+            raise e
+        time.sleep(0.5)
+
+    def read_i2c_data(self, bus, register=0x00, length=0x06):
+        """
+        Read i2c data.
+
+        inputs:
+            bus(obj?): i2c bus object
+            register(int): register to read from.
+            length(int):  number of blocks to read.
+        returns:
+            response(int):  raw data structure
+        """
+        # Temp MSB, temp LSB, temp CRC, humidity MSB,
+        # humidity LSB, humidity CRC
+        # read_i2c_block_data(i2c_addr, register, length,
+        #                     force=None)
+        print("DEBUG: bus data type=%s" % type(bus))
+        try:
+            response = bus.read_i2c_block_data(i2c_address,
+                                               register,
+                                               length)
+        except OSError as e:
+            print("FATAL ERROR(%s): i2c device at address %s is "
+                  "not responding" %
+                  (util.get_function_name(), i2c_address))
+            raise e
+        print("DEBUG: response data type=%s" % type(response))
+        return response
+
     def get_unit_test(self):
-        """Get fabricated data for unit testing."""
+        """
+        Get fabricated data for unit testing at ip:port/unit.
+
+        syntax: http://bsl-pi0.ddns.net:5000/unit?seed=0x7E&measurements=1
+        """
 
         # get runtime parameters
         measurements = request.args.get('measurements', 1, type=int)
@@ -147,54 +213,11 @@ class Sensors(object):
         # return data on API
         return self.pack_data_structure(fTemp_lst, cTemp_lst, humidity_lst)
 
-    def set_sht31_address(self):
-        """Set the address for the sht31."""
-        # set address pin on SHT31
-        GPIO.setmode(GPIO.BCM)  # broadcom pin numbering
-        GPIO.setup(addr_pin, GPIO.OUT)  # address pin set as output
-        GPIO.setup(alert_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-        if i2c_address == 0x45:
-            GPIO.output(addr_pin, GPIO.HIGH)
-        else:
-            GPIO.output(addr_pin, GPIO.LOW)
-
-    def send_i2c_cmd(self, bus, i2c_command):
-        """
-        Send the i2c command to the sht31.
-
-        inputs:
-            bus(obj?): i2c bus object
-            i2c_command(tuple): (register, [data])
-        returns:
-            None
-        """
-        # write_i2c_block_data(i2c_addr, register, data,
-        #                      force=None)
-        register = i2c_command[0]
-        data = i2c_command[1]
-        bus.write_i2c_block_data(i2c_address, register, data)
-        time.sleep(0.5)
-
-    def read_i2c_data(self, bus, register=0x00, length=0x06):
-        """
-        Read i2c data.
-
-        inputs:
-            bus(obj?): i2c bus object
-            register(int): register to read from.
-            length(int):  number of blocks to read.
-        returns:
-            data
-        """
-        # Temp MSB, temp LSB, temp CRC, humidity MSB,
-        # humidity LSB, humidity CRC
-        # read_i2c_block_data(i2c_addr, register, length,
-        #                     force=None)
-        return bus.read_i2c_block_data(i2c_address, register,
-                                       length)
-
     def get(self):
-        """Get sensor data."""
+        """Get sensor data at ip:port."""
+
+        # get runtime parameters
+        measurements = request.args.get('measurements', 1, type=int)
 
         # set address pin on SHT31
         self.set_sht31_address()
@@ -233,7 +256,7 @@ class Sensors(object):
             GPIO.cleanup()  # clean up GPIO
 
     def get_diag(self):
-        """Get status register data."""
+        """Get status register data from ip:port/diag."""
 
         # set address pin on SHT31
         self.set_sht31_address()
@@ -297,7 +320,7 @@ def create_app():
     api = Api(app_)
     api.add_resource(Controller, "/")
     api.add_resource(ControllerUnit, util.FLASK_UNIT_TEST_FOLDER)
-    api.add_resource(ControllerDiag, "/diag")
+    api.add_resource(ControllerDiag, util.FLASK_DIAG_FOLDER)
     return app_
 
 
@@ -315,31 +338,12 @@ app.config.update(
 
 if __name__ == "__main__":
 
-    unit_test_mode = False
     print("SHT31 sensor Flask server")
 
-    # parse runtime parameters, argv[1] is unittest mode
-    if len(sys.argv) > 1 and sys.argv[1] == "unittest":
-        unit_test_mode = True
-        print("Running in unit test mode (fabricated output)", file=sys.stderr)
-    else:
-        print("Running in production mode (real output)", file=sys.stderr)
-        # raise exception if pi libaries failed to load
-        if pi_library_exception is not None:
-            raise pi_library_exception
-
-    # argv[2] is measurement count
-    if len(sys.argv) > 2:
-        measurements = int(sys.argv[2])
-    else:
-        measurements = 1  # default
-    print("Averaging %s measurement for each reading" %
-          measurements, file=sys.stderr)
-
-    # argv[3] is flask server debug mode
+    # parse runtime parameters, argv[1] is flask server debug mode
     debug = False  # default
-    if len(sys.argv) > 3:
-        argv3_str = sys.argv[3]
+    if len(sys.argv) > 1:
+        argv3_str = sys.argv[1]
         if argv3_str.lower() in ["1", "true"]:
             debug = True
             print("Flask debug mode is enabled", file=sys.stderr)

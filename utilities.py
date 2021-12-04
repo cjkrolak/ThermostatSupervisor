@@ -12,6 +12,7 @@ import socket
 UNIT_TEST_ZONE = 99
 UNIT_TEST_ENV_KEY = "SHT31_REMOTE_IP_ADDRESS_" + str(UNIT_TEST_ZONE)
 FLASK_UNIT_TEST_FOLDER = "/unit"
+FLASK_DIAG_FOLDER = "/diag"
 
 # error codes
 NO_ERROR = 0
