@@ -48,11 +48,14 @@ class ThermostatClass(tc.ThermostatCommon):
         # URL and port configuration
         self.port = "5000"  # Flask server port on SHT31 host
         if self.zone_number == sht31_config.UNIT_TEST_ZONE:
-            # self.dir = "/diag"
-            self.path = sht31_config.FLASK_UNIT_TEST_FOLDER  # unit test dir
+            self.path = sht31_config.FLASK_UNIT_TEST_FOLDER
+            self.unit_test_seed = "?seed=" + str(sht31_config.unit_test_seed)
         else:
             self.path = ""
-        self.url = "http://" + self.ip_address + ":" + self.port + self.path
+            self.unit_test_seed = ""
+        self.measurements = "?measurements=" + str(sht31_config.measurements)
+        self.url = ("http://" + self.ip_address + ":" + self.port +
+                    self.path + self.measurements + self.unit_test_seed)
         self.device_id = self.url
         self.retry_delay = 60  # delay before retrying a bad reading
 

@@ -9,6 +9,7 @@ LOFT_SHT31_REMOTE = 1  # zone 1
 
 # unit test parameters
 UNIT_TEST_ZONE = 99
+unit_test_seed = 0x7F
 UNIT_TEST_ENV_KEY = "SHT31_REMOTE_IP_ADDRESS_" + str(UNIT_TEST_ZONE)
 FLASK_UNIT_TEST_FOLDER = "/unit"
 
@@ -46,6 +47,7 @@ supported_configs = {"module": "sht31",
 
 # SHT31D config
 i2c_address = 0x45  # i2c address b
+measurements = 10  # number of measurements to average
 
 # pi0 config
 alert_pin = 17  # yellow wire, GPIO17 (pi pin 11)

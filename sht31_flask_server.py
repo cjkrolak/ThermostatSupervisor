@@ -217,15 +217,17 @@ class Sensors(object):
         """
         Get fabricated data for unit testing at ip:port/unit.
 
-        syntax: http://bsl-pi0.ddns.net:5000/unit?seed=0x7E&measurements=1
+        syntax: http://ip:port/unit?seed=0x7E&measurements=1
         inputs:
             None
         returns:
             (dict): fabricated unit test data.
         """
         # get runtime parameters
-        measurements = request.args.get('measurements', 1, type=int)
-        seed = request.args.get('seed', 0x7F, type=int)
+        measurements = request.args.get('measurements',
+                                        sht31_config.measurements,
+                                        type=int)
+        seed = request.args.get('seed', sht31_config.unit_test_seed, type=int)
 
         # data structure
         fTemp_lst = []
