@@ -122,8 +122,8 @@ class Sensors(object):
         """Get fabricated data for unit testing."""
 
         # get runtime parameters
-        measurements = request.args.get('measurements', 1)
-        seed = request.args.get('seed', 0x7F)
+        measurements = request.args.get('measurements', 1, type=int)
+        seed = request.args.get('seed', 0x7F, type=int)
 
         # data structure
         fTemp_lst = []
