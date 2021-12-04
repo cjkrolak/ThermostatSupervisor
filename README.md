@@ -105,8 +105,8 @@ production data is at root, unit test data is at /unit, and fault register data 
 "*python sht31_flask_server.py \<debug\>*"<br/>
 argv[1] = debug (bool): True to enable Flask debug mode, False is default.<br/>
 ### client URL usage:<br/>
-production: "*\<ip\>:\<port\>?measurements=\<measurements\>*"
-unit test: "*\<ip\>:\<port\>/unit?measurements=\<measurements\>&seed=\<seed\>*"
+production: "*\<ip\>:\<port\>?measurements=\<measurements\>*"<br/>
+unit test: "*\<ip\>:\<port\>/unit?measurements=\<measurements\>&seed=\<seed\>*"<br/>
 diag: "*\<ip\>:\<port\>/diag*"<br/>
 measurements=number of measurements to average (default=10)<br/>
 seed=seed value for fabricated data in unit test mode (default=0x7F)<br/>
