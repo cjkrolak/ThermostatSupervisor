@@ -3,6 +3,7 @@ Flask server for displaying supervisor output on web page.
 """
 # built-in libraries
 from flask import Flask, Response
+from flask_wtf.csrf import CSRFProtect
 import html
 from subprocess import Popen, PIPE, STDOUT, DEVNULL
 import sys
@@ -31,6 +32,7 @@ def create_app():
 
 # create the flask app
 app = create_app()
+csrf = CSRFProtect(app)  # enable CSRF protection
 
 
 @app.route('/')

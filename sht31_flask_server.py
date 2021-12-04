@@ -1,6 +1,9 @@
 """"flask API for raspberry pi"""
 from flask import Flask
 from flask_restful import Resource, Api  # noqa F405
+from flask_wtf.csrf import CSRFProtect
+
+# raspberry pi libraries
 try:
     import RPi.GPIO as GPIO  # noqa F405 raspberry pi GPIO library
     import smbus  # noqa F405
@@ -124,7 +127,7 @@ def create_app():
 
 # create the flask app
 app = create_app()
-
+csrf = CSRFProtect(app)  # enable CSRF protection
 
 if __name__ == "__main__":
 
