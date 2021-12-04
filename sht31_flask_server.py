@@ -142,12 +142,14 @@ class Sensors(object):
         """
         # write_i2c_block_data(i2c_addr, register, data,
         #                      force=None)
+        print("DEBUG: bus data type=%s" % type(bus),
+              file=sys.stderr)
         register = i2c_command[0]
         data = i2c_command[1]
         try:
             bus.write_i2c_block_data(i2c_address, register, data)
         except OSError as e:
-            print("FATAL ERROR(%s): i2c device at address 0x%s is "
+            print("FATAL ERROR(%s): i2c device at address %s is "
                   "not responding" %
                   (util.get_function_name(), hex(i2c_address)))
             raise e
@@ -175,7 +177,7 @@ class Sensors(object):
                                                register,
                                                length)
         except OSError as e:
-            print("FATAL ERROR(%s): i2c device at address 0x%s is "
+            print("FATAL ERROR(%s): i2c device at address %s is "
                   "not responding" %
                   (util.get_function_name(), hex(i2c_address)))
             raise e
