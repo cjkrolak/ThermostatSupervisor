@@ -8,6 +8,7 @@ import random
 import unittest
 
 # local imports
+import sht31_config
 import thermostat_api as api
 import thermostat_common as tc
 import unit_test_common as utc
@@ -544,7 +545,7 @@ class Test(utc.UnitTestCommon):
                     tc.ThermostatCommonZone.DRY_MODE])
             Thermostat, Zone = \
                 tc.thermostat_basic_checkout(
-                    api, api.SHT31, tc.ThermostatCommon,
+                    api, sht31_config.ALIAS, tc.ThermostatCommon,
                     tc.ThermostatCommonZone, utc.unit_test_argv)
             print("thermotat=%s" % type(Thermostat))
             print("thermotat=%s" % type(Zone))

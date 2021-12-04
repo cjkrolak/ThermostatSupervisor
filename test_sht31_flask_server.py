@@ -11,6 +11,7 @@ import unittest
 # thermostat_api is imported but not used to avoid a circular import
 import thermostat_api as api  # pylint: disable=unused-import.
 import sht31
+import sht31_config
 import unit_test_common as utc
 import utilities as util
 
@@ -36,7 +37,7 @@ class Test(utc.UnitTestCommon):
             print("this test not supported on Azure Pipelines, exiting")
             return
         print("creating thermostat object...")
-        Thermostat = sht31.ThermostatClass(util.UNIT_TEST_ZONE)
+        Thermostat = sht31.ThermostatClass(sht31_config.UNIT_TEST_ZONE)
         print("printing thermostat meta data:")
         Thermostat.print_all_thermostat_metadata()
 

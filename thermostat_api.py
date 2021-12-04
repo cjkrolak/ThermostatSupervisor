@@ -10,13 +10,13 @@ import sys
 import traceback
 
 # local imports
+import sht31_config
 import utilities as util
 
 
 # thermostat types
 HONEYWELL = "honeywell"
 MMM50 = "mmm50"
-SHT31 = "sht31"
 KUMOCLOUD = "kumocloud"
 KUMOLOCAL = "kumolocal"
 DEFAULT_THERMOSTAT = HONEYWELL
@@ -29,8 +29,6 @@ SUPPORTED_THERMOSTATS = {
                 "modes": ["OFF_MODE", "HEAT_MODE", "COOL_MODE"]},
     MMM50: {"module": "mmm", "type": 2, "zones": [0, 1],
             "modes": ["OFF_MODE", "HEAT_MODE", "COOL_MODE"]},
-    SHT31: {"module": "sht31", "type": 3, "zones": [0, 1, util.UNIT_TEST_ZONE],
-            "modes": ["OFF_MODE"]},
     KUMOCLOUD: {"module": "kumocloud", "type": 4, "zones": [0, 1],
                 "modes": ["OFF_MODE", "HEAT_MODE", "COOL_MODE",
                           "DRY_MODE", "AUTO_MODE"]},
@@ -38,6 +36,8 @@ SUPPORTED_THERMOSTATS = {
                 "modes": ["OFF_MODE", "HEAT_MODE", "COOL_MODE",
                           "DRY_MODE", "AUTO_MODE"]},
     }
+SUPPORTED_THERMOSTATS.update(
+    {sht31_config.ALIAS: sht31_config.supported_configs})
 
 # target zone for monitoring
 zone_number = 0  # default
@@ -57,12 +57,8 @@ thermostats = {
             "GMAIL_PASSWORD": None,
             },
         },
-    SHT31: {
-        "required_env_variables": {
-            "GMAIL_USERNAME": None,
-            "GMAIL_PASSWORD": None,
-            "SHT31_REMOTE_IP_ADDRESS_": None,  # prefix only, excludes zone
-            },
+    sht31_config.ALIAS: {
+        "required_env_variables": sht31_config.required_env_variables,
         },
     KUMOCLOUD: {
         "required_env_variables": {
