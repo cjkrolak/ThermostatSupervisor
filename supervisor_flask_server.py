@@ -19,7 +19,8 @@ if util.is_windows_environment():
     flask_ip_address = '127.0.0.1'  # working through IDE
 else:
     # flask_ip_address = '127.0.0.1'  # almost works from Linux client
-    flask_ip_address = util.get_local_ip()
+    flask_ip_address = util.get_local_ip()  # almost works from Linux client
+    # on Linux both methds are returning correct page header, but no data
 flask_port = 80  # note: ports below 1024 require root access on Linux
 flask_url = 'http://' + flask_ip_address + ':' + str(flask_port)
 
