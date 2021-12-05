@@ -18,8 +18,8 @@ import utilities as util
 if util.is_windows_environment():
     flask_ip_address = '127.0.0.1'
 else:
-    flask_ip_address = util.get_local_ip()
-flask_port = 80
+    flask_ip_address = '127.0.0.1'  # util.get_local_ip()
+flask_port = 80  # note: ports below 1024 require root access on Linux
 flask_url = 'http://' + flask_ip_address + ':' + str(flask_port)
 
 argv = []  # supervisor runtime args list
