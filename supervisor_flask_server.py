@@ -17,12 +17,20 @@ import utilities as util
 
 # flask server
 if util.is_windows_environment():
-    flask_ip_address = '127.0.0.1'  # working through IDE
+    # win server from Eclipse IDE:
+    #     loopback will work to itself but not remote clients
+    #     local IP works both itself and to remote Linux client.
+    # win server from command line:
+    #
+    flask_ip_address = util.get_local_ip()
 else:
+    # Linux server from Thoney IDE: must update Thonny to run from root
+    #   page opens on both loopback Linux and remote Win client, but
+    #       no data loads.
     # flask_ip_address = '127.0.0.1'  # almost works from Linux client
     flask_ip_address = util.get_local_ip()  # almost works from Linux client
     # on Linux both methds are returning correct page header, but no data
-flask_port = 80  # note: ports below 1024 require root access on Linux
+flask_port = 5080  # note: ports below 1024 require root access on Linux
 flask_url = 'http://' + flask_ip_address + ':' + str(flask_port)
 
 argv = []  # supervisor runtime args list
