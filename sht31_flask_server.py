@@ -2,8 +2,8 @@
 flask API for raspberry pi
 example from http://www.pibits.net/code/raspberry-pi-sht31-sensor-example.php
 """
-# built-in imports
-from flask import Flask, request
+# Flask imports
+from flask import Flask, request, send_from_directory
 from flask_restful import Resource, Api  # noqa F405
 from flask_wtf.csrf import CSRFProtect
 
@@ -17,6 +17,9 @@ except ImportError as e:
     print("WARNING: RPi or smbus library import error, "
           "this is expected in unittest mode")
     pi_library_exception = e  # unsuccessful
+
+# built-in imports
+import os
 import statistics
 import sys
 import time
@@ -389,6 +392,13 @@ app.config.update(
     SESSION_COOKIE_HTTPONLY=True,
     SESSION_COOKIE_SAMESITE='Lax',
 )
+
+
+@app.route('/favicon.ico')
+def favicon():
+    return send_from_directory(os.path.join(app.root_path, 'image'),
+                               'sht31.ico',
+                               mimetype='image/vnd.microsoft.icon')
 
 
 if __name__ == "__main__":
