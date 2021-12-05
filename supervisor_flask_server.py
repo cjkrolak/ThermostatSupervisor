@@ -30,7 +30,7 @@ else:
     # flask_ip_address = '127.0.0.1'  # almost works from Linux client
     flask_ip_address = util.get_local_ip()  # almost works from Linux client
     # on Linux both methds are returning correct page header, but no data
-flask_port = 5080  # note: ports below 1024 require root access on Linux
+flask_port = 5001  # note: ports below 1024 require root access on Linux
 flask_url = 'http://' + flask_ip_address + ':' + str(flask_port)
 
 argv = []  # supervisor runtime args list
@@ -81,14 +81,15 @@ def index():
 
         # runtime variabless
         executable = "python"
+        dont_buffer = "-u"
         script = "supervise.py"
         if argv:
             # argv list override for unit testing
-            arg_list = [executable, script] + argv[1:]
+            arg_list = [executable, dont_buffer, script] + argv[1:]
         elif len(sys.argv) > 1:
-            arg_list = [executable, script] + sys.argv[1:]
+            arg_list = [executable, dont_buffer, script] + sys.argv[1:]
         else:
-            arg_list = [executable, script]
+            arg_list = [executable, dont_buffer, script]
         with Popen(arg_list, stdin=DEVNULL, stdout=PIPE, stderr=STDOUT,
                    bufsize=1, universal_newlines=True, shell=True) as p:
             i = 0
