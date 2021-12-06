@@ -11,14 +11,17 @@ supervisor to detect and correct thermostat deviations<br/>
 1. Honeywell thermostat support through TCC web site requires 3 minute poll time (or longer).  Default for this thermostat is set to 10 minutes.
 2. a few other low frequency intermittent issues exist, refer to issues in github repo for details.
 3. KumoCloud remote connection currently only supports monitoring, cannot set or revert settings.
+4. supervisor_flask_server not currently working on Linux server.
 
 # Build Information:
 ## dependencies:
 pyhtcc for Honeywell thermostats (pip3 install pyhtcc)<br/>
 radiotherm for 3m50 thermostats (mhrivnak/radiotherm or pip3 install radiotherm)<br/>
-flask and flask_resful for sht31 flask server<br/>
+flask, flask_resful, and fask_wtf for sht31 flask server<br/>
+flask and flask_wtf for supervisor flask server<br/>
 pykumo for kumocloud<br/>
 coverage for code coverage analysis<br/>
+psutil for all thermostat types<br/>
 
 ## Run the Docker Image:
 docker run --rm --env-file 'envfile' 'username'/thermostatsupervisor 'runtime parameters'<br/>
@@ -74,28 +77,23 @@ command line usage:  "*python supervise.py \<thermostat type\> \<zone\> \<poll t
 ## supervisor_flask_server.py:
 This module will render supervise.py output on an HTML page using Flask.<br/>
 Same runtime parameters as supervise.py can be specified to override defaults:<br/>
-port is currently hard-coded to 80, access at loopback.<br/><br/>
+port is currently hard-coded to 5001, access at server's local IP address<br/><br/>
 command line usage:  "*python supervisor_flask_server.py \<runtime parameters\>*"
 
 ## honeywell.py:
-1. Script will logon to TCC web site and infinitely poll server at configurable poll interval for current thermostat settings.
+1. Script will logon to TCC web site and query thermostat meta data.
 2. default poll time is currently set to 3 minutes, longer poll times experience connection errors, shorter poll times are impractical based on emperical data.
-3. If schedule deviation detected, script will revert thermostat back to scheduled settings.
-Script can be configured to customize polling interval, force re-logon after period of time, and either just alert or alert and revert to schedule.<br/>
-command line usage:  "*python honeywell.py \<thermostat type\> \<zone\> \<poll time\> \<connection time\> \<target mode\> \<measurements\>*"
+command line usage:  "*python honeywell.py \<thermostat type\> \<zone\>*"
 
 ## mmm50.py:
-1. Script will connect to 3m50 thermostat on local network, IP address stored in thermostat_api.mmm_ip
-2. polling is currently set to 10 minutes.
-3. If schedule deviation detected, script will revert thermostat back to scheduled settings.
-Script can be configured to customize polling interval, force re-logon after period of time, and either just alert or alert and revert to schedule.<br/>
-command line usage:  "*python mmm.py \<thermostat type\> \<zone\> \<poll time\> \<connection time\> \<target mode\> \<measurements\>*"
+1. Script will connect to 3m50 thermostat on local network, IP address stored in mmm_config.mmm_metadata.
+2. default poll time is currently set to 10 minutes.
+command line usage:  "*python mmm.py \<thermostat type\> \<zone\>*"
 
 ## sht31.py:
 1. Script will connect to sht31 thermometer at URL specified (can be local IP or remote URL).
-2. polling is currently set to 1 minute.
-Script can be configured to customize polling interval, force re-logon after period of time, and either just alert or alert and revert to schedule.<br/>
-command line usage:  "*python sht31.py \<thermostat type\> \<zone\> \<poll time\> \<connection time\> \<target mode\> \<measurements\>*"
+2. default poll time is currently set to 1 minute.
+command line usage:  "*python sht31.py \<thermostat type\> \<zone\>*"
 
 ## sht31_flask_server.py:
 This module will render sht31 sensor output on an HTML page using Flask.<br/>
@@ -113,19 +111,15 @@ seed=seed value for fabricated data in unit test mode (default=0x7F)<br/>
 
 ## kumocloud.py:
 1. Script will connect to Mitsubishi ductless thermostat through kumocloud account only.
-2. polling is currently set to 10 minutes.
+2. default poll time is currently set to 10 minutes.
 3. Zone number refers to the thermostat order in kumocloud, 0=first thermostat data returned, 1=second thermostat, etc.
-4. If schedule deviation detected, script will revert thermostat back to scheduled settings.
-Script can be configured to customize polling interval, force re-logon after period of time, and either just alert or alert and revert to schedule.<br/>
-command line usage:  "*python kumocloud.py \<thermostat type\> \<zone\> \<poll time\> \<connection time\> \<target mode\> \<measurements\>*"
+command line usage:  "*python kumocloud.py \<thermostat type\> \<zone\>*"
 
 ## kumolocal.py:
 1. Script will connect to Mitsubishi ductless thermostat through kumocloud account and local network.
-2. polling is currently set to 10 minutes.
+2. default poll time is currently set to 10 minutes.
 3. Zone number refers to the thermostat order in kumocloud, 0=first thermostat data returned, 1=second thermostat, etc.
-4. If schedule deviation detected, script will revert thermostat back to scheduled settings.
-Script can be configured to customize polling interval, force re-logon after period of time, and either just alert or alert and revert to schedule.<br/>
-command line usage:  "*python kumocloud.py \<thermostat type\> \<zone\> \<poll time\> \<connection time\> \<target mode\> \<measurements\>*"
+command line usage:  "*python kumolocal.py \<thermostat type\> \<zone\>*"
 
 ## Supervisor API required methods:<br/>
 **Thermostat class:**<br/>
