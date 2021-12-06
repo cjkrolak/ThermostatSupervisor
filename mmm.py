@@ -19,21 +19,12 @@ import radiotherm  # noqa F405
 import urllib  # noqa E402
 
 # local imports
+import mmm_config  # noqa E402
 import thermostat_api as api  # noqa E402
 import thermostat_common as tc  # noqa E402
 import utilities as util  # noqa E402
 
 
-# 3m50 thermostat IP addresses (on local net)
-# user should configure these zones and IP addresses for their application.
-MAIN_3M50 = 0  # zone 0
-BASEMENT_3M50 = 1  # zone 1
-mmm_metadata = {
-    MAIN_3M50: {"ip_address": "192.168.86.82",  # local IP
-                },
-    BASEMENT_3M50: {"ip_address": "192.168.86.83",  # local IP
-                    }
-}
 socket_timeout = 30  # http socket timeout override
 
 
@@ -51,11 +42,12 @@ class ThermostatClass(tc.ThermostatCommonZone):
         """
         # construct the superclass
         super(ThermostatClass, self).__init__()
-        self.thermostat_type = api.MMM50
+        self.thermostat_type = mmm_config.ALIAS
 
         # configure zone info
         self.zone_number = int(zone)
-        self.ip_address = mmm_metadata[self.zone_number]["ip_address"]
+        self.ip_address = mmm_config.mmm_metadata[
+            self.zone_number]["ip_address"]
         self.device_id = self.get_target_zone_id()
 
     def get_target_zone_id(self) -> object:
@@ -203,7 +195,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         self.system_switch_position[tc.ThermostatCommonZone.AUTO_MODE] = 3
 
         # zone info
-        self.thermostat_type = api.MMM50
+        self.thermostat_type = mmm_config.ALIAS
         self.device_id = Thermostat_obj.device_id
         self.zone_number = Thermostat_obj.zone_number
 
@@ -601,7 +593,7 @@ radiotherm.thermostat.Thermostat.__init__ = __init__
 
 if __name__ == "__main__":
 
-    _, Zone = tc.thermostat_basic_checkout(api, api.MMM50,
+    _, Zone = tc.thermostat_basic_checkout(api, mmm_config.ALIAS,
                                            ThermostatClass,
                                            ThermostatZone)
 

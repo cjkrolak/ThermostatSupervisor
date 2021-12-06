@@ -12,12 +12,12 @@ import traceback
 # local imports
 import honeywell_config
 import kumocloud_config
+import mmm_config
 import sht31_config
 import utilities as util
 
 
 # thermostat types
-MMM50 = "mmm50"
 KUMOLOCAL = "kumolocal"
 DEFAULT_THERMOSTAT = honeywell_config.ALIAS
 
@@ -25,38 +25,19 @@ SUPPORTED_THERMOSTATS = {
     # "module" = module to import
     # "type" = thermostat type index number
     # "zones" = zone numbers supported
-    MMM50: {"module": "mmm", "type": 2, "zones": [0, 1],
-            "modes": ["OFF_MODE", "HEAT_MODE", "COOL_MODE"]},
     KUMOLOCAL: {"module": "kumolocal", "type": 5, "zones": [0, 1],
                 "modes": ["OFF_MODE", "HEAT_MODE", "COOL_MODE",
                           "DRY_MODE", "AUTO_MODE"]},
     }
-SUPPORTED_THERMOSTATS.update(
-    {honeywell_config.ALIAS: honeywell_config.supported_configs})
-SUPPORTED_THERMOSTATS.update(
-    {kumocloud_config.ALIAS: kumocloud_config.supported_configs})
-SUPPORTED_THERMOSTATS.update(
-    {sht31_config.ALIAS: sht31_config.supported_configs})
+for config_module in [honeywell_config, kumocloud_config, mmm_config,
+                      sht31_config]:
+    SUPPORTED_THERMOSTATS.update(
+        {config_module.ALIAS: config_module.supported_configs})
 
 # target zone for monitoring
 zone_number = 0  # default
 
 thermostats = {
-    honeywell_config.ALIAS: {
-        "required_env_variables": honeywell_config.required_env_variables,
-        },
-    MMM50: {
-        "required_env_variables": {
-            "GMAIL_USERNAME": None,
-            "GMAIL_PASSWORD": None,
-            },
-        },
-    sht31_config.ALIAS: {
-        "required_env_variables": sht31_config.required_env_variables,
-        },
-    kumocloud_config.ALIAS: {
-        "required_env_variables": kumocloud_config.required_env_variables,
-        },
     KUMOLOCAL: {
         "required_env_variables": {
             "GMAIL_USERNAME": None,
@@ -66,6 +47,12 @@ thermostats = {
             },
         }
 }
+for config_module in [honeywell_config, kumocloud_config, mmm_config,
+                      sht31_config]:
+    thermostats.update(
+        {config_module.ALIAS: {"required_env_variables":
+                               config_module.required_env_variables}})
+
 
 # runtime overrides
 # dict values will be populated in supervise.main
