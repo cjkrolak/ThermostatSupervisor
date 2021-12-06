@@ -9,50 +9,42 @@ import imp
 import sys
 import traceback
 
-# local imports
+# thermostat config files
 import honeywell_config
 import kumocloud_config
+import kumolocal_config
 import mmm_config
 import sht31_config
+
+# local imports
 import utilities as util
 
 
 # thermostat types
-KUMOLOCAL = "kumolocal"
 DEFAULT_THERMOSTAT = honeywell_config.ALIAS
 
 SUPPORTED_THERMOSTATS = {
     # "module" = module to import
     # "type" = thermostat type index number
     # "zones" = zone numbers supported
-    KUMOLOCAL: {"module": "kumolocal", "type": 5, "zones": [0, 1],
-                "modes": ["OFF_MODE", "HEAT_MODE", "COOL_MODE",
-                          "DRY_MODE", "AUTO_MODE"]},
+    # "modes" = modes supported
     }
-for config_module in [honeywell_config, kumocloud_config, mmm_config,
-                      sht31_config]:
+for config_module in [honeywell_config, kumocloud_config, kumolocal_config,
+                      mmm_config, sht31_config]:
     SUPPORTED_THERMOSTATS.update(
         {config_module.ALIAS: config_module.supported_configs})
 
 # target zone for monitoring
 zone_number = 0  # default
 
+# dictionary of required env variables for each thermostat type
 thermostats = {
-    KUMOLOCAL: {
-        "required_env_variables": {
-            "GMAIL_USERNAME": None,
-            "GMAIL_PASSWORD": None,
-            'KUMO_USERNAME': None,
-            'KUMO_PASSWORD': None,
-            },
-        }
 }
-for config_module in [honeywell_config, kumocloud_config, mmm_config,
-                      sht31_config]:
+for config_module in [honeywell_config, kumocloud_config, kumolocal_config,
+                      mmm_config, sht31_config]:
     thermostats.update(
         {config_module.ALIAS: {"required_env_variables":
                                config_module.required_env_variables}})
-
 
 # runtime overrides
 # dict values will be populated in supervise.main

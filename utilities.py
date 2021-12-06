@@ -8,9 +8,10 @@ import platform
 import psutil
 import socket
 
-# local imports
+# thermostat config files
 import honeywell_config
 import kumocloud_config
+import kumolocal_config
 import mmm_config
 import sht31_config
 
@@ -45,6 +46,7 @@ env_variables = {
     }
 env_variables.update(honeywell_config.env_variables)
 env_variables.update(kumocloud_config.env_variables)
+env_variables.update(kumolocal_config.env_variables)
 env_variables.update(mmm_config.env_variables)
 env_variables.update(sht31_config.env_variables)
 
