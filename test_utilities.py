@@ -281,6 +281,10 @@ class Test(utc.UnitTestCommon):
                                      "actual_val=%s" %
                                      (test_case, expected_val, actual_val))
 
+        # test failing case
+        with self.assertRaises(ValueError):
+            util.temp_value_with_units(-13, "bogus", 1)
+
     def test_HumidityValueWithUnits(self):
         """Verify function attaches units as expected."""
 
@@ -296,6 +300,10 @@ class Test(utc.UnitTestCommon):
                                      "test case: %s, expected_val=%s, "
                                      "actual_val=%s" %
                                      (test_case, expected_val, actual_val))
+
+        # test failing case
+        with self.assertRaises(ValueError):
+            util.humidity_value_with_units(-13, "bogus", 1)
 
     def test_GetKeyFromValue(self):
         """Verify get_key_from_value()."""
