@@ -4,6 +4,9 @@ Common functions used in multiple unit tests.
 # global imports
 import unittest
 
+# thermostat configs
+import sht31_config
+
 # local imports
 import thermostat_api as api
 import thermostat_common as tc
@@ -23,8 +26,8 @@ unit_test_argv = ["supervise.py",  # module
 class UnitTestCommon(unittest.TestCase):
     """Extensions to unit test framework."""
 
-    thermostat_type = "UNITTEST"
-    zone = 1
+    thermostat_type = sht31_config.ALIAS  # "UNITTEST"
+    zone = sht31_config.UNIT_TEST_ZONE  # 1
     user_inputs_backup = None
     Thermostat = None
     Zone = None
@@ -42,6 +45,8 @@ class UnitTestCommon(unittest.TestCase):
             "zone": self.zone,
             "poll_time_sec": 55,
             "connection_time_sec": 155,
+            "target_mode": "OFF_MODE",
+            "measurements": 3,
             }
 
         self.Thermostat = tc.ThermostatCommon()

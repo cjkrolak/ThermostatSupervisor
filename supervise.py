@@ -71,9 +71,10 @@ def display_runtime_settings(Zone):
                  mode=util.BOTH_LOG)
 
 
-def main(thermostat_type, zone_str):
+def supervisor(thermostat_type, zone_str):
     """
-    Thermostat Supervisor Routine.
+    Monitor specified thermometer and zone for deviations up to max
+    measurements.
 
     inputs:
         thermostat_type(str): thermostat type, see thermostat_api for list
@@ -188,4 +189,4 @@ if __name__ == "__main__":
     api.user_inputs = api.parse_all_runtime_parameters(argv)
 
     # main supervise function
-    main(api.user_inputs["thermostat_type"], api.user_inputs["zone"])
+    supervisor(api.user_inputs["thermostat_type"], api.user_inputs["zone"])

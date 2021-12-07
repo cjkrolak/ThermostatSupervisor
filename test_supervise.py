@@ -4,6 +4,9 @@ Unit test module for supervise.py.
 # built-in imports
 import unittest
 
+# thermostat config files
+import sht31_config
+
 # local imports
 import supervise as sup
 import unit_test_common as utc
@@ -38,6 +41,15 @@ class Test(utc.UnitTestCommon):
     def test_DisplayRuntimeSettings(self):
         """Verify display_runtime_settings()."""
         sup.display_runtime_settings(self.Zone)
+
+    def test_Supervisor(self):
+        """Verify main supervisor loop."""
+        # user_inputs_backup = api.user_inputs
+        # try:
+        #     api.user_inputs["measurements"] = 2
+        sup.supervisor(sht31_config.ALIAS, sht31_config.UNIT_TEST_ZONE)
+        # finally:
+        #     api.user_inputs = user_inputs_backup
 
 
 if __name__ == "__main__":
