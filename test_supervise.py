@@ -44,12 +44,10 @@ class Test(utc.UnitTestCommon):
 
     def test_Supervisor(self):
         """Verify main supervisor loop."""
-        # user_inputs_backup = api.user_inputs
-        # try:
-        #     api.user_inputs["measurements"] = 2
-        sup.supervisor(sht31_config.ALIAS, sht31_config.UNIT_TEST_ZONE)
-        # finally:
-        #     api.user_inputs = user_inputs_backup
+        if utc.is_azure_environment():
+            print("WARNING: test is not compatible with Azure, aborting")
+        else:
+            sup.supervisor(sht31_config.ALIAS, sht31_config.UNIT_TEST_ZONE)
 
 
 if __name__ == "__main__":
