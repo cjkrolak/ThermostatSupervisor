@@ -12,6 +12,7 @@ import thermostat_api as api
 import thermostat_common as tc
 import utilities as util
 
+# generic argv list for unit testing
 unit_test_argv = ["supervise.py",  # module
                   "sht31",  # thermostat
                   "99",  # str(util.UNIT_TEST_ZONE),  # zone
@@ -26,8 +27,8 @@ unit_test_argv = ["supervise.py",  # module
 class UnitTestCommon(unittest.TestCase):
     """Extensions to unit test framework."""
 
-    thermostat_type = sht31_config.ALIAS  # "UNITTEST"
-    zone = sht31_config.UNIT_TEST_ZONE  # 1
+    thermostat_type = sht31_config.ALIAS  # was "UNITTEST"
+    zone = sht31_config.UNIT_TEST_ZONE  # was 1
     user_inputs_backup = None
     Thermostat = None
     Zone = None
