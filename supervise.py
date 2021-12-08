@@ -177,16 +177,33 @@ def supervisor(thermostat_type, zone_str):
         # increment connection count
         session_count += 1
 
+    # clean-up and exit
     util.log_msg("\n %s measurements completed, exiting program\n" %
                  measurement, mode=util.BOTH_LOG)
+    del Zone
+    del Thermostat
 
 
-if __name__ == "__main__":
+def exec_supervise(debug=True, argv_list=None):
+    """
+    Execute supervisor loop.
 
-    util.log_msg.debug = True  # debug mode set
+    inputs:
+        debug(bool): enable debugging mode.
+        argv_list(list): argv overrides.
+    returns:
+        (bool): True if complete.
+    """
+    util.log_msg.debug = debug  # debug mode set
 
     # parse all runtime parameters
-    api.user_inputs = api.parse_all_runtime_parameters(argv)
+    api.user_inputs = api.parse_all_runtime_parameters(argv_list)
 
     # main supervise function
     supervisor(api.user_inputs["thermostat_type"], api.user_inputs["zone"])
+
+    return True
+
+
+if __name__ == "__main__":
+    exec_supervise(debug=True, argv_list=argv)

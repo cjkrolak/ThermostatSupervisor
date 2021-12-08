@@ -38,7 +38,9 @@ class ThermostatClass(pyhtcc.PyHTCC):
         self.args = [self.tcc_uname, self.tcc_pwd]
 
         # construct the superclass, requires auth setup first
-        super(ThermostatClass, self).__init__(*self.args)
+        # super(ThermostatClass, self).__init__(*self.args)
+        # line above no longer worked when class was imported
+        super().__init__(*self.args)
 
         # configure zone info
         self.thermostat_type = honeywell_config.ALIAS
