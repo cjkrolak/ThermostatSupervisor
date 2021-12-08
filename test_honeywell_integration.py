@@ -22,26 +22,8 @@ class Test(utc.UnitTestCommon):
     def setUp(self):
         self.print_test_name()
 
-    def tearDown(self):
-        self.print_test_result()
-
-    def test_HoneywellThermostatBasicCheckout(self):
-        """
-        Verify Honeywell basic checkout function.
-        """
-        tc.thermostat_basic_checkout(api, honeywell_config.ALIAS,
-                                     honeywell.ThermostatClass,
-                                     honeywell.ThermostatZone)
-
-    def test_Z_HoneywellSupervise(self):
-        """
-        Verify supervisor loop on Honeywell Thermostat.
-
-        PYHTCC requests.session() is left open after the test is complete,
-        so this test is titled to run last in the module.
-        """
-        # argv list must be valid settings
-        unit_test_argv = [
+        # Honeywell argv list must be valid settings
+        self.unit_test_argv = [
             "supervise.py",  # module
             "honeywell",  # thermostat
             "0",  # zone
@@ -51,8 +33,28 @@ class Test(utc.UnitTestCommon):
             "",  # thermostat mode, no target
             "3",  # number of measurements
             ]
+
+    def tearDown(self):
+        self.print_test_result()
+
+    def test_HoneywellThermostatBasicCheckout(self):
+        """
+        Verify Honeywell basic checkout function.
+        """
+        tc.thermostat_basic_checkout(api, honeywell_config.ALIAS,
+                                     honeywell.ThermostatClass,
+                                     honeywell.ThermostatZone,
+                                     self.unit_test_argv)
+
+    def test_Z_HoneywellSupervise(self):
+        """
+        Verify supervisor loop on Honeywell Thermostat.
+
+        PYHTCC requests.session() is left open after the test is complete,
+        so this test is titled to run last in the module.
+        """
         return_status = sup.exec_supervise(debug=True,
-                                           argv_list=unit_test_argv)
+                                           argv_list=self.unit_test_argv)
         self.assertTrue(return_status, "return status=%s, expected True" %
                         return_status)
 
