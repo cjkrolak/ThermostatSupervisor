@@ -53,6 +53,6 @@ steps:
     TCC_PASSWORD: '$(TCC_PASSWORD)'  # used for Honeywell int test
     # SHT31_REMOTE_IP_ADDRESS_1: '$(SHT31_REMOTE_IP_ADDRESS_1)'
     # SHT31_REMOTE_IP_ADDRESS_99: '$(SHT31_REMOTE_IP_ADDRESS_99)'
-    # KUMO_USERNAME: '$(KUMO_USERNAME)'
-    # KUMO_PASSWORD: '$(KUMO_PASSWORD)'
+    KUMO_USERNAME: '$(KUMO_USERNAME)' # used for kumocloud int test
+    KUMO_PASSWORD: '$(KUMO_PASSWORD)' # used for kumocloud int test
  
