@@ -33,7 +33,6 @@ class ThermostatClass(pykumo.KumoCloudAccount):
 
         # construct the superclass
         self._need_fetch = True  # force data fetch
-        # super(ThermostatClass, self).__init__(*self.args)
         super().__init__(*self.args)
         self.thermostat_type = kumocloud_config.ALIAS
 
@@ -120,7 +119,6 @@ class ThermostatZone(tc.ThermostatCommonZone):
             Thermostat(obj): Thermostat class instance.
         """
         # construct the superclass, requires auth setup first
-        # super(ThermostatZone, self).__init__()
         super().__init__()
 
         # switch config for this thermostat

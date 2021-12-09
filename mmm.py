@@ -41,7 +41,7 @@ class ThermostatClass(tc.ThermostatCommonZone):
             zone.
         """
         # construct the superclass
-        super(ThermostatClass, self).__init__()
+        super().__init__()
         self.thermostat_type = mmm_config.ALIAS
 
         # configure zone info
@@ -186,7 +186,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
             Thermostat_obj(obj):  Thermostat class instance.
         """
         # construct the superclass
-        super(ThermostatZone, self).__init__()
+        super().__init__()
 
         # switch config for this thermostat
         self.system_switch_position[tc.ThermostatCommonZone.COOL_MODE] = 2

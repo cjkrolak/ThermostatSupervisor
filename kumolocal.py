@@ -32,7 +32,7 @@ class ThermostatClass(pykumo.KumoCloudAccount):
         self.args = [self.kc_uname, self.kc_pwd]
 
         # construct the superclass
-        super(ThermostatClass, self).__init__(*self.args)
+        super().__init__(*self.args)
         self.thermostat_type = kumolocal_config.ALIAS
 
         # configure zone info
@@ -128,7 +128,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
             Thermostat(obj): Thermostat class instance.
         """
         # construct the superclass, requires auth setup first
-        super(ThermostatZone, self).__init__()
+        super().__init__()
 
         # switch config for this thermostat
         self.system_switch_position[tc.ThermostatCommonZone.COOL_MODE] = "cool"

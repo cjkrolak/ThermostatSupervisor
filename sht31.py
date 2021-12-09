@@ -38,7 +38,7 @@ class ThermostatClass(tc.ThermostatCommon):
             zone.
         """
         # construct the superclass
-        super(ThermostatClass, self).__init__()
+        super().__init__()
 
         # zone configuration
         self.thermostat_type = sht31_config.ALIAS
@@ -180,7 +180,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
             Thermostat_obj(obj): associated Thermostat_obj
         """
         # construct the superclass
-        super(ThermostatZone, self).__init__()
+        super().__init__()
 
         # switch config for this thermostat
         # SHT31 is a monitor only, does not support heat/cool modes.
