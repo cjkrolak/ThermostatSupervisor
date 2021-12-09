@@ -55,6 +55,10 @@ class Test(utc.UnitTestCommon):
                       "thread may still be active")
         self.print_test_result()
 
+    @unittest.skipIf(utc.is_azure_environment(),
+                     "this test not supported on Azure Pipelines")
+    @unittest.skipIf(not util.is_interactive_environment(),
+                     "this test hangs when run from the command line")
     def test_Supervisor_FlaskServer(self):
         """
         Confirm Flask server returns valid data.
@@ -62,15 +66,6 @@ class Test(utc.UnitTestCommon):
         This test requires a live thermostat connection to run the
         supervise routine on.
         """
-        if utc.is_azure_environment():
-            print("WARNING, TEST ABORT: this test not supported on "
-                  "Azure Pipelines, exiting")
-            return
-        if not util.is_interactive_environment():
-            print("WARNING, TEST ABORT: this test hangs when run from "
-                  "command line, exiting")
-            return
-
         # grab supervise web page result and display
         flask_url = 'http://' + util.get_local_ip() + ':' + str(sfs.flask_port)
 

@@ -29,14 +29,12 @@ class Test(utc.UnitTestCommon):
     def tearDown(self):
         self.print_test_result()
 
+    @unittest.skipIf(utc.is_azure_environment(),
+                     "this test not supported on Azure Pipelines")
     def test_SHT31_FlaskServer(self):
         """
         Confirm Flask server returns valid data.
         """
-        if utc.is_azure_environment():
-            print("this test not supported on Azure Pipelines, exiting")
-            return
-
         measurements_bckup = sht31_config.measurements
         try:
             for sht31_config.measurements in [1, 10, 100, 1000]:
