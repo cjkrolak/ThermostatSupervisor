@@ -144,8 +144,6 @@ class Sensors(object):
         returns:
             None
         """
-        # write_i2c_block_data(i2c_addr, register, data,
-        #                      force=None)
         register = i2c_command[0]
         data = i2c_command[1]
         try:
@@ -198,6 +196,7 @@ class Sensors(object):
             d = data[0]
             resp = {
                 'raw': d,
+                'raw_binary': bin(data[0])[2:],
                 'alert pending status(0=0,1=1+)': (d >> 15) & 1,
                 # bit 15: 0=None, 1=at least 1 pending alert
                 'heater status(0=off,1=on)': (d >> 13) & 1,
@@ -334,7 +333,7 @@ class Sensors(object):
 
             # read the measurement data
             data = self.read_i2c_data(bus, sht31_config.i2c_address,
-                                      register=0x00, length=0x01)
+                                      register=0x00, length=0x06)
 
             # parse data into registers
             parsed_data = self.parse_fault_register_data(data)
