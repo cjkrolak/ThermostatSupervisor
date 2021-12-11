@@ -99,10 +99,10 @@ command line usage:  "*python sht31.py \<thermostat type\> \<zone\>*"
 This module will render sht31 sensor output on an HTML page using Flask.<br/>
 Port is currently hard-coded to 5000.<br/>
 Production data is at root, subfolders provide additional commands:<br/>
-* /unit = unit test (fabricated) data
-* /diag = fault register data
-* /clear_diag = clear the fault register
-* /enable_heater = enable the internal heater
+* /unit: unit test (fabricated) data
+* /diag: fault register data
+* /clear_diag: clear the fault register
+* /enable_heater: enable the internal heater
 * /disable_heater: disable the internal heater
 * /soft_reset: perform soft reset
 * /reset: perform hard reset<br/>
