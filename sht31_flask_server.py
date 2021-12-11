@@ -196,7 +196,7 @@ class Sensors(object):
             d = data[0] * 256 + data[1]
             resp = {
                 'raw': data,
-                'raw_binary': bin(d)[2:],
+                'raw_binary': format(d, '#16b')[2:],
                 'alert pending status(0=0,1=1+)': (d >> 15) & 1,
                 # bit 15: 0=None, 1=at least 1 pending alert
                 'heater status(0=off,1=on)': (d >> 13) & 1,
@@ -331,9 +331,9 @@ class Sensors(object):
             self.send_i2c_cmd(bus, sht31_config.i2c_address,
                               i2c_command)
 
-            # read the measurement data
+            # read the measurement data, 2 bytes data, 1 byte checksum
             data = self.read_i2c_data(bus, sht31_config.i2c_address,
-                                      register=0x00, length=0x06)
+                                      register=0x00, length=0x03)
 
             # parse data into registers
             parsed_data = self.parse_fault_register_data(data)
