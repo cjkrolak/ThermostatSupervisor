@@ -309,12 +309,12 @@ class Sensors(object):
             bus.close()
             GPIO.cleanup()  # clean up GPIO
 
-    def get_diag(self):
+    def send_cmd_get_diag(self, i2c_command):
         """
-        Get status register data from ip:port/diag.
+        Send i2c command and read status register..
 
         inputs:
-            None
+            i2c_command(int): i2c command to send
         returns:
             (dict): parsed fault register data.
         """
@@ -327,43 +327,9 @@ class Sensors(object):
         time.sleep(0.5)
 
         try:
-            # send single shot read command
+            # send single shot command
             self.send_i2c_cmd(bus, sht31_config.i2c_address,
-                              read_status_register)
-
-            # read the measurement data
-            data = self.read_i2c_data(bus, sht31_config.i2c_address,
-                                      register=0x00, length=0x01)
-
-            # parse data into registers
-            parsed_data = self.parse_fault_register_data(data)
-            return parsed_data
-        finally:
-            # close the smbus connection
-            bus.close()
-            GPIO.cleanup()  # clean up GPIO
-
-    def clear_diag(self):
-        """
-        Clear status register data from ip:port/clear_diag.
-
-        inputs:
-            None
-        returns:
-            (dict): parsed fault register data after clear.
-        """
-        # set address pin on SHT31
-        self.set_sht31_address(sht31_config.i2c_address, sht31_config.addr_pin,
-                               sht31_config.alert_pin)
-
-        # activate smbus
-        bus = smbus.SMBus(1)
-        time.sleep(0.5)
-
-        try:
-            # send single shot clear command
-            self.send_i2c_cmd(bus, sht31_config.i2c_address,
-                              clear_status_register)
+                              i2c_command)
 
             # read the measurement data
             data = self.read_i2c_data(bus, sht31_config.i2c_address,
@@ -398,24 +364,44 @@ class ControllerUnit(Resource):
         return helper.get_unit_test()
 
 
-class ControllerDiag(Resource):
+class ReadFaultRegister(Resource):
     """Diagnostic Controller."""
     def __init__(self):
         pass
 
     def get(self):
         helper = Sensors()
-        return helper.get_diag()
+        return helper.send_cmd_get_diag(read_status_register)
 
 
-class ControllerClearDiag(Resource):
+class ClearFaultRegister(Resource):
     """Clear Diagnostic Controller."""
     def __init__(self):
         pass
 
     def get(self):
         helper = Sensors()
-        return helper.clear_diag()
+        return helper.send_cmd_get_diag(clear_status_register)
+
+
+class EnableHeater(Resource):
+    """Enable heater Controller."""
+    def __init__(self):
+        pass
+
+    def get(self):
+        helper = Sensors()
+        return helper.send_cmd_get_diag(enable_heater)
+
+
+class DisableHeater(Resource):
+    """Enable heater Controller."""
+    def __init__(self):
+        pass
+
+    def get(self):
+        helper = Sensors()
+        return helper.send_cmd_get_diag(disable_heater)
 
 
 def create_app():
@@ -426,8 +412,10 @@ def create_app():
     api = Api(app_)
     api.add_resource(Controller, "/")
     api.add_resource(ControllerUnit, sht31_config.FLASK_UNIT_TEST_FOLDER)
-    api.add_resource(ControllerDiag, sht31_config.FLASK_DIAG_FOLDER)
-    api.add_resource(ControllerClearDiag, sht31_config.FLASK_CLEAR_DIAG_FOLDER)
+    api.add_resource(ReadFaultRegister, sht31_config.FLASK_DIAG_FOLDER)
+    api.add_resource(ClearFaultRegister, sht31_config.FLASK_CLEAR_DIAG_FOLDER)
+    api.add_resource(EnableHeater, sht31_config.FLASK_ENABLE_HEATER_FOLDER)
+    api.add_resource(DisableHeater, sht31_config.FLASK_DISABLE_HEATER_FOLDER)
     return app_
 
 

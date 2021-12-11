@@ -16,6 +16,8 @@ FLASK_UNIT_TEST_FOLDER = "/unit"
 # diagnostic parameters
 FLASK_DIAG_FOLDER = "/diag"
 FLASK_CLEAR_DIAG_FOLDER = "/clear_diag"
+FLASK_ENABLE_HEATER_FOLDER = "/enable_heater"
+FLASK_DISABLE_HEATER_FOLDER = "/disable_heater"
 
 # SHT31 API field names
 API_MEASUREMENT_CNT = 'measurements'
