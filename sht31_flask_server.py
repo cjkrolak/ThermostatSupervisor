@@ -193,10 +193,10 @@ class Sensors(object):
         """
         try:
             # d = bin(data[0])[2:]
-            d = data[0]
+            d = data[0] * 256 + data[1]
             resp = {
                 'raw': data,
-                'raw_binary': bin(data[0])[2:],
+                'raw_binary': bin(d)[2:],
                 'alert pending status(0=0,1=1+)': (d >> 15) & 1,
                 # bit 15: 0=None, 1=at least 1 pending alert
                 'heater status(0=off,1=on)': (d >> 13) & 1,
