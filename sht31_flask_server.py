@@ -195,7 +195,7 @@ class Sensors(object):
             # d = bin(data[0])[2:]
             d = data[0]
             resp = {
-                'raw': d,
+                'raw': data,
                 'raw_binary': bin(data[0])[2:],
                 'alert pending status(0=0,1=1+)': (d >> 15) & 1,
                 # bit 15: 0=None, 1=at least 1 pending alert
