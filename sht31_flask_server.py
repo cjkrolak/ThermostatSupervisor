@@ -213,6 +213,8 @@ class Sensors(object):
                 }
         except IndexError:
             # parsing error, just return raw data
+            print("WARNING: fault register parsing error, just returning "
+                  "raw fault register data")
             resp = {'raw': data}
         return resp
 
@@ -329,7 +331,41 @@ class Sensors(object):
 
             # read the measurement data
             data = self.read_i2c_data(bus, sht31_config.i2c_address,
-                                      register=0x00, length=0x06)
+                                      register=0x00, length=0x01)
+
+            # parse data into registers
+            parsed_data = self.parse_fault_register_data(data)
+            return parsed_data
+        finally:
+            # close the smbus connection
+            bus.close()
+            GPIO.cleanup()  # clean up GPIO
+
+    def clear_diag(self):
+        """
+        Clear status register data from ip:port/clear_diag.
+
+        inputs:
+            None
+        returns:
+            (dict): parsed fault register data after clear.
+        """
+        # set address pin on SHT31
+        self.set_sht31_address(sht31_config.i2c_address, sht31_config.addr_pin,
+                               sht31_config.alert_pin)
+
+        # activate smbus
+        bus = smbus.SMBus(1)
+        time.sleep(0.5)
+
+        try:
+            # send single shot clear command
+            self.send_i2c_cmd(bus, sht31_config.i2c_address,
+                              clear_status_register)
+
+            # read the measurement data
+            data = self.read_i2c_data(bus, sht31_config.i2c_address,
+                                      register=0x00, length=0x01)
 
             # parse data into registers
             parsed_data = self.parse_fault_register_data(data)
@@ -370,6 +406,16 @@ class ControllerDiag(Resource):
         return helper.get_diag()
 
 
+class ControllerClearDiag(Resource):
+    """Clear Diagnostic Controller."""
+    def __init__(self):
+        pass
+
+    def get(self):
+        helper = Sensors()
+        return helper.clear_diag()
+
+
 def create_app():
 
     app_ = Flask(__name__)
@@ -379,6 +425,7 @@ def create_app():
     api.add_resource(Controller, "/")
     api.add_resource(ControllerUnit, sht31_config.FLASK_UNIT_TEST_FOLDER)
     api.add_resource(ControllerDiag, sht31_config.FLASK_DIAG_FOLDER)
+    api.add_resource(ControllerDiag, sht31_config.FLASK_CLEAR_DIAG_FOLDER)
     return app_
 
 
