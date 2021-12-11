@@ -194,23 +194,24 @@ class Sensors(object):
             (dict): fault register contents.
         """
         try:
+            # d = bin(data[0])[2:]
             d = data[0]
             resp = {
                 'raw': d,
-                'alert pending status(0=0,1=1+)': d & 0x8000,
+                'alert pending status(0=0,1=1+)': (d >> 15) & 1,
                 # bit 15: 0=None, 1=at least 1 pending alert
-                'heater status(0=off,1=on)': d & 0x2000,
+                'heater status(0=off,1=on)': (d >> 13) & 1,
                 # bit 13: 0=off, 1=on
-                'RH tracking alert(0=no,1=yes)': d & 0x800,
+                'RH tracking alert(0=no,1=yes)': (d >> 11) & 1,
                 # bit 11: 0=no, 1=yes
-                'T tracking alert(0=no,1=yes)': d & 0x400,
+                'T tracking alert(0=no,1=yes)': (d >> 10) & 1,
                 # bit 10: 0=no, 1=yes
-                'System reset detected(0=no,1=yes)': d & 0x10,
+                'System reset detected(0=no,1=yes)': (d >> 4) & 1,
                 # bit 4
                 # 0=no reset since last clear cmd, 1=hard, soft, or supply fail
-                'Command status(0=correct,1=failed)': d & 0x02,
+                'Command status(0=correct,1=failed)': (d >> 1) & 1,
                 # bit 1: 0=successful, 1=invalid or field checksum
-                'Write data checksum status(0=correct,1=failed)': d & 0x01,
+                'Write data checksum status(0=correct,1=failed)': (d >> 0) & 1,
                 # bit 0: 0=correct, 1=failed
                 }
         except IndexError:
