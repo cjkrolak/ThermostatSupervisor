@@ -187,12 +187,12 @@ class Sensors(object):
         Parse the fault register data, if possible.
 
         inputs:
-            data(): list containing one 16 bit number.
+            data(): list containing at least 2 bytes.
+                    3rd byte (checksum) is not currently used.
         returns:
             (dict): fault register contents.
         """
         try:
-            # d = bin(data[0])[2:]
             d = data[0] * 256 + data[1]
             resp = {
                 'raw': data,
