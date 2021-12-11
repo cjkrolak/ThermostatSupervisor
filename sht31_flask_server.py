@@ -436,8 +436,8 @@ def create_app():
     api.add_resource(ClearFaultRegister, sht31_config.FLASK_CLEAR_DIAG_FOLDER)
     api.add_resource(EnableHeater, sht31_config.FLASK_ENABLE_HEATER_FOLDER)
     api.add_resource(DisableHeater, sht31_config.FLASK_DISABLE_HEATER_FOLDER)
-    api.add_resource(DisableHeater, sht31_config.FLASK_RESET_FOLDER)
-    api.add_resource(DisableHeater, sht31_config.FLASK_SOFT_RESET_FOLDER)
+    api.add_resource(Reset, sht31_config.FLASK_RESET_FOLDER)
+    api.add_resource(SoftReset, sht31_config.FLASK_SOFT_RESET_FOLDER)
     return app_
 
 
