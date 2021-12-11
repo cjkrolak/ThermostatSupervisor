@@ -331,6 +331,9 @@ class Sensors(object):
             self.send_i2c_cmd(bus, sht31_config.i2c_address,
                               i2c_command)
 
+            # small delay
+            time.sleep(1.0)
+
             # read the measurement data, 2 bytes data, 1 byte checksum
             data = self.read_i2c_data(bus, sht31_config.i2c_address,
                                       register=0x00, length=0x03)
