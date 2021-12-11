@@ -142,8 +142,7 @@ class Test(utc.UnitTestCommon):
         """
         Confirm get_file_size_bytes() works as expected.
         """
-        file_name = "unit_test.txt"
-        full_path = util.get_full_file_path(file_name)
+        full_path = __file__  # this file
 
         # assuming file exists, should return non-zero value
         result = util.get_file_size_bytes(full_path)
