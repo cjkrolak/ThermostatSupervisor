@@ -404,6 +404,26 @@ class DisableHeater(Resource):
         return helper.send_cmd_get_diag(disable_heater)
 
 
+class SoftReset(Resource):
+    """Enable heater Controller."""
+    def __init__(self):
+        pass
+
+    def get(self):
+        helper = Sensors()
+        return helper.send_cmd_get_diag(soft_reset)
+
+
+class Reset(Resource):
+    """Enable heater Controller."""
+    def __init__(self):
+        pass
+
+    def get(self):
+        helper = Sensors()
+        return helper.send_cmd_get_diag(reset)
+
+
 def create_app():
 
     app_ = Flask(__name__)
@@ -416,6 +436,8 @@ def create_app():
     api.add_resource(ClearFaultRegister, sht31_config.FLASK_CLEAR_DIAG_FOLDER)
     api.add_resource(EnableHeater, sht31_config.FLASK_ENABLE_HEATER_FOLDER)
     api.add_resource(DisableHeater, sht31_config.FLASK_DISABLE_HEATER_FOLDER)
+    api.add_resource(DisableHeater, sht31_config.FLASK_RESET_FOLDER)
+    api.add_resource(DisableHeater, sht31_config.FLASK_SOFT_RESET_FOLDER)
     return app_
 
 
