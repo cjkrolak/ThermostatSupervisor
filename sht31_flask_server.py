@@ -189,27 +189,29 @@ class Sensors(object):
         Parse the fault register data, if possible.
 
         inputs:
-            data():
+            data(): list containing one 16 bit number.
         returns:
             (dict): fault register contents.
         """
         try:
+            d = data[0]
             resp = {
-                'raw': data,
-                'alert pending status(0=0,1=1+)': data[15],
-                # 0=None, 1=at least 1 pending alert
-                'heater status(0=off,1=on)': data[13],
-                # 0=off, 1=on
-                'RH tracking alert(0=no,1=yes)': data[11],
-                # 0=no, 1=yes
-                'T tracking alert(0=no,1=yes)': data[10],
-                # 0=no, 1=yes
-                'System reset detected(0=no,1=yes)': data[4],
+                'raw': d,
+                'alert pending status(0=0,1=1+)': d & 0x8000,
+                # bit 15: 0=None, 1=at least 1 pending alert
+                'heater status(0=off,1=on)': d & 0x2000,
+                # bit 13: 0=off, 1=on
+                'RH tracking alert(0=no,1=yes)': d & 0x800,
+                # bit 11: 0=no, 1=yes
+                'T tracking alert(0=no,1=yes)': d & 0x400,
+                # bit 10: 0=no, 1=yes
+                'System reset detected(0=no,1=yes)': d & 0x10,
+                # bit 4
                 # 0=no reset since last clear cmd, 1=hard, soft, or supply fail
-                'Command status(0=correct,1=failed)': data[1],
-                # 0=successful, 1=invalid or field checksum
-                'Write data checksum status(0=correct,1=failed)': data[0],
-                # 0=correct, 1=failed
+                'Command status(0=correct,1=failed)': d & 0x02,
+                # bit 1: 0=successful, 1=invalid or field checksum
+                'Write data checksum status(0=correct,1=failed)': d & 0x01,
+                # bit 0: 0=correct, 1=failed
                 }
         except IndexError:
             # parsing error, just return raw data
