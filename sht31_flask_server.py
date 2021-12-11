@@ -332,7 +332,12 @@ class Sensors(object):
                               i2c_command)
 
             # small delay
-            time.sleep(1.0)
+            if i2c_command in [reset]:
+                time.sleep(5)
+            elif i2c_command in [enable_heater]:
+                time.sleep(3)
+            else:
+                time.sleep(1.0)
 
             # read the measurement data, 2 bytes data, 1 byte checksum
             data = self.read_i2c_data(bus, sht31_config.i2c_address,
