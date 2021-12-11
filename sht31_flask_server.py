@@ -144,8 +144,6 @@ class Sensors(object):
         returns:
             None
         """
-        # write_i2c_block_data(i2c_addr, register, data,
-        #                      force=None)
         register = i2c_command[0]
         data = i2c_command[1]
         try:
@@ -189,30 +187,36 @@ class Sensors(object):
         Parse the fault register data, if possible.
 
         inputs:
-            data():
+            data(): list containing at least 2 bytes.
+                    3rd byte (checksum) is not currently used.
         returns:
             (dict): fault register contents.
         """
         try:
+            d = data[0] * 256 + data[1]
             resp = {
                 'raw': data,
-                'alert pending status(0=0,1=1+)': data[15],
-                # 0=None, 1=at least 1 pending alert
-                'heater status(0=off,1=on)': data[13],
-                # 0=off, 1=on
-                'RH tracking alert(0=no,1=yes)': data[11],
-                # 0=no, 1=yes
-                'T tracking alert(0=no,1=yes)': data[10],
-                # 0=no, 1=yes
-                'System reset detected(0=no,1=yes)': data[4],
+                'raw_binary': format(d, '#018b')[2:],
+                'alert pending status(0=0,1=1+)': (d >> 15) & 1,
+                # bit 15: 0=None, 1=at least 1 pending alert
+                'heater status(0=off,1=on)': (d >> 13) & 1,
+                # bit 13: 0=off, 1=on
+                'RH tracking alert(0=no,1=yes)': (d >> 11) & 1,
+                # bit 11: 0=no, 1=yes
+                'T tracking alert(0=no,1=yes)': (d >> 10) & 1,
+                # bit 10: 0=no, 1=yes
+                'System reset detected(0=no,1=yes)': (d >> 4) & 1,
+                # bit 4
                 # 0=no reset since last clear cmd, 1=hard, soft, or supply fail
-                'Command status(0=correct,1=failed)': data[1],
-                # 0=successful, 1=invalid or field checksum
-                'Write data checksum status(0=correct,1=failed)': data[0],
-                # 0=correct, 1=failed
+                'Command status(0=correct,1=failed)': (d >> 1) & 1,
+                # bit 1: 0=successful, 1=invalid or field checksum
+                'Write data checksum status(0=correct,1=failed)': (d >> 0) & 1,
+                # bit 0: 0=correct, 1=failed
                 }
         except IndexError:
             # parsing error, just return raw data
+            print("WARNING: fault register parsing error, just returning "
+                  "raw fault register data")
             resp = {'raw': data}
         return resp
 
@@ -305,12 +309,12 @@ class Sensors(object):
             bus.close()
             GPIO.cleanup()  # clean up GPIO
 
-    def get_diag(self):
+    def send_cmd_get_diag(self, i2c_command):
         """
-        Get status register data from ip:port/diag.
+        Send i2c command and read status register..
 
         inputs:
-            None
+            i2c_command(int): i2c command to send
         returns:
             (dict): parsed fault register data.
         """
@@ -323,13 +327,16 @@ class Sensors(object):
         time.sleep(0.5)
 
         try:
-            # send single shot read command
+            # send single shot command
             self.send_i2c_cmd(bus, sht31_config.i2c_address,
-                              read_status_register)
+                              i2c_command)
 
-            # read the measurement data
+            # small delay
+            time.sleep(1.0)
+
+            # read the measurement data, 2 bytes data, 1 byte checksum
             data = self.read_i2c_data(bus, sht31_config.i2c_address,
-                                      register=0x00, length=0x06)
+                                      register=0x00, length=0x03)
 
             # parse data into registers
             parsed_data = self.parse_fault_register_data(data)
@@ -360,14 +367,64 @@ class ControllerUnit(Resource):
         return helper.get_unit_test()
 
 
-class ControllerDiag(Resource):
+class ReadFaultRegister(Resource):
     """Diagnostic Controller."""
     def __init__(self):
         pass
 
     def get(self):
         helper = Sensors()
-        return helper.get_diag()
+        return helper.send_cmd_get_diag(read_status_register)
+
+
+class ClearFaultRegister(Resource):
+    """Clear Diagnostic Controller."""
+    def __init__(self):
+        pass
+
+    def get(self):
+        helper = Sensors()
+        return helper.send_cmd_get_diag(clear_status_register)
+
+
+class EnableHeater(Resource):
+    """Enable heater Controller."""
+    def __init__(self):
+        pass
+
+    def get(self):
+        helper = Sensors()
+        return helper.send_cmd_get_diag(enable_heater)
+
+
+class DisableHeater(Resource):
+    """Enable heater Controller."""
+    def __init__(self):
+        pass
+
+    def get(self):
+        helper = Sensors()
+        return helper.send_cmd_get_diag(disable_heater)
+
+
+class SoftReset(Resource):
+    """Enable heater Controller."""
+    def __init__(self):
+        pass
+
+    def get(self):
+        helper = Sensors()
+        return helper.send_cmd_get_diag(soft_reset)
+
+
+class Reset(Resource):
+    """Enable heater Controller."""
+    def __init__(self):
+        pass
+
+    def get(self):
+        helper = Sensors()
+        return helper.send_cmd_get_diag(reset)
 
 
 def create_app():
@@ -378,7 +435,12 @@ def create_app():
     api = Api(app_)
     api.add_resource(Controller, "/")
     api.add_resource(ControllerUnit, sht31_config.FLASK_UNIT_TEST_FOLDER)
-    api.add_resource(ControllerDiag, sht31_config.FLASK_DIAG_FOLDER)
+    api.add_resource(ReadFaultRegister, sht31_config.FLASK_DIAG_FOLDER)
+    api.add_resource(ClearFaultRegister, sht31_config.FLASK_CLEAR_DIAG_FOLDER)
+    api.add_resource(EnableHeater, sht31_config.FLASK_ENABLE_HEATER_FOLDER)
+    api.add_resource(DisableHeater, sht31_config.FLASK_DISABLE_HEATER_FOLDER)
+    api.add_resource(Reset, sht31_config.FLASK_RESET_FOLDER)
+    api.add_resource(SoftReset, sht31_config.FLASK_SOFT_RESET_FOLDER)
     return app_
 
 
