@@ -425,7 +425,7 @@ def create_app():
     api.add_resource(Controller, "/")
     api.add_resource(ControllerUnit, sht31_config.FLASK_UNIT_TEST_FOLDER)
     api.add_resource(ControllerDiag, sht31_config.FLASK_DIAG_FOLDER)
-    api.add_resource(ControllerDiag, sht31_config.FLASK_CLEAR_DIAG_FOLDER)
+    api.add_resource(ControllerClearDiag, sht31_config.FLASK_CLEAR_DIAG_FOLDER)
     return app_
 
 
