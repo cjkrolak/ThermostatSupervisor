@@ -25,7 +25,9 @@ MAIN_3M50 = 0  # zone 0
 BASEMENT_3M50 = 1  # zone 1
 mmm_metadata = {
     MAIN_3M50: {"ip_address": "192.168.86.82",  # local IP
+                "zone_name": "Main Level",
                 },
     BASEMENT_3M50: {"ip_address": "192.168.86.83",  # local IP
+                    "zone_name": "Basement",
                     }
 }

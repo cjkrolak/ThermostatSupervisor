@@ -50,6 +50,12 @@ supported_configs = {"module": "sht31",
                      "zones": [0, 1, UNIT_TEST_ZONE],
                      "modes": ["OFF_MODE"]}
 
+zone_names = {
+    LOFT_SHT31: "Loft (local)",
+    LOFT_SHT31_REMOTE: "loft (remote",
+    UNIT_TEST_ZONE: "unittest",
+    }
+
 # SHT31D config
 i2c_address = 0x45  # i2c address b
 measurements = 10  # number of measurements to average

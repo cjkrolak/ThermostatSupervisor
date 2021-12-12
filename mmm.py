@@ -198,10 +198,22 @@ class ThermostatZone(tc.ThermostatCommonZone):
         self.thermostat_type = mmm_config.ALIAS
         self.device_id = Thermostat_obj.device_id
         self.zone_number = Thermostat_obj.zone_number
+        self.zone_name = self.get_zone_name(self.zone_number)
 
         # runtime parameter defaults
         self.poll_time_sec = 10 * 60  # default to 10 minutes
         self.connection_time_sec = 8 * 60 * 60  # default to 8 hours
+
+    def get_zone_name(self, zone_number):
+        """
+        Return the name associated with the zone number.
+
+        inputs:
+            zone_number(int): Zone number
+        returns:
+            (str) zone name
+        """
+        return mmm_config.mmm_metadata[zone_number]["zone_name"]
 
     def get_display_temp(self) -> float:
         """
@@ -598,7 +610,7 @@ if __name__ == "__main__":
                                            ThermostatZone)
 
     # measure thermostat response time
-    measurements = 100
+    measurements = 30
     print("Thermostat response times for %s measurements..." % measurements)
     meas_data = Zone.measure_thermostat_response_time(measurements)
     ppp = pprint.PrettyPrinter(indent=4)

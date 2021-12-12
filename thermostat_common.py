@@ -81,6 +81,7 @@ class ThermostatCommonZone():
     def __init__(self, *_, **__):
         self.thermostat_type = "unknown"  # placeholder
         self.zone_number = util.bogus_int  # placeholder
+        self.zone_name = None  # placeholder
         self.device_id = util.bogus_int  # placeholder
         self.poll_time_sec = util.bogus_int  # placeholder
         self.connection_time_sec = util.bogus_int  # placeholder
@@ -673,6 +674,8 @@ class ThermostatCommonZone():
             None, prints data to log and/or console.
         """
         util.log_msg("current thermostat settings...",
+                     mode=mode, func_name=1)
+        util.log_msg("zone name = %s" % self.zone_name,
                      mode=mode, func_name=1)
         util.log_msg("system switch position: %s (%s)" %
                      (self.get_system_switch_position(),
