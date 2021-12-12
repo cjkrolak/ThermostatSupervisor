@@ -4,9 +4,11 @@ Tests for thermostat_common.py
 # built-in imports
 import operator
 import pprint
+import random
 import unittest
 
 # local imports
+import sht31_config
 import thermostat_api as api
 import thermostat_common as tc
 import unit_test_common as utc
@@ -14,8 +16,7 @@ import utilities as util
 
 
 class Test(utc.UnitTestCommon):
-    """Test functions in utilities.py."""
-    tstat = "UNITTEST"
+    """Test functions in thermostat_common.py."""
 
     # initialization
     switch_pos_bckup = None
@@ -27,30 +28,14 @@ class Test(utc.UnitTestCommon):
     schedule_cool_sp_bckup = None
     get_humid_support_bckup = None
     switch_position_backup = None
+    revert_setpoint_func_bckup = None
 
     def setUp(self):
         self.print_test_name()
-        api.thermostats[self.tstat] = {  # dummy unit test thermostat
-            "required_env_variables": {
-                "GMAIL_USERNAME": None,
-                "GMAIL_PASSWORD": None,
-                },
-            }
-        self.user_inputs_backup = api.user_inputs
-        api.user_inputs = {
-            "thermostat_type": self.tstat,
-            "zone": 1,
-            "poll_time_sec": 55,
-            "connection_time_sec": 155,
-            }
-
-        self.Thermostat = tc.ThermostatCommon()
-        self.Zone = tc.ThermostatCommonZone()
-        self.Zone.update_runtime_parameters(api.user_inputs)
+        self.setUp_mock_thermostat_zone()
 
     def tearDown(self):
-        del api.thermostats[self.tstat]
-        api.user_inputs = self.user_inputs_backup
+        self.tearDown_mock_thermostat_zone()
         self.print_test_result()
 
     def test_PrintAllThermostatMetaData(self):
@@ -188,6 +173,18 @@ class Test(utc.UnitTestCommon):
                 "key": self.Zone.get_vacation_hold_until_time,
                 "args": None,
                 "return_type": int},
+            "set_heat_setpoint": {
+                "key": self.Zone.set_heat_setpoint,
+                "args": [0],
+                "return_type": type(None)},
+            "set_cool_setpoint": {
+                "key": self.Zone.set_cool_setpoint,
+                "args": [0],
+                "return_type": type(None)},
+            "revert_temperature_deviation": {
+                "key": self.Zone.revert_temperature_deviation,
+                "args": [0, "this is a dummy msg from unit test"],
+                "return_type": type(None)},
             }
         for k, v in func_dict.items():
             print("key=%s" % k)
@@ -245,14 +242,25 @@ class Test(utc.UnitTestCommon):
         """
         Test the revert_thermostat_mode() function.
         """
-        for test_case in [self.Zone.HEAT_MODE, self.Zone.COOL_MODE,
-                          self.Zone.DRY_MODE, self.Zone.AUTO_MODE,
-                          self.Zone.OFF_MODE]:
-            print("reverting to '%s' mode" % test_case)
+        test_cases = [self.Zone.HEAT_MODE, self.Zone.COOL_MODE,
+                      self.Zone.DRY_MODE, self.Zone.AUTO_MODE,
+                      self.Zone.OFF_MODE]
+        for test_case in random.choices(test_cases, k=20):
+            if ((self.Zone.current_mode in self.Zone.heat_modes and
+                 test_case in self.Zone.cool_modes)
+                or (self.Zone.current_mode in self.Zone.cool_modes and
+                    test_case in self.Zone.heat_modes)):
+                expected_mode = self.Zone.OFF_MODE
+            else:
+                expected_mode = test_case
+            print("reverting to '%s' mode, expected mode=%s" %
+                  (test_case, expected_mode))
             new_mode = self.Zone.revert_thermostat_mode(test_case)
-            self.assertEqual(new_mode, test_case,
+            self.assertEqual(new_mode, expected_mode,
                              "reverting to %s mode failed, "
-                             "new mode is '%s'" % (test_case, new_mode))
+                             "new mode is '%s', expected '%s'" %
+                             (test_case, new_mode, expected_mode))
+            self.Zone.current_mode = test_case
 
     def test_MeasureThermostatResponseTime(self):
         """
@@ -286,7 +294,7 @@ class Test(utc.UnitTestCommon):
         """
         test_cases = {
             "heat mode and following schedule": {
-                "mode": "heat_mode",
+                "mode": self.Zone.HEAT_MODE,
                 "humidity": False,
                 "heat_mode": True,
                 "cool_mode": False,
@@ -295,7 +303,7 @@ class Test(utc.UnitTestCommon):
                 "hold_mode": False,
                 },
             "heat mode and following schedule and humidity": {
-                "mode": "heat_mode",
+                "mode": self.Zone.HEAT_MODE,
                 "humidity": True,
                 "heat_mode": True,
                 "cool_mode": False,
@@ -304,7 +312,7 @@ class Test(utc.UnitTestCommon):
                 "hold_mode": False,
                 },
             "heat mode and deviation": {
-                "mode": "heat_mode",
+                "mode": self.Zone.HEAT_MODE,
                 "humidity": False,
                 "heat_mode": True,
                 "cool_mode": False,
@@ -313,7 +321,7 @@ class Test(utc.UnitTestCommon):
                 "hold_mode": True,
                 },
             "heat mode and deviation and humidity": {
-                "mode": "heat_mode",
+                "mode": self.Zone.HEAT_MODE,
                 "humidity": True,
                 "heat_mode": True,
                 "cool_mode": False,
@@ -322,7 +330,7 @@ class Test(utc.UnitTestCommon):
                 "hold_mode": True,
                 },
             "cool mode and following schedule": {
-                "mode": "cool_mode",
+                "mode": self.Zone.COOL_MODE,
                 "humidity": False,
                 "heat_mode": False,
                 "cool_mode": True,
@@ -331,7 +339,7 @@ class Test(utc.UnitTestCommon):
                 "hold_mode": False,
                 },
             "cool mode and following schedule and humidity": {
-                "mode": "cool_mode",
+                "mode": self.Zone.COOL_MODE,
                 "humidity": True,
                 "heat_mode": False,
                 "cool_mode": True,
@@ -340,7 +348,7 @@ class Test(utc.UnitTestCommon):
                 "hold_mode": False,
                 },
             "cool mode and deviation": {
-                "mode": "cool_mode",
+                "mode": self.Zone.COOL_MODE,
                 "humidity": False,
                 "heat_mode": False,
                 "cool_mode": True,
@@ -349,7 +357,7 @@ class Test(utc.UnitTestCommon):
                 "hold_mode": True,
                 },
             "cool mode and deviation and humidity": {
-                "mode": "cool_mode",
+                "mode": self.Zone.COOL_MODE,
                 "humidity": True,
                 "heat_mode": False,
                 "cool_mode": True,
@@ -359,14 +367,14 @@ class Test(utc.UnitTestCommon):
                 },
             }
 
-        # return  # test is not ready
         self.backup_functions()
         try:
             for test_case in test_cases:
                 # mock up mode, set points, and humidity setting
                 self.mock_set_mode(test_cases[test_case]["mode"])
-                self.mock_set_points(test_cases[test_case]["heat_deviation"],
-                                     test_cases[test_case]["cool_deviation"])
+                self.mock_set_point_deviation(
+                    test_cases[test_case]["heat_deviation"],
+                    test_cases[test_case]["cool_deviation"])
                 self.mock_set_humidity_support(
                     test_cases[test_case]["humidity"])
 
@@ -403,12 +411,60 @@ class Test(utc.UnitTestCommon):
         returns:
             None
         """
-        self.Zone.is_heat_mode = \
-            (lambda *_, **__: mock_mode == "heat_mode")
-        self.Zone.is_cool_mode = \
-            (lambda *_, **__: mock_mode == "cool_mode")
+        if mock_mode == self.Zone.HEAT_MODE:
+            self.Zone.is_heat_mode = \
+                (lambda *_, **__: True)
+            self.Zone.is_cool_mode = \
+                (lambda *_, **__: False)
+            self.Zone.is_dry_mode = \
+                (lambda *_, **__: False)
+            self.Zone.is_auto_mode = \
+                (lambda *_, **__: False)
+            self.Zone.current_mode = self.Zone.HEAT_MODE
+        elif mock_mode == self.Zone.COOL_MODE:
+            self.Zone.is_heat_mode = \
+                (lambda *_, **__: False)
+            self.Zone.is_cool_mode = \
+                (lambda *_, **__: True)
+            self.Zone.is_dry_mode = \
+                (lambda *_, **__: False)
+            self.Zone.is_auto_mode = \
+                (lambda *_, **__: False)
+            self.Zone.current_mode = self.Zone.COOL_MODE
+        elif mock_mode == self.Zone.DRY_MODE:
+            self.Zone.is_heat_mode = \
+                (lambda *_, **__: False)
+            self.Zone.is_cool_mode = \
+                (lambda *_, **__: False)
+            self.Zone.is_dry_mode = \
+                (lambda *_, **__: True)
+            self.Zone.is_auto_mode = \
+                (lambda *_, **__: False)
+            self.Zone.current_mode = self.Zone.DRY_MODE
+        elif mock_mode == self.Zone.AUTO_MODE:
+            self.Zone.is_heat_mode = \
+                (lambda *_, **__: False)
+            self.Zone.is_cool_mode = \
+                (lambda *_, **__: False)
+            self.Zone.is_dry_mode = \
+                (lambda *_, **__: False)
+            self.Zone.is_auto_mode = \
+                (lambda *_, **__: True)
+            self.Zone.current_mode = self.Zone.AUTO_MODE
+        elif mock_mode == self.Zone.OFF_MODE:
+            self.Zone.is_heat_mode = \
+                (lambda *_, **__: False)
+            self.Zone.is_cool_mode = \
+                (lambda *_, **__: False)
+            self.Zone.is_dry_mode = \
+                (lambda *_, **__: False)
+            self.Zone.is_auto_mode = \
+                (lambda *_, **__: False)
+            self.Zone.current_mode = self.Zone.OFF_MODE
+        else:
+            self.fail("mock mode '%s' is not supporteed" % mock_mode)
 
-    def mock_set_points(self, heat_deviation, cool_deviation):
+    def mock_set_point_deviation(self, heat_deviation, cool_deviation):
         """
         Override heat and cool set points with mock values.
 
@@ -451,6 +507,7 @@ class Test(utc.UnitTestCommon):
         self.cool_raw_bckup = self.Zone.get_cool_setpoint_raw
         self.schedule_cool_sp_bckup = self.Zone.get_schedule_cool_sp
         self.get_humid_support_bckup = self.Zone.get_is_humidity_supported
+        self.revert_setpoint_func_bckup = self.Zone.revert_setpoint_func
 
     def restore_functions(self):
         """Restore backed up functions."""
@@ -462,6 +519,7 @@ class Test(utc.UnitTestCommon):
         self.Zone.get_cool_setpoint_raw = self.cool_raw_bckup
         self.Zone.get_schedule_cool_sp = self.schedule_cool_sp_bckup
         self.Zone.get_is_humidity_supported = self.get_humid_support_bckup
+        self.Zone.revert_setpoint_func = self.revert_setpoint_func_bckup
 
     def test_DisplayBasicThermostatSummary(self):
         """Confirm print_basic_thermostat_summary() works without error."""
@@ -487,12 +545,66 @@ class Test(utc.UnitTestCommon):
                     tc.ThermostatCommonZone.DRY_MODE])
             Thermostat, Zone = \
                 tc.thermostat_basic_checkout(
-                    api, api.SHT31, tc.ThermostatCommon,
+                    api, sht31_config.ALIAS, tc.ThermostatCommon,
                     tc.ThermostatCommonZone, utc.unit_test_argv)
             print("thermotat=%s" % type(Thermostat))
             print("thermotat=%s" % type(Zone))
         finally:
             self.Zone.get_system_switch_position = self.switch_position_backup
+
+    def test_RevertTemperatureDeviation(self):
+        """Verify thermostat_basic_checkout()."""
+
+        def mock_revert_setpoint_func(setpoint):
+            self.Zone.current_setpoint = setpoint
+
+        # backup functions that may be mocked
+        self.backup_functions()
+        try:
+            # mock up the revert function for unit testing
+            self.Zone.revert_setpoint_func = mock_revert_setpoint_func
+
+            # mock the thermostat into heat mode
+            # self.mock_set_mode(self.Zone.HEAT_MODE)
+            # print("current thermostat mode=%s" % self.Zone.current_mode)
+
+            for new_setpoint in [13, 26, -4, 101]:
+                # get current setpoint
+                current_setpoint = self.Zone.current_setpoint
+
+                # revert setpoint
+                msg = ("reverting setpoint from %s to %s" %
+                       (util.temp_value_with_units(current_setpoint),
+                        util.temp_value_with_units(new_setpoint)))
+                self.Zone.revert_temperature_deviation(new_setpoint, msg)
+
+                # verify setpoint
+                actual_setpoint = self.Zone.current_setpoint
+                self.assertEqual(new_setpoint, actual_setpoint,
+                                 "reverting setpoint failed, actual=%s, "
+                                 "expected=%s" % (util.temp_value_with_units(
+                                     actual_setpoint),
+                                     util.temp_value_with_units(new_setpoint)))
+
+            # verify function default behavior
+            new_setpoint = self.Zone.current_setpoint = 56
+
+            # revert setpoint
+            msg = ("reverting setpoint from %s to %s" %
+                   (util.temp_value_with_units(actual_setpoint),
+                    util.temp_value_with_units(new_setpoint)))
+            self.Zone.revert_temperature_deviation(msg=msg)
+
+            # verify setpoint
+            actual_setpoint = self.Zone.current_setpoint
+            self.assertEqual(new_setpoint, actual_setpoint,
+                             "reverting setpoint failed, actual=%s, "
+                             "expected=%s" % (util.temp_value_with_units(
+                                 actual_setpoint),
+                                 util.temp_value_with_units(new_setpoint)))
+
+        finally:
+            self.restore_functions()
 
 
 if __name__ == "__main__":

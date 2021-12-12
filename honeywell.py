@@ -13,6 +13,7 @@ import traceback
 
 # local imports
 import email_notification
+import honeywell_config
 import thermostat_api as api
 import thermostat_common as tc
 import utilities as util
@@ -37,10 +38,10 @@ class ThermostatClass(pyhtcc.PyHTCC):
         self.args = [self.tcc_uname, self.tcc_pwd]
 
         # construct the superclass, requires auth setup first
-        super(ThermostatClass, self).__init__(*self.args)
+        super().__init__(*self.args)
 
         # configure zone info
-        self.thermostat_type = api.HONEYWELL
+        self.thermostat_type = honeywell_config.ALIAS
         self.zone_number = int(zone)
         self.device_id = self.get_target_zone_id(self.zone_number)
 
@@ -265,9 +266,10 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
         # TODO: what mode is 0 on Honeywell?
 
         # zone info
-        self.thermostat_type = api.HONEYWELL
+        self.thermostat_type = honeywell_config.ALIAS
         self.device_id = Thermostat_obj.device_id
         self.zone_number = Thermostat_obj.zone_number
+        self.zone_name = self.get_zone_name()
 
         # runtime parameter defaults
         self.poll_time_sec = 10 * 60  # default to 10 minutes
@@ -275,6 +277,18 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
         # max value was 3, higher settings will cause HTTP errors, why?
         # not showing error on Pi at 10 minutes, so changed default to 10 min.
         self.connection_time_sec = 8 * 60 * 60  # default to 8 hours
+
+    def get_zone_name(self) -> str:  # used
+        """
+        Refresh the cached zone information then return Name.
+
+        inputs:
+            None
+        returns:
+            (str): zone name
+        """
+        self.refresh_zone_info()
+        return self.zone_info['Name']
 
     def get_display_temp(self) -> float:  # used
         """
@@ -610,25 +624,6 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
 
 if __name__ == "__main__":
 
-    util.log_msg.debug = True  # debug mode set
-
-    # get zone from user input
-    zone_input = api.parse_all_runtime_parameters()["zone"]
-
-    # verify required env vars
-    api.verify_required_env_variables(api.HONEYWELL, zone_input)
-
-    # import hardware module
-    mod = api.load_hardware_library(api.HONEYWELL)
-
-    # create Thermostat object
-    Thermostat = ThermostatClass(zone_input)
-    Thermostat.print_all_thermostat_metadata()
-
-    # create Zone object
-    Zone = ThermostatZone(Thermostat)
-
-    # update runtime overrides
-    Zone.update_runtime_parameters(api.user_inputs)
-
-    Zone.display_basic_thermostat_summary()
+    tc.thermostat_basic_checkout(api, honeywell_config.ALIAS,
+                                 ThermostatClass,
+                                 ThermostatZone)

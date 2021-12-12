@@ -8,7 +8,7 @@ import time
 import statistics
 
 # local imports
-import email_notification
+import email_notification as eml
 import utilities as util
 
 
@@ -41,12 +41,29 @@ class ThermostatCommon():
 class ThermostatCommonZone():
     """Class methods common to all thermostat zones."""
 
-    OFF_MODE = "OFF_MODE"
-    HEAT_MODE = "HEAT_MODE"
-    COOL_MODE = "COOL_MODE"
-    AUTO_MODE = "AUTO_MODE"
-    DRY_MODE = "DRY_MODE"
-    UNKNOWN_MODE = "UNKNOWN_MODE"
+    # OFF_MODE = "OFF_MODE"
+    # HEAT_MODE = "HEAT_MODE"
+    # COOL_MODE = "COOL_MODE"
+    # AUTO_MODE = "AUTO_MODE"
+    # DRY_MODE = "DRY_MODE"
+    # UNKNOWN_MODE = "UNKNOWN_MODE"
+
+    # supported thermostat modes
+    OFF_MODE = "off"
+    HEAT_MODE = "heat"
+    COOL_MODE = "cool"
+    AUTO_MODE = "auto"
+    DRY_MODE = "dry"
+    UNKNOWN_MODE = "unknown"
+
+    # modes where heat is applied
+    heat_modes = [HEAT_MODE, AUTO_MODE]
+
+    # modes where cooling is applied
+    cool_modes = [COOL_MODE, DRY_MODE, AUTO_MODE]
+
+    # modes in which setpoints apply
+    controlled_modes = [HEAT_MODE, AUTO_MODE, COOL_MODE]
 
     system_switch_position = {
         # placeholder, will be tstat-specific
@@ -64,11 +81,112 @@ class ThermostatCommonZone():
     def __init__(self, *_, **__):
         self.thermostat_type = "unknown"  # placeholder
         self.zone_number = util.bogus_int  # placeholder
+        self.zone_name = None  # placeholder
         self.device_id = util.bogus_int  # placeholder
         self.poll_time_sec = util.bogus_int  # placeholder
         self.connection_time_sec = util.bogus_int  # placeholder
+        self.flag_all_deviations = False  #
+        self.temperature_is_deviated = False  # temp deviated from schedule
+        self.display_temp = None  # current temperature in deg F
+        self.display_humidity = None  # current humidity in %RH
+        self.humidity_is_available = False  # humidity supported flag
+        self.hold_mode = False  # True = not following schedule
+        self.hold_temporary = False
+
+        # abstraction vars and funcs, defined in query_thermostat_zone
+        self.current_mode = None  # integer representing mode
+        self.current_setpoint = util.bogus_int  # current setpoint
+        self.schedule_setpoint = util.bogus_int  # current scheduled setpoint
+        self.tolerance_sign = 1  # +1 for heat, -1 for cool
+        self.operator = operator.ne  # operator for deviation check
         self.tolerance_degrees = self.tolerance_degrees_default
-        self.current_mode = None  # placeholder
+        self.global_limit = util.bogus_int  # global temp limit
+        self.global_operator = operator.ne  # oper for global temp deviation
+        self.revert_setpoint_func = self.function_not_supported
+        self.get_setpoint_func = self.function_not_supported
+
+    def query_thermostat_zone(self):
+        """Return the current mode and set mode-specific parameters."""
+
+        # current temperature
+        self.display_temp = self.validate_numeric(self.get_display_temp(),
+                                                  "get_display_temp")
+
+        # current humidity
+        self.display_humidity = self.get_display_humidity()
+        self.humidity_is_available = self.get_is_humidity_supported()
+
+        # mode-specific parameters
+        if self.is_heat_mode():
+            self.current_mode = self.HEAT_MODE
+            self.current_setpoint = int(self.get_heat_setpoint_raw())
+            self.schedule_setpoint = int(self.get_schedule_heat_sp())
+            self.tolerance_sign = 1
+            if self.flag_all_deviations:
+                self.operator = operator.ne
+                self.tolerance_degrees = 0  # disable tolerance
+            else:
+                self.operator = operator.gt
+            self.global_limit = self.max_scheduled_heat_allowed
+            self.global_operator = operator.gt
+            self.revert_setpoint_func = self.set_heat_setpoint
+            self.get_setpoint_func = self.get_heat_setpoint_raw
+        elif self.is_cool_mode():
+            self.current_mode = self.COOL_MODE
+            self.current_setpoint = int(self.get_cool_setpoint_raw())
+            self.schedule_setpoint = int(self.get_schedule_cool_sp())
+            self.tolerance_sign = -1
+            if self.flag_all_deviations:
+                self.operator = operator.ne
+                self.tolerance_degrees = 0  # disable tolerance
+            else:
+                self.operator = operator.lt
+            self.global_limit = self.min_scheduled_cool_allowed
+            self.global_operator = operator.lt
+            self.revert_setpoint_func = self.set_cool_setpoint
+            self.get_setpoint_func = self.get_cool_setpoint_raw
+        elif self.is_dry_mode():
+            self.current_mode = self.DRY_MODE
+            self.current_setpoint = int(self.get_cool_setpoint_raw())
+            self.schedule_setpoint = int(self.get_schedule_cool_sp())
+            self.tolerance_sign = -1
+            if self.flag_all_deviations:
+                self.operator = operator.ne
+                self.tolerance_degrees = 0  # disable tolerance
+            else:
+                self.operator = operator.lt
+            self.global_limit = self.min_scheduled_cool_allowed
+            self.global_operator = operator.lt
+            self.revert_setpoint_func = self.function_not_supported
+            self.get_setpoint_func = self.function_not_supported
+        elif self.is_auto_mode():
+            self.current_mode = self.AUTO_MODE
+            self.current_setpoint = util.bogus_int
+            self.schedule_setpoint = util.bogus_int
+            self.tolerance_sign = 1
+            self.operator = operator.ne
+            self.global_limit = util.bogus_int
+            self.global_operator = operator.ne
+            self.revert_setpoint_func = self.function_not_supported
+            self.get_setpoint_func = self.function_not_supported
+        else:
+            self.current_mode = self.OFF_MODE
+            self.current_setpoint = util.bogus_int
+            self.schedule_setpoint = util.bogus_int
+            self.tolerance_sign = 1
+            self.operator = operator.ne
+            self.global_limit = util.bogus_int
+            self.global_operator = operator.ne
+            self.revert_setpoint_func = self.function_not_supported
+            self.get_setpoint_func = self.function_not_supported
+
+        self.temperature_is_deviated = self.is_temp_deviated_from_schedule()
+
+    def is_temp_deviated_from_schedule(self):
+        """Return True if temperature is deviated from current schedule."""
+        return self.operator(self.current_setpoint, self.schedule_setpoint
+                             + self.tolerance_sign
+                             * self.tolerance_degrees)
 
     def get_current_mode(self, session_count, poll_count, print_status=True,
                          flag_all_deviations=False):
@@ -91,26 +209,6 @@ class ThermostatCommonZone():
             dictionary of heat/cool mode status, deviation status,
             and hold status
         """
-        # initialize variables
-        cool_deviation = util.bogus_bool  # cool set point deviates from sched
-        heat_deviation = util.bogus_bool  # heat set point deviates from sched
-        hold_mode = util.bogus_bool  # True if not following schedule
-        heat_schedule_point = util.bogus_int  # heating schedule set point
-        heat_set_point = util.bogus_int  # heating current set point
-        cool_schedule_point = util.bogus_int  # cooling schedule set point
-        cool_set_point = util.bogus_int  # cooling current set point
-        mode = "OFF MODE"  # mode for display, "OFF MODE", "HEAT MODE",
-        #                    "COOL MODE"
-        hold_temporary = util.bogus_bool  # True if hold will revert on next
-        #                              schedule event
-
-        if flag_all_deviations:
-            cool_operator = operator.ne
-            heat_operator = operator.ne
-            self.tolerance_degrees = 0  # disable tolerance
-        else:
-            cool_operator = operator.lt
-            heat_operator = operator.gt
 
         return_buffer = {
             "heat_mode": util.bogus_bool,  # in heating mode
@@ -121,103 +219,52 @@ class ThermostatCommonZone():
             "status_msg": "",  # status message
             }
 
-        print("DEBUG: %s entrypoint (switch position=%s)" %
-              (util.get_function_name(),
-               self.get_system_switch_position()))
-        # current temperature
-        display_temp = self.validate_numeric(self.get_display_temp(),
-                                             "get_display_temp")
+        self.flag_all_deviations = flag_all_deviations
+        self.query_thermostat_zone()
 
-        # current humidity
-        display_humidity = self.get_display_humidity()
-        humidity_is_available = self.get_is_humidity_supported()
+        # warning email if set point is outside global limit
+        self.warn_if_outside_global_limit(self.current_setpoint,
+                                          self.global_limit,
+                                          self.global_operator,
+                                          self.current_mode)
 
-        # check for heat deviation
-        if self.is_heat_mode():
-            mode = "HEAT MODE"
-            # cast integers just in case a set point returns a float
-            heat_set_point = int(self.get_heat_setpoint_raw())
-            heat_schedule_point = int(self.get_schedule_heat_sp())
-            if heat_operator(heat_set_point, heat_schedule_point +
-                             self.tolerance_degrees):
-                status_msg = ("[heat deviation] act temp=%.1f%sF" %
-                              (display_temp, degree_sign))
-                # add humidity if available
-                if humidity_is_available:
-                    status_msg += ", act humidity=%.1f%% RH" % display_humidity
-                # add setpoint and override point
-                status_msg += (", set point=%s, tolerance=%s, override=%s" %
-                               (heat_schedule_point,
-                                self.tolerance_degrees, heat_set_point))
-                heat_deviation = True
-
-            # warning email if heat set point is above global max value
-            self.warn_if_outside_global_limit(heat_schedule_point,
-                                              self.max_scheduled_heat_allowed,
-                                              operator.gt, "heat")
-
-        # check for cool deviation
-        if self.is_cool_mode():
-            mode = "COOL MODE"
-            # cast integers just in case a set point returns a float
-            cool_set_point = int(self.get_cool_setpoint_raw())
-            cool_schedule_point = int(self.get_schedule_cool_sp())
-            if cool_operator(cool_set_point, cool_schedule_point -
-                             self.tolerance_degrees):
-                status_msg = ("[cool deviation] act temp=%.1f%sF" %
-                              (display_temp, degree_sign))
-                # add humidity if available
-                if humidity_is_available:
-                    status_msg += ", act humidity=%.1f%% RH" % display_humidity
-                # add setpoint and override point
-                status_msg += (", set point=%s, tolerance=%s, override=%s" %
-                               (cool_schedule_point,
-                                self.tolerance_degrees, cool_set_point))
-                cool_deviation = True
-
-            # warning email if cool set point is below global min value
-            self.warn_if_outside_global_limit(cool_schedule_point,
-                                              self.min_scheduled_cool_allowed,
-                                              operator.lt, "cool")
-
-        # persistent or temporary deviation detected.
-        if heat_deviation or cool_deviation:
-            # print("DEBUG: in vacation hold=%s" %
-            #       self.get_is_invacation_hold_mode())
-            # print("DEBUG: hold time=%s" %
-            #       self.get_temporary_hold_until_time())
-            hold_mode = True  # True = not following schedule
-            # TCC:
-            #   get_is_in_vacation_hold_mode(): always 0 for TCC
-            #   get_temporary_hold_until_time(): > 0 for temp hold
-            #                                   == 0 for perm hold
-            # 3m50:
-            #   get_is_in_vacation_hold_mode(): need to verify
-            #   get_temporary_hold_until_time(): need to verify
-            hold_temporary = (self.get_temporary_hold_until_time() > 0)
-            # or not self.get_is_invacation_hold_mode())
-            status_msg += (" (%s)" % ["persistent",
-                                      "temporary"][hold_temporary])
+        if self.is_temp_deviated_from_schedule() and self.is_controlled_mode():
+            status_msg = ("[%s_MODE deviation] act temp=%s" %
+                          (self.current_mode.upper(),
+                           util.temp_value_with_units(self.display_temp)))
         else:
-            status_msg = ("[following schedule] act temp=%.1f%sF" %
-                          (display_temp, degree_sign))
-            # add humidity if available
-            if humidity_is_available:
-                status_msg += ", act humidity=%.1f%% RH" % display_humidity
-            # add setpoints if in heat or cool mode
-            if self.is_heat_mode():
-                status_msg += (", set point=%s, tolerance=%s, override=%s" %
-                               (heat_schedule_point,
-                                self.tolerance_degrees, heat_set_point))
-            elif self.is_cool_mode():
-                status_msg += (", set point=%s, tolerance=%s, override=%s" %
-                               (cool_schedule_point,
-                                self.tolerance_degrees, cool_set_point))
+            status_msg = ("[following schedule] act temp=%s" %
+                          util.temp_value_with_units(
+                              self.display_temp))
 
-        full_status_msg = ("%s: (session:%s, poll:%s) %s %s" %
+        # add humidity if available
+        if self.humidity_is_available:
+            status_msg += (", act humidity=%s" %
+                           util.humidity_value_with_units(
+                               self.display_humidity))
+
+        # add hold information
+        if self.is_temp_deviated_from_schedule() and self.is_controlled_mode():
+            self.hold_mode = True  # True = not following schedule
+            self.hold_temporary = (self.get_temporary_hold_until_time() > 0)
+            status_msg += (" (%s)" % ["persistent",
+                                      "temporary"][self.hold_temporary])
+        else:
+            self.hold_mode = False
+            self.hold_temporary = False
+
+        # add setpoints if in heat or cool mode
+        if self.is_heat_mode() or self.is_cool_mode():
+            status_msg += (", set point=%s, tolerance=%s, override=%s" %
+                           (self.schedule_setpoint,
+                            self.tolerance_degrees, self.current_setpoint))
+
+        full_status_msg = ("%s: (session:%s, poll:%s) %s_MODE %s" %
                            (datetime.datetime.now().
                             strftime("%Y-%m-%d %H:%M:%S"),
-                            session_count, poll_count, mode, status_msg))
+                            session_count, poll_count,
+                            self.current_mode.upper(),
+                            status_msg))
         if print_status:
             util.log_msg(full_status_msg, mode=util.BOTH_LOG)
 
@@ -226,9 +273,9 @@ class ThermostatCommonZone():
         # return status
         return_buffer["heat_mode"] = self.is_heat_mode()
         return_buffer["cool_mode"] = self.is_cool_mode()
-        return_buffer["heat_deviation"] = heat_deviation
-        return_buffer["cool_deviation"] = cool_deviation
-        return_buffer["hold_mode"] = hold_mode
+        return_buffer["heat_deviation"] = self.is_heat_deviation()
+        return_buffer["cool_deviation"] = self.is_cool_deviation()
+        return_buffer["hold_mode"] = self.hold_mode
         return_buffer["status_msg"] = full_status_msg
         return return_buffer
 
@@ -290,12 +337,12 @@ class ThermostatCommonZone():
         else:
             level = "below min"
         if oper(setpoint, limit_value):
-            msg = ("%s zone %s: scheduled %s set point (%s) is "
+            msg = ("%s zone %s: scheduled %s_MODE set point (%s) is "
                    "%s limit (%s)" % (
-                       self.thermostat_type, self.zone_number, label,
+                       self.thermostat_type, self.zone_number, label.upper(),
                        setpoint, level, limit_value))
             util.log_msg("WARNING: %s" % msg, mode=util.BOTH_LOG)
-            email_notification.send_email_alert(
+            eml.send_email_alert(
                     subject=msg,
                     body="%s: %s" % (util.get_function_name(), msg))
             return True
@@ -314,15 +361,71 @@ class ThermostatCommonZone():
         """Return 1 if dry mode enabled, else 0."""
         return util.bogus_int
 
+    def set_heat_setpoint(self, temp: int) -> None:
+        """
+        Set a new heat setpoint.
+
+        This will also attempt to turn the thermostat to 'Cool'
+        inputs:
+            temp(int): desired temperature in deg F.
+        returns:
+            None
+        """
+        del temp
+        util.log_msg("WARNING: %s: function is not yet implemented on this "
+                     "thermostat, doing nothing" %
+                     util.get_function_name(), mode=util.BOTH_LOG,
+                     func_name=1)
+        return
+
+    def set_cool_setpoint(self, temp: int) -> None:
+        """
+        Set a new cool setpoint.
+
+        This will also attempt to turn the thermostat to 'Cool'
+        inputs:
+            temp(int): desired temperature in deg F.
+        returns:
+            None
+        """
+        del temp
+        util.log_msg("WARNING: %s: function is not yet implemented on this "
+                     "thermostat, doing nothing" %
+                     util.get_function_name(), mode=util.BOTH_LOG,
+                     func_name=1)
+        return
+
     def is_heat_mode(self):
         """Return True if in heat mode."""
         return (self.get_system_switch_position() ==
                 self.system_switch_position[self.HEAT_MODE])
 
+    def is_heat_deviation(self):
+        """
+        Return True if heat is deviated.
+
+        inputs:
+            None
+        returns:
+            (bool): True if deviation exists.
+        """
+        return self.is_heat_mode() and self.is_temp_deviated_from_schedule()
+
     def is_cool_mode(self):
         """Return True if in cool mode."""
         return (self.get_system_switch_position() ==
                 self.system_switch_position[self.COOL_MODE])
+
+    def is_cool_deviation(self):
+        """
+        Return True if cool is deviated.
+
+        inputs:
+            None
+        returns:
+            (bool): True if deviation exists.
+        """
+        return self.is_cool_mode() and self.is_temp_deviated_from_schedule()
 
     def is_dry_mode(self):
         """Return True if in dry mode."""
@@ -333,6 +436,10 @@ class ThermostatCommonZone():
         """Return True if in auto mode."""
         return (self.get_system_switch_position() ==
                 self.system_switch_position[self.AUTO_MODE])
+
+    def is_controlled_mode(self):
+        """Return True if mode is being controlled."""
+        return self.current_mode in self.controlled_modes
 
     # Thermostat-specific methods will be overloaded
     def get_display_temp(self) -> float:
@@ -500,10 +607,9 @@ class ThermostatCommonZone():
             target_mode(str) target_mode, which may get updated by
             this function.
         """
-        heat_modes = [self.HEAT_MODE, self.AUTO_MODE]
-        cool_modes = [self.COOL_MODE, self.DRY_MODE, self.AUTO_MODE]
         # do not switch directly from hot to cold
-        if (self.current_mode in heat_modes and target_mode in cool_modes):
+        if (self.current_mode in self.heat_modes and
+                target_mode in self.cool_modes):
             util.log_msg("WARNING: target mode=%s, switching from %s mode to "
                          "OFF_MODE to prevent damage to HVAC" %
                          (target_mode, self.current_mode),
@@ -511,7 +617,8 @@ class ThermostatCommonZone():
             target_mode = self.OFF_MODE
 
         # do not switch directly from cold to hot
-        elif (self.current_mode in cool_modes and target_mode in heat_modes):
+        elif (self.current_mode in self.cool_modes and
+              target_mode in self.heat_modes):
             util.log_msg("WARNING: target mode=%s, switching from %s mode to "
                          "OFF_MODE to prevent damage to HVAC" %
                          (target_mode, self.current_mode),
@@ -557,34 +664,6 @@ class ThermostatCommonZone():
                                        stats["mean"]), 1)
         return stats
 
-    def _c_to_f(self, tempc) -> float:
-        """
-        Convert from Celsius to Fahrenheit.
-
-        inputs:
-            tempc(int, float): temp in deg c.
-        returns:
-            (float): temp in deg f.
-        """
-        if isinstance(tempc, (int, float)):
-            return tempc * 9.0 / 5 + 32
-        else:
-            return tempc  # pass-thru
-
-    def _f_to_c(self, tempf) -> float:
-        """
-        Convert from Fahrenheit to Celsius.
-
-        inputs:
-            tempc(int, float): temp in deg f.
-        returns:
-            (float): temp in deg c.
-        """
-        if isinstance(tempf, (int, float)):
-            return (tempf - 32) * 5 / 9.0
-        else:
-            return tempf  # pass-thru
-
     def display_basic_thermostat_summary(self, mode=util.CONSOLE_LOG):
         """
         Display basic thermostat summary.
@@ -595,6 +674,8 @@ class ThermostatCommonZone():
             None, prints data to log and/or console.
         """
         util.log_msg("current thermostat settings...",
+                     mode=mode, func_name=1)
+        util.log_msg("zone name = %s" % self.zone_name,
                      mode=mode, func_name=1)
         util.log_msg("system switch position: %s (%s)" %
                      (self.get_system_switch_position(),
@@ -633,6 +714,36 @@ class ThermostatCommonZone():
         util.log_msg("temporary hold minutes=%s" %
                      self.get_temporary_hold_until_time(),
                      mode=mode, func_name=1)
+
+    def revert_temperature_deviation(self, setpoint=None, msg=""):
+        """
+        Revert the temperature deviation.
+
+        inputs:
+            setpoint(int or float): setpoint in deg F
+            msg(str): status message to display.
+        returns:
+            None
+        """
+        if setpoint is None:
+            setpoint = self.current_setpoint
+
+        eml.send_email_alert(
+            subject=("%s %s_MODE deviation alert on zone %s" %
+                     (self.thermostat_type, self.current_mode.upper(),
+                      self.zone_number)),
+            body=msg)
+        util.log_msg("\n*** %s %s_MODE deviation detected on zone %s,"
+                     " reverting thermostat to heat schedule ***\n" %
+                     (self.thermostat_type, self.current_mode.upper(),
+                      self.zone_number), mode=util.BOTH_LOG)
+        self.revert_setpoint_func(setpoint)
+
+    def function_not_supported(self, *_, **__):
+        """Function for unsupported activities."""
+        util.log_msg("WARNING (in %s): function call is not supported "
+                     "on this thermostat type" %
+                     (util.get_function_name(2)), mode=util.BOTH_LOG)
 
 
 def thermostat_basic_checkout(api, thermostat_type,

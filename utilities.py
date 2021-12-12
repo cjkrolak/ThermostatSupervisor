@@ -4,12 +4,16 @@
 import datetime
 import inspect
 import os
+import platform
 import psutil
 import socket
 
-# zone number for unit testing
-UNIT_TEST_ZONE = 99
-UNIT_TEST_ENV_KEY = "SHT31_REMOTE_IP_ADDRESS_" + str(UNIT_TEST_ZONE)
+# thermostat config files
+import honeywell_config
+import kumocloud_config
+import kumolocal_config
+import mmm_config
+import sht31_config
 
 # error codes
 NO_ERROR = 0
@@ -35,22 +39,16 @@ DEBUG_LOG = 0x100  # print only if debug mode is on
 file_path = ".//data"
 max_log_size_bytes = 2**20  # logs rotate at this max size
 
-# API field names
-API_TEMP_FIELD = 'Temp(F) mean'
-API_HUMIDITY_FIELD = 'Humidity(%RH) mean'
-
 # all environment variables required by code should be registered here
 env_variables = {
-    "TCC_USERNAME": None,
-    "TCC_PASSWORD": None,
     "GMAIL_USERNAME": None,
     "GMAIL_PASSWORD": None,
-    "SHT31_REMOTE_IP_ADDRESS_0": None,
-    "SHT31_REMOTE_IP_ADDRESS_1": None,
-    UNIT_TEST_ENV_KEY: None,
-    "KUMO_USERNAME": None,
-    "KUMO_PASSWORD": None,
     }
+env_variables.update(honeywell_config.env_variables)
+env_variables.update(kumocloud_config.env_variables)
+env_variables.update(kumolocal_config.env_variables)
+env_variables.update(mmm_config.env_variables)
+env_variables.update(sht31_config.env_variables)
 
 
 def get_local_ip():
@@ -92,7 +90,7 @@ def get_env_variable(env_key):
 
     try:
         # unit test key is not required to be in env var list
-        if env_key == UNIT_TEST_ENV_KEY:
+        if env_key == sht31_config.UNIT_TEST_ENV_KEY:
             return_buffer["value"] = unit_test_ip_address
         else:
             return_buffer["value"] = os.environ[env_key]
@@ -178,27 +176,13 @@ def log_msg(msg, mode, func_name=-1, file_name=None):
         # build full file name
         full_path = get_full_file_path(log_msg.file_name)
 
-        # log rotate
-        try:
-            file_size_bytes = os.path.getsize(full_path)
-        except FileNotFoundError:
-            # file does not exist
-            file_size_bytes = 0
-        if file_size_bytes > max_log_size_bytes:
-            # rotate log file
-            current_date = datetime.datetime.today().strftime(
-                '%d-%b-%Y-%H-%M-%S')
-            os.rename(full_path, full_path[:-4] + "-" +
-                      str(current_date) + '.txt')
-            file_size_bytes = 0
+        # check file size and rotate if necessary
+        file_size_bytes = get_file_size_bytes(full_path)
+        file_size_bytes = log_rotate_file(full_path, file_size_bytes,
+                                          max_log_size_bytes)
 
         # write to file
-        if file_size_bytes == 0:
-            f = open(full_path, "w")  # writing
-        else:
-            f = open(full_path, "a")  # appending
-        f.write(msg + "\n")
-        f.close()
+        write_to_file(full_path, file_size_bytes, msg)
 
     # print to console
     if (mode & CONSOLE_LOG) and not filter_debug_msg:
@@ -209,6 +193,70 @@ def log_msg(msg, mode, func_name=-1, file_name=None):
 
 # global default log file name if none is specified
 log_msg.file_name = "default_log.txt"
+
+
+def get_file_size_bytes(full_path):
+    """
+    Get the file size for the specified log file.
+
+    inputs:
+        full_path(str): full file name and path.
+    returns:
+        file_size_bytes(int): file size in bytes
+    """
+    try:
+        file_size_bytes = os.path.getsize(full_path)
+    except FileNotFoundError:
+        # file does not exist
+        file_size_bytes = 0
+    return file_size_bytes
+
+
+def log_rotate_file(full_path, file_size_bytes, max_size_bytes):
+    """
+    Rotate log file to prevent file from getting too large.
+
+    inputs:
+        full_path(str): full file name and path.
+        file_size_bytes(int): file size in bytes
+        max_size_bytes(int): max allowable file size.
+    returns:
+        file_size_bytes(int): file size in bytes
+    """
+    if file_size_bytes > max_size_bytes:
+        # rotate log file
+        current_date = datetime.datetime.today().strftime(
+            '%d-%b-%Y-%H-%M-%S')
+        os.rename(full_path, full_path[:-4] + "-" +
+                  str(current_date) + '.txt')
+        file_size_bytes = 0
+    return file_size_bytes
+
+
+def write_to_file(full_path, file_size_bytes, msg):
+    """
+    Rotate log file to prevent file from getting too large.
+
+    inputs:
+        full_path(str): full file name and path.
+        file_size_bytes(int): file size in bytes
+        msg(str): message to write.
+    returns:
+        (int): number of bytes written to file.
+    """
+    if file_size_bytes == 0:
+        f = open(full_path, "w")  # writing
+    else:
+        f = open(full_path, "a")  # appending
+    msg_to_write = msg + "\n"
+    f.write(msg_to_write)
+    f.close()
+    return utf8len(msg_to_write)
+
+
+def is_windows_environment():
+    """Return True if running on Windows PC."""
+    return 'WINDOWS' in platform.system().upper()
 
 
 def get_full_file_path(file_name):
@@ -247,10 +295,40 @@ def is_interactive_environment():
         return True
 
 
-def temp_value_with_units(raw) -> str:
-    """takes the raw and adds a degree F sign and a unit."""
-    disp_unit = 'F'
-    return f'{raw}°{disp_unit}'
+def temp_value_with_units(raw, disp_unit='F', precision=1) -> str:
+    """
+    Return string representing temperature and units.
+
+    inputs:
+        raw(int or float): temperature value.
+        disp_unit(str): display unit character.
+        precision(int): number of digits after decimal.
+    returns:
+        (str): temperature and units.
+    """
+    if disp_unit.upper() not in ['C', 'F', 'K']:
+        raise ValueError("%s: '%s' is not a valid temperature unit" %
+                         (get_function_name(), disp_unit))
+    formatted = "%.*f" % (precision, raw)
+    return f'{formatted}°{disp_unit}'
+
+
+def humidity_value_with_units(raw, disp_unit='RH', precision=1) -> str:
+    """
+    Return string representing humidity and units.
+
+    inputs:
+        raw(int or float): humidity value.
+        disp_unit(str): display unit character.
+        precision(int): number of digits after decimal.
+    returns:
+        (str): temperature and units.
+    """
+    if disp_unit.upper() not in ['RH']:
+        raise ValueError("%s: '%s' is not a valid humidity unit" %
+                         (get_function_name(), disp_unit))
+    formatted = "%.*f" % (precision, raw)
+    return f'{formatted}%{disp_unit}'
 
 
 def get_key_from_value(input_dict, val):
@@ -268,3 +346,33 @@ def get_key_from_value(input_dict, val):
             return key
     raise KeyError("key not found in dict '%s' with value='%s'" %
                    (input_dict, val))
+
+
+def c_to_f(tempc) -> float:
+    """
+    Convert from Celsius to Fahrenheit.
+
+    inputs:
+        tempc(int, float): temp in deg c.
+    returns:
+        (float): temp in deg f.
+    """
+    if isinstance(tempc, (int, float)):
+        return tempc * 9.0 / 5 + 32
+    else:
+        return tempc  # pass-thru
+
+
+def f_to_c(tempf) -> float:
+    """
+    Convert from Fahrenheit to Celsius.
+
+    inputs:
+        tempc(int, float): temp in deg f.
+    returns:
+        (float): temp in deg c.
+    """
+    if isinstance(tempf, (int, float)):
+        return (tempf - 32) * 5 / 9.0
+    else:
+        return tempf  # pass-thru

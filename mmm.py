@@ -19,21 +19,12 @@ import radiotherm  # noqa F405
 import urllib  # noqa E402
 
 # local imports
+import mmm_config  # noqa E402
 import thermostat_api as api  # noqa E402
 import thermostat_common as tc  # noqa E402
 import utilities as util  # noqa E402
 
 
-# 3m50 thermostat IP addresses (on local net)
-# user should configure these zones and IP addresses for their application.
-MAIN_3M50 = 0  # zone 0
-BASEMENT_3M50 = 1  # zone 1
-mmm_metadata = {
-    MAIN_3M50: {"ip_address": "192.168.86.82",  # local IP
-                },
-    BASEMENT_3M50: {"ip_address": "192.168.86.83",  # local IP
-                    }
-}
 socket_timeout = 30  # http socket timeout override
 
 
@@ -50,12 +41,13 @@ class ThermostatClass(tc.ThermostatCommonZone):
             zone.
         """
         # construct the superclass
-        super(ThermostatClass, self).__init__()
-        self.thermostat_type = api.MMM50
+        super().__init__()
+        self.thermostat_type = mmm_config.ALIAS
 
         # configure zone info
         self.zone_number = int(zone)
-        self.ip_address = mmm_metadata[self.zone_number]["ip_address"]
+        self.ip_address = mmm_config.mmm_metadata[
+            self.zone_number]["ip_address"]
         self.device_id = self.get_target_zone_id()
 
     def get_target_zone_id(self) -> object:
@@ -194,7 +186,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
             Thermostat_obj(obj):  Thermostat class instance.
         """
         # construct the superclass
-        super(ThermostatZone, self).__init__()
+        super().__init__()
 
         # switch config for this thermostat
         self.system_switch_position[tc.ThermostatCommonZone.COOL_MODE] = 2
@@ -203,13 +195,25 @@ class ThermostatZone(tc.ThermostatCommonZone):
         self.system_switch_position[tc.ThermostatCommonZone.AUTO_MODE] = 3
 
         # zone info
-        self.thermostat_type = api.MMM50
+        self.thermostat_type = mmm_config.ALIAS
         self.device_id = Thermostat_obj.device_id
         self.zone_number = Thermostat_obj.zone_number
+        self.zone_name = self.get_zone_name(self.zone_number)
 
         # runtime parameter defaults
         self.poll_time_sec = 10 * 60  # default to 10 minutes
         self.connection_time_sec = 8 * 60 * 60  # default to 8 hours
+
+    def get_zone_name(self, zone_number):
+        """
+        Return the name associated with the zone number.
+
+        inputs:
+            zone_number(int): Zone number
+        returns:
+            (str) zone name
+        """
+        return mmm_config.mmm_metadata[zone_number]["zone_name"]
 
     def get_display_temp(self) -> float:
         """
@@ -601,12 +605,12 @@ radiotherm.thermostat.Thermostat.__init__ = __init__
 
 if __name__ == "__main__":
 
-    _, Zone = tc.thermostat_basic_checkout(api, api.MMM50,
+    _, Zone = tc.thermostat_basic_checkout(api, mmm_config.ALIAS,
                                            ThermostatClass,
                                            ThermostatZone)
 
     # measure thermostat response time
-    measurements = 100
+    measurements = 30
     print("Thermostat response times for %s measurements..." % measurements)
     meas_data = Zone.measure_thermostat_response_time(measurements)
     ppp = pprint.PrettyPrinter(indent=4)

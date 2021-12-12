@@ -102,38 +102,6 @@ class Test(utc.UnitTestCommon):
             # restore original data file name
             util.file_path = path_backup
 
-    def test_LogMsgRotate(self):
-        """
-        Verify log rotates at max_log_size_bytes.
-        """
-        print("WARNING: test is aborting early, unfinished code.")
-        return  # test is not yet ready
-        # override rotate size
-        size_backup = util.max_log_size_bytes
-        util.file_path = ".//unittest_data"
-
-        file_name = "unit_test.txt"
-        full_path = util.get_full_file_path(file_name)
-        try:
-            # remove directory if it already exists
-            if os.path.exists(util.file_path):
-                os.removedirs(util.file_path)
-
-            # write to file and path that does not exist
-            test_msg1 = "first test message from unit test"
-            # test_msg1_length = util.utf8len(test_msg1 + "\n") + 1
-            return_buffer = util.log_msg(test_msg1, mode=util.BOTH_LOG,
-                                         file_name=file_name)
-            self.assertEqual(return_buffer["status"], util.NO_ERROR)
-
-            # confirm file exists
-            file_size_bytes = os.path.getsize(full_path)
-            # self.assertEqual(file_size_bytes, test_msg1_length)
-            self.assertGreater(file_size_bytes, 30)
-        finally:
-            # restore original log max size
-            util.max_log_size_bytes = size_backup
-
     def test_LogMsgWrite(self):
         """
         Confirm log_msg() can write and append to file.
@@ -142,11 +110,7 @@ class Test(utc.UnitTestCommon):
         full_path = util.get_full_file_path(file_name)
 
         # delete unit test file if it exists
-        try:
-            os.remove(full_path)
-            print("unit test file '%s' deleted." % full_path)
-        except FileNotFoundError:
-            print("unit test file '%s' did not exist." % full_path)
+        self.delete_test_file(full_path)
 
         # write to file that does not exist
         test_msg1 = "first test message from unit test"
@@ -173,6 +137,90 @@ class Test(utc.UnitTestCommon):
         # self.assertEqual(file_size_bytes,
         #                 test_msg1_length + test_msg2_length)
         self.assertGreater(file_size_bytes, 60)
+
+    def test_GetFileSizeBytes(self):
+        """
+        Confirm get_file_size_bytes() works as expected.
+        """
+        full_path = __file__  # this file
+
+        # assuming file exists, should return non-zero value
+        result = util.get_file_size_bytes(full_path)
+        self.assertTrue(result > 0,
+                        "file size for existing file is %s, expected > 0" %
+                        result)
+
+        # bogus file, should return zero value
+        result = util.get_file_size_bytes("bogus.123")
+        self.assertTrue(result == 0,
+                        "file size for bogus file is %s, expected == 0" %
+                        result)
+
+    def test_LogRotateFile(self):
+        """
+        Confirm log_rotate_file() works as expected.
+        """
+        file_name = "unit_test.txt"
+        full_path = util.get_full_file_path(file_name)
+        file_size_bytes = util.get_file_size_bytes(full_path)
+
+        # check while under max limit, should not rotate file
+        file_size_bytes_same = util.log_rotate_file(full_path, file_size_bytes,
+                                                    file_size_bytes + 1)
+        self.assertEqual(file_size_bytes, file_size_bytes_same,
+                         "log_rotate_file under max limit, file size should "
+                         "not change, expected size=%s, actual size=%s" %
+                         (file_size_bytes, file_size_bytes_same))
+
+        # check while above max limit, should rotate file and return 0
+        file_size_bytes_new = util.log_rotate_file(full_path, file_size_bytes,
+                                                   file_size_bytes - 1)
+        expected_size = 0
+        self.assertEqual(expected_size, file_size_bytes_new,
+                         "log_rotate_file above max limit, file size should "
+                         "be reset to 0, expected size=%s, actual size=%s" %
+                         (expected_size, file_size_bytes_new))
+
+    def test_WriteToFile(self):
+        """
+        Verify write_to_file() function.
+        """
+        file_name = "unit_test.txt"
+        full_path = util.get_full_file_path(file_name)
+
+        # delete unit test file if it exists
+        self.delete_test_file(full_path)
+
+        # test message
+        msg = "unit test bogus message"
+        print("test message=%s bytes" % util.utf8len(msg))
+
+        # write to non-existing file, bytes written + EOF == bytes read
+        bytes_written = util.write_to_file(full_path, 0, msg)
+        bytes_expected = bytes_written + [0, 1][util.is_windows_environment()]
+        bytes_present = util.get_file_size_bytes(full_path)
+        self.assertEqual(bytes_expected, bytes_present,
+                         "writing to non-existent file, bytes written=%s, "
+                         "file size=%s" % (bytes_expected, bytes_present))
+
+        # write to existing file with reset, bytes written == bytes read
+        bytes_written = util.write_to_file(full_path, 0, msg)
+        bytes_expected = bytes_written + [0, 1][util.is_windows_environment()]
+        bytes_present = util.get_file_size_bytes(full_path)
+        self.assertEqual(bytes_expected, bytes_present,
+                         "writing to existing file with override option, "
+                         "bytes written=%s, "
+                         "file size=%s" % (bytes_expected, bytes_present))
+
+        # write to existing file, bytes written < bytes read
+        file_size_bytes = util.get_file_size_bytes(full_path)
+        bytes_written = util.write_to_file(full_path, file_size_bytes, msg)
+        bytes_expected = (bytes_written + file_size_bytes +
+                          [0, 1][util.is_windows_environment()])
+        bytes_present = util.get_file_size_bytes(full_path)
+        self.assertEqual(bytes_expected, bytes_present,
+                         "writing to existent file, bytes expected=%s, "
+                         "file size=%s" % (bytes_expected, bytes_present))
 
     def test_GetFullFilePath(self):
         """
@@ -218,14 +266,43 @@ class Test(utc.UnitTestCommon):
 
     def test_TempValueWithUnits(self):
         """Verify function attaches units as expected."""
-        disp_unit = 'F'
 
         for test_case in [44, -1, 101, 2]:
-            expected_val = f'{test_case}°{disp_unit}'
-            actual_val = util.temp_value_with_units(test_case)
-            self.assertEqual(expected_val, actual_val,
-                             "test case: %s, expected_val=%s, actual_val=%s" %
-                             (test_case, expected_val, actual_val))
+            for precision in [0, 1, 2]:
+                for disp_unit in ['F', 'c']:
+                    formatted = "%.*f" % (precision, test_case)
+                    expected_val = f'{formatted}°{disp_unit}'
+                    actual_val = util.temp_value_with_units(test_case,
+                                                            disp_unit,
+                                                            precision)
+                    self.assertEqual(expected_val, actual_val,
+                                     "test case: %s, expected_val=%s, "
+                                     "actual_val=%s" %
+                                     (test_case, expected_val, actual_val))
+
+        # test failing case
+        with self.assertRaises(ValueError):
+            util.temp_value_with_units(-13, "bogus", 1)
+
+    def test_HumidityValueWithUnits(self):
+        """Verify function attaches units as expected."""
+
+        for test_case in [44, -1, 101, 2]:
+            for precision in [0, 1, 2]:
+                for disp_unit in ['RH']:
+                    formatted = "%.*f" % (precision, test_case)
+                    expected_val = f'{formatted}%{disp_unit}'
+                    actual_val = util.humidity_value_with_units(test_case,
+                                                                disp_unit,
+                                                                precision)
+                    self.assertEqual(expected_val, actual_val,
+                                     "test case: %s, expected_val=%s, "
+                                     "actual_val=%s" %
+                                     (test_case, expected_val, actual_val))
+
+        # test failing case
+        with self.assertRaises(ValueError):
+            util.humidity_value_with_units(-13, "bogus", 1)
 
     def test_GetKeyFromValue(self):
         """Verify get_key_from_value()."""
@@ -252,6 +329,60 @@ class Test(utc.UnitTestCommon):
             print("attempting to input bad dictionary key, "
                   "expect exception...")
             actual_val = util.get_key_from_value(test_dict, "bogus_value")
+
+    def test_CtoF(self):
+        """Verify C to F calculations."""
+
+        # int and float cases
+        for tempc in [0, -19, 34, 101, -44.1]:
+            tempf = util.c_to_f(tempc)
+            expected_tempf = tempc * 9.0 / 5 + 32
+            self.assertEqual(expected_tempf, tempf, "test case %s: "
+                             "expected=%s, actual=%s" %
+                             (tempc, expected_tempf, tempf))
+
+        # verify pass-thru case
+        for tempc in ['0', None, "", "*"]:
+            tempf = util.c_to_f(tempc)
+            expected_tempf = tempc
+            self.assertEqual(expected_tempf, tempf, "test case %s: "
+                             "expected=%s, actual=%s" %
+                             (tempc, expected_tempf, tempf))
+
+    def test_FtoC(self):
+        """Verify F to C calculations."""
+
+        # int and float cases
+        for tempf in [0, -19, 34, 101, -44.1]:
+            tempc = util.f_to_c(tempf)
+            expected_tempc = (tempf - 32) * 5 / 9.0
+            self.assertEqual(expected_tempc, tempc, "test case %s: "
+                             "expected=%s, actual=%s" %
+                             (tempf, expected_tempc, tempc))
+
+        # verify pass-thru case
+        for tempf in ['0', None, "", "*"]:
+            tempc = util.f_to_c(tempf)
+            expected_tempc = tempf  # pass-thru
+            self.assertEqual(expected_tempc, tempc, "test case %s: "
+                             "expected=%s, actual=%s" %
+                             (tempf, expected_tempc, tempc))
+
+    def delete_test_file(self, full_path):
+        """Delete the test file.
+
+        inputs:
+            full_path(str): full file path
+        returns:
+            (bool): True if file was deleted, False if it did not exist.
+        """
+        try:
+            os.remove(full_path)
+            print("unit test file '%s' deleted." % full_path)
+            return True
+        except FileNotFoundError:
+            print("unit test file '%s' did not exist." % full_path)
+            return False
 
 
 if __name__ == "__main__":

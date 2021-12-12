@@ -17,7 +17,7 @@ import coverage
 import unittest
 
 
-def main():
+def code_coverage_all_tests():
     # start the coverage service
     cov = coverage.Coverage()
     cov.start()
@@ -36,4 +36,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    code_coverage_all_tests()

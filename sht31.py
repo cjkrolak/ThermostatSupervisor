@@ -19,15 +19,10 @@ import time
 import traceback
 
 # local imports
-import sht31_flask_server as sht31_fs
+import sht31_config
 import thermostat_api as api
 import thermostat_common as tc
 import utilities as util
-
-
-# SHT31 thermometer zones
-LOFT_SHT31 = 0  # zone 0, local IP 192.168.86.15
-LOFT_SHT31_REMOTE = 1  # zone 1
 
 
 class ThermostatClass(tc.ThermostatCommon):
@@ -43,21 +38,29 @@ class ThermostatClass(tc.ThermostatCommon):
             zone.
         """
         # construct the superclass
-        super(ThermostatClass, self).__init__()
+        super().__init__()
 
         # zone configuration
-        self.thermostat_type = api.SHT31
+        self.thermostat_type = sht31_config.ALIAS
         self.zone_number = int(zone)
         self.ip_address = self.get_target_zone_id(self.zone_number)
 
         # URL and port configuration
         self.port = "5000"  # Flask server port on SHT31 host
-        self.url = "http://" + self.ip_address + ":" + self.port
+        if self.zone_number == sht31_config.UNIT_TEST_ZONE:
+            self.path = sht31_config.FLASK_UNIT_TEST_FOLDER
+            self.unit_test_seed = "?seed=" + str(sht31_config.unit_test_seed)
+        else:
+            self.path = ""
+            self.unit_test_seed = ""
+        self.measurements = "?measurements=" + str(sht31_config.measurements)
+        self.url = ("http://" + self.ip_address + ":" + self.port +
+                    self.path + self.measurements + self.unit_test_seed)
         self.device_id = self.url
         self.retry_delay = 60  # delay before retrying a bad reading
 
-        # if in unit test mode, spawn flask server with emulated data
-        if self.zone_number == util.UNIT_TEST_ZONE:
+        # if in unit test mode, spawn flask server with emulated data on client
+        if self.zone_number == sht31_config.UNIT_TEST_ZONE:
             self.spawn_flask_server()
 
     def get_target_zone_id(self, zone_number=0):
@@ -103,10 +106,10 @@ class ThermostatClass(tc.ThermostatCommon):
         inputs: None
         returns:
         """
-        # app = sht31_fs.create_app()
+        # flask server used in unit test mode
+        import sht31_flask_server as sht31_fs  # noqa E402
+
         sht31_fs.debug = False
-        sht31_fs.measurements = 10
-        sht31_fs.unit_test_mode = True
         self.flask_server = threading.Thread(target=sht31_fs.app.run,
                                              args=('0.0.0.0', 5000,
                                                    False))
@@ -177,25 +180,37 @@ class ThermostatZone(tc.ThermostatCommonZone):
             Thermostat_obj(obj): associated Thermostat_obj
         """
         # construct the superclass
-        super(ThermostatZone, self).__init__()
+        super().__init__()
 
         # switch config for this thermostat
         # SHT31 is a monitor only, does not support heat/cool modes.
         self.system_switch_position[tc.ThermostatCommonZone.OFF_MODE] = 0
 
         # zone configuration
-        self.thermostat_type = api.SHT31
+        self.thermostat_type = sht31_config.ALIAS
         self.device_id = Thermostat_obj.device_id
         self.url = Thermostat_obj.device_id
         self.zone_number = Thermostat_obj.zone_number
+        self.zone_name = self.get_zone_name(self.zone_number)
 
         # runtime defaults
         self.poll_time_sec = 1 * 60  # default to 1 minute
         self.connection_time_sec = 8 * 60 * 60  # default to 8 hours
 
-        self.tempfield = util.API_TEMP_FIELD  # must match flask API
-        self.humidityfield = util.API_HUMIDITY_FIELD  # must match flask API
+        self.tempfield = sht31_config.API_TEMPF_MEAN  # must match flask API
+        self.humidityfield = sht31_config.API_HUMIDITY_MEAN  # must match API
         self.retry_delay = Thermostat_obj.retry_delay
+
+    def get_zone_name(self, zone_number) -> str:  # used
+        """
+        Refresh the cached zone information then return Name.
+
+        inputs:
+            zone_number(int): zone number
+        returns:
+            (str): zone name
+        """
+        return sht31_config.zone_names[zone_number]
 
     def get_metadata(self, parameter=None, retry=True):
         """
@@ -346,6 +361,6 @@ class ThermostatZone(tc.ThermostatCommonZone):
 
 if __name__ == "__main__":
 
-    tc.thermostat_basic_checkout(api, api.SHT31,
+    tc.thermostat_basic_checkout(api, sht31_config.ALIAS,
                                  ThermostatClass,
                                  ThermostatZone)

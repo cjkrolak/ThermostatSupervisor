@@ -5,21 +5,10 @@ import pykumo
 import time
 
 # local imports
+import kumocloud_config
 import thermostat_api as api
 import thermostat_common as tc
 import utilities as util
-
-# Kumocloud zone configuration (on local net)
-MAIN_KUMO = 0  # zone 0
-BASEMENT_KUMO = 1  # zone 1
-kc_metadata = {
-    MAIN_KUMO: {"ip_address": "192.168.86.229",  # local IP, for ref only.
-                "zone_name": "Main Level",  # customize for your site.
-                },
-    BASEMENT_KUMO: {"ip_address": "192.168.86.236",  # local IP, for ref only.
-                    "zone_name": "Basement",  # customize for your site.
-                    },
-}
 
 
 class ThermostatClass(pykumo.KumoCloudAccount):
@@ -44,8 +33,8 @@ class ThermostatClass(pykumo.KumoCloudAccount):
 
         # construct the superclass
         self._need_fetch = True  # force data fetch
-        super(ThermostatClass, self).__init__(*self.args)
-        self.thermostat_type = api.KUMOCLOUD
+        super().__init__(*self.args)
+        self.thermostat_type = kumocloud_config.ALIAS
 
         # configure zone info
         self.zone_number = int(zone)
@@ -130,7 +119,15 @@ class ThermostatZone(tc.ThermostatCommonZone):
             Thermostat(obj): Thermostat class instance.
         """
         # construct the superclass, requires auth setup first
-        super(ThermostatZone, self).__init__()
+        super().__init__()
+
+        # runtime parameter defaults
+        self.poll_time_sec = 10 * 60  # default to 10 minutes
+        self.connection_time_sec = 8 * 60 * 60  # default to 8 hours
+
+        # server data cache expiration parameters
+        self.fetch_interval_sec = 10  # age of server data before refresh
+        self.last_fetch_time = time.time() - 2 * self.fetch_interval_sec
 
         # switch config for this thermostat
         self.system_switch_position[
@@ -143,20 +140,13 @@ class ThermostatZone(tc.ThermostatCommonZone):
         self.system_switch_position[tc.ThermostatCommonZone.AUTO_MODE] = "Dry"
 
         # zone info
-        self.thermostat_type = api.KUMOCLOUD
+        self.thermostat_type = kumocloud_config.ALIAS
         self.device_id = Thermostat_obj.device_id
         self.Thermostat = Thermostat_obj
         self.zone_number = Thermostat_obj.zone_number
         self.zone_data = Thermostat_obj.get_all_thermostat_metadata(
             Thermostat_obj.zone_number)
-
-        # runtime parameter defaults
-        self.poll_time_sec = 10 * 60  # default to 10 minutes
-        self.connection_time_sec = 8 * 60 * 60  # default to 8 hours
-
-        # server data cache expiration parameters
-        self.fetch_interval_sec = 10  # age of server data before refresh
-        self.last_fetch_time = time.time() - 2 * self.fetch_interval_sec
+        self.zone_name = self.get_zone_name()
 
     def get_parameter(self, key, parent_key=None, grandparent_key=None,
                       default_val=None):
@@ -191,6 +181,18 @@ class ThermostatZone(tc.ThermostatCommonZone):
                 raise e
         return return_val
 
+    def get_zone_name(self):
+        """
+        Return the name associated with the zone number.
+
+        inputs:
+            None
+        returns:
+            (str) zone name
+        """
+        self.refresh_zone_info()
+        return self.get_parameter('label')
+
     def get_display_temp(self) -> float:  # used
         """
         Refresh the cached zone information and return Indoor Temp in Deg F.
@@ -201,8 +203,8 @@ class ThermostatZone(tc.ThermostatCommonZone):
             (float): indoor temp in deg F.
         """
         self.refresh_zone_info()
-        return self._c_to_f(self.get_parameter('room_temp',
-                                               'reportedCondition'))
+        return util.c_to_f(self.get_parameter('room_temp',
+                                              'reportedCondition'))
 
     def get_display_humidity(self) -> (float, None):
         """
@@ -218,8 +220,8 @@ class ThermostatZone(tc.ThermostatCommonZone):
             return None
         else:
             # untested, don't have humidity support
-            return self._c_to_f(self.get_parameter('humidity',
-                                                   'reportedCondition'))
+            return util.c_to_f(self.get_parameter('humidity',
+                                                  'reportedCondition'))
 
     def get_is_humidity_supported(self) -> bool:  # used
         """
@@ -286,8 +288,8 @@ class ThermostatZone(tc.ThermostatCommonZone):
             (int): heating set point in degrees F.
         """
         self.refresh_zone_info()
-        return self._c_to_f(self.get_parameter('sp_heat',
-                                               'reportedCondition'))
+        return util.c_to_f(self.get_parameter('sp_heat',
+                                              'reportedCondition'))
 
     def get_heat_setpoint(self) -> str:
         """Return heat setpoint with units as a string."""
@@ -325,8 +327,8 @@ class ThermostatZone(tc.ThermostatCommonZone):
             (int): cooling set point in degrees F.
         """
         self.refresh_zone_info()
-        return self._c_to_f(self.get_parameter('sp_cool',
-                                               'reportedCondition'))
+        return util.c_to_f(self.get_parameter('sp_cool',
+                                              'reportedCondition'))
 
     def get_cool_setpoint(self) -> str:
         """Return cool setpoint with units as a string."""
@@ -484,6 +486,6 @@ class ThermostatZone(tc.ThermostatCommonZone):
 
 if __name__ == "__main__":
 
-    tc.thermostat_basic_checkout(api, api.KUMOCLOUD,
+    tc.thermostat_basic_checkout(api, kumocloud_config.ALIAS,
                                  ThermostatClass,
                                  ThermostatZone)
