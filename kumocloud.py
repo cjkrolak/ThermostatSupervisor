@@ -121,6 +121,14 @@ class ThermostatZone(tc.ThermostatCommonZone):
         # construct the superclass, requires auth setup first
         super().__init__()
 
+        # runtime parameter defaults
+        self.poll_time_sec = 10 * 60  # default to 10 minutes
+        self.connection_time_sec = 8 * 60 * 60  # default to 8 hours
+
+        # server data cache expiration parameters
+        self.fetch_interval_sec = 10  # age of server data before refresh
+        self.last_fetch_time = time.time() - 2 * self.fetch_interval_sec
+
         # switch config for this thermostat
         self.system_switch_position[
             tc.ThermostatCommonZone.HEAT_MODE] = 1  # "Heat"
@@ -138,14 +146,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         self.zone_number = Thermostat_obj.zone_number
         self.zone_data = Thermostat_obj.get_all_thermostat_metadata(
             Thermostat_obj.zone_number)
-
-        # runtime parameter defaults
-        self.poll_time_sec = 10 * 60  # default to 10 minutes
-        self.connection_time_sec = 8 * 60 * 60  # default to 8 hours
-
-        # server data cache expiration parameters
-        self.fetch_interval_sec = 10  # age of server data before refresh
-        self.last_fetch_time = time.time() - 2 * self.fetch_interval_sec
+        self.zone_name = self.get_zone_name()
 
     def get_parameter(self, key, parent_key=None, grandparent_key=None,
                       default_val=None):
@@ -179,6 +180,18 @@ class ThermostatZone(tc.ThermostatCommonZone):
             except KeyError as e:
                 raise e
         return return_val
+
+    def get_zone_name(self):
+        """
+        Return the name associated with the zone number.
+
+        inputs:
+            None
+        returns:
+            (str) zone name
+        """
+        self.refresh_zone_info()
+        return self.get_parameter('label')
 
     def get_display_temp(self) -> float:  # used
         """

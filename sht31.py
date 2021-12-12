@@ -191,6 +191,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         self.device_id = Thermostat_obj.device_id
         self.url = Thermostat_obj.device_id
         self.zone_number = Thermostat_obj.zone_number
+        self.zone_name = self.get_zone_name(self.zone_number)
 
         # runtime defaults
         self.poll_time_sec = 1 * 60  # default to 1 minute
@@ -199,6 +200,17 @@ class ThermostatZone(tc.ThermostatCommonZone):
         self.tempfield = sht31_config.API_TEMPF_MEAN  # must match flask API
         self.humidityfield = sht31_config.API_HUMIDITY_MEAN  # must match API
         self.retry_delay = Thermostat_obj.retry_delay
+
+    def get_zone_name(self, zone_number) -> str:  # used
+        """
+        Refresh the cached zone information then return Name.
+
+        inputs:
+            zone_number(int): zone number
+        returns:
+            (str): zone name
+        """
+        return sht31_config.zone_names[zone_number]
 
     def get_metadata(self, parameter=None, retry=True):
         """

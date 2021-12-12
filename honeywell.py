@@ -269,6 +269,7 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
         self.thermostat_type = honeywell_config.ALIAS
         self.device_id = Thermostat_obj.device_id
         self.zone_number = Thermostat_obj.zone_number
+        self.zone_name = self.get_zone_name()
 
         # runtime parameter defaults
         self.poll_time_sec = 10 * 60  # default to 10 minutes
@@ -276,6 +277,18 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
         # max value was 3, higher settings will cause HTTP errors, why?
         # not showing error on Pi at 10 minutes, so changed default to 10 min.
         self.connection_time_sec = 8 * 60 * 60  # default to 8 hours
+
+    def get_zone_name(self) -> str:  # used
+        """
+        Refresh the cached zone information then return Name.
+
+        inputs:
+            None
+        returns:
+            (str): zone name
+        """
+        self.refresh_zone_info()
+        return self.zone_info['Name']
 
     def get_display_temp(self) -> float:  # used
         """
