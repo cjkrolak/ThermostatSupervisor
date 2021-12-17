@@ -144,13 +144,17 @@ def parse_runtime_parameter(key, datatype, default_value,
     # if no override exists in argv_list, use argv value
     try:
         proposed_val = str(argv_list[get_argv_position(key)])
-        # print("DEBUG: key=%s: using user override value '%s'" %
-        #       (key, argv_list[get_argv_position(key)]))
-    except (TypeError, IndexError):
-        # util.log_msg(traceback.format_exc(),
-        #              mode=util.BOTH_LOG, func_name=1)
-        # print("DEBUG: key=%s: using default value '%s'" %
-        #       (key, default_value))
+        util.log_msg("key='%s': using user override value '%s'" %
+                     (key, argv_list[get_argv_position(key)]),
+                     mode=util.BOTH_LOG, func_name=1)
+    except TypeError:
+        util.log_msg("key='%s': argv parsing error, using default value '%s'" %
+                     (key, default_value), mode=util.BOTH_LOG, func_name=1)
+        proposed_val = str(default_value)
+    except IndexError:
+        util.log_msg("key='%s': argv parameter missing, "
+                     "using default value '%s'" %
+                     (key, default_value), mode=util.BOTH_LOG, func_name=1)
         proposed_val = str(default_value)
 
     # cast input for these keys into uppercase and target data type.
@@ -199,6 +203,8 @@ def parse_all_runtime_parameters(argv_list=None):
         util.log_msg("parse_all_runtime_parameters from sys.argv: %s" %
                      sys.argv, mode=util.DEBUG_LOG + util.CONSOLE_LOG,
                      func_name=1)
+        argv_list = sys.argv
+
     # parse thermostat type parameter (argv[1] if present):
     result["thermostat_type"] = parse_runtime_parameter(
         "thermostat_type", str, DEFAULT_THERMOSTAT,

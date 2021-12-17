@@ -217,20 +217,22 @@ class Test(utc.UnitTestCommon):
 
         # test default case
         print("argv list=%s" % sys.argv)
-        if utc.is_azure_environment():
-            # parsing should fail since argv list is unit test-specific
-            with self.assertRaises((TypeError, ValueError)):
-                print("attempting to run parse_all_runtime_parameters with "
-                      " no argv input list in Azure pipeline, "
-                      "should raise exception...")
+        # argv=['python -m unittest', 'discover', '-v'] case
+        if '-v' in sys.argv:
+            # parsing should fail parsing -v from argv list
+            with self.assertRaises(ValueError):
+                print("attempting to run parse_all_runtime_parameters() with "
+                      "unittest argv list, should fail for ValueError since "
+                      "'-v' is not parseable into a value...")
                 return_list = api.parse_all_runtime_parameters()
                 print("parsed input parameter list=%s" % return_list)
         else:
+            # arbitrary argv list > 1, assume it's a valid argv list
             if len(sys.argv) > 1:
-                # argv list > 1
-                expected_result = [sys.argv[0]]
+                # argv list > 1, thermostat_type is argv[1]
+                expected_result = [sys.argv[1]]
             else:
-                # argv list is 1 element, thermostat_type will default
+                # argv list is 1 element, thermostat_type missing, will default
                 expected_result = [api.DEFAULT_THERMOSTAT]
             return_list = api.parse_all_runtime_parameters()
 
