@@ -63,112 +63,134 @@ class Test(utc.UnitTestCommon):
         Verify test parse_runtime_parameter() returns expected
         values when input known values.
         """
-        input_list = ["supervise.py", api.DEFAULT_THERMOSTAT, "0", "9",
-                      "90", "3", "HEAT_MODE"]
+        tstat_type = api.DEFAULT_THERMOSTAT
+        test_list = [
+            "supervise.py",  # script
+            tstat_type,  # thermostat_type
+            "0",  # zone
+            "9",  # poll time sec
+            "90",  # connection time
+            "3",  # tolerance
+            "HEAT_MODE",  # target mode
+            1,  # measurements
+            ]
 
-        # parse thermostat type parameter (argv[1] if present):
-        tstat_type = api.parse_runtime_parameter(api.user_input_list[0],
-                                                 1, str,
-                                                 api.DEFAULT_THERMOSTAT,
-                                                 api.SUPPORTED_THERMOSTATS,
-                                                 input_list)
-        self.assertEqual(tstat_type, api.DEFAULT_THERMOSTAT,
-                         "actual=%s, expected=%s" %
-                         (tstat_type, api.DEFAULT_THERMOSTAT))
+        # test case default should be different from test_list above
+        test_cases = {
+            "thermostat_type": {"datatype": str,
+                                "default_value": "bogus",
+                                "supported_values": api.SUPPORTED_THERMOSTATS,
+                                "input_list": test_list,
+                                },
+            "zone": {"datatype": int,
+                     "default_value": 2,
+                     "supported_values": api.SUPPORTED_THERMOSTATS[
+                         tstat_type]["zones"],
+                     "input_list": test_list,
+                     },
+            "poll_time_sec": {"datatype": int,
+                              "default_value": 10 * 60,
+                              "supported_values": range(0, 24 * 60 * 60),
+                              "input_list": test_list,
+                              },
+            "connection_time_sec": {"datatype": int,
+                                    "default_value": 8 * 60 * 60,
+                                    "supported_values": range(0, 24 * 60 * 60),
+                                    "input_list": test_list,
+                                    },
+            "tolerance_degrees": {"datatype": int,
+                                  "default_value": 2,
+                                  "supported_values": range(0, 10),
+                                  "input_list": test_list,
+                                  },
+            "target_mode": {"datatype": str,
+                            "default_value": "OFF_MODE",
+                            "supported_values": api.SUPPORTED_THERMOSTATS[
+                                tstat_type]["modes"],
+                            "input_list": test_list,
+                            },
+            "measurements": {"datatype": int,
+                             "default_value": 2,
+                             "supported_values": range(0, 100000),
+                             "input_list": test_list,
+                             },
+            }
 
-        # parse zone number parameter (argv[2] if present):
-        zone_input = \
-            api.parse_runtime_parameter(api.user_input_list[1], 2, int, 0,
-                                        api.SUPPORTED_THERMOSTATS[
-                                            tstat_type]["zones"],
-                                        input_list)
-        self.assertEqual(zone_input, 0, "actual=%s, expected=%s" %
-                         (zone_input, 0))
-
-        # parse the poll time override (argv[3] if present):
-        poll_time_input = api.parse_runtime_parameter(api.user_input_list[2],
-                                                      3, int,
-                                                      10 * 60,
-                                                      range(0, 24 * 60 * 60),
-                                                      input_list)
-        self.assertEqual(poll_time_input, 9, "actual=%s, expected=%s" %
-                         (poll_time_input, 9))
-
-        # parse the connection time override (argv[4] if present):
-        connection_time_input = \
-            api.parse_runtime_parameter(api.user_input_list[3], 4,
-                                        int, 8 * 60 * 60,
-                                        range(0, 24 * 60 * 60), input_list)
-        self.assertEqual(connection_time_input, 90, "actual=%s, expected=%s" %
-                         (connection_time_input, 90))
-
-        # parse the tolerance override (argv[5] if present):
-        tolerance_degrees_input = \
-            api.parse_runtime_parameter(api.user_input_list[4], 5,
-                                        int, 2, range(0, 10), input_list)
-        self.assertEqual(tolerance_degrees_input, 3, "actual=%s, expected=%s" %
-                         (tolerance_degrees_input, 3))
-
-        # parse the target mode override (argv[6] if present):
-        target_mode_input = \
-            api.parse_runtime_parameter(api.user_input_list[5], 6,
-                                        str, None, api.SUPPORTED_THERMOSTATS[
-                                            tstat_type]["modes"], input_list)
-        self.assertEqual(target_mode_input, "HEAT_MODE", "actual=%s, "
-                         "expected=%s" %
-                         (target_mode_input, "HEAT_MODE"))
+        for key, inputs in test_cases.items():
+            print("testing parse of input parameter=%s" % key)
+            expected_value = inputs["datatype"](test_list[
+                api.get_argv_position(key)])
+            actual_value = api.parse_runtime_parameter(
+                key,
+                inputs["datatype"],
+                inputs["default_value"],
+                inputs["supported_values"],
+                inputs["input_list"]
+                )
+            print("key=%s, actual=%s, expected=%s" % (key, actual_value,
+                                                      expected_value))
+            self.assertEqual(actual_value, expected_value,
+                             "actual=%s, expected=%s" %
+                             (actual_value, expected_value))
 
         # test out of range parameter
-        # parse the tolerance override (argv[5] if present):
-        input_list_backup = input_list
+        # parse the tolerance override:
+        test_list_backup = test_list
         try:
-            input_list[5] = "-1"  # out of range value
-            tolerance_degrees_input = \
-                api.parse_runtime_parameter(api.user_input_list[4], 5,
-                                            int, 2, range(0, 10), input_list)
+            # out of range value
+            key = "tolerance_degrees"
+            test_list[api.get_argv_position(key)] = "-1"
+
             # defaults should be used
             default_value = 2
+            tolerance_degrees_input = \
+                api.parse_runtime_parameter(key, int, default_value,
+                                            range(0, 10), test_list)
             self.assertEqual(tolerance_degrees_input, default_value,
                              "actual=%s, expected=%s" %
                              (tolerance_degrees_input, default_value))
         finally:
-            input_list = input_list_backup  # restore original
+            test_list = test_list_backup  # restore original
 
         # test missing input parameter
-        # parse the tolerance override (argv[5] if present):
-        input_list_backup = input_list
+        # parse the tolerance override:
+        test_list_backup = test_list
         try:
-            input_list.pop()  # pop last element
-            tolerance_degrees_input = \
-                api.parse_runtime_parameter(api.user_input_list[-1],
-                                            len(api.user_input_list),
-                                            int, 2, range(0, 10), input_list)
+            key = api.argv_order[len(api.argv_order) - 1]
+            test_list.pop(-1)  # pop last element
             # defaults should be used
             default_value = 2
-            self.assertEqual(tolerance_degrees_input, default_value,
+            measurements_input = \
+                api.parse_runtime_parameter(key,
+                                            int, str(default_value),
+                                            range(0, 10),
+                                            test_list)
+            self.assertEqual(measurements_input, default_value,
                              "actual=%s, expected=%s" %
-                             (tolerance_degrees_input, default_value))
+                             (measurements_input, default_value))
         finally:
-            input_list = input_list_backup  # restore original
+            test_list = test_list_backup  # restore original
 
         # test bad data type for position input parameter (should be int)
         with self.assertRaises(TypeError):
             print("attempting to invalid parameter type, "
                   "expect exception...")
-            tstat_type = api.parse_runtime_parameter(api.user_input_list[0],
-                                                     "1", str,
-                                                     api.DEFAULT_THERMOSTAT,
-                                                     api.SUPPORTED_THERMOSTATS,
-                                                     input_list)
+            tstat_type = api.parse_runtime_parameter(
+                "thermostat_type",
+                "bogus",  # datatype
+                api.DEFAULT_THERMOSTAT,
+                api.SUPPORTED_THERMOSTATS,
+                test_list)
 
         # test default behavior with input_list == None
         print("argv list=%s" % sys.argv)
         expected_result = [api.DEFAULT_THERMOSTAT]
-        argv0 = api.parse_runtime_parameter(api.user_input_list[0],
-                                            0, str,
-                                            api.DEFAULT_THERMOSTAT,
-                                            expected_result,
-                                            input_list=None)
+        argv0 = api.parse_runtime_parameter(
+            "thermostat_type",
+            str,
+            api.DEFAULT_THERMOSTAT,
+            expected_result,
+            argv_list=None)
         self.assertTrue(argv0 in expected_result, "actual=%s, expected=%s" %
                         (argv0, expected_result))
 
@@ -219,6 +241,11 @@ class Test(utc.UnitTestCommon):
     def test_DynamicModuleImport(self):
         """
         Verify dynamic_module_import() runs without error
+
+        TODO: this module results in a resourcewarning within unittest:
+        sys:1: ResourceWarning: unclosed <socket.socket fd=628,
+        family=AddressFamily.AF_INET, type=SocketKind.SOCK_DGRAM, proto=0,
+        laddr=('0.0.0.0', 64963)>
         """
 
         # test successful case
@@ -227,6 +254,7 @@ class Test(utc.UnitTestCommon):
         self.assertTrue(isinstance(pkg, object),
                         "api.dynamic_module_import() returned type(%s),"
                         " expected an object" % type(pkg))
+        del sys.modules[api.DEFAULT_THERMOSTAT]
         del pkg
 
         # test failing case
@@ -265,22 +293,24 @@ class Test(utc.UnitTestCommon):
         """
         Verify load_module() runs without error
         """
-
         # test successful case
-        fp, path, desc = api.find_module(api.DEFAULT_THERMOSTAT)
-        pkg = api.load_module(api.DEFAULT_THERMOSTAT, fp, path, desc)
-        print("default thermostat returned package type %s" % type(pkg))
-        self.assertTrue(isinstance(pkg, object),
-                        "api.load_module() returned type(%s),"
-                        " expected an object" % type(pkg))
-        del pkg
+        try:
+            fp, path, desc = api.find_module(api.DEFAULT_THERMOSTAT)
+            pkg = api.load_module(api.DEFAULT_THERMOSTAT, fp, path, desc)
+            print("default thermostat returned package type %s" % type(pkg))
+            self.assertTrue(isinstance(pkg, object),
+                            "api.load_module() returned type(%s),"
+                            " expected an object" % type(pkg))
+            del pkg
 
-        # test failing case
-        with self.assertRaises(FileNotFoundError):
-            print("attempting to load 'bogus' module, expect exception...")
-            pkg = api.load_module(api.DEFAULT_THERMOSTAT, fp, "", desc)
-            print("'bogus' module returned package type %s" % type(pkg))
-        print("test passed")
+            # test failing case
+            with self.assertRaises(FileNotFoundError):
+                print("attempting to load 'bogus' module, expect exception...")
+                pkg = api.load_module(api.DEFAULT_THERMOSTAT, fp, "", desc)
+                print("'bogus' module returned package type %s" % type(pkg))
+            print("test passed")
+        finally:
+            fp.close()
 
     def test_LoadHardwareLibrary(self):
         """

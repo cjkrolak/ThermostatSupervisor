@@ -2,6 +2,7 @@
 Thermostat Supervisor
 """
 # built ins
+import sys
 import time
 
 # local imports
@@ -208,4 +209,9 @@ def exec_supervise(debug=True, argv_list=None):
 
 
 if __name__ == "__main__":
-    exec_supervise(debug=True, argv_list=argv)
+    # if argv list is set use that, else use sys.argv
+    if argv:
+        argv_inputs = argv
+    else:
+        argv_inputs = sys.argv
+    exec_supervise(debug=True, argv_list=argv_inputs)

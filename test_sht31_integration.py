@@ -47,10 +47,13 @@ class Test(utc.UnitTestCommon):
         """
         Verify thermostat_basic_checkout on sht31.
         """
-        tc.thermostat_basic_checkout(api, sht31_config.ALIAS,
-                                     sht31.ThermostatClass,
-                                     sht31.ThermostatZone,
-                                     self.unit_test_argv)
+        mod = sht31
+        tc.thermostat_basic_checkout(
+            api,
+            self.unit_test_argv[api.get_argv_position("thermostat_type")],
+            self.unit_test_argv[api.get_argv_position("zone")],
+            mod.ThermostatClass, mod.ThermostatZone
+            )
 
     @unittest.skip("sht31 thermostat is currently broken, skipping test")
     def test_Z_Sht31Supervise(self):

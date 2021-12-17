@@ -570,6 +570,7 @@ class ThermostatCommonZone():
             "connection_time_sec": "connection_time_sec",
             "tolerance_degrees": "tolerance_degrees",
             "target_mode": "target_mode",
+            "measurements": "measurements",
             }
 
         for inp, cls_method in user_input_to_class_mapping.items():
@@ -746,41 +747,39 @@ class ThermostatCommonZone():
                      (util.get_function_name(2)), mode=util.BOTH_LOG)
 
 
-def thermostat_basic_checkout(api, thermostat_type,
-                              ThermostatClass, ThermostatZone,
-                              input_list=None):
+def thermostat_basic_checkout(api, thermostat_type, zone,
+                              ThermostatClass, ThermostatZone):
     """
     Perform basic Thermostat checkout.
 
     inputs:
         api(module): thermostat_api module.
         tstat(int):  thermostat_type
+        zone(int): zone number
         ThermostatClass(cls): Thermostat class
         ThermostatZone(cls): ThermostatZone class
-        input_list(list): runtime parameter overrides
     returns:
         Thermostat(obj): Thermostat object
         Zone(obj):  Zone object
     """
     util.log_msg.debug = True  # debug mode set
 
-    # get zone from user input
-    zone_input = api.parse_all_runtime_parameters(input_list)["zone"]
-
     # verify required env vars
-    api.verify_required_env_variables(thermostat_type, zone_input)
+    api.verify_required_env_variables(thermostat_type, zone)
 
     # import hardware module
     api.load_hardware_library(thermostat_type)
 
     # create Thermostat object
-    Thermostat = ThermostatClass(zone_input)
+    Thermostat = ThermostatClass(zone)
     Thermostat.print_all_thermostat_metadata()
 
     # create Zone object
     Zone = ThermostatZone(Thermostat)
 
     # update runtime overrides
+    api.user_inputs["thermostat_type"] = thermostat_type
+    api.user_inputs["zone"] = zone
     Zone.update_runtime_parameters(api.user_inputs)
 
     # print("thermostat meta data=%s\n" % Thermostat.get_all_metadata())

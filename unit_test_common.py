@@ -13,6 +13,7 @@ import thermostat_common as tc
 import utilities as util
 
 # generic argv list for unit testing
+unit_test_argv = api.user_inputs
 unit_test_argv = ["supervise.py",  # module
                   "sht31",  # thermostat
                   "99",  # str(util.UNIT_TEST_ZONE),  # zone
