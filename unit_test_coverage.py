@@ -13,21 +13,23 @@ coverage results:
 session window will contain high level coverage report
 open /htmlcov/index.html to see the html report index.
 """
+# built-in imports
 import coverage
-import unittest
+
+# local imports
+import unit_test_common as utc
 
 
 def code_coverage_all_tests():
+    """
+    Run all enabled unit tests and collect code coverage data.
+    """
     # start the coverage service
     cov = coverage.Coverage()
     cov.start()
 
-    # discover all unit test files in current directory
-    print("discovering tests...")
-    suite = unittest.TestLoader().discover('.', pattern="test_*.py")
-
     # run all unit tests
-    unittest.TextTestRunner(verbosity=2).run(suite)
+    utc.run_all_tests()
 
     # stop the coverage service and generate reports
     cov.stop()
@@ -36,4 +38,5 @@ def code_coverage_all_tests():
 
 
 if __name__ == "__main__":
+    utc.parse_unit_test_runtime_parameters()
     code_coverage_all_tests()

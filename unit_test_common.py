@@ -2,6 +2,7 @@
 Common functions used in multiple unit tests.
 """
 # global imports
+import sys
 import unittest
 
 # thermostat configs
@@ -11,6 +12,11 @@ import sht31_config
 import thermostat_api as api
 import thermostat_common as tc
 import utilities as util
+
+# enable modes
+enable_integration_tests = True  # use to bypass integration tests
+enable_kumolocal_tests = False  # Kumolocal is local net only
+enable_mmm_tests = False  # mmm50 is local net only
 
 
 def is_azure_environment():
@@ -113,3 +119,55 @@ class UnitTestCommon(unittest.TestCase):
         print("-" * 60)
         print("testing '%s'" % self.id())  # util.get_function_name(2))
         print("-" * 60)
+
+
+def run_all_tests():
+    """
+    Run all enabled unit tests.
+    """
+    # discover all unit test files in current directory
+    print("discovering tests...")
+    suite = unittest.TestLoader().discover('.', pattern="test_*.py")
+
+    # run all unit tests
+    result = unittest.TextTestRunner(verbosity=2).run(suite)
+
+    # flush stdout so that the following output will be at the end
+    sys.stdout.flush()
+    print("-" * 80)
+    print("skipped tests:")
+    for name, reason in result.skipped:
+        print(name, reason)
+    print("-" * 80)
+
+
+def parse_unit_test_runtime_parameters():
+    """
+    Parse runtime parameters passed in to unit test modules.
+
+    unit test runtime args:
+    0 = script_name
+    1 = enable integration tests (default = enabled)
+    """
+    # parameter 1: enable integration tests
+    global_par = "enable_integration_tests"
+    enable_flag = getattr(sys.modules[__name__], global_par)
+
+    # parse runtime parameters
+    if len(sys.argv) > 1:
+        enable_int_test_flags = ["1", "t", "true"]
+        if sys.argv[1].lower() in enable_int_test_flags:
+            enable_flag = True
+        else:
+            enable_flag = False
+
+    # update global parameter
+    setattr(sys.modules[__name__], global_par, enable_flag)
+    print("integration tests are %s" % ["disabled", "enabled"][enable_flag])
+    return enable_flag
+
+
+if __name__ == "__main__":
+    parse_unit_test_runtime_parameters()
+    print("DEBUG: enable_integration_tests=%s" % enable_integration_tests)
+    run_all_tests()
