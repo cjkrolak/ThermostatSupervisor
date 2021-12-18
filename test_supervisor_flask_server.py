@@ -18,7 +18,13 @@ import unit_test_common as utc
 import utilities as util
 
 
-class Test(utc.UnitTestCommon):
+@unittest.skipIf(utc.is_azure_environment(),
+                 "this test not supported on Azure Pipelines")
+@unittest.skipIf(not util.is_interactive_environment(),
+                 "this test hangs when run from the command line")
+@unittest.skipIf(not utc.enable_integration_tests,
+                 "integration tests are disabled")
+class IntegrationTest(utc.UnitTestCommon):
     """Test functions in supervisor_flask_server.py."""
 
     app = sfs.create_app()
@@ -55,10 +61,6 @@ class Test(utc.UnitTestCommon):
                       "thread may still be active")
         self.print_test_result()
 
-    @unittest.skipIf(utc.is_azure_environment(),
-                     "this test not supported on Azure Pipelines")
-    @unittest.skipIf(not util.is_interactive_environment(),
-                     "this test hangs when run from the command line")
     def test_Supervisor_FlaskServer(self):
         """
         Confirm Flask server returns valid data.

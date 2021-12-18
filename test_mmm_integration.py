@@ -16,7 +16,11 @@ import unit_test_common as utc
 import utilities as util
 
 
-class Test(utc.UnitTestCommon):
+@unittest.skipIf(not utc.enable_integration_tests,
+                 "integration tests are disabled")
+@unittest.skipIf(not utc.enable_mmm_tests,
+                 "mmm tests are disabled")
+class IntegrationTest(utc.UnitTestCommon):
     """
     Test functions in mmm.py.
 
@@ -42,8 +46,6 @@ class Test(utc.UnitTestCommon):
     def tearDown(self):
         self.print_test_result()
 
-    @unittest.skipIf(utc.is_azure_environment(),
-                     "mmm is only supported on local network")
     def test_A_MMMThermostatBasicCheckout(self):
         """
         Verify thermostat_basic_checkout on mmm.
@@ -70,8 +72,6 @@ class Test(utc.UnitTestCommon):
                         "timout setting (%s)" % (meas_data['6sigma_upper'],
                                                  mmm.socket_timeout))
 
-    @unittest.skipIf(utc.is_azure_environment(),
-                     "mmm is only supported on local network")
     def test_Z_MMMSupervise(self):
         """
         Verify supervisor loop on mmm Thermostat.

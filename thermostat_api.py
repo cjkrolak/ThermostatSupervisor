@@ -76,25 +76,6 @@ def get_argv_position(key):
     return util.get_key_from_value(argv_order, key)
 
 
-def get_runtime_override(input_list, key):
-    """
-    Return the argv runtime override value for specified parameter.
-
-    inputs:
-        input_list(list): runtime parameters in list
-        key(str): name of runtime parameter
-    returns:
-        (str, int, None):  runtime parameter value, None if missing.
-    """
-    try:
-        return_val = input_list[get_argv_position(key)]
-        return return_val
-    except IndexError:  # runtime parameter is missing
-        return None
-    except KeyError as e:  # bad key value
-        raise KeyError("'%s' is not a valid runtime parameter" % key) from e
-
-
 def verify_required_env_variables(tstat, zone_str):
     """
     Verify all required env variables are present for thermostat

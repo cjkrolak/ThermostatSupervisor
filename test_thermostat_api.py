@@ -227,18 +227,19 @@ class Test(utc.UnitTestCommon):
                 return_list = api.parse_all_runtime_parameters()
                 print("parsed input parameter list=%s" % return_list)
         else:
-            # arbitrary argv list > 1, assume it's a valid argv list
             if len(sys.argv) > 1:
-                # argv list > 1, thermostat_type is argv[1]
-                expected_result = [sys.argv[1]]
+                # argv list > 1, arbitrary list, can't evaluate
+                print("unittest sys.argv list is not empty, parsing result "
+                      "is indeterminant")
             else:
                 # argv list is 1 element, thermostat_type missing, will default
                 expected_result = [api.DEFAULT_THERMOSTAT]
-            return_list = api.parse_all_runtime_parameters()
+                return_list = api.parse_all_runtime_parameters()
 
-            self.assertTrue(return_list["thermostat_type"] in expected_result,
-                            "actual=%s, expected=%s" %
-                            (return_list["thermostat_type"], expected_result))
+                self.assertTrue(return_list[
+                    "thermostat_type"] in expected_result,
+                    "actual=%s, expected=%s" %
+                    (return_list["thermostat_type"], expected_result))
 
     def test_DynamicModuleImport(self):
         """

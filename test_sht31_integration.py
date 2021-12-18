@@ -16,7 +16,9 @@ import unit_test_common as utc
 import utilities as util
 
 
-class Test(utc.UnitTestCommon):
+@unittest.skipIf(not utc.enable_integration_tests,
+                 "integration tests are disabled")
+class IntegrationTest(utc.UnitTestCommon):
     """
     Test functions in sht31.py.
 
