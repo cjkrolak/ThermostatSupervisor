@@ -8,8 +8,6 @@ import random
 import unittest
 
 # local imports
-# import honeywell
-import sht31
 import thermostat_api as api
 import thermostat_common as tc
 import unit_test_common as utc
@@ -544,13 +542,16 @@ class Test(utc.UnitTestCommon):
             self.Zone.get_system_switch_position = \
                 (lambda *_, **__: self.Zone.system_switch_position[
                     tc.ThermostatCommonZone.DRY_MODE])
-            mod = sht31
+            thermostat_type = utc.unit_test_argv[api.get_argv_position(
+                "thermostat_type")]
+            zone = utc.unit_test_argv[api.get_argv_position(
+                "zone")]
+            mod = api.load_hardware_library(thermostat_type)
             Thermostat, Zone = \
                 tc.thermostat_basic_checkout(
                     api,
-                    utc.unit_test_argv[api.get_argv_position(
-                        "thermostat_type")],
-                    utc.unit_test_argv[api.get_argv_position("zone")],
+                    thermostat_type,
+                    zone,
                     mod.ThermostatClass, mod.ThermostatZone
                     )
             print("thermotat=%s" % type(Thermostat))
