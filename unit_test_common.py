@@ -113,4 +113,3 @@ class UnitTestCommon(unittest.TestCase):
         print("-" * 60)
         print("testing '%s'" % self.id())  # util.get_function_name(2))
         print("-" * 60)
-
