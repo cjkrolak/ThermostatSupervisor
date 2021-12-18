@@ -272,6 +272,30 @@ class ThermostatZone(tc.ThermostatCommonZone):
         return int(self.device_id.tmode['raw'] ==
                    self.system_switch_position[self.COOL_MODE])
 
+    def get_dry_mode(self) -> int:
+        """
+        Return the dry mode.
+
+        inputs:
+            None
+        returns:
+            (int): 1=dry mode enabled, 0=disabled.
+        """
+        return int(self.device_id.tmode['raw'] ==
+                   self.system_switch_position[self.DRY_MODE])
+
+    def get_auto_mode(self) -> int:
+        """
+        Return the auto mode.
+
+        inputs:
+            None
+        returns:
+            (int): 1=auto mode enabled, 0=disabled.
+        """
+        return int(self.device_id.tmode['raw'] ==
+                   self.system_switch_position[self.AUTO_MODE])
+
     def get_setpoint_list(self, sp_dict, day) -> list:
         """
         Return list of 4 setpoints for the day.

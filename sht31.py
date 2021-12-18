@@ -348,6 +348,17 @@ class ThermostatZone(tc.ThermostatCommonZone):
         """
         return self.system_switch_position[self.OFF_MODE]
 
+    def get_auto_mode(self) -> int:
+        """
+        Return the auto mode.
+
+        inputs:
+            None
+        returns:
+            (int): auto mode, 1=enabled, 0=disabled.
+        """
+        return self.system_switch_position[self.OFF_MODE]
+
     def get_system_switch_position(self) -> int:
         """ Return the thermostat mode.
 

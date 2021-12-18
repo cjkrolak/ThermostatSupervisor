@@ -242,6 +242,20 @@ class ThermostatZone(tc.ThermostatCommonZone):
                    self.system_switch_position[
                        tc.ThermostatCommonZone.DRY_MODE])
 
+    def get_auto_mode(self) -> int:
+        """
+        Refresh the cached zone information and return the auto mode.
+
+        inputs:
+            None
+        returns:
+            (int): auto mode, 1=enabled, 0=disabled.
+        """
+        self.refresh_zone_info()
+        return int(self.device_id.get_mode() ==
+                   self.system_switch_position[
+                       tc.ThermostatCommonZone.AUTO_MODE])
+
     def get_heat_setpoint_raw(self) -> int:  # used
         """
         Refresh the cached zone information and return the heat setpoint.
