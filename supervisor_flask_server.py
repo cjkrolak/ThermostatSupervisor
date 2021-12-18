@@ -90,6 +90,7 @@ def index():
             arg_list = [executable, dont_buffer, script] + sys.argv[1:]
         else:
             arg_list = [executable, dont_buffer, script]
+        print("DEBUG: arg_list=%s" % arg_list)
         with Popen(arg_list, stdin=DEVNULL, stdout=PIPE, stderr=STDOUT,
                    bufsize=1, universal_newlines=True, shell=True) as p:
             i = 0

@@ -341,13 +341,14 @@ class Test(utc.UnitTestCommon):
                              "expected=%s, actual=%s" %
                              (tempc, expected_tempf, tempf))
 
-        # verify pass-thru case
+        # verify exception cases
         for tempc in ['0', None, "", "*"]:
-            tempf = util.c_to_f(tempc)
-            expected_tempf = tempc
-            self.assertEqual(expected_tempf, tempf, "test case %s: "
-                             "expected=%s, actual=%s" %
-                             (tempc, expected_tempf, tempf))
+            with self.assertRaises(TypeError):
+                tempf = util.c_to_f(tempc)
+            # expected_tempf = tempc
+            # self.assertEqual(expected_tempf, tempf, "test case %s: "
+            #                  "expected=%s, actual=%s" %
+            #                  (tempc, expected_tempf, tempf))
 
     def test_FtoC(self):
         """Verify F to C calculations."""
@@ -360,13 +361,14 @@ class Test(utc.UnitTestCommon):
                              "expected=%s, actual=%s" %
                              (tempf, expected_tempc, tempc))
 
-        # verify pass-thru case
+        # verify exception case
         for tempf in ['0', None, "", "*"]:
-            tempc = util.f_to_c(tempf)
-            expected_tempc = tempf  # pass-thru
-            self.assertEqual(expected_tempc, tempc, "test case %s: "
-                             "expected=%s, actual=%s" %
-                             (tempf, expected_tempc, tempc))
+            with self.assertRaises(TypeError):
+                tempc = util.f_to_c(tempf)
+            # expected_tempc = tempf  # pass-thru
+            # self.assertEqual(expected_tempc, tempc, "test case %s: "
+            #                  "expected=%s, actual=%s" %
+            #                  (tempf, expected_tempc, tempc))
 
     def delete_test_file(self, full_path):
         """Delete the test file.

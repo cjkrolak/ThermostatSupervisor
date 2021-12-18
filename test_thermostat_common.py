@@ -8,7 +8,6 @@ import random
 import unittest
 
 # local imports
-import sht31_config
 import thermostat_api as api
 import thermostat_common as tc
 import unit_test_common as utc
@@ -543,17 +542,25 @@ class Test(utc.UnitTestCommon):
             self.Zone.get_system_switch_position = \
                 (lambda *_, **__: self.Zone.system_switch_position[
                     tc.ThermostatCommonZone.DRY_MODE])
+            thermostat_type = utc.unit_test_argv[api.get_argv_position(
+                "thermostat_type")]
+            zone = utc.unit_test_argv[api.get_argv_position(
+                "zone")]
+            mod = api.load_hardware_library(thermostat_type)
             Thermostat, Zone = \
                 tc.thermostat_basic_checkout(
-                    api, sht31_config.ALIAS, tc.ThermostatCommon,
-                    tc.ThermostatCommonZone, utc.unit_test_argv)
+                    api,
+                    thermostat_type,
+                    zone,
+                    mod.ThermostatClass, mod.ThermostatZone
+                    )
             print("thermotat=%s" % type(Thermostat))
             print("thermotat=%s" % type(Zone))
         finally:
             self.Zone.get_system_switch_position = self.switch_position_backup
 
     def test_RevertTemperatureDeviation(self):
-        """Verify thermostat_basic_checkout()."""
+        """Verify revert_temperature_deviation()."""
 
         def mock_revert_setpoint_func(setpoint):
             self.Zone.current_setpoint = setpoint

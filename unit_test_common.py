@@ -12,16 +12,40 @@ import thermostat_api as api
 import thermostat_common as tc
 import utilities as util
 
+
+def is_azure_environment():
+    """
+    Return True if machine is Azure pipeline.
+
+    Function assumes '192.' IP addresses are not Azure,
+    everything else is Azure.
+    """
+    return '192.' not in util.get_local_ip()
+
+
 # generic argv list for unit testing
-unit_test_argv = ["supervise.py",  # module
-                  "sht31",  # thermostat
-                  "99",  # str(util.UNIT_TEST_ZONE),  # zone
-                  "19",  # poll time in sec
-                  "359",  # reconnect time in sec
-                  "3",  # tolerance
-                  "OFF_MODE",  # thermostat mode
-                  "2",  # number of measurements
-                  ]
+unit_test_sht31 = ["supervise.py",  # module
+                   "sht31",  # thermostat
+                   ["99", "1"][is_azure_environment()],  # zone
+                   "19",  # poll time in sec
+                   "359",  # reconnect time in sec
+                   "3",  # tolerance
+                   "OFF_MODE",  # thermostat mode
+                   "2",  # number of measurements
+                   ]
+
+unit_test_honeywell = [
+    "supervise.py",  # module
+    "honeywell",  # thermostat
+    "0",  # str(util.UNIT_TEST_ZONE),  # zone
+    "19",  # poll time in sec
+    "359",  # reconnect time in sec
+    "3",  # tolerance
+    "OFF_MODE",  # thermostat mode
+    "2",  # number of measurements
+    ]
+
+unit_test_argv = unit_test_sht31
 
 
 class UnitTestCommon(unittest.TestCase):
@@ -89,13 +113,3 @@ class UnitTestCommon(unittest.TestCase):
         print("-" * 60)
         print("testing '%s'" % self.id())  # util.get_function_name(2))
         print("-" * 60)
-
-
-def is_azure_environment():
-    """
-    Return True if machine is Azure pipeline.
-
-    Function assumes '192.' IP addresses are not Azure,
-    everything else is Azure.
-    """
-    return '192.' not in util.get_local_ip()

@@ -8,7 +8,6 @@ import unittest
 
 # local imports
 import honeywell
-import honeywell_config
 import supervise as sup
 import thermostat_api as api
 import thermostat_common as tc
@@ -47,10 +46,13 @@ class Test(utc.UnitTestCommon):
         """
         Verify thermostat_basic_checkout on Honeywell.
         """
-        tc.thermostat_basic_checkout(api, honeywell_config.ALIAS,
-                                     honeywell.ThermostatClass,
-                                     honeywell.ThermostatZone,
-                                     self.unit_test_argv)
+        mod = honeywell
+        tc.thermostat_basic_checkout(
+            api,
+            self.unit_test_argv[api.get_argv_position("thermostat_type")],
+            self.unit_test_argv[api.get_argv_position("zone")],
+            mod.ThermostatClass, mod.ThermostatZone
+            )
 
     def test_Z_HoneywellSupervise(self):
         """

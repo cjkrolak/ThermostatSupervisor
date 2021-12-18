@@ -605,9 +605,13 @@ radiotherm.thermostat.Thermostat.__init__ = __init__
 
 if __name__ == "__main__":
 
-    _, Zone = tc.thermostat_basic_checkout(api, mmm_config.ALIAS,
-                                           ThermostatClass,
-                                           ThermostatZone)
+    # get zone override
+    zone = api.parse_all_runtime_parameters()["zone"]
+
+    _, Zone = tc.thermostat_basic_checkout(
+        api, mmm_config.ALIAS,
+        zone,
+        ThermostatClass, ThermostatZone)
 
     # measure thermostat response time
     measurements = 30

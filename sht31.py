@@ -361,6 +361,10 @@ class ThermostatZone(tc.ThermostatCommonZone):
 
 if __name__ == "__main__":
 
-    tc.thermostat_basic_checkout(api, sht31_config.ALIAS,
-                                 ThermostatClass,
-                                 ThermostatZone)
+    # get zone override
+    zone = api.parse_all_runtime_parameters()["zone"]
+
+    tc.thermostat_basic_checkout(
+        api, sht31_config.ALIAS,
+        zone,
+        ThermostatClass, ThermostatZone)
