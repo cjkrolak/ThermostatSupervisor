@@ -8,8 +8,8 @@ import random
 import unittest
 
 # local imports
-import honeywell
-# import sht31
+# import honeywell
+import sht31
 import thermostat_api as api
 import thermostat_common as tc
 import unit_test_common as utc
@@ -544,8 +544,7 @@ class Test(utc.UnitTestCommon):
             self.Zone.get_system_switch_position = \
                 (lambda *_, **__: self.Zone.system_switch_position[
                     tc.ThermostatCommonZone.DRY_MODE])
-            # TODO - update to sht31 once that thermostat is fixed
-            mod = honeywell
+            mod = sht31
             Thermostat, Zone = \
                 tc.thermostat_basic_checkout(
                     api,

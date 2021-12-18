@@ -34,7 +34,7 @@ unit_test_honeywell = [
     "2",  # number of measurements
     ]
 
-unit_test_argv = unit_test_honeywell
+unit_test_argv = unit_test_sht31
 
 
 class UnitTestCommon(unittest.TestCase):
