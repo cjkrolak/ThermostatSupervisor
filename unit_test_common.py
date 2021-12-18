@@ -15,8 +15,8 @@ import utilities as util
 
 # enable modes
 enable_integration_tests = True  # use to bypass integration tests
-enable_kumolocal_tests = True  # Kumolocal is local net only
-enable_mmm_tests = True  # mmm50 is local net only
+enable_kumolocal_tests = False  # Kumolocal is local net only
+enable_mmm_tests = False  # mmm50 is local net only
 
 
 def is_azure_environment():
