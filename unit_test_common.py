@@ -13,16 +13,28 @@ import thermostat_common as tc
 import utilities as util
 
 # generic argv list for unit testing
-unit_test_argv = api.user_inputs
-unit_test_argv = ["supervise.py",  # module
-                  "sht31",  # thermostat
-                  "99",  # str(util.UNIT_TEST_ZONE),  # zone
-                  "19",  # poll time in sec
-                  "359",  # reconnect time in sec
-                  "3",  # tolerance
-                  "OFF_MODE",  # thermostat mode
-                  "2",  # number of measurements
-                  ]
+unit_test_sht31 = ["supervise.py",  # module
+                   "sht31",  # thermostat
+                   "99",  # str(util.UNIT_TEST_ZONE),  # zone
+                   "19",  # poll time in sec
+                   "359",  # reconnect time in sec
+                   "3",  # tolerance
+                   "OFF_MODE",  # thermostat mode
+                   "2",  # number of measurements
+                   ]
+
+unit_test_honeywell = [
+    "supervise.py",  # module
+    "honeywell",  # thermostat
+    "0",  # str(util.UNIT_TEST_ZONE),  # zone
+    "19",  # poll time in sec
+    "359",  # reconnect time in sec
+    "3",  # tolerance
+    "OFF_MODE",  # thermostat mode
+    "2",  # number of measurements
+    ]
+
+unit_test_argv = unit_test_honeywell
 
 
 class UnitTestCommon(unittest.TestCase):
