@@ -52,7 +52,7 @@ supported_configs = {"module": "sht31",
 
 zone_names = {
     LOFT_SHT31: "Loft (local)",
-    LOFT_SHT31_REMOTE: "loft (remote",
+    LOFT_SHT31_REMOTE: "loft (remote)",
     UNIT_TEST_ZONE: "unittest",
     }
 
