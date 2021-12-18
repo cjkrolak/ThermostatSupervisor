@@ -44,7 +44,6 @@ class IntegrationTest(utc.UnitTestCommon):
     def tearDown(self):
         self.print_test_result()
 
-    @unittest.skip("sht31 thermostat is currently broken, skipping test")
     def test_A_Sht31ThermostatBasicCheckout(self):
         """
         Verify thermostat_basic_checkout on sht31.
@@ -57,7 +56,6 @@ class IntegrationTest(utc.UnitTestCommon):
             mod.ThermostatClass, mod.ThermostatZone
             )
 
-    @unittest.skip("sht31 thermostat is currently broken, skipping test")
     def test_Z_Sht31Supervise(self):
         """
         Verify supervisor loop on sht31 Thermostat.

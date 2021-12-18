@@ -324,6 +324,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         returns:
             (int): heat mode.
         """
+        # function not supported on SHT31
         return self.system_switch_position[self.OFF_MODE]
 
     def get_cool_mode(self) -> int:
@@ -335,6 +336,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         returns:
             (int): cool mode.
         """
+        # function not supported on SHT31
         return self.system_switch_position[self.OFF_MODE]
 
     def get_dry_mode(self) -> int:
@@ -346,6 +348,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         returns:
             (int): dry mode, 1=enabled, 0=disabled.
         """
+        # function not supported on SHT31
         return self.system_switch_position[self.OFF_MODE]
 
     def get_auto_mode(self) -> int:
@@ -357,7 +360,42 @@ class ThermostatZone(tc.ThermostatCommonZone):
         returns:
             (int): auto mode, 1=enabled, 0=disabled.
         """
+        # function not supported on SHT31
         return self.system_switch_position[self.OFF_MODE]
+
+    def get_fan_mode(self) -> int:
+        """
+        Return the fan mode.
+
+        inputs:
+            None
+        returns:
+            (int): fan mode, 1=enabled, 0=disabled.
+        """
+        # function not supported on SHT31
+        return self.system_switch_position[self.OFF_MODE]
+
+    def is_heating(self) -> int:
+        """
+        Return 1 if actively heating, else 0.
+
+        inputs:
+            None
+        returns:
+            (int): actively heating, 1=yes, 2=no.
+        """
+        return 0  # sht31 does not provide heat.
+
+    def is_cooling(self) -> int:
+        """
+        Return 1 if actively cooling, else 0.
+
+        inputs:
+            None
+        returns:
+            (int): actively cooling, 1=yes, 2=no.
+        """
+        return 0  # sht31 does not provide cooling.
 
     def get_system_switch_position(self) -> int:
         """ Return the thermostat mode.
