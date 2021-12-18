@@ -54,6 +54,7 @@ class ThermostatCommonZone():
     COOL_MODE = "cool"
     AUTO_MODE = "auto"
     DRY_MODE = "dry"
+    FAN_MODE = "fan"
     UNKNOWN_MODE = "unknown"
 
     # modes where heat is applied
@@ -359,6 +360,30 @@ class ThermostatCommonZone():
 
     def get_dry_mode(self):
         """Return 1 if dry mode enabled, else 0."""
+        return util.bogus_int
+
+    def get_auto_mode(self):
+        """Return 1 if auto mode enabled, else 0."""
+        return util.bogus_int
+
+    def get_fan_mode(self):
+        """Return 1 if fan mode enabled, else 0."""
+        return util.bogus_int
+
+    def is_heating(self):
+        """Return 1 if heating relay is active, else 0."""
+        return util.bogus_int
+
+    def is_cooling(self):
+        """Return 1 if cooling relay is active, else 0."""
+        return util.bogus_int
+
+    def is_drying(self):
+        """Return 1 if drying relay is active, else 0."""
+        return util.bogus_int
+
+    def is_auto(self):
+        """Return 1 if auto relay is active, else 0."""
         return util.bogus_int
 
     def set_heat_setpoint(self, temp: int) -> None:
@@ -704,11 +729,17 @@ class ThermostatCommonZone():
         util.log_msg("(schedule) cool program=%s" %
                      self.get_schedule_program_cool(),
                      mode=mode, func_name=1)
-        util.log_msg("heat mode=%s" % self.get_heat_mode(),
+        util.log_msg("heat mode=%s (actively heating=%s)" %
+                     (self.get_heat_mode(), self.is_heating()),
                      mode=mode, func_name=1)
-        util.log_msg("cool mode=%s" % self.get_cool_mode(),
+        util.log_msg("cool mode=%s (actively cooling=%s)" %
+                     (self.get_cool_mode(), self.is_cooling()),
                      mode=mode, func_name=1)
         util.log_msg("dry mode=%s" % self.get_dry_mode(),
+                     mode=mode, func_name=1)
+        util.log_msg("auto mode=%s" % self.get_auto_mode(),
+                     mode=mode, func_name=1)
+        util.log_msg("fan mode=%s" % self.get_fan_mode(),
                      mode=mode, func_name=1)
         util.log_msg("hold=%s" % self.get_vacation_hold(),
                      mode=mode, func_name=1)

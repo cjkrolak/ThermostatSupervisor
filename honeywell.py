@@ -337,15 +337,17 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
 
     def get_heat_mode(self) -> int:
         """
-        Refresh the cached zone information and return the heat mode.
+        Refresh the cached zone information and return heat mode.
 
         inputs:
             None
         returns:
-            (int) heat mode.
+            (int): 1 heat mode, else 0
         """
         self.refresh_zone_info()
-        return int(self.zone_info['latestData']['uiData']['StatusHeat'])
+        return int(self.get_system_switch_position() ==
+                   self.system_switch_position[
+                       tc.ThermostatCommonZone.HEAT_MODE])
 
     def get_cool_mode(self) -> int:
         """
@@ -354,10 +356,12 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
         inputs:
             None
         returns:
-            (int): cool mode.
+            (int): 1 if cool mode, else 0
         """
         self.refresh_zone_info()
-        return int(self.zone_info['latestData']['uiData']['StatusCool'])
+        return int(self.get_system_switch_position() ==
+                   self.system_switch_position[
+                       tc.ThermostatCommonZone.COOL_MODE])
 
     def get_dry_mode(self) -> int:
         """
@@ -366,9 +370,48 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
         inputs:
             None
         returns:
-            (int): dry mode, 1=enabled, 0=disabled.
+            (int): 1 if dry mode, else 0
         """
-        return 0  # dry mode not supported on Honeywell
+        self.refresh_zone_info()
+        return int(self.get_system_switch_position() ==
+                   self.system_switch_position[
+                       tc.ThermostatCommonZone.DRY_MODE])
+
+    def get_auto_mode(self) -> int:
+        """
+        Return the auto mode.
+
+        inputs:
+            None
+        returns:
+            (int): 1 if auto mode, else 0
+        """
+        self.refresh_zone_info()
+        return int(self.get_system_switch_position() ==
+                   self.system_switch_position[
+                       tc.ThermostatCommonZone.AUTO_MODE])
+
+    def is_heating(self) -> int:
+        """
+        Refresh the cached zone information and return the heat active mode.
+        inputs:
+            None
+        returns:
+            (int) 1 if heating is active, else 0.
+        """
+        self.refresh_zone_info()
+        return int(self.zone_info['latestData']['uiData']['StatusHeat'])
+
+    def is_cooling(self) -> int:
+        """
+        Refresh the cached zone information and return the cool active mode.
+        inputs:
+            None
+        returns:
+            (int): 1 if cooling is active, else 0.
+        """
+        self.refresh_zone_info()
+        return int(self.zone_info['latestData']['uiData']['StatusCool'])
 
     def get_schedule_heat_sp(self) -> int:  # used
         """

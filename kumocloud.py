@@ -134,9 +134,14 @@ class ThermostatZone(tc.ThermostatCommonZone):
             tc.ThermostatCommonZone.HEAT_MODE] = 1  # "Heat"
         self.system_switch_position[
             tc.ThermostatCommonZone.OFF_MODE] = 16  # "Off"
+        self.system_switch_position[
+            tc.ThermostatCommonZone.FAN_MODE] = 7  # "Fan"
+        self.system_switch_position[
+            tc.ThermostatCommonZone.DRY_MODE] = 2  # dry
+        self.system_switch_position[
+            tc.ThermostatCommonZone.COOL_MODE] = 3  # cool
+
         # TODO - these modes need verification
-        self.system_switch_position[tc.ThermostatCommonZone.COOL_MODE] = "Cool"
-        self.system_switch_position[tc.ThermostatCommonZone.DRY_MODE] = "Auto"
         self.system_switch_position[tc.ThermostatCommonZone.AUTO_MODE] = "Dry"
 
         # zone info
@@ -277,6 +282,34 @@ class ThermostatZone(tc.ThermostatCommonZone):
         return int(self.get_system_switch_position() ==
                    self.system_switch_position[
                        tc.ThermostatCommonZone.DRY_MODE])
+
+    def get_fan_mode(self) -> int:
+        """
+        Refresh the cached zone information and return the dry mode.
+
+        inputs:
+            None
+        returns:
+            (int): dry mode, 1=enabled, 0=disabled.
+        """
+        self.refresh_zone_info()
+        return int(self.get_system_switch_position() ==
+                   self.system_switch_position[
+                       tc.ThermostatCommonZone.FAN_MODE])
+
+    def get_auto_mode(self) -> int:
+        """
+        Refresh the cached zone information and return the auto mode.
+
+        inputs:
+            None
+        returns:
+            (int): auto mode, 1=enabled, 0=disabled.
+        """
+        self.refresh_zone_info()
+        return int(self.get_system_switch_position() ==
+                   self.system_switch_position[
+                       tc.ThermostatCommonZone.AUTO_MODE])
 
     def get_heat_setpoint_raw(self) -> int:  # used
         """
