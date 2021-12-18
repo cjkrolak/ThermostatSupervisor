@@ -135,7 +135,7 @@ def run_all_tests():
     # flush stdout so that the following output will be at the end
     sys.stdout.flush()
     print("-" * 80)
-    print("skipped tests:")
+    print("skipped tests(%s):" % len(result.skipped))
     for name, reason in result.skipped:
         print(name, reason)
     print("-" * 80)
