@@ -56,7 +56,6 @@ class Test(utc.UnitTest):
         """
         def dummy_true(): return True
 
-        dummy_func = None
         test_cases = [["is_heat_mode", self.Zone.HEAT_MODE],
                       ["is_cool_mode", self.Zone.COOL_MODE],
                       ["is_dry_mode", self.Zone.DRY_MODE],
