@@ -184,7 +184,14 @@ class ThermostatCommonZone():
         self.temperature_is_deviated = self.is_temp_deviated_from_schedule()
 
     def is_temp_deviated_from_schedule(self):
-        """Return True if temperature is deviated from current schedule."""
+        """
+        Return True if temperature is deviated from current schedule.
+
+        inputs:
+            None:
+        returns:
+            (bool): True if temp is deviated from schedule.
+        """
         return self.operator(self.current_setpoint, self.schedule_setpoint
                              + self.tolerance_sign
                              * self.tolerance_degrees)
@@ -257,8 +264,9 @@ class ThermostatCommonZone():
         # add setpoints if in heat or cool mode
         if self.is_heat_mode() or self.is_cool_mode():
             status_msg += (", set point=%s, tolerance=%s, override=%s" %
-                           (self.schedule_setpoint,
-                            self.tolerance_degrees, self.current_setpoint))
+                           (util.temp_value_with_units(self.schedule_setpoint),
+                            util.temp_value_with_units(self.tolerance_degrees),
+                            util.temp_value_with_units(self.current_setpoint)))
 
         full_status_msg = ("%s: (session:%s, poll:%s) %s_MODE %s" %
                            (datetime.datetime.now().
@@ -341,7 +349,8 @@ class ThermostatCommonZone():
             msg = ("%s zone %s: scheduled %s_MODE set point (%s) is "
                    "%s limit (%s)" % (
                        self.thermostat_type, self.zone_number, label.upper(),
-                       setpoint, level, limit_value))
+                       util.temp_value_with_units(setpoint), level,
+                       util.temp_value_with_units(limit_value)))
             util.log_msg("WARNING: %s" % msg, mode=util.BOTH_LOG)
             eml.send_email_alert(
                     subject=msg,

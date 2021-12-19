@@ -71,7 +71,8 @@ class IntegrationTest(utc.UnitTest):
               Zone.get_temporary_hold_until_time())
         meta_data = Thermostat.get_all_metadata()
         print("thermostat meta data=%s" % meta_data)
-        print("thermostat display tempF=%s" % Zone.get_display_temp())
+        print("thermostat display temp=%s" %
+              util.temp_value_with_units(Zone.get_display_temp()))
 
         # verify measurements
         self.assertEqual(meta_data["measurements"],
