@@ -375,6 +375,18 @@ class ThermostatZone(tc.ThermostatCommonZone):
         # function not supported on SHT31
         return self.system_switch_position[self.OFF_MODE]
 
+    def is_off_mode(self) -> int:
+        """
+        Return the off mode.
+
+        inputs:
+            None
+        returns:
+            (int): off mode, 1=enabled, 0=disabled.
+        """
+        # function not supported on SHT31
+        return self.system_switch_position[self.OFF_MODE]
+
     def is_heating(self) -> int:
         """
         Return 1 if actively heating, else 0.

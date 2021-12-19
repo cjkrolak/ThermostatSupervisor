@@ -194,6 +194,12 @@ class ThermostatZone(tc.ThermostatCommonZone):
         self.system_switch_position[tc.ThermostatCommonZone.OFF_MODE] = 0
         self.system_switch_position[tc.ThermostatCommonZone.AUTO_MODE] = 3
 
+        # need verification
+        self.system_switch_position[
+            tc.ThermostatCommonZone.DRY_MODE] = util.bogus_int
+        self.system_switch_position[
+            tc.ThermostatCommonZone.FAN_MODE] = util.bogus_int
+
         # zone info
         self.thermostat_type = mmm_config.ALIAS
         self.device_id = Thermostat_obj.device_id

@@ -142,8 +142,9 @@ class ThermostatZone(tc.ThermostatCommonZone):
         self.system_switch_position[tc.ThermostatCommonZone.COOL_MODE] = "cool"
         self.system_switch_position[tc.ThermostatCommonZone.HEAT_MODE] = "heat"
         self.system_switch_position[tc.ThermostatCommonZone.OFF_MODE] = "off"
-        self.system_switch_position[tc.ThermostatCommonZone.DRY_MODE] = "auto"
-        self.system_switch_position[tc.ThermostatCommonZone.AUTO_MODE] = "dry"
+        self.system_switch_position[tc.ThermostatCommonZone.DRY_MODE] = "dry"
+        self.system_switch_position[tc.ThermostatCommonZone.AUTO_MODE] = "auto"
+        self.system_switch_position[tc.ThermostatCommonZone.FAN_MODE] = "fan"
 
         # zone info
         self.thermostat_type = kumolocal_config.ALIAS

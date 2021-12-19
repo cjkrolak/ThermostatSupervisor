@@ -286,12 +286,12 @@ class ThermostatZone(tc.ThermostatCommonZone):
 
     def is_fan_mode(self) -> int:
         """
-        Refresh the cached zone information and return the dry mode.
+        Refresh the cached zone information and return the fan mode.
 
         inputs:
             None
         returns:
-            (int): dry mode, 1=enabled, 0=disabled.
+            (int): fan mode, 1=enabled, 0=disabled.
         """
         self.refresh_zone_info()
         return int(self.get_system_switch_position() ==
@@ -311,6 +311,20 @@ class ThermostatZone(tc.ThermostatCommonZone):
         return int(self.get_system_switch_position() ==
                    self.system_switch_position[
                        tc.ThermostatCommonZone.AUTO_MODE])
+
+    def is_off_mode(self) -> int:
+        """
+        Refresh the cached zone information and return the off mode.
+
+        inputs:
+            None
+        returns:
+            (int): off mode, 1=enabled, 0=disabled.
+        """
+        self.refresh_zone_info()
+        return int(self.get_system_switch_position() ==
+                   self.system_switch_position[
+                       tc.ThermostatCommonZone.OFF_MODE])
 
     def get_heat_setpoint_raw(self) -> int:  # used
         """

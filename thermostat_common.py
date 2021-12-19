@@ -41,13 +41,6 @@ class ThermostatCommon():
 class ThermostatCommonZone():
     """Class methods common to all thermostat zones."""
 
-    # OFF_MODE = "OFF_MODE"
-    # HEAT_MODE = "HEAT_MODE"
-    # COOL_MODE = "COOL_MODE"
-    # AUTO_MODE = "AUTO_MODE"
-    # DRY_MODE = "DRY_MODE"
-    # UNKNOWN_MODE = "UNKNOWN_MODE"
-
     # supported thermostat modes
     OFF_MODE = "off"
     HEAT_MODE = "heat"
@@ -171,7 +164,17 @@ class ThermostatCommonZone():
             self.global_operator = operator.ne
             self.revert_setpoint_func = self.function_not_supported
             self.get_setpoint_func = self.function_not_supported
-        else:
+        elif self.is_fan_mode():
+            self.current_mode = self.FAN_MODE
+            self.current_setpoint = util.bogus_int
+            self.schedule_setpoint = util.bogus_int
+            self.tolerance_sign = 1
+            self.operator = operator.ne
+            self.global_limit = util.bogus_int
+            self.global_operator = operator.ne
+            self.revert_setpoint_func = self.function_not_supported
+            self.get_setpoint_func = self.function_not_supported
+        elif self.is_off_mode():
             self.current_mode = self.OFF_MODE
             self.current_setpoint = util.bogus_int
             self.schedule_setpoint = util.bogus_int
@@ -181,6 +184,8 @@ class ThermostatCommonZone():
             self.global_operator = operator.ne
             self.revert_setpoint_func = self.function_not_supported
             self.get_setpoint_func = self.function_not_supported
+        else:
+            raise ValueError("unknown thermostat mode")
 
         self.temperature_is_deviated = self.is_temp_deviated_from_schedule()
 
@@ -311,6 +316,8 @@ class ThermostatCommonZone():
             self.current_mode = self.DRY_MODE
         elif self.is_auto_mode():
             self.current_mode = self.AUTO_MODE
+        elif self.is_fan_mode():
+            self.current_mode = self.FAN_MODE
         else:
             self.current_mode = self.OFF_MODE
 
@@ -384,6 +391,11 @@ class ThermostatCommonZone():
         """Return 1 if fan mode enabled, else 0."""
         return (self.get_system_switch_position() ==
                 self.system_switch_position[self.FAN_MODE])
+
+    def is_off_mode(self):
+        """Return 1 if fan mode enabled, else 0."""
+        return (self.get_system_switch_position() ==
+                self.system_switch_position[self.OFF_MODE])
 
     def is_controlled_mode(self):
         """Return True if mode is being controlled."""
@@ -743,6 +755,8 @@ class ThermostatCommonZone():
         util.log_msg("auto mode=%s" % self.is_auto_mode(),
                      mode=mode, func_name=1)
         util.log_msg("fan mode=%s" % self.is_fan_mode(),
+                     mode=mode, func_name=1)
+        util.log_msg("off mode=%s" % self.is_off_mode(),
                      mode=mode, func_name=1)
         util.log_msg("hold=%s" % self.get_vacation_hold(),
                      mode=mode, func_name=1)
