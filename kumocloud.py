@@ -42,16 +42,16 @@ class ThermostatClass(pykumo.KumoCloudAccount):
         self.device_id = self.get_target_zone_id(self.zone_number)
         self.serial_number = None  # will be populated when unit is queried.
 
-    def get_target_zone_id(self, zone_number=0):
+    def get_target_zone_id(self, zone=0):
         """
         Return the target zone ID.
 
         inputs:
-            zone_number(int):  zone number.
+            zone(int):  zone number.
         returns:
             (int): device_id
         """
-        return zone_number
+        return zone
 
     def get_all_thermostat_metadata(self, zone=None, debug=False):
         """Get all thermostat meta data for zone from kumocloud.
@@ -131,18 +131,15 @@ class ThermostatZone(tc.ThermostatCommonZone):
 
         # switch config for this thermostat
         self.system_switch_position[
-            tc.ThermostatCommonZone.HEAT_MODE] = 1  # "Heat"
+            tc.ThermostatCommonZone.HEAT_MODE] = 1  # "Heat" 0 0001
         self.system_switch_position[
-            tc.ThermostatCommonZone.OFF_MODE] = 16  # "Off"
+            tc.ThermostatCommonZone.OFF_MODE] = 16  # "Off"  1 0000
         self.system_switch_position[
-            tc.ThermostatCommonZone.FAN_MODE] = 7  # "Fan"
+            tc.ThermostatCommonZone.FAN_MODE] = 7  # "Fan"   0 0111
         self.system_switch_position[
-            tc.ThermostatCommonZone.DRY_MODE] = 2  # dry
+            tc.ThermostatCommonZone.DRY_MODE] = 2  # dry     0 0010
         self.system_switch_position[
-            tc.ThermostatCommonZone.COOL_MODE] = 3  # cool
-
-        # TODO - these modes need verification
-        self.system_switch_position[tc.ThermostatCommonZone.AUTO_MODE] = "Dry"
+            tc.ThermostatCommonZone.COOL_MODE] = 3  # cool   0 0011
 
         # zone info
         self.thermostat_type = kumocloud_config.ALIAS
@@ -241,7 +238,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         return self.get_parameter('humidistat', 'inputs',
                                   'acoilSettings')
 
-    def get_heat_mode(self) -> int:
+    def is_heat_mode(self) -> int:
         """
         Refresh the cached zone information and return the heat mode.
 
@@ -255,7 +252,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
                    self.system_switch_position[
                        tc.ThermostatCommonZone.HEAT_MODE])
 
-    def get_cool_mode(self) -> int:
+    def is_cool_mode(self) -> int:
         """
         Refresh the cached zone information and return the cool mode.
 
@@ -269,7 +266,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
                    self.system_switch_position[
                        tc.ThermostatCommonZone.COOL_MODE])
 
-    def get_dry_mode(self) -> int:
+    def is_dry_mode(self) -> int:
         """
         Refresh the cached zone information and return the dry mode.
 
@@ -283,21 +280,21 @@ class ThermostatZone(tc.ThermostatCommonZone):
                    self.system_switch_position[
                        tc.ThermostatCommonZone.DRY_MODE])
 
-    def get_fan_mode(self) -> int:
+    def is_fan_mode(self) -> int:
         """
-        Refresh the cached zone information and return the dry mode.
+        Refresh the cached zone information and return the fan mode.
 
         inputs:
             None
         returns:
-            (int): dry mode, 1=enabled, 0=disabled.
+            (int): fan mode, 1=enabled, 0=disabled.
         """
         self.refresh_zone_info()
         return int(self.get_system_switch_position() ==
                    self.system_switch_position[
                        tc.ThermostatCommonZone.FAN_MODE])
 
-    def get_auto_mode(self) -> int:
+    def is_auto_mode(self) -> int:
         """
         Refresh the cached zone information and return the auto mode.
 
@@ -310,6 +307,20 @@ class ThermostatZone(tc.ThermostatCommonZone):
         return int(self.get_system_switch_position() ==
                    self.system_switch_position[
                        tc.ThermostatCommonZone.AUTO_MODE])
+
+    def is_off_mode(self) -> int:
+        """
+        Refresh the cached zone information and return the off mode.
+
+        inputs:
+            None
+        returns:
+            (int): off mode, 1=enabled, 0=disabled.
+        """
+        self.refresh_zone_info()
+        return int(self.get_system_switch_position() ==
+                   self.system_switch_position[
+                       tc.ThermostatCommonZone.OFF_MODE])
 
     def get_heat_setpoint_raw(self) -> int:  # used
         """
@@ -492,7 +503,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         # heating status
         if switch_position == \
                 self.system_switch_position[self.HEAT_MODE]:
-            util.log_msg("heat mode=%s" % self.get_heat_mode(),
+            util.log_msg("heat mode=%s" % self.is_heat_mode(),
                          mode=util.BOTH_LOG)
             util.log_msg("heat setpoint=%s" %
                          self.get_heat_setpoint_raw(), mode=util.BOTH_LOG)
@@ -503,7 +514,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         # cooling status
         if switch_position == \
                 self.system_switch_position[self.COOL_MODE]:
-            util.log_msg("cool mode=%s" % self.get_cool_mode(),
+            util.log_msg("cool mode=%s" % self.is_cool_mode(),
                          mode=util.BOTH_LOG)
             util.log_msg("cool setpoint=%s" %
                          self.get_cool_setpoint_raw(), mode=util.BOTH_LOG)
@@ -525,9 +536,9 @@ class ThermostatZone(tc.ThermostatCommonZone):
 if __name__ == "__main__":
 
     # get zone override
-    zone_input = api.parse_all_runtime_parameters()["zone"]
+    zone_number = api.parse_all_runtime_parameters()["zone"]
 
     tc.thermostat_basic_checkout(
         api, kumocloud_config.ALIAS,
-        zone_input,
+        zone_number,
         ThermostatClass, ThermostatZone)

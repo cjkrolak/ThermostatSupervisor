@@ -85,11 +85,14 @@ class UnitTest(unittest.TestCase):
         self.Thermostat = tc.ThermostatCommon()
         self.Zone = tc.ThermostatCommonZone()
         self.Zone.update_runtime_parameters(api.user_inputs)
-        self.Zone.current_mode = self.Zone.HEAT_MODE
+        self.Zone.current_mode = self.Zone.OFF_MODE
+        self.is_off_mode_bckup = self.Zone.is_off_mode
+        self.Zone.is_off_mode = lambda *_, **__: 1
 
     def tearDown_mock_thermostat_zone(self):
         del api.thermostats[self.thermostat_type]
         api.user_inputs = self.user_inputs_backup
+        self.Zone.is_off_mode = self.is_off_mode_bckup
 
     def print_test_result(self):
         if hasattr(self, '_outcome'):  # Python 3.4+

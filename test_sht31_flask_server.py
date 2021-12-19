@@ -65,8 +65,8 @@ class IntegrationTest(utc.UnitTest):
 
         print("current thermostat settings...")
         print("switch position: %s" % Zone.get_system_switch_position())
-        print("heat mode=%s" % Zone.get_heat_mode())
-        print("cool mode=%s" % Zone.get_cool_mode())
+        print("heat mode=%s" % Zone.is_heat_mode())
+        print("cool mode=%s" % Zone.is_cool_mode())
         print("temporary hold minutes=%s" %
               Zone.get_temporary_hold_until_time())
         meta_data = Thermostat.get_all_metadata()
