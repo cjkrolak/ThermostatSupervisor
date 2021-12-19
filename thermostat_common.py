@@ -184,7 +184,14 @@ class ThermostatCommonZone():
         self.temperature_is_deviated = self.is_temp_deviated_from_schedule()
 
     def is_temp_deviated_from_schedule(self):
-        """Return True if temperature is deviated from current schedule."""
+        """
+        Return True if temperature is deviated from current schedule.
+
+        inputs:
+            None:
+        returns:
+            (bool): True if temp is deviated from schedule.
+        """
         return self.operator(self.current_setpoint, self.schedule_setpoint
                              + self.tolerance_sign
                              * self.tolerance_degrees)

@@ -103,7 +103,7 @@ class Test(utc.UnitTest):
             "is_temp_deviated_from_schedule": {
                 "key": self.Zone.is_temp_deviated_from_schedule,
                 "args": None,
-                "return_type": type(None)},
+                "return_type": bool},
             "get_current_mode": {
                 "key": self.Zone.get_current_mode,
                 "args": [1, 1],  # flag_all_deviations==False
