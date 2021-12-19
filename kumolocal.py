@@ -398,12 +398,12 @@ class ThermostatZone(tc.ThermostatCommonZone):
             self.device_id = \
                 self.Thermostat.get_target_zone_id(self.zone_number)
 
-    def report_heating_parameters(self):
+    def report_heating_parameters(self, switch_position=None):
         """
         Display critical thermostat settings and reading to the screen.
 
         inputs:
-            None
+            switch_position(int): switch position override, used for testing.
         returns:
             None
         """
@@ -411,8 +411,12 @@ class ThermostatZone(tc.ThermostatCommonZone):
         util.log_msg("display temp=%s" % self.get_display_temp(),
                      mode=util.BOTH_LOG, func_name=1)
 
+        # get switch position
+        if switch_position is None:
+            switch_position = self.get_system_switch_position()
+
         # heating status
-        if self.get_system_switch_position() == \
+        if switch_position == \
                 self.system_switch_position[self.HEAT_MODE]:
             util.log_msg("heat mode=%s" % self.get_heat_mode(),
                          mode=util.BOTH_LOG)
@@ -423,7 +427,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
             util.log_msg("\n", mode=util.BOTH_LOG)
 
         # cooling status
-        if self.get_system_switch_position() == \
+        if switch_position == \
                 self.system_switch_position[self.COOL_MODE]:
             util.log_msg("cool mode=%s" % self.get_cool_mode(),
                          mode=util.BOTH_LOG)

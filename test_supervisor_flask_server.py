@@ -24,7 +24,7 @@ import utilities as util
                  "this test hangs when run from the command line")
 @unittest.skipIf(not utc.enable_integration_tests,
                  "integration tests are disabled")
-class IntegrationTest(utc.UnitTestCommon):
+class IntegrationTest(utc.UnitTest):
     """Test functions in supervisor_flask_server.py."""
 
     app = sfs.create_app()

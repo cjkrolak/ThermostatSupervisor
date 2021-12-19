@@ -203,7 +203,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
 
     def get_zone_name(self, zone_number) -> str:  # used
         """
-        Refresh the cached zone information then return Name.
+        Return zone name.
 
         inputs:
             zone_number(int): zone number
@@ -406,6 +406,59 @@ class ThermostatZone(tc.ThermostatCommonZone):
             (int): thermostat mode, see tc.system_switch_position for details.
         """
         return self.system_switch_position[self.OFF_MODE]
+
+    def report_heating_parameters(self, switch_position=None):
+        """
+        Display critical thermostat settings and reading to the screen.
+
+        inputs:
+            switch_position(int): switch position override, used for testing.
+        returns:
+            None
+        """
+        # current temp as measured by thermostat
+        util.log_msg("display temp=%s" % self.get_display_temp(),
+                     mode=util.BOTH_LOG, func_name=1)
+
+        # get switch position
+        if switch_position is None:
+            switch_position = self.get_system_switch_position()
+
+        # heating status
+        if switch_position == \
+                self.system_switch_position[self.HEAT_MODE]:
+            util.log_msg("heat mode=%s" % self.get_heat_mode(),
+                         mode=util.BOTH_LOG)
+            util.log_msg("heat setpoint=%s" %
+                         self.get_heat_setpoint(), mode=util.BOTH_LOG)
+            # util.log_msg("heat setpoint raw=%s" %
+            #              zone.get_heat_setpoint_raw())
+            util.log_msg("schedule heat sp=%s" %
+                         self.get_schedule_heat_sp(), mode=util.BOTH_LOG)
+            util.log_msg("\n", mode=util.BOTH_LOG)
+
+        # cooling status
+        if switch_position == \
+                self.system_switch_position[self.COOL_MODE]:
+            util.log_msg("cool mode=%s" % self.get_cool_mode(),
+                         mode=util.BOTH_LOG)
+            util.log_msg("cool setpoint=%s" %
+                         self.get_cool_setpoint(), mode=util.BOTH_LOG)
+            # util.log_msg("cool setpoint raw=%s" %
+            #              zone.get_cool_setpoint_raw(), mode=util.BOTH_LOG)
+            util.log_msg("schedule cool sp=%s" %
+                         self.get_schedule_cool_sp(), mode=util.BOTH_LOG)
+            util.log_msg("\n", mode=util.BOTH_LOG)
+
+        # hold settings
+        util.log_msg("is in vacation hold mode=%s" %
+                     self.get_is_invacation_hold_mode(), mode=util.BOTH_LOG)
+        util.log_msg("vacation hold=%s" % self.get_vacation_hold(),
+                     mode=util.BOTH_LOG)
+        util.log_msg("vacation hold until time=%s" %
+                     self.get_vacation_hold_until_time(), mode=util.BOTH_LOG)
+        util.log_msg("temporary hold until time=%s" %
+                     self.get_temporary_hold_until_time(), mode=util.BOTH_LOG)
 
 
 if __name__ == "__main__":

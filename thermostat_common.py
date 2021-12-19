@@ -563,8 +563,16 @@ class ThermostatCommonZone():
         del force_refresh  # not used in this template.
         return  # placeholder
 
-    def report_heating_parameters(self):
-        """Display critical thermostat settings and reading to the screen."""
+    def report_heating_parameters(self, switch_position=None):
+        """
+        Display critical thermostat settings and reading to the screen.
+
+        inputs:
+            switch_position(int): switch position override for testing.
+        returns:
+            None
+        """
+        del switch_position
         return  # placeholder
 
     def get_vacation_hold_until_time(self) -> int:
