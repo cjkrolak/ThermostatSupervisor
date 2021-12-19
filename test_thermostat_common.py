@@ -589,6 +589,8 @@ class Test(utc.UnitTest):
         finally:
             self.Zone.get_system_switch_position = self.switch_position_backup
 
+    @unittest.skipIf(not utc.enable_sht31_tests,
+                     "sht31 tests are disabled")
     def test_ThermostatBasicCheckout(self):
         """Verify thermostat_basic_checkout()."""
 
