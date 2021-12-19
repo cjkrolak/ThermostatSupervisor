@@ -54,7 +54,7 @@ class Test(utc.UnitTest):
         """
         Verify store_current_mode() runs without error.
         """
-        def dummy_true(): return True
+        def dummy_true(): return 1  # functions return ints
 
         test_cases = [["is_heat_mode", self.Zone.HEAT_MODE],
                       ["is_cool_mode", self.Zone.COOL_MODE],
@@ -62,6 +62,9 @@ class Test(utc.UnitTest):
                       ["is_auto_mode", self.Zone.AUTO_MODE],
                       ["is_fan_mode", self.Zone.FAN_MODE],
                       ["is_off_mode", self.Zone.OFF_MODE]]
+
+        print("thermostat_type=%s" % self.Zone.thermostat_type)
+
         for test_case in test_cases:
             print("testing %s" % test_case[0])
             try:
@@ -69,10 +72,11 @@ class Test(utc.UnitTest):
                 if test_case[0]:
                     backup_func = getattr(self.Zone, test_case[0])
                     setattr(self.Zone, test_case[0], dummy_true)
+                print("current mode(pre)=%s" % self.Zone.current_mode)
 
                 # store the current mode and check cache
                 self.Zone.store_current_mode()
-                print("current mode=%s" % self.Zone.current_mode)
+                print("current mode(post)=%s" % self.Zone.current_mode)
                 self.assertEqual(test_case[1], self.Zone.current_mode,
                                  "Zone.set_current_mode() failed to "
                                  "cache mode=%s" % test_case[1])

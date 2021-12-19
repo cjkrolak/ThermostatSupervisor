@@ -141,10 +141,6 @@ class ThermostatZone(tc.ThermostatCommonZone):
         self.system_switch_position[
             tc.ThermostatCommonZone.COOL_MODE] = 3  # cool   0 0011
 
-        # TODO - these modes need verification
-        self.system_switch_position[
-            tc.ThermostatCommonZone.AUTO_MODE] = util.bogus_int
-
         # zone info
         self.thermostat_type = kumocloud_config.ALIAS
         self.device_id = Thermostat_obj.device_id

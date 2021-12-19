@@ -63,11 +63,11 @@ class ThermostatCommonZone():
         # placeholder, will be tstat-specific
         UNKNOWN_MODE: util.bogus_int,
         HEAT_MODE: util.bogus_int - 1,
-        OFF_MODE: util.bogus_int - 2,
-        COOL_MODE: util.bogus_int - 3,
-        AUTO_MODE: util.bogus_int - 4,
-        DRY_MODE: util.bogus_int - 5,
-        FAN_MODE: util.bogus_int - 6,
+        COOL_MODE: util.bogus_int - 2,
+        AUTO_MODE: util.bogus_int - 3,
+        DRY_MODE: util.bogus_int - 4,
+        FAN_MODE: util.bogus_int - 5,
+        OFF_MODE: util.bogus_int - 6,
         }
     max_scheduled_heat_allowed = 74  # warn if scheduled heat value exceeds.
     min_scheduled_cool_allowed = 68  # warn if scheduled cool value exceeds.
