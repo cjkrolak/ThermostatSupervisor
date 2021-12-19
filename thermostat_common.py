@@ -74,6 +74,7 @@ class ThermostatCommonZone():
         COOL_MODE: util.bogus_int - 3,
         AUTO_MODE: util.bogus_int - 4,
         DRY_MODE: util.bogus_int - 5,
+        FAN_MODE: util.bogus_int - 6,
         }
     max_scheduled_heat_allowed = 74  # warn if scheduled heat value exceeds.
     min_scheduled_cool_allowed = 68  # warn if scheduled cool value exceeds.
@@ -359,25 +360,34 @@ class ThermostatCommonZone():
         else:
             return False
 
-    def get_heat_mode(self):
-        """Return 1 if heat mode enabled, else 0."""
-        return util.bogus_int
+    def is_heat_mode(self):
+        """Return True if in heat mode."""
+        return (self.get_system_switch_position() ==
+                self.system_switch_position[self.HEAT_MODE])
 
-    def get_cool_mode(self):
-        """Return 1 if cool mode enabled, else 0."""
-        return util.bogus_int
+    def is_cool_mode(self):
+        """Return True if in cool mode."""
+        return (self.get_system_switch_position() ==
+                self.system_switch_position[self.COOL_MODE])
 
-    def get_dry_mode(self):
-        """Return 1 if dry mode enabled, else 0."""
-        return util.bogus_int
+    def is_dry_mode(self):
+        """Return True if in dry mode."""
+        return (self.get_system_switch_position() ==
+                self.system_switch_position[self.DRY_MODE])
 
-    def get_auto_mode(self):
-        """Return 1 if auto mode enabled, else 0."""
-        return util.bogus_int
+    def is_auto_mode(self):
+        """Return True if in auto mode."""
+        return (self.get_system_switch_position() ==
+                self.system_switch_position[self.AUTO_MODE])
 
-    def get_fan_mode(self):
+    def is_fan_mode(self):
         """Return 1 if fan mode enabled, else 0."""
-        return util.bogus_int
+        return (self.get_system_switch_position() ==
+                self.system_switch_position[self.FAN_MODE])
+
+    def is_controlled_mode(self):
+        """Return True if mode is being controlled."""
+        return self.current_mode in self.controlled_modes
 
     def is_heating(self):
         """Return 1 if heating relay is active, else 0."""
@@ -429,11 +439,6 @@ class ThermostatCommonZone():
                      func_name=1)
         return
 
-    def is_heat_mode(self):
-        """Return True if in heat mode."""
-        return (self.get_system_switch_position() ==
-                self.system_switch_position[self.HEAT_MODE])
-
     def is_heat_deviation(self):
         """
         Return True if heat is deviated.
@@ -445,11 +450,6 @@ class ThermostatCommonZone():
         """
         return self.is_heat_mode() and self.is_temp_deviated_from_schedule()
 
-    def is_cool_mode(self):
-        """Return True if in cool mode."""
-        return (self.get_system_switch_position() ==
-                self.system_switch_position[self.COOL_MODE])
-
     def is_cool_deviation(self):
         """
         Return True if cool is deviated.
@@ -460,20 +460,6 @@ class ThermostatCommonZone():
             (bool): True if deviation exists.
         """
         return self.is_cool_mode() and self.is_temp_deviated_from_schedule()
-
-    def is_dry_mode(self):
-        """Return True if in dry mode."""
-        return (self.get_system_switch_position() ==
-                self.system_switch_position[self.DRY_MODE])
-
-    def is_auto_mode(self):
-        """Return True if in auto mode."""
-        return (self.get_system_switch_position() ==
-                self.system_switch_position[self.AUTO_MODE])
-
-    def is_controlled_mode(self):
-        """Return True if mode is being controlled."""
-        return self.current_mode in self.controlled_modes
 
     # Thermostat-specific methods will be overloaded
     def get_display_temp(self) -> float:
@@ -747,16 +733,16 @@ class ThermostatCommonZone():
                      self.get_schedule_program_cool(),
                      mode=mode, func_name=1)
         util.log_msg("heat mode=%s (actively heating=%s)" %
-                     (self.get_heat_mode(), self.is_heating()),
+                     (self.is_heat_mode(), self.is_heating()),
                      mode=mode, func_name=1)
         util.log_msg("cool mode=%s (actively cooling=%s)" %
-                     (self.get_cool_mode(), self.is_cooling()),
+                     (self.is_cool_mode(), self.is_cooling()),
                      mode=mode, func_name=1)
-        util.log_msg("dry mode=%s" % self.get_dry_mode(),
+        util.log_msg("dry mode=%s" % self.is_dry_mode(),
                      mode=mode, func_name=1)
-        util.log_msg("auto mode=%s" % self.get_auto_mode(),
+        util.log_msg("auto mode=%s" % self.is_auto_mode(),
                      mode=mode, func_name=1)
-        util.log_msg("fan mode=%s" % self.get_fan_mode(),
+        util.log_msg("fan mode=%s" % self.is_fan_mode(),
                      mode=mode, func_name=1)
         util.log_msg("hold=%s" % self.get_vacation_hold(),
                      mode=mode, func_name=1)

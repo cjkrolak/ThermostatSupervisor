@@ -128,24 +128,24 @@ class Test(utc.UnitTest):
                 "key": self.Zone.warn_if_outside_global_limit,
                 "args": [0, 0, operator.gt, "bogus"],
                 "return_type": bool},
-            "get_heat_mode": {
-                "key": self.Zone.get_heat_mode,
+            "is_heat_mode": {
+                "key": self.Zone.is_heat_mode,
                 "args": None,
                 "return_type": int},
-            "get_cool_mode": {
-                "key": self.Zone.get_cool_mode,
+            "is_cool_mode": {
+                "key": self.Zone.is_cool_mode,
                 "args": None,
                 "return_type": int},
-            "get_dry_mode": {
-                "key": self.Zone.get_dry_mode,
+            "is_dry_mode": {
+                "key": self.Zone.is_dry_mode,
                 "args": None,
                 "return_type": int},
-            "get_auto_mode": {
-                "key": self.Zone.get_auto_mode,
+            "is_auto_mode": {
+                "key": self.Zone.is_auto_mode,
                 "args": None,
                 "return_type": int},
-            "get_fan_mode": {
-                "key": self.Zone.get_fan_mode,
+            "is_fan_mode": {
+                "key": self.Zone.is_fan_mode,
                 "args": None,
                 "return_type": int},
             "is_heating": {
@@ -475,6 +475,8 @@ class Test(utc.UnitTest):
                 (lambda *_, **__: False)
             self.Zone.is_auto_mode = \
                 (lambda *_, **__: False)
+            self.Zone.is_fan_mode = \
+                (lambda *_, **__: False)
             self.Zone.current_mode = self.Zone.HEAT_MODE
         elif mock_mode == self.Zone.COOL_MODE:
             self.Zone.is_heat_mode = \
@@ -484,6 +486,8 @@ class Test(utc.UnitTest):
             self.Zone.is_dry_mode = \
                 (lambda *_, **__: False)
             self.Zone.is_auto_mode = \
+                (lambda *_, **__: False)
+            self.Zone.is_fan_mode = \
                 (lambda *_, **__: False)
             self.Zone.current_mode = self.Zone.COOL_MODE
         elif mock_mode == self.Zone.DRY_MODE:
@@ -495,6 +499,8 @@ class Test(utc.UnitTest):
                 (lambda *_, **__: True)
             self.Zone.is_auto_mode = \
                 (lambda *_, **__: False)
+            self.Zone.is_fan_mode = \
+                (lambda *_, **__: False)
             self.Zone.current_mode = self.Zone.DRY_MODE
         elif mock_mode == self.Zone.AUTO_MODE:
             self.Zone.is_heat_mode = \
@@ -505,7 +511,21 @@ class Test(utc.UnitTest):
                 (lambda *_, **__: False)
             self.Zone.is_auto_mode = \
                 (lambda *_, **__: True)
+            self.Zone.is_fan_mode = \
+                (lambda *_, **__: False)
             self.Zone.current_mode = self.Zone.AUTO_MODE
+        elif mock_mode == self.Zone.FAN_MODE:
+            self.Zone.is_heat_mode = \
+                (lambda *_, **__: False)
+            self.Zone.is_cool_mode = \
+                (lambda *_, **__: False)
+            self.Zone.is_dry_mode = \
+                (lambda *_, **__: False)
+            self.Zone.is_auto_mode = \
+                (lambda *_, **__: False)
+            self.Zone.is_fan_mode = \
+                (lambda *_, **__: True)
+            self.Zone.current_mode = self.Zone.FAN_MODE
         elif mock_mode == self.Zone.OFF_MODE:
             self.Zone.is_heat_mode = \
                 (lambda *_, **__: False)
@@ -514,6 +534,8 @@ class Test(utc.UnitTest):
             self.Zone.is_dry_mode = \
                 (lambda *_, **__: False)
             self.Zone.is_auto_mode = \
+                (lambda *_, **__: False)
+            self.Zone.is_fan_mode = \
                 (lambda *_, **__: False)
             self.Zone.current_mode = self.Zone.OFF_MODE
         else:
