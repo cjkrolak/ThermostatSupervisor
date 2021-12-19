@@ -417,7 +417,8 @@ class ThermostatZone(tc.ThermostatCommonZone):
             None
         """
         # current temp as measured by thermostat
-        util.log_msg("display temp=%s" % self.get_display_temp(),
+        util.log_msg("display temp=%s" %
+                     util.temp_value_with_units(self.get_display_temp()),
                      mode=util.BOTH_LOG, func_name=1)
 
         # get switch position

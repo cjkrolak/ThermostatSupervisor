@@ -100,6 +100,10 @@ class Test(utc.UnitTest):
         Verify return type of each function is as expected.
         """
         func_dict = {
+            "is_temp_deviated_from_schedule": {
+                "key": self.Zone.is_temp_deviated_from_schedule,
+                "args": None,
+                "return_type": type(None)},
             "get_current_mode": {
                 "key": self.Zone.get_current_mode,
                 "args": [1, 1],  # flag_all_deviations==False
@@ -108,6 +112,58 @@ class Test(utc.UnitTest):
                 "key": self.Zone.get_current_mode,
                 "args": [1, 1, True, True],  # flag_all_deviations==True
                 "return_type": dict},
+            "set_mode": {
+                "key": self.Zone.set_mode,
+                "args": ["bogus"],
+                "return_type": bool},
+            "store_current_mode": {
+                "key": self.Zone.store_current_mode,
+                "args": None,
+                "return_type": type(None)},
+            "validate_numeric": {
+                "key": self.Zone.validate_numeric,
+                "args": [0, "bogus"],
+                "return_type": int},
+            "warn_if_outside_global_limit": {
+                "key": self.Zone.warn_if_outside_global_limit,
+                "args": [0, 0, operator.gt, "bogus"],
+                "return_type": bool},
+            "get_heat_mode": {
+                "key": self.Zone.get_heat_mode,
+                "args": None,
+                "return_type": int},
+            "get_cool_mode": {
+                "key": self.Zone.get_cool_mode,
+                "args": None,
+                "return_type": int},
+            "get_dry_mode": {
+                "key": self.Zone.get_dry_mode,
+                "args": None,
+                "return_type": int},
+            "get_auto_mode": {
+                "key": self.Zone.get_auto_mode,
+                "args": None,
+                "return_type": int},
+            "get_fan_mode": {
+                "key": self.Zone.get_fan_mode,
+                "args": None,
+                "return_type": int},
+            "is_heating": {
+                "key": self.Zone.is_heating,
+                "args": None,
+                "return_type": int},
+            "is_cooling": {
+                "key": self.Zone.is_cooling,
+                "args": None,
+                "return_type": int},
+            "is_drying": {
+                "key": self.Zone.is_drying,
+                "args": None,
+                "return_type": int},
+            "is_auto": {
+                "key": self.Zone.is_auto,
+                "args": None,
+                "return_type": int},
             "get_display_temp": {
                 "key": self.Zone.get_display_temp,
                 "args": None,

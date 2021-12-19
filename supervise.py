@@ -67,8 +67,8 @@ def display_runtime_settings(Zone):
                  mode=util.BOTH_LOG)
 
     # tolerance to set point:
-    util.log_msg("tolerance to set point is set to %d degrees" %
-                 (Zone.tolerance_degrees),
+    util.log_msg("tolerance to set point is set to %s" %
+                 util.temp_value_with_units(Zone.tolerance_degrees),
                  mode=util.BOTH_LOG)
 
 
