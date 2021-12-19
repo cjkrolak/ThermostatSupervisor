@@ -11,7 +11,7 @@ import unit_test_common as utc
 import utilities as util
 
 
-class Test(utc.UnitTestCommon):
+class Test(utc.UnitTest):
     """Test functions in utilities.py."""
 
     def setUp(self):

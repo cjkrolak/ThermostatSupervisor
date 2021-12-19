@@ -18,7 +18,7 @@ import utilities as util
 
 @unittest.skipIf(not utc.enable_integration_tests,
                  "integration tests are disabled")
-class IntegrationTest(utc.UnitTestCommon):
+class IntegrationTest(utc.UnitTest):
     """Test functions in sht31_flask_server.py."""
 
     # app = sht31_fs.create_app()

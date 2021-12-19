@@ -14,7 +14,7 @@ import unit_test_common as utc
 import utilities as util
 
 
-class Test(utc.UnitTestCommon):
+class Test(utc.UnitTest):
     """Test functions in thermostat_common.py."""
 
     # initialization
@@ -612,6 +612,13 @@ class Test(utc.UnitTestCommon):
 
         finally:
             self.restore_functions()
+
+    def test_ReportHeatingParameters(self):
+        """Verify report_heating_parameters()."""
+        test_cases = [tc.ThermostatCommonZone.OFF_MODE]
+        for test_case in test_cases:
+            print("test_case=%s" % test_case)
+            self.Zone.report_heating_parameters(switch_position=test_case)
 
 
 if __name__ == "__main__":

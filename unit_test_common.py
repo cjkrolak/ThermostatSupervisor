@@ -9,6 +9,7 @@ import unittest
 import sht31_config
 
 # local imports
+import supervise as sup
 import thermostat_api as api
 import thermostat_common as tc
 import utilities as util
@@ -54,7 +55,7 @@ unit_test_honeywell = [
 unit_test_argv = unit_test_sht31
 
 
-class UnitTestCommon(unittest.TestCase):
+class UnitTest(unittest.TestCase):
     """Extensions to unit test framework."""
 
     thermostat_type = sht31_config.ALIAS  # was "UNITTEST"
@@ -119,6 +120,52 @@ class UnitTestCommon(unittest.TestCase):
         print("-" * 60)
         print("testing '%s'" % self.id())  # util.get_function_name(2))
         print("-" * 60)
+
+
+class IntegrationTest(UnitTest):
+    """Common integration test framework."""
+
+    # thermostat_type = sht31_config.ALIAS  # was "UNITTEST"
+    # zone = sht31_config.UNIT_TEST_ZONE  # was 1
+    # user_inputs_backup = None
+    # Thermostat = None
+    Zone = None  # Zone object
+    mod = None  # module object
+    mod_config = None  # config object
+    unit_test_argv = []  # populated during setup
+
+    def tearDown(self):
+        self.print_test_result()
+
+    def test_A_ThermostatBasicCheckout(self):
+        """
+        Verify thermostat_basic_checkout on target thermostat.
+        """
+        _, IntegrationTest.Zone = tc.thermostat_basic_checkout(
+            api,
+            self.unit_test_argv[api.get_argv_position("thermostat_type")],
+            self.unit_test_argv[api.get_argv_position("zone")],
+            self.mod.ThermostatClass, self.mod.ThermostatZone
+            )
+
+    def test_ReportHeatingParameters(self):
+        """
+        Verify report_heating_parameters().
+        """
+        for test_case in self.mod_config.supported_configs["modes"]:
+            print("-" * 80)
+            print("test_case='%s" % test_case)
+            self.Zone.report_heating_parameters(test_case)
+            print("-" * 80)
+
+    def test_Z_Supervise(self):
+        """
+        Verify supervisor loop on target thermostat.
+        """
+        return_status = sup.exec_supervise(
+            debug=True, argv_list=self.unit_test_argv)
+        self.assertTrue(return_status, "return status=%s, expected True" %
+                        return_status)
 
 
 def run_all_tests():
