@@ -154,7 +154,7 @@ class IntegrationTest(UnitTest):
         """
         for test_case in self.mod_config.supported_configs["modes"]:
             print("-" * 80)
-            print("test_case='%s" % test_case)
+            print("test_case='%s'" % test_case)
             self.Zone.report_heating_parameters(test_case)
             print("-" * 80)
 
