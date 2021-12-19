@@ -555,7 +555,7 @@ class Test(utc.UnitTest):
                 (lambda *_, **__: True)
             self.Zone.current_mode = self.Zone.OFF_MODE
         else:
-            self.fail("mock mode '%s' is not supporteed" % mock_mode)
+            self.fail("mock mode '%s' is not supported" % mock_mode)
 
     def mock_set_point_deviation(self, heat_deviation, cool_deviation):
         """

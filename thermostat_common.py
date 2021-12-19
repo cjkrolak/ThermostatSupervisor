@@ -318,8 +318,11 @@ class ThermostatCommonZone():
             self.current_mode = self.AUTO_MODE
         elif self.is_fan_mode():
             self.current_mode = self.FAN_MODE
-        else:
+        elif self.is_off_mode():
             self.current_mode = self.OFF_MODE
+        else:
+            raise ValueError("unknown thermostat mode")
+        print("DEBUG: self.current_mode=%s" % self.current_mode)
 
     def validate_numeric(self, input_val, parameter_name):
         """
