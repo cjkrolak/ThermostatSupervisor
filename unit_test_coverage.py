@@ -16,9 +16,6 @@ open /htmlcov/index.html to see the html report index.
 # built-in imports
 import coverage
 
-# local imports
-import unit_test_common as utc
-
 
 def code_coverage_all_tests():
     """
@@ -29,6 +26,11 @@ def code_coverage_all_tests():
     cov.start()
 
     # run all unit tests
+    # defer imports until after coverage service
+    # starts so that all imports are included in
+    # coverage metric.
+    import unit_test_common as utc  # noqa E402
+    utc.parse_unit_test_runtime_parameters()
     utc.run_all_tests()
 
     # stop the coverage service and generate reports
@@ -38,5 +40,4 @@ def code_coverage_all_tests():
 
 
 if __name__ == "__main__":
-    utc.parse_unit_test_runtime_parameters()
     code_coverage_all_tests()
