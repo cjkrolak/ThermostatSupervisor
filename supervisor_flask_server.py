@@ -31,7 +31,16 @@ else:
     flask_ip_address = util.get_local_ip()  # almost works from Linux client
     # on Linux both methds are returning correct page header, but no data
 flask_port = 5001  # note: ports below 1024 require root access on Linux
-flask_url = 'http://' + flask_ip_address + ':' + str(flask_port)
+flask_use_https = False  # HTTPS requires a cert to be installed.
+if flask_use_https:
+    flask_ssl_cert = 'adhoc'  # adhoc
+    flask_kwargs = {'ssl_context': flask_ssl_cert}
+    flask_url_prefix = "https://"
+else:
+    flask_ssl_cert = None  # adhoc
+    flask_kwargs = {}
+    flask_url_prefix = "http://"
+flask_url = flask_url_prefix + flask_ip_address + ':' + str(flask_port)
 
 argv = []  # supervisor runtime args list
 
@@ -105,6 +114,8 @@ def index():
 if __name__ == '__main__':
     # show the page in browser
     webbrowser.open(flask_url, new=2)
-    app.run(host=flask_ip_address, port=flask_port,
+    app.run(host=flask_ip_address,
+            port=flask_port,
             debug=False,  # True causes 2 tabs to open, enables auto-reload
-            threaded=True)  # threaded=True may speed up rendering on web page
+            threaded=True,  # threaded=True may speed up rendering on web page
+            ssl_context=flask_ssl_cert)

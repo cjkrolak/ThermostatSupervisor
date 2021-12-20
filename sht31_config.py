@@ -12,6 +12,17 @@ UNIT_TEST_ZONE = 99
 unit_test_seed = 0x7F
 UNIT_TEST_ENV_KEY = "SHT31_REMOTE_IP_ADDRESS_" + str(UNIT_TEST_ZONE)
 FLASK_UNIT_TEST_FOLDER = "/unit"
+flask_port = 5000
+flask_use_https = False  # HTTPS requires a cert to be installed.
+if flask_use_https:
+    flask_ssl_cert = 'adhoc'  # adhoc
+    flask_kwargs = {'ssl_context': flask_ssl_cert}
+    flask_url_prefix = "https://"
+else:
+    flask_ssl_cert = None  # adhoc
+    flask_kwargs = {}
+    flask_url_prefix = "http://"
+
 
 # diagnostic parameters
 FLASK_DIAG_FOLDER = "/diag"

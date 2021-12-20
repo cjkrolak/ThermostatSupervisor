@@ -46,7 +46,7 @@ class ThermostatClass(tc.ThermostatCommon):
         self.ip_address = self.get_target_zone_id(self.zone_number)
 
         # URL and port configuration
-        self.port = "5000"  # Flask server port on SHT31 host
+        self.port = str(sht31_config.flask_port)  # Flask server port on host
         if self.zone_number == sht31_config.UNIT_TEST_ZONE:
             self.path = sht31_config.FLASK_UNIT_TEST_FOLDER
             self.unit_test_seed = "?seed=" + str(sht31_config.unit_test_seed)
@@ -54,8 +54,9 @@ class ThermostatClass(tc.ThermostatCommon):
             self.path = ""
             self.unit_test_seed = ""
         self.measurements = "?measurements=" + str(sht31_config.measurements)
-        self.url = ("http://" + self.ip_address + ":" + self.port +
-                    self.path + self.measurements + self.unit_test_seed)
+        self.url = (sht31_config.flask_url_prefix + self.ip_address + ":" +
+                    self.port + self.path + self.measurements +
+                    self.unit_test_seed)
         self.device_id = self.url
         self.retry_delay = 60  # delay before retrying a bad reading
 
@@ -111,8 +112,10 @@ class ThermostatClass(tc.ThermostatCommon):
 
         sht31_fs.debug = False
         self.flask_server = threading.Thread(target=sht31_fs.app.run,
-                                             args=('0.0.0.0', 5000,
-                                                   False))
+                                             args=('0.0.0.0',
+                                                   sht31_config.flask_port,
+                                                   sht31_fs.debug),
+                                             kwargs=sht31_config.flask_kwargs)
         self.flask_server.daemon = True  # make thread daemonic
         self.flask_server.start()
         util.log_msg("thread alive status=%s" %

@@ -482,5 +482,9 @@ if __name__ == "__main__":
     # parse runtime parameters
     debug = parse_runtime_parameters()
 
-    # launch the Flask API
-    app.run(debug=debug, host='0.0.0.0')
+    # launch the Flask API on development server
+    app.run(host='0.0.0.0',
+            port=sht31_config.flask_port,
+            debug=debug,
+            threaded=True,  # threaded=True may speed up rendering on web page
+            ssl_context=sht31_config.flask_ssl_cert)
