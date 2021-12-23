@@ -8,7 +8,7 @@ import random
 import unittest
 
 # local imports
-import context  # noqa F401, pylint: disable=unused-import.
+from ... import azure_context  # noqa F401, pylint: disable=unused-import.
 import thermostat_api as api
 import thermostat_common as tc
 import unit_test_common as utc
