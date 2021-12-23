@@ -1,4 +1,3 @@
 """
-This file is required in the test folder for code coverage
-to work properly.
+This file identifies the supervisor folder to be a package.
 """

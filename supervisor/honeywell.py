@@ -12,11 +12,12 @@ import time
 import traceback
 
 # local imports
-from supervisor import email_notification
-from supervisor import honeywell_config
-from supervisor import thermostat_api as api
-from supervisor import thermostat_common as tc
-from supervisor import utilities as util
+import azure_context  # noqa F401, pylint: disable=unused-import.
+from supervisor import email_notification as eml
+import supervisor.honeywell_config as hc
+import supervisor.thermostat_api as api
+import supervisor.thermostat_common as tc
+import supervisor.utilities as util
 
 
 class ThermostatClass(pyhtcc.PyHTCC):
@@ -41,7 +42,7 @@ class ThermostatClass(pyhtcc.PyHTCC):
         super().__init__(*self.args)
 
         # configure zone info
-        self.thermostat_type = honeywell_config.ALIAS
+        self.thermostat_type = hc.ALIAS
         self.zone_number = int(zone)
         self.device_id = self.get_target_zone_id(self.zone_number)
 
@@ -266,7 +267,7 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
         # TODO: what mode is 0 on Honeywell?
 
         # zone info
-        self.thermostat_type = honeywell_config.ALIAS
+        self.thermostat_type = hc.ALIAS
         self.device_id = Thermostat_obj.device_id
         self.zone_number = Thermostat_obj.zone_number
         self.zone_name = self.get_zone_name()
@@ -649,7 +650,7 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
             else:
                 # log the mitigated failure
                 if trial_number > 1:
-                    email_notification.send_email_alert(
+                    eml.send_email_alert(
                         subject=("intermittent JSON decode error "
                                  "during refresh zone"),
                         body="%s: trial %s of %s" % (util.get_function_name(),
@@ -663,7 +664,7 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
                         return
 
         # log fatal failure
-        email_notification.send_email_alert(
+        eml.send_email_alert(
             subject=("intermittent JSON decode error during refresh zone"),
             body="%s: trial %s of %s" % (util.get_function_name(),
                                          trial_number, number_of_retries))
@@ -676,6 +677,6 @@ if __name__ == "__main__":
     zone_number = api.parse_all_runtime_parameters()["zone"]
 
     tc.thermostat_basic_checkout(
-        api, honeywell_config.ALIAS,
+        api, hc.ALIAS,
         zone_number,
         ThermostatClass, ThermostatZone)
