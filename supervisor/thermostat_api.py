@@ -10,14 +10,14 @@ import sys
 import traceback
 
 # thermostat config files
-import honeywell_config
-import kumocloud_config
-import kumolocal_config
-import mmm_config
-import sht31_config
+from supervisor import honeywell_config
+from supervisor import kumocloud_config
+from supervisor import kumolocal_config
+from supervisor import mmm_config
+from supervisor import sht31_config
 
 # local imports
-import utilities as util
+from supervisor import utilities as util
 
 
 # thermostat types

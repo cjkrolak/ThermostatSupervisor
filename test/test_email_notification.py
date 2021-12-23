@@ -2,14 +2,14 @@
 Unit tes module for email_notification.py.
 """
 # built-in imports
-import email_notification as eml
+from supervisor import email_notification as eml
 import os
 import unittest
 
 # local impports
-from .. import azure_context  # noqa F401, pylint: disable=unused-import.
+from supervisor import azure_context  # noqa F401, pylint: disable=unused-import.
 import unit_test_common as utc
-import utilities as util
+from supervisor import utilities as util
 
 
 class Test(utc.UnitTest):

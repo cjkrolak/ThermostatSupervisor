@@ -12,11 +12,11 @@ import time
 import traceback
 
 # local imports
-import email_notification
-import honeywell_config
-import thermostat_api as api
-import thermostat_common as tc
-import utilities as util
+from supervisor import email_notification
+from supervisor import honeywell_config
+from supervisor import thermostat_api as api
+from supervisor import thermostat_common as tc
+from supervisor import utilities as util
 
 
 class ThermostatClass(pyhtcc.PyHTCC):

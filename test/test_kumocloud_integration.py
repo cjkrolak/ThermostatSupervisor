@@ -7,11 +7,11 @@ This test requires connection to Kumocloud thermostat.
 import unittest
 
 # local imports
-from .. import azure_context  # noqa F401, pylint: disable=unused-import.
-import kumocloud
-import kumocloud_config
+from supervisor import azure_context  # noqa F401, pylint: disable=unused-import.
+from supervisor import kumocloud
+from supervisor import kumocloud_config
 import unit_test_common as utc
-import utilities as util
+from supervisor import utilities as util
 
 
 @unittest.skipIf(not utc.enable_integration_tests,

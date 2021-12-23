@@ -19,10 +19,10 @@ import radiotherm  # noqa F405
 import urllib  # noqa E402
 
 # local imports
-import mmm_config  # noqa E402
-import thermostat_api as api  # noqa E402
-import thermostat_common as tc  # noqa E402
-import utilities as util  # noqa E402
+from supervisor import mmm_config  # noqa E402
+from supervisor import thermostat_api as api  # noqa E402
+from supervisor import thermostat_common as tc  # noqa E402
+from supervisor import utilities as util  # noqa E402
 
 
 socket_timeout = 30  # http socket timeout override

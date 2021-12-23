@@ -5,10 +5,10 @@ import pykumo
 import time
 
 # local imports
-import kumolocal_config
-import thermostat_api as api
-import thermostat_common as tc
-import utilities as util
+from supervisor import kumolocal_config
+from supervisor import thermostat_api as api
+from supervisor import thermostat_common as tc
+from supervisor import utilities as util
 
 
 class ThermostatClass(pykumo.KumoCloudAccount):

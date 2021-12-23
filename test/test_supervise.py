@@ -5,13 +5,13 @@ Unit test module for supervise.py.
 import unittest
 
 # thermostat config files
-import sht31_config
+from supervisor import sht31_config
 
 # local imports
-from .. import azure_context  # noqa F401, pylint: disable=unused-import.
-import supervise as sup
+from supervisor import azure_context  # noqa F401, pylint: disable=unused-import.
+from supervisor import supervise as sup
 import unit_test_common as utc
-import utilities as util
+from supervisor import utilities as util
 
 
 class Test(utc.UnitTest):

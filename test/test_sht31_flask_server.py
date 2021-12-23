@@ -8,13 +8,13 @@ because ports cannot be opened on shared pool.
 import unittest
 
 # local imports
-from .. import azure_context  # noqa F401, pylint: disable=unused-import.
+from supervisor import azure_context  # noqa F401, pylint: disable=unused-import.
 # thermostat_api is imported but not used to avoid a circular import
-import thermostat_api as api  # pylint: disable=unused-import.
-import sht31
-import sht31_config
+from supervisor import thermostat_api as api  # pylint: disable=unused-import.
+from supervisor import sht31
+from supervisor import sht31_config
 import unit_test_common as utc
-import utilities as util
+from supervisor import utilities as util
 
 
 @unittest.skipIf(not utc.enable_integration_tests,

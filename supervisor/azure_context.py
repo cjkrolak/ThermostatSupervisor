@@ -12,5 +12,6 @@ import inspect
 currentdir = os.path.dirname(os.path.abspath(
     inspect.getfile(inspect.currentframe())))
 testdir = currentdir + "\tests"
-print(testdir)
 sys.path.insert(0, testdir)
+srcdir = currentdir + "\supervisor"
+sys.path.insert(0, srcdir)

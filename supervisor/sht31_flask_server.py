@@ -25,8 +25,8 @@ import sys
 import time
 
 # local imports
-import sht31_config
-import utilities as util
+from supervisor import sht31_config
+from supervisor import utilities as util
 
 # SHT31D write commands (register, [data])
 # spec: https://cdn-shop.adafruit.com/product-files/

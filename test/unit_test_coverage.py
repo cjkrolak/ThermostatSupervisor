@@ -17,7 +17,7 @@ open /htmlcov/index.html to see the html report index.
 import coverage
 
 # local imports
-from .. import azure_context  # noqa F401, pylint: disable=unused-import.
+from supervisor import azure_context  # noqa F401, pylint: disable=unused-import.
 
 
 def code_coverage_all_tests():

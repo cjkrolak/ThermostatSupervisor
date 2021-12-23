@@ -6,12 +6,12 @@ import sys
 import unittest
 
 # local imports
-from .. import azure_context  # noqa F401, pylint: disable=unused-import.
-import sht31_config
-import supervise as sup
-import thermostat_api as api
-import thermostat_common as tc
-import utilities as util
+from supervisor import azure_context  # noqa F401, pylint: disable=unused-import.
+from supervisor import sht31_config
+from supervisor import supervise as sup
+from supervisor import thermostat_api as api
+from supervisor import thermostat_common as tc
+from supervisor import utilities as util
 
 # enable modes
 enable_integration_tests = True  # use to bypass integration tests

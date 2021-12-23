@@ -8,8 +8,8 @@ import time
 import statistics
 
 # local imports
-import email_notification as eml
-import utilities as util
+from supervisor import email_notification as eml
+from supervisor import utilities as util
 
 
 degree_sign = u"\N{DEGREE SIGN}"

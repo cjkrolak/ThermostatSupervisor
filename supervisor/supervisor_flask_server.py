@@ -11,9 +11,9 @@ import sys
 import webbrowser
 
 # local imports
-import supervise as sup
-import thermostat_api as api
-import utilities as util
+from supervisor import supervise as sup
+from supervisor import thermostat_api as api
+from supervisor import utilities as util
 
 # flask server
 if util.is_windows_environment():

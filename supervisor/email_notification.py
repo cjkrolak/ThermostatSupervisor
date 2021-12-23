@@ -14,7 +14,7 @@ import sys
 import traceback
 
 # local libraries
-import utilities as util
+from supervisor import utilities as util
 
 # tracing data
 module_name = sys.modules[__name__]
