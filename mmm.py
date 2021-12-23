@@ -194,6 +194,12 @@ class ThermostatZone(tc.ThermostatCommonZone):
         self.system_switch_position[tc.ThermostatCommonZone.OFF_MODE] = 0
         self.system_switch_position[tc.ThermostatCommonZone.AUTO_MODE] = 3
 
+        # need verification
+        self.system_switch_position[
+            tc.ThermostatCommonZone.DRY_MODE] = util.bogus_int
+        self.system_switch_position[
+            tc.ThermostatCommonZone.FAN_MODE] = util.bogus_int
+
         # zone info
         self.thermostat_type = mmm_config.ALIAS
         self.device_id = Thermostat_obj.device_id
@@ -204,16 +210,16 @@ class ThermostatZone(tc.ThermostatCommonZone):
         self.poll_time_sec = 10 * 60  # default to 10 minutes
         self.connection_time_sec = 8 * 60 * 60  # default to 8 hours
 
-    def get_zone_name(self, zone_number):
+    def get_zone_name(self, zone):
         """
         Return the name associated with the zone number.
 
         inputs:
-            zone_number(int): Zone number
+            zone(int): Zone number
         returns:
             (str) zone name
         """
-        return mmm_config.mmm_metadata[zone_number]["zone_name"]
+        return mmm_config.mmm_metadata[zone]["zone_name"]
 
     def get_display_temp(self) -> float:
         """
@@ -248,7 +254,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         """
         return self.get_display_humidity() is not None
 
-    def get_heat_mode(self) -> int:
+    def is_heat_mode(self) -> int:
         """
         Return the heat mode.
 
@@ -260,7 +266,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         return int(self.device_id.tmode['raw'] ==
                    self.system_switch_position[self.HEAT_MODE])
 
-    def get_cool_mode(self) -> int:
+    def is_cool_mode(self) -> int:
         """
         Return the cool mode.
 
@@ -271,6 +277,30 @@ class ThermostatZone(tc.ThermostatCommonZone):
         """
         return int(self.device_id.tmode['raw'] ==
                    self.system_switch_position[self.COOL_MODE])
+
+    def is_dry_mode(self) -> int:
+        """
+        Return the dry mode.
+
+        inputs:
+            None
+        returns:
+            (int): 1=dry mode enabled, 0=disabled.
+        """
+        return int(self.device_id.tmode['raw'] ==
+                   self.system_switch_position[self.DRY_MODE])
+
+    def is_auto_mode(self) -> int:
+        """
+        Return the auto mode.
+
+        inputs:
+            None
+        returns:
+            (int): 1=auto mode enabled, 0=disabled.
+        """
+        return int(self.device_id.tmode['raw'] ==
+                   self.system_switch_position[self.AUTO_MODE])
 
     def get_setpoint_list(self, sp_dict, day) -> list:
         """
@@ -504,9 +534,9 @@ class ThermostatZone(tc.ThermostatCommonZone):
         returns:
             (int): temporary hold time in minutes.
          """
-        if self.get_heat_mode() == 1:
+        if self.is_heat_mode() == 1:
             sp_dict = self.device_id.program_heat
-        elif self.get_cool_mode() == 1:
+        elif self.is_cool_mode() == 1:
             sp_dict = self.device_id.program_cool
         else:
             # off mode, use dummy dict.
@@ -581,16 +611,55 @@ class ThermostatZone(tc.ThermostatCommonZone):
         """
         self.device_id.t_cool = temp
 
-    def report_heating_parameters(self):
+    def report_heating_parameters(self, switch_position=None):
         """
         Display critical thermostat settings and reading to the screen.
 
         inputs:
-            None
+            switch_position(int): switch position override, used for testing.
         returns:
             None
         """
-        return  # not yet implemented
+        # current temp as measured by thermostat
+        util.log_msg("display temp=%s" %
+                     util.temp_value_with_units(self.get_display_temp()),
+                     mode=util.BOTH_LOG, func_name=1)
+
+        # get switch position
+        if switch_position is None:
+            switch_position = self.get_system_switch_position()
+
+        # heating status
+        if switch_position == \
+                self.system_switch_position[self.HEAT_MODE]:
+            util.log_msg("heat mode=%s" % self.is_heat_mode(),
+                         mode=util.BOTH_LOG)
+            util.log_msg("heat setpoint=%s" %
+                         self.get_heat_setpoint_raw(), mode=util.BOTH_LOG)
+            util.log_msg("schedule heat sp=%s" %
+                         self.get_schedule_heat_sp(), mode=util.BOTH_LOG)
+            util.log_msg("\n", mode=util.BOTH_LOG)
+
+        # cooling status
+        if switch_position == \
+                self.system_switch_position[self.COOL_MODE]:
+            util.log_msg("cool mode=%s" % self.is_cool_mode(),
+                         mode=util.BOTH_LOG)
+            util.log_msg("cool setpoint=%s" %
+                         self.get_cool_setpoint_raw(), mode=util.BOTH_LOG)
+            util.log_msg("schedule cool sp=%s" %
+                         self.get_schedule_cool_sp(), mode=util.BOTH_LOG)
+            util.log_msg("\n", mode=util.BOTH_LOG)
+
+        # hold settings
+        util.log_msg("is in vacation hold mode=%s" %
+                     self.get_is_invacation_hold_mode(), mode=util.BOTH_LOG)
+        util.log_msg("vacation hold=%s" % self.get_vacation_hold(),
+                     mode=util.BOTH_LOG)
+        util.log_msg("vacation hold until time=%s" %
+                     self.get_vacation_hold_until_time(), mode=util.BOTH_LOG)
+        util.log_msg("temporary hold until time=%s" %
+                     self.get_temporary_hold_until_time(), mode=util.BOTH_LOG)
 
 
 # monkeypatch radiotherm.thermostat.Thermostat __init__ method with longer
@@ -605,9 +674,13 @@ radiotherm.thermostat.Thermostat.__init__ = __init__
 
 if __name__ == "__main__":
 
-    _, Zone = tc.thermostat_basic_checkout(api, mmm_config.ALIAS,
-                                           ThermostatClass,
-                                           ThermostatZone)
+    # get zone override
+    zone_number = api.parse_all_runtime_parameters()["zone"]
+
+    _, Zone = tc.thermostat_basic_checkout(
+        api, mmm_config.ALIAS,
+        zone_number,
+        ThermostatClass, ThermostatZone)
 
     # measure thermostat response time
     measurements = 30

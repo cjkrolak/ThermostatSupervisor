@@ -9,21 +9,19 @@ import unittest
 # local imports
 import kumocloud
 import kumocloud_config
-import supervise as sup
-import thermostat_api as api
-import thermostat_common as tc
 import unit_test_common as utc
 import utilities as util
 
 
-class Test(utc.UnitTestCommon):
+@unittest.skipIf(not utc.enable_integration_tests,
+                 "integration tests are disabled")
+class IntegrationTest(utc.IntegrationTest):
     """
     Test functions in kumocloud.py.
 
     Tests are named to ensure basic checkout is executed first
     and supervise loop is executed last.
     """
-
     def setUp(self):
         self.print_test_name()
 
@@ -38,27 +36,8 @@ class Test(utc.UnitTestCommon):
             "",  # thermostat mode, no target
             "3",  # number of measurements
             ]
-
-    def tearDown(self):
-        self.print_test_result()
-
-    def test_A_KumocloudThermostatBasicCheckout(self):
-        """
-        Verify thermostat_basic_checkout on Kumocloud.
-        """
-        tc.thermostat_basic_checkout(api, kumocloud_config.ALIAS,
-                                     kumocloud.ThermostatClass,
-                                     kumocloud.ThermostatZone,
-                                     self.unit_test_argv)
-
-    def test_Z_KumocloudSupervise(self):
-        """
-        Verify supervisor loop on Kumocloud Thermostat.
-        """
-        return_status = sup.exec_supervise(debug=True,
-                                           argv_list=self.unit_test_argv)
-        self.assertTrue(return_status, "return status=%s, expected True" %
-                        return_status)
+        self.mod = kumocloud
+        self.mod_config = kumocloud_config
 
 
 if __name__ == "__main__":

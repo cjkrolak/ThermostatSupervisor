@@ -59,16 +59,16 @@ class ThermostatClass(pyhtcc.PyHTCC):
             zone_id_lst.append(zone['DeviceID'])
         return zone_id_lst
 
-    def get_target_zone_id(self, zone_number=0) -> int:
+    def get_target_zone_id(self, zone=0) -> int:
         """
         Return the target zone ID.
 
         inputs:
-            zone_number(int):  zone number.
+            zone(int):  zone number.
         returns:
             (int): zone device id number
         """
-        return self._get_zone_device_ids()[zone_number]
+        return self._get_zone_device_ids()[zone]
 
     def print_all_thermostat_metadata(self):
         """
@@ -87,26 +87,26 @@ class ThermostatClass(pyhtcc.PyHTCC):
         pp = pprint.PrettyPrinter(indent=4)
         pp.pprint(return_data)
 
-    def get_all_metadata(self, zone_number=0) -> dict:
+    def get_all_metadata(self, zone=0) -> dict:
         """
         Return all the current thermostat metadata.
 
         inputs:
-          zone_number(int): zone number, default=0
+          zone(int): zone number, default=0
         returns:
           (dict) thermostat meta data.
         """
-        return_data = self.get_metadata(zone_number, parameter=None)
+        return_data = self.get_metadata(zone, parameter=None)
         util.log_msg("all meta data: %s" % return_data,
                      mode=util.DEBUG_LOG + util.CONSOLE_LOG, func_name=1)
         return return_data
 
-    def get_metadata(self, zone_number=0, parameter=None) -> (dict, str):
+    def get_metadata(self, zone=0, parameter=None) -> (dict, str):
         """
         Return the current thermostat metadata settings.
 
         inputs:
-          zone_number(int): zone number, default=0
+          zone(int): zone number, default=0
           parameter(str): target parameter, None = all settings
         returns:
           dict if parameter=None
@@ -114,58 +114,58 @@ class ThermostatClass(pyhtcc.PyHTCC):
         """
         zone_info_list = self.get_zones_info()
         if parameter is None:
-            return_data = zone_info_list[zone_number]
-            util.log_msg("zone%s info: %s" % (zone_number, return_data),
+            return_data = zone_info_list[zone]
+            util.log_msg("zone%s info: %s" % (zone, return_data),
                          mode=util.DEBUG_LOG + util.CONSOLE_LOG, func_name=1)
             return return_data
         else:
-            return_data = zone_info_list[zone_number].get(parameter)
+            return_data = zone_info_list[zone].get(parameter)
             util.log_msg("zone%s parameter '%s': %s" %
-                         (zone_number, parameter, return_data),
+                         (zone, parameter, return_data),
                          mode=util.DEBUG_LOG + util.CONSOLE_LOG, func_name=1)
             return return_data
 
-    def get_latestdata(self, zone_number=0) -> dict:
+    def get_latestdata(self, zone=0) -> dict:
         """
         Return the current thermostat latest data.
 
         inputs:
-          zone_number(int): zone number, default=0
+          zone(int): zone number, default=0
         returns:
           (dict) latest data from thermostat.
         """
-        latest_data_dict = self.get_metadata(zone_number).get('latestData')
-        util.log_msg("zone%s latestData: %s" % (zone_number, latest_data_dict),
+        latest_data_dict = self.get_metadata(zone).get('latestData')
+        util.log_msg("zone%s latestData: %s" % (zone, latest_data_dict),
                      mode=util.DEBUG_LOG + util.CONSOLE_LOG, func_name=1)
         return latest_data_dict
 
-    def get_uiData(self, zone_number=0) -> dict:
+    def get_uiData(self, zone=0) -> dict:
         """
         Return the latest thermostat ui data.
 
         inputs:
-          zone_number(int): zone_number, default=0
+          zone(int): zone, default=0
         returns:
           (dict) ui data from thermostat.
         """
-        ui_data_dict = self.get_latestdata(zone_number).get('uiData')
-        util.log_msg("zone%s latestData: %s" % (zone_number, ui_data_dict),
+        ui_data_dict = self.get_latestdata(zone).get('uiData')
+        util.log_msg("zone%s latestData: %s" % (zone, ui_data_dict),
                      mode=util.DEBUG_LOG + util.CONSOLE_LOG, func_name=1)
         return ui_data_dict
 
-    def get_uiData_param(self, zone_number=0, parameter=None) -> dict:
+    def get_uiData_param(self, zone=0, parameter=None) -> dict:
         """
         Return the latest thermostat ui data for one specific parameter.
 
         inputs:
-          zone_number(int): zone_number, default=0
+          zone(int): zone, default=0
           parameter(str): paramenter name
         returns:
           (dict)  # need to verify return data type.
         """
-        parameter_data = self.get_uiData(zone_number=0).get(parameter)
+        parameter_data = self.get_uiData(zone=0).get(parameter)
         util.log_msg("zone%s uiData parameter %s: %s" %
-                     (zone_number, parameter, parameter_data),
+                     (zone, parameter, parameter_data),
                      mode=util.DEBUG_LOG + util.CONSOLE_LOG,
                      func_name=1)
         return parameter_data
@@ -335,40 +335,83 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
                      ['IndoorHumiditySensorNotFault'])
         return available and not_fault
 
-    def get_heat_mode(self) -> int:
+    def is_heat_mode(self) -> int:
         """
-        Refresh the cached zone information and return the heat mode.
+        Refresh the cached zone information and return heat mode.
 
         inputs:
             None
         returns:
-            (int) heat mode.
+            (int): 1 heat mode, else 0
         """
         self.refresh_zone_info()
-        return int(self.zone_info['latestData']['uiData']['StatusHeat'])
+        return int(self.get_system_switch_position() ==
+                   self.system_switch_position[
+                       tc.ThermostatCommonZone.HEAT_MODE])
 
-    def get_cool_mode(self) -> int:
+    def is_cool_mode(self) -> int:
         """
         Refresh the cached zone information and return the cool mode.
 
         inputs:
             None
         returns:
-            (int): cool mode.
+            (int): 1 if cool mode, else 0
         """
         self.refresh_zone_info()
-        return int(self.zone_info['latestData']['uiData']['StatusCool'])
+        return int(self.get_system_switch_position() ==
+                   self.system_switch_position[
+                       tc.ThermostatCommonZone.COOL_MODE])
 
-    def get_dry_mode(self) -> int:
+    def is_dry_mode(self) -> int:
         """
         Return the dry mode.
 
         inputs:
             None
         returns:
-            (int): dry mode, 1=enabled, 0=disabled.
+            (int): 1 if dry mode, else 0
         """
-        return 0  # dry mode not supported on Honeywell
+        self.refresh_zone_info()
+        return int(self.get_system_switch_position() ==
+                   self.system_switch_position[
+                       tc.ThermostatCommonZone.DRY_MODE])
+
+    def is_auto_mode(self) -> int:
+        """
+        Return the auto mode.
+
+        inputs:
+            None
+        returns:
+            (int): 1 if auto mode, else 0
+        """
+        self.refresh_zone_info()
+        return int(self.get_system_switch_position() ==
+                   self.system_switch_position[
+                       tc.ThermostatCommonZone.AUTO_MODE])
+
+    def is_heating(self) -> int:
+        """
+        Refresh the cached zone information and return the heat active mode.
+        inputs:
+            None
+        returns:
+            (int) 1 if heating is active, else 0.
+        """
+        self.refresh_zone_info()
+        return int(self.zone_info['latestData']['uiData']['StatusHeat'])
+
+    def is_cooling(self) -> int:
+        """
+        Refresh the cached zone information and return the cool active mode.
+        inputs:
+            None
+        returns:
+            (int): 1 if cooling is active, else 0.
+        """
+        self.refresh_zone_info()
+        return int(self.zone_info['latestData']['uiData']['StatusCool'])
 
     def get_schedule_heat_sp(self) -> int:  # used
         """
@@ -518,23 +561,28 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
             'SystemSwitch': self.system_switch_position[self.COOL_MODE],
         })
 
-    def report_heating_parameters(self) -> None:
+    def report_heating_parameters(self, switch_position=None):
         """
         Display critical thermostat settings and reading to the screen.
 
         inputs:
-            None
+            switch_position(int): switch position override, used for testing.
         returns:
             None
         """
         # current temp as measured by thermostat
-        util.log_msg("display temp=%s" % self.get_display_temp(),
+        util.log_msg("display temp=%s" %
+                     util.temp_value_with_units(self.get_display_temp()),
                      mode=util.BOTH_LOG, func_name=1)
 
+        # get switch position
+        if switch_position is None:
+            switch_position = self.get_system_switch_position()
+
         # heating status
-        if self.get_system_switch_position() == \
+        if switch_position == \
                 self.system_switch_position[self.HEAT_MODE]:
-            util.log_msg("heat mode=%s" % self.get_heat_mode(),
+            util.log_msg("heat mode=%s" % self.is_heat_mode(),
                          mode=util.BOTH_LOG)
             util.log_msg("heat setpoint=%s" %
                          self.get_heat_setpoint(), mode=util.BOTH_LOG)
@@ -545,9 +593,9 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
             util.log_msg("\n", mode=util.BOTH_LOG)
 
         # cooling status
-        if self.get_system_switch_position() == \
+        if switch_position == \
                 self.system_switch_position[self.COOL_MODE]:
-            util.log_msg("cool mode=%s" % self.get_cool_mode(),
+            util.log_msg("cool mode=%s" % self.is_cool_mode(),
                          mode=util.BOTH_LOG)
             util.log_msg("cool setpoint=%s" %
                          self.get_cool_setpoint(), mode=util.BOTH_LOG)
@@ -624,6 +672,10 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
 
 if __name__ == "__main__":
 
-    tc.thermostat_basic_checkout(api, honeywell_config.ALIAS,
-                                 ThermostatClass,
-                                 ThermostatZone)
+    # get zone override
+    zone_number = api.parse_all_runtime_parameters()["zone"]
+
+    tc.thermostat_basic_checkout(
+        api, honeywell_config.ALIAS,
+        zone_number,
+        ThermostatClass, ThermostatZone)

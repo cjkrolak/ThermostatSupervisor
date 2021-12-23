@@ -13,7 +13,7 @@ import unit_test_common as utc
 import utilities as util
 
 
-class Test(utc.UnitTestCommon):
+class Test(utc.UnitTest):
     """Test functions in supervise.py."""
 
     def setUp(self):
@@ -42,12 +42,11 @@ class Test(utc.UnitTestCommon):
         """Verify display_runtime_settings()."""
         sup.display_runtime_settings(self.Zone)
 
+    @unittest.skipIf(utc.is_azure_environment(),
+                     "this test not supported on Azure Pipelines")
     def test_Supervisor(self):
         """Verify main supervisor loop."""
-        if utc.is_azure_environment():
-            print("WARNING: test is not compatible with Azure, aborting")
-        else:
-            sup.supervisor(sht31_config.ALIAS, sht31_config.UNIT_TEST_ZONE)
+        sup.supervisor(sht31_config.ALIAS, sht31_config.UNIT_TEST_ZONE)
 
 
 if __name__ == "__main__":

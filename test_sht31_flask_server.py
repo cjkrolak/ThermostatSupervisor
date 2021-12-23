@@ -16,7 +16,9 @@ import unit_test_common as utc
 import utilities as util
 
 
-class Test(utc.UnitTestCommon):
+@unittest.skipIf(not utc.enable_integration_tests,
+                 "integration tests are disabled")
+class IntegrationTest(utc.UnitTest):
     """Test functions in sht31_flask_server.py."""
 
     # app = sht31_fs.create_app()
@@ -63,13 +65,14 @@ class Test(utc.UnitTestCommon):
 
         print("current thermostat settings...")
         print("switch position: %s" % Zone.get_system_switch_position())
-        print("heat mode=%s" % Zone.get_heat_mode())
-        print("cool mode=%s" % Zone.get_cool_mode())
+        print("heat mode=%s" % Zone.is_heat_mode())
+        print("cool mode=%s" % Zone.is_cool_mode())
         print("temporary hold minutes=%s" %
               Zone.get_temporary_hold_until_time())
         meta_data = Thermostat.get_all_metadata()
         print("thermostat meta data=%s" % meta_data)
-        print("thermostat display tempF=%s" % Zone.get_display_temp())
+        print("thermostat display temp=%s" %
+              util.temp_value_with_units(Zone.get_display_temp()))
 
         # verify measurements
         self.assertEqual(meta_data["measurements"],

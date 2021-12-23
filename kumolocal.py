@@ -42,16 +42,16 @@ class ThermostatClass(pykumo.KumoCloudAccount):
         self.device_id = self.get_target_zone_id(self.zone_number)
         self.serial_number = None  # will be populated when unit is queried.
 
-    def get_target_zone_id(self, zone_number=0):
+    def get_target_zone_id(self, zone=0):
         """
         Return the target zone ID.
 
         inputs:
-            zone_number(int):  zone number.
+            zone(int):  zone number.
         returns:
             (obj): PyKumo object
         """
-        self.zone_name = kumolocal_config.kc_metadata[zone_number]["zone_name"]
+        self.zone_name = kumolocal_config.kc_metadata[zone]["zone_name"]
         # populate the zone dictionary
         # establish local interface to kumos, must be on local net
         kumos = self.make_pykumos()
@@ -59,7 +59,7 @@ class ThermostatClass(pykumo.KumoCloudAccount):
         # print zone name the first time it is known
         if self.device_id is None:
             util.log_msg("zone %s name = '%s', device_id=%s" %
-                         (zone_number, self.zone_name, device_id),
+                         (zone, self.zone_name, device_id),
                          mode=util.DEBUG_LOG + util.CONSOLE_LOG,
                          func_name=1)
         self.device_id = device_id
@@ -142,8 +142,9 @@ class ThermostatZone(tc.ThermostatCommonZone):
         self.system_switch_position[tc.ThermostatCommonZone.COOL_MODE] = "cool"
         self.system_switch_position[tc.ThermostatCommonZone.HEAT_MODE] = "heat"
         self.system_switch_position[tc.ThermostatCommonZone.OFF_MODE] = "off"
-        self.system_switch_position[tc.ThermostatCommonZone.DRY_MODE] = "auto"
-        self.system_switch_position[tc.ThermostatCommonZone.AUTO_MODE] = "dry"
+        self.system_switch_position[tc.ThermostatCommonZone.DRY_MODE] = "dry"
+        self.system_switch_position[tc.ThermostatCommonZone.AUTO_MODE] = "auto"
+        self.system_switch_position[tc.ThermostatCommonZone.FAN_MODE] = "fan"
 
         # zone info
         self.thermostat_type = kumolocal_config.ALIAS
@@ -200,7 +201,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         """
         return self.get_display_humidity() is not None
 
-    def get_heat_mode(self) -> int:
+    def is_heat_mode(self) -> int:
         """
         Refresh the cached zone information and return the heat mode.
 
@@ -214,7 +215,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
                    self.system_switch_position[
                        tc.ThermostatCommonZone.HEAT_MODE])
 
-    def get_cool_mode(self) -> int:
+    def is_cool_mode(self) -> int:
         """
         Refresh the cached zone information and return the cool mode.
 
@@ -228,7 +229,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
                    self.system_switch_position[
                        tc.ThermostatCommonZone.COOL_MODE])
 
-    def get_dry_mode(self) -> int:
+    def is_dry_mode(self) -> int:
         """
         Refresh the cached zone information and return the dry mode.
 
@@ -241,6 +242,20 @@ class ThermostatZone(tc.ThermostatCommonZone):
         return int(self.device_id.get_mode() ==
                    self.system_switch_position[
                        tc.ThermostatCommonZone.DRY_MODE])
+
+    def is_auto_mode(self) -> int:
+        """
+        Refresh the cached zone information and return the auto mode.
+
+        inputs:
+            None
+        returns:
+            (int): auto mode, 1=enabled, 0=disabled.
+        """
+        self.refresh_zone_info()
+        return int(self.device_id.get_mode() ==
+                   self.system_switch_position[
+                       tc.ThermostatCommonZone.AUTO_MODE])
 
     def get_heat_setpoint_raw(self) -> int:  # used
         """
@@ -384,23 +399,28 @@ class ThermostatZone(tc.ThermostatCommonZone):
             self.device_id = \
                 self.Thermostat.get_target_zone_id(self.zone_number)
 
-    def report_heating_parameters(self):
+    def report_heating_parameters(self, switch_position=None):
         """
         Display critical thermostat settings and reading to the screen.
 
         inputs:
-            None
+            switch_position(int): switch position override, used for testing.
         returns:
             None
         """
         # current temp as measured by thermostat
-        util.log_msg("display temp=%s" % self.get_display_temp(),
+        util.log_msg("display temp=%s" %
+                     util.temp_value_with_units(self.get_display_temp()),
                      mode=util.BOTH_LOG, func_name=1)
 
+        # get switch position
+        if switch_position is None:
+            switch_position = self.get_system_switch_position()
+
         # heating status
-        if self.get_system_switch_position() == \
+        if switch_position == \
                 self.system_switch_position[self.HEAT_MODE]:
-            util.log_msg("heat mode=%s" % self.get_heat_mode(),
+            util.log_msg("heat mode=%s" % self.is_heat_mode(),
                          mode=util.BOTH_LOG)
             util.log_msg("heat setpoint=%s" %
                          self.get_heat_setpoint_raw(), mode=util.BOTH_LOG)
@@ -409,9 +429,9 @@ class ThermostatZone(tc.ThermostatCommonZone):
             util.log_msg("\n", mode=util.BOTH_LOG)
 
         # cooling status
-        if self.get_system_switch_position() == \
+        if switch_position == \
                 self.system_switch_position[self.COOL_MODE]:
-            util.log_msg("cool mode=%s" % self.get_cool_mode(),
+            util.log_msg("cool mode=%s" % self.is_cool_mode(),
                          mode=util.BOTH_LOG)
             util.log_msg("cool setpoint=%s" %
                          self.get_cool_setpoint_raw(), mode=util.BOTH_LOG)
@@ -432,6 +452,10 @@ class ThermostatZone(tc.ThermostatCommonZone):
 
 if __name__ == "__main__":
 
-    tc.thermostat_basic_checkout(api, kumolocal_config.ALIAS,
-                                 ThermostatClass,
-                                 ThermostatZone)
+    # get zone override
+    zone_number = api.parse_all_runtime_parameters()["zone"]
+
+    tc.thermostat_basic_checkout(
+        api, kumolocal_config.ALIAS,
+        zone_number,
+        ThermostatClass, ThermostatZone)

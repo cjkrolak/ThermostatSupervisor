@@ -8,14 +8,13 @@ import random
 import unittest
 
 # local imports
-import sht31_config
 import thermostat_api as api
 import thermostat_common as tc
 import unit_test_common as utc
 import utilities as util
 
 
-class Test(utc.UnitTestCommon):
+class Test(utc.UnitTest):
     """Test functions in thermostat_common.py."""
 
     # initialization
@@ -55,14 +54,17 @@ class Test(utc.UnitTestCommon):
         """
         Verify store_current_mode() runs without error.
         """
-        def dummy_true(): return True
+        def dummy_true(): return 1  # functions return ints
 
-        dummy_func = None
         test_cases = [["is_heat_mode", self.Zone.HEAT_MODE],
                       ["is_cool_mode", self.Zone.COOL_MODE],
                       ["is_dry_mode", self.Zone.DRY_MODE],
                       ["is_auto_mode", self.Zone.AUTO_MODE],
-                      [dummy_func, self.Zone.OFF_MODE]]
+                      ["is_fan_mode", self.Zone.FAN_MODE],
+                      ["is_off_mode", self.Zone.OFF_MODE]]
+
+        print("thermostat_type=%s" % self.Zone.thermostat_type)
+
         for test_case in test_cases:
             print("testing %s" % test_case[0])
             try:
@@ -70,10 +72,11 @@ class Test(utc.UnitTestCommon):
                 if test_case[0]:
                     backup_func = getattr(self.Zone, test_case[0])
                     setattr(self.Zone, test_case[0], dummy_true)
+                print("current mode(pre)=%s" % self.Zone.current_mode)
 
                 # store the current mode and check cache
                 self.Zone.store_current_mode()
-                print("current mode=%s" % self.Zone.current_mode)
+                print("current mode(post)=%s" % self.Zone.current_mode)
                 self.assertEqual(test_case[1], self.Zone.current_mode,
                                  "Zone.set_current_mode() failed to "
                                  "cache mode=%s" % test_case[1])
@@ -101,6 +104,10 @@ class Test(utc.UnitTestCommon):
         Verify return type of each function is as expected.
         """
         func_dict = {
+            "is_temp_deviated_from_schedule": {
+                "key": self.Zone.is_temp_deviated_from_schedule,
+                "args": None,
+                "return_type": bool},
             "get_current_mode": {
                 "key": self.Zone.get_current_mode,
                 "args": [1, 1],  # flag_all_deviations==False
@@ -109,6 +116,62 @@ class Test(utc.UnitTestCommon):
                 "key": self.Zone.get_current_mode,
                 "args": [1, 1, True, True],  # flag_all_deviations==True
                 "return_type": dict},
+            "set_mode": {
+                "key": self.Zone.set_mode,
+                "args": ["bogus"],
+                "return_type": bool},
+            "store_current_mode": {
+                "key": self.Zone.store_current_mode,
+                "args": None,
+                "return_type": type(None)},
+            "validate_numeric": {
+                "key": self.Zone.validate_numeric,
+                "args": [0, "bogus"],
+                "return_type": int},
+            "warn_if_outside_global_limit": {
+                "key": self.Zone.warn_if_outside_global_limit,
+                "args": [0, 0, operator.gt, "bogus"],
+                "return_type": bool},
+            "is_heat_mode": {
+                "key": self.Zone.is_heat_mode,
+                "args": None,
+                "return_type": int},
+            "is_cool_mode": {
+                "key": self.Zone.is_cool_mode,
+                "args": None,
+                "return_type": int},
+            "is_dry_mode": {
+                "key": self.Zone.is_dry_mode,
+                "args": None,
+                "return_type": int},
+            "is_auto_mode": {
+                "key": self.Zone.is_auto_mode,
+                "args": None,
+                "return_type": int},
+            "is_fan_mode": {
+                "key": self.Zone.is_fan_mode,
+                "args": None,
+                "return_type": int},
+            "is_off_mode": {
+                "key": self.Zone.is_off_mode,
+                "args": None,
+                "return_type": int},
+            "is_heating": {
+                "key": self.Zone.is_heating,
+                "args": None,
+                "return_type": int},
+            "is_cooling": {
+                "key": self.Zone.is_cooling,
+                "args": None,
+                "return_type": int},
+            "is_drying": {
+                "key": self.Zone.is_drying,
+                "args": None,
+                "return_type": int},
+            "is_auto": {
+                "key": self.Zone.is_auto,
+                "args": None,
+                "return_type": int},
             "get_display_temp": {
                 "key": self.Zone.get_display_temp,
                 "args": None,
@@ -244,7 +307,7 @@ class Test(utc.UnitTestCommon):
         """
         test_cases = [self.Zone.HEAT_MODE, self.Zone.COOL_MODE,
                       self.Zone.DRY_MODE, self.Zone.AUTO_MODE,
-                      self.Zone.OFF_MODE]
+                      self.Zone.FAN_MODE, self.Zone.OFF_MODE]
         for test_case in random.choices(test_cases, k=20):
             if ((self.Zone.current_mode in self.Zone.heat_modes and
                  test_case in self.Zone.cool_modes)
@@ -420,6 +483,10 @@ class Test(utc.UnitTestCommon):
                 (lambda *_, **__: False)
             self.Zone.is_auto_mode = \
                 (lambda *_, **__: False)
+            self.Zone.is_fan_mode = \
+                (lambda *_, **__: False)
+            self.Zone.is_off_mode = \
+                (lambda *_, **__: False)
             self.Zone.current_mode = self.Zone.HEAT_MODE
         elif mock_mode == self.Zone.COOL_MODE:
             self.Zone.is_heat_mode = \
@@ -429,6 +496,10 @@ class Test(utc.UnitTestCommon):
             self.Zone.is_dry_mode = \
                 (lambda *_, **__: False)
             self.Zone.is_auto_mode = \
+                (lambda *_, **__: False)
+            self.Zone.is_fan_mode = \
+                (lambda *_, **__: False)
+            self.Zone.is_off_mode = \
                 (lambda *_, **__: False)
             self.Zone.current_mode = self.Zone.COOL_MODE
         elif mock_mode == self.Zone.DRY_MODE:
@@ -440,6 +511,10 @@ class Test(utc.UnitTestCommon):
                 (lambda *_, **__: True)
             self.Zone.is_auto_mode = \
                 (lambda *_, **__: False)
+            self.Zone.is_fan_mode = \
+                (lambda *_, **__: False)
+            self.Zone.is_off_mode = \
+                (lambda *_, **__: False)
             self.Zone.current_mode = self.Zone.DRY_MODE
         elif mock_mode == self.Zone.AUTO_MODE:
             self.Zone.is_heat_mode = \
@@ -450,7 +525,25 @@ class Test(utc.UnitTestCommon):
                 (lambda *_, **__: False)
             self.Zone.is_auto_mode = \
                 (lambda *_, **__: True)
+            self.Zone.is_fan_mode = \
+                (lambda *_, **__: False)
+            self.Zone.is_off_mode = \
+                (lambda *_, **__: False)
             self.Zone.current_mode = self.Zone.AUTO_MODE
+        elif mock_mode == self.Zone.FAN_MODE:
+            self.Zone.is_heat_mode = \
+                (lambda *_, **__: False)
+            self.Zone.is_cool_mode = \
+                (lambda *_, **__: False)
+            self.Zone.is_dry_mode = \
+                (lambda *_, **__: False)
+            self.Zone.is_auto_mode = \
+                (lambda *_, **__: False)
+            self.Zone.is_fan_mode = \
+                (lambda *_, **__: True)
+            self.Zone.is_off_mode = \
+                (lambda *_, **__: False)
+            self.Zone.current_mode = self.Zone.FAN_MODE
         elif mock_mode == self.Zone.OFF_MODE:
             self.Zone.is_heat_mode = \
                 (lambda *_, **__: False)
@@ -460,9 +553,13 @@ class Test(utc.UnitTestCommon):
                 (lambda *_, **__: False)
             self.Zone.is_auto_mode = \
                 (lambda *_, **__: False)
+            self.Zone.is_fan_mode = \
+                (lambda *_, **__: False)
+            self.Zone.is_off_mode = \
+                (lambda *_, **__: True)
             self.Zone.current_mode = self.Zone.OFF_MODE
         else:
-            self.fail("mock mode '%s' is not supporteed" % mock_mode)
+            self.fail("mock mode '%s' is not supported" % mock_mode)
 
     def mock_set_point_deviation(self, heat_deviation, cool_deviation):
         """
@@ -534,6 +631,8 @@ class Test(utc.UnitTestCommon):
         finally:
             self.Zone.get_system_switch_position = self.switch_position_backup
 
+    @unittest.skipIf(not utc.enable_sht31_tests,
+                     "sht31 tests are disabled")
     def test_ThermostatBasicCheckout(self):
         """Verify thermostat_basic_checkout()."""
 
@@ -543,17 +642,25 @@ class Test(utc.UnitTestCommon):
             self.Zone.get_system_switch_position = \
                 (lambda *_, **__: self.Zone.system_switch_position[
                     tc.ThermostatCommonZone.DRY_MODE])
+            thermostat_type = utc.unit_test_argv[api.get_argv_position(
+                "thermostat_type")]
+            zone = utc.unit_test_argv[api.get_argv_position(
+                "zone")]
+            mod = api.load_hardware_library(thermostat_type)
             Thermostat, Zone = \
                 tc.thermostat_basic_checkout(
-                    api, sht31_config.ALIAS, tc.ThermostatCommon,
-                    tc.ThermostatCommonZone, utc.unit_test_argv)
+                    api,
+                    thermostat_type,
+                    zone,
+                    mod.ThermostatClass, mod.ThermostatZone
+                    )
             print("thermotat=%s" % type(Thermostat))
             print("thermotat=%s" % type(Zone))
         finally:
             self.Zone.get_system_switch_position = self.switch_position_backup
 
     def test_RevertTemperatureDeviation(self):
-        """Verify thermostat_basic_checkout()."""
+        """Verify revert_temperature_deviation()."""
 
         def mock_revert_setpoint_func(setpoint):
             self.Zone.current_setpoint = setpoint
@@ -605,6 +712,13 @@ class Test(utc.UnitTestCommon):
 
         finally:
             self.restore_functions()
+
+    def test_ReportHeatingParameters(self):
+        """Verify report_heating_parameters()."""
+        test_cases = [tc.ThermostatCommonZone.OFF_MODE]
+        for test_case in test_cases:
+            print("test_case=%s" % test_case)
+            self.Zone.report_heating_parameters(switch_position=test_case)
 
 
 if __name__ == "__main__":

@@ -41,19 +41,13 @@ class ThermostatCommon():
 class ThermostatCommonZone():
     """Class methods common to all thermostat zones."""
 
-    # OFF_MODE = "OFF_MODE"
-    # HEAT_MODE = "HEAT_MODE"
-    # COOL_MODE = "COOL_MODE"
-    # AUTO_MODE = "AUTO_MODE"
-    # DRY_MODE = "DRY_MODE"
-    # UNKNOWN_MODE = "UNKNOWN_MODE"
-
     # supported thermostat modes
     OFF_MODE = "off"
     HEAT_MODE = "heat"
     COOL_MODE = "cool"
     AUTO_MODE = "auto"
     DRY_MODE = "dry"
+    FAN_MODE = "fan"
     UNKNOWN_MODE = "unknown"
 
     # modes where heat is applied
@@ -69,10 +63,11 @@ class ThermostatCommonZone():
         # placeholder, will be tstat-specific
         UNKNOWN_MODE: util.bogus_int,
         HEAT_MODE: util.bogus_int - 1,
-        OFF_MODE: util.bogus_int - 2,
-        COOL_MODE: util.bogus_int - 3,
-        AUTO_MODE: util.bogus_int - 4,
-        DRY_MODE: util.bogus_int - 5,
+        COOL_MODE: util.bogus_int - 2,
+        AUTO_MODE: util.bogus_int - 3,
+        DRY_MODE: util.bogus_int - 4,
+        FAN_MODE: util.bogus_int - 5,
+        OFF_MODE: util.bogus_int - 6,
         }
     max_scheduled_heat_allowed = 74  # warn if scheduled heat value exceeds.
     min_scheduled_cool_allowed = 68  # warn if scheduled cool value exceeds.
@@ -169,7 +164,17 @@ class ThermostatCommonZone():
             self.global_operator = operator.ne
             self.revert_setpoint_func = self.function_not_supported
             self.get_setpoint_func = self.function_not_supported
-        else:
+        elif self.is_fan_mode():
+            self.current_mode = self.FAN_MODE
+            self.current_setpoint = util.bogus_int
+            self.schedule_setpoint = util.bogus_int
+            self.tolerance_sign = 1
+            self.operator = operator.ne
+            self.global_limit = util.bogus_int
+            self.global_operator = operator.ne
+            self.revert_setpoint_func = self.function_not_supported
+            self.get_setpoint_func = self.function_not_supported
+        elif self.is_off_mode():
             self.current_mode = self.OFF_MODE
             self.current_setpoint = util.bogus_int
             self.schedule_setpoint = util.bogus_int
@@ -179,11 +184,20 @@ class ThermostatCommonZone():
             self.global_operator = operator.ne
             self.revert_setpoint_func = self.function_not_supported
             self.get_setpoint_func = self.function_not_supported
+        else:
+            raise ValueError("unknown thermostat mode")
 
         self.temperature_is_deviated = self.is_temp_deviated_from_schedule()
 
     def is_temp_deviated_from_schedule(self):
-        """Return True if temperature is deviated from current schedule."""
+        """
+        Return True if temperature is deviated from current schedule.
+
+        inputs:
+            None:
+        returns:
+            (bool): True if temp is deviated from schedule.
+        """
         return self.operator(self.current_setpoint, self.schedule_setpoint
                              + self.tolerance_sign
                              * self.tolerance_degrees)
@@ -256,8 +270,9 @@ class ThermostatCommonZone():
         # add setpoints if in heat or cool mode
         if self.is_heat_mode() or self.is_cool_mode():
             status_msg += (", set point=%s, tolerance=%s, override=%s" %
-                           (self.schedule_setpoint,
-                            self.tolerance_degrees, self.current_setpoint))
+                           (util.temp_value_with_units(self.schedule_setpoint),
+                            util.temp_value_with_units(self.tolerance_degrees),
+                            util.temp_value_with_units(self.current_setpoint)))
 
         full_status_msg = ("%s: (session:%s, poll:%s) %s_MODE %s" %
                            (datetime.datetime.now().
@@ -301,8 +316,13 @@ class ThermostatCommonZone():
             self.current_mode = self.DRY_MODE
         elif self.is_auto_mode():
             self.current_mode = self.AUTO_MODE
-        else:
+        elif self.is_fan_mode():
+            self.current_mode = self.FAN_MODE
+        elif self.is_off_mode():
             self.current_mode = self.OFF_MODE
+        else:
+            raise ValueError("unknown thermostat mode")
+        print("DEBUG: self.current_mode=%s" % self.current_mode)
 
     def validate_numeric(self, input_val, parameter_name):
         """
@@ -340,7 +360,8 @@ class ThermostatCommonZone():
             msg = ("%s zone %s: scheduled %s_MODE set point (%s) is "
                    "%s limit (%s)" % (
                        self.thermostat_type, self.zone_number, label.upper(),
-                       setpoint, level, limit_value))
+                       util.temp_value_with_units(setpoint), level,
+                       util.temp_value_with_units(limit_value)))
             util.log_msg("WARNING: %s" % msg, mode=util.BOTH_LOG)
             eml.send_email_alert(
                     subject=msg,
@@ -349,16 +370,54 @@ class ThermostatCommonZone():
         else:
             return False
 
-    def get_heat_mode(self):
-        """Return 1 if heat mode enabled, else 0."""
+    def is_heat_mode(self):
+        """Return True if in heat mode."""
+        return (self.get_system_switch_position() ==
+                self.system_switch_position[self.HEAT_MODE])
+
+    def is_cool_mode(self):
+        """Return True if in cool mode."""
+        return (self.get_system_switch_position() ==
+                self.system_switch_position[self.COOL_MODE])
+
+    def is_dry_mode(self):
+        """Return True if in dry mode."""
+        return (self.get_system_switch_position() ==
+                self.system_switch_position[self.DRY_MODE])
+
+    def is_auto_mode(self):
+        """Return True if in auto mode."""
+        return (self.get_system_switch_position() ==
+                self.system_switch_position[self.AUTO_MODE])
+
+    def is_fan_mode(self):
+        """Return 1 if fan mode enabled, else 0."""
+        return (self.get_system_switch_position() ==
+                self.system_switch_position[self.FAN_MODE])
+
+    def is_off_mode(self):
+        """Return 1 if fan mode enabled, else 0."""
+        return (self.get_system_switch_position() ==
+                self.system_switch_position[self.OFF_MODE])
+
+    def is_controlled_mode(self):
+        """Return True if mode is being controlled."""
+        return self.current_mode in self.controlled_modes
+
+    def is_heating(self):
+        """Return 1 if heating relay is active, else 0."""
         return util.bogus_int
 
-    def get_cool_mode(self):
-        """Return 1 if cool mode enabled, else 0."""
+    def is_cooling(self):
+        """Return 1 if cooling relay is active, else 0."""
         return util.bogus_int
 
-    def get_dry_mode(self):
-        """Return 1 if dry mode enabled, else 0."""
+    def is_drying(self):
+        """Return 1 if drying relay is active, else 0."""
+        return util.bogus_int
+
+    def is_auto(self):
+        """Return 1 if auto relay is active, else 0."""
         return util.bogus_int
 
     def set_heat_setpoint(self, temp: int) -> None:
@@ -395,11 +454,6 @@ class ThermostatCommonZone():
                      func_name=1)
         return
 
-    def is_heat_mode(self):
-        """Return True if in heat mode."""
-        return (self.get_system_switch_position() ==
-                self.system_switch_position[self.HEAT_MODE])
-
     def is_heat_deviation(self):
         """
         Return True if heat is deviated.
@@ -411,11 +465,6 @@ class ThermostatCommonZone():
         """
         return self.is_heat_mode() and self.is_temp_deviated_from_schedule()
 
-    def is_cool_mode(self):
-        """Return True if in cool mode."""
-        return (self.get_system_switch_position() ==
-                self.system_switch_position[self.COOL_MODE])
-
     def is_cool_deviation(self):
         """
         Return True if cool is deviated.
@@ -426,20 +475,6 @@ class ThermostatCommonZone():
             (bool): True if deviation exists.
         """
         return self.is_cool_mode() and self.is_temp_deviated_from_schedule()
-
-    def is_dry_mode(self):
-        """Return True if in dry mode."""
-        return (self.get_system_switch_position() ==
-                self.system_switch_position[self.DRY_MODE])
-
-    def is_auto_mode(self):
-        """Return True if in auto mode."""
-        return (self.get_system_switch_position() ==
-                self.system_switch_position[self.AUTO_MODE])
-
-    def is_controlled_mode(self):
-        """Return True if mode is being controlled."""
-        return self.current_mode in self.controlled_modes
 
     # Thermostat-specific methods will be overloaded
     def get_display_temp(self) -> float:
@@ -538,8 +573,16 @@ class ThermostatCommonZone():
         del force_refresh  # not used in this template.
         return  # placeholder
 
-    def report_heating_parameters(self):
-        """Display critical thermostat settings and reading to the screen."""
+    def report_heating_parameters(self, switch_position=None):
+        """
+        Display critical thermostat settings and reading to the screen.
+
+        inputs:
+            switch_position(int): switch position override for testing.
+        returns:
+            None
+        """
+        del switch_position
         return  # placeholder
 
     def get_vacation_hold_until_time(self) -> int:
@@ -570,6 +613,7 @@ class ThermostatCommonZone():
             "connection_time_sec": "connection_time_sec",
             "tolerance_degrees": "tolerance_degrees",
             "target_mode": "target_mode",
+            "measurements": "measurements",
             }
 
         for inp, cls_method in user_input_to_class_mapping.items():
@@ -703,11 +747,19 @@ class ThermostatCommonZone():
         util.log_msg("(schedule) cool program=%s" %
                      self.get_schedule_program_cool(),
                      mode=mode, func_name=1)
-        util.log_msg("heat mode=%s" % self.get_heat_mode(),
+        util.log_msg("heat mode=%s (actively heating=%s)" %
+                     (self.is_heat_mode(), self.is_heating()),
                      mode=mode, func_name=1)
-        util.log_msg("cool mode=%s" % self.get_cool_mode(),
+        util.log_msg("cool mode=%s (actively cooling=%s)" %
+                     (self.is_cool_mode(), self.is_cooling()),
                      mode=mode, func_name=1)
-        util.log_msg("dry mode=%s" % self.get_dry_mode(),
+        util.log_msg("dry mode=%s" % self.is_dry_mode(),
+                     mode=mode, func_name=1)
+        util.log_msg("auto mode=%s" % self.is_auto_mode(),
+                     mode=mode, func_name=1)
+        util.log_msg("fan mode=%s" % self.is_fan_mode(),
+                     mode=mode, func_name=1)
+        util.log_msg("off mode=%s" % self.is_off_mode(),
                      mode=mode, func_name=1)
         util.log_msg("hold=%s" % self.get_vacation_hold(),
                      mode=mode, func_name=1)
@@ -746,41 +798,39 @@ class ThermostatCommonZone():
                      (util.get_function_name(2)), mode=util.BOTH_LOG)
 
 
-def thermostat_basic_checkout(api, thermostat_type,
-                              ThermostatClass, ThermostatZone,
-                              input_list=None):
+def thermostat_basic_checkout(api, thermostat_type, zone,
+                              ThermostatClass, ThermostatZone):
     """
     Perform basic Thermostat checkout.
 
     inputs:
         api(module): thermostat_api module.
         tstat(int):  thermostat_type
+        zone(int): zone number
         ThermostatClass(cls): Thermostat class
         ThermostatZone(cls): ThermostatZone class
-        input_list(list): runtime parameter overrides
     returns:
         Thermostat(obj): Thermostat object
         Zone(obj):  Zone object
     """
     util.log_msg.debug = True  # debug mode set
 
-    # get zone from user input
-    zone_input = api.parse_all_runtime_parameters(input_list)["zone"]
-
     # verify required env vars
-    api.verify_required_env_variables(thermostat_type, zone_input)
+    api.verify_required_env_variables(thermostat_type, zone)
 
     # import hardware module
     api.load_hardware_library(thermostat_type)
 
     # create Thermostat object
-    Thermostat = ThermostatClass(zone_input)
+    Thermostat = ThermostatClass(zone)
     Thermostat.print_all_thermostat_metadata()
 
     # create Zone object
     Zone = ThermostatZone(Thermostat)
 
     # update runtime overrides
+    api.user_inputs["thermostat_type"] = thermostat_type
+    api.user_inputs["zone"] = zone
     Zone.update_runtime_parameters(api.user_inputs)
 
     # print("thermostat meta data=%s\n" % Thermostat.get_all_metadata())

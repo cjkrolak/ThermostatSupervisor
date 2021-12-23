@@ -2,6 +2,7 @@
 Thermostat Supervisor
 """
 # built ins
+import sys
 import time
 
 # local imports
@@ -66,8 +67,8 @@ def display_runtime_settings(Zone):
                  mode=util.BOTH_LOG)
 
     # tolerance to set point:
-    util.log_msg("tolerance to set point is set to %d degrees" %
-                 (Zone.tolerance_degrees),
+    util.log_msg("tolerance to set point is set to %s" %
+                 util.temp_value_with_units(Zone.tolerance_degrees),
                  mode=util.BOTH_LOG)
 
 
@@ -208,4 +209,9 @@ def exec_supervise(debug=True, argv_list=None):
 
 
 if __name__ == "__main__":
-    exec_supervise(debug=True, argv_list=argv)
+    # if argv list is set use that, else use sys.argv
+    if argv:
+        argv_inputs = argv
+    else:
+        argv_inputs = sys.argv
+    exec_supervise(debug=True, argv_list=argv_inputs)

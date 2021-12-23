@@ -18,7 +18,13 @@ import unit_test_common as utc
 import utilities as util
 
 
-class Test(utc.UnitTestCommon):
+@unittest.skipIf(utc.is_azure_environment(),
+                 "this test not supported on Azure Pipelines")
+@unittest.skipIf(not util.is_interactive_environment(),
+                 "this test hangs when run from the command line")
+@unittest.skipIf(not utc.enable_integration_tests,
+                 "integration tests are disabled")
+class IntegrationTest(utc.UnitTest):
     """Test functions in supervisor_flask_server.py."""
 
     app = sfs.create_app()
@@ -35,7 +41,8 @@ class Test(utc.UnitTestCommon):
             print("DEBUG: in setup supervise sfs.argv=%s" % sfs.argv)
             print("starting supervise flask server thread...")
             self.fs = threading.Thread(target=sfs.app.run,
-                                       args=('0.0.0.0', sfs.flask_port, False))
+                                       args=('0.0.0.0', sfs.flask_port, False),
+                                       kwargs=sfs.flask_kwargs)
             self.fs.daemon = True  # make thread daemonic
             self.fs.start()
             print("thread alive status=%s" % self.fs.is_alive())
@@ -55,10 +62,6 @@ class Test(utc.UnitTestCommon):
                       "thread may still be active")
         self.print_test_result()
 
-    @unittest.skipIf(utc.is_azure_environment(),
-                     "this test not supported on Azure Pipelines")
-    @unittest.skipIf(not util.is_interactive_environment(),
-                     "this test hangs when run from the command line")
     def test_Supervisor_FlaskServer(self):
         """
         Confirm Flask server returns valid data.
@@ -67,7 +70,8 @@ class Test(utc.UnitTestCommon):
         supervise routine on.
         """
         # grab supervise web page result and display
-        flask_url = 'http://' + util.get_local_ip() + ':' + str(sfs.flask_port)
+        flask_url = (sfs.flask_url_prefix + util.get_local_ip() + ':' +
+                     str(sfs.flask_port))
 
         # delay for page load and initial data posting
         wait_delay_sec = 10

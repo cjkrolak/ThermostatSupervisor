@@ -46,7 +46,7 @@ class ThermostatClass(tc.ThermostatCommon):
         self.ip_address = self.get_target_zone_id(self.zone_number)
 
         # URL and port configuration
-        self.port = "5000"  # Flask server port on SHT31 host
+        self.port = str(sht31_config.flask_port)  # Flask server port on host
         if self.zone_number == sht31_config.UNIT_TEST_ZONE:
             self.path = sht31_config.FLASK_UNIT_TEST_FOLDER
             self.unit_test_seed = "?seed=" + str(sht31_config.unit_test_seed)
@@ -54,8 +54,9 @@ class ThermostatClass(tc.ThermostatCommon):
             self.path = ""
             self.unit_test_seed = ""
         self.measurements = "?measurements=" + str(sht31_config.measurements)
-        self.url = ("http://" + self.ip_address + ":" + self.port +
-                    self.path + self.measurements + self.unit_test_seed)
+        self.url = (sht31_config.flask_url_prefix + self.ip_address + ":" +
+                    self.port + self.path + self.measurements +
+                    self.unit_test_seed)
         self.device_id = self.url
         self.retry_delay = 60  # delay before retrying a bad reading
 
@@ -63,17 +64,17 @@ class ThermostatClass(tc.ThermostatCommon):
         if self.zone_number == sht31_config.UNIT_TEST_ZONE:
             self.spawn_flask_server()
 
-    def get_target_zone_id(self, zone_number=0):
+    def get_target_zone_id(self, zone=0):
         """
         Return the target zone ID (aka IP address for sht31) from the
         zone number provided.
 
         inputs:
-            zone_number(int): specified zone number
+            zone(int): specified zone number
         returns:
             (str):  IP address of target zone.
         """
-        env_str = self.get_env_key(zone_number)
+        env_str = self.get_env_key(zone)
         ip_address = self.get_ip_address(env_str)
         return ip_address
 
@@ -111,8 +112,10 @@ class ThermostatClass(tc.ThermostatCommon):
 
         sht31_fs.debug = False
         self.flask_server = threading.Thread(target=sht31_fs.app.run,
-                                             args=('0.0.0.0', 5000,
-                                                   False))
+                                             args=('0.0.0.0',
+                                                   sht31_config.flask_port,
+                                                   sht31_fs.debug),
+                                             kwargs=sht31_config.flask_kwargs)
         self.flask_server.daemon = True  # make thread daemonic
         self.flask_server.start()
         util.log_msg("thread alive status=%s" %
@@ -201,16 +204,16 @@ class ThermostatZone(tc.ThermostatCommonZone):
         self.humidityfield = sht31_config.API_HUMIDITY_MEAN  # must match API
         self.retry_delay = Thermostat_obj.retry_delay
 
-    def get_zone_name(self, zone_number) -> str:  # used
+    def get_zone_name(self, zone) -> str:  # used
         """
-        Refresh the cached zone information then return Name.
+        Return zone name.
 
         inputs:
-            zone_number(int): zone number
+            zone(int): zone number
         returns:
             (str): zone name
         """
-        return sht31_config.zone_names[zone_number]
+        return sht31_config.zone_names[zone]
 
     def get_metadata(self, parameter=None, retry=True):
         """
@@ -315,7 +318,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         """Return humidity sensor status."""
         return self.get_display_humidity() is not None
 
-    def get_heat_mode(self) -> int:
+    def is_heat_mode(self) -> int:
         """
         Return the heat mode.
 
@@ -324,9 +327,10 @@ class ThermostatZone(tc.ThermostatCommonZone):
         returns:
             (int): heat mode.
         """
-        return self.system_switch_position[self.OFF_MODE]
+        # function not supported on SHT31
+        return 0
 
-    def get_cool_mode(self) -> int:
+    def is_cool_mode(self) -> int:
         """
         Return the cool mode.
 
@@ -335,9 +339,10 @@ class ThermostatZone(tc.ThermostatCommonZone):
         returns:
             (int): cool mode.
         """
-        return self.system_switch_position[self.OFF_MODE]
+        # function not supported on SHT31
+        return 0
 
-    def get_dry_mode(self) -> int:
+    def is_dry_mode(self) -> int:
         """
         Return the dry mode.
 
@@ -346,7 +351,66 @@ class ThermostatZone(tc.ThermostatCommonZone):
         returns:
             (int): dry mode, 1=enabled, 0=disabled.
         """
-        return self.system_switch_position[self.OFF_MODE]
+        # function not supported on SHT31
+        return 0
+
+    def is_auto_mode(self) -> int:
+        """
+        Return the auto mode.
+
+        inputs:
+            None
+        returns:
+            (int): auto mode, 1=enabled, 0=disabled.
+        """
+        # function not supported on SHT31
+        return 0
+
+    def is_fan_mode(self) -> int:
+        """
+        Return the fan mode.
+
+        inputs:
+            None
+        returns:
+            (int): fan mode, 1=enabled, 0=disabled.
+        """
+        # function not supported on SHT31
+        return 0
+
+    def is_off_mode(self) -> int:
+        """
+        Return the off mode.
+
+        inputs:
+            None
+        returns:
+            (int): off mode, 1=enabled, 0=disabled.
+        """
+        # function not supported on SHT31
+        return 1
+
+    def is_heating(self) -> int:
+        """
+        Return 1 if actively heating, else 0.
+
+        inputs:
+            None
+        returns:
+            (int): actively heating, 1=yes, 2=no.
+        """
+        return 0  # sht31 does not provide heat.
+
+    def is_cooling(self) -> int:
+        """
+        Return 1 if actively cooling, else 0.
+
+        inputs:
+            None
+        returns:
+            (int): actively cooling, 1=yes, 2=no.
+        """
+        return 0  # sht31 does not provide cooling.
 
     def get_system_switch_position(self) -> int:
         """ Return the thermostat mode.
@@ -358,9 +422,67 @@ class ThermostatZone(tc.ThermostatCommonZone):
         """
         return self.system_switch_position[self.OFF_MODE]
 
+    def report_heating_parameters(self, switch_position=None):
+        """
+        Display critical thermostat settings and reading to the screen.
+
+        inputs:
+            switch_position(int): switch position override, used for testing.
+        returns:
+            None
+        """
+        # current temp as measured by thermostat
+        util.log_msg("display temp=%s" %
+                     util.temp_value_with_units(self.get_display_temp()),
+                     mode=util.BOTH_LOG, func_name=1)
+
+        # get switch position
+        if switch_position is None:
+            switch_position = self.get_system_switch_position()
+
+        # heating status
+        if switch_position == \
+                self.system_switch_position[self.HEAT_MODE]:
+            util.log_msg("heat mode=%s" % self.is_heat_mode(),
+                         mode=util.BOTH_LOG)
+            util.log_msg("heat setpoint=%s" %
+                         self.get_heat_setpoint(), mode=util.BOTH_LOG)
+            # util.log_msg("heat setpoint raw=%s" %
+            #              zone.get_heat_setpoint_raw())
+            util.log_msg("schedule heat sp=%s" %
+                         self.get_schedule_heat_sp(), mode=util.BOTH_LOG)
+            util.log_msg("\n", mode=util.BOTH_LOG)
+
+        # cooling status
+        if switch_position == \
+                self.system_switch_position[self.COOL_MODE]:
+            util.log_msg("cool mode=%s" % self.is_cool_mode(),
+                         mode=util.BOTH_LOG)
+            util.log_msg("cool setpoint=%s" %
+                         self.get_cool_setpoint(), mode=util.BOTH_LOG)
+            # util.log_msg("cool setpoint raw=%s" %
+            #              zone.get_cool_setpoint_raw(), mode=util.BOTH_LOG)
+            util.log_msg("schedule cool sp=%s" %
+                         self.get_schedule_cool_sp(), mode=util.BOTH_LOG)
+            util.log_msg("\n", mode=util.BOTH_LOG)
+
+        # hold settings
+        util.log_msg("is in vacation hold mode=%s" %
+                     self.get_is_invacation_hold_mode(), mode=util.BOTH_LOG)
+        util.log_msg("vacation hold=%s" % self.get_vacation_hold(),
+                     mode=util.BOTH_LOG)
+        util.log_msg("vacation hold until time=%s" %
+                     self.get_vacation_hold_until_time(), mode=util.BOTH_LOG)
+        util.log_msg("temporary hold until time=%s" %
+                     self.get_temporary_hold_until_time(), mode=util.BOTH_LOG)
+
 
 if __name__ == "__main__":
 
-    tc.thermostat_basic_checkout(api, sht31_config.ALIAS,
-                                 ThermostatClass,
-                                 ThermostatZone)
+    # get zone override
+    zone_number = api.parse_all_runtime_parameters()["zone"]
+
+    tc.thermostat_basic_checkout(
+        api, sht31_config.ALIAS,
+        zone_number,
+        ThermostatClass, ThermostatZone)

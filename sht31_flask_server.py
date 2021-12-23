@@ -463,17 +463,28 @@ def favicon():
                                mimetype='image/vnd.microsoft.icon')
 
 
+def parse_runtime_parameters():
+    """Parse runtime parameters."""
+    # parse runtime parameters, argv[1] is flask server debug mode
+    debug_flag = False  # default
+    if len(sys.argv) > 1:
+        argv3_str = sys.argv[1]
+        if argv3_str.lower() in ["1", "true"]:
+            debug_flag = True
+            print("Flask debug mode is enabled", file=sys.stderr)
+    return debug_flag
+
+
 if __name__ == "__main__":
 
     print("SHT31 sensor Flask server")
 
-    # parse runtime parameters, argv[1] is flask server debug mode
-    debug = False  # default
-    if len(sys.argv) > 1:
-        argv3_str = sys.argv[1]
-        if argv3_str.lower() in ["1", "true"]:
-            debug = True
-            print("Flask debug mode is enabled", file=sys.stderr)
+    # parse runtime parameters
+    debug = parse_runtime_parameters()
 
-    # launch the Flask API
-    app.run(debug=debug, host='0.0.0.0')
+    # launch the Flask API on development server
+    app.run(host='0.0.0.0',
+            port=sht31_config.flask_port,
+            debug=debug,
+            threaded=True,  # threaded=True may speed up rendering on web page
+            ssl_context=sht31_config.flask_ssl_cert)

@@ -1,23 +1,25 @@
 """
-Integration test module for honeywell.py.
+Integration test module for kumolocal.py.
 
-This test requires connection to Honeywell thermostat.
+This test requires connection to kumolocal thermostat.
 """
 # built-in imports
 import unittest
 
 # local imports
-import honeywell
-import honeywell_config
+import kumolocal
+import kumolocal_config
 import unit_test_common as utc
 import utilities as util
 
 
 @unittest.skipIf(not utc.enable_integration_tests,
                  "integration tests are disabled")
+@unittest.skipIf(not utc.enable_kumolocal_tests,
+                 "kumolocal tests are disabled")
 class IntegrationTest(utc.IntegrationTest):
     """
-    Test functions in honeywell.py.
+    Test functions in kumolocal.py.
 
     Tests are named to ensure basic checkout is executed first
     and supervise loop is executed last.
@@ -25,20 +27,19 @@ class IntegrationTest(utc.IntegrationTest):
     def setUp(self):
         self.print_test_name()
 
-        # Honeywell argv list must be valid settings
+        # argv list must be valid settings
         self.unit_test_argv = [
             "supervise.py",  # module
-            "honeywell",  # thermostat
+            "kumolocal",  # thermostat
             "0",  # zone
-            "30",  # poll time in sec, this value violates min
-            # cycle time for TCC if reverting temperature deviation
+            "30",  # poll time in sec
             "1000",  # reconnect time in sec
             "2",  # tolerance
             "",  # thermostat mode, no target
             "3",  # number of measurements
             ]
-        self.mod = honeywell
-        self.mod_config = honeywell_config
+        self.mod = kumolocal
+        self.mod_config = kumolocal_config
 
 
 if __name__ == "__main__":
