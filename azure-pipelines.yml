@@ -44,7 +44,7 @@ steps:
 
 # python unit tests
 - script: |
-    python -m unittest discover -v
+    python -m unittest discover -v -s test
   displayName: 'Unit Tests'
   env:
     GMAIL_USERNAME: '$(GMAIL_USERNAME)'  # used for some unit tests
