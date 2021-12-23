@@ -8,7 +8,7 @@ import unittest
 import sht31_config
 
 # local imports
-import context  # pylint: disable=unused-import.
+import context  # noqa F401, pylint: disable=unused-import.
 import supervise as sup
 import unit_test_common as utc
 import utilities as util

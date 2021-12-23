@@ -6,7 +6,7 @@ import sys
 import unittest
 
 # local imports
-import context  # pylint: disable=unused-import.
+import context  # noqa F401, pylint: disable=unused-import.
 import sht31_config
 import supervise as sup
 import thermostat_api as api

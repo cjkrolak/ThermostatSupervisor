@@ -7,7 +7,7 @@ import shutil
 import unittest
 
 # local imports
-import context  # pylint: disable=unused-import.
+import context  # noqa F401, pylint: disable=unused-import.
 import unit_test_common as utc
 import utilities as util
 

@@ -17,7 +17,7 @@ open /htmlcov/index.html to see the html report index.
 import coverage
 
 # local imports
-import context  # pylint: disable=unused-import.
+import context  # noqa F401, pylint: disable=unused-import.
 
 
 def code_coverage_all_tests():

@@ -8,7 +8,7 @@ import pprint
 import unittest
 
 # local imports
-import context  # pylint: disable=unused-import.
+import context  # noqa F401, pylint: disable=unused-import.
 import mmm
 import mmm_config
 import unit_test_common as utc

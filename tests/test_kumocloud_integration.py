@@ -7,7 +7,7 @@ This test requires connection to Kumocloud thermostat.
 import unittest
 
 # local imports
-import context  # pylint: disable=unused-import.
+import context  # noqa F401, pylint: disable=unused-import.
 import kumocloud
 import kumocloud_config
 import unit_test_common as utc
