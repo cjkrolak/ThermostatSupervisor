@@ -7,7 +7,7 @@ This test requires connection to sht31 thermostat.
 import unittest
 
 # local imports
-from ... import azure_context  # noqa F401, pylint: disable=unused-import.
+from .. import azure_context  # noqa F401, pylint: disable=unused-import.
 import sht31
 import sht31_config
 import unit_test_common as utc
