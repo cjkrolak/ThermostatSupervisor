@@ -41,7 +41,7 @@ API_TEMPF_STD = 'Temp(F) std'
 API_HUMIDITY_MEAN = 'Humidity(%RH) mean'
 API_HUMIDITY_STD = 'Humidity(%RH) std'
 
-# all environment variables required by code should be registered here
+# all context variables required by code should be registered here
 env_variables = {
     "SHT31_REMOTE_IP_ADDRESS_0": None,
     "SHT31_REMOTE_IP_ADDRESS_1": None,

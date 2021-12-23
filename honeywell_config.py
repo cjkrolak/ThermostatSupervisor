@@ -3,7 +3,7 @@ Honeywell config file.
 """
 ALIAS = "honeywell"
 
-# all environment variables required by code should be registered here
+# all context variables required by code should be registered here
 env_variables = {
     "TCC_USERNAME": None,
     "TCC_PASSWORD": None,

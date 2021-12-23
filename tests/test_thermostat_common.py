@@ -8,6 +8,7 @@ import random
 import unittest
 
 # local imports
+import context  # pylint: disable=unused-import.
 import thermostat_api as api
 import thermostat_common as tc
 import unit_test_common as utc

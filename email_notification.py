@@ -2,7 +2,7 @@
 Email notifications from gmail client.
 
 dependencies:
-  environment variables must be setup:
+  context variables must be setup:
   'GMAIL_USERNAME':  from address on gmail service
   'GMAIL_PASSWORD':  GMAIL_USERNAME password
 """
@@ -58,7 +58,7 @@ def send_email_alert(to_address=None,
                                 "is supported by the sending and "
                                 "receiving addresses"),
         util.ENVIRONMENT_ERROR: ("failed to retrieve email credentials "
-                                 "from environment variable"),
+                                 "from context variable"),
         }
 
     # default email addresses from env variables

@@ -1,12 +1,13 @@
 """
 Unit tes module for email_notification.py.
 """
-# built-in libraries
+# built-in imports
 import email_notification as eml
 import os
 import unittest
 
-# local libraries
+# local impports
+import context  # pylint: disable=unused-import.
 import unit_test_common as utc
 import utilities as util
 
@@ -30,17 +31,17 @@ class Test(utc.UnitTest):
         If this test fails during AzDO CI, check repository secrets stored
         in Azure DevOps variables and also check yml file.
         If this test fails during manual run check env variables in
-        local PC environment variables.
+        local PC context variables.
         """
         # make sure email account environmental variables are present
         for env_key in ['GMAIL_USERNAME', 'GMAIL_PASSWORD']:
             try:
-                print("checking for environment variable key %s" % env_key)
+                print("checking for context variable key %s" % env_key)
                 _ = os.environ[env_key]
-                print("environment variable key %s was found (PASS)" % env_key)
+                print("context variable key %s was found (PASS)" % env_key)
             except KeyError:
-                fail_msg = ("%s environment variable missing "
-                            "from environment" % env_key)
+                fail_msg = ("%s context variable missing "
+                            "from context" % env_key)
                 self.fail(fail_msg)
 
     def test_SendEmailAlerts(self):

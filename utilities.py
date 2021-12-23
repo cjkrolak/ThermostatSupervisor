@@ -39,7 +39,7 @@ DEBUG_LOG = 0x100  # print only if debug mode is on
 file_path = ".//data"
 max_log_size_bytes = 2**20  # logs rotate at this max size
 
-# all environment variables required by code should be registered here
+# all context variables required by code should be registered here
 env_variables = {
     "GMAIL_USERNAME": None,
     "GMAIL_PASSWORD": None,
@@ -71,7 +71,7 @@ unit_test_ip_address = get_local_ip()
 
 def get_env_variable(env_key):
     """
-    Get environment variable.
+    Get context variable.
 
     Results will be logged but passwords will be masked off.
 
@@ -104,7 +104,7 @@ def get_env_variable(env_key):
         log_msg("%s=%s" % (env_key, value_shown),
                 mode=DEBUG_LOG)
     except KeyError:
-        log_msg("FATAL ERROR: required environment variable '%s'"
+        log_msg("FATAL ERROR: required context variable '%s'"
                 " is missing." % env_key, mode=CONSOLE_LOG + DATA_LOG)
         return_buffer["status"] = ENVIRONMENT_ERROR
     return return_buffer
@@ -112,7 +112,7 @@ def get_env_variable(env_key):
 
 def load_all_env_variables():
     """
-    Load all environment variables into a dictionary.
+    Load all context variables into a dictionary.
 
     inputs:
         None

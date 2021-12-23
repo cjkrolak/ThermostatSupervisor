@@ -3,7 +3,7 @@ kumocloud config file.
 """
 ALIAS = "kumocloud"
 
-# all environment variables required by code should be registered here
+# all context variables required by code should be registered here
 env_variables = {
     "KUMO_USERNAME": None,
     "KUMO_PASSWORD": None,

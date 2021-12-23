@@ -5,10 +5,9 @@ Common functions used in multiple unit tests.
 import sys
 import unittest
 
-# thermostat configs
-import sht31_config
-
 # local imports
+import context  # pylint: disable=unused-import.
+import sht31_config
 import supervise as sup
 import thermostat_api as api
 import thermostat_common as tc
@@ -64,6 +63,7 @@ class UnitTest(unittest.TestCase):
     user_inputs_backup = None
     Thermostat = None
     Zone = None
+    is_off_mode_bckup = None
 
     def setUp_mock_thermostat_zone(self):
         api.thermostats[self.thermostat_type] = {  # dummy unit test thermostat

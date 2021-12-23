@@ -3,7 +3,7 @@ mmm config file.
 """
 ALIAS = "mmm50"
 
-# all environment variables required by code should be registered here
+# all context variables required by code should be registered here
 env_variables = {
     }
 

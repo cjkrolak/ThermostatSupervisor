@@ -93,7 +93,7 @@ def verify_required_env_variables(tstat, zone_str):
         if key[-1] == '_':
             # append zone info to key
             key = key + str(zone_str)
-        print("checking required environment key: %s..." % key, end='')
+        print("checking required context key: %s..." % key, end='')
         util.env_variables[key] = util.get_env_variable(key)["value"]
         if util.env_variables[key] is not None:
             print("OK")
