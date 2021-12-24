@@ -47,6 +47,7 @@ steps:
     python -m unittest discover -v -s test
   displayName: 'Unit Tests'
   env:
+    PYTHONPATH: '$(Build.SourcesDirectory);$(Build.SourcesDirectory)/test'
     GMAIL_USERNAME: '$(GMAIL_USERNAME)'  # used for some unit tests
     GMAIL_PASSWORD: '$(GMAIL_PASSWORD)'  # used for some unit test
     TCC_USERNAME: '$(TCC_USERNAME)'  # used for Honeywell int test
