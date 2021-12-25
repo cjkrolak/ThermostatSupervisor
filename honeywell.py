@@ -675,12 +675,12 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
 from requests.adapters import HTTPAdapter  # noqa E402
 
 
-DEFAULT_TIMEOUT = 2  # seconds, 6s upper is 1.9 on pi4 and laptop
+http_timeout = 2  # seconds, 6s upper is 1.9 on pi4 and laptop
 
 
 class TimeoutHTTPAdapter(HTTPAdapter):
     def __init__(self, *args, **kwargs):
-        self.timeout = DEFAULT_TIMEOUT
+        self.timeout = http_timeout
         if "timeout" in kwargs:
             self.timeout = kwargs["timeout"]
             del kwargs["timeout"]

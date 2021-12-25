@@ -675,7 +675,7 @@ class ThermostatCommonZone():
         return target_mode
 
     def measure_thermostat_response_time(self, measurements=30,
-                                         func=get_schedule_heat_sp):
+                                         func=None):
         """
         Measure Thermostat response time and report statistics.
 
@@ -687,10 +687,14 @@ class ThermostatCommonZone():
         """
         delta_lst = []
         stats = {}
+        # set default measurement method if not provided.
+        if func is None:
+            func = self.get_schedule_heat_sp
+
+        # measurement loop
         for n in range(measurements):
             t0 = time.time()
             func()  # target command
-            # self.get_schedule_heat_sp()  # arbitrary command
             t1 = time.time()
 
             # accumulate stats

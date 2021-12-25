@@ -4,6 +4,7 @@ Integration test module for honeywell.py.
 This test requires connection to Honeywell thermostat.
 """
 # built-in imports
+import pprint
 import unittest
 
 # local imports
@@ -39,6 +40,24 @@ class IntegrationTest(utc.IntegrationTest):
             ]
         self.mod = honeywell
         self.mod_config = honeywell_config
+
+    def test_B_MMMNetworkTiming(self):
+        """
+        Verify network timing for Honeywell thermostat.
+        """
+        # measure thermostat response time
+        measurements = 100
+        print("Thermostat response times for %s measurements..." %
+              measurements)
+        meas_data = self.Zone.measure_thermostat_response_time(measurements)
+        ppp = pprint.PrettyPrinter(indent=4)
+        ppp.pprint(meas_data)
+
+        # fail test if thermostat timing margin is poor
+        self.assertTrue(meas_data['6sigma_upper'] < honeywell.http_timeout,
+                        "6 sigma timing margin (%s) is greater than "
+                        "timout setting (%s)" % (meas_data['6sigma_upper'],
+                                                 honeywell.http_timeout))
 
 
 if __name__ == "__main__":
