@@ -670,12 +670,43 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
         raise pyhtcc.ZoneNotFoundError(f"Missing device: {self.device_id}")
 
 
+# add default requests session default timeout to prevent TimeoutExceptions
+# see ticket #93 for details
+from requests.adapters import HTTPAdapter  # noqa E402
+
+
+DEFAULT_TIMEOUT = 2  # seconds, 6s upper is 1.9 on cjk laptop
+
+
+class TimeoutHTTPAdapter(HTTPAdapter):
+    def __init__(self, *args, **kwargs):
+        self.timeout = DEFAULT_TIMEOUT
+        if "timeout" in kwargs:
+            self.timeout = kwargs["timeout"]
+            del kwargs["timeout"]
+        super().__init__(*args, **kwargs)
+
+    def send(self, request, **kwargs):  # pylint: disable=arguments-differ
+        timeout = kwargs.get("timeout")
+        if timeout is None:
+            kwargs["timeout"] = self.timeout
+        return super().send(request, **kwargs)
+
+
 if __name__ == "__main__":
 
     # get zone override
     zone_number = api.parse_all_runtime_parameters()["zone"]
 
-    tc.thermostat_basic_checkout(
+    _, Zone = tc.thermostat_basic_checkout(
         api, honeywell_config.ALIAS,
         zone_number,
         ThermostatClass, ThermostatZone)
+
+    # measure thermostat response time
+    measurements = 100
+    print("Thermostat response times for %s measurements..." % measurements)
+    meas_data = Zone.measure_thermostat_response_time(
+        measurements, func=Zone.pyhtcc.get_zones_info)
+    ppp = pprint.PrettyPrinter(indent=4)
+    ppp.pprint(meas_data)
