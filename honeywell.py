@@ -70,17 +70,17 @@ class ThermostatClass(pyhtcc.PyHTCC):
         """
         return self._get_zone_device_ids()[zone]
 
-    def print_all_thermostat_metadata(self):
+    def print_all_thermostat_metadata(self, zone=0):
         """
         Return initial meta data queried from thermostat.
 
         inputs:
-            None
+            zone(int): zone number, default=0
         returns:
             None, prints data to the stdout.
         """
         # dump all meta data
-        self.get_all_metadata()
+        self.get_all_metadata(zone)
 
         # dump uiData in a readable format
         return_data = self.get_latestdata()

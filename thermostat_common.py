@@ -24,17 +24,17 @@ class ThermostatCommon():
         self.device_id = util.bogus_int  # placeholder
         self.ip_address = None  # placeholder
 
-    def print_all_thermostat_metadata(self):
+    def print_all_thermostat_metadata(self, zone):
         """
-        Print initial meta data queried from thermostat.
+        Print initial meta data queried from thermostat for specified zone.
 
         inputs:
-            None
+            zone(int): zone number
         returns:
             None
         """
-        util.log_msg("WARNING: print_all_thermostat_metatdata() not yet "
-                     "implemented for this thermostat type\n",
+        util.log_msg("WARNING: print_all_thermostat_metatdata(%s) not yet "
+                     "implemented for this thermostat type\n" % zone,
                      mode=util.BOTH_LOG, func_name=1)
 
 
@@ -837,7 +837,7 @@ def thermostat_basic_checkout(api, thermostat_type, zone,
 
     # create Thermostat object
     Thermostat = ThermostatClass(zone)
-    Thermostat.print_all_thermostat_metadata()
+    Thermostat.print_all_thermostat_metadata(zone)
 
     # create Zone object
     Zone = ThermostatZone(Thermostat)

@@ -41,7 +41,7 @@ class Test(utc.UnitTest):
         """
         Verify print_all_thermostat_metadata() runs without error.
         """
-        self.Thermostat.print_all_thermostat_metadata()
+        self.Thermostat.print_all_thermostat_metadata(api.user_inputs["zone"])
 
     def test_SetMode(self):
         """

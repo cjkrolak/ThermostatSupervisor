@@ -124,29 +124,31 @@ class ThermostatClass(tc.ThermostatCommon):
         util.log_msg("Flask server setup is complete",
                      mode=util.BOTH_LOG, func_name=1)
 
-    def print_all_thermostat_metadata(self):
+    def print_all_thermostat_metadata(self, zone):
         """
         Print initial meta data queried from thermostat.
 
         inputs:
-            None
+            zone(int): target zone
         returns:
             None
         """
         # dump metadata in a readable format
-        return_data = self.get_all_metadata()
+        return_data = self.get_all_metadata(zone)
         pp = pprint.PrettyPrinter(indent=4)
         pp.pprint(return_data)
 
-    def get_all_metadata(self, retry=True):
+    def get_all_metadata(self, zone, retry=True):
         """
         Get all the current thermostat metadata.
 
         inputs:
+            zone(int): target zone
             retry(bool): if True will retry once.
         returns:
             (dict) empty dict.
         """
+        del zone  # unused, url determines zone
         try:
             r = requests.get(self.url)
         except requests.exceptions.ConnectionError as e:
