@@ -420,6 +420,10 @@ class ThermostatCommonZone():
         """Return 1 if auto relay is active, else 0."""
         return util.bogus_int
 
+    def is_fanning(self):
+        """Return 1 if fan relay is active, else 0."""
+        return util.bogus_int
+
     def set_heat_setpoint(self, temp: int) -> None:
         """
         Set a new heat setpoint.
@@ -719,7 +723,7 @@ class ThermostatCommonZone():
         """
         util.log_msg("current thermostat settings...",
                      mode=mode, func_name=1)
-        util.log_msg("zone name = %s" % self.zone_name,
+        util.log_msg("zone name='%s'" % self.zone_name,
                      mode=mode, func_name=1)
         util.log_msg("system switch position: %s (%s)" %
                      (self.get_system_switch_position(),
@@ -753,11 +757,14 @@ class ThermostatCommonZone():
         util.log_msg("cool mode=%s (actively cooling=%s)" %
                      (self.is_cool_mode(), self.is_cooling()),
                      mode=mode, func_name=1)
-        util.log_msg("dry mode=%s" % self.is_dry_mode(),
+        util.log_msg("dry mode=%s (actively drying=%s)" %
+                     (self.is_dry_mode(), self.is_drying()),
                      mode=mode, func_name=1)
-        util.log_msg("auto mode=%s" % self.is_auto_mode(),
+        util.log_msg("auto mode=%s (actively auto=%s)" %
+                     (self.is_auto_mode(), self.is_auto()),
                      mode=mode, func_name=1)
-        util.log_msg("fan mode=%s" % self.is_fan_mode(),
+        util.log_msg("fan mode=%s (actively fanning=%s)" %
+                     (self.is_fan_mode(), self.is_fanning()),
                      mode=mode, func_name=1)
         util.log_msg("off mode=%s" % self.is_off_mode(),
                      mode=mode, func_name=1)
