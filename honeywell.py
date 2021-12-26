@@ -5,9 +5,11 @@ using pyhtcc library.
 https://pypi.org/project/pyhtcc/
 """
 # built-in imports
+import functools
 import os
 import pprint
 import pyhtcc
+import requests
 import time
 import traceback
 
@@ -17,6 +19,30 @@ import honeywell_config
 import thermostat_api as api
 import thermostat_common as tc
 import utilities as util
+
+http_timeout = 3  # seconds, 6s upper is 1.9 on pi4 and laptop
+
+# add timeout to HTTPAdapter, not sure if this is actually used in this code
+# see ticket #93 for details
+from requests.adapters import HTTPAdapter  # noqa E402
+
+
+class TimeoutHTTPAdapter(HTTPAdapter):
+    def __init__(self, *args, **kwargs):
+        print("*" * 80)
+        print("DEBUG: in TimeoutHTTPAdapter")
+        print("*" * 80)
+        self.timeout = http_timeout
+        if "timeout" in kwargs:
+            self.timeout = kwargs["timeout"]
+            del kwargs["timeout"]
+        super().__init__(*args, **kwargs)
+
+    def send(self, request, **kwargs):  # pylint: disable=arguments-differ
+        timeout = kwargs.get("timeout")
+        if timeout is None:
+            kwargs["timeout"] = self.timeout
+        return super().send(request, **kwargs)
 
 
 class ThermostatClass(pyhtcc.PyHTCC):
@@ -44,6 +70,50 @@ class ThermostatClass(pyhtcc.PyHTCC):
         self.thermostat_type = honeywell_config.ALIAS
         self.zone_number = int(zone)
         self.device_id = self.get_target_zone_id(self.zone_number)
+
+    def _do_authenticate(self) -> None:
+        '''
+        Attempts to perform the actual authentication.
+        Will set: self.session and self._locationId
+
+        Can raise various exceptions. Users are expected to use authenticate()
+        instead of this method.
+        '''
+        print("*" * 80)
+        print("DEBUG: in _do_authenticate override")
+        print("*" * 80)
+        self.session = requests.session()
+        # shim the requests function to add a timeout value
+        # https://stackoverflow.com/questions/41295142/is-there-a-way-to-
+        # globally-override-requests-timeout-setting
+        self.session.request = functools.partial(self.session.request,
+                                                 timeout=http_timeout)
+        self.session.auth = (self.username, self.password)
+        # util.log_msg(f"Attempting authentication for {self.username}", )
+        # logger.debug(f"Attempting authentication for {self.username}")
+
+        result = self.session.post('https://mytotalconnectcomfort.com/portal', {
+            'UserName': self.username,
+            'Password': self.password,
+        })
+        if result.status_code != 200:
+            raise requests.AuthenticationError(f"Unable to authenticate as {self.username}. Status was: {result.status_code}")
+
+        if 'The email or password provided is incorrect' in result.text or 'The email address is not in the correct format' in result.text:
+            raise requests.LoginCredentialsInvalidError(f"Email ({self.username}) and/or password appear to have been rejected")
+
+        # logger.debug(f"resulting url from authentication: {result.url}")
+
+        if 'TooManyAttempts' in result.url:
+            raise requests.TooManyAttemptsError("url denoted that we have made too many attempts")
+
+        if 'portal/' not in result.url:
+            raise requests.RedirectDidNotHappenError(f"{result.url} did not represent the needed redirect")
+
+        if '/Error' in result.url:
+            raise requests.LoginUnexpectedError(f"{result.url} denotes an error")
+
+        self._set_location_id_from_result(result)
 
     def _get_zone_device_ids(self) -> list:
         """
@@ -670,29 +740,6 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
         raise pyhtcc.ZoneNotFoundError(f"Missing device: {self.device_id}")
 
 
-# add default requests session default timeout to prevent TimeoutExceptions
-# see ticket #93 for details
-from requests.adapters import HTTPAdapter  # noqa E402
-
-
-http_timeout = 2  # seconds, 6s upper is 1.9 on pi4 and laptop
-
-
-class TimeoutHTTPAdapter(HTTPAdapter):
-    def __init__(self, *args, **kwargs):
-        self.timeout = http_timeout
-        if "timeout" in kwargs:
-            self.timeout = kwargs["timeout"]
-            del kwargs["timeout"]
-        super().__init__(*args, **kwargs)
-
-    def send(self, request, **kwargs):  # pylint: disable=arguments-differ
-        timeout = kwargs.get("timeout")
-        if timeout is None:
-            kwargs["timeout"] = self.timeout
-        return super().send(request, **kwargs)
-
-
 if __name__ == "__main__":
 
     # get zone override
@@ -704,7 +751,7 @@ if __name__ == "__main__":
         ThermostatClass, ThermostatZone)
 
     # measure thermostat response time
-    measurements = 100
+    measurements = 10
     print("Thermostat response times for %s measurements..." % measurements)
     meas_data = Zone.measure_thermostat_response_time(
         measurements, func=Zone.pyhtcc.get_zones_info)
