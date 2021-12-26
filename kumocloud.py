@@ -322,6 +322,60 @@ class ThermostatZone(tc.ThermostatCommonZone):
                    self.system_switch_position[
                        tc.ThermostatCommonZone.OFF_MODE])
 
+    def is_heating(self):
+        """Return 1 if heating relay is active, else 0."""
+        self.refresh_zone_info()
+        return int(self.is_heat_mode() and self.is_power_on() and
+                   self.get_heat_setpoint_raw() > self.get_display_temp())
+
+    def is_cooling(self):
+        """Return 1 if cooling relay is active, else 0."""
+        self.refresh_zone_info()
+        return int(self.is_cool_mode() and self.is_power_on() and
+                   self.get_cool_setpoint_raw() < self.get_display_temp())
+
+    def is_drying(self):
+        """Return 1 if drying relay is active, else 0."""
+        self.refresh_zone_info()
+        return int(self.is_dry_mode() and self.is_power_on() and
+                   self.get_cool_setpoint_raw() < self.get_display_temp())
+
+    def is_auto(self):
+        """Return 1 if auto relay is active, else 0."""
+        self.refresh_zone_info()
+        return int(self.is_auto_mode() and self.is_power_on() and
+                   (self.get_cool_setpoint_raw() < self.get_display_temp() or
+                    self.get_heat_setpoint_raw() > self.get_display_temp()))
+
+    def is_fanning(self):
+        """Return 1 if fan relay is active, else 0."""
+        self.refresh_zone_info()
+        return int(self.is_fan_mode() and self.is_fan_on())
+
+    def is_power_on(self):
+        """Return 1 if power relay is active, else 0."""
+        self.refresh_zone_info()
+        return self.get_parameter('power', 'reportedCondition')
+
+    def is_fan_on(self):
+        """Return 1 if fan relay is active, else 0."""
+        self.refresh_zone_info()
+        return (self.get_parameter('fan_speed', 'reportedCondition') > 0 or
+                self.get_parameter('fan_speed_text', 'more,',
+                                   'reportedCondition') != 'off')
+
+    def is_defrosting(self):
+        """Return 1 if defrosting is active, else 0."""
+        self.refresh_zone_info()
+        return int(self.get_parameter('defrost', 'status_display',
+                                      'reportedCondition'))
+
+    def is_standby(self):
+        """Return 1 if standby is active, else 0."""
+        self.refresh_zone_info()
+        return int(self.get_parameter('standby', 'status_display',
+                                      'reportedCondition'))
+
     def get_heat_setpoint_raw(self) -> int:  # used
         """
         Refresh the cached zone information and return the heat setpoint.
