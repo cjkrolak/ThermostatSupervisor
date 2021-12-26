@@ -148,7 +148,7 @@ class IntegrationTest(UnitTest):
         _, IntegrationTest.Zone = tc.thermostat_basic_checkout(
             api,
             self.unit_test_argv[api.get_argv_position("thermostat_type")],
-            self.unit_test_argv[api.get_argv_position("zone")],
+            int(self.unit_test_argv[api.get_argv_position("zone")]),
             self.mod.ThermostatClass, self.mod.ThermostatZone
             )
 

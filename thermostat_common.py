@@ -830,7 +830,7 @@ def thermostat_basic_checkout(api, thermostat_type, zone,
     util.log_msg.debug = True  # debug mode set
 
     # verify required env vars
-    api.verify_required_env_variables(thermostat_type, zone)
+    api.verify_required_env_variables(thermostat_type, str(zone))
 
     # import hardware module
     api.load_hardware_library(thermostat_type)
