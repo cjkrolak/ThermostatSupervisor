@@ -4,6 +4,7 @@ Common Thermostat Class
 # built-ins
 import datetime
 import operator
+import pprint
 import time
 import statistics
 
@@ -24,18 +25,38 @@ class ThermostatCommon():
         self.device_id = util.bogus_int  # placeholder
         self.ip_address = None  # placeholder
 
-    def print_all_thermostat_metadata(self, zone):
+    def print_all_thermostat_metadata(self, zone=0, debug=False):
         """
         Print initial meta data queried from thermostat for specified zone.
 
         inputs:
             zone(int): zone number
+            debug(bool): debug flag
         returns:
             None
         """
+        del debug
         util.log_msg("WARNING: print_all_thermostat_metatdata(%s) not yet "
                      "implemented for this thermostat type\n" % zone,
                      mode=util.BOTH_LOG, func_name=1)
+
+    def exec_print_all_thermostat_metadata(self, func, args):
+        """
+        Print all metadata to screen.
+
+        inputs:
+            func(obj): function get metadata.
+            args(list): argument list
+        returns:
+            None
+        """
+        # dump metadata in a readable format
+        return_data = func(*args)
+        pp = pprint.PrettyPrinter(indent=4)
+        print("\n")
+        util.log_msg("raw thermostat meta data:",
+                     mode=util.BOTH_LOG, func_name=1)
+        pp.pprint(return_data)
 
 
 class ThermostatCommonZone():
@@ -620,6 +641,9 @@ class ThermostatCommonZone():
             "measurements": "measurements",
             }
 
+        print("\n")
+        util.log_msg("supervisor runtime parameters:",
+                     mode=util.BOTH_LOG, func_name=1)
         for inp, cls_method in user_input_to_class_mapping.items():
             user_input = user_inputs.get(inp)
             if user_input is not None:
@@ -728,6 +752,7 @@ class ThermostatCommonZone():
         returns:
             None, prints data to log and/or console.
         """
+        print("\n")
         util.log_msg("current thermostat settings...",
                      mode=mode, func_name=1)
         util.log_msg("zone name='%s'" % self.zone_name,
@@ -745,14 +770,18 @@ class ThermostatCommonZone():
                      util.humidity_value_with_units(
                          self.get_display_humidity()),
                      mode=mode, func_name=1)
-        util.log_msg("heat set point=%s" % self.get_heat_setpoint(),
+        util.log_msg("heat set point=%s" %
+                     util.temp_value_with_units(self.get_heat_setpoint()),
                      mode=mode, func_name=1)
-        util.log_msg("cool set point=%s" % self.get_cool_setpoint(),
+        util.log_msg("cool set point=%s" %
+                     util.temp_value_with_units(self.get_cool_setpoint()),
                      mode=mode, func_name=1)
         util.log_msg("heat schedule set point=%s" %
-                     self.get_schedule_heat_sp(), mode=mode, func_name=1)
+                     util.temp_value_with_units(self.get_schedule_heat_sp()),
+                     mode=mode, func_name=1)
         util.log_msg("cool schedule set point=%s" %
-                     self.get_schedule_cool_sp(), mode=mode, func_name=1)
+                     util.temp_value_with_units(self.get_schedule_cool_sp()),
+                     mode=mode, func_name=1)
         util.log_msg("(schedule) heat program=%s" %
                      self.get_schedule_program_heat(),
                      mode=mode, func_name=1)

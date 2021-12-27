@@ -87,6 +87,7 @@ def verify_required_env_variables(tstat, zone_str):
     returns:
         (bool): True if all keys are present, else False
     """
+    print("\nchecking required environment variables:")
     key_status = True  # default, all keys present
     for key in thermostats[tstat]["required_env_variables"]:
         # any env key ending in '_' should have zone number appended to it.
@@ -127,15 +128,17 @@ def parse_runtime_parameter(key, datatype, default_value,
         proposed_val = str(argv_list[get_argv_position(key)])
         util.log_msg("key='%s': using user override value '%s'" %
                      (key, argv_list[get_argv_position(key)]),
-                     mode=util.BOTH_LOG, func_name=1)
+                     mode=util.DEBUG_LOG + util.CONSOLE_LOG, func_name=1)
     except TypeError:
         util.log_msg("key='%s': argv parsing error, using default value '%s'" %
-                     (key, default_value), mode=util.BOTH_LOG, func_name=1)
+                     (key, default_value),
+                     mode=util.DEBUG_LOG + util.CONSOLE_LOG, func_name=1)
         proposed_val = str(default_value)
     except IndexError:
         util.log_msg("key='%s': argv parameter missing, "
                      "using default value '%s'" %
-                     (key, default_value), mode=util.BOTH_LOG, func_name=1)
+                     (key, default_value),
+                     mode=util.DEBUG_LOG + util.CONSOLE_LOG, func_name=1)
         proposed_val = str(default_value)
 
     # cast input for these keys into uppercase and target data type.

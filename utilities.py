@@ -309,6 +309,16 @@ def temp_value_with_units(raw, disp_unit='F', precision=1) -> str:
     if disp_unit.upper() not in ['C', 'F', 'K']:
         raise ValueError("%s: '%s' is not a valid temperature unit" %
                          (get_function_name(), disp_unit))
+
+    # if string try to convert to float
+    if isinstance(raw, str):
+        if '°' in raw:
+            return raw  # pass-thru
+        try:
+            float(raw)
+        except ValueError:
+            pass
+
     if raw is None:
         formatted = "%s" % (raw)
     elif precision == 0:
@@ -332,6 +342,16 @@ def humidity_value_with_units(raw, disp_unit=' RH', precision=0) -> str:
     if disp_unit.upper() not in ['RH', ' RH']:
         raise ValueError("%s: '%s' is not a valid humidity unit" %
                          (get_function_name(), disp_unit))
+
+    # if string try to convert to float
+    if isinstance(raw, str):
+        if '%' in raw:
+            return raw  # pass-thru
+        try:
+            float(raw)
+        except ValueError:
+            pass
+
     if raw is None:
         formatted = "%s" % (raw)
     elif precision == 0:

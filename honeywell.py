@@ -704,7 +704,7 @@ if __name__ == "__main__":
         ThermostatClass, ThermostatZone)
 
     # measure thermostat response time
-    measurements = 100
+    measurements = 30
     print("Thermostat response times for %s measurements..." % measurements)
     meas_data = Zone.measure_thermostat_response_time(
         measurements, func=Zone.pyhtcc.get_zones_info)

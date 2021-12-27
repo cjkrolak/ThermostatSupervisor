@@ -1,6 +1,5 @@
 """KumoCloud integration using local API for data."""
 import os
-import pprint
 import pykumo
 import time
 
@@ -11,7 +10,7 @@ import thermostat_common as tc
 import utilities as util
 
 
-class ThermostatClass(pykumo.KumoCloudAccount):
+class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
     """KumoCloud thermostat functions."""
 
     def __init__(self, zone):
@@ -108,9 +107,8 @@ class ThermostatClass(pykumo.KumoCloudAccount):
         returns:
             None, prints result to screen
         """
-        raw_json = self.get_all_thermostat_metadata(zone)
-        pp = pprint.PrettyPrinter(indent=4)
-        pp.pprint(raw_json)
+        self.exec_print_all_thermostat_metadata(
+            self.get_all_thermostat_metadata, [zone])
 
 
 class ThermostatZone(tc.ThermostatCommonZone):
