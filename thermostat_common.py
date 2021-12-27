@@ -324,7 +324,8 @@ class ThermostatCommonZone():
         returns:
             True if successful, else False
         """
-        # print("DEBUG in set_mode, target_mode=%s, doing nothing" % target_mode)
+        # print("DEBUG in set_mode, target_mode=%s, doing nothing" %
+        #       target_mode)
         return False
 
     def store_current_mode(self):
