@@ -68,32 +68,32 @@ class ThermostatClass(tc.ThermostatCommonZone):
                             "ip address: %s" % self.ip_address) from e
         return self.device_id
 
-    def print_all_thermostat_metadata(self) -> None:
+    def print_all_thermostat_metadata(self, zone) -> None:
         """
         Return initial meta data queried from thermostat.
 
         inputs:
-            None
+            zone(int) zone number
         returns:
             None
         """
         # dump all meta data
-        self.get_all_metadata()
+        self.get_all_metadata(zone)
 
         # dump uiData in a readable format
-        return_data = self.get_latestdata()
+        return_data = self.get_latestdata(zone)
         pp = pprint.PrettyPrinter(indent=4)
         pp.pprint(return_data)
 
-    def get_meta_data_dict(self) -> dict:
+    def get_meta_data_dict(self, zone) -> dict:
         """Build meta data dictionary from list of object attributes.
 
         inputs:
-            None
+            zone(int): zone number
         returns:
             (dict) of meta data
         """
-        util.log_msg("querying thermostat for meta data...",
+        util.log_msg("querying thermostat zone %s for meta data..." % zone,
                      mode=util.BOTH_LOG, func_name=1)
         attr_dict = {}
         ignore_fields = ['get', 'post', 'reboot', 'set_day_program']
@@ -111,18 +111,18 @@ class ThermostatClass(tc.ThermostatCommonZone):
                 attr_dict[key] = val
         return attr_dict
 
-    def get_all_metadata(self) -> list:
+    def get_all_metadata(self, zone) -> list:
         """
         Get all the current thermostat metadata.
 
         inputs:
-            None
+            zone(int): zone number
         returns:
             (list) of thermostat attributes.
         """
-        return self.get_meta_data_dict()
+        return self.get_meta_data_dict(zone)
 
-    def get_metadata(self, parameter=None) -> (dict, str):
+    def get_metadata(self, zone, parameter=None) -> (dict, str):
         """
         Get the current thermostat metadata settings.
 
@@ -133,32 +133,32 @@ class ThermostatClass(tc.ThermostatCommonZone):
           str if parameter != None
         """
         if parameter is None:
-            return self.get_meta_data_dict()
+            return self.get_meta_data_dict(zone)
         else:
             return self.device_id[parameter]['raw']
 
-    def get_latestdata(self) -> (dict, str):
+    def get_latestdata(self, zone) -> (dict, str):
         """
         Get the current thermostat latest data.
 
         inputs:
-          None
+          zone(int): target zone
         returns:
           dict if parameter=None
           str if parameter != None
         """
-        return self.get_meta_data_dict()
+        return self.get_meta_data_dict(zone)
 
-    def get_uiData(self) -> dict:
+    def get_uiData(self, zone) -> dict:
         """
         Get the latest thermostat ui data
 
         inputs:
-          None
+          zone(int): target zone.
         returns:
           (dict)
         """
-        return self.get_meta_data_dict()
+        return self.get_meta_data_dict(zone)
 
     def get_uiData_param(self, parameter) -> dict:
         """

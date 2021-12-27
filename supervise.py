@@ -122,7 +122,7 @@ def supervisor(thermostat_type, zone_str):
         if debug:
             util.log_msg("thermostat meta data:", mode=util.BOTH_LOG,
                          func_name=1)
-            Thermostat.print_all_thermostat_metadata()
+            Thermostat.print_all_thermostat_metadata(zone_num)
 
         # get Zone object based on deviceID
         Zone = mod.ThermostatZone(Thermostat)

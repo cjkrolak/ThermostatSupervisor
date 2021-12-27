@@ -41,7 +41,7 @@ class Test(utc.UnitTest):
         """
         Verify print_all_thermostat_metadata() runs without error.
         """
-        self.Thermostat.print_all_thermostat_metadata()
+        self.Thermostat.print_all_thermostat_metadata(api.user_inputs["zone"])
 
     def test_SetMode(self):
         """
@@ -644,14 +644,14 @@ class Test(utc.UnitTest):
                     tc.ThermostatCommonZone.DRY_MODE])
             thermostat_type = utc.unit_test_argv[api.get_argv_position(
                 "thermostat_type")]
-            zone = utc.unit_test_argv[api.get_argv_position(
-                "zone")]
+            zone_number = int(utc.unit_test_argv[api.get_argv_position(
+                "zone")])
             mod = api.load_hardware_library(thermostat_type)
             Thermostat, Zone = \
                 tc.thermostat_basic_checkout(
                     api,
                     thermostat_type,
-                    zone,
+                    zone_number,
                     mod.ThermostatClass, mod.ThermostatZone
                     )
             print("thermotat=%s" % type(Thermostat))
