@@ -741,8 +741,9 @@ class ThermostatCommonZone():
         util.log_msg("thermostat display temp=%s" %
                      util.temp_value_with_units(self.get_display_temp()),
                      mode=mode, func_name=1)
-        util.log_msg("thermostat display humidity=%s RH" %
-                     self.get_display_humidity(),
+        util.log_msg("thermostat display humidity=%s" %
+                     util.humidity_value_with_units(
+                         self.get_display_humidity()),
                      mode=mode, func_name=1)
         util.log_msg("heat set point=%s" % self.get_heat_setpoint(),
                      mode=mode, func_name=1)

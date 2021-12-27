@@ -309,11 +309,16 @@ def temp_value_with_units(raw, disp_unit='F', precision=1) -> str:
     if disp_unit.upper() not in ['C', 'F', 'K']:
         raise ValueError("%s: '%s' is not a valid temperature unit" %
                          (get_function_name(), disp_unit))
-    formatted = "%.*f" % (precision, raw)
+    if raw is None:
+        formatted = "%s" % (raw)
+    elif precision == 0:
+        formatted = "%d" % (raw)
+    else:
+        formatted = "%.*f" % (precision, raw)
     return f'{formatted}°{disp_unit}'
 
 
-def humidity_value_with_units(raw, disp_unit='RH', precision=1) -> str:
+def humidity_value_with_units(raw, disp_unit=' RH', precision=0) -> str:
     """
     Return string representing humidity and units.
 
@@ -324,10 +329,15 @@ def humidity_value_with_units(raw, disp_unit='RH', precision=1) -> str:
     returns:
         (str): temperature and units.
     """
-    if disp_unit.upper() not in ['RH']:
+    if disp_unit.upper() not in ['RH', ' RH']:
         raise ValueError("%s: '%s' is not a valid humidity unit" %
                          (get_function_name(), disp_unit))
-    formatted = "%.*f" % (precision, raw)
+    if raw is None:
+        formatted = "%s" % (raw)
+    elif precision == 0:
+        formatted = "%d" % (raw)
+    else:
+        formatted = "%.*f" % (precision, raw)
     return f'{formatted}%{disp_unit}'
 
 
