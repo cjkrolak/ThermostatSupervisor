@@ -360,7 +360,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         """Return 1 if fan relay is active, else 0."""
         self.refresh_zone_info()
         return (self.get_parameter('fan_speed', 'reportedCondition') > 0 or
-                self.get_parameter('fan_speed_text', 'more,',
+                self.get_parameter('fan_speed_text', 'more',
                                    'reportedCondition') != 'off')
 
     def is_defrosting(self):
