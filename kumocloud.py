@@ -28,11 +28,12 @@ class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
         self.kc_pwd = (os.environ.get(
             self.KC_PASSWORD_KEY, "<" +
             self.KC_PASSWORD_KEY + "_KEY_MISSING>"))
-        self.args = [self.kc_uname, self.kc_pwd]
 
-        # construct the superclass
+        # call both parent class __init__
         self._need_fetch = True  # force data fetch
-        super().__init__(*self.args)
+        self.args = [self.kc_uname, self.kc_pwd]
+        pykumo.KumoCloudAccount.__init__(self, *self.args)
+        tc.ThermostatCommon.__init__(self)
         self.thermostat_type = kumocloud_config.ALIAS
 
         # configure zone info
@@ -89,7 +90,7 @@ class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
                 'zoneTable'][units[zone]]
         return raw_json
 
-    def print_all_thermostat_metadata(self, zone=None, debug=False):
+    def print_all_thermostat_metadata(self, zone, debug=False):
         """Print all metadata for zone to the screen.
 
         inputs:

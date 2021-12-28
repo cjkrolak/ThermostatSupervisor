@@ -25,7 +25,7 @@ class ThermostatCommon():
         self.device_id = util.bogus_int  # placeholder
         self.ip_address = None  # placeholder
 
-    def print_all_thermostat_metadata(self, zone=0, debug=False):
+    def print_all_thermostat_metadata(self, zone, debug=False):
         """
         Print initial meta data queried from thermostat for specified zone.
 
