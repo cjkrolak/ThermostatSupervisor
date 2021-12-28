@@ -139,17 +139,22 @@ class ThermostatClass(tc.ThermostatCommon):
         else:
             return self.device_id[parameter]['raw']
 
-    def get_latestdata(self, zone) -> (dict, str):
+    def get_latestdata(self, zone, debug=False) -> (dict, str):
         """
         Get the current thermostat latest data.
 
         inputs:
           zone(int): target zone
+          debug(bool): debug flag
         returns:
           dict if parameter=None
           str if parameter != None
         """
-        return self.get_meta_data_dict(zone)
+        latest_data_dict = self.get_meta_data_dict(zone)
+        if debug:
+            util.log_msg("zone%s latestData: %s" % (zone, latest_data_dict),
+                         mode=util.BOTH_LOG, func_name=1)
+        return latest_data_dict
 
     def get_uiData(self, zone) -> dict:
         """

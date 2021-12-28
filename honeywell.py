@@ -60,7 +60,7 @@ class ThermostatClass(pyhtcc.PyHTCC, tc.ThermostatCommon):
             zone_id_lst.append(zone['DeviceID'])
         return zone_id_lst
 
-    def get_target_zone_id(self, zone=0) -> int:
+    def get_target_zone_id(self, zone=honeywell_config.default_zone) -> int:
         """
         Return the target zone ID.
 
@@ -76,7 +76,7 @@ class ThermostatClass(pyhtcc.PyHTCC, tc.ThermostatCommon):
         Return initial meta data queried from thermostat.
 
         inputs:
-            zone(int): zone number, default=0
+            zone(int): zone number
             debug(bool): debug flag
         returns:
             None, prints data to the stdout.
@@ -88,12 +88,12 @@ class ThermostatClass(pyhtcc.PyHTCC, tc.ThermostatCommon):
         self.exec_print_all_thermostat_metadata(
             self.get_latestdata, [zone, debug])
 
-    def get_all_metadata(self, zone=0) -> dict:
+    def get_all_metadata(self, zone=honeywell_config.default_zone) -> dict:
         """
         Return all the current thermostat metadata.
 
         inputs:
-          zone(int): zone number, default=0
+          zone(int): zone number, default=honeywell_config.default_zone
         returns:
           (dict) thermostat meta data.
         """
@@ -102,12 +102,13 @@ class ThermostatClass(pyhtcc.PyHTCC, tc.ThermostatCommon):
                      mode=util.DEBUG_LOG + util.CONSOLE_LOG, func_name=1)
         return return_data
 
-    def get_metadata(self, zone=0, parameter=None) -> (dict, str):
+    def get_metadata(self, zone=honeywell_config.default_zone,
+                     parameter=None) -> (dict, str):
         """
         Return the current thermostat metadata settings.
 
         inputs:
-          zone(int): zone number, default=0
+          zone(int): zone number, default=honeywell_config.default_zone
           parameter(str): target parameter, None = all settings
         returns:
           dict if parameter=None
@@ -126,26 +127,29 @@ class ThermostatClass(pyhtcc.PyHTCC, tc.ThermostatCommon):
                          mode=util.DEBUG_LOG + util.CONSOLE_LOG, func_name=1)
             return return_data
 
-    def get_latestdata(self, zone=0) -> dict:
+    def get_latestdata(self, zone=honeywell_config.default_zone,
+                       debug=False) -> dict:
         """
         Return the current thermostat latest data.
 
         inputs:
-          zone(int): zone number, default=0
+          zone(int): zone number, default=honeywell_config.default_zone
+          debug(bool): debug flag
         returns:
           (dict) latest data from thermostat.
         """
         latest_data_dict = self.get_metadata(zone).get('latestData')
-        util.log_msg("zone%s latestData: %s" % (zone, latest_data_dict),
-                     mode=util.DEBUG_LOG + util.CONSOLE_LOG, func_name=1)
+        if debug:
+            util.log_msg("zone%s latestData: %s" % (zone, latest_data_dict),
+                         mode=util.BOTH_LOG, func_name=1)
         return latest_data_dict
 
-    def get_uiData(self, zone=0) -> dict:
+    def get_uiData(self, zone=honeywell_config.default_zone) -> dict:
         """
         Return the latest thermostat ui data.
 
         inputs:
-          zone(int): zone, default=0
+          zone(int): zone, default=honeywell_config.default_zone
         returns:
           (dict) ui data from thermostat.
         """
@@ -154,17 +158,19 @@ class ThermostatClass(pyhtcc.PyHTCC, tc.ThermostatCommon):
                      mode=util.DEBUG_LOG + util.CONSOLE_LOG, func_name=1)
         return ui_data_dict
 
-    def get_uiData_param(self, zone=0, parameter=None) -> dict:
+    def get_uiData_param(self, zone=honeywell_config.default_zone,
+                         parameter=None) -> dict:
         """
         Return the latest thermostat ui data for one specific parameter.
 
         inputs:
-          zone(int): zone, default=0
+          zone(int): zone, default=honeywell_config.default_zone
           parameter(str): paramenter name
         returns:
           (dict)  # need to verify return data type.
         """
-        parameter_data = self.get_uiData(zone=0).get(parameter)
+        parameter_data = self.get_uiData(
+            zone=honeywell_config.default_zone).get(parameter)
         util.log_msg("zone%s uiData parameter %s: %s" %
                      (zone, parameter, parameter_data),
                      mode=util.DEBUG_LOG + util.CONSOLE_LOG,

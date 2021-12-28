@@ -2,6 +2,7 @@
 Honeywell config file.
 """
 ALIAS = "honeywell"
+default_zone = 0
 
 # all environment variables required by code should be registered here
 env_variables = {
@@ -20,5 +21,5 @@ required_env_variables = {
 # supported thermostat configs
 supported_configs = {"module": "honeywell",
                      "type": 1,
-                     "zones": [0],
+                     "zones": [default_zone],
                      "modes": ["OFF_MODE", "HEAT_MODE", "COOL_MODE"]}
