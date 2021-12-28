@@ -28,7 +28,7 @@ import utilities as util  # noqa E402
 socket_timeout = 30  # http socket timeout override
 
 
-class ThermostatClass(tc.ThermostatCommonZone, tc.ThermostatCommon):
+class ThermostatClass(tc.ThermostatCommon):
     """3m50 thermostat zone functions."""
 
     def __init__(self, zone):
@@ -41,6 +41,8 @@ class ThermostatClass(tc.ThermostatCommonZone, tc.ThermostatCommon):
             zone.
         """
         # construct the superclass
+        # tc.ThermostatCommonZone.__init__(self)
+        # tc.ThermostatCommon.__init__(self)
         super().__init__()
         self.thermostat_type = mmm_config.ALIAS
 
@@ -68,12 +70,13 @@ class ThermostatClass(tc.ThermostatCommonZone, tc.ThermostatCommon):
                             "ip address: %s" % self.ip_address) from e
         return self.device_id
 
-    def print_all_thermostat_metadata(self, zone) -> None:
+    def print_all_thermostat_metadata(self, zone, debug=False):
         """
         Return initial meta data queried from thermostat.
 
         inputs:
             zone(int) zone number
+            debug(bool): debug flag
         returns:
             None
         """
@@ -81,7 +84,8 @@ class ThermostatClass(tc.ThermostatCommonZone, tc.ThermostatCommon):
         self.get_all_metadata(zone)
 
         # dump uiData in a readable format
-        self.exec_print_all_thermostat_metadata(self.get_latestdata, [zone])
+        self.exec_print_all_thermostat_metadata(
+            self.get_latestdata, [zone, debug])
 
     def get_meta_data_dict(self, zone) -> dict:
         """Build meta data dictionary from list of object attributes.

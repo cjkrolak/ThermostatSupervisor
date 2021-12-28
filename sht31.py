@@ -123,16 +123,18 @@ class ThermostatClass(tc.ThermostatCommon):
         util.log_msg("Flask server setup is complete",
                      mode=util.BOTH_LOG, func_name=1)
 
-    def print_all_thermostat_metadata(self, zone):
+    def print_all_thermostat_metadata(self, zone, debug=False):
         """
         Print initial meta data queried from thermostat.
 
         inputs:
             zone(int): target zone
+            debug(bool): debug flag
         returns:
             None
         """
-        self.exec_print_all_thermostat_metadata(self.get_all_metadata, [zone])
+        self.exec_print_all_thermostat_metadata(
+            self.get_all_metadata, [zone, debug])
 
     def get_all_metadata(self, zone, retry=True):
         """

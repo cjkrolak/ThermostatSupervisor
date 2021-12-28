@@ -19,7 +19,7 @@ import thermostat_common as tc
 import utilities as util
 
 
-class ThermostatClass(pyhtcc.PyHTCC):
+class ThermostatClass(pyhtcc.PyHTCC, tc.ThermostatCommon):
     """Extend the PyHTCC class with additional methods."""
 
     def __init__(self, zone):
@@ -35,10 +35,11 @@ class ThermostatClass(pyhtcc.PyHTCC):
         self.tcc_pwd = (os.environ.get(
             self.TCC_PASSWORD_KEY, "<" +
             self.TCC_PASSWORD_KEY + "_KEY_MISSING>"))
-        self.args = [self.tcc_uname, self.tcc_pwd]
 
-        # construct the superclass, requires auth setup first
-        super().__init__(*self.args)
+        # call both parent class __init__
+        self.args = [self.tcc_uname, self.tcc_pwd]
+        pyhtcc.PyHTCC.__init__(self, *self.args)
+        tc.ThermostatCommon.__init__(self)
 
         # configure zone info
         self.thermostat_type = honeywell_config.ALIAS
@@ -70,12 +71,13 @@ class ThermostatClass(pyhtcc.PyHTCC):
         """
         return self._get_zone_device_ids()[zone]
 
-    def print_all_thermostat_metadata(self, zone=0):
+    def print_all_thermostat_metadata(self, zone, debug=False):
         """
         Return initial meta data queried from thermostat.
 
         inputs:
             zone(int): zone number, default=0
+            debug(bool): debug flag
         returns:
             None, prints data to the stdout.
         """
@@ -83,9 +85,8 @@ class ThermostatClass(pyhtcc.PyHTCC):
         self.get_all_metadata(zone)
 
         # dump uiData in a readable format
-        return_data = self.get_latestdata()
-        pp = pprint.PrettyPrinter(indent=4)
-        pp.pprint(return_data)
+        self.exec_print_all_thermostat_metadata(
+            self.get_latestdata, [zone, debug])
 
     def get_all_metadata(self, zone=0) -> dict:
         """
@@ -255,8 +256,8 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
                             type(Thermostat_obj.device_id))
 
         # call both parent class __init__
-        pyhtcc.Zone.__init__(self, Thermostat_obj.device_id,
-                             Thermostat_obj)
+        self.args = [Thermostat_obj.device_id, Thermostat_obj]
+        pyhtcc.Zone.__init__(self, *self.args)
         tc.ThermostatCommonZone.__init__(self)
 
         # switch config for this thermostat
