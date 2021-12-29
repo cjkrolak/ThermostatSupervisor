@@ -25,6 +25,7 @@ class IntegrationTest(utc.IntegrationTest):
     and supervise loop is executed last.
     """
     def setUp(self):
+        self.setUpCommon()
         self.print_test_name()
 
         # argv list must be valid settings

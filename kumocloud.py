@@ -145,7 +145,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         self.device_id = Thermostat_obj.device_id
         self.Thermostat = Thermostat_obj
         self.zone_number = Thermostat_obj.zone_number
-        self.zone_data = Thermostat_obj.get_all_thermostat_metadata(
+        self.zone_info = Thermostat_obj.get_all_thermostat_metadata(
             Thermostat_obj.zone_number)
         self.zone_name = self.get_zone_name()
 
@@ -164,20 +164,20 @@ class ThermostatZone(tc.ThermostatCommonZone):
         if grandparent_key is not None:
             try:
                 # check parent keys
-                grandparent_dict = self.zone_data[grandparent_key]
+                grandparent_dict = self.zone_info[grandparent_key]
                 parent_dict = grandparent_dict[parent_key]
                 return_val = parent_dict[key]
             except KeyError as e:
                 raise e
         elif parent_key is not None:
             try:
-                parent_dict = self.zone_data[parent_key]
+                parent_dict = self.zone_info[parent_key]
                 return_val = parent_dict[key]
             except KeyError as e:
                 raise e
         else:
             try:
-                return_val = self.zone_data[key]
+                return_val = self.zone_info[key]
             except KeyError as e:
                 raise e
         return return_val
@@ -349,7 +349,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
     def is_fanning(self):
         """Return 1 if fan relay is active, else 0."""
         self.refresh_zone_info()
-        return int(self.is_fan_on())
+        return int(self.is_fan_on() and self.is_power_on())
 
     def is_power_on(self):
         """Return 1 if power relay is active, else 0."""
@@ -532,7 +532,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
                              "timeout", mode=util.BOTH_LOG, func_name=1)
             self.last_fetch_time = now_time
             # refresh device object
-            self.zone_data = self.Thermostat.get_all_thermostat_metadata(
+            self.zone_info = self.Thermostat.get_all_thermostat_metadata(
                 self.zone_number)
 
     def report_heating_parameters(self, switch_position=None):
