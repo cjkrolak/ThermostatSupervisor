@@ -630,7 +630,7 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
         inputs:
             None
         returns:
-            None
+            None, populates self.zone_info dict.
         """
         number_of_retries = 3
         trial_number = 1
@@ -667,6 +667,7 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
                         pyhtcc.logger.debug(f"Refreshed zone info for \
                                            {self.device_id}")
                         self.zone_info = z
+                        self.last_fetch_time = time.time()
                         return
 
         # log fatal failure

@@ -324,6 +324,7 @@ class ThermostatCommonZone():
         returns:
             True if successful, else False
         """
+        del target_mode  # not yet implemented
         # print("DEBUG in set_mode, target_mode=%s, doing nothing" %
         #       target_mode)
         return False
@@ -717,7 +718,7 @@ class ThermostatCommonZone():
         stats = {}
         # set default measurement method if not provided.
         if func is None:
-            func = self.get_schedule_heat_sp
+            func = self.get_display_temp
 
         # measurement loop
         for n in range(measurements):
@@ -728,19 +729,66 @@ class ThermostatCommonZone():
             # accumulate stats
             tdelta = t1 - t0
             delta_lst.append(tdelta)
-            util.log_msg("measurement %s=%.1f seconds" % (n, tdelta),
+            util.log_msg("measurement %s=%.2f seconds" % (n, tdelta),
                          mode=util.BOTH_LOG, func_name=1)
 
         # calc stats
         stats["measurements"] = measurements
-        stats["mean"] = round(statistics.mean(delta_lst), 1)
-        stats["stdev"] = round(statistics.stdev(delta_lst), 1)
-        stats["min"] = round(min(delta_lst), 1)
-        stats["max"] = round(max(delta_lst), 1)
+        stats["mean"] = round(statistics.mean(delta_lst), 2)
+        stats["stdev"] = round(statistics.stdev(delta_lst), 2)
+        stats["min"] = round(min(delta_lst), 2)
+        stats["max"] = round(max(delta_lst), 2)
         stats["3sigma_upper"] = round((3.0 * stats["stdev"] +
-                                      stats["mean"]), 1)
+                                      stats["mean"]), 2)
         stats["6sigma_upper"] = round((6.0 * stats["stdev"] +
-                                       stats["mean"]), 1)
+                                       stats["mean"]), 2)
+        return stats
+
+    def measure_thermostat_repeatability(self, measurements=30,
+                                         poll_interval_sec=0,
+                                         func=None):
+        """
+        Measure Thermostat repeatability and report statistics.
+
+        inputs:
+            measurements(int): number of measurements
+            poll_interval_sec(int): delay between measurements
+            func(obj): target function to run during repeatabilty measurement.
+        returns:
+            (dict): measurement statistics.
+        """
+        data_lst = []
+        stats = {}
+        # set default measurement method if not provided.
+        if func is None:
+            func = self.get_display_temp
+
+        # measurement loop
+        for n in range(measurements):
+            t0 = time.time()
+            data = func()  # target command
+            t1 = time.time()
+
+            # accumulate stats
+            tdelta = t1 - t0
+            data_lst.append(data)
+            util.log_msg("measurement %s=%s (deltaTime=%.2f sec, "
+                         "delay=%s sec)" %
+                         (n, data, tdelta, poll_interval_sec),
+                         mode=util.BOTH_LOG, func_name=1)
+            time.sleep(poll_interval_sec)
+            self.refresh_zone_info()
+
+        # calc stats
+        stats["measurements"] = measurements
+        stats["mean"] = round(statistics.mean(data_lst), 2)
+        stats["stdev"] = round(statistics.stdev(data_lst), 2)
+        stats["min"] = round(min(data_lst), 2)
+        stats["max"] = round(max(data_lst), 2)
+        stats["3sigma_upper"] = round((3.0 * stats["stdev"] +
+                                      stats["mean"]), 2)
+        stats["6sigma_upper"] = round((6.0 * stats["stdev"] +
+                                       stats["mean"]), 2)
         return stats
 
     def display_basic_thermostat_summary(self, mode=util.CONSOLE_LOG):
@@ -842,10 +890,10 @@ class ThermostatCommonZone():
                      (util.get_function_name(2)), mode=util.BOTH_LOG)
 
 
-def thermostat_basic_checkout(api, thermostat_type, zone,
-                              ThermostatClass, ThermostatZone):
+def create_thermostat_instance(api, thermostat_type, zone,
+                               ThermostatClass, ThermostatZone):
     """
-    Perform basic Thermostat checkout.
+    Create Thermostat and Zone instances.
 
     inputs:
         api(module): thermostat_api module.
@@ -876,6 +924,31 @@ def thermostat_basic_checkout(api, thermostat_type, zone,
     api.user_inputs["thermostat_type"] = thermostat_type
     api.user_inputs["zone"] = zone
     Zone.update_runtime_parameters(api.user_inputs)
+
+    return Thermostat, Zone
+
+
+def thermostat_basic_checkout(api, thermostat_type, zone,
+                              ThermostatClass, ThermostatZone):
+    """
+    Perform basic Thermostat checkout.
+
+    inputs:
+        api(module): thermostat_api module.
+        tstat(int):  thermostat_type
+        zone(int): zone number
+        ThermostatClass(cls): Thermostat class
+        ThermostatZone(cls): ThermostatZone class
+    returns:
+        Thermostat(obj): Thermostat object
+        Zone(obj):  Zone object
+    """
+    util.log_msg.debug = True  # debug mode set
+
+    # create class instances
+    Thermostat, Zone = create_thermostat_instance(api, thermostat_type, zone,
+                                                  ThermostatClass,
+                                                  ThermostatZone)
 
     # print("thermostat meta data=%s\n" % Thermostat.get_all_metadata())
     Zone.display_basic_thermostat_summary()

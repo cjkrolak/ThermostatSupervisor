@@ -23,6 +23,7 @@ class IntegrationTest(utc.IntegrationTest):
     and supervise loop is executed last.
     """
     def setUp(self):
+        self.setUpCommon()
         self.print_test_name()
 
         # argv list must be valid settings
@@ -38,6 +39,8 @@ class IntegrationTest(utc.IntegrationTest):
             ]
         self.mod = kumocloud
         self.mod_config = kumocloud_config
+        self.timing_measurements = 30
+        self.poll_interval_sec = 10
 
 
 if __name__ == "__main__":

@@ -301,7 +301,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
     def is_fanning(self):
         """Return 1 if fan relay is active, else 0."""
         self.refresh_zone_info()
-        return int(self.is_fan_on())
+        return int(self.is_fan_on() and self.is_power_on())
 
     def is_power_on(self):
         """Return 1 if power relay is active, else 0."""
