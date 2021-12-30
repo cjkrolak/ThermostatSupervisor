@@ -2,7 +2,7 @@
 import os
 import time
 
-pykumo_debug = True  # debug uses local pykumo repo instead of pkg
+pykumo_debug = False  # debug uses local pykumo repo instead of pkg
 if pykumo_debug:
     # begin local import
     import importlib.util
