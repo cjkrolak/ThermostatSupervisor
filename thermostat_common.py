@@ -108,6 +108,8 @@ class ThermostatCommonZone():
         self.humidity_is_available = False  # humidity supported flag
         self.hold_mode = False  # True = not following schedule
         self.hold_temporary = False
+        self.zone_info = {}  # dict containing zone data
+        self.last_fetch_time = None  # last fetch of zone_info
 
         # abstraction vars and funcs, defined in query_thermostat_zone
         self.current_mode = None  # integer representing mode
@@ -597,6 +599,8 @@ class ThermostatCommonZone():
             None, cached data is refreshed.
         """
         del force_refresh  # not used in this template.
+        self.zone_info = {}
+        self.last_fetch_time = time.time()
         return  # placeholder
 
     def report_heating_parameters(self, switch_position=None):

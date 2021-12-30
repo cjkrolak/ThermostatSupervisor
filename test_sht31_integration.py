@@ -43,7 +43,20 @@ class IntegrationTest(utc.IntegrationTest):
             ]
         self.mod = sht31
         self.mod_config = sht31_config
-        self.poll_interval_sec = 30
+
+        # network timing measurement
+        # mean timing = 0.5 sec per measurement plus 0.75 sec overhead
+        self.timeout_limit = (6.0 * 0.1 +
+                              (sht31_config.measurements * 0.5 + 0.75))
+
+        # temperature and humidity repeatability measurements
+        # settings below are tuned short term repeatability assessment
+        # assuming sht31_config.measurements = 10
+        self.temp_stdev_limit = 0.5  # 1 sigma temp repeatability limit in F
+        self.temp_repeatability_measurements = 30  # number of temp msmts.
+        self.humidity_stdev_limit = 0.5  # 1 sigma humid repeat. limit %RH
+        self.humidity_repeatability_measurements = 30  # number of temp msmts.
+        self.poll_interval_sec = 1  # delay between repeatability measurements
 
 
 if __name__ == "__main__":

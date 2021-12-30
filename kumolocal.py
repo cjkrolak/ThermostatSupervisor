@@ -519,7 +519,9 @@ class ThermostatZone(tc.ThermostatCommonZone):
         """Retrieve local metadata from pykumo."""
         self.device_id.update_status()
         print("pykumo status=%s" % self.device_id.get_status())
+        # pylint: disable=protected-access
         print("pykumo sensors=%s" % self.device_id._sensors)
+        # pylint: disable=protected-access
         print("pykumo profile=%s" % self.device_id._profile)
 
 
