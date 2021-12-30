@@ -1,13 +1,24 @@
 """KumoCloud integration"""
 import os
-import pykumo
 import time
 
+pykumo_debug = True  # debug uses local pykumo repo instead of pkg
+if pykumo_debug:
+    # begin local import
+    import importlib.util
+    spec = importlib.util.spec_from_file_location(
+        "pykumo.py", "..\\pykumo\\pykumo\\pykumo.py")
+    pykumo = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(pykumo)
+    # end of local import
+else:
+    import pykumo  # from path / site packages
+
 # local imports
-import kumocloud_config
-import thermostat_api as api
-import thermostat_common as tc
-import utilities as util
+import kumocloud_config  # noqa E402
+import thermostat_api as api  # noqa E402
+import thermostat_common as tc  # noqa E402
+import utilities as util  # noqa E402
 
 
 class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
@@ -521,10 +532,10 @@ class ThermostatZone(tc.ThermostatCommonZone):
         if (force_refresh or (now_time >=
                               (self.last_fetch_time +
                                self.fetch_interval_sec))):
-            print("DEBUG: refreshing data from cloud")
             self.Thermostat._need_fetch = True \
                 # pylint: disable=protected-access
             try:
+                print("DEBUG: refreshing data from cloud")
                 self.Thermostat._fetch_if_needed() \
                     # pylint: disable=protected-access
             except UnboundLocalError:  # patch for issue #205

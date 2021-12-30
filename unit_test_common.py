@@ -150,14 +150,14 @@ class IntegrationTest(UnitTest):
     poll_interval_sec = None
 
     def setUpCommon(self):
-        self.timeout_limit = 30  # arbitrary value
-        self.timing_measurements = 30
-        self.timing_func = None  # placeholder
-        self.temp_stdev_limit = 1  # 1 degF
-        self.temp_repeatability_measurements = 10
-        self.humidity_stdev_limit = 1  # 1 %RH
-        self.humidity_repeatability_measurements = 30
-        self.poll_interval_sec = 0
+        self.timeout_limit = 30  # 6 sigma timing upper limit in sec.
+        self.timing_measurements = 10  # number of timing measurements.
+        self.timing_func = None  # function used for timing measurement.
+        self.temp_stdev_limit = 1  # 1 sigma temp repeatability limit in F
+        self.temp_repeatability_measurements = 10  # number of temp msmts.
+        self.humidity_stdev_limit = 1  # 1 sigma humid repeatability limit %RH
+        self.humidity_repeatability_measurements = 10  # number of humid msmts.
+        self.poll_interval_sec = 0  # delay between repeat measurements
 
     def setUpThermostatZone(self):
         """Create a Thermostat and Zone instance for unit testing if needed."""
@@ -180,6 +180,7 @@ class IntegrationTest(UnitTest):
     def tearDown(self):
         self.print_test_result()
 
+    @unittest.skip("temporary disable for debugging")
     def test_A_ThermostatBasicCheckout(self):
         """
         Verify thermostat_basic_checkout on target thermostat.
@@ -195,10 +196,14 @@ class IntegrationTest(UnitTest):
                 self.mod.ThermostatClass, self.mod.ThermostatZone
                 )
 
+    # @unittest.skip("temporary disable for debugging")
     def test_B_NetworkTiming(self):
         """
         Verify network timing..
         """
+        # setup class instances
+        self.Thermostat, self.Zone = self.setUpThermostatZone()
+
         # measure thermostat response time
         measurements = self.timing_measurements
         print("%s Thermostat zone %s response times for %s measurements..." %
@@ -219,11 +224,15 @@ class IntegrationTest(UnitTest):
         """
         Verify temperature repeatability.
         """
+        # setup class instances
+        self.Thermostat, self.Zone = self.setUpThermostatZone()
+
         # measure thermostat temp repeatability
         measurements = self.temp_repeatability_measurements
         print("%s Thermostat zone %s temperature repeatability for %s "
-              "measurements..." %
-              (self.Zone.thermostat_type, self.Zone.zone_number, measurements))
+              "measurements with %s sec delay between each measurement..." %
+              (self.Zone.thermostat_type, self.Zone.zone_number, measurements,
+               self.poll_interval_sec))
         meas_data = self.Zone.measure_thermostat_repeatability(
             measurements, self.poll_interval_sec)
         print("temperature repeatability stats (deg F)")
@@ -238,10 +247,14 @@ class IntegrationTest(UnitTest):
             "temp repeatability limit (%s)" % (act_val,
                                                self.temp_stdev_limit))
 
+    # @unittest.skip("temporary disable for debugging")
     def test_D_HumidityRepeatability(self):
         """
         Verify humidity repeatability.
         """
+        # setup class instances
+        self.Thermostat, self.Zone = self.setUpThermostatZone()
+
         # check for humidity support
         if not self.Zone.get_is_humidity_supported():
             print("humidity not supported on this thermostat, exiting")
@@ -250,8 +263,9 @@ class IntegrationTest(UnitTest):
         # measure thermostat humidity repeatability
         measurements = self.temp_repeatability_measurements
         print("%s Thermostat zone %s humidity repeatability for %s "
-              "measurements..." %
-              (self.Zone.thermostat_type, self.Zone.zone_number, measurements))
+              "measurements with %s sec delay betweeen each measurement..." %
+              (self.Zone.thermostat_type, self.Zone.zone_number, measurements,
+               self.poll_interval_sec))
         meas_data = self.Zone.measure_thermostat_repeatability(
             measurements, self.poll_interval_sec,
             self.Zone.get_display_humidity)
@@ -267,20 +281,28 @@ class IntegrationTest(UnitTest):
             "humidity repeatability limit (%s)" %
             (act_val, self.humidity_stdev_limit))
 
+    @unittest.skip("temporary disable for debugging")
     def test_ReportHeatingParameters(self):
         """
         Verify report_heating_parameters().
         """
+        # setup class instances
+        self.Thermostat, self.Zone = self.setUpThermostatZone()
+
         for test_case in self.mod_config.supported_configs["modes"]:
             print("-" * 80)
             print("test_case='%s'" % test_case)
             self.Zone.report_heating_parameters(test_case)
             print("-" * 80)
 
+    @unittest.skip("temporary disable for debugging")
     def test_Z_Supervise(self):
         """
         Verify supervisor loop on target thermostat.
         """
+        # setup class instances
+        self.Thermostat, self.Zone = self.setUpThermostatZone()
+
         return_status = sup.exec_supervise(
             debug=True, argv_list=self.unit_test_argv)
         self.assertTrue(return_status, "return status=%s, expected True" %
