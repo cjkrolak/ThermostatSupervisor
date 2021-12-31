@@ -12,7 +12,7 @@ UNIT_TEST_ZONE = 99
 unit_test_seed = 0x7F
 UNIT_TEST_ENV_KEY = "SHT31_REMOTE_IP_ADDRESS_" + str(UNIT_TEST_ZONE)
 FLASK_UNIT_TEST_FOLDER = "/unit"
-flask_port = 5000
+flask_port = 5000  # note: ports below 1024 require root access on Linux
 flask_use_https = False  # HTTPS requires a cert to be installed.
 if flask_use_https:
     flask_ssl_cert = 'adhoc'  # adhoc
