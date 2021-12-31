@@ -406,3 +406,25 @@ def f_to_c(tempf) -> float:
         return (tempf - 32) * 5 / 9.0
     else:
         raise TypeError("raw value '%s' is not an int or float" % tempf)
+
+
+def is_thermostat_on_local_net(host_name, ip_address):
+    """
+    Return True if specified thermostat is on local network.
+
+    inputs:
+        ip_address(str): target IP address on local net.
+        host_name(str): expected host name.
+    returns:
+        (bool): True if confirmed on local net, else False.
+    """
+    try:
+        host_found = socket.gethostbyaddr(ip_address)
+        if host_name == host_found[0]:
+            return True
+        else:
+            print("DEBUG: expected host=%s, actual host=%s" %
+                  (host_name, host_found))
+            return False
+    except socket.herror:
+        return False

@@ -11,8 +11,8 @@ import unit_test_common as utc
 import utilities as util
 
 
-class Test(utc.UnitTest):
-    """Test functions in utilities.py."""
+class EnvironmentTests(utc.UnitTest):
+    """Test functions related to environment and env variables."""
 
     def setUp(self):
         self.print_test_name()
@@ -20,6 +20,13 @@ class Test(utc.UnitTest):
 
     def tearDown(self):
         self.print_test_result()
+
+    def test_is_interactive_environment(self):
+        """
+        Verify is_interactive_environment().
+        """
+        return_val = util.is_interactive_environment()
+        self.assertTrue(isinstance(return_val, bool))
 
     def test_GetEnvVariable(self):
         """
@@ -40,35 +47,50 @@ class Test(utc.UnitTest):
         util.load_all_env_variables()
         print("env var dict=%s" % util.env_variables)
 
-    def test_GetFunctionName(self):
+    def test_GetLocalIP(self):
         """
-        Confirm get_function_name works as expected.
+        Verify get_local_ip().
         """
-        # default
-        test = "<default>"
-        print("testing util.get_function_name(%s)" % test)
-        ev_1 = "test_GetFunctionName"
-        result_1 = util.get_function_name()
-        self.assertEqual(ev_1, result_1, "expected=%s, actual=%s" %
-                         (ev_1, result_1))
+        return_val = util.get_local_ip()
+        self.assertTrue(isinstance(return_val, str),
+                        "get_local_ip() returned '%s' which is not a string")
+        self.assertTrue(7 <= len(return_val) <= 15,
+                        "get_local_ip() returned '%s' which is not "
+                        "between 7 and 15 chars")
 
-        # test 1
-        test = 1
-        print("testing util.get_function_name(%s)" % test)
-        ev_1 = "test_GetFunctionName"
-        result_1 = util.get_function_name(test)
-        self.assertEqual(ev_1, result_1, "test%s: expected=%s, actual=%s" %
-                         (test, ev_1, result_1))
+    def test_IsThermostatOnLocalNet(self):
+        """
+        Verify is_thermostat_on_local_net() runs as expected.
+        """
+        test_cases = [
+            # [host_name, ip_address, expected_result]
+            ['testwifi.here', '192.168.86.1',
+             not utc.is_azure_environment()],  # Google wifi router
+            ['gateway743dd9.lan', '192.168.86.250',
+             not utc.is_azure_environment()],  # Honeywell
+            ['bogus_host', '192.168.86.145', False],  # bogus host
+            ['dns.google', '8.8.8.8', True],  # should pass everywhere
+            ]
 
-        # test 2
-        test = 2
-        print("testing util.get_function_name(%s)" % test)
-        ev_1 = ["run",  # Linux
-                "_callTestMethod",  # windows
-                ]
-        result_1 = util.get_function_name(test)
-        self.assertTrue(result_1 in ev_1, "test%s: expected values=%s, "
-                        "actual=%s" % (test, ev_1, result_1))
+        for test_case in test_cases:
+            print("testing for '%s' at %s, expect %s" %
+                  (test_case[0], test_case[1], test_case[2]))
+            result = util.is_thermostat_on_local_net(test_case[0],
+                                                     test_case[1])
+            self.assertEqual(result, test_case[2],
+                             "test_case=%s, expected=%s, actual=%s" %
+                             (test_case[0], test_case[2], result))
+
+
+class FileAndLoggingTests(utc.UnitTest):
+    """Test functions related to logging functions."""
+
+    def setUp(self):
+        self.print_test_name()
+        util.log_msg.file_name = "unit_test.txt"
+
+    def tearDown(self):
+        self.print_test_result()
 
     def test_LogMsgCreateFolder(self):
         """
@@ -234,35 +256,32 @@ class Test(utc.UnitTest):
                          "expected=%s, actual=%s" %
                          (expected_value, full_path))
 
-    def test_utf8len(self):
-        """
-        Verify utf8len().
-        """
-        for test_case in ["A", "BB", "ccc", "dd_d"]:
-            print("testing util.utf8len(%s)" % test_case)
-            expected_value = 1 * len(test_case)
-            actual_value = util.utf8len(test_case)
-            self.assertEqual(expected_value, actual_value,
-                             "expected=%s, actual=%s" %
-                             (expected_value, actual_value))
+    def delete_test_file(self, full_path):
+        """Delete the test file.
 
-    def test_GetLocalIP(self):
+        inputs:
+            full_path(str): full file path
+        returns:
+            (bool): True if file was deleted, False if it did not exist.
         """
-        Verify get_local_ip().
-        """
-        return_val = util.get_local_ip()
-        self.assertTrue(isinstance(return_val, str),
-                        "get_local_ip() returned '%s' which is not a string")
-        self.assertTrue(7 <= len(return_val) <= 15,
-                        "get_local_ip() returned '%s' which is not "
-                        "between 7 and 15 chars")
+        try:
+            os.remove(full_path)
+            print("unit test file '%s' deleted." % full_path)
+            return True
+        except FileNotFoundError:
+            print("unit test file '%s' did not exist." % full_path)
+            return False
 
-    def test_is_interactive_environment(self):
-        """
-        Verify is_interactive_environment().
-        """
-        return_val = util.is_interactive_environment()
-        self.assertTrue(isinstance(return_val, bool))
+
+class MetricsTests(utc.UnitTest):
+    """Test functions related temperature/humidity metrics."""
+
+    def setUp(self):
+        self.print_test_name()
+        util.log_msg.file_name = "unit_test.txt"
+
+    def tearDown(self):
+        self.print_test_result()
 
     def test_TempValueWithUnits(self):
         """Verify function attaches units as expected."""
@@ -304,32 +323,6 @@ class Test(utc.UnitTest):
         with self.assertRaises(ValueError):
             util.humidity_value_with_units(-13, "bogus", 1)
 
-    def test_GetKeyFromValue(self):
-        """Verify get_key_from_value()."""
-        test_dict = {'A': 1, 'B': 2, 'C': 1}
-
-        # test keys with distinctvalue, determinant case
-        test_case = 2
-        expected_val = ['B']
-        actual_val = util.get_key_from_value(test_dict, test_case)
-        self.assertTrue(actual_val in expected_val,
-                        "test case: %s, expected_val=%s, actual_val=%s" %
-                        (test_case, expected_val, actual_val))
-
-        # test keys with same value, indeterminant case
-        test_case = 1
-        expected_val = ['A', 'C']
-        actual_val = util.get_key_from_value(test_dict, test_case)
-        self.assertTrue(actual_val in expected_val,
-                        "test case: %s, expected_val=%s, actual_val=%s" %
-                        (test_case, expected_val, actual_val))
-
-        # test key not found
-        with self.assertRaises(KeyError):
-            print("attempting to input bad dictionary key, "
-                  "expect exception...")
-            actual_val = util.get_key_from_value(test_dict, "bogus_value")
-
     def test_CtoF(self):
         """Verify C to F calculations."""
 
@@ -370,21 +363,84 @@ class Test(utc.UnitTest):
             #                  "expected=%s, actual=%s" %
             #                  (tempf, expected_tempc, tempc))
 
-    def delete_test_file(self, full_path):
-        """Delete the test file.
 
-        inputs:
-            full_path(str): full file path
-        returns:
-            (bool): True if file was deleted, False if it did not exist.
+class MiscTests(utc.UnitTest):
+    """Miscellaneous util tests."""
+
+    def setUp(self):
+        self.print_test_name()
+        util.log_msg.file_name = "unit_test.txt"
+
+    def tearDown(self):
+        self.print_test_result()
+
+    def test_GetFunctionName(self):
         """
-        try:
-            os.remove(full_path)
-            print("unit test file '%s' deleted." % full_path)
-            return True
-        except FileNotFoundError:
-            print("unit test file '%s' did not exist." % full_path)
-            return False
+        Confirm get_function_name works as expected.
+        """
+        # default
+        test = "<default>"
+        print("testing util.get_function_name(%s)" % test)
+        ev_1 = "test_GetFunctionName"
+        result_1 = util.get_function_name()
+        self.assertEqual(ev_1, result_1, "expected=%s, actual=%s" %
+                         (ev_1, result_1))
+
+        # test 1
+        test = 1
+        print("testing util.get_function_name(%s)" % test)
+        ev_1 = "test_GetFunctionName"
+        result_1 = util.get_function_name(test)
+        self.assertEqual(ev_1, result_1, "test%s: expected=%s, actual=%s" %
+                         (test, ev_1, result_1))
+
+        # test 2
+        test = 2
+        print("testing util.get_function_name(%s)" % test)
+        ev_1 = ["run",  # Linux
+                "_callTestMethod",  # windows
+                ]
+        result_1 = util.get_function_name(test)
+        self.assertTrue(result_1 in ev_1, "test%s: expected values=%s, "
+                        "actual=%s" % (test, ev_1, result_1))
+
+    def test_utf8len(self):
+        """
+        Verify utf8len().
+        """
+        for test_case in ["A", "BB", "ccc", "dd_d"]:
+            print("testing util.utf8len(%s)" % test_case)
+            expected_value = 1 * len(test_case)
+            actual_value = util.utf8len(test_case)
+            self.assertEqual(expected_value, actual_value,
+                             "expected=%s, actual=%s" %
+                             (expected_value, actual_value))
+
+    def test_GetKeyFromValue(self):
+        """Verify get_key_from_value()."""
+        test_dict = {'A': 1, 'B': 2, 'C': 1}
+
+        # test keys with distinctvalue, determinant case
+        test_case = 2
+        expected_val = ['B']
+        actual_val = util.get_key_from_value(test_dict, test_case)
+        self.assertTrue(actual_val in expected_val,
+                        "test case: %s, expected_val=%s, actual_val=%s" %
+                        (test_case, expected_val, actual_val))
+
+        # test keys with same value, indeterminant case
+        test_case = 1
+        expected_val = ['A', 'C']
+        actual_val = util.get_key_from_value(test_dict, test_case)
+        self.assertTrue(actual_val in expected_val,
+                        "test case: %s, expected_val=%s, actual_val=%s" %
+                        (test_case, expected_val, actual_val))
+
+        # test key not found
+        with self.assertRaises(KeyError):
+            print("attempting to input bad dictionary key, "
+                  "expect exception...")
+            actual_val = util.get_key_from_value(test_dict, "bogus_value")
 
 
 if __name__ == "__main__":
