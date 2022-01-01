@@ -477,10 +477,16 @@ class ThermostatZone(tc.ThermostatCommonZone):
                   in self.system_switch_position
         """
         self.refresh_zone_info()
-        # return self.get_parameter('operation_mode_text', 'more',
-        #                           'reportedCondition')
-        return self.get_parameter('operation_mode',
-                                  'reportedCondition')
+        # first check if power is on
+        # if power is off then operation_mode key may be missing.
+        power_on = self.get_parameter('power_on', 'more',
+                                      'reportedCondition')
+        if not power_on:
+            return self.system_switch_position[
+                tc.ThermostatCommonZone.OFF_MODE]
+        else:
+            return self.get_parameter('operation_mode',
+                                      'reportedCondition')
 
     def set_heat_setpoint(self, temp: int) -> None:
         """
