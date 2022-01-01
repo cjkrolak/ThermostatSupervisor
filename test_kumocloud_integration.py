@@ -47,9 +47,9 @@ class IntegrationTest(utc.IntegrationTest):
         # temperature and humidity repeatability measurements
         # temperature and humidity data are int values
         # settings below are tuned for 12 minutes, 4 measurements per minute.
-        self.temp_stdev_limit = 0.5  # 1 sigma temp repeatability limit in F
+        self.temp_stdev_limit = 2.0  # 1 sigma temp repeatability limit in F
         self.temp_repeatability_measurements = 48  # number of temp msmts.
-        self.humidity_stdev_limit = 0.5  # 1 sigma humid repeat. limit %RH
+        self.humidity_stdev_limit = 2.0  # 1 sigma humid repeat. limit %RH
         self.humidity_repeatability_measurements = 48  # number of temp msmts.
         self.poll_interval_sec = 15  # delay between repeatability measurements
 
