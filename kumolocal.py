@@ -67,7 +67,7 @@ class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
         # return the target zone object
         return self.device_id
 
-    def get_all_thermostat_metadata(self, zone=None, debug=False):
+    def get_kumocloud_thermostat_metadata(self, zone=None, debug=False):
         """Get all thermostat meta data for zone from kumocloud.
 
         inputs:
@@ -101,6 +101,28 @@ class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
             raw_json = self.get_raw_json()[2]['children'][0][
                 'zoneTable'][units[zone]]
         return raw_json
+
+    def get_all_thermostat_metadata(self, zone=None, debug=False):
+        """Get all thermostat meta data for device_id from local API.
+
+        inputs:
+            zone(): specified zone
+            debug(bool): debug flag.
+        returns:
+            (dict): dictionary of meta data.
+        """
+        del debug  # unused
+        del zone  # unused
+
+        # refresh device status
+        self.device_id.update_status()
+        meta_data = {}
+        meta_data['status'] = self.device_id.get_status()
+        # pylint: disable=protected-access
+        meta_data['sensors'] = self.device_id._sensors
+        # pylint: disable=protected-access
+        meta_data['profile'] = self.device_id._profile
+        return meta_data
 
     def print_all_thermostat_metadata(self, zone, debug=False):
         """Print all metadata for zone to the screen.
@@ -146,7 +168,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         self.system_switch_position[tc.ThermostatCommonZone.OFF_MODE] = "off"
         self.system_switch_position[tc.ThermostatCommonZone.DRY_MODE] = "dry"
         self.system_switch_position[tc.ThermostatCommonZone.AUTO_MODE] = "auto"
-        self.system_switch_position[tc.ThermostatCommonZone.FAN_MODE] = "fan"
+        self.system_switch_position[tc.ThermostatCommonZone.FAN_MODE] = "vent"
 
         # zone info
         self.thermostat_type = kumolocal_config.ALIAS
@@ -244,6 +266,20 @@ class ThermostatZone(tc.ThermostatCommonZone):
         return int(self.device_id.get_mode() ==
                    self.system_switch_position[
                        tc.ThermostatCommonZone.DRY_MODE])
+
+    def is_fan_mode(self) -> int:
+        """
+        Refresh the cached zone information and return the fan mode.
+
+        inputs:
+            None
+        returns:
+            (int): fan mode, 1=enabled, 0=disabled.
+        """
+        self.refresh_zone_info()
+        return int(self.get_system_switch_position() ==
+                   self.system_switch_position[
+                       tc.ThermostatCommonZone.FAN_MODE])
 
     def is_auto_mode(self) -> int:
         """
@@ -515,15 +551,6 @@ class ThermostatZone(tc.ThermostatCommonZone):
         util.log_msg("temporary hold until time=%s" %
                      self.get_temporary_hold_until_time(), mode=util.BOTH_LOG)
 
-    def get_local_metadata(self):
-        """Retrieve local metadata from pykumo."""
-        self.device_id.update_status()
-        print("pykumo status=%s" % self.device_id.get_status())
-        # pylint: disable=protected-access
-        print("pykumo sensors=%s" % self.device_id._sensors)
-        # pylint: disable=protected-access
-        print("pykumo profile=%s" % self.device_id._profile)
-
 
 if __name__ == "__main__":
 
@@ -534,5 +561,3 @@ if __name__ == "__main__":
         api, kumolocal_config.ALIAS,
         zone_number,
         ThermostatClass, ThermostatZone)
-
-    Zone.get_local_metadata()
