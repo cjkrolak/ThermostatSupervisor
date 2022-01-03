@@ -2,6 +2,8 @@
 kumolocal config file.
 """
 ALIAS = "kumolocal"
+max_heat_setpoint = 68
+min_cool_setpoint = 70
 
 # all environment variables required by code should be registered here
 env_variables = {

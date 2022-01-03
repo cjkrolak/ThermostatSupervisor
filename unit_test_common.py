@@ -16,7 +16,7 @@ import thermostat_common as tc
 import utilities as util
 
 # enable modes
-enable_integration_tests = False  # use to bypass integration tests
+enable_integration_tests = True  # use to bypass integration tests
 enable_kumolocal_tests = True  # Kumolocal is local net only
 enable_mmm_tests = True  # mmm50 is local net only
 enable_sht31_tests = True  # sht31 can fail on occasion
@@ -180,7 +180,6 @@ class IntegrationTest(UnitTest):
     def tearDown(self):
         self.print_test_result()
 
-    @unittest.skip("temporary disable for debugging")
     def test_A_ThermostatBasicCheckout(self):
         """
         Verify thermostat_basic_checkout on target thermostat.
@@ -196,7 +195,6 @@ class IntegrationTest(UnitTest):
                 self.mod.ThermostatClass, self.mod.ThermostatZone
                 )
 
-    # @unittest.skip("temporary disable for debugging")
     def test_B_NetworkTiming(self):
         """
         Verify network timing..
@@ -247,7 +245,6 @@ class IntegrationTest(UnitTest):
             "temp repeatability limit (%s)" % (act_val,
                                                self.temp_stdev_limit))
 
-    # @unittest.skip("temporary disable for debugging")
     def test_D_HumidityRepeatability(self):
         """
         Verify humidity repeatability.
@@ -281,7 +278,6 @@ class IntegrationTest(UnitTest):
             "humidity repeatability limit (%s)" %
             (act_val, self.humidity_stdev_limit))
 
-    @unittest.skip("temporary disable for debugging")
     def test_ReportHeatingParameters(self):
         """
         Verify report_heating_parameters().
@@ -295,7 +291,6 @@ class IntegrationTest(UnitTest):
             self.Zone.report_heating_parameters(test_case)
             print("-" * 80)
 
-    @unittest.skip("temporary disable for debugging")
     def test_Z_Supervise(self):
         """
         Verify supervisor loop on target thermostat.
