@@ -43,7 +43,7 @@ class IntegrationTest(utc.IntegrationTest):
 
         # network timing measurement
         self.timeout_limit = honeywell.http_timeout
-        self.timing_measurements = 100  # fast measurement
+        self.timing_measurements = 30  # fast measurement
 
         # temperature and humidity repeatability measurements
         # TCC server polling period to thermostat appears to be about 5-6 min
