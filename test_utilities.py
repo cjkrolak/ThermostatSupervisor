@@ -65,9 +65,9 @@ class EnvironmentTests(utc.UnitTest):
         test_cases = [
             # [host_name, ip_address, expected_result]
             ['testwifi.here', '192.168.86.1',
-             not utc.is_azure_environment()],  # Google wifi router
+             not util.is_azure_environment()],  # Google wifi router
             ['gateway743dd9.lan', '192.168.86.250',
-             not utc.is_azure_environment()],  # Honeywell
+             not util.is_azure_environment()],  # Honeywell
             ['bogus_host', '192.168.86.145', False],  # bogus host
             ['dns.google', '8.8.8.8', True],  # should pass everywhere
             ]

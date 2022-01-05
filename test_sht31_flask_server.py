@@ -31,7 +31,7 @@ class IntegrationTest(utc.UnitTest):
     def tearDown(self):
         self.print_test_result()
 
-    @unittest.skipIf(utc.is_azure_environment(),
+    @unittest.skipIf(util.is_azure_environment(),
                      "this test not supported on Azure Pipelines")
     def test_SHT31_FlaskServer(self):
         """

@@ -2,8 +2,15 @@
 import os
 import time
 
+# local imports
+import kumolocal_config
+import thermostat_api as api
+import thermostat_common as tc
+import utilities as util
+
+# pykumo
 pykumo_debug = True  # debug uses local pykumo repo instead of pkg
-if pykumo_debug:
+if pykumo_debug and not util.is_azure_environment():
     # begin local import
     import importlib.util
     spec = importlib.util.spec_from_file_location(
@@ -12,13 +19,7 @@ if pykumo_debug:
     spec.loader.exec_module(pykumo)
     # end of local import
 else:
-    import pykumo  # from path / site packages
-
-# local imports
-import kumolocal_config  # noqa E402
-import thermostat_api as api  # noqa E402
-import thermostat_common as tc  # noqa E402
-import utilities as util  # noqa E402
+    import pykumo  # noqa E402, from path / site packages
 
 
 class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
