@@ -22,20 +22,10 @@ enable_mmm_tests = False  # mmm50 is local net only
 enable_sht31_tests = False  # sht31 can fail on occasion
 
 
-def is_azure_environment():
-    """
-    Return True if machine is Azure pipeline.
-
-    Function assumes '192.' IP addresses are not Azure,
-    everything else is Azure.
-    """
-    return '192.' not in util.get_local_ip()
-
-
 # generic argv list for unit testing
 unit_test_sht31 = ["supervise.py",  # module
                    "sht31",  # thermostat
-                   ["99", "1"][is_azure_environment()],  # zone
+                   ["99", "1"][util.is_azure_environment()],  # zone
                    "19",  # poll time in sec
                    "359",  # reconnect time in sec
                    "3",  # tolerance
