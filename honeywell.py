@@ -682,8 +682,10 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
 # see ticket #93 for details
 from requests.adapters import HTTPAdapter  # noqa E402
 
-
-http_timeout = 2  # seconds, 6s upper is 1.9 on pi4 and laptop
+# network timeout limit
+# 6s upper is 1.9 on pi4 and laptop
+# 6s upper is 2.17 on Azure pipeline
+http_timeout = 2.5  # 6 sigma limit in seconds
 
 
 class TimeoutHTTPAdapter(HTTPAdapter):

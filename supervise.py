@@ -157,7 +157,7 @@ def supervisor(thermostat_type, zone_str):
             # revert thermostat to schedule if heat override is detected
             if (revert_deviations and Zone.is_controlled_mode() and
                     Zone.is_temp_deviated_from_schedule()):
-                Zone.revert_temperature_deviation(current_mode["status_msg"])
+                Zone.revert_temperature_deviation(Zone.schedule_setpoint)
 
             # polling delay
             time.sleep(Zone.poll_time_sec)

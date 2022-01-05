@@ -2,8 +2,15 @@
 import os
 import time
 
+# local imports
+import kumocloud_config
+import thermostat_api as api
+import thermostat_common as tc
+import utilities as util
+
+# pykumo import
 pykumo_debug = False  # debug uses local pykumo repo instead of pkg
-if pykumo_debug:
+if pykumo_debug and not util.is_azure_environment():
     # begin local import
     import importlib.util
     spec = importlib.util.spec_from_file_location(
@@ -12,13 +19,7 @@ if pykumo_debug:
     spec.loader.exec_module(pykumo)
     # end of local import
 else:
-    import pykumo  # from path / site packages
-
-# local imports
-import kumocloud_config  # noqa E402
-import thermostat_api as api  # noqa E402
-import thermostat_common as tc  # noqa E402
-import utilities as util  # noqa E402
+    import pykumo  # noqa E402, from path / site packages
 
 
 class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
@@ -412,7 +413,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         returns:
             (int): scheduled heating set point in degrees.
         """
-        return 72  # max heat set point allowed
+        return kumocloud_config.max_heat_setpoint  # max heat set point allowed
 
     def get_schedule_cool_sp(self) -> int:
         """
@@ -423,7 +424,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         returns:
             (int): scheduled cooling set point in degrees F.
         """
-        return 70  # min cool set point allowed
+        return kumocloud_config.min_cool_setpoint  # min cool set point allowed
 
     def get_cool_setpoint_raw(self) -> int:
         """

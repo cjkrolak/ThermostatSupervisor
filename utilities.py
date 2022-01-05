@@ -428,3 +428,13 @@ def is_thermostat_on_local_net(host_name, ip_address):
             return False
     except socket.herror:
         return False
+
+
+def is_azure_environment():
+    """
+    Return True if machine is Azure pipeline.
+
+    Function assumes '192.' IP addresses are not Azure,
+    everything else is Azure.
+    """
+    return '192.' not in get_local_ip()

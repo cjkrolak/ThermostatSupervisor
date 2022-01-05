@@ -42,7 +42,7 @@ class Test(utc.UnitTest):
         """Verify display_runtime_settings()."""
         sup.display_runtime_settings(self.Zone)
 
-    @unittest.skipIf(utc.is_azure_environment(),
+    @unittest.skipIf(util.is_azure_environment(),
                      "this test not supported on Azure Pipelines")
     def test_Supervisor(self):
         """Verify main supervisor loop."""
