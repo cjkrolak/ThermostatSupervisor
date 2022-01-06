@@ -1,7 +1,5 @@
 """KumoCloud integration using local API for data."""
 import os
-import pprint
-import pykumo
 import time
 
 # local imports
@@ -10,8 +8,21 @@ import thermostat_api as api
 import thermostat_common as tc
 import utilities as util
 
+# pykumo
+pykumo_debug = True  # debug uses local pykumo repo instead of pkg
+if pykumo_debug and not util.is_azure_environment():
+    # begin local import
+    import importlib.util
+    spec = importlib.util.spec_from_file_location(
+        "pykumo.py", "..\\pykumo\\pykumo\\pykumo.py")
+    pykumo = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(pykumo)
+    # end of local import
+else:
+    import pykumo  # noqa E402, from path / site packages
 
-class ThermostatClass(pykumo.KumoCloudAccount):
+
+class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
     """KumoCloud thermostat functions."""
 
     def __init__(self, zone):
@@ -29,10 +40,11 @@ class ThermostatClass(pykumo.KumoCloudAccount):
         self.kc_pwd = (os.environ.get(
             self.KC_PASSWORD_KEY, "<" +
             self.KC_PASSWORD_KEY + "_KEY_MISSING>"))
-        self.args = [self.kc_uname, self.kc_pwd]
 
-        # construct the superclass
-        super().__init__(*self.args)
+        # call both parent class __init__
+        self.args = [self.kc_uname, self.kc_pwd]
+        pykumo.KumoCloudAccount.__init__(self, *self.args)
+        tc.ThermostatCommon.__init__(self)
         self.thermostat_type = kumolocal_config.ALIAS
 
         # configure zone info
@@ -67,14 +79,16 @@ class ThermostatClass(pykumo.KumoCloudAccount):
         # return the target zone object
         return self.device_id
 
-    def get_all_thermostat_metadata(self, zone=None):
+    def get_kumocloud_thermostat_metadata(self, zone=None, debug=False):
         """Get all thermostat meta data for zone from kumocloud.
 
         inputs:
             zone(): specified zone, if None will print all zones.
+            debug(bool): debug flag.
         returns:
             (dict): JSON dict
         """
+        del debug  # unused
         try:
             units = list(self.get_indoor_units())  # will also query unit
         except UnboundLocalError:  # patch for issue #205
@@ -100,17 +114,39 @@ class ThermostatClass(pykumo.KumoCloudAccount):
                 'zoneTable'][units[zone]]
         return raw_json
 
-    def print_all_thermostat_metadata(self, zone=None):
+    def get_all_thermostat_metadata(self, zone=None, debug=False):
+        """Get all thermostat meta data for device_id from local API.
+
+        inputs:
+            zone(): specified zone
+            debug(bool): debug flag.
+        returns:
+            (dict): dictionary of meta data.
+        """
+        del debug  # unused
+        del zone  # unused
+
+        # refresh device status
+        self.device_id.update_status()
+        meta_data = {}
+        meta_data['status'] = self.device_id.get_status()
+        # pylint: disable=protected-access
+        meta_data['sensors'] = self.device_id._sensors
+        # pylint: disable=protected-access
+        meta_data['profile'] = self.device_id._profile
+        return meta_data
+
+    def print_all_thermostat_metadata(self, zone, debug=False):
         """Print all metadata for zone to the screen.
 
         inputs:
-            zone(): specified zone, if None will print all zones.
+            zone(int): specified zone, if None will print all zones.
+            debug(bool): debug flag
         returns:
             None, prints result to screen
         """
-        raw_json = self.get_all_thermostat_metadata(zone)
-        pp = pprint.PrettyPrinter(indent=4)
-        pp.pprint(raw_json)
+        self.exec_print_all_thermostat_metadata(
+            self.get_all_thermostat_metadata, [zone, debug])
 
 
 class ThermostatZone(tc.ThermostatCommonZone):
@@ -144,7 +180,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         self.system_switch_position[tc.ThermostatCommonZone.OFF_MODE] = "off"
         self.system_switch_position[tc.ThermostatCommonZone.DRY_MODE] = "dry"
         self.system_switch_position[tc.ThermostatCommonZone.AUTO_MODE] = "auto"
-        self.system_switch_position[tc.ThermostatCommonZone.FAN_MODE] = "fan"
+        self.system_switch_position[tc.ThermostatCommonZone.FAN_MODE] = "vent"
 
         # zone info
         self.thermostat_type = kumolocal_config.ALIAS
@@ -243,6 +279,20 @@ class ThermostatZone(tc.ThermostatCommonZone):
                    self.system_switch_position[
                        tc.ThermostatCommonZone.DRY_MODE])
 
+    def is_fan_mode(self) -> int:
+        """
+        Refresh the cached zone information and return the fan mode.
+
+        inputs:
+            None
+        returns:
+            (int): fan mode, 1=enabled, 0=disabled.
+        """
+        self.refresh_zone_info()
+        return int(self.get_system_switch_position() ==
+                   self.system_switch_position[
+                       tc.ThermostatCommonZone.FAN_MODE])
+
     def is_auto_mode(self) -> int:
         """
         Refresh the cached zone information and return the auto mode.
@@ -256,6 +306,70 @@ class ThermostatZone(tc.ThermostatCommonZone):
         return int(self.device_id.get_mode() ==
                    self.system_switch_position[
                        tc.ThermostatCommonZone.AUTO_MODE])
+
+    def is_off_mode(self) -> int:
+        """
+        Refresh the cached zone information and return the off mode.
+
+        inputs:
+            None
+        returns:
+            (int): off mode, 1=enabled, 0=disabled.
+        """
+        self.refresh_zone_info()
+        return int(self.get_system_switch_position() ==
+                   self.system_switch_position[
+                       tc.ThermostatCommonZone.OFF_MODE])
+
+    def is_heating(self):
+        """Return 1 if heating relay is active, else 0."""
+        self.refresh_zone_info()
+        return int(self.is_heat_mode() and self.is_power_on() and
+                   self.get_heat_setpoint_raw() > self.get_display_temp())
+
+    def is_cooling(self):
+        """Return 1 if cooling relay is active, else 0."""
+        self.refresh_zone_info()
+        return int(self.is_cool_mode() and self.is_power_on() and
+                   self.get_cool_setpoint_raw() < self.get_display_temp())
+
+    def is_drying(self):
+        """Return 1 if drying relay is active, else 0."""
+        self.refresh_zone_info()
+        return int(self.is_dry_mode() and self.is_power_on() and
+                   self.get_cool_setpoint_raw() < self.get_display_temp())
+
+    def is_auto(self):
+        """Return 1 if auto relay is active, else 0."""
+        self.refresh_zone_info()
+        return int(self.is_auto_mode() and self.is_power_on() and
+                   (self.get_cool_setpoint_raw() < self.get_display_temp() or
+                    self.get_heat_setpoint_raw() > self.get_display_temp()))
+
+    def is_fanning(self):
+        """Return 1 if fan relay is active, else 0."""
+        self.refresh_zone_info()
+        return int(self.is_fan_on() and self.is_power_on())
+
+    def is_power_on(self):
+        """Return 1 if power relay is active, else 0."""
+        self.refresh_zone_info()
+        return int(self.device_id.get_mode() != 'off')
+
+    def is_fan_on(self):
+        """Return 1 if fan relay is active, else 0."""
+        self.refresh_zone_info()
+        return int(self.device_id.get_fan_speed() != 'off')
+
+    def is_defrosting(self):
+        """Return 1 if defrosting is active, else 0."""
+        self.refresh_zone_info()
+        return int(self.device_id.get_status('defrost') == "True")
+
+    def is_standby(self):
+        """Return 1 if standby is active, else 0."""
+        self.refresh_zone_info()
+        return int(self.device_id.get_standby())
 
     def get_heat_setpoint_raw(self) -> int:  # used
         """
@@ -282,7 +396,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         returns:
             (int): scheduled heating set point in degrees.
         """
-        return 72  # max heat set point allowed
+        return kumolocal_config.max_heat_setpoint  # max heat set point allowed
 
     def get_schedule_cool_sp(self) -> int:
         """
@@ -293,7 +407,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         returns:
             (int): scheduled cooling set point in degrees F.
         """
-        return 70  # min cool set point allowed
+        return kumolocal_config.min_cool_setpoint  # min cool set point allowed
 
     def get_cool_setpoint_raw(self) -> int:
         """
@@ -455,7 +569,7 @@ if __name__ == "__main__":
     # get zone override
     zone_number = api.parse_all_runtime_parameters()["zone"]
 
-    tc.thermostat_basic_checkout(
+    Thermostat, Zone = tc.thermostat_basic_checkout(
         api, kumolocal_config.ALIAS,
         zone_number,
         ThermostatClass, ThermostatZone)

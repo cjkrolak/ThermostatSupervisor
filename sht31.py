@@ -12,7 +12,6 @@ data structure expected:
 """
 # built-in imports
 import json
-import pprint
 import requests
 import threading
 import time
@@ -124,25 +123,25 @@ class ThermostatClass(tc.ThermostatCommon):
         util.log_msg("Flask server setup is complete",
                      mode=util.BOTH_LOG, func_name=1)
 
-    def print_all_thermostat_metadata(self):
+    def print_all_thermostat_metadata(self, zone, debug=False):
         """
         Print initial meta data queried from thermostat.
 
         inputs:
-            None
+            zone(int): target zone
+            debug(bool): debug flag
         returns:
             None
         """
-        # dump metadata in a readable format
-        return_data = self.get_all_metadata()
-        pp = pprint.PrettyPrinter(indent=4)
-        pp.pprint(return_data)
+        self.exec_print_all_thermostat_metadata(
+            self.get_all_metadata, [zone, debug])
 
-    def get_all_metadata(self, retry=True):
+    def get_all_metadata(self, zone, retry=True):
         """
         Get all the current thermostat metadata.
 
         inputs:
+            zone(int): target zone
             retry(bool): if True will retry once.
         returns:
             (dict) empty dict.
@@ -166,7 +165,7 @@ class ThermostatClass(tc.ThermostatCommon):
                              self.retry_delay, mode=util.BOTH_LOG,
                              func_name=1)
                 time.sleep(self.retry_delay)
-                self.get_all_metadata(retry=False)
+                self.get_all_metadata(zone, retry=False)
             else:
                 raise Exception("FATAL ERROR: SHT31 server "
                                 "is not responding") from e
@@ -319,98 +318,64 @@ class ThermostatZone(tc.ThermostatCommonZone):
         return self.get_display_humidity() is not None
 
     def is_heat_mode(self) -> int:
-        """
-        Return the heat mode.
-
-        inputs:
-            None
-        returns:
-            (int): heat mode.
-        """
-        # function not supported on SHT31
-        return 0
+        """Return the heat mode."""
+        return 0  # not applicable
 
     def is_cool_mode(self) -> int:
-        """
-        Return the cool mode.
-
-        inputs:
-            None
-        returns:
-            (int): cool mode.
-        """
-        # function not supported on SHT31
-        return 0
+        """Return the cool mode."""
+        return 0  # not applicable
 
     def is_dry_mode(self) -> int:
-        """
-        Return the dry mode.
-
-        inputs:
-            None
-        returns:
-            (int): dry mode, 1=enabled, 0=disabled.
-        """
-        # function not supported on SHT31
-        return 0
+        """Return the dry mode."""
+        return 0  # not applicable
 
     def is_auto_mode(self) -> int:
-        """
-        Return the auto mode.
-
-        inputs:
-            None
-        returns:
-            (int): auto mode, 1=enabled, 0=disabled.
-        """
-        # function not supported on SHT31
-        return 0
+        """Return the auto mode."""
+        return 0  # not applicable
 
     def is_fan_mode(self) -> int:
-        """
-        Return the fan mode.
-
-        inputs:
-            None
-        returns:
-            (int): fan mode, 1=enabled, 0=disabled.
-        """
-        # function not supported on SHT31
-        return 0
+        """Return the fan mode."""
+        return 0  # not applicable
 
     def is_off_mode(self) -> int:
-        """
-        Return the off mode.
-
-        inputs:
-            None
-        returns:
-            (int): off mode, 1=enabled, 0=disabled.
-        """
-        # function not supported on SHT31
-        return 1
+        """Return the off mode."""
+        return 1  # always off
 
     def is_heating(self) -> int:
-        """
-        Return 1 if actively heating, else 0.
-
-        inputs:
-            None
-        returns:
-            (int): actively heating, 1=yes, 2=no.
-        """
-        return 0  # sht31 does not provide heat.
+        """Return 1 if actively heating, else 0."""
+        return 0  # not applicable
 
     def is_cooling(self) -> int:
-        """
-        Return 1 if actively cooling, else 0.
+        """Return 1 if actively cooling, else 0."""
+        return 0  # not applicable
 
-        inputs:
-            None
-        returns:
-            (int): actively cooling, 1=yes, 2=no.
-        """
-        return 0  # sht31 does not provide cooling.
+    def is_drying(self):
+        """Return 1 if drying relay is active, else 0."""
+        return 0  # not applicable
+
+    def is_auto(self):
+        """Return 1 if auto relay is active, else 0."""
+        return 0  # not applicable
+
+    def is_fanning(self):
+        """Return 1 if fan relay is active, else 0."""
+        return 0  # not applicable
+
+    def is_power_on(self):
+        """Return 1 if power relay is active, else 0."""
+        return 1  # always on
+
+    def is_fan_on(self):
+        """Return 1 if fan relay is active, else 0."""
+        return 0  # not applicable
+
+    def is_defrosting(self):
+        """Return 1 if defrosting is active, else 0."""
+        return 0  # not applicable
+
+    def is_standby(self):
+        """Return 1 if standby is active, else 0."""
+        return 0  # not applicable
 
     def get_system_switch_position(self) -> int:
         """ Return the thermostat mode.

@@ -19,7 +19,7 @@ import thermostat_common as tc
 import utilities as util
 
 
-class ThermostatClass(pyhtcc.PyHTCC):
+class ThermostatClass(pyhtcc.PyHTCC, tc.ThermostatCommon):
     """Extend the PyHTCC class with additional methods."""
 
     def __init__(self, zone):
@@ -35,10 +35,11 @@ class ThermostatClass(pyhtcc.PyHTCC):
         self.tcc_pwd = (os.environ.get(
             self.TCC_PASSWORD_KEY, "<" +
             self.TCC_PASSWORD_KEY + "_KEY_MISSING>"))
-        self.args = [self.tcc_uname, self.tcc_pwd]
 
-        # construct the superclass, requires auth setup first
-        super().__init__(*self.args)
+        # call both parent class __init__
+        self.args = [self.tcc_uname, self.tcc_pwd]
+        pyhtcc.PyHTCC.__init__(self, *self.args)
+        tc.ThermostatCommon.__init__(self)
 
         # configure zone info
         self.thermostat_type = honeywell_config.ALIAS
@@ -59,7 +60,7 @@ class ThermostatClass(pyhtcc.PyHTCC):
             zone_id_lst.append(zone['DeviceID'])
         return zone_id_lst
 
-    def get_target_zone_id(self, zone=0) -> int:
+    def get_target_zone_id(self, zone=honeywell_config.default_zone) -> int:
         """
         Return the target zone ID.
 
@@ -70,29 +71,29 @@ class ThermostatClass(pyhtcc.PyHTCC):
         """
         return self._get_zone_device_ids()[zone]
 
-    def print_all_thermostat_metadata(self):
+    def print_all_thermostat_metadata(self, zone, debug=False):
         """
         Return initial meta data queried from thermostat.
 
         inputs:
-            None
+            zone(int): zone number
+            debug(bool): debug flag
         returns:
             None, prints data to the stdout.
         """
         # dump all meta data
-        self.get_all_metadata()
+        self.get_all_metadata(zone)
 
         # dump uiData in a readable format
-        return_data = self.get_latestdata()
-        pp = pprint.PrettyPrinter(indent=4)
-        pp.pprint(return_data)
+        self.exec_print_all_thermostat_metadata(
+            self.get_latestdata, [zone, debug])
 
-    def get_all_metadata(self, zone=0) -> dict:
+    def get_all_metadata(self, zone=honeywell_config.default_zone) -> dict:
         """
         Return all the current thermostat metadata.
 
         inputs:
-          zone(int): zone number, default=0
+          zone(int): zone number, default=honeywell_config.default_zone
         returns:
           (dict) thermostat meta data.
         """
@@ -101,12 +102,13 @@ class ThermostatClass(pyhtcc.PyHTCC):
                      mode=util.DEBUG_LOG + util.CONSOLE_LOG, func_name=1)
         return return_data
 
-    def get_metadata(self, zone=0, parameter=None) -> (dict, str):
+    def get_metadata(self, zone=honeywell_config.default_zone,
+                     parameter=None) -> (dict, str):
         """
         Return the current thermostat metadata settings.
 
         inputs:
-          zone(int): zone number, default=0
+          zone(int): zone number, default=honeywell_config.default_zone
           parameter(str): target parameter, None = all settings
         returns:
           dict if parameter=None
@@ -125,26 +127,29 @@ class ThermostatClass(pyhtcc.PyHTCC):
                          mode=util.DEBUG_LOG + util.CONSOLE_LOG, func_name=1)
             return return_data
 
-    def get_latestdata(self, zone=0) -> dict:
+    def get_latestdata(self, zone=honeywell_config.default_zone,
+                       debug=False) -> dict:
         """
         Return the current thermostat latest data.
 
         inputs:
-          zone(int): zone number, default=0
+          zone(int): zone number, default=honeywell_config.default_zone
+          debug(bool): debug flag
         returns:
           (dict) latest data from thermostat.
         """
         latest_data_dict = self.get_metadata(zone).get('latestData')
-        util.log_msg("zone%s latestData: %s" % (zone, latest_data_dict),
-                     mode=util.DEBUG_LOG + util.CONSOLE_LOG, func_name=1)
+        if debug:
+            util.log_msg("zone%s latestData: %s" % (zone, latest_data_dict),
+                         mode=util.BOTH_LOG, func_name=1)
         return latest_data_dict
 
-    def get_uiData(self, zone=0) -> dict:
+    def get_uiData(self, zone=honeywell_config.default_zone) -> dict:
         """
         Return the latest thermostat ui data.
 
         inputs:
-          zone(int): zone, default=0
+          zone(int): zone, default=honeywell_config.default_zone
         returns:
           (dict) ui data from thermostat.
         """
@@ -153,17 +158,19 @@ class ThermostatClass(pyhtcc.PyHTCC):
                      mode=util.DEBUG_LOG + util.CONSOLE_LOG, func_name=1)
         return ui_data_dict
 
-    def get_uiData_param(self, zone=0, parameter=None) -> dict:
+    def get_uiData_param(self, zone=honeywell_config.default_zone,
+                         parameter=None) -> dict:
         """
         Return the latest thermostat ui data for one specific parameter.
 
         inputs:
-          zone(int): zone, default=0
+          zone(int): zone, default=honeywell_config.default_zone
           parameter(str): paramenter name
         returns:
           (dict)  # need to verify return data type.
         """
-        parameter_data = self.get_uiData(zone=0).get(parameter)
+        parameter_data = self.get_uiData(
+            zone=honeywell_config.default_zone).get(parameter)
         util.log_msg("zone%s uiData parameter %s: %s" %
                      (zone, parameter, parameter_data),
                      mode=util.DEBUG_LOG + util.CONSOLE_LOG,
@@ -255,8 +262,8 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
                             type(Thermostat_obj.device_id))
 
         # call both parent class __init__
-        pyhtcc.Zone.__init__(self, Thermostat_obj.device_id,
-                             Thermostat_obj)
+        self.args = [Thermostat_obj.device_id, Thermostat_obj]
+        pyhtcc.Zone.__init__(self, *self.args)
         tc.ThermostatCommonZone.__init__(self)
 
         # switch config for this thermostat
@@ -623,7 +630,7 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
         inputs:
             None
         returns:
-            None
+            None, populates self.zone_info dict.
         """
         number_of_retries = 3
         trial_number = 1
@@ -660,6 +667,7 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
                         pyhtcc.logger.debug(f"Refreshed zone info for \
                                            {self.device_id}")
                         self.zone_info = z
+                        self.last_fetch_time = time.time()
                         return
 
         # log fatal failure
@@ -670,12 +678,45 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
         raise pyhtcc.ZoneNotFoundError(f"Missing device: {self.device_id}")
 
 
+# add default requests session default timeout to prevent TimeoutExceptions
+# see ticket #93 for details
+from requests.adapters import HTTPAdapter  # noqa E402
+
+# network timeout limit
+# 6s upper is 1.9 on pi4 and laptop
+# 6s upper is 2.17 on Azure pipeline
+http_timeout = 2.5  # 6 sigma limit in seconds
+
+
+class TimeoutHTTPAdapter(HTTPAdapter):
+    def __init__(self, *args, **kwargs):
+        self.timeout = http_timeout
+        if "timeout" in kwargs:
+            self.timeout = kwargs["timeout"]
+            del kwargs["timeout"]
+        super().__init__(*args, **kwargs)
+
+    def send(self, request, **kwargs):  # pylint: disable=arguments-differ
+        timeout = kwargs.get("timeout")
+        if timeout is None:
+            kwargs["timeout"] = self.timeout
+        return super().send(request, **kwargs)
+
+
 if __name__ == "__main__":
 
     # get zone override
     zone_number = api.parse_all_runtime_parameters()["zone"]
 
-    tc.thermostat_basic_checkout(
+    _, Zone = tc.thermostat_basic_checkout(
         api, honeywell_config.ALIAS,
         zone_number,
         ThermostatClass, ThermostatZone)
+
+    # measure thermostat response time
+    measurements = 30
+    print("Thermostat response times for %s measurements..." % measurements)
+    meas_data = Zone.measure_thermostat_response_time(
+        measurements, func=Zone.pyhtcc.get_zones_info)
+    ppp = pprint.PrettyPrinter(indent=4)
+    ppp.pprint(meas_data)

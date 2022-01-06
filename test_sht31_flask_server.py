@@ -31,7 +31,7 @@ class IntegrationTest(utc.UnitTest):
     def tearDown(self):
         self.print_test_result()
 
-    @unittest.skipIf(utc.is_azure_environment(),
+    @unittest.skipIf(util.is_azure_environment(),
                      "this test not supported on Azure Pipelines")
     def test_SHT31_FlaskServer(self):
         """
@@ -55,7 +55,7 @@ class IntegrationTest(utc.UnitTest):
         print("creating thermostat object...")
         Thermostat = sht31.ThermostatClass(sht31_config.UNIT_TEST_ZONE)
         print("printing thermostat meta data:")
-        Thermostat.print_all_thermostat_metadata()
+        Thermostat.print_all_thermostat_metadata(sht31_config.UNIT_TEST_ZONE)
 
         # create Zone object
         Zone = sht31.ThermostatZone(Thermostat)
@@ -69,7 +69,7 @@ class IntegrationTest(utc.UnitTest):
         print("cool mode=%s" % Zone.is_cool_mode())
         print("temporary hold minutes=%s" %
               Zone.get_temporary_hold_until_time())
-        meta_data = Thermostat.get_all_metadata()
+        meta_data = Thermostat.get_all_metadata(sht31_config.UNIT_TEST_ZONE)
         print("thermostat meta data=%s" % meta_data)
         print("thermostat display temp=%s" %
               util.temp_value_with_units(Zone.get_display_temp()))

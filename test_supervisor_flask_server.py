@@ -18,7 +18,7 @@ import unit_test_common as utc
 import utilities as util
 
 
-@unittest.skipIf(utc.is_azure_environment(),
+@unittest.skipIf(util.is_azure_environment(),
                  "this test not supported on Azure Pipelines")
 @unittest.skipIf(not util.is_interactive_environment(),
                  "this test hangs when run from the command line")
@@ -35,7 +35,7 @@ class IntegrationTest(utc.UnitTest):
         sfs.measurements = 10
         sfs.unit_test_mode = True
         util.log_msg.file_name = "unit_test.txt"
-        if not utc.is_azure_environment():
+        if not util.is_azure_environment():
             # mock the argv list
             sfs.argv = utc.unit_test_argv
             print("DEBUG: in setup supervise sfs.argv=%s" % sfs.argv)
@@ -52,7 +52,7 @@ class IntegrationTest(utc.UnitTest):
                   "Azure pipelines, doing nothing")
 
     def tearDown(self):
-        if not utc.is_azure_environment():
+        if not util.is_azure_environment():
             print("thread alive status=%s" % self.fs.is_alive())
             if self.fs.daemon:
                 print("flask server is daemon thread, "

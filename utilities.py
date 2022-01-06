@@ -309,11 +309,26 @@ def temp_value_with_units(raw, disp_unit='F', precision=1) -> str:
     if disp_unit.upper() not in ['C', 'F', 'K']:
         raise ValueError("%s: '%s' is not a valid temperature unit" %
                          (get_function_name(), disp_unit))
-    formatted = "%.*f" % (precision, raw)
+
+    # if string try to convert to float
+    if isinstance(raw, str):
+        if '°' in raw:
+            return raw  # pass-thru
+        try:
+            float(raw)
+        except ValueError:
+            pass
+
+    if raw is None:
+        formatted = "%s" % (raw)
+    elif precision == 0:
+        formatted = "%d" % (raw)
+    else:
+        formatted = "%.*f" % (precision, raw)
     return f'{formatted}°{disp_unit}'
 
 
-def humidity_value_with_units(raw, disp_unit='RH', precision=1) -> str:
+def humidity_value_with_units(raw, disp_unit=' RH', precision=0) -> str:
     """
     Return string representing humidity and units.
 
@@ -324,10 +339,25 @@ def humidity_value_with_units(raw, disp_unit='RH', precision=1) -> str:
     returns:
         (str): temperature and units.
     """
-    if disp_unit.upper() not in ['RH']:
+    if disp_unit.upper() not in ['RH', ' RH']:
         raise ValueError("%s: '%s' is not a valid humidity unit" %
                          (get_function_name(), disp_unit))
-    formatted = "%.*f" % (precision, raw)
+
+    # if string try to convert to float
+    if isinstance(raw, str):
+        if '%' in raw:
+            return raw  # pass-thru
+        try:
+            float(raw)
+        except ValueError:
+            pass
+
+    if raw is None:
+        formatted = "%s" % (raw)
+    elif precision == 0:
+        formatted = "%d" % (raw)
+    else:
+        formatted = "%.*f" % (precision, raw)
     return f'{formatted}%{disp_unit}'
 
 
@@ -376,3 +406,35 @@ def f_to_c(tempf) -> float:
         return (tempf - 32) * 5 / 9.0
     else:
         raise TypeError("raw value '%s' is not an int or float" % tempf)
+
+
+def is_thermostat_on_local_net(host_name, ip_address):
+    """
+    Return True if specified thermostat is on local network.
+
+    inputs:
+        ip_address(str): target IP address on local net.
+        host_name(str): expected host name.
+    returns:
+        (bool): True if confirmed on local net, else False.
+    """
+    try:
+        host_found = socket.gethostbyaddr(ip_address)
+        if host_name == host_found[0]:
+            return True
+        else:
+            print("DEBUG: expected host=%s, actual host=%s" %
+                  (host_name, host_found))
+            return False
+    except socket.herror:
+        return False
+
+
+def is_azure_environment():
+    """
+    Return True if machine is Azure pipeline.
+
+    Function assumes '192.' IP addresses are not Azure,
+    everything else is Azure.
+    """
+    return '192.' not in get_local_ip()

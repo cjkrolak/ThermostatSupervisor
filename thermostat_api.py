@@ -19,9 +19,16 @@ import sht31_config
 # local imports
 import utilities as util
 
-
 # thermostat types
 DEFAULT_THERMOSTAT = honeywell_config.ALIAS
+
+# list of thermostat config modules supported
+config_modules = [honeywell_config,
+                  kumocloud_config,
+                  kumolocal_config,
+                  mmm_config,
+                  sht31_config
+                  ]
 
 SUPPORTED_THERMOSTATS = {
     # "module" = module to import
@@ -29,8 +36,7 @@ SUPPORTED_THERMOSTATS = {
     # "zones" = zone numbers supported
     # "modes" = modes supported
     }
-for config_module in [honeywell_config, kumocloud_config, kumolocal_config,
-                      mmm_config, sht31_config]:
+for config_module in config_modules:
     SUPPORTED_THERMOSTATS.update(
         {config_module.ALIAS: config_module.supported_configs})
 
@@ -40,8 +46,7 @@ zone_number = 0  # default
 # dictionary of required env variables for each thermostat type
 thermostats = {
 }
-for config_module in [honeywell_config, kumocloud_config, kumolocal_config,
-                      mmm_config, sht31_config]:
+for config_module in config_modules:
     thermostats.update(
         {config_module.ALIAS: {"required_env_variables":
                                config_module.required_env_variables}})
@@ -87,6 +92,7 @@ def verify_required_env_variables(tstat, zone_str):
     returns:
         (bool): True if all keys are present, else False
     """
+    print("\nchecking required environment variables:")
     key_status = True  # default, all keys present
     for key in thermostats[tstat]["required_env_variables"]:
         # any env key ending in '_' should have zone number appended to it.
@@ -127,15 +133,17 @@ def parse_runtime_parameter(key, datatype, default_value,
         proposed_val = str(argv_list[get_argv_position(key)])
         util.log_msg("key='%s': using user override value '%s'" %
                      (key, argv_list[get_argv_position(key)]),
-                     mode=util.BOTH_LOG, func_name=1)
+                     mode=util.DEBUG_LOG + util.CONSOLE_LOG, func_name=1)
     except TypeError:
         util.log_msg("key='%s': argv parsing error, using default value '%s'" %
-                     (key, default_value), mode=util.BOTH_LOG, func_name=1)
+                     (key, default_value),
+                     mode=util.DEBUG_LOG + util.CONSOLE_LOG, func_name=1)
         proposed_val = str(default_value)
     except IndexError:
         util.log_msg("key='%s': argv parameter missing, "
                      "using default value '%s'" %
-                     (key, default_value), mode=util.BOTH_LOG, func_name=1)
+                     (key, default_value),
+                     mode=util.DEBUG_LOG + util.CONSOLE_LOG, func_name=1)
         proposed_val = str(default_value)
 
     # cast input for these keys into uppercase and target data type.

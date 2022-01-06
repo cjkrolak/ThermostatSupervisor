@@ -4,7 +4,6 @@ Integration test module for mmm.py.
 This test requires connection to mmm thermostat.
 """
 # built-in imports
-import pprint
 import unittest
 
 # local imports
@@ -18,7 +17,7 @@ import utilities as util
                  "integration tests are disabled")
 @unittest.skipIf(not utc.enable_mmm_tests,
                  "mmm tests are disabled")
-class IntegrationTest(utc.UnitTest):
+class IntegrationTest(utc.IntegrationTest):
     """
     Test functions in mmm.py.
 
@@ -26,6 +25,7 @@ class IntegrationTest(utc.UnitTest):
     and supervise loop is executed last.
     """
     def setUp(self):
+        self.setUpCommon()
         self.print_test_name()
 
         # argv list must be valid settings
@@ -41,24 +41,8 @@ class IntegrationTest(utc.UnitTest):
             ]
         self.mod = mmm
         self.mod_config = mmm_config
-
-    def test_B_MMMNetworkTiming(self):
-        """
-        Verify network timing for mmm thermostat on local net.
-        """
-        # measure thermostat response time
-        measurements = 100
-        print("Thermostat response times for %s measurements..." %
-              measurements)
-        meas_data = self.Zone.measure_thermostat_response_time(measurements)
-        ppp = pprint.PrettyPrinter(indent=4)
-        ppp.pprint(meas_data)
-
-        # fail test if thermostat timing margin is poor
-        self.assertTrue(meas_data['6sigma_upper'] < mmm.socket_timeout,
-                        "6 sigma timing margin (%s) is greater than "
-                        "timout setting (%s)" % (meas_data['6sigma_upper'],
-                                                 mmm.socket_timeout))
+        self.timeout_limit = mmm.socket_timeout
+        self.timing_measurements = 100
 
 
 if __name__ == "__main__":

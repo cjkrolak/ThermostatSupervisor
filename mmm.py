@@ -28,7 +28,7 @@ import utilities as util  # noqa E402
 socket_timeout = 30  # http socket timeout override
 
 
-class ThermostatClass(tc.ThermostatCommonZone):
+class ThermostatClass(tc.ThermostatCommon):
     """3m50 thermostat zone functions."""
 
     def __init__(self, zone):
@@ -41,6 +41,8 @@ class ThermostatClass(tc.ThermostatCommonZone):
             zone.
         """
         # construct the superclass
+        # tc.ThermostatCommonZone.__init__(self)
+        # tc.ThermostatCommon.__init__(self)
         super().__init__()
         self.thermostat_type = mmm_config.ALIAS
 
@@ -68,32 +70,32 @@ class ThermostatClass(tc.ThermostatCommonZone):
                             "ip address: %s" % self.ip_address) from e
         return self.device_id
 
-    def print_all_thermostat_metadata(self) -> None:
+    def print_all_thermostat_metadata(self, zone, debug=False):
         """
         Return initial meta data queried from thermostat.
 
         inputs:
-            None
+            zone(int) zone number
+            debug(bool): debug flag
         returns:
             None
         """
         # dump all meta data
-        self.get_all_metadata()
+        self.get_all_metadata(zone)
 
         # dump uiData in a readable format
-        return_data = self.get_latestdata()
-        pp = pprint.PrettyPrinter(indent=4)
-        pp.pprint(return_data)
+        self.exec_print_all_thermostat_metadata(
+            self.get_latestdata, [zone, debug])
 
-    def get_meta_data_dict(self) -> dict:
+    def get_meta_data_dict(self, zone) -> dict:
         """Build meta data dictionary from list of object attributes.
 
         inputs:
-            None
+            zone(int): zone number
         returns:
             (dict) of meta data
         """
-        util.log_msg("querying thermostat for meta data...",
+        util.log_msg("querying thermostat zone %s for meta data..." % zone,
                      mode=util.BOTH_LOG, func_name=1)
         attr_dict = {}
         ignore_fields = ['get', 'post', 'reboot', 'set_day_program']
@@ -111,18 +113,18 @@ class ThermostatClass(tc.ThermostatCommonZone):
                 attr_dict[key] = val
         return attr_dict
 
-    def get_all_metadata(self) -> list:
+    def get_all_metadata(self, zone) -> list:
         """
         Get all the current thermostat metadata.
 
         inputs:
-            None
+            zone(int): zone number
         returns:
             (list) of thermostat attributes.
         """
-        return self.get_meta_data_dict()
+        return self.get_meta_data_dict(zone)
 
-    def get_metadata(self, parameter=None) -> (dict, str):
+    def get_metadata(self, zone, parameter=None) -> (dict, str):
         """
         Get the current thermostat metadata settings.
 
@@ -133,32 +135,37 @@ class ThermostatClass(tc.ThermostatCommonZone):
           str if parameter != None
         """
         if parameter is None:
-            return self.get_meta_data_dict()
+            return self.get_meta_data_dict(zone)
         else:
             return self.device_id[parameter]['raw']
 
-    def get_latestdata(self) -> (dict, str):
+    def get_latestdata(self, zone, debug=False) -> (dict, str):
         """
         Get the current thermostat latest data.
 
         inputs:
-          None
+          zone(int): target zone
+          debug(bool): debug flag
         returns:
           dict if parameter=None
           str if parameter != None
         """
-        return self.get_meta_data_dict()
+        latest_data_dict = self.get_meta_data_dict(zone)
+        if debug:
+            util.log_msg("zone%s latestData: %s" % (zone, latest_data_dict),
+                         mode=util.BOTH_LOG, func_name=1)
+        return latest_data_dict
 
-    def get_uiData(self) -> dict:
+    def get_uiData(self, zone) -> dict:
         """
         Get the latest thermostat ui data
 
         inputs:
-          None
+          zone(int): target zone.
         returns:
           (dict)
         """
-        return self.get_meta_data_dict()
+        return self.get_meta_data_dict(zone)
 
     def get_uiData_param(self, parameter) -> dict:
         """
@@ -204,13 +211,13 @@ class ThermostatZone(tc.ThermostatCommonZone):
         self.thermostat_type = mmm_config.ALIAS
         self.device_id = Thermostat_obj.device_id
         self.zone_number = Thermostat_obj.zone_number
-        self.zone_name = self.get_zone_name(self.zone_number)
+        self.zone_name = self.get_zone_name()
 
         # runtime parameter defaults
         self.poll_time_sec = 10 * 60  # default to 10 minutes
         self.connection_time_sec = 8 * 60 * 60  # default to 8 hours
 
-    def get_zone_name(self, zone):
+    def get_zone_name(self, zone=None):
         """
         Return the name associated with the zone number.
 
@@ -219,7 +226,12 @@ class ThermostatZone(tc.ThermostatCommonZone):
         returns:
             (str) zone name
         """
-        return mmm_config.mmm_metadata[zone]["zone_name"]
+        if zone is None:
+            # pull from thermostat
+            return self.device_id.name['raw']
+        else:
+            # override from config file
+            return mmm_config.mmm_metadata[zone]["zone_name"]
 
     def get_display_temp(self) -> float:
         """
@@ -301,6 +313,69 @@ class ThermostatZone(tc.ThermostatCommonZone):
         """
         return int(self.device_id.tmode['raw'] ==
                    self.system_switch_position[self.AUTO_MODE])
+
+    def is_fan_mode(self) -> int:
+        """
+        Return the fan mode.
+
+        Fan mode is fan on for circulation but not applying heat or cooling.
+        inputs:
+            None
+        returns:
+            (int): 1=fan mode enabled, 0=disabled.
+        """
+        return int(self.device_id.fmode['raw'] == 2 and self.is_off_mode())
+
+    def is_off_mode(self) -> int:
+        """
+        Refresh the cached zone information and return the off mode.
+
+        inputs:
+            None
+        returns:
+            (int): off mode, 1=enabled, 0=disabled.
+        """
+        return int(self.device_id.tmode['raw'] ==
+                   self.system_switch_position[self.OFF_MODE] and
+                   not self.device_id.fmode['raw'] == 2)
+
+    def is_heating(self):
+        """Return 1 if heating relay is active, else 0."""
+        return int(self.is_heat_mode() and self.is_power_on() and
+                   self.get_heat_setpoint_raw() > self.get_display_temp())
+
+    def is_cooling(self):
+        """Return 1 if cooling relay is active, else 0."""
+        return int(self.is_cool_mode() and self.is_power_on() and
+                   self.get_cool_setpoint_raw() < self.get_display_temp())
+
+    def is_drying(self):
+        """Return 1 if drying relay is active, else 0."""
+        return 0  # not applicable
+
+    def is_auto(self):
+        """Return 1 if auto relay is active, else 0."""
+        return 0  # not applicable
+
+    def is_fanning(self):
+        """Return 1 if fan relay is active, else 0."""
+        return int(self.is_fan_on() and self.is_power_on())
+
+    def is_power_on(self):
+        """Return 1 if power relay is active, else 0."""
+        return int(self.device_id.power['raw'] > 0)
+
+    def is_fan_on(self):
+        """Return 1 if fan relay is active, else 0."""
+        return self.device_id.fstate['raw']
+
+    def is_defrosting(self):
+        """Return 1 if defrosting is active, else 0."""
+        return 0  # not applicable
+
+    def is_standby(self):
+        """Return 1 if standby is active, else 0."""
+        return 0  # not applicable
 
     def get_setpoint_list(self, sp_dict, day) -> list:
         """

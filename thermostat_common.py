@@ -4,6 +4,7 @@ Common Thermostat Class
 # built-ins
 import datetime
 import operator
+import pprint
 import time
 import statistics
 
@@ -24,18 +25,38 @@ class ThermostatCommon():
         self.device_id = util.bogus_int  # placeholder
         self.ip_address = None  # placeholder
 
-    def print_all_thermostat_metadata(self):
+    def print_all_thermostat_metadata(self, zone, debug=False):
         """
-        Print initial meta data queried from thermostat.
+        Print initial meta data queried from thermostat for specified zone.
 
         inputs:
-            None
+            zone(int): zone number
+            debug(bool): debug flag
         returns:
             None
         """
-        util.log_msg("WARNING: print_all_thermostat_metatdata() not yet "
-                     "implemented for this thermostat type\n",
+        del debug
+        util.log_msg("WARNING: print_all_thermostat_metatdata(%s) not yet "
+                     "implemented for this thermostat type\n" % zone,
                      mode=util.BOTH_LOG, func_name=1)
+
+    def exec_print_all_thermostat_metadata(self, func, args):
+        """
+        Print all metadata to screen.
+
+        inputs:
+            func(obj): function get metadata.
+            args(list): argument list
+        returns:
+            None
+        """
+        # dump metadata in a readable format
+        return_data = func(*args)
+        pp = pprint.PrettyPrinter(indent=4)
+        print("\n")
+        util.log_msg("raw thermostat meta data:",
+                     mode=util.BOTH_LOG, func_name=1)
+        pp.pprint(return_data)
 
 
 class ThermostatCommonZone():
@@ -87,6 +108,8 @@ class ThermostatCommonZone():
         self.humidity_is_available = False  # humidity supported flag
         self.hold_mode = False  # True = not following schedule
         self.hold_temporary = False
+        self.zone_info = {}  # dict containing zone data
+        self.last_fetch_time = None  # last fetch of zone_info
 
         # abstraction vars and funcs, defined in query_thermostat_zone
         self.current_mode = None  # integer representing mode
@@ -303,7 +326,9 @@ class ThermostatCommonZone():
         returns:
             True if successful, else False
         """
-        print("DEBUG in set_mode, target_mode=%s, doing nothing" % target_mode)
+        del target_mode  # not yet implemented
+        # print("DEBUG in set_mode, target_mode=%s, doing nothing" %
+        #       target_mode)
         return False
 
     def store_current_mode(self):
@@ -322,7 +347,6 @@ class ThermostatCommonZone():
             self.current_mode = self.OFF_MODE
         else:
             raise ValueError("unknown thermostat mode")
-        print("DEBUG: self.current_mode=%s" % self.current_mode)
 
     def validate_numeric(self, input_val, parameter_name):
         """
@@ -418,6 +442,10 @@ class ThermostatCommonZone():
 
     def is_auto(self):
         """Return 1 if auto relay is active, else 0."""
+        return util.bogus_int
+
+    def is_fanning(self):
+        """Return 1 if fan relay is active, else 0."""
         return util.bogus_int
 
     def set_heat_setpoint(self, temp: int) -> None:
@@ -571,6 +599,8 @@ class ThermostatCommonZone():
             None, cached data is refreshed.
         """
         del force_refresh  # not used in this template.
+        self.zone_info = {}
+        self.last_fetch_time = time.time()
         return  # placeholder
 
     def report_heating_parameters(self, switch_position=None):
@@ -616,6 +646,9 @@ class ThermostatCommonZone():
             "measurements": "measurements",
             }
 
+        print("\n")
+        util.log_msg("supervisor runtime parameters:",
+                     mode=util.BOTH_LOG, func_name=1)
         for inp, cls_method in user_input_to_class_mapping.items():
             user_input = user_inputs.get(inp)
             if user_input is not None:
@@ -674,38 +707,92 @@ class ThermostatCommonZone():
 
         return target_mode
 
-    def measure_thermostat_response_time(self, measurements=30):
+    def measure_thermostat_response_time(self, measurements=30,
+                                         func=None):
         """
         Measure Thermostat response time and report statistics.
 
         inputs:
             measurements(int): number of measurements
+            func(obj): target function to run during timing measurement.
         returns:
             (dict): measurement statistics.
         """
         delta_lst = []
         stats = {}
+        # set default measurement method if not provided.
+        if func is None:
+            func = self.get_display_temp
+
+        # measurement loop
         for n in range(measurements):
             t0 = time.time()
-            self.get_schedule_heat_sp()  # arbitrary command
+            func()  # target command
             t1 = time.time()
 
             # accumulate stats
             tdelta = t1 - t0
             delta_lst.append(tdelta)
-            util.log_msg("measurement %s=%.1f seconds" % (n, tdelta),
+            util.log_msg("measurement %s=%.2f seconds" % (n, tdelta),
                          mode=util.BOTH_LOG, func_name=1)
 
         # calc stats
         stats["measurements"] = measurements
-        stats["mean"] = round(statistics.mean(delta_lst), 1)
-        stats["stdev"] = round(statistics.stdev(delta_lst), 1)
-        stats["min"] = round(min(delta_lst), 1)
-        stats["max"] = round(max(delta_lst), 1)
+        stats["mean"] = round(statistics.mean(delta_lst), 2)
+        stats["stdev"] = round(statistics.stdev(delta_lst), 2)
+        stats["min"] = round(min(delta_lst), 2)
+        stats["max"] = round(max(delta_lst), 2)
         stats["3sigma_upper"] = round((3.0 * stats["stdev"] +
-                                      stats["mean"]), 1)
+                                      stats["mean"]), 2)
         stats["6sigma_upper"] = round((6.0 * stats["stdev"] +
-                                       stats["mean"]), 1)
+                                       stats["mean"]), 2)
+        return stats
+
+    def measure_thermostat_repeatability(self, measurements=30,
+                                         poll_interval_sec=0,
+                                         func=None):
+        """
+        Measure Thermostat repeatability and report statistics.
+
+        inputs:
+            measurements(int): number of measurements
+            poll_interval_sec(int): delay between measurements
+            func(obj): target function to run during repeatabilty measurement.
+        returns:
+            (dict): measurement statistics.
+        """
+        data_lst = []
+        stats = {}
+        # set default measurement method if not provided.
+        if func is None:
+            func = self.get_display_temp
+
+        # measurement loop
+        for n in range(measurements):
+            t0 = time.time()
+            data = func()  # target command
+            t1 = time.time()
+
+            # accumulate stats
+            tdelta = t1 - t0
+            data_lst.append(data)
+            util.log_msg("measurement %s=%s (deltaTime=%.2f sec, "
+                         "delay=%s sec)" %
+                         (n, data, tdelta, poll_interval_sec),
+                         mode=util.BOTH_LOG, func_name=1)
+            time.sleep(poll_interval_sec)
+            self.refresh_zone_info()
+
+        # calc stats
+        stats["measurements"] = measurements
+        stats["mean"] = round(statistics.mean(data_lst), 2)
+        stats["stdev"] = round(statistics.stdev(data_lst), 2)
+        stats["min"] = round(min(data_lst), 2)
+        stats["max"] = round(max(data_lst), 2)
+        stats["3sigma_upper"] = round((3.0 * stats["stdev"] +
+                                      stats["mean"]), 2)
+        stats["6sigma_upper"] = round((6.0 * stats["stdev"] +
+                                       stats["mean"]), 2)
         return stats
 
     def display_basic_thermostat_summary(self, mode=util.CONSOLE_LOG):
@@ -717,9 +804,10 @@ class ThermostatCommonZone():
         returns:
             None, prints data to log and/or console.
         """
+        print("\n")
         util.log_msg("current thermostat settings...",
                      mode=mode, func_name=1)
-        util.log_msg("zone name = %s" % self.zone_name,
+        util.log_msg("zone name='%s'" % self.zone_name,
                      mode=mode, func_name=1)
         util.log_msg("system switch position: %s (%s)" %
                      (self.get_system_switch_position(),
@@ -730,17 +818,22 @@ class ThermostatCommonZone():
         util.log_msg("thermostat display temp=%s" %
                      util.temp_value_with_units(self.get_display_temp()),
                      mode=mode, func_name=1)
-        util.log_msg("thermostat display humidity=%s RH" %
-                     self.get_display_humidity(),
+        util.log_msg("thermostat display humidity=%s" %
+                     util.humidity_value_with_units(
+                         self.get_display_humidity()),
                      mode=mode, func_name=1)
-        util.log_msg("heat set point=%s" % self.get_heat_setpoint(),
+        util.log_msg("heat set point=%s" %
+                     util.temp_value_with_units(self.get_heat_setpoint()),
                      mode=mode, func_name=1)
-        util.log_msg("cool set point=%s" % self.get_cool_setpoint(),
+        util.log_msg("cool set point=%s" %
+                     util.temp_value_with_units(self.get_cool_setpoint()),
                      mode=mode, func_name=1)
         util.log_msg("heat schedule set point=%s" %
-                     self.get_schedule_heat_sp(), mode=mode, func_name=1)
+                     util.temp_value_with_units(self.get_schedule_heat_sp()),
+                     mode=mode, func_name=1)
         util.log_msg("cool schedule set point=%s" %
-                     self.get_schedule_cool_sp(), mode=mode, func_name=1)
+                     util.temp_value_with_units(self.get_schedule_cool_sp()),
+                     mode=mode, func_name=1)
         util.log_msg("(schedule) heat program=%s" %
                      self.get_schedule_program_heat(),
                      mode=mode, func_name=1)
@@ -753,11 +846,14 @@ class ThermostatCommonZone():
         util.log_msg("cool mode=%s (actively cooling=%s)" %
                      (self.is_cool_mode(), self.is_cooling()),
                      mode=mode, func_name=1)
-        util.log_msg("dry mode=%s" % self.is_dry_mode(),
+        util.log_msg("dry mode=%s (actively drying=%s)" %
+                     (self.is_dry_mode(), self.is_drying()),
                      mode=mode, func_name=1)
-        util.log_msg("auto mode=%s" % self.is_auto_mode(),
+        util.log_msg("auto mode=%s (actively auto=%s)" %
+                     (self.is_auto_mode(), self.is_auto()),
                      mode=mode, func_name=1)
-        util.log_msg("fan mode=%s" % self.is_fan_mode(),
+        util.log_msg("fan mode=%s (actively fanning=%s)" %
+                     (self.is_fan_mode(), self.is_fanning()),
                      mode=mode, func_name=1)
         util.log_msg("off mode=%s" % self.is_off_mode(),
                      mode=mode, func_name=1)
@@ -798,6 +894,44 @@ class ThermostatCommonZone():
                      (util.get_function_name(2)), mode=util.BOTH_LOG)
 
 
+def create_thermostat_instance(api, thermostat_type, zone,
+                               ThermostatClass, ThermostatZone):
+    """
+    Create Thermostat and Zone instances.
+
+    inputs:
+        api(module): thermostat_api module.
+        tstat(int):  thermostat_type
+        zone(int): zone number
+        ThermostatClass(cls): Thermostat class
+        ThermostatZone(cls): ThermostatZone class
+    returns:
+        Thermostat(obj): Thermostat object
+        Zone(obj):  Zone object
+    """
+    util.log_msg.debug = True  # debug mode set
+
+    # verify required env vars
+    api.verify_required_env_variables(thermostat_type, str(zone))
+
+    # import hardware module
+    api.load_hardware_library(thermostat_type)
+
+    # create Thermostat object
+    Thermostat = ThermostatClass(zone)
+    Thermostat.print_all_thermostat_metadata(zone)
+
+    # create Zone object
+    Zone = ThermostatZone(Thermostat)
+
+    # update runtime overrides
+    api.user_inputs["thermostat_type"] = thermostat_type
+    api.user_inputs["zone"] = zone
+    Zone.update_runtime_parameters(api.user_inputs)
+
+    return Thermostat, Zone
+
+
 def thermostat_basic_checkout(api, thermostat_type, zone,
                               ThermostatClass, ThermostatZone):
     """
@@ -815,23 +949,10 @@ def thermostat_basic_checkout(api, thermostat_type, zone,
     """
     util.log_msg.debug = True  # debug mode set
 
-    # verify required env vars
-    api.verify_required_env_variables(thermostat_type, zone)
-
-    # import hardware module
-    api.load_hardware_library(thermostat_type)
-
-    # create Thermostat object
-    Thermostat = ThermostatClass(zone)
-    Thermostat.print_all_thermostat_metadata()
-
-    # create Zone object
-    Zone = ThermostatZone(Thermostat)
-
-    # update runtime overrides
-    api.user_inputs["thermostat_type"] = thermostat_type
-    api.user_inputs["zone"] = zone
-    Zone.update_runtime_parameters(api.user_inputs)
+    # create class instances
+    Thermostat, Zone = create_thermostat_instance(api, thermostat_type, zone,
+                                                  ThermostatClass,
+                                                  ThermostatZone)
 
     # print("thermostat meta data=%s\n" % Thermostat.get_all_metadata())
     Zone.display_basic_thermostat_summary()

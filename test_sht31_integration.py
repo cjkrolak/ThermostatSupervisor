@@ -25,13 +25,16 @@ class IntegrationTest(utc.IntegrationTest):
     and supervise loop is executed last.
     """
     def setUp(self):
+        self.setUpCommon()
         self.print_test_name()
 
         # argv list must be valid settings
         self.unit_test_argv = [
             "supervise.py",  # module
             "sht31",  # thermostat
-            str(sht31_config.LOFT_SHT31_REMOTE),  # zone, remote
+            # TODO #291 enhancement for local zone detection
+            #  str(0),  # zone for local net (loopback doesn't work)
+            sht31_config.LOFT_SHT31_REMOTE,  # zone, remote
             "30",  # poll time in sec
             "1000",  # reconnect time in sec
             "2",  # tolerance
@@ -40,6 +43,20 @@ class IntegrationTest(utc.IntegrationTest):
             ]
         self.mod = sht31
         self.mod_config = sht31_config
+
+        # network timing measurement
+        # mean timing = 0.5 sec per measurement plus 0.75 sec overhead
+        self.timeout_limit = (6.0 * 0.1 +
+                              (sht31_config.measurements * 0.5 + 0.75))
+
+        # temperature and humidity repeatability measurements
+        # settings below are tuned short term repeatability assessment
+        # assuming sht31_config.measurements = 10
+        self.temp_stdev_limit = 0.5  # 1 sigma temp repeatability limit in F
+        self.temp_repeatability_measurements = 30  # number of temp msmts.
+        self.humidity_stdev_limit = 0.5  # 1 sigma humid repeat. limit %RH
+        self.humidity_repeatability_measurements = 30  # number of temp msmts.
+        self.poll_interval_sec = 1  # delay between repeatability measurements
 
 
 if __name__ == "__main__":
