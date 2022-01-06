@@ -203,7 +203,7 @@ class IntegrationTest(UnitTest):
         ppp.pprint(meas_data)
 
         # fail test if thermostat timing margin is poor
-        self.assertTrue(meas_data['6sigma_upper'] < self.timeout_limit,
+        self.assertTrue(meas_data['6sigma_upper'] <= self.timeout_limit,
                         "6 sigma timing margin (%s) is greater than "
                         "timout setting (%s)" % (meas_data['6sigma_upper'],
                                                  self.timeout_limit))
@@ -230,7 +230,7 @@ class IntegrationTest(UnitTest):
         # fail test if thermostat temp repeatability is poor
         act_val = meas_data['stdev']
         self.assertTrue(
-            act_val < self.temp_stdev_limit,
+            act_val <= self.temp_stdev_limit,
             "temperature stdev (%s) is greater than "
             "temp repeatability limit (%s)" % (act_val,
                                                self.temp_stdev_limit))
@@ -263,7 +263,7 @@ class IntegrationTest(UnitTest):
         # fail test if thermostat humidity repeatability is poor
         act_val = meas_data['stdev']
         self.assertTrue(
-            act_val < self.humidity_stdev_limit,
+            act_val <= self.humidity_stdev_limit,
             "humidity stdev (%s) is greater than "
             "humidity repeatability limit (%s)" %
             (act_val, self.humidity_stdev_limit))
