@@ -17,8 +17,8 @@ supervisor to detect and correct thermostat deviations<br/>
 ## dependencies:
 pyhtcc for Honeywell thermostats (pip3 install pyhtcc)<br/>
 radiotherm for 3m50 thermostats (mhrivnak/radiotherm or pip3 install radiotherm)<br/>
-flask, flask_resful, and fask_wtf for sht31 flask server<br/>
-flask and flask_wtf for supervisor flask server<br/>
+flask, flask-resful, and fask-wtf for sht31 flask server<br/>
+flask and flask-wtf for supervisor flask server<br/>
 pykumo for kumocloud<br/>
 coverage for code coverage analysis<br/>
 psutil for all thermostat types<br/>
