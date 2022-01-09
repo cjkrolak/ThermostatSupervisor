@@ -19,7 +19,7 @@ import utilities as util
 enable_integration_tests = True  # use to bypass integration tests
 enable_kumolocal_tests = False  # Kumolocal is local net only
 enable_mmm_tests = False  # mmm50 is local net only
-enable_sht31_tests = False  # sht31 can fail on occasion
+enable_sht31_tests = True  # sht31 can fail on occasion
 
 
 # generic argv list for unit testing
@@ -202,7 +202,13 @@ class IntegrationTest(UnitTest):
         ppp = pprint.PrettyPrinter(indent=4)
         ppp.pprint(meas_data)
 
-        # fail test if thermostat timing margin is poor
+        # fail test if any measurement fails the limit.
+        self.assertTrue(meas_data['max'] <= self.timeout_limit,
+                        "max value observed (%s) is greater than "
+                        "timout setting (%s)" % (meas_data['max'],
+                                                 self.timeout_limit))
+
+        # fail test if thermostat timing margin is poor vs. 6 sigma value
         self.assertTrue(meas_data['6sigma_upper'] <= self.timeout_limit,
                         "6 sigma timing margin (%s) is greater than "
                         "timout setting (%s)" % (meas_data['6sigma_upper'],

@@ -33,8 +33,8 @@ class IntegrationTest(utc.IntegrationTest):
             "supervise.py",  # module
             "sht31",  # thermostat
             # TODO #291 enhancement for local zone detection
-            #  str(0),  # zone for local net (loopback doesn't work)
-            sht31_config.LOFT_SHT31_REMOTE,  # zone, remote
+            str(0),  # zone for local net (loopback doesn't work)
+            # sht31_config.LOFT_SHT31_REMOTE,  # zone, remote
             "30",  # poll time in sec
             "1000",  # reconnect time in sec
             "2",  # tolerance
