@@ -26,8 +26,10 @@ BASEMENT_3M50 = 1  # zone 1
 mmm_metadata = {
     MAIN_3M50: {"ip_address": "192.168.86.82",  # local IP
                 "zone_name": "Main Level",
+                "host_name": "thermostat-fd-b3-be.lan",
                 },
     BASEMENT_3M50: {"ip_address": "192.168.86.83",  # local IP
                     "zone_name": "Basement",
+                    "host_name": "thermostat-27-67-11.lan",
                     }
 }

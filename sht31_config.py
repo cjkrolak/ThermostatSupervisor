@@ -61,10 +61,17 @@ supported_configs = {"module": "sht31",
                      "zones": [0, 1, UNIT_TEST_ZONE],
                      "modes": ["OFF_MODE"]}
 
-zone_names = {
-    LOFT_SHT31: "Loft (local)",
-    LOFT_SHT31_REMOTE: "loft (remote)",
-    UNIT_TEST_ZONE: "unittest",
+sht31_metadata = {
+    LOFT_SHT31: {"zone_name": "Loft (local)",
+                 "host_name": "raspberrypi.lan",
+                 "ip_address": "192.168.86.15",  # local IP
+                 },
+    LOFT_SHT31_REMOTE: {"zone_name": "loft (remote)",
+                        "host_name": "none",
+                        },
+    UNIT_TEST_ZONE: {"zone_name": "unittest",
+                     "host_name": "none",
+                     },
     }
 
 # SHT31D config

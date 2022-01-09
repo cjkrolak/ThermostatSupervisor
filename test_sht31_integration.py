@@ -29,12 +29,18 @@ class IntegrationTest(utc.IntegrationTest):
         self.print_test_name()
 
         # argv list must be valid settings
+        local_host = sht31_config.sht31_metadata[
+            sht31_config.LOFT_SHT31]["host_name"]
+        local_ip = sht31_config.sht31_metadata[
+            sht31_config.LOFT_SHT31]["ip_address"]
         self.unit_test_argv = [
             "supervise.py",  # module
             "sht31",  # thermostat
-            # TODO #291 enhancement for local zone detection
-            # str(0),  # zone for local net (loopback doesn't work)
-            sht31_config.LOFT_SHT31_REMOTE,  # zone, remote
+            # loopback does not work so use local sht31 zone if testing
+            # on the local net.  If not, use the DNS name.
+            str([sht31_config.LOFT_SHT31_REMOTE,
+                 sht31_config.LOFT_SHT31][
+                     util.is_thermostat_on_local_net(local_host, local_ip)]),
             "30",  # poll time in sec
             "1000",  # reconnect time in sec
             "2",  # tolerance
