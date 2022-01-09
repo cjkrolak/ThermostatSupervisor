@@ -413,8 +413,8 @@ def is_thermostat_on_local_net(host_name, ip_address):
     Return True if specified thermostat is on local network.
 
     inputs:
-        ip_address(str): target IP address on local net.
         host_name(str): expected host name.
+        ip_address(str): target IP address on local net.
     returns:
         (bool): True if confirmed on local net, else False.
     """
