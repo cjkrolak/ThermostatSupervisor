@@ -9,7 +9,7 @@ import thermostat_common as tc
 import utilities as util
 
 # pykumo
-pykumo_debug = True  # debug uses local pykumo repo instead of pkg
+pykumo_debug = False  # debug uses local pykumo repo instead of pkg
 if pykumo_debug and not util.is_azure_environment():
     # begin local import
     import importlib.util

@@ -25,7 +25,7 @@ import thermostat_common as tc  # noqa E402
 import utilities as util  # noqa E402
 
 
-socket_timeout = 30  # http socket timeout override
+socket_timeout = 45  # http socket timeout override
 
 
 class ThermostatClass(tc.ThermostatCommon):
@@ -758,7 +758,8 @@ if __name__ == "__main__":
         ThermostatClass, ThermostatZone)
 
     # measure thermostat response time
-    measurements = 30
+    measurements = 60  # running higher than normal count here because
+    # intermittent failures have been observed.
     print("Thermostat response times for %s measurements..." % measurements)
     meas_data = Zone.measure_thermostat_response_time(measurements)
     ppp = pprint.PrettyPrinter(indent=4)
