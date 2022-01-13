@@ -1,6 +1,7 @@
 """KumoCloud integration"""
 import os
 import time
+import traceback
 
 # local imports
 import kumocloud_config
@@ -180,17 +181,23 @@ class ThermostatZone(tc.ThermostatCommonZone):
                 parent_dict = grandparent_dict[parent_key]
                 return_val = parent_dict[key]
             except KeyError as e:
-                raise e
+                util.log_msg(traceback.format_exc(),
+                             mode=util.BOTH_LOG, func_name=1)
+                # raise e
         elif parent_key is not None:
             try:
                 parent_dict = self.zone_info[parent_key]
                 return_val = parent_dict[key]
             except KeyError as e:
+                util.log_msg(traceback.format_exc(),
+                             mode=util.BOTH_LOG, func_name=1)
                 raise e
         else:
             try:
                 return_val = self.zone_info[key]
             except KeyError as e:
+                util.log_msg(traceback.format_exc(),
+                             mode=util.BOTH_LOG, func_name=1)
                 raise e
         return return_val
 

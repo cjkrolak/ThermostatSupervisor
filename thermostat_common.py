@@ -6,6 +6,7 @@ import datetime
 import operator
 import pprint
 import time
+import traceback
 import statistics
 
 # local imports
@@ -127,8 +128,13 @@ class ThermostatCommonZone():
         """Return the current mode and set mode-specific parameters."""
 
         # current temperature
-        self.display_temp = self.validate_numeric(self.get_display_temp(),
-                                                  "get_display_temp")
+        try:
+            self.display_temp = self.validate_numeric(self.get_display_temp(),
+                                                      "get_display_temp")
+        except TypeError:
+            util.log_msg(traceback.format_exc(),
+                         mode=util.BOTH_LOG, func_name=1)
+            self.display_temp = None
 
         # current humidity
         self.display_humidity = self.get_display_humidity()

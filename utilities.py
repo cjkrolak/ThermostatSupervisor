@@ -387,7 +387,9 @@ def c_to_f(tempc) -> float:
     returns:
         (float): temp in deg f.
     """
-    if isinstance(tempc, (int, float)):
+    if isinstance(tempc, type(None)):
+        return tempc  # pass thru
+    elif isinstance(tempc, (int, float)):
         return tempc * 9.0 / 5 + 32
     else:
         raise TypeError("raw value '%s' is not an int or float" % tempc)
@@ -402,7 +404,9 @@ def f_to_c(tempf) -> float:
     returns:
         (float): temp in deg c.
     """
-    if isinstance(tempf, (int, float)):
+    if isinstance(tempf, type(None)):
+        return tempf  # pass thru
+    elif isinstance(tempf, (int, float)):
         return (tempf - 32) * 5 / 9.0
     else:
         raise TypeError("raw value '%s' is not an int or float" % tempf)

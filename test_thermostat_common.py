@@ -264,7 +264,7 @@ class Test(utc.UnitTest):
 
     def test_ValidateNumeric(self):
         """Test validate_numeric() function."""
-        for test_case in [1, 1.0, "1", True]:
+        for test_case in [1, 1.0, "1", True, None]:
             print("test case=%s" % type(test_case))
             if isinstance(test_case, (int, float)):
                 expected_val = test_case
