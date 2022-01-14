@@ -232,11 +232,11 @@ class ThermostatZone(tc.ThermostatCommonZone):
         returns:
             (float, None): indoor humidity in %RH, None if not supported.
         """
-        self.refresh_zone_info()
         if not self.get_is_humidity_supported():
             return None
         else:
             # untested, don't have humidity support
+            # zone refreshed during if clause above
             return util.c_to_f(self.get_parameter('humidity',
                                                   'reportedCondition'))
 
@@ -250,6 +250,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         returns:
             (booL): True if is in humidity sensor is available and not faulted.
         """
+        self.refresh_zone_info()
         return self.get_parameter('humidistat', 'inputs',
                                   'acoilSettings')
 
@@ -262,7 +263,6 @@ class ThermostatZone(tc.ThermostatCommonZone):
         returns:
             (int) heat mode, 1=enabled, 0=disabled.
         """
-        self.refresh_zone_info()
         return int(self.get_system_switch_position() ==
                    self.system_switch_position[
                        tc.ThermostatCommonZone.HEAT_MODE])
@@ -276,7 +276,6 @@ class ThermostatZone(tc.ThermostatCommonZone):
         returns:
             (int): cool mode, 1=enabled, 0=disabled.
         """
-        self.refresh_zone_info()
         return int(self.get_system_switch_position() ==
                    self.system_switch_position[
                        tc.ThermostatCommonZone.COOL_MODE])
@@ -290,7 +289,6 @@ class ThermostatZone(tc.ThermostatCommonZone):
         returns:
             (int): dry mode, 1=enabled, 0=disabled.
         """
-        self.refresh_zone_info()
         return int(self.get_system_switch_position() ==
                    self.system_switch_position[
                        tc.ThermostatCommonZone.DRY_MODE])
@@ -304,7 +302,6 @@ class ThermostatZone(tc.ThermostatCommonZone):
         returns:
             (int): fan mode, 1=enabled, 0=disabled.
         """
-        self.refresh_zone_info()
         return int(self.get_system_switch_position() ==
                    self.system_switch_position[
                        tc.ThermostatCommonZone.FAN_MODE])
@@ -318,7 +315,6 @@ class ThermostatZone(tc.ThermostatCommonZone):
         returns:
             (int): auto mode, 1=enabled, 0=disabled.
         """
-        self.refresh_zone_info()
         return int(self.get_system_switch_position() ==
                    self.system_switch_position[
                        tc.ThermostatCommonZone.AUTO_MODE])
@@ -332,39 +328,33 @@ class ThermostatZone(tc.ThermostatCommonZone):
         returns:
             (int): off mode, 1=enabled, 0=disabled.
         """
-        self.refresh_zone_info()
         return int(self.get_system_switch_position() ==
                    self.system_switch_position[
                        tc.ThermostatCommonZone.OFF_MODE])
 
     def is_heating(self):
         """Return 1 if heating relay is active, else 0."""
-        self.refresh_zone_info()
         return int(self.is_heat_mode() and self.is_power_on() and
                    self.get_heat_setpoint_raw() > self.get_display_temp())
 
     def is_cooling(self):
         """Return 1 if cooling relay is active, else 0."""
-        self.refresh_zone_info()
         return int(self.is_cool_mode() and self.is_power_on() and
                    self.get_cool_setpoint_raw() < self.get_display_temp())
 
     def is_drying(self):
         """Return 1 if drying relay is active, else 0."""
-        self.refresh_zone_info()
         return int(self.is_dry_mode() and self.is_power_on() and
                    self.get_cool_setpoint_raw() < self.get_display_temp())
 
     def is_auto(self):
         """Return 1 if auto relay is active, else 0."""
-        self.refresh_zone_info()
         return int(self.is_auto_mode() and self.is_power_on() and
                    (self.get_cool_setpoint_raw() < self.get_display_temp() or
                     self.get_heat_setpoint_raw() > self.get_display_temp()))
 
     def is_fanning(self):
         """Return 1 if fan relay is active, else 0."""
-        self.refresh_zone_info()
         return int(self.is_fan_on() and self.is_power_on())
 
     def is_power_on(self):
