@@ -384,6 +384,23 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
                    self.system_switch_position[
                        tc.ThermostatCommonZone.DRY_MODE])
 
+    def is_fan_mode(self) -> int:
+        """
+        Refresh the cached zone information and return the fan mode.
+
+        Fan mode on Honeywell is defined as in off mode with fan set to
+        on or circulate modes.
+        inputs:
+            None
+        returns:
+            (int): fan mode, 1=enabled, 0=disabled.
+        """
+        self.refresh_zone_info()
+        return int(self.get_system_switch_position() ==
+                   self.system_switch_position[
+                       tc.ThermostatCommonZone.OFF_MODE] and
+                   (self.is_fan_on_mode() or self.is_fan_circulate_mode()))
+
     def is_auto_mode(self) -> int:
         """
         Return the auto mode.
@@ -419,6 +436,55 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
         """
         self.refresh_zone_info()
         return int(self.zone_info['latestData']['uiData']['StatusCool'])
+
+    def is_drying(self):
+        """Return 1 if drying relay is active, else 0."""
+        self.refresh_zone_info()
+        return int(self.is_dry_mode() and self.is_power_on() and
+                   self.get_cool_setpoint_raw() < self.get_display_temp())
+
+    def is_auto(self):
+        """Return 1 if auto relay is active, else 0."""
+        self.refresh_zone_info()
+        return int(self.is_auto_mode() and self.is_power_on() and
+                   (self.get_cool_setpoint_raw() < self.get_display_temp() or
+                    self.get_heat_setpoint_raw() > self.get_display_temp()))
+
+    def is_fanning(self):
+        """Return 1 if fan relay is active, else 0."""
+        self.refresh_zone_info()
+        return int((self.is_fan_on() or self.is_fan_circulate_mode())
+                   and self.is_power_on())
+
+    def is_fan_circulate_mode(self):
+        """Return 1 if fan is in circulate mode, else 0."""
+        self.refresh_zone_info()
+        return int(self.zone_info['latestData']['fanData'][
+            'fanMode'] == 2)
+
+    def is_fan_auto_mode(self):
+        """Return 1 if fan is in auto mode, else 0."""
+        self.refresh_zone_info()
+        return int(self.zone_info['latestData']['fanData'][
+            'fanMode'] == 0)
+
+    def is_fan_on_mode(self):
+        """Return 1 if fan is in always on mode, else 0."""
+        self.refresh_zone_info()
+        return int(self.zone_info['latestData']['fanData'][
+            'fanMode'] == 1)
+
+    def is_power_on(self):
+        """Return 1 if power relay is active, else 0."""
+        self.refresh_zone_info()
+        # just a guess, not sure what position 0 is yet.
+        return int(self.zone_info['latestData']['uiData'][
+            'SystemSwitchPosition'] > 0)
+
+    def is_fan_on(self):
+        """Return 1 if fan relay is active, else 0."""
+        self.refresh_zone_info()
+        return int(self.zone_info['latestData']['fanData']['fanIsRunning'])
 
     def get_schedule_heat_sp(self) -> int:  # used
         """
