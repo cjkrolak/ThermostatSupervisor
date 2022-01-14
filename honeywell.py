@@ -424,7 +424,8 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
             (int) 1 if heating is active, else 0.
         """
         self.refresh_zone_info()
-        return int(self.zone_info['latestData']['uiData']['StatusHeat'])
+        return int(self.is_heat_mode() and
+                   self.get_display_temp() < self.get_heat_setpoint_raw())
 
     def is_cooling(self) -> int:
         """
@@ -435,7 +436,8 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
             (int): 1 if cooling is active, else 0.
         """
         self.refresh_zone_info()
-        return int(self.zone_info['latestData']['uiData']['StatusCool'])
+        return int(self.is_cool_mode() and
+                   self.get_display_temp() > self.get_cool_setpoint_raw())
 
     def is_drying(self):
         """Return 1 if drying relay is active, else 0."""
