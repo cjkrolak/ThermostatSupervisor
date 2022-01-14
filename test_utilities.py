@@ -58,25 +58,29 @@ class EnvironmentTests(utc.UnitTest):
                         "get_local_ip() returned '%s' which is not "
                         "between 7 and 15 chars")
 
-    def test_IsThermostatOnLocalNet(self):
+    def test_IsHostOnLocalNet(self):
         """
-        Verify is_thermostat_on_local_net() runs as expected.
+        Verify is_host_on_local_net() runs as expected.
+
+        util.is_host_on_local_net is not reliable when passing
+        in an IP address so most test cases are for hostname only.
         """
         test_cases = [
             # [host_name, ip_address, expected_result]
-            ['testwifi.here', '192.168.86.1',
+            ['testwifi.here', None,
              not util.is_azure_environment()],  # Google wifi router
-            ['gateway743dd9.lan', '192.168.86.250',
-             not util.is_azure_environment()],  # Honeywell
+            ['gateway743dd9.lan', None,
+             not util.is_azure_environment()],  # Honeywell tstat
             ['bogus_host', '192.168.86.145', False],  # bogus host
+            ['bogus_host', None, False],  # bogus host without IP
             ['dns.google', '8.8.8.8', True],  # should pass everywhere
             ]
 
         for test_case in test_cases:
             print("testing for '%s' at %s, expect %s" %
                   (test_case[0], test_case[1], test_case[2]))
-            result = util.is_thermostat_on_local_net(test_case[0],
-                                                     test_case[1])
+            result = util.is_host_on_local_net(test_case[0],
+                                               test_case[1])
             self.assertEqual(result, test_case[2],
                              "test_case=%s, expected=%s, actual=%s" %
                              (test_case[0], test_case[2], result))
@@ -327,15 +331,18 @@ class MetricsTests(utc.UnitTest):
         """Verify C to F calculations."""
 
         # int and float cases
-        for tempc in [0, -19, 34, 101, -44.1]:
+        for tempc in [0, -19, 34, 101, -44.1, None]:
             tempf = util.c_to_f(tempc)
-            expected_tempf = tempc * 9.0 / 5 + 32
+            if tempc is None:
+                expected_tempf = None  # pass-thru
+            else:
+                expected_tempf = tempc * 9.0 / 5 + 32
             self.assertEqual(expected_tempf, tempf, "test case %s: "
                              "expected=%s, actual=%s" %
                              (tempc, expected_tempf, tempf))
 
         # verify exception cases
-        for tempc in ['0', None, "", "*"]:
+        for tempc in ['0', "", "*"]:
             with self.assertRaises(TypeError):
                 tempf = util.c_to_f(tempc)
             # expected_tempf = tempc
@@ -347,15 +354,18 @@ class MetricsTests(utc.UnitTest):
         """Verify F to C calculations."""
 
         # int and float cases
-        for tempf in [0, -19, 34, 101, -44.1]:
+        for tempf in [0, -19, 34, 101, -44.1, None]:
             tempc = util.f_to_c(tempf)
-            expected_tempc = (tempf - 32) * 5 / 9.0
+            if tempf is None:
+                expected_tempc = None  # pass-thru
+            else:
+                expected_tempc = (tempf - 32) * 5 / 9.0
             self.assertEqual(expected_tempc, tempc, "test case %s: "
                              "expected=%s, actual=%s" %
                              (tempf, expected_tempc, tempc))
 
         # verify exception case
-        for tempf in ['0', None, "", "*"]:
+        for tempf in ['0', "", "*"]:
             with self.assertRaises(TypeError):
                 tempc = util.f_to_c(tempf)
             # expected_tempc = tempf  # pass-thru
