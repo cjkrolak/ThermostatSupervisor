@@ -197,7 +197,7 @@ class ThermostatClass(pyhtcc.PyHTCC, tc.ThermostatCommon):
                                 f"page: {self._locationId}, {page_num}")
             try:
                 data = result.json()
-            except Exception:
+            except Exception:  # noqa w0703 too general exception
                 # we can get a 200 with non-json data if pages aren't needed.
                 # Though the 1st page shouldn't give non-json.
                 if page_num == 1:
@@ -694,10 +694,11 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
         """
         number_of_retries = 3
         trial_number = 1
+        retry_delay_sec = 60
         while trial_number < number_of_retries:
             try:
                 all_zones_info = self.pyhtcc.get_zones_info()
-            except Exception:
+            except Exception:  # noqa w0703 too general exception
                 # catching simplejson.errors.JSONDecodeError
                 # using Exception since simplejson is not imported
                 util.log_msg(traceback.format_exc(),
@@ -707,11 +708,13 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
                              "%s of %s, probably a"
                              " connection issue%s" %
                              (trial_number, number_of_retries,
-                              ["", ", waiting 30 seconds and then retrying..."]
+                              ["",
+                               ", waiting %s seconds and then retrying..." %
+                               retry_delay_sec]
                               [trial_number < number_of_retries]),
                              mode=util.BOTH_LOG, func_name=1)
                 if trial_number < number_of_retries:
-                    time.sleep(30)
+                    time.sleep(retry_delay_sec)
                 trial_number += 1
             else:
                 # log the mitigated failure
