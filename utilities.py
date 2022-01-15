@@ -387,7 +387,9 @@ def c_to_f(tempc) -> float:
     returns:
         (float): temp in deg f.
     """
-    if isinstance(tempc, (int, float)):
+    if isinstance(tempc, type(None)):
+        return tempc  # pass thru
+    elif isinstance(tempc, (int, float)):
         return tempc * 9.0 / 5 + 32
     else:
         raise TypeError("raw value '%s' is not an int or float" % tempc)
@@ -402,32 +404,53 @@ def f_to_c(tempf) -> float:
     returns:
         (float): temp in deg c.
     """
-    if isinstance(tempf, (int, float)):
+    if isinstance(tempf, type(None)):
+        return tempf  # pass thru
+    elif isinstance(tempf, (int, float)):
         return (tempf - 32) * 5 / 9.0
     else:
         raise TypeError("raw value '%s' is not an int or float" % tempf)
 
 
-def is_thermostat_on_local_net(host_name, ip_address):
+def is_host_on_local_net(host_name, ip_address=None):
     """
-    Return True if specified thermostat is on local network.
+    Return True if specified host is on local network.
+
+    socket.gethostbyaddr() throws exception for some IP address
+    so preferred way to use this function is to pass in only the
+    hostname and leave the IP as default (None).
 
     inputs:
-        ip_address(str): target IP address on local net.
         host_name(str): expected host name.
+        ip_address(str): target IP address on local net.
     returns:
         (bool): True if confirmed on local net, else False.
     """
-    try:
-        host_found = socket.gethostbyaddr(ip_address)
+    host_found = None
+    # find by hostname alone if IP is None
+    if ip_address is None:
+        try:
+            host_found = socket.gethostbyname(host_name)
+        except socket.gaierror:
+            return False
+        if host_found:
+            print("host %s found at %s" % (host_name, host_found))
+            return True
+        else:
+            return False
+
+    else:
+        # match both IP and host if both are provided.
+        try:
+            host_found = socket.gethostbyaddr(ip_address)
+        except socket.herror:  # exception if DNS name is not set
+            return False
         if host_name == host_found[0]:
             return True
         else:
             print("DEBUG: expected host=%s, actual host=%s" %
                   (host_name, host_found))
             return False
-    except socket.herror:
-        return False
 
 
 def is_azure_environment():

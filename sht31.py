@@ -212,7 +212,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         returns:
             (str): zone name
         """
-        return sht31_config.zone_names[zone]
+        return sht31_config.sht31_metadata[zone]["zone_name"]
 
     def get_metadata(self, parameter=None, retry=True):
         """

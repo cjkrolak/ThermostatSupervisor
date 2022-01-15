@@ -9,7 +9,7 @@ import thermostat_common as tc
 import utilities as util
 
 # pykumo
-pykumo_debug = True  # debug uses local pykumo repo instead of pkg
+pykumo_debug = False  # debug uses local pykumo repo instead of pkg
 if pykumo_debug and not util.is_azure_environment():
     # begin local import
     import importlib.util
@@ -288,7 +288,6 @@ class ThermostatZone(tc.ThermostatCommonZone):
         returns:
             (int): fan mode, 1=enabled, 0=disabled.
         """
-        self.refresh_zone_info()
         return int(self.get_system_switch_position() ==
                    self.system_switch_position[
                        tc.ThermostatCommonZone.FAN_MODE])
@@ -316,39 +315,33 @@ class ThermostatZone(tc.ThermostatCommonZone):
         returns:
             (int): off mode, 1=enabled, 0=disabled.
         """
-        self.refresh_zone_info()
         return int(self.get_system_switch_position() ==
                    self.system_switch_position[
                        tc.ThermostatCommonZone.OFF_MODE])
 
     def is_heating(self):
         """Return 1 if heating relay is active, else 0."""
-        self.refresh_zone_info()
         return int(self.is_heat_mode() and self.is_power_on() and
                    self.get_heat_setpoint_raw() > self.get_display_temp())
 
     def is_cooling(self):
         """Return 1 if cooling relay is active, else 0."""
-        self.refresh_zone_info()
         return int(self.is_cool_mode() and self.is_power_on() and
                    self.get_cool_setpoint_raw() < self.get_display_temp())
 
     def is_drying(self):
         """Return 1 if drying relay is active, else 0."""
-        self.refresh_zone_info()
         return int(self.is_dry_mode() and self.is_power_on() and
                    self.get_cool_setpoint_raw() < self.get_display_temp())
 
     def is_auto(self):
         """Return 1 if auto relay is active, else 0."""
-        self.refresh_zone_info()
         return int(self.is_auto_mode() and self.is_power_on() and
                    (self.get_cool_setpoint_raw() < self.get_display_temp() or
                     self.get_heat_setpoint_raw() > self.get_display_temp()))
 
     def is_fanning(self):
         """Return 1 if fan relay is active, else 0."""
-        self.refresh_zone_info()
         return int(self.is_fan_on() and self.is_power_on())
 
     def is_power_on(self):
