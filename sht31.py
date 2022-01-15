@@ -27,12 +27,13 @@ import utilities as util
 class ThermostatClass(tc.ThermostatCommon):
     """SHT31 thermometer functions."""
 
-    def __init__(self, zone):
+    def __init__(self, zone, path=sht31_config.flask_folder.production):
         """
         Constructor, connect to thermostat.
 
         inputs:
             zone(str):  zone of thermostat.
+            path(str):  path on flask server, default = production
             sht31_ip dict above must have correct IP address for each
             zone.
         """
@@ -43,14 +44,16 @@ class ThermostatClass(tc.ThermostatCommon):
         self.thermostat_type = sht31_config.ALIAS
         self.zone_number = int(zone)
         self.ip_address = self.get_target_zone_id(self.zone_number)
+        self.path = path
 
         # URL and port configuration
         self.port = str(sht31_config.flask_port)  # Flask server port on host
-        if self.zone_number == sht31_config.UNIT_TEST_ZONE:
-            self.path = sht31_config.FLASK_UNIT_TEST_FOLDER
+        if (self.zone_number == sht31_config.UNIT_TEST_ZONE and
+                self.path == sht31_config.flask_folder.production):
+            self.path = sht31_config.flask_folder.unit_test
             self.unit_test_seed = "?seed=" + str(sht31_config.unit_test_seed)
         else:
-            self.path = ""
+            # self.path = ""
             self.unit_test_seed = ""
         self.measurements = "?measurements=" + str(sht31_config.measurements)
         self.url = (sht31_config.flask_url_prefix + self.ip_address + ":" +
@@ -131,10 +134,11 @@ class ThermostatClass(tc.ThermostatCommon):
             zone(int): target zone
             debug(bool): debug flag
         returns:
-            None
+            (dict): return data
         """
-        self.exec_print_all_thermostat_metadata(
+        return_data = self.exec_print_all_thermostat_metadata(
             self.get_all_metadata, [zone, debug])
+        return return_data
 
     def get_all_metadata(self, zone, retry=True):
         """

@@ -49,7 +49,7 @@ class ThermostatCommon():
             func(obj): function get metadata.
             args(list): argument list
         returns:
-            None
+            (dict): return data
         """
         # dump metadata in a readable format
         return_data = func(*args)
@@ -58,6 +58,7 @@ class ThermostatCommon():
         util.log_msg("raw thermostat meta data:",
                      mode=util.BOTH_LOG, func_name=1)
         pp.pprint(return_data)
+        return return_data
 
 
 class ThermostatCommonZone():

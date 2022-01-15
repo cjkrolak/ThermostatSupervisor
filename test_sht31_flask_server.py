@@ -33,6 +33,48 @@ class IntegrationTest(utc.UnitTest):
 
     @unittest.skipIf(util.is_azure_environment(),
                      "this test not supported on Azure Pipelines")
+    def test_SHT31_FlaskServer_All_Pages(self):
+        """
+        Confirm all pages return data from Flask server.
+        """
+        # loopback does not work so use local sht31 zone if testing
+        # on the local net.  If not, use the DNS name.
+        local_host = sht31_config.sht31_metadata[
+            sht31_config.LOFT_SHT31]["host_name"]
+        zone = str([sht31_config.LOFT_SHT31_REMOTE,
+                    sht31_config.LOFT_SHT31][
+                        util.is_host_on_local_net(local_host)])
+
+        for test_case in sht31_config.flask_folder:
+            print("test_case=%s" % test_case)
+            Thermostat = \
+                sht31.ThermostatClass(
+                    zone, path=sht31_config.flask_folder[test_case])
+            print("printing thermostat meta data:")
+            return_data = Thermostat.print_all_thermostat_metadata(
+                zone)
+
+            # validate dictionary was returned
+            self.assertTrue(isinstance(return_data, dict),
+                            "return data is not a dictionary")
+
+            # validate key as proof of correct return page
+            if test_case in ["production", "unit_test"]:
+                expected_key = "measurements"
+            elif test_case in ["diag", "clear_diag", "enable_heater",
+                               "disable_heater", "soft_reset"]:
+                expected_key = "raw_binary"
+            elif test_case == "reset":
+                expected_key = "message"
+            else:
+                expected_key = "bogus"
+            self.assertTrue(expected_key in return_data,
+                            "test_case '%s': key '%s' was not found in "
+                            "return data: %s" %
+                            (test_case, expected_key, return_data))
+
+    @unittest.skipIf(util.is_azure_environment(),
+                     "this test not supported on Azure Pipelines")
     def test_SHT31_FlaskServer(self):
         """
         Confirm Flask server returns valid data.
