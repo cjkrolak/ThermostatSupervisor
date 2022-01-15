@@ -13,16 +13,11 @@ import unit_test_common as utc
 import utilities as util
 
 
-@unittest.skipIf(not utc.enable_integration_tests,
-                 "integration tests are disabled")
 class IntegrationTest(utc.IntegrationTest):
     """
     Test functions in kumocloud.py.
-
-    Tests are named to ensure basic checkout is executed first
-    and supervise loop is executed last.
     """
-    def setUp(self):
+    def setUpIntTest(self):
         self.setUpCommon()
         self.print_test_name()
 
@@ -40,6 +35,35 @@ class IntegrationTest(utc.IntegrationTest):
         self.mod = kumocloud
         self.mod_config = kumocloud_config
 
+
+class FunctionalIntegrationTest(IntegrationTest,
+                                utc.FunctionalIntegrationTest):
+    """
+    Test functional performance of kumocloud.py.
+    """
+    def setUp(self):
+        self.setUpIntTest()
+        # test_GetMetaData input parameters
+        self.metadata_field = "address"
+        self.metadata_type = str
+
+
+class SuperviseIntegrationTest(IntegrationTest,
+                               utc.SuperviseIntegrationTest):
+    """
+    Test supervise functionality of kumocloud.py.
+    """
+    def setUp(self):
+        self.setUpIntTest()
+
+
+class PerformanceIntegrationTest(IntegrationTest,
+                                 utc.PerformanceIntegrationTest):
+    """
+    Test performance of in kumocloud.py.
+    """
+    def setUp(self):
+        self.setUpIntTest()
         # network timing measurement
         self.timeout_limit = 30
         self.timing_measurements = 30
