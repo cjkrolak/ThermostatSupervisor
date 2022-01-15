@@ -114,11 +114,23 @@ class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
                 'zoneTable'][units[zone]]
         return raw_json
 
-    def get_all_thermostat_metadata(self, zone=None, debug=False):
+    def get_all_metadata(self, zone=None, debug=False):
         """Get all thermostat meta data for device_id from local API.
 
         inputs:
             zone(): specified zone
+            debug(bool): debug flag.
+        returns:
+            (dict): dictionary of meta data.
+        """
+        return self.get_metadata(zone, None, debug)
+
+    def get_metadata(self, zone=None, parameter=None, debug=False):
+        """Get thermostat meta data for device_id from local API.
+
+        inputs:
+            zone(): specified zone
+            parameter(str): target parameter, if None will return all.
             debug(bool): debug flag.
         returns:
             (dict): dictionary of meta data.
@@ -134,7 +146,10 @@ class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
         meta_data['sensors'] = self.device_id._sensors
         # pylint: disable=protected-access
         meta_data['profile'] = self.device_id._profile
-        return meta_data
+        if parameter is None:
+            return meta_data
+        else:
+            return meta_data[parameter]
 
     def print_all_thermostat_metadata(self, zone, debug=False):
         """Print all metadata for zone to the screen.
@@ -146,7 +161,7 @@ class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
             None, prints result to screen
         """
         self.exec_print_all_thermostat_metadata(
-            self.get_all_thermostat_metadata, [zone, debug])
+            self.get_all_metadata, [zone, debug])
 
 
 class ThermostatZone(tc.ThermostatCommonZone):
