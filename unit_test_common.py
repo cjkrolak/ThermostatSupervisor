@@ -16,7 +16,9 @@ import thermostat_common as tc
 import utilities as util
 
 # enable modes
-enable_integration_tests = True  # use to bypass integration tests
+enable_functional_integration_tests = True  # enable func int tests
+enable_performance_integration_tests = False  # enable performance int tests
+enable_supervise_integration_tests = False  # enable supervise int tests
 enable_kumolocal_tests = False  # Kumolocal is local net only
 enable_mmm_tests = False  # mmm50 is local net only
 enable_sht31_tests = True  # sht31 can fail on occasion
@@ -170,6 +172,14 @@ class IntegrationTest(UnitTest):
     def tearDown(self):
         self.print_test_result()
 
+
+@unittest.skipIf(not enable_functional_integration_tests,
+                 "functional integration tests are disabled")
+class FunctionalIntegrationTest(IntegrationTest):
+    """Functional integration tests."""
+    metadata_field = None  # thermostat-specific
+    metadata_type = str  # thermostat-specific
+
     def test_A_ThermostatBasicCheckout(self):
         """
         Verify thermostat_basic_checkout on target thermostat.
@@ -185,7 +195,73 @@ class IntegrationTest(UnitTest):
                 self.mod.ThermostatClass, self.mod.ThermostatZone
                 )
 
-    def test_B_NetworkTiming(self):
+    def test_ReportHeatingParameters(self):
+        """
+        Verify report_heating_parameters().
+        """
+        # setup class instances
+        self.Thermostat, self.Zone = self.setUpThermostatZone()
+
+        for test_case in self.mod_config.supported_configs["modes"]:
+            print("-" * 80)
+            print("test_case='%s'" % test_case)
+            self.Zone.report_heating_parameters(test_case)
+            print("-" * 80)
+
+    def test_GetMetaData(self):
+        """
+        Verify get_metadata().
+        """
+        # setup class instances
+        self.Thermostat, self.Zone = self.setUpThermostatZone()
+
+        # test None case
+        parameter = None
+        expected_return_type = (dict)
+        metadata = self.Thermostat.get_metadata(
+            zone=self.Thermostat.zone_number,
+            parameter=parameter)
+        self.assertTrue(isinstance(metadata, expected_return_type),
+                        "parameter='%s', metadata is type '%s', "
+                        "expected type '%s'" %
+                        (parameter, type(metadata), expected_return_type))
+
+        # test parameter case
+        parameter = self.metadata_field
+        expected_return_type = self.metadata_type
+        metadata = self.Thermostat.get_metadata(
+            zone=self.Thermostat.zone_number,
+            parameter=parameter)
+        self.assertTrue(isinstance(metadata, expected_return_type),
+                        "parameter='%s', metadata is type '%s', "
+                        "expected type '%s'" %
+                        (parameter, type(metadata), expected_return_type))
+
+
+@unittest.skipIf(not enable_supervise_integration_tests,
+                 "supervise integration test is disabled")
+class SuperviseIntegrationTest(IntegrationTest):
+    """Supervise integration tests common to all thermostat types."""
+
+    def test_Supervise(self):
+        """
+        Verify supervisor loop on target thermostat.
+        """
+        # setup class instances
+        self.Thermostat, self.Zone = self.setUpThermostatZone()
+
+        return_status = sup.exec_supervise(
+            debug=True, argv_list=self.unit_test_argv)
+        self.assertTrue(return_status, "return status=%s, expected True" %
+                        return_status)
+
+
+@unittest.skipIf(not enable_performance_integration_tests,
+                 "performance integration tests are disabled")
+class PerformanceIntegrationTest(IntegrationTest):
+    """Performance integration tests common to all thermostat types."""
+
+    def test_NetworkTiming(self):
         """
         Verify network timing..
         """
@@ -214,7 +290,7 @@ class IntegrationTest(UnitTest):
                         "timout setting (%s)" % (meas_data['6sigma_upper'],
                                                  self.timeout_limit))
 
-    def test_C_TemperatureRepeatability(self):
+    def test_TemperatureRepeatability(self):
         """
         Verify temperature repeatability.
         """
@@ -241,7 +317,7 @@ class IntegrationTest(UnitTest):
             "temp repeatability limit (%s)" % (act_val,
                                                self.temp_stdev_limit))
 
-    def test_D_HumidityRepeatability(self):
+    def test_HumidityRepeatability(self):
         """
         Verify humidity repeatability.
         """
@@ -274,31 +350,6 @@ class IntegrationTest(UnitTest):
             "humidity repeatability limit (%s)" %
             (act_val, self.humidity_stdev_limit))
 
-    def test_ReportHeatingParameters(self):
-        """
-        Verify report_heating_parameters().
-        """
-        # setup class instances
-        self.Thermostat, self.Zone = self.setUpThermostatZone()
-
-        for test_case in self.mod_config.supported_configs["modes"]:
-            print("-" * 80)
-            print("test_case='%s'" % test_case)
-            self.Zone.report_heating_parameters(test_case)
-            print("-" * 80)
-
-    def test_Z_Supervise(self):
-        """
-        Verify supervisor loop on target thermostat.
-        """
-        # setup class instances
-        self.Thermostat, self.Zone = self.setUpThermostatZone()
-
-        return_status = sup.exec_supervise(
-            debug=True, argv_list=self.unit_test_argv)
-        self.assertTrue(return_status, "return status=%s, expected True" %
-                        return_status)
-
 
 def run_all_tests():
     """
@@ -329,7 +380,7 @@ def parse_unit_test_runtime_parameters():
     1 = enable integration tests (default = enabled)
     """
     # parameter 1: enable integration tests
-    global_par = "enable_integration_tests"
+    global_par = "enable_functional_integration_tests"
     enable_flag = getattr(sys.modules[__name__], global_par)
 
     # parse runtime parameters
@@ -348,5 +399,8 @@ def parse_unit_test_runtime_parameters():
 
 if __name__ == "__main__":
     parse_unit_test_runtime_parameters()
-    print("DEBUG: enable_integration_tests=%s" % enable_integration_tests)
+    print("DEBUG: enable_functional_integration_tests=%s" %
+          enable_functional_integration_tests)
+    print("DEBUG: enable_performance_integration_tests=%s" %
+          enable_performance_integration_tests)
     run_all_tests()
