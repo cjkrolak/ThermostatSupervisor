@@ -148,6 +148,19 @@ class ThermostatClass(tc.ThermostatCommon):
             zone(int): target zone
             retry(bool): if True will retry once.
         returns:
+            (dict) results dict.
+        """
+        return self.get_metadata(zone, None, retry)
+
+    def get_metadata(self, zone, parameter=None, retry=True):
+        """
+        Get current thermostat metadata.
+
+        inputs:
+            zone(int): target zone
+            parameter(str): target parameter, if None will fetch all.
+            retry(bool): if True will retry once.
+        returns:
             (dict) empty dict.
         """
         try:
@@ -158,7 +171,10 @@ class ThermostatClass(tc.ThermostatCommon):
                          self.url, mode=util.BOTH_LOG, func_name=1)
             raise e
         try:
-            return r.json()
+            if parameter is None:
+                return r.json()
+            else:
+                return r.json()[parameter]
         except json.decoder.JSONDecodeError as e:
             util.log_msg(traceback.format_exc(),
                          mode=util.BOTH_LOG,
@@ -169,7 +185,7 @@ class ThermostatClass(tc.ThermostatCommon):
                              self.retry_delay, mode=util.BOTH_LOG,
                              func_name=1)
                 time.sleep(self.retry_delay)
-                self.get_all_metadata(zone, retry=False)
+                self.get_metadata(zone, parameter, retry=False)
             else:
                 raise Exception("FATAL ERROR: SHT31 server "
                                 "is not responding") from e

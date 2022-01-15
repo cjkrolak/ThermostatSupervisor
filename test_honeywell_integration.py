@@ -13,16 +13,11 @@ import unit_test_common as utc
 import utilities as util
 
 
-@unittest.skipIf(not utc.enable_integration_tests,
-                 "integration tests are disabled")
 class IntegrationTest(utc.IntegrationTest):
     """
     Test functions in honeywell.py.
-
-    Tests are named to ensure basic checkout is executed first
-    and supervise loop is executed last.
     """
-    def setUp(self):
+    def setUpIntTest(self):
         self.setUpCommon()
         self.print_test_name()
 
@@ -41,6 +36,35 @@ class IntegrationTest(utc.IntegrationTest):
         self.mod = honeywell
         self.mod_config = honeywell_config
 
+
+class FunctionalIntegrationTest(IntegrationTest,
+                                utc.FunctionalIntegrationTest):
+    """
+    Test functional performance of honeywell.py.
+    """
+    def setUp(self):
+        self.setUpIntTest()
+        # test_GetMetaData input parameters
+        self.metadata_field = "DeviceID"
+        self.metadata_type = int
+
+
+class SuperviseIntegrationTest(IntegrationTest,
+                               utc.SuperviseIntegrationTest):
+    """
+    Test supervise functionality of honeywell.py.
+    """
+    def setUp(self):
+        self.setUpIntTest()
+
+
+class PerformanceIntegrationTest(IntegrationTest,
+                                 utc.PerformanceIntegrationTest):
+    """
+    Test performance of in honeywell.py.
+    """
+    def setUp(self):
+        self.setUpIntTest()
         # network timing measurement
         self.timeout_limit = honeywell.http_timeout
         self.timing_measurements = 30  # fast measurement

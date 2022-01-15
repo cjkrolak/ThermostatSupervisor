@@ -66,7 +66,7 @@ class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
         """
         return zone
 
-    def get_all_thermostat_metadata(self, zone=None, debug=False):
+    def get_all_metadata(self, zone=None, debug=False):
         """Get all thermostat meta data for zone from kumocloud.
 
         inputs:
@@ -74,6 +74,18 @@ class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
             debug(bool): if True will print unit details.
         returns:
             (dict): JSON dict
+        """
+        return self.get_metadata(zone, None, debug)
+
+    def get_metadata(self, zone=None, parameter=None, debug=False):
+        """Get all thermostat meta data for zone from kumocloud.
+
+        inputs:
+            zone(int): specified zone, if None will print all zones.
+            parameter(str): target parameter, if None will return all.
+            debug(bool): if True will print unit details.
+        returns:
+            (int, float, str, dict): depends on parameter
         """
         try:
             units = list(self.get_indoor_units())  # will also query unit
@@ -101,7 +113,10 @@ class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
             self.serial_number = units[zone]
             raw_json = self.get_raw_json()[2]['children'][0][
                 'zoneTable'][units[zone]]
-        return raw_json
+        if parameter is None:
+            return raw_json
+        else:
+            return raw_json[parameter]
 
     def print_all_thermostat_metadata(self, zone, debug=False):
         """Print all metadata for zone to the screen.
@@ -113,7 +128,7 @@ class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
             None, prints result to screen
         """
         self.exec_print_all_thermostat_metadata(
-            self.get_all_thermostat_metadata, [zone, debug])
+            self.get_all_metadata, [zone, debug])
 
 
 class ThermostatZone(tc.ThermostatCommonZone):
@@ -158,7 +173,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         self.device_id = Thermostat_obj.device_id
         self.Thermostat = Thermostat_obj
         self.zone_number = Thermostat_obj.zone_number
-        self.zone_info = Thermostat_obj.get_all_thermostat_metadata(
+        self.zone_info = Thermostat_obj.get_all_metadata(
             Thermostat_obj.zone_number)
         self.zone_name = self.get_zone_name()
 
@@ -544,7 +559,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
                              "timeout", mode=util.BOTH_LOG, func_name=1)
             self.last_fetch_time = now_time
             # refresh device object
-            self.zone_info = self.Thermostat.get_all_thermostat_metadata(
+            self.zone_info = self.Thermostat.get_all_metadata(
                 self.zone_number)
 
     def report_heating_parameters(self, switch_position=None):
