@@ -434,13 +434,13 @@ def create_app():
     # add API routes
     api = Api(app_)
     api.add_resource(Controller, "/")
-    api.add_resource(ControllerUnit, sht31_config.FLASK_UNIT_TEST_FOLDER)
-    api.add_resource(ReadFaultRegister, sht31_config.FLASK_DIAG_FOLDER)
-    api.add_resource(ClearFaultRegister, sht31_config.FLASK_CLEAR_DIAG_FOLDER)
-    api.add_resource(EnableHeater, sht31_config.FLASK_ENABLE_HEATER_FOLDER)
-    api.add_resource(DisableHeater, sht31_config.FLASK_DISABLE_HEATER_FOLDER)
-    api.add_resource(Reset, sht31_config.FLASK_RESET_FOLDER)
-    api.add_resource(SoftReset, sht31_config.FLASK_SOFT_RESET_FOLDER)
+    api.add_resource(ControllerUnit, sht31_config.flask_folder.unit_test)
+    api.add_resource(ReadFaultRegister, sht31_config.flask_folder.diag)
+    api.add_resource(ClearFaultRegister, sht31_config.flask_folder.clear_diag)
+    api.add_resource(EnableHeater, sht31_config.flask_folder.enable_heater)
+    api.add_resource(DisableHeater, sht31_config.flask_folder.disable_heater)
+    api.add_resource(Reset, sht31_config.flask_folder.reset)
+    api.add_resource(SoftReset, sht31_config.flask_folder.soft_reset)
     return app_
 
 

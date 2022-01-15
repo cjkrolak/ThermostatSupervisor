@@ -1,6 +1,8 @@
 """
 SHT31 config file.
 """
+import bunch
+
 ALIAS = "sht31"
 
 # SHT31 thermometer zones
@@ -11,7 +13,6 @@ LOFT_SHT31_REMOTE = 1  # zone 1
 UNIT_TEST_ZONE = 99
 unit_test_seed = 0x7F
 UNIT_TEST_ENV_KEY = "SHT31_REMOTE_IP_ADDRESS_" + str(UNIT_TEST_ZONE)
-FLASK_UNIT_TEST_FOLDER = "/unit"
 flask_port = 5000  # note: ports below 1024 require root access on Linux
 flask_use_https = False  # HTTPS requires a cert to be installed.
 if flask_use_https:
@@ -25,12 +26,15 @@ else:
 
 
 # diagnostic parameters
-FLASK_DIAG_FOLDER = "/diag"
-FLASK_CLEAR_DIAG_FOLDER = "/clear_diag"
-FLASK_ENABLE_HEATER_FOLDER = "/enable_heater"
-FLASK_DISABLE_HEATER_FOLDER = "/disable_heater"
-FLASK_SOFT_RESET_FOLDER = "/soft_reset"
-FLASK_RESET_FOLDER = "/reset"
+flask_folder = bunch.Bunch()
+flask_folder.production = ""
+flask_folder.unit_test = "/unit"
+flask_folder.diag = "/diag"
+flask_folder.clear_diag = "/clear_diag"
+flask_folder.enable_heater = "/enable_heater"
+flask_folder.disable_heater = "/disable_heater"
+flask_folder.soft_reset = "/soft_reset"
+flask_folder.reset = "/reset"
 
 # SHT31 API field names
 API_MEASUREMENT_CNT = 'measurements'
