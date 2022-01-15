@@ -13,18 +13,11 @@ import unit_test_common as utc
 import utilities as util
 
 
-@unittest.skipIf(not utc.enable_sht31_tests,
-                 "sht31 tests are disabled")
-@unittest.skipIf(not utc.enable_integration_tests,
-                 "integration tests are disabled")
 class IntegrationTest(utc.IntegrationTest):
     """
     Test functions in sht31.py.
-
-    Tests are named to ensure basic checkout is executed first
-    and supervise loop is executed last.
     """
-    def setUp(self):
+    def setUpIntTest(self):
         self.setUpCommon()
         self.print_test_name()
 
@@ -48,6 +41,35 @@ class IntegrationTest(utc.IntegrationTest):
         self.mod = sht31
         self.mod_config = sht31_config
 
+
+class FunctionalIntegrationTest(IntegrationTest,
+                                utc.FunctionalIntegrationTest):
+    """
+    Test functional performance of sht31.py.
+    """
+    def setUp(self):
+        self.setUpIntTest()
+        # test_GetMetaData input parameters
+        self.metadata_field = sht31_config.API_TEMPF_MEAN
+        self.metadata_type = float
+
+
+class SuperviseIntegrationTest(IntegrationTest,
+                               utc.SuperviseIntegrationTest):
+    """
+    Test supervise functionality of sht31.py.
+    """
+    def setUp(self):
+        self.setUpIntTest()
+
+
+class PerformanceIntegrationTest(IntegrationTest,
+                                 utc.PerformanceIntegrationTest):
+    """
+    Test performance of in honeywell.py.
+    """
+    def setUp(self):
+        self.setUpIntTest()
         # network timing measurement
         # mean timing = 0.5 sec per measurement plus 0.75 sec overhead
         self.timeout_limit = (6.0 * 0.1 +
