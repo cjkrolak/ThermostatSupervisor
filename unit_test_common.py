@@ -19,7 +19,7 @@ import utilities as util
 enable_integration_tests = True  # use to bypass integration tests
 enable_kumolocal_tests = False  # Kumolocal is local net only
 enable_mmm_tests = False  # mmm50 is local net only
-enable_sht31_tests = False  # sht31 can fail on occasion
+enable_sht31_tests = True  # sht31 can fail on occasion
 
 
 # generic argv list for unit testing

@@ -16,8 +16,12 @@ import unit_test_common as utc
 import utilities as util
 
 
+@unittest.skipIf(not utc.enable_sht31_tests,
+                 "sht31 tests are disabled")
 @unittest.skipIf(not utc.enable_integration_tests,
                  "integration tests are disabled")
+@unittest.skipIf(util.is_azure_environment(),
+                 "this test not supported on Azure Pipelines")
 class IntegrationTest(utc.UnitTest):
     """Test functions in sht31_flask_server.py."""
 
@@ -31,8 +35,6 @@ class IntegrationTest(utc.UnitTest):
     def tearDown(self):
         self.print_test_result()
 
-    @unittest.skipIf(util.is_azure_environment(),
-                     "this test not supported on Azure Pipelines")
     def test_SHT31_FlaskServer_All_Pages(self):
         """
         Confirm all pages return data from Flask server.
@@ -73,8 +75,6 @@ class IntegrationTest(utc.UnitTest):
                             "return data: %s" %
                             (test_case, expected_key, return_data))
 
-    @unittest.skipIf(util.is_azure_environment(),
-                     "this test not supported on Azure Pipelines")
     def test_SHT31_FlaskServer(self):
         """
         Confirm Flask server returns valid data.
