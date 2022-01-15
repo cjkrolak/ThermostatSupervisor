@@ -18,7 +18,7 @@ import utilities as util
 # enable modes
 enable_functional_integration_tests = True  # enable func int tests
 enable_performance_integration_tests = False  # enable performance int tests
-enable_supervise_integration_tests = False  # enable supervise int tests
+enable_supervise_integration_tests = True  # enable supervise int tests
 enable_flask_integration_tests = False  # enable flask int tests
 enable_kumolocal_tests = False  # Kumolocal is local net only
 enable_mmm_tests = False  # mmm50 is local net only
@@ -209,6 +209,21 @@ class FunctionalIntegrationTest(IntegrationTest):
             self.Zone.report_heating_parameters(test_case)
             print("-" * 80)
 
+    def test_GetAllMetaData(self):
+        """
+        Verify get_all_metadata().
+        """
+        # setup class instances
+        self.Thermostat, self.Zone = self.setUpThermostatZone()
+
+        expected_return_type = dict
+        metadata = self.Thermostat.get_all_metadata(
+            zone=self.Thermostat.zone_number)
+        self.assertTrue(isinstance(metadata, expected_return_type),
+                        "metadata is type '%s', "
+                        "expected type '%s'" %
+                        (type(metadata), expected_return_type))
+
     def test_GetMetaData(self):
         """
         Verify get_metadata().
@@ -218,7 +233,7 @@ class FunctionalIntegrationTest(IntegrationTest):
 
         # test None case
         parameter = None
-        expected_return_type = (dict)
+        expected_return_type = dict
         metadata = self.Thermostat.get_metadata(
             zone=self.Thermostat.zone_number,
             parameter=parameter)
