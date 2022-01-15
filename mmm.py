@@ -137,7 +137,9 @@ class ThermostatClass(tc.ThermostatCommon):
         if parameter is None:
             return self.get_meta_data_dict(zone)
         else:
-            return self.device_id[parameter]['raw']
+            print("DEBUG: device_id(type=%s)=%s" %
+                  (type(self.device_id), self.device_id))
+            return self.get_meta_data_dict(zone)[parameter]['raw']
 
     def get_latestdata(self, zone, debug=False) -> (dict, str):
         """
