@@ -62,6 +62,10 @@ class EnvironmentTests(utc.UnitTest):
         """
         Verify is_host_on_local_net() runs as expected.
 
+        Test cases need to be site-agnostic or require some type
+        of filtering to ensure they pass regardless of which LAN
+        this test is running from.
+
         util.is_host_on_local_net is not reliable when passing
         in an IP address so most test cases are for hostname only.
         """
@@ -69,8 +73,6 @@ class EnvironmentTests(utc.UnitTest):
             # [host_name, ip_address, expected_result]
             ['testwifi.here', None,
              not util.is_azure_environment()],  # Google wifi router
-            ['gateway743dd9.lan', None,
-             not util.is_azure_environment()],  # Honeywell tstat
             ['bogus_host', '192.168.86.145', False],  # bogus host
             ['bogus_host', None, False],  # bogus host without IP
             ['dns.google', '8.8.8.8', True],  # should pass everywhere
@@ -290,10 +292,18 @@ class MetricsTests(utc.UnitTest):
     def test_TempValueWithUnits(self):
         """Verify function attaches units as expected."""
 
-        for test_case in [44, -1, 101, 2]:
+        for test_case in [44, -1, 101, 2, "13", "-13", None]:
             for precision in [0, 1, 2]:
                 for disp_unit in ['F', 'c']:
-                    formatted = "%.*f" % (precision, test_case)
+                    print("test case: value=%s, precision=%s, units=%s" %
+                          (test_case, precision, disp_unit))
+                    if test_case is None:
+                        formatted = "None"
+                    else:
+                        if isinstance(test_case, str):
+                            formatted = "%.*f" % (precision, float(test_case))
+                        else:
+                            formatted = "%.*f" % (precision, test_case)
                     expected_val = f'{formatted}°{disp_unit}'
                     actual_val = util.temp_value_with_units(test_case,
                                                             disp_unit,
@@ -310,10 +320,18 @@ class MetricsTests(utc.UnitTest):
     def test_HumidityValueWithUnits(self):
         """Verify function attaches units as expected."""
 
-        for test_case in [44, -1, 101, 2]:
+        for test_case in [44, -1, 101, 2, "13", "-13", None]:
             for precision in [0, 1, 2]:
                 for disp_unit in ['RH']:
-                    formatted = "%.*f" % (precision, test_case)
+                    print("test case: value=%s, precision=%s, units=%s" %
+                          (test_case, precision, disp_unit))
+                    if test_case is None:
+                        formatted = "None"
+                    else:
+                        if isinstance(test_case, str):
+                            formatted = "%.*f" % (precision, float(test_case))
+                        else:
+                            formatted = "%.*f" % (precision, test_case)
                     expected_val = f'{formatted}%{disp_unit}'
                     actual_val = util.humidity_value_with_units(test_case,
                                                                 disp_unit,
