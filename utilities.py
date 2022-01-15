@@ -315,7 +315,7 @@ def temp_value_with_units(raw, disp_unit='F', precision=1) -> str:
         if '°' in raw:
             return raw  # pass-thru
         try:
-            float(raw)
+            raw = float(raw)
         except ValueError:
             pass
 
@@ -348,7 +348,7 @@ def humidity_value_with_units(raw, disp_unit=' RH', precision=0) -> str:
         if '%' in raw:
             return raw  # pass-thru
         try:
-            float(raw)
+            raw = float(raw)
         except ValueError:
             pass
 
