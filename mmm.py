@@ -180,16 +180,17 @@ class ThermostatClass(tc.ThermostatCommon):
         """
         return self.get_meta_data_dict(zone)
 
-    def get_uiData_param(self, parameter) -> dict:
+    def get_uiData_param(self, zone, parameter) -> dict:
         """
         Get the latest thermostat ui data for one specific parameter.
 
         inputs:
+          zone(int): target zone
           parameter(str): UI parameter
         returns:
-          (dict)
+          (various) value or data structure of interest
         """
-        return self.device_id[parameter]['raw']
+        return self.get_meta_data_dict(zone)[parameter]['raw']
 
 
 class ThermostatZone(tc.ThermostatCommonZone):
