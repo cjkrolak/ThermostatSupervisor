@@ -17,11 +17,11 @@ import utilities as util
 
 # enable modes
 enable_functional_integration_tests = True  # enable func int tests
-enable_performance_integration_tests = False  # enable performance int tests
+enable_performance_integration_tests = True  # enable performance int tests
 enable_supervise_integration_tests = True  # enable supervise int tests
-enable_flask_integration_tests = False  # enable flask int tests
-enable_kumolocal_tests = False  # Kumolocal is local net only
-enable_mmm_tests = False  # mmm50 is local net only
+enable_flask_integration_tests = True  # enable flask int tests
+enable_kumolocal_tests = True  # Kumolocal is local net only
+enable_mmm_tests = True  # mmm50 is local net only
 enable_sht31_tests = True  # sht31 can fail on occasion
 
 

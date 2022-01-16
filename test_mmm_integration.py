@@ -47,6 +47,47 @@ class FunctionalIntegrationTest(IntegrationTest,
         self.metadata_field = "network"
         self.metadata_type = dict
 
+    def test_Get_UiData(self):
+        """Verify get_uiData() function"""
+        # setup class instances
+        self.Thermostat, self.Zone = self.setUpThermostatZone()
+
+        # verify function return value
+        result = self.Thermostat.get_uiData(self.Thermostat.zone_number)
+        print("get_uiData returned %s" % result)
+        self.assertTrue(isinstance(result, dict),
+                        "result returned is type (%s), "
+                        "expected a dictionary" % type(result))
+
+    def test_GetUiDataParam(self):
+        """Verify get_uiData_param() function"""
+        # setup class instances
+        self.Thermostat, self.Zone = self.setUpThermostatZone()
+
+        # verify function return value
+        param = ""
+        expected_data_type = str
+        result = self.Thermostat.get_uiData_param(param)
+        print("get_uiData_param(%s) returned %s" %
+              (param, result))
+        self.assertTrue(isinstance(result, expected_data_type),
+                        "result returned is type (%s), "
+                        "expected a %s" % (type(result), expected_data_type))
+
+    def test_GetZoneName(self):
+        """Verify get_zone_name() function"""
+        # setup class instances
+        self.Thermostat, self.Zone = self.setUpThermostatZone()
+
+        # verify default option
+        result = self.Thermostat.get_zone_name()
+        print("get_zone_name() returned %s" % result)
+
+        # verify override option
+        result = self.Thermostat.get_zone_name(self.Thermostat.zone_number)
+        print("get_zone_name(%s) returned %s" %
+              (self.Thermostat.zone_number, result))
+
 
 class SuperviseIntegrationTest(IntegrationTest,
                                utc.SuperviseIntegrationTest):

@@ -7,6 +7,7 @@ import os
 import pprint
 import socket
 import sys
+from dns.exception import DNSException
 
 # add github version of radiotherm to path
 sys.path.append(os.path.abspath('../radiotherm'))
@@ -48,8 +49,20 @@ class ThermostatClass(tc.ThermostatCommon):
 
         # configure zone info
         self.zone_number = int(zone)
-        self.ip_address = mmm_config.mmm_metadata[
-            self.zone_number]["ip_address"]
+        # use hard-coded IP address if provided, otherwise
+        # use host dns lookup
+        self.host_name = mmm_config.mmm_metadata[
+            self.zone_number]["host_name"]
+        if "ip_address" in mmm_config.mmm_metadata[
+                self.zone_number]:
+            self.ip_address = mmm_config.mmm_metadata[
+                self.zone_number]["ip_address"]
+        else:
+            ip_status, self.ip_address = util.is_host_on_local_net(
+                self.host_name)
+            if not ip_status:
+                raise DNSException("failed to resolve ip address for "
+                                   "3m thermostat '%s'" % self.host_name)
         self.device_id = self.get_target_zone_id()
 
     def get_target_zone_id(self) -> object:

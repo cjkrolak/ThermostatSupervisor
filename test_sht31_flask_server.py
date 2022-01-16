@@ -45,7 +45,7 @@ class IntegrationTest(utc.UnitTest):
             sht31_config.LOFT_SHT31]["host_name"]
         zone = str([sht31_config.LOFT_SHT31_REMOTE,
                     sht31_config.LOFT_SHT31][
-                        util.is_host_on_local_net(local_host)])
+                        util.is_host_on_local_net(local_host)[0]])
 
         for test_case in sht31_config.flask_folder:
             print("test_case=%s" % test_case)
