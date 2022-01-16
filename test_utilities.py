@@ -81,8 +81,23 @@ class EnvironmentTests(utc.UnitTest):
         for test_case in test_cases:
             print("testing for '%s' at %s, expect %s" %
                   (test_case[0], test_case[1], test_case[2]))
-            result = util.is_host_on_local_net(test_case[0],
-                                               test_case[1])
+            result, ip_address = util.is_host_on_local_net(test_case[0],
+                                                           test_case[1])
+            # verify IP length returned
+            if result:
+                ip_length_symbol = ">="
+                ip_length_min = 7
+                self.assertTrue(len(ip_address) >= ip_length_min,
+                                "ip_address returned (%s) did not meet length "
+                                "expectations (%s)" %
+                                (ip_address,
+                                 (ip_length_symbol + str(ip_length_min))))
+            else:
+                self.assertTrue(ip_address is None,
+                                "ip_address returned (%s) is not None" %
+                                ip_address)
+
+            # verify expected result
             self.assertEqual(result, test_case[2],
                              "test_case=%s, expected=%s, actual=%s" %
                              (test_case[0], test_case[2], result))

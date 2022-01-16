@@ -68,7 +68,6 @@ supported_configs = {"module": "sht31",
 sht31_metadata = {
     LOFT_SHT31: {"zone_name": "Loft (local)",
                  "host_name": "raspberrypi.lan",
-                 "ip_address": "192.168.86.15",  # local IP
                  },
     LOFT_SHT31_REMOTE: {"zone_name": "loft (remote)",
                         "host_name": "none",

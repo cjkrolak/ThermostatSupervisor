@@ -31,7 +31,7 @@ class IntegrationTest(utc.IntegrationTest):
             # on the local net.  If not, use the DNS name.
             str([sht31_config.LOFT_SHT31_REMOTE,
                  sht31_config.LOFT_SHT31][
-                     util.is_host_on_local_net(local_host)]),
+                     util.is_host_on_local_net(local_host)[0]]),
             "30",  # poll time in sec
             "1000",  # reconnect time in sec
             "2",  # tolerance

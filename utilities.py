@@ -7,6 +7,7 @@ import os
 import platform
 import psutil
 import socket
+import traceback
 
 # thermostat config files
 import honeywell_config
@@ -59,6 +60,8 @@ def get_local_ip():
         s.connect(('10.255.255.255', 1))
         ip = s.getsockname()[0]
     except Exception:
+        log_msg(traceback.format_exc(),
+                mode=BOTH_LOG, func_name=1)
         ip = '127.0.0.1'
     finally:
         s.close()
@@ -292,7 +295,7 @@ def is_interactive_environment():
         return True
     else:
         print("DEBUG: parent process=%s" % parent)
-        return True
+        raise EnvironmentError("unrecognized environment: %s" % parent)
 
 
 def temp_value_with_units(raw, disp_unit='F', precision=1) -> str:
@@ -424,7 +427,8 @@ def is_host_on_local_net(host_name, ip_address=None):
         host_name(str): expected host name.
         ip_address(str): target IP address on local net.
     returns:
-        (bool): True if confirmed on local net, else False.
+        tuple(bool, str): True if confirmed on local net, else False.
+                          ip_address if known
     """
     host_found = None
     # find by hostname alone if IP is None
@@ -432,25 +436,25 @@ def is_host_on_local_net(host_name, ip_address=None):
         try:
             host_found = socket.gethostbyname(host_name)
         except socket.gaierror:
-            return False
+            return False, None
         if host_found:
             print("host %s found at %s" % (host_name, host_found))
-            return True
+            return True, host_found
         else:
-            return False
+            return False, None
 
     else:
         # match both IP and host if both are provided.
         try:
             host_found = socket.gethostbyaddr(ip_address)
         except socket.herror:  # exception if DNS name is not set
-            return False
+            return False, None
         if host_name == host_found[0]:
-            return True
+            return True, ip_address
         else:
             print("DEBUG: expected host=%s, actual host=%s" %
                   (host_name, host_found))
-            return False
+            return False, None
 
 
 def is_azure_environment():
