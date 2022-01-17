@@ -64,7 +64,7 @@ class ThermostatCommon():
 class ThermostatCommonZone():
     """Class methods common to all thermostat zones."""
 
-    # supported thermostat modes
+    # supported thermostat modes and label text
     OFF_MODE = "off"
     HEAT_MODE = "heat"
     COOL_MODE = "cool"
@@ -215,6 +215,7 @@ class ThermostatCommonZone():
             self.revert_setpoint_func = self.function_not_supported
             self.get_setpoint_func = self.function_not_supported
         else:
+            print("DEBUG: zone info: %s" % self.zone_info)
             raise ValueError("unknown thermostat mode")
 
         self.temperature_is_deviated = self.is_temp_deviated_from_schedule()
@@ -329,13 +330,12 @@ class ThermostatCommonZone():
         Set the thermostat mode.
 
         inputs:
-            target_mode(str):  target mode
+            target_mode(str): target mode, refer to supported_configs["modes"]
         returns:
             True if successful, else False
         """
-        del target_mode  # not yet implemented
-        # print("DEBUG in set_mode, target_mode=%s, doing nothing" %
-        #       target_mode)
+        print("DEBUG in set_mode, target_mode=%s, doing nothing" %
+              target_mode)
         return False
 
     def store_current_mode(self):
