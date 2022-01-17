@@ -65,8 +65,8 @@ class FunctionalIntegrationTest(IntegrationTest,
         self.Thermostat, self.Zone = self.setUpThermostatZone()
 
         # verify function return value
-        param = ""
-        expected_data_type = str
+        param = "cloud"
+        expected_data_type = dict
         result = self.Thermostat.get_uiData_param(self.Thermostat.zone_number,
                                                   param)
         print("Thermostat.get_uiData_param(%s, %s) returned %s" %
@@ -85,7 +85,7 @@ class FunctionalIntegrationTest(IntegrationTest,
         print("Zone.get_zone_name() returned %s" % result)
 
         # verify override option
-        result = self.Thermostat.get_zone_name(self.Thermostat.zone_number)
+        result = self.Zone.get_zone_name(self.Thermostat.zone_number)
         print("Zone.get_zone_name(%s) returned %s" %
               (self.Thermostat.zone_number, result))
 
