@@ -10,6 +10,7 @@ import sys
 import traceback
 
 # thermostat config files
+import emulator_config
 import honeywell_config
 import kumocloud_config
 import kumolocal_config
@@ -23,7 +24,8 @@ import utilities as util
 DEFAULT_THERMOSTAT = honeywell_config.ALIAS
 
 # list of thermostat config modules supported
-config_modules = [honeywell_config,
+config_modules = [emulator_config,
+                  honeywell_config,
                   kumocloud_config,
                   kumolocal_config,
                   mmm_config,
