@@ -479,6 +479,9 @@ if __name__ == "__main__":
 
     print("SHT31 sensor Flask server")
 
+    # verify environment
+    util.get_python_version()
+
     # parse runtime parameters
     debug = parse_runtime_parameters()
 

@@ -615,6 +615,9 @@ class ThermostatZone(tc.ThermostatCommonZone):
 
 if __name__ == "__main__":
 
+    # verify environment
+    util.get_python_version()
+
     # get zone override
     zone_number = api.parse_all_runtime_parameters()["zone"]
 

@@ -7,6 +7,7 @@ import os
 import platform
 import psutil
 import socket
+import sys
 import traceback
 
 # thermostat config files
@@ -39,6 +40,7 @@ DEBUG_LOG = 0x100  # print only if debug mode is on
 
 file_path = ".//data"
 max_log_size_bytes = 2**20  # logs rotate at this max size
+min_python_version = 3.7  # minimum python version required
 
 # all environment variables required by code should be registered here
 env_variables = {
@@ -465,3 +467,35 @@ def is_azure_environment():
     everything else is Azure.
     """
     return '192.' not in get_local_ip()
+
+
+def get_python_version(min_version=min_python_version, display_version=True):
+    """
+    Print current Python version to the screen.
+
+    inputs:
+        min_version(float): min allowed version
+        display_version(bool): True to print to screen.
+    return:
+        (tuple): (major version, minor version)
+    """
+    major_version = sys.version_info.major
+    minor_version = sys.version_info.minor
+    version_float = float(str(major_version) + "." + str(minor_version))
+
+    # display version
+    if display_version:
+        print("running on Python version %s" % version_float)
+
+    # check version
+    if min_version is not None:
+        if not isinstance(min_version, (int, float)):
+            raise TypeError("input parameter 'min_version is type (%s), "
+                            "not int or float" % type(min_version))
+        if version_float < min_version:
+            raise EnvironmentError("current python version (%s) is less than "
+                                   "min python version required (%s)" %
+                                   (version_float, min_version))
+
+    return (major_version, minor_version)
+

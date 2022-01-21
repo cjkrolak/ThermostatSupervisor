@@ -214,4 +214,8 @@ if __name__ == "__main__":
         argv_inputs = argv
     else:
         argv_inputs = sys.argv
+
+    # verify environment
+    util.get_python_version()
+
     exec_supervise(debug=True, argv_list=argv_inputs)
