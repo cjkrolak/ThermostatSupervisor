@@ -102,6 +102,40 @@ class EnvironmentTests(utc.UnitTest):
                              "test_case=%s, expected=%s, actual=%s" %
                              (test_case[0], test_case[2], result))
 
+    def test_GetPythonVersion(self):
+        """Verify get_python_version()."""
+        major_version, minor_version = util.get_python_version()
+
+        # verify major version
+        min_major = int(util.min_python_version)
+        self.assertTrue(major_version >= min_major,
+                        "python major version (%s) is not gte min required "
+                        "value (%s)" % (major_version, min_major))
+
+        # verify minor version
+        min_minor = int(str(util.min_python_version)[
+            str(util.min_python_version).find(".") + 1:])
+        self.assertTrue(minor_version >= min_minor,
+                        "python minor version (%s) is not gte min required "
+                        "value (%s)" % (minor_version, min_minor))
+
+        # error checking invalid input parmeter
+        with self.assertRaises(TypeError):
+            print("attempting to invalid input parameter type, "
+                  "expect exception...")
+            util.get_python_version("3.7")
+
+        # no decimal point
+        util.get_python_version(3)
+
+        # min value exception
+        with self.assertRaises(EnvironmentError):
+            print("attempting to verify version gte 99.99, "
+                  "expect exception...")
+            util.get_python_version(99.99)
+
+        print("test passed all checks")
+
 
 class FileAndLoggingTests(utc.UnitTest):
     """Test functions related to logging functions."""
