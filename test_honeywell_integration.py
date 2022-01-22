@@ -66,7 +66,7 @@ class PerformanceIntegrationTest(IntegrationTest,
     def setUp(self):
         self.setUpIntTest()
         # network timing measurement
-        self.timeout_limit = honeywell.http_timeout
+        self.timeout_limit = honeywell.HTTP_TIMEOUT
         self.timing_measurements = 30  # fast measurement
 
         # temperature and humidity repeatability measurements

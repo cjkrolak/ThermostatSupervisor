@@ -5,9 +5,7 @@ This file should be updated for any new thermostats supported and
 any changes to thermostat configs.
 """
 # built ins
-import imp
 import sys
-import traceback
 
 # thermostat config files
 import emulator_config
@@ -41,9 +39,6 @@ SUPPORTED_THERMOSTATS = {
 for config_module in config_modules:
     SUPPORTED_THERMOSTATS.update(
         {config_module.ALIAS: config_module.supported_configs})
-
-# target zone for monitoring
-zone_number = 0  # default
 
 # dictionary of required env variables for each thermostat type
 thermostats = {
@@ -235,78 +230,6 @@ def parse_all_runtime_parameters(argv_list=None):
     return result
 
 
-# dynamic import
-def dynamic_module_import(name):
-    """
-    Find and load python module.
-
-    TODO: this module results in a resourcewarning within unittest:
-    sys:1: ResourceWarning: unclosed <socket.socket fd=628,
-    family=AddressFamily.AF_INET, type=SocketKind.SOCK_DGRAM, proto=0,
-    laddr=('0.0.0.0', 64963)>
-
-    inputs:
-        name(str): module name
-    returns:
-        mod(module): module object
-    """
-    fp, path, desc = find_module(name)
-    mod = load_module(name, fp, path, desc)
-
-    return mod
-
-
-def find_module(name):
-    """
-    Find the module and return its description and path.
-
-    inputs:
-        name(str): module name
-    returns:
-        fp(_io.TextIOWrapper): file pointer
-        path(str): path to file
-        desc(tuple): file descriptor
-    """
-    try:
-        fp, path, desc = imp.find_module(name)
-    except ImportError as ex:
-        util.log_msg(traceback.format_exc(),
-                     mode=util.BOTH_LOG, func_name=1)
-        util.log_msg("module not found: " + name,
-                     mode=util.BOTH_LOG, func_name=1)
-        raise ex
-    return fp, path, desc
-
-
-def load_module(name, fp, path, desc):
-    """
-    Load the module into memory.
-
-    Note: this function will close fp.
-
-    inputs:
-        fp(_io.TextIOWrapper): file pointer
-        path(str): path to file
-        desc(tuple): file descriptor
-    returns:
-        mod(python module)
-    """
-    try:
-        # load_modules loads the module
-        # dynamically and takes the filepath
-        # module and description as parameter
-        mod = imp.load_module(name, fp, path, desc)
-    except Exception as ex:
-        util.log_msg(traceback.format_exc(),
-                     mode=util.BOTH_LOG, func_name=1)
-        util.log_msg("module load failed: " + name,
-                     mode=util.BOTH_LOG, func_name=1)
-        raise ex
-    finally:
-        fp.close()
-    return mod
-
-
 def load_hardware_library(thermostat_type):
     """
     Dynamic load library for requested hardware type.
@@ -316,7 +239,7 @@ def load_hardware_library(thermostat_type):
     returns:
         module
     """
-    mod = dynamic_module_import(
+    mod = util.dynamic_module_import(
         SUPPORTED_THERMOSTATS[thermostat_type]["module"])
     return mod
 

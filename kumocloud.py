@@ -10,15 +10,10 @@ import thermostat_common as tc
 import utilities as util
 
 # pykumo import
-pykumo_debug = False  # debug uses local pykumo repo instead of pkg
-if pykumo_debug and not util.is_azure_environment():
-    # begin local import
-    import importlib.util
-    spec = importlib.util.spec_from_file_location(
-        "pykumo.py", "..\\pykumo\\pykumo\\pykumo.py")
-    pykumo = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(pykumo)
-    # end of local import
+PYKUMO_DEBUG = False  # debug uses local pykumo repo instead of pkg
+if PYKUMO_DEBUG and not util.is_azure_environment():
+    pykumo = util.dynamic_module_import("pykumo.py",
+                                        "..\\pykumo\\pykumo\\pykumo.py")
 else:
     import pykumo  # noqa E402, from path / site packages
 
@@ -422,7 +417,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         returns:
             (int): scheduled heating set point in degrees.
         """
-        return kumocloud_config.max_heat_setpoint  # max heat set point allowed
+        return kumocloud_config.MAX_HEAT_SETPOINT  # max heat set point allowed
 
     def get_schedule_cool_sp(self) -> int:
         """
@@ -433,7 +428,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         returns:
             (int): scheduled cooling set point in degrees F.
         """
-        return kumocloud_config.min_cool_setpoint  # min cool set point allowed
+        return kumocloud_config.MIN_COOL_SETPOINT  # min cool set point allowed
 
     def get_cool_setpoint_raw(self) -> int:
         """
@@ -514,7 +509,6 @@ class ThermostatZone(tc.ThermostatCommonZone):
         util.log_msg("WARNING: this method not implemented yet for this "
                      "thermostat type",
                      mode=util.BOTH_LOG, func_name=1)
-        return
 
     def set_cool_setpoint(self, temp: int) -> None:
         """
@@ -532,7 +526,6 @@ class ThermostatZone(tc.ThermostatCommonZone):
         util.log_msg("WARNING: this method not implemented yet for this "
                      "thermostat type",
                      mode=util.BOTH_LOG, func_name=1)
-        return
 
     def refresh_zone_info(self, force_refresh=False):
         """

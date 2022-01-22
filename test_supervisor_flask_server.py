@@ -41,7 +41,7 @@ class IntegrationTest(utc.UnitTest):
             print("DEBUG: in setup supervise sfs.argv=%s" % sfs.argv)
             print("starting supervise flask server thread...")
             self.fs = threading.Thread(target=sfs.app.run,
-                                       args=('0.0.0.0', sfs.flask_port, False),
+                                       args=('0.0.0.0', sfs.FLASK_PORT, False),
                                        kwargs=sfs.flask_kwargs)
             self.fs.daemon = True  # make thread daemonic
             self.fs.start()
@@ -70,8 +70,8 @@ class IntegrationTest(utc.UnitTest):
         supervise routine on.
         """
         # grab supervise web page result and display
-        flask_url = (sfs.flask_url_prefix + util.get_local_ip() + ':' +
-                     str(sfs.flask_port))
+        flask_url = (sfs.FLASK_URL_PREFIX + util.get_local_ip() + ':' +
+                     str(sfs.FLASK_PORT))
 
         # delay for page load and initial data posting
         wait_delay_sec = 10

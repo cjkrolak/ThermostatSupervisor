@@ -14,7 +14,7 @@ import email_notification as eml
 import utilities as util
 
 
-DEGREE_SIGN = u"\N{DEGREE SIGN}"
+DEGREE_SIGN = "\N{DEGREE SIGN}"
 
 
 class ThermostatCommon():
@@ -470,7 +470,6 @@ class ThermostatCommonZone():
                      "thermostat, doing nothing" %
                      util.get_function_name(), mode=util.BOTH_LOG,
                      func_name=1)
-        return
 
     def set_cool_setpoint(self, temp: int) -> None:
         """
@@ -487,7 +486,6 @@ class ThermostatCommonZone():
                      "thermostat, doing nothing" %
                      util.get_function_name(), mode=util.BOTH_LOG,
                      func_name=1)
-        return
 
     def is_heat_deviation(self):
         """
@@ -608,7 +606,6 @@ class ThermostatCommonZone():
         del force_refresh  # not used in this template.
         self.zone_info = {}
         self.last_fetch_time = time.time()
-        return  # placeholder
 
     def report_heating_parameters(self, switch_position=None):
         """
@@ -620,7 +617,6 @@ class ThermostatCommonZone():
             None
         """
         del switch_position
-        return  # placeholder
 
     def get_vacation_hold_until_time(self) -> int:
         """
@@ -676,10 +672,7 @@ class ThermostatCommonZone():
         if target_mode is None:
             return True
         else:
-            if self.current_mode == target_mode:
-                return True
-            else:
-                return False
+            return bool(self.current_mode == target_mode)
 
     def revert_thermostat_mode(self, target_mode):
         """

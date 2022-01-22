@@ -2,13 +2,15 @@
 Flask server for displaying supervisor output on web page.
 """
 # built-in libraries
-from flask import Flask, Response, send_from_directory
-from flask_wtf.csrf import CSRFProtect
 import html
 import os
 from subprocess import Popen, PIPE, STDOUT, DEVNULL
 import sys
 import webbrowser
+
+# third party imports
+from flask import Flask, Response, send_from_directory
+from flask_wtf.csrf import CSRFProtect
 
 # local imports
 import supervise as sup
@@ -30,23 +32,23 @@ else:
     # flask_ip_address = '127.0.0.1'  # almost works from Linux client
     flask_ip_address = util.get_local_ip()  # almost works from Linux client
     # on Linux both methds are returning correct page header, but no data
-flask_port = 5001  # note: ports below 1024 require root access on Linux
-flask_use_https = False  # HTTPS requires a cert to be installed.
-if flask_use_https:
-    flask_ssl_cert = 'adhoc'  # adhoc
-    flask_kwargs = {'ssl_context': flask_ssl_cert}
-    flask_url_prefix = "https://"
+FLASK_PORT = 5001  # note: ports below 1024 require root access on Linux
+FLASK_USE_HTTPS = False  # HTTPS requires a cert to be installed.
+if FLASK_USE_HTTPS:
+    FLASK_SSL_CERT = 'adhoc'  # adhoc
+    flask_kwargs = {'ssl_context': FLASK_SSL_CERT}
+    FLASK_URL_PREFIX = "https://"
 else:
-    flask_ssl_cert = None  # adhoc
+    FLASK_SSL_CERT = None  # adhoc
     flask_kwargs = {}
-    flask_url_prefix = "http://"
-flask_url = flask_url_prefix + flask_ip_address + ':' + str(flask_port)
+    FLASK_URL_PREFIX = "http://"
+flask_url = FLASK_URL_PREFIX + flask_ip_address + ':' + str(FLASK_PORT)
 
 argv = []  # supervisor runtime args list
 
 
 def create_app():
-
+    """Create the flask object."""
     app_ = Flask(__name__)
     # api = Api(app)
 
@@ -68,6 +70,7 @@ app.config.update(
 
 @app.route('/favicon.ico')
 def favicon():
+    """Faviocon displayed in browser tab."""
     return send_from_directory(os.path.join(app.root_path, 'image'),
                                'honeywell.ico',
                                mimetype='image/vnd.microsoft.icon')
@@ -75,6 +78,7 @@ def favicon():
 
 @app.route('/')
 def index():
+    """index route"""
     def run_supervise():
         sup.argv = argv  # pass runtime overrides to supervise
         print("DEBUG: in run_supervise, argv=%s" % argv)
@@ -101,9 +105,9 @@ def index():
             arg_list = [executable, dont_buffer, script]
         print("DEBUG: arg_list=%s" % arg_list)
         with Popen(arg_list, stdin=DEVNULL, stdout=PIPE, stderr=STDOUT,
-                   bufsize=1, universal_newlines=True, shell=True) as p:
+                   bufsize=1, universal_newlines=True, shell=True) as p_out:
             i = 0
-            for line in p.stdout:
+            for line in p_out.stdout:
                 print("DEBUG: line %s: %s" % (i, line), file=sys.stderr)
                 i += 1
                 yield "<code>{}</code>".format(html.escape(line.rstrip("\n")))
@@ -115,7 +119,7 @@ if __name__ == '__main__':
     # show the page in browser
     webbrowser.open(flask_url, new=2)
     app.run(host=flask_ip_address,
-            port=flask_port,
+            port=FLASK_PORT,
             debug=False,  # True causes 2 tabs to open, enables auto-reload
             threaded=True,  # threaded=True may speed up rendering on web page
-            ssl_context=flask_ssl_cert)
+            ssl_context=FLASK_SSL_CERT)

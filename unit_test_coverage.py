@@ -29,6 +29,7 @@ def code_coverage_all_tests():
     # defer imports until after coverage service
     # starts so that all imports are included in
     # coverage metric.
+    # pylint: disable=import-outside-toplevel
     import unit_test_common as utc  # noqa E402
     utc.parse_unit_test_runtime_parameters()
     utc.run_all_tests()

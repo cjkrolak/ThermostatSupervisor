@@ -4,9 +4,11 @@ Unit test module for utilities.py.
 # built-in imports
 import os
 import shutil
+import sys
 import unittest
 
 # local imports
+import thermostat_api as api
 import unit_test_common as utc
 import utilities as util
 
@@ -135,6 +137,32 @@ class EnvironmentTests(utc.UnitTest):
             util.get_python_version(99.99)
 
         print("test passed all checks")
+
+    def test_DynamicModuleImport(self):
+        """
+        Verify dynamic_module_import() runs without error
+
+        TODO: this module results in a resourcewarning within unittest:
+        sys:1: ResourceWarning: unclosed <socket.socket fd=628,
+        family=AddressFamily.AF_INET, type=SocketKind.SOCK_DGRAM, proto=0,
+        laddr=('0.0.0.0', 64963)>
+        """
+
+        # test successful case
+        pkg = api.dynamic_module_import(api.DEFAULT_THERMOSTAT)
+        print("default thermostat returned package type %s" % type(pkg))
+        self.assertTrue(isinstance(pkg, object),
+                        "api.dynamic_module_import() returned type(%s),"
+                        " expected an object" % type(pkg))
+        del sys.modules[api.DEFAULT_THERMOSTAT]
+        del pkg
+
+        # test failing case
+        with self.assertRaises(ImportError):
+            print("attempting to open bogus package name, expect exception...")
+            pkg = api.dynamic_module_import("bogus")
+            print("'bogus' module returned package type %s" % type(pkg))
+        print("test passed")
 
 
 class FileAndLoggingTests(utc.UnitTest):
