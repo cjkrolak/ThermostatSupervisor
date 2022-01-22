@@ -165,17 +165,17 @@ class ThermostatClass(tc.ThermostatCommon):
         """
         try:
             r = requests.get(self.url)
-        except requests.exceptions.ConnectionError as e:
+        except requests.exceptions.ConnectionError as ex:
             util.log_msg("FATAL ERROR: unable to connect to sht31 "
                          "thermometer at url '%s'" %
                          self.url, mode=util.BOTH_LOG, func_name=1)
-            raise e
+            raise ex
         try:
             if parameter is None:
                 return r.json()
             else:
                 return r.json()[parameter]
-        except json.decoder.JSONDecodeError as e:
+        except json.decoder.JSONDecodeError as ex:
             util.log_msg(traceback.format_exc(),
                          mode=util.BOTH_LOG,
                          func_name=1)
@@ -188,7 +188,7 @@ class ThermostatClass(tc.ThermostatCommon):
                 self.get_metadata(zone, parameter, retry=False)
             else:
                 raise Exception("FATAL ERROR: SHT31 server "
-                                "is not responding") from e
+                                "is not responding") from ex
 
 
 class ThermostatZone(tc.ThermostatCommonZone):
@@ -247,15 +247,15 @@ class ThermostatZone(tc.ThermostatCommonZone):
         """
         try:
             r = requests.get(self.url)
-        except requests.exceptions.ConnectionError as e:
+        except requests.exceptions.ConnectionError as ex:
             util.log_msg("FATAL ERROR: unable to connect to sht31 "
                          "thermometer at url '%s'" %
                          self.url, mode=util.BOTH_LOG, func_name=1)
-            raise e
+            raise ex
         if parameter is None:
             try:
                 return r.json()
-            except json.decoder.JSONDecodeError as e:
+            except json.decoder.JSONDecodeError as ex:
                 util.log_msg(traceback.format_exc(),
                              mode=util.BOTH_LOG,
                              func_name=1)
@@ -268,11 +268,11 @@ class ThermostatZone(tc.ThermostatCommonZone):
                     self.get_metadata(parameter=None, retry=False)
                 else:
                     raise Exception("FATAL ERROR: SHT31 server "
-                                    "is not responding") from e
+                                    "is not responding") from ex
         else:
             try:
                 return r.json()[parameter]
-            except json.decoder.JSONDecodeError as e:
+            except json.decoder.JSONDecodeError as ex:
                 util.log_msg(traceback.format_exc(),
                              mode=util.BOTH_LOG,
                              func_name=1)
@@ -285,8 +285,8 @@ class ThermostatZone(tc.ThermostatCommonZone):
                     self.get_metadata(parameter, retry=False)
                 else:
                     raise Exception("FATAL ERROR: SHT31 server "
-                                    "is not responding") from e
-            except KeyError as e:
+                                    "is not responding") from ex
+            except KeyError as ex:
                 util.log_msg(traceback.format_exc(),
                              mode=util.BOTH_LOG,
                              func_name=1)
@@ -305,7 +305,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
                     raise Exception("FATAL ERROR: SHT31 server "
                                     "response did not contain key '%s'"
                                     ", raw response=%s" %
-                                    (parameter, r.json())) from e
+                                    (parameter, r.json())) from ex
 
     def get_display_temp(self) -> float:
         """

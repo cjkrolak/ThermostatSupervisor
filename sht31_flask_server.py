@@ -12,11 +12,11 @@ try:
     import RPi.GPIO as GPIO  # noqa F405 raspberry pi GPIO library
     import smbus  # noqa F405
     pi_library_exception = None  # successful
-except ImportError as e:
+except ImportError as ex:
     # hardware-related library, not needed in unittest mode
     print("WARNING: RPi or smbus library import error, "
           "this is expected in unittest mode")
-    pi_library_exception = e  # unsuccessful
+    pi_library_exception = ex  # unsuccessful
 
 # built-in imports
 import os
@@ -148,11 +148,11 @@ class Sensors(object):
         data = i2c_command[1]
         try:
             bus.write_i2c_block_data(i2c_addr, register, data)
-        except OSError as e:
+        except OSError as ex:
             print("FATAL ERROR(%s): i2c device at address %s is "
                   "not responding" %
                   (util.get_function_name(), hex(i2c_addr)))
-            raise e
+            raise ex
         time.sleep(0.5)
 
     def read_i2c_data(self, bus, i2c_addr, register=0x00, length=0x06):
@@ -175,11 +175,11 @@ class Sensors(object):
             response = bus.read_i2c_block_data(i2c_addr,
                                                register,
                                                length)
-        except OSError as e:
+        except OSError as ex:
             print("FATAL ERROR(%s): i2c device at address %s is "
                   "not responding" %
                   (util.get_function_name(), hex(i2c_addr)))
-            raise e
+            raise ex
         return response
 
     def parse_fault_register_data(self, data):

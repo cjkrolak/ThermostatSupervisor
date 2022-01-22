@@ -99,8 +99,8 @@ def send_email_alert(to_address=None,
     except (ValueError,  # not sure if this exception will be raised here
             TimeoutError,  # observed on Windows for bad port
             OSError  # on AzDO with bad port
-            ) as e:
-        util.log_msg("exception during smtp connection: %s" % str(e),
+            ) as ex:
+        util.log_msg("exception during smtp connection: %s" % str(ex),
                      mode=util.BOTH_LOG, func_name=1)
         return (util.CONNECTION_ERROR, return_status_msg_dict[status])
     server.ehlo()

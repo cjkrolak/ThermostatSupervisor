@@ -269,12 +269,12 @@ def find_module(name):
     """
     try:
         fp, path, desc = imp.find_module(name)
-    except ImportError as e:
+    except ImportError as ex:
         util.log_msg(traceback.format_exc(),
                      mode=util.BOTH_LOG, func_name=1)
         util.log_msg("module not found: " + name,
                      mode=util.BOTH_LOG, func_name=1)
-        raise e
+        raise ex
     return fp, path, desc
 
 
@@ -296,12 +296,12 @@ def load_module(name, fp, path, desc):
         # dynamically and takes the filepath
         # module and description as parameter
         mod = imp.load_module(name, fp, path, desc)
-    except Exception as e:
+    except Exception as ex:
         util.log_msg(traceback.format_exc(),
                      mode=util.BOTH_LOG, func_name=1)
         util.log_msg("module load failed: " + name,
                      mode=util.BOTH_LOG, func_name=1)
-        raise e
+        raise ex
     finally:
         fp.close()
     return mod
