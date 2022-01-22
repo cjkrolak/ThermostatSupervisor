@@ -14,7 +14,7 @@ import email_notification as eml
 import utilities as util
 
 
-degree_sign = u"\N{DEGREE SIGN}"
+DEGREE_SIGN = u"\N{DEGREE SIGN}"
 
 
 class ThermostatCommon():
@@ -22,8 +22,8 @@ class ThermostatCommon():
 
     def __init__(self, *_, **__):
         self.thermostat_type = "unknown"  # placeholder
-        self.zone_number = util.bogus_int  # placeholder
-        self.device_id = util.bogus_int  # placeholder
+        self.zone_number = util.BOGUS_INT  # placeholder
+        self.device_id = util.BOGUS_INT  # placeholder
         self.ip_address = None  # placeholder
 
     def print_all_thermostat_metadata(self, zone, debug=False):
@@ -53,11 +53,11 @@ class ThermostatCommon():
         """
         # dump metadata in a readable format
         return_data = func(*args)
-        pp = pprint.PrettyPrinter(indent=4)
+        pprint_obj = pprint.PrettyPrinter(indent=4)
         print("\n")
         util.log_msg("raw thermostat meta data:",
                      mode=util.BOTH_LOG, func_name=1)
-        pp.pprint(return_data)
+        pprint_obj.pprint(return_data)
         return return_data
 
 
@@ -84,13 +84,13 @@ class ThermostatCommonZone():
 
     system_switch_position = {
         # placeholder, will be tstat-specific
-        UNKNOWN_MODE: util.bogus_int,
-        HEAT_MODE: util.bogus_int - 1,
-        COOL_MODE: util.bogus_int - 2,
-        AUTO_MODE: util.bogus_int - 3,
-        DRY_MODE: util.bogus_int - 4,
-        FAN_MODE: util.bogus_int - 5,
-        OFF_MODE: util.bogus_int - 6,
+        UNKNOWN_MODE: util.BOGUS_INT,
+        HEAT_MODE: util.BOGUS_INT - 1,
+        COOL_MODE: util.BOGUS_INT - 2,
+        AUTO_MODE: util.BOGUS_INT - 3,
+        DRY_MODE: util.BOGUS_INT - 4,
+        FAN_MODE: util.BOGUS_INT - 5,
+        OFF_MODE: util.BOGUS_INT - 6,
         }
     max_scheduled_heat_allowed = 74  # warn if scheduled heat value exceeds.
     min_scheduled_cool_allowed = 68  # warn if scheduled cool value exceeds.
@@ -98,11 +98,11 @@ class ThermostatCommonZone():
 
     def __init__(self, *_, **__):
         self.thermostat_type = "unknown"  # placeholder
-        self.zone_number = util.bogus_int  # placeholder
+        self.zone_number = util.BOGUS_INT  # placeholder
         self.zone_name = None  # placeholder
-        self.device_id = util.bogus_int  # placeholder
-        self.poll_time_sec = util.bogus_int  # placeholder
-        self.connection_time_sec = util.bogus_int  # placeholder
+        self.device_id = util.BOGUS_INT  # placeholder
+        self.poll_time_sec = util.BOGUS_INT  # placeholder
+        self.connection_time_sec = util.BOGUS_INT  # placeholder
         self.flag_all_deviations = False  #
         self.temperature_is_deviated = False  # temp deviated from schedule
         self.display_temp = None  # current temperature in deg F
@@ -115,12 +115,12 @@ class ThermostatCommonZone():
 
         # abstraction vars and funcs, defined in query_thermostat_zone
         self.current_mode = None  # integer representing mode
-        self.current_setpoint = util.bogus_int  # current setpoint
-        self.schedule_setpoint = util.bogus_int  # current scheduled setpoint
+        self.current_setpoint = util.BOGUS_INT  # current setpoint
+        self.schedule_setpoint = util.BOGUS_INT  # current scheduled setpoint
         self.tolerance_sign = 1  # +1 for heat, -1 for cool
         self.operator = operator.ne  # operator for deviation check
         self.tolerance_degrees = self.tolerance_degrees_default
-        self.global_limit = util.bogus_int  # global temp limit
+        self.global_limit = util.BOGUS_INT  # global temp limit
         self.global_operator = operator.ne  # oper for global temp deviation
         self.revert_setpoint_func = self.function_not_supported
         self.get_setpoint_func = self.function_not_supported
@@ -186,31 +186,31 @@ class ThermostatCommonZone():
             self.get_setpoint_func = self.function_not_supported
         elif self.is_auto_mode():
             self.current_mode = self.AUTO_MODE
-            self.current_setpoint = util.bogus_int
-            self.schedule_setpoint = util.bogus_int
+            self.current_setpoint = util.BOGUS_INT
+            self.schedule_setpoint = util.BOGUS_INT
             self.tolerance_sign = 1
             self.operator = operator.ne
-            self.global_limit = util.bogus_int
+            self.global_limit = util.BOGUS_INT
             self.global_operator = operator.ne
             self.revert_setpoint_func = self.function_not_supported
             self.get_setpoint_func = self.function_not_supported
         elif self.is_fan_mode():
             self.current_mode = self.FAN_MODE
-            self.current_setpoint = util.bogus_int
-            self.schedule_setpoint = util.bogus_int
+            self.current_setpoint = util.BOGUS_INT
+            self.schedule_setpoint = util.BOGUS_INT
             self.tolerance_sign = 1
             self.operator = operator.ne
-            self.global_limit = util.bogus_int
+            self.global_limit = util.BOGUS_INT
             self.global_operator = operator.ne
             self.revert_setpoint_func = self.function_not_supported
             self.get_setpoint_func = self.function_not_supported
         elif self.is_off_mode():
             self.current_mode = self.OFF_MODE
-            self.current_setpoint = util.bogus_int
-            self.schedule_setpoint = util.bogus_int
+            self.current_setpoint = util.BOGUS_INT
+            self.schedule_setpoint = util.BOGUS_INT
             self.tolerance_sign = 1
             self.operator = operator.ne
-            self.global_limit = util.bogus_int
+            self.global_limit = util.BOGUS_INT
             self.global_operator = operator.ne
             self.revert_setpoint_func = self.function_not_supported
             self.get_setpoint_func = self.function_not_supported
@@ -256,11 +256,11 @@ class ThermostatCommonZone():
         """
 
         return_buffer = {
-            "heat_mode": util.bogus_bool,  # in heating mode
-            "cool_mode": util.bogus_bool,  # in cooling mode
-            "heat_deviation": util.bogus_bool,  # True: heat is deviated above
-            "cool_deviation": util.bogus_bool,  # True: cool is deviated below
-            "hold_mode": util.bogus_bool,  # True if hold is enabled
+            "heat_mode": util.BOGUS_BOOL,  # in heating mode
+            "cool_mode": util.BOGUS_BOOL,  # in cooling mode
+            "heat_deviation": util.BOGUS_BOOL,  # True: heat is deviated above
+            "cool_deviation": util.BOGUS_BOOL,  # True: cool is deviated below
+            "hold_mode": util.BOGUS_BOOL,  # True if hold is enabled
             "status_msg": "",  # status message
             }
 
@@ -437,23 +437,23 @@ class ThermostatCommonZone():
 
     def is_heating(self):
         """Return 1 if heating relay is active, else 0."""
-        return util.bogus_int
+        return util.BOGUS_INT
 
     def is_cooling(self):
         """Return 1 if cooling relay is active, else 0."""
-        return util.bogus_int
+        return util.BOGUS_INT
 
     def is_drying(self):
         """Return 1 if drying relay is active, else 0."""
-        return util.bogus_int
+        return util.BOGUS_INT
 
     def is_auto(self):
         """Return 1 if auto relay is active, else 0."""
-        return util.bogus_int
+        return util.BOGUS_INT
 
     def is_fanning(self):
         """Return 1 if fan relay is active, else 0."""
-        return util.bogus_int
+        return util.BOGUS_INT
 
     def set_heat_setpoint(self, temp: int) -> None:
         """
@@ -514,29 +514,29 @@ class ThermostatCommonZone():
     # Thermostat-specific methods will be overloaded
     def get_display_temp(self) -> float:
         """Return the displayed temperature."""
-        return float(util.bogus_int)  # placeholder
+        return float(util.BOGUS_INT)  # placeholder
 
     def get_display_humidity(self) -> float:
         """Return the displayed humidity."""
-        return float(util.bogus_int)  # placeholder
+        return float(util.BOGUS_INT)  # placeholder
 
     def get_is_humidity_supported(self) -> bool:
         """Return humidity sensor status."""
-        return util.bogus_bool  # placeholder
+        return util.BOGUS_BOOL  # placeholder
 
     def get_system_switch_position(self) -> int:
         """Return the 'SystemSwitchPosition'
             'SystemSwitchPosition' = 1 for heat, 2 for off
         """
-        return util.bogus_int  # placeholder
+        return util.BOGUS_INT  # placeholder
 
     def get_heat_setpoint_raw(self) -> int:
         """Return raw heat set point(number only, no units)."""
-        return util.bogus_int  # placeholder
+        return util.BOGUS_INT  # placeholder
 
     def get_heat_setpoint(self) -> int:
         """Return raw heat set point(number and units)."""
-        return util.bogus_int  # placeholder
+        return util.BOGUS_INT  # placeholder
 
     def get_schedule_program_heat(self) -> dict:
         """
@@ -555,15 +555,15 @@ class ThermostatCommonZone():
             # unit test mode, return global min
             return self.max_scheduled_heat_allowed
         else:
-            return util.bogus_int  # placeholder
+            return util.BOGUS_INT  # placeholder
 
     def get_cool_setpoint_raw(self) -> int:
         """Return raw cool set point (number only, no units)."""
-        return util.bogus_int  # placeholder
+        return util.BOGUS_INT  # placeholder
 
     def get_cool_setpoint(self) -> int:
         """Return raw cool set point (number and units)."""
-        return util.bogus_int  # placeholder
+        return util.BOGUS_INT  # placeholder
 
     def get_schedule_program_cool(self) -> dict:
         """
@@ -582,19 +582,19 @@ class ThermostatCommonZone():
             # unit test mode, return global min
             return self.min_scheduled_cool_allowed
         else:
-            return util.bogus_int  # placeholder
+            return util.BOGUS_INT  # placeholder
 
     def get_vacation_hold(self) -> bool:
         """Return True if thermostat is in vacation hold mode."""
-        return util.bogus_bool  # placeholder
+        return util.BOGUS_BOOL  # placeholder
 
     def get_is_invacation_hold_mode(self) -> bool:
         """Return the 'IsInVacationHoldMode' setting."""
-        return util.bogus_bool  # placeholder
+        return util.BOGUS_BOOL  # placeholder
 
     def get_temporary_hold_until_time(self) -> int:
         """Return the 'TemporaryHoldUntilTime' """
-        return util.bogus_int  # placeholder
+        return util.BOGUS_INT  # placeholder
 
     def refresh_zone_info(self, force_refresh=False) -> None:
         """
@@ -631,7 +631,7 @@ class ThermostatCommonZone():
         returns:
             (int): vacation hold time in minutes.
          """
-        return util.bogus_int  # not implemented
+        return util.BOGUS_INT  # not implemented
 
     def update_runtime_parameters(self, user_inputs):
         """use runtime parameter overrides.
@@ -733,12 +733,12 @@ class ThermostatCommonZone():
 
         # measurement loop
         for n in range(measurements):
-            t0 = time.time()
+            time0 = time.time()
             func()  # target command
-            t1 = time.time()
+            time1 = time.time()
 
             # accumulate stats
-            tdelta = t1 - t0
+            tdelta = time1 - time0
             delta_lst.append(tdelta)
             util.log_msg("measurement %s=%.2f seconds" % (n, tdelta),
                          mode=util.BOTH_LOG, func_name=1)

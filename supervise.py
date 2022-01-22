@@ -116,7 +116,7 @@ def supervisor(thermostat_type, zone_str):
                      (zone_num, session_count), mode=util.BOTH_LOG)
         Thermostat = mod.ThermostatClass(zone_num)
 
-        t0 = time.time()  # connection timer
+        time0 = time.time()  # connection timer
 
         # dump all meta data
         if debug:
@@ -167,7 +167,7 @@ def supervisor(thermostat_type, zone_str):
             Zone.refresh_zone_info()
 
             # reconnect
-            if (time.time() - t0) > Zone.connection_time_sec:
+            if (time.time() - time0) > Zone.connection_time_sec:
                 util.log_msg("forcing re-connection to thermostat...",
                              mode=util.BOTH_LOG)
                 del Thermostat

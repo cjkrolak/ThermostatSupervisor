@@ -217,9 +217,9 @@ class ThermostatZone(tc.ThermostatCommonZone):
 
         # need verification
         self.system_switch_position[
-            tc.ThermostatCommonZone.DRY_MODE] = util.bogus_int
+            tc.ThermostatCommonZone.DRY_MODE] = util.BOGUS_INT
         self.system_switch_position[
-            tc.ThermostatCommonZone.FAN_MODE] = util.bogus_int
+            tc.ThermostatCommonZone.FAN_MODE] = util.BOGUS_INT
 
         # zone info
         self.thermostat_type = mmm_config.ALIAS
