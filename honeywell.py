@@ -5,6 +5,7 @@ using pyhtcc library.
 https://pypi.org/project/pyhtcc/
 """
 # built-in imports
+import datetime
 import os
 import pprint
 import pyhtcc
@@ -697,6 +698,8 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
         retry_delay_sec = 60
         while trial_number < number_of_retries:
             try:
+                time_now = (datetime.datetime.now().
+                            strftime("%Y-%m-%d %H:%M:%S"))
                 all_zones_info = self.pyhtcc.get_zones_info()
             except Exception:  # noqa w0703 too general exception
                 # catching simplejson.errors.JSONDecodeError
@@ -704,10 +707,10 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
                 util.log_msg(traceback.format_exc(),
                              mode=util.BOTH_LOG,
                              func_name=1)
-                util.log_msg("exception during refresh_zone_info, on trial "
-                             "%s of %s, probably a"
+                util.log_msg("%s: exception during refresh_zone_info, "
+                             "on trial %s of %s, probably a"
                              " connection issue%s" %
-                             (trial_number, number_of_retries,
+                             (time_now, trial_number, number_of_retries,
                               ["",
                                ", waiting %s seconds and then retrying..." %
                                retry_delay_sec]
@@ -722,9 +725,9 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
                     email_notification.send_email_alert(
                         subject=("intermittent JSON decode error "
                                  "during refresh zone"),
-                        body="%s: trial %s of %s" % (util.get_function_name(),
-                                                     trial_number,
-                                                     number_of_retries))
+                        body="%s: trial %s of %s at %s" %
+                        (util.get_function_name(), trial_number,
+                         number_of_retries, time_now))
                 for z in all_zones_info:
                     if z['DeviceID'] == self.device_id:
                         pyhtcc.logger.debug(f"Refreshed zone info for \
@@ -735,9 +738,10 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
 
         # log fatal failure
         email_notification.send_email_alert(
-            subject=("intermittent JSON decode error during refresh zone"),
-            body="%s: trial %s of %s" % (util.get_function_name(),
-                                         trial_number, number_of_retries))
+            subject=("fatal JSON decode error during refresh zone"),
+            body="%s: trial %s of %s at %s" % (util.get_function_name(),
+                                               trial_number, number_of_retries,
+                                               time_now))
         raise pyhtcc.ZoneNotFoundError(f"Missing device: {self.device_id}")
 
 
