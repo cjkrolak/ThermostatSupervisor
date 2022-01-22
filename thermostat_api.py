@@ -42,9 +42,6 @@ for config_module in config_modules:
     SUPPORTED_THERMOSTATS.update(
         {config_module.ALIAS: config_module.supported_configs})
 
-# target zone for monitoring
-zone_number = 0  # default
-
 # dictionary of required env variables for each thermostat type
 thermostats = {
 }
@@ -264,29 +261,6 @@ def dynamic_module_import(name):
         raise ex
     else:
         return mod
-
-
-def find_module(name):
-    """
-    Find the module and return its description and path.
-
-    inputs:
-        name(str): module name
-    returns:
-        fp(_io.TextIOWrapper): file pointer
-        path(str): path to file
-        desc(tuple): file descriptor
-    """
-    try:
-        # fp, path, desc = imp.find_module(name)
-        fp, path, desc = importlib.util.find_spec(name)
-    except ImportError as ex:
-        util.log_msg(traceback.format_exc(),
-                     mode=util.BOTH_LOG, func_name=1)
-        util.log_msg("module not found: " + name,
-                     mode=util.BOTH_LOG, func_name=1)
-        raise ex
-    return fp, path, desc
 
 
 def load_hardware_library(thermostat_type):
