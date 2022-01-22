@@ -7,3 +7,4 @@ psutil==5.8.0  # process id utility
 pyhtcc==0.1.6  # Honeywell TCC library
 pykumo==0.1.12  # kumocloud library
 radiotherm==2.1.0  # 3m50 library
+requests==2.27.1  # used by Honeywell and mmm at least

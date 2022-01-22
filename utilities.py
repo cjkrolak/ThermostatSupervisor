@@ -498,4 +498,3 @@ def get_python_version(min_version=min_python_version, display_version=True):
                                    (version_float, min_version))
 
     return (major_version, minor_version)
-
