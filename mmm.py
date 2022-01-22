@@ -78,9 +78,9 @@ class ThermostatClass(tc.ThermostatCommon):
         # verify thermostat exists on network
         try:
             self.device_id = radiotherm.get_thermostat(self.ip_address)
-        except urllib.error.URLError as e:
+        except urllib.error.URLError as ex:
             raise Exception("FATAL ERROR: 3m thermostat not found at "
-                            "ip address: %s" % self.ip_address) from e
+                            "ip address: %s" % self.ip_address) from ex
         return self.device_id
 
     def print_all_thermostat_metadata(self, zone, debug=False):
@@ -119,8 +119,8 @@ class ThermostatClass(tc.ThermostatCommon):
                     val = self.device_id.__getattribute__(key)
                 except TypeError:
                     val = "<attribute is not readable>"
-                except AttributeError as e:
-                    val = e
+                except AttributeError as ex:
+                    val = ex
                 except socket.timeout:
                     val = "<socket timeout>"
                 attr_dict[key] = val
