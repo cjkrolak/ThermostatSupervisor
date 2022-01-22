@@ -12,10 +12,12 @@ data structure expected:
 """
 # built-in imports
 import json
-import requests
 import threading
 import time
 import traceback
+
+# third party imports
+import requests
 
 # local imports
 import sht31_config
@@ -89,7 +91,7 @@ class ThermostatClass(tc.ThermostatCommon):
         returns:
             (str): env var key
         """
-        return ('SHT31_REMOTE_IP_ADDRESS' + '_' + str(zone_str))
+        return 'SHT31_REMOTE_IP_ADDRESS' + '_' + str(zone_str)
 
     def get_ip_address(self, env_key):
         """
@@ -111,6 +113,7 @@ class ThermostatClass(tc.ThermostatCommon):
         """
         # flask server used in unit test mode
         import sht31_flask_server as sht31_fs  # noqa E402
+        # pylint: disable=import-outside-toplevel
 
         sht31_fs.debug = False
         self.flask_server = threading.Thread(target=sht31_fs.app.run,
@@ -164,7 +167,7 @@ class ThermostatClass(tc.ThermostatCommon):
             (dict) empty dict.
         """
         try:
-            r = requests.get(self.url)
+            response = requests.get(self.url)
         except requests.exceptions.ConnectionError as ex:
             util.log_msg("FATAL ERROR: unable to connect to sht31 "
                          "thermometer at url '%s'" %
@@ -172,9 +175,9 @@ class ThermostatClass(tc.ThermostatCommon):
             raise ex
         try:
             if parameter is None:
-                return r.json()
+                return response.json()
             else:
-                return r.json()[parameter]
+                return response.json()[parameter]
         except json.decoder.JSONDecodeError as ex:
             util.log_msg(traceback.format_exc(),
                          mode=util.BOTH_LOG,
@@ -246,7 +249,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
           str if parameter != None
         """
         try:
-            r = requests.get(self.url)
+            response = requests.get(self.url)
         except requests.exceptions.ConnectionError as ex:
             util.log_msg("FATAL ERROR: unable to connect to sht31 "
                          "thermometer at url '%s'" %
@@ -254,7 +257,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
             raise ex
         if parameter is None:
             try:
-                return r.json()
+                return response.json()
             except json.decoder.JSONDecodeError as ex:
                 util.log_msg(traceback.format_exc(),
                              mode=util.BOTH_LOG,
@@ -271,7 +274,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
                                     "is not responding") from ex
         else:
             try:
-                return r.json()[parameter]
+                return response.json()[parameter]
             except json.decoder.JSONDecodeError as ex:
                 util.log_msg(traceback.format_exc(),
                              mode=util.BOTH_LOG,
@@ -290,9 +293,10 @@ class ThermostatZone(tc.ThermostatCommonZone):
                 util.log_msg(traceback.format_exc(),
                              mode=util.BOTH_LOG,
                              func_name=1)
-                if "message" in r.json():
+                if "message" in response.json():
                     util.log_msg("WARNING in Flask response: '%s'" %
-                                 r.json()["message"], mode=util.BOTH_LOG,
+                                 response.json()["message"],
+                                 mode=util.BOTH_LOG,
                                  func_name=1)
                 if retry:
                     util.log_msg("waiting %s seconds and retrying SHT31 "
@@ -305,7 +309,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
                     raise Exception("FATAL ERROR: SHT31 server "
                                     "response did not contain key '%s'"
                                     ", raw response=%s" %
-                                    (parameter, r.json())) from ex
+                                    (parameter, response.json())) from ex
 
     def get_display_temp(self) -> float:
         """

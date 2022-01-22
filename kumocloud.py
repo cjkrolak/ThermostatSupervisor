@@ -509,7 +509,6 @@ class ThermostatZone(tc.ThermostatCommonZone):
         util.log_msg("WARNING: this method not implemented yet for this "
                      "thermostat type",
                      mode=util.BOTH_LOG, func_name=1)
-        return
 
     def set_cool_setpoint(self, temp: int) -> None:
         """
@@ -527,7 +526,6 @@ class ThermostatZone(tc.ThermostatCommonZone):
         util.log_msg("WARNING: this method not implemented yet for this "
                      "thermostat type",
                      mode=util.BOTH_LOG, func_name=1)
-        return
 
     def refresh_zone_info(self, force_refresh=False):
         """
