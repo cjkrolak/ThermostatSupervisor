@@ -395,7 +395,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         returns:
             (int): scheduled heating set point in degrees.
         """
-        return emulator_config.max_heat_setpoint  # max heat set point allowed
+        return emulator_config.MAX_HEAT_SETPOINT  # max heat set point allowed
 
     def get_schedule_cool_sp(self) -> int:
         """
@@ -406,7 +406,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         returns:
             (int): scheduled cooling set point in degrees F.
         """
-        return emulator_config.min_cool_setpoint  # min cool set point allowed
+        return emulator_config.MIN_COOL_SETPOINT  # min cool set point allowed
 
     def get_cool_setpoint_raw(self) -> int:
         """

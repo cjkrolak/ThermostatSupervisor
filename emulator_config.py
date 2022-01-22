@@ -2,8 +2,8 @@
 emulator thermostat config file.
 """
 ALIAS = "emulator"
-max_heat_setpoint = 66
-min_cool_setpoint = 78
+MAX_HEAT_SETPOINT = 66
+MIN_COOL_SETPOINT = 78
 
 # all environment variables required by code should be registered here
 env_variables = {
