@@ -5,7 +5,7 @@ This file should be updated for any new thermostats supported and
 any changes to thermostat configs.
 """
 # built ins
-import imp
+import importlib
 import sys
 import traceback
 
@@ -250,10 +250,20 @@ def dynamic_module_import(name):
     returns:
         mod(module): module object
     """
-    fp, path, desc = find_module(name)
-    mod = load_module(name, fp, path, desc)
-
-    return mod
+    try:
+        # load_modules loads the module
+        spec = importlib.util.find_spec(name)
+        if spec is None:
+            raise ModuleNotFoundError("module '%s' could not be found")
+        mod = spec.loader.load_module()
+    except Exception as ex:
+        util.log_msg(traceback.format_exc(),
+                     mode=util.BOTH_LOG, func_name=1)
+        util.log_msg("module load failed: " + name,
+                     mode=util.BOTH_LOG, func_name=1)
+        raise ex
+    else:
+        return mod
 
 
 def find_module(name):
@@ -268,7 +278,8 @@ def find_module(name):
         desc(tuple): file descriptor
     """
     try:
-        fp, path, desc = imp.find_module(name)
+        # fp, path, desc = imp.find_module(name)
+        fp, path, desc = importlib.util.find_spec(name)
     except ImportError as ex:
         util.log_msg(traceback.format_exc(),
                      mode=util.BOTH_LOG, func_name=1)
@@ -276,35 +287,6 @@ def find_module(name):
                      mode=util.BOTH_LOG, func_name=1)
         raise ex
     return fp, path, desc
-
-
-def load_module(name, fp, path, desc):
-    """
-    Load the module into memory.
-
-    Note: this function will close fp.
-
-    inputs:
-        fp(_io.TextIOWrapper): file pointer
-        path(str): path to file
-        desc(tuple): file descriptor
-    returns:
-        mod(python module)
-    """
-    try:
-        # load_modules loads the module
-        # dynamically and takes the filepath
-        # module and description as parameter
-        mod = imp.load_module(name, fp, path, desc)
-    except Exception as ex:
-        util.log_msg(traceback.format_exc(),
-                     mode=util.BOTH_LOG, func_name=1)
-        util.log_msg("module load failed: " + name,
-                     mode=util.BOTH_LOG, func_name=1)
-        raise ex
-    finally:
-        fp.close()
-    return mod
 
 
 def load_hardware_library(thermostat_type):
