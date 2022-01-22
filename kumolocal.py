@@ -9,15 +9,10 @@ import thermostat_common as tc
 import utilities as util
 
 # pykumo
-pykumo_debug = False  # debug uses local pykumo repo instead of pkg
-if pykumo_debug and not util.is_azure_environment():
-    # begin local import
-    import importlib.util
-    spec = importlib.util.spec_from_file_location(
-        "pykumo.py", "..\\pykumo\\pykumo\\pykumo.py")
-    pykumo = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(pykumo)
-    # end of local import
+PYKUMO_DEBUG = False  # debug uses local pykumo repo instead of pkg
+if PYKUMO_DEBUG and not util.is_azure_environment():
+    pykumo = util.dynamic_module_import("pykumo.py",
+                                        "..\\pykumo\\pykumo\\pykumo.py")
 else:
     import pykumo  # noqa E402, from path / site packages
 

@@ -180,7 +180,7 @@ class ThermostatClass(tc.ThermostatCommon):
         """
         return self.get_meta_data_dict(zone)
 
-    def get_uiData_param(self, zone, parameter) -> dict:
+    def get_ui_data_param(self, zone, parameter) -> dict:
         """
         Get the latest thermostat ui data for one specific parameter.
 

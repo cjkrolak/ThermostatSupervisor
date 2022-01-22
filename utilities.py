@@ -2,6 +2,7 @@
 
 # built-in libraries
 import datetime
+import importlib
 import inspect
 import os
 import platform
@@ -500,3 +501,34 @@ def get_python_version(min_version=MIN_PYTHON_VERSION, display_version=True):
                                    (version_float, min_version))
 
     return (major_version, minor_version)
+
+
+def dynamic_module_import(name, path=None):
+    """
+    Find and load python module.
+
+    TODO: this module results in a resourcewarning within unittest:
+    sys:1: ResourceWarning: unclosed <socket.socket fd=628,
+    family=AddressFamily.AF_INET, type=SocketKind.SOCK_DGRAM, proto=0,
+    laddr=('0.0.0.0', 64963)>
+
+    inputs:
+        name(str): module name
+        path(str): file path, if None use current directory
+    returns:
+        mod(module): module object
+    """
+    try:
+        # load_modules loads the module
+        spec = importlib.util.find_spec(name, path)
+        if spec is None:
+            raise ModuleNotFoundError("module '%s' could not be found")
+        mod = spec.loader.load_module()
+    except Exception as ex:
+        log_msg(traceback.format_exc(),
+                mode=BOTH_LOG, func_name=1)
+        log_msg("module load failed: " + name,
+                mode=BOTH_LOG, func_name=1)
+        raise ex
+    else:
+        return mod

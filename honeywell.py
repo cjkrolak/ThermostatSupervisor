@@ -8,9 +8,11 @@ https://pypi.org/project/pyhtcc/
 import datetime
 import os
 import pprint
-import pyhtcc
 import time
 import traceback
+
+# third party imports
+import pyhtcc
 
 # local imports
 import email_notification
@@ -159,8 +161,8 @@ class ThermostatClass(pyhtcc.PyHTCC, tc.ThermostatCommon):
                      mode=util.DEBUG_LOG + util.CONSOLE_LOG, func_name=1)
         return ui_data_dict
 
-    def get_uiData_param(self, zone=honeywell_config.default_zone,
-                         parameter=None) -> dict:
+    def get_ui_data_param(self, zone=honeywell_config.default_zone,
+                          parameter=None) -> dict:
         """
         Return the latest thermostat ui data for one specific parameter.
 
@@ -728,11 +730,11 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
                         body="%s: trial %s of %s at %s" %
                         (util.get_function_name(), trial_number,
                          number_of_retries, time_now))
-                for z in all_zones_info:
-                    if z['DeviceID'] == self.device_id:
+                for zone_data in all_zones_info:
+                    if zone_data['DeviceID'] == self.device_id:
                         pyhtcc.logger.debug(f"Refreshed zone info for \
                                            {self.device_id}")
-                        self.zone_info = z
+                        self.zone_info = zone_data
                         self.last_fetch_time = time.time()
                         return
 
@@ -747,17 +749,20 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
 
 # add default requests session default timeout to prevent TimeoutExceptions
 # see ticket #93 for details
+# pylint: disable=wrong-import-order,wrong-import-position
 from requests.adapters import HTTPAdapter  # noqa E402
 
 # network timeout limit
 # 6s upper is 1.9 on pi4 and laptop
 # 6s upper is 2.17 on Azure pipeline
-http_timeout = 2.5  # 6 sigma limit in seconds
+HTTP_TIMEOUT = 2.5  # 6 sigma limit in seconds
 
 
 class TimeoutHTTPAdapter(HTTPAdapter):
+    """Override TimeoutHTTPAdapter to include timeout parameter.
+    """
     def __init__(self, *args, **kwargs):
-        self.timeout = http_timeout
+        self.timeout = HTTP_TIMEOUT
         if "timeout" in kwargs:
             self.timeout = kwargs["timeout"]
             del kwargs["timeout"]
@@ -784,9 +789,9 @@ if __name__ == "__main__":
         ThermostatClass, ThermostatZone)
 
     # measure thermostat response time
-    measurements = 30
-    print("Thermostat response times for %s measurements..." % measurements)
+    MEASUREMENTS = 30
+    print("Thermostat response times for %s measurements..." % MEASUREMENTS)
     meas_data = Zone.measure_thermostat_response_time(
-        measurements, func=Zone.pyhtcc.get_zones_info)
+        MEASUREMENTS, func=Zone.pyhtcc.get_zones_info)
     ppp = pprint.PrettyPrinter(indent=4)
     ppp.pprint(meas_data)

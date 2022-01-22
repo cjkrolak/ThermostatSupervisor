@@ -5,9 +5,7 @@ This file should be updated for any new thermostats supported and
 any changes to thermostat configs.
 """
 # built ins
-import importlib
 import sys
-import traceback
 
 # thermostat config files
 import emulator_config
@@ -232,37 +230,6 @@ def parse_all_runtime_parameters(argv_list=None):
     return result
 
 
-# dynamic import
-def dynamic_module_import(name):
-    """
-    Find and load python module.
-
-    TODO: this module results in a resourcewarning within unittest:
-    sys:1: ResourceWarning: unclosed <socket.socket fd=628,
-    family=AddressFamily.AF_INET, type=SocketKind.SOCK_DGRAM, proto=0,
-    laddr=('0.0.0.0', 64963)>
-
-    inputs:
-        name(str): module name
-    returns:
-        mod(module): module object
-    """
-    try:
-        # load_modules loads the module
-        spec = importlib.util.find_spec(name)
-        if spec is None:
-            raise ModuleNotFoundError("module '%s' could not be found")
-        mod = spec.loader.load_module()
-    except Exception as ex:
-        util.log_msg(traceback.format_exc(),
-                     mode=util.BOTH_LOG, func_name=1)
-        util.log_msg("module load failed: " + name,
-                     mode=util.BOTH_LOG, func_name=1)
-        raise ex
-    else:
-        return mod
-
-
 def load_hardware_library(thermostat_type):
     """
     Dynamic load library for requested hardware type.
@@ -272,7 +239,7 @@ def load_hardware_library(thermostat_type):
     returns:
         module
     """
-    mod = dynamic_module_import(
+    mod = util.dynamic_module_import(
         SUPPORTED_THERMOSTATS[thermostat_type]["module"])
     return mod
 
