@@ -2,14 +2,11 @@
 flask API for raspberry pi
 example from http://www.pibits.net/code/raspberry-pi-sht31-sensor-example.php
 """
-# Flask imports
-from flask import Flask, request, send_from_directory
-from flask_restful import Resource, Api  # noqa F405
-from flask_wtf.csrf import CSRFProtect
+
 
 # raspberry pi libraries
 try:
-    import RPi.GPIO as GPIO  # noqa F405 raspberry pi GPIO library
+    from RPi import GPIO  # noqa F405 raspberry pi GPIO library
     import smbus  # noqa F405
     pi_library_exception = None  # successful
 except ImportError as ex:
@@ -23,6 +20,11 @@ import os
 import statistics
 import sys
 import time
+
+# third party imports
+from flask import Flask, request, send_from_directory
+from flask_restful import Resource, Api  # noqa F405
+from flask_wtf.csrf import CSRFProtect
 
 # local imports
 import sht31_config
@@ -70,7 +72,7 @@ read_status_register = (0xf3, [0x2d])
 
 
 class Sensors(object):
-
+    """Sensor data."""
     def __init__(self):
         pass
 
@@ -82,33 +84,33 @@ class Sensors(object):
             data(class 'list'): raw data structure
         returns:
             temp(int): raw temp data in bits.
-            cTemp(float): temp on deg C
-            fTemp(float): temp in deg F
+            temp_c(float): temp on deg C
+            temp_f(float): temp in deg F
             humidity(float): humidity in %RH
         """
         # convert the data
         temp = data[0] * 256 + data[1]
-        cTemp = -45 + (175 * temp / 65535.0)
-        fTemp = -49 + (315 * temp / 65535.0)
+        temp_c = -45 + (175 * temp / 65535.0)
+        temp_f = -49 + (315 * temp / 65535.0)
         humidity = 100 * (data[3] * 256 + data[4]) / 65535.0
-        return temp, cTemp, fTemp, humidity
+        return temp, temp_c, temp_f, humidity
 
-    def pack_data_structure(self, fTemp_lst, cTemp_lst, humidity_lst):
+    def pack_data_structure(self, temp_f_lst, temp_c_lst, humidity_lst):
         """
         Calculate statistics and pack data structure.
 
         inputs:
-            fTemp_lst(list): list of fehrenheit measurements
-            cTemp_lst(list): list of celcius measurements
+            temp_f_lst(list): list of fehrenheit measurements
+            temp_c_lst(list): list of celcius measurements
             humidity_lst(list): list of humidity measurements.
         returns:
             (dict): data structure.
         """
-        return {sht31_config.API_MEASUREMENT_CNT: len(fTemp_lst),
-                sht31_config.API_TEMPC_MEAN:  statistics.mean(cTemp_lst),
-                sht31_config.API_TEMPC_STD: statistics.pstdev(cTemp_lst),
-                sht31_config.API_TEMPF_MEAN: statistics.mean(fTemp_lst),
-                sht31_config.API_TEMPF_STD: statistics.pstdev(fTemp_lst),
+        return {sht31_config.API_MEASUREMENT_CNT: len(temp_f_lst),
+                sht31_config.API_TEMPC_MEAN:  statistics.mean(temp_c_lst),
+                sht31_config.API_TEMPC_STD: statistics.pstdev(temp_c_lst),
+                sht31_config.API_TEMPF_MEAN: statistics.mean(temp_f_lst),
+                sht31_config.API_TEMPF_STD: statistics.pstdev(temp_f_lst),
                 sht31_config.API_HUMIDITY_MEAN: statistics.mean(humidity_lst),
                 sht31_config.API_HUMIDITY_STD: statistics.pstdev(humidity_lst),
                 }
@@ -148,11 +150,11 @@ class Sensors(object):
         data = i2c_command[1]
         try:
             bus.write_i2c_block_data(i2c_addr, register, data)
-        except OSError as ex:
+        except OSError as exc:
             print("FATAL ERROR(%s): i2c device at address %s is "
                   "not responding" %
                   (util.get_function_name(), hex(i2c_addr)))
-            raise ex
+            raise exc
         time.sleep(0.5)
 
     def read_i2c_data(self, bus, i2c_addr, register=0x00, length=0x06):
@@ -175,11 +177,11 @@ class Sensors(object):
             response = bus.read_i2c_block_data(i2c_addr,
                                                register,
                                                length)
-        except OSError as ex:
+        except OSError as exc:
             print("FATAL ERROR(%s): i2c device at address %s is "
                   "not responding" %
                   (util.get_function_name(), hex(i2c_addr)))
-            raise ex
+            raise exc
         return response
 
     def parse_fault_register_data(self, data):
@@ -193,24 +195,25 @@ class Sensors(object):
             (dict): fault register contents.
         """
         try:
-            d = data[0] * 256 + data[1]
+            date_val = data[0] * 256 + data[1]
             resp = {
                 'raw': data,
-                'raw_binary': format(d, '#018b')[2:],
-                'alert pending status(0=0,1=1+)': (d >> 15) & 1,
+                'raw_binary': format(date_val, '#018b')[2:],
+                'alert pending status(0=0,1=1+)': (date_val >> 15) & 1,
                 # bit 15: 0=None, 1=at least 1 pending alert
-                'heater status(0=off,1=on)': (d >> 13) & 1,
+                'heater status(0=off,1=on)': (date_val >> 13) & 1,
                 # bit 13: 0=off, 1=on
-                'RH tracking alert(0=no,1=yes)': (d >> 11) & 1,
+                'RH tracking alert(0=no,1=yes)': (date_val >> 11) & 1,
                 # bit 11: 0=no, 1=yes
-                'T tracking alert(0=no,1=yes)': (d >> 10) & 1,
+                'T tracking alert(0=no,1=yes)': (date_val >> 10) & 1,
                 # bit 10: 0=no, 1=yes
-                'System reset detected(0=no,1=yes)': (d >> 4) & 1,
+                'System reset detected(0=no,1=yes)': (date_val >> 4) & 1,
                 # bit 4
                 # 0=no reset since last clear cmd, 1=hard, soft, or supply fail
-                'Command status(0=correct,1=failed)': (d >> 1) & 1,
+                'Command status(0=correct,1=failed)': (date_val >> 1) & 1,
                 # bit 1: 0=successful, 1=invalid or field checksum
-                'Write data checksum status(0=correct,1=failed)': (d >> 0) & 1,
+                'Write data checksum status(0=correct,1=failed)':
+                    (date_val >> 0) & 1,
                 # bit 0: 0=correct, 1=failed
                 }
         except IndexError:
@@ -237,26 +240,26 @@ class Sensors(object):
         seed = request.args.get('seed', sht31_config.unit_test_seed, type=int)
 
         # data structure
-        fTemp_lst = []
-        cTemp_lst = []
+        temp_f_lst = []
+        temp_c_lst = []
         humidity_lst = []
 
         # loop for n measurements
-        for m in range(measurements):
+        for measurement in range(measurements):
 
             # fabricated data for unit testing
-            data = [seed + m % 2] * 5  # almost mid range
+            data = [seed + measurement % 2] * 5  # almost mid range
 
             # convert the data
-            _, cTemp, fTemp, humidity = self.convert_data(data)
+            _, temp_c, temp_f, humidity = self.convert_data(data)
 
             # add data to structure
-            fTemp_lst.append(fTemp)
-            cTemp_lst.append(cTemp)
+            temp_f_lst.append(temp_f)
+            temp_c_lst.append(temp_c)
             humidity_lst.append(humidity)
 
         # return data on API
-        return self.pack_data_structure(fTemp_lst, cTemp_lst, humidity_lst)
+        return self.pack_data_structure(temp_f_lst, temp_c_lst, humidity_lst)
 
     def get(self):
         """
@@ -279,8 +282,8 @@ class Sensors(object):
         time.sleep(0.5)
 
         # data structure
-        fTemp_lst = []
-        cTemp_lst = []
+        temp_f_lst = []
+        temp_c_lst = []
         humidity_lst = []
 
         try:
@@ -295,15 +298,16 @@ class Sensors(object):
                                           register=0x00, length=0x06)
 
                 # convert the data
-                _, cTemp, fTemp, humidity = self.convert_data(data)
+                _, temp_c, temp_f, humidity = self.convert_data(data)
 
                 # add data to structure
-                fTemp_lst.append(fTemp)
-                cTemp_lst.append(cTemp)
+                temp_f_lst.append(temp_f)
+                temp_c_lst.append(temp_c)
                 humidity_lst.append(humidity)
 
             # return data on API
-            return self.pack_data_structure(fTemp_lst, cTemp_lst, humidity_lst)
+            return self.pack_data_structure(temp_f_lst, temp_c_lst,
+                                            humidity_lst)
         finally:
             # close the smbus connection
             bus.close()

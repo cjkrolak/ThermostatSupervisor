@@ -61,6 +61,7 @@ class UnitTest(unittest.TestCase):
     is_off_mode_bckup = None
 
     def setUp_mock_thermostat_zone(self):
+        """Setup mock thermostat settings."""
         api.thermostats[self.thermostat_type] = {  # dummy unit test thermostat
             "required_env_variables": {
                 "GMAIL_USERNAME": None,
@@ -85,11 +86,13 @@ class UnitTest(unittest.TestCase):
         self.Zone.is_off_mode = lambda *_, **__: 1
 
     def tearDown_mock_thermostat_zone(self):
+        """Tear down the mock thermostat settings."""
         del api.thermostats[self.thermostat_type]
         api.user_inputs = self.user_inputs_backup
         self.Zone.is_off_mode = self.is_off_mode_bckup
 
     def print_test_result(self):
+        """Print unit test result to console."""
         if hasattr(self, '_outcome'):  # Python 3.4+
             # These two methods have no side effects
             result = self.defaultTestResult()
@@ -101,15 +104,16 @@ class UnitTest(unittest.TestCase):
             #                 self._resultForDoCleanups)
         error = self.list2reason(result.errors)
         failure = self.list2reason(result.failures)
-        ok = not error and not failure
+        result_ok = not error and not failure
 
         # Demo:   report short info immediately (not important)
-        if not ok:
+        if not result_ok:
             typ, text = ('ERROR', error) if error else ('FAIL', failure)
             msg = [x for x in text.split('\n')[1:] if not x.startswith(' ')][0]
             print("\n%s: %s\n     %s" % (typ, self.id(), msg))
 
     def list2reason(self, exc_list):
+        """Parse reason from list."""
         if exc_list and exc_list[-1][0] is self:
             return exc_list[-1][1]
 
@@ -143,6 +147,7 @@ class IntegrationTest(UnitTest):
     poll_interval_sec = None
 
     def setUpCommon(self):
+        """Test attributes common to all integration tests."""
         self.timeout_limit = 30  # 6 sigma timing upper limit in sec.
         self.timing_measurements = 10  # number of timing measurements.
         self.timing_func = None  # function used for timing measurement.
@@ -402,10 +407,7 @@ def parse_unit_test_runtime_parameters():
     # parse runtime parameters
     if len(sys.argv) > 1:
         enable_int_test_flags = ["1", "t", "true"]
-        if sys.argv[1].lower() in enable_int_test_flags:
-            enable_flag = True
-        else:
-            enable_flag = False
+        enable_flag = bool(sys.argv[1].lower() in enable_int_test_flags)
 
     # update global parameter
     setattr(sys.modules[__name__], global_par, enable_flag)
