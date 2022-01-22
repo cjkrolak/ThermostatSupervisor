@@ -5,10 +5,12 @@ import datetime
 import inspect
 import os
 import platform
-import psutil
 import socket
 import sys
 import traceback
+
+# third party libraries
+import psutil
 
 # thermostat config files
 import honeywell_config
@@ -27,9 +29,9 @@ FILE_NOT_FOUND_ERROR = 5
 OTHER_ERROR = 99
 
 # bogus values to identify uninitialized data
-bogus_int = -13
-bogus_bool = False
-bogus_str = "<missing value>"
+BOGUS_INT = -13
+BOGUS_BOOL = False
+BOGUS_STR = "<missing value>"
 bogus_dict = {}
 
 # logging options
@@ -39,8 +41,8 @@ BOTH_LOG = 0x011  # log to both console and data logs
 DEBUG_LOG = 0x100  # print only if debug mode is on
 
 file_path = ".//data"
-max_log_size_bytes = 2**20  # logs rotate at this max size
-min_python_version = 3.7  # minimum python version required
+MAX_LOG_SIZE_BYTES = 2**20  # logs rotate at this max size
+MIN_PYTHON_VERSION = 3.7  # minimum python version required
 
 # all environment variables required by code should be registered here
 env_variables = {
@@ -56,18 +58,18 @@ env_variables.update(sht31_config.env_variables)
 
 def get_local_ip():
     """Get local IP address for this PC."""
-    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    socket_obj = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     try:
         # doesn't even have to be reachable
-        s.connect(('10.255.255.255', 1))
-        ip = s.getsockname()[0]
+        socket_obj.connect(('10.255.255.255', 1))
+        ip_address = socket_obj.getsockname()[0]
     except Exception:
         log_msg(traceback.format_exc(),
                 mode=BOTH_LOG, func_name=1)
-        ip = '127.0.0.1'
+        ip_address = '127.0.0.1'
     finally:
-        s.close()
-    return ip
+        socket_obj.close()
+    return ip_address
 
 
 # set unit test IP address, same as client
@@ -184,7 +186,7 @@ def log_msg(msg, mode, func_name=-1, file_name=None):
         # check file size and rotate if necessary
         file_size_bytes = get_file_size_bytes(full_path)
         file_size_bytes = log_rotate_file(full_path, file_size_bytes,
-                                          max_log_size_bytes)
+                                          MAX_LOG_SIZE_BYTES)
 
         # write to file
         write_to_file(full_path, file_size_bytes, msg)
@@ -250,12 +252,12 @@ def write_to_file(full_path, file_size_bytes, msg):
         (int): number of bytes written to file.
     """
     if file_size_bytes == 0:
-        f = open(full_path, "w")  # writing
+        file_handle = open(full_path, "w")  # writing
     else:
-        f = open(full_path, "a")  # appending
+        file_handle = open(full_path, "a")  # appending
     msg_to_write = msg + "\n"
-    f.write(msg_to_write)
-    f.close()
+    file_handle.write(msg_to_write)
+    file_handle.close()
     return utf8len(msg_to_write)
 
 
@@ -276,16 +278,16 @@ def get_full_file_path(file_name):
     return file_path + "//" + file_name
 
 
-def utf8len(s):
+def utf8len(input_string):
     """
     Return length of string in bytes.
 
     inputs:
-        s(str): input string.
+        input_string(str): input string.
     returns:
         (int): length of string in bytes.
     """
-    return len(s.encode('utf-8'))
+    return len(input_string.encode('utf-8'))
 
 
 def is_interactive_environment():
@@ -469,7 +471,7 @@ def is_azure_environment():
     return '192.' not in get_local_ip()
 
 
-def get_python_version(min_version=min_python_version, display_version=True):
+def get_python_version(min_version=MIN_PYTHON_VERSION, display_version=True):
     """
     Print current Python version to the screen.
 

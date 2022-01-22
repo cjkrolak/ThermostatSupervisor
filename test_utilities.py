@@ -107,14 +107,14 @@ class EnvironmentTests(utc.UnitTest):
         major_version, minor_version = util.get_python_version()
 
         # verify major version
-        min_major = int(util.min_python_version)
+        min_major = int(util.MIN_PYTHON_VERSION)
         self.assertTrue(major_version >= min_major,
                         "python major version (%s) is not gte min required "
                         "value (%s)" % (major_version, min_major))
 
         # verify minor version
-        min_minor = int(str(util.min_python_version)[
-            str(util.min_python_version).find(".") + 1:])
+        min_minor = int(str(util.MIN_PYTHON_VERSION)[
+            str(util.MIN_PYTHON_VERSION).find(".") + 1:])
         self.assertTrue(minor_version >= min_minor,
                         "python minor version (%s) is not gte min required "
                         "value (%s)" % (minor_version, min_minor))
