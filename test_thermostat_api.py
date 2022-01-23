@@ -249,7 +249,7 @@ class Test(utc.UnitTest):
         pkg = api.load_hardware_library(api.DEFAULT_THERMOSTAT)
         print("default thermostat returned package type %s" % type(pkg))
         self.assertTrue(isinstance(pkg, object),
-                        "api.dynamic_module_import() returned type(%s),"
+                        "dynamic_module_import() returned type(%s),"
                         " expected an object" % type(pkg))
         del pkg
 
