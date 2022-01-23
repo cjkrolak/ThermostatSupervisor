@@ -16,7 +16,7 @@ import thermostat_common as tc
 import utilities as util
 
 # radiotherm import
-MMM_DEBUG = True  # debug uses local radiotherm repo instead of pkg
+MMM_DEBUG = False  # debug uses local radiotherm repo instead of pkg
 if MMM_DEBUG and not util.is_azure_environment():
     radiotherm = util.dynamic_module_import("radiotherm",
                                             os.path.abspath('../radiotherm'))
