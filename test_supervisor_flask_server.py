@@ -5,10 +5,12 @@ Flask server tests currently do not work on Azure pipelines
 because ports cannot be opened on shared pool.
 """
 # built-in imports
-import requests
 import threading
 import time
 import unittest
+
+# third party imports
+import requests
 
 # local imports
 # thermostat_api is imported but not used to avoid a circular import
@@ -22,7 +24,7 @@ import utilities as util
                  "this test not supported on Azure Pipelines")
 @unittest.skipIf(not util.is_interactive_environment(),
                  "this test hangs when run from the command line")
-@unittest.skipIf(not utc.enable_flask_integration_tests,
+@unittest.skipIf(not utc.ENABLE_FLASK_INTEGRATION_TESTS,
                  "flask integration tests are disabled")
 class IntegrationTest(utc.UnitTest):
     """Test functions in supervisor_flask_server.py."""
@@ -40,12 +42,12 @@ class IntegrationTest(utc.UnitTest):
             sfs.argv = utc.unit_test_argv
             print("DEBUG: in setup supervise sfs.argv=%s" % sfs.argv)
             print("starting supervise flask server thread...")
-            self.fs = threading.Thread(target=sfs.app.run,
-                                       args=('0.0.0.0', sfs.FLASK_PORT, False),
-                                       kwargs=sfs.flask_kwargs)
-            self.fs.daemon = True  # make thread daemonic
-            self.fs.start()
-            print("thread alive status=%s" % self.fs.is_alive())
+            self.flask_server = threading.Thread(
+                target=sfs.app.run, args=('0.0.0.0', sfs.FLASK_PORT, False),
+                kwargs=sfs.flask_kwargs)
+            self.flask_server.daemon = True  # make thread daemonic
+            self.flask_server.start()
+            print("thread alive status=%s" % self.flask_server.is_alive())
             print("Flask server setup is complete")
         else:
             print("WARNING: flask server tests not currently supported on "
@@ -53,8 +55,8 @@ class IntegrationTest(utc.UnitTest):
 
     def tearDown(self):
         if not util.is_azure_environment():
-            print("thread alive status=%s" % self.fs.is_alive())
-            if self.fs.daemon:
+            print("thread alive status=%s" % self.flask_server.is_alive())
+            if self.flask_server.daemon:
                 print("flask server is daemon thread, "
                       "thread will terminate when main thread terminates")
             else:
@@ -62,7 +64,7 @@ class IntegrationTest(utc.UnitTest):
                       "thread may still be active")
         self.print_test_result()
 
-    def test_Supervisor_FlaskServer(self):
+    def test_supervisor_flask_server(self):
         """
         Confirm Flask server returns valid data.
 

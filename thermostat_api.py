@@ -7,15 +7,13 @@ any changes to thermostat configs.
 # built ins
 import sys
 
-# thermostat config files
+# local imports
 import emulator_config
 import honeywell_config
 import kumocloud_config
 import kumolocal_config
 import mmm_config
 import sht31_config
-
-# local imports
 import utilities as util
 
 # thermostat types

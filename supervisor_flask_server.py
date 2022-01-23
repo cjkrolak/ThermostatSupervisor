@@ -106,10 +106,8 @@ def index():
         print("DEBUG: arg_list=%s" % arg_list)
         with Popen(arg_list, stdin=DEVNULL, stdout=PIPE, stderr=STDOUT,
                    bufsize=1, universal_newlines=True, shell=True) as p_out:
-            i = 0
-            for line in p_out.stdout:
+            for i, line in enumerate(p_out.stdout):
                 print("DEBUG: line %s: %s" % (i, line), file=sys.stderr)
-                i += 1
                 yield "<code>{}</code>".format(html.escape(line.rstrip("\n")))
                 yield "<br>\n"
     return Response(run_supervise(), mimetype='text/html')

@@ -5,9 +5,9 @@ Common Thermostat Class
 import datetime
 import operator
 import pprint
+import statistics
 import time
 import traceback
-import statistics
 
 # local imports
 import email_notification as eml

@@ -18,7 +18,8 @@ class IntegrationTest(utc.IntegrationTest):
     Test functions in honeywell.py.
     """
     def setUpIntTest(self):
-        self.setUpCommon()
+        """Setup common to integration tests."""
+        self.setup_common()
         self.print_test_name()
 
         # Honeywell argv list must be valid settings

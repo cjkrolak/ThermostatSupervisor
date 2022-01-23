@@ -4,10 +4,8 @@ Unit test module for supervise.py.
 # built-in imports
 import unittest
 
-# thermostat config files
-import sht31_config
-
 # local imports
+import sht31_config
 import supervise as sup
 import unit_test_common as utc
 import utilities as util
@@ -18,13 +16,13 @@ class Test(utc.UnitTest):
 
     def setUp(self):
         self.print_test_name()
-        self.setUp_mock_thermostat_zone()
+        self.setup_mock_thermostat_zone()
 
     def tearDown(self):
-        self.tearDown_mock_thermostat_zone()
+        self.teardown_mock_thermostat_zone()
         self.print_test_result()
 
-    def test_DisplaySessionSettings(self):
+    def test_display_session_settings(self):
         """
         Verify display_session_settings() with all permutations.
         """
@@ -38,13 +36,13 @@ class Test(utc.UnitTest):
                                              revert_setting,
                                              revert_all_setting)
 
-    def test_DisplayRuntimeSettings(self):
+    def test_display_runtime_settings(self):
         """Verify display_runtime_settings()."""
         sup.display_runtime_settings(self.Zone)
 
     @unittest.skipIf(util.is_azure_environment(),
                      "this test not supported on Azure Pipelines")
-    def test_Supervisor(self):
+    def test_supervisor(self):
         """Verify main supervisor loop."""
         sup.supervisor(sht31_config.ALIAS, sht31_config.UNIT_TEST_ZONE)
 

@@ -18,7 +18,8 @@ class IntegrationTest(utc.IntegrationTest):
     Test functions in kumolocal.py.
     """
     def setUpIntTest(self):
-        self.setUpCommon()
+        """Setup common to integration tests."""
+        self.setup_common()
         self.print_test_name()
 
         # argv list must be valid settings
@@ -36,6 +37,8 @@ class IntegrationTest(utc.IntegrationTest):
         self.mod_config = kumolocal_config
 
 
+@unittest.skipIf(not utc.ENABLE_KUMOLOCAL_TESTS,
+                 "kumolocal tests are disabled")
 class FunctionalIntegrationTest(IntegrationTest,
                                 utc.FunctionalIntegrationTest):
     """
@@ -48,6 +51,8 @@ class FunctionalIntegrationTest(IntegrationTest,
         self.metadata_type = dict
 
 
+@unittest.skipIf(not utc.ENABLE_KUMOLOCAL_TESTS,
+                 "kumolocal tests are disabled")
 class SuperviseIntegrationTest(IntegrationTest,
                                utc.SuperviseIntegrationTest):
     """
@@ -57,6 +62,8 @@ class SuperviseIntegrationTest(IntegrationTest,
         self.setUpIntTest()
 
 
+@unittest.skipIf(not utc.ENABLE_KUMOLOCAL_TESTS,
+                 "kumolocal tests are disabled")
 class PerformanceIntegrationTest(IntegrationTest,
                                  utc.PerformanceIntegrationTest):
     """

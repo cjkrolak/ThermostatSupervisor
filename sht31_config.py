@@ -11,18 +11,18 @@ LOFT_SHT31_REMOTE = 1  # zone 1
 
 # unit test parameters
 UNIT_TEST_ZONE = 99
-unit_test_seed = 0x7F
+UNIT_TEST_SEED = 0x7F
 UNIT_TEST_ENV_KEY = "SHT31_REMOTE_IP_ADDRESS_" + str(UNIT_TEST_ZONE)
-flask_port = 5000  # note: ports below 1024 require root access on Linux
-flask_use_https = False  # HTTPS requires a cert to be installed.
-if flask_use_https:
-    flask_ssl_cert = 'adhoc'  # adhoc
-    flask_kwargs = {'ssl_context': flask_ssl_cert}
-    flask_url_prefix = "https://"
+FLASK_PORT = 5000  # note: ports below 1024 require root access on Linux
+FLASK_USE_HTTPS = False  # HTTPS requires a cert to be installed.
+if FLASK_USE_HTTPS:
+    FLASK_SSL_CERT = 'adhoc'  # adhoc
+    FLASK_KWARGS = {'ssl_context': FLASK_SSL_CERT}
+    FLASK_URL_PREFIX = "https://"
 else:
-    flask_ssl_cert = None  # adhoc
-    flask_kwargs = {}
-    flask_url_prefix = "http://"
+    FLASK_SSL_CERT = None  # adhoc
+    FLASK_KWARGS = {}
+    FLASK_URL_PREFIX = "http://"
 
 
 # diagnostic parameters
@@ -67,7 +67,7 @@ supported_configs = {"module": "sht31",
 
 sht31_metadata = {
     LOFT_SHT31: {"zone_name": "Loft (local)",
-                 "host_name": "raspberrypi.lan",
+                 "host_name": "raspberrypi0.lan",
                  },
     LOFT_SHT31_REMOTE: {"zone_name": "loft (remote)",
                         "host_name": "none",
@@ -78,9 +78,9 @@ sht31_metadata = {
     }
 
 # SHT31D config
-i2c_address = 0x45  # i2c address b
-measurements = 10  # number of measurements to average
+I2C_ADDRESS = 0x45  # i2c address b
+MEASUREMENTS = 10  # number of MEASUREMENTS to average
 
 # pi0 config
-alert_pin = 17  # yellow wire, GPIO17 (pi pin 11)
-addr_pin = 4  # white wire, GPIO4, low = 0x44, high=0x45 (pi pin 7)
+ALERT_PIN = 17  # yellow wire, GPIO17 (pi pin 11)
+ADDR_PIN = 4  # white wire, GPIO4, low = 0x44, high=0x45 (pi pin 7)

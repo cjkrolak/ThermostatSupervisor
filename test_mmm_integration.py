@@ -18,7 +18,8 @@ class IntegrationTest(utc.IntegrationTest):
     Test functions in mmm.py.
     """
     def setUpIntTest(self):
-        self.setUpCommon()
+        """Setup common to integration tests."""
+        self.setup_common()
         self.print_test_name()
 
         # argv list must be valid settings
@@ -36,6 +37,8 @@ class IntegrationTest(utc.IntegrationTest):
         self.mod_config = mmm_config
 
 
+@unittest.skipIf(not utc.ENABLE_MMM_TESTS,
+                 "mmm tests are disabled")
 class FunctionalIntegrationTest(IntegrationTest,
                                 utc.FunctionalIntegrationTest):
     """
@@ -47,22 +50,22 @@ class FunctionalIntegrationTest(IntegrationTest,
         self.metadata_field = "network"
         self.metadata_type = dict
 
-    def test_ThermostatGetUiData(self):
-        """Verify Thermostat.get_uiData() function"""
+    def test_thermostat_get_ui_data(self):
+        """Verify Thermostat.get_ui_data() function"""
         # setup class instances
-        self.Thermostat, self.Zone = self.setUpThermostatZone()
+        self.Thermostat, self.Zone = self.setup_thermostat_zone()
 
         # verify function return value
-        result = self.Thermostat.get_uiData(self.Thermostat.zone_number)
-        print("Thermostat.get_uiData returned %s" % result)
+        result = self.Thermostat.get_ui_data(self.Thermostat.zone_number)
+        print("Thermostat.get_ui_data returned %s" % result)
         self.assertTrue(isinstance(result, dict),
                         "result returned is type (%s), "
                         "expected a dictionary" % type(result))
 
-    def test_ThermostatGetUiDataParam(self):
+    def test_thermostat_get_ui_data_param(self):
         """Verify Thermostat.get_ui_data_param() function"""
         # setup class instances
-        self.Thermostat, self.Zone = self.setUpThermostatZone()
+        self.Thermostat, self.Zone = self.setup_thermostat_zone()
 
         # verify function return value
         param = "cloud"
@@ -75,10 +78,10 @@ class FunctionalIntegrationTest(IntegrationTest,
                         "result returned is type (%s), "
                         "expected a %s" % (type(result), expected_data_type))
 
-    def test_ZoneGetZoneName(self):
+    def test_zone_get_zone_name(self):
         """Verify Zone.get_zone_name() function"""
         # setup class instances
-        self.Thermostat, self.Zone = self.setUpThermostatZone()
+        self.Thermostat, self.Zone = self.setup_thermostat_zone()
 
         # verify default option
         result = self.Zone.get_zone_name()
@@ -90,6 +93,8 @@ class FunctionalIntegrationTest(IntegrationTest,
               (self.Thermostat.zone_number, result))
 
 
+@unittest.skipIf(not utc.ENABLE_MMM_TESTS,
+                 "mmm tests are disabled")
 class SuperviseIntegrationTest(IntegrationTest,
                                utc.SuperviseIntegrationTest):
     """
@@ -99,6 +104,8 @@ class SuperviseIntegrationTest(IntegrationTest,
         self.setUpIntTest()
 
 
+@unittest.skipIf(not utc.ENABLE_MMM_TESTS,
+                 "mmm tests are disabled")
 class PerformanceIntegrationTest(IntegrationTest,
                                  utc.PerformanceIntegrationTest):
     """
@@ -107,7 +114,7 @@ class PerformanceIntegrationTest(IntegrationTest,
     def setUp(self):
         self.setUpIntTest()
         # network timing measurement
-        self.timeout_limit = mmm.socket_timeout
+        self.timeout_limit = mmm.SOCKET_TIMEOUT
         self.timing_measurements = 100
 
 

@@ -30,7 +30,7 @@ class EnvironmentTests(utc.UnitTest):
         return_val = util.is_interactive_environment()
         self.assertTrue(isinstance(return_val, bool))
 
-    def test_GetEnvVariable(self):
+    def test_get_env_variable(self):
         """
         Confirm get_env_variable() can retrieve values.
         """
@@ -42,14 +42,14 @@ class EnvironmentTests(utc.UnitTest):
             self.assertEqual(buff["status"], util.NO_ERROR)
             self.assertGreater(len(buff["value"]), 0)
 
-    def test_LoadAllEnvVariables(self):
+    def test_load_all_env_variables(self):
         """
         Confirm all env variables can be loaded.
         """
         util.load_all_env_variables()
         print("env var dict=%s" % util.env_variables)
 
-    def test_GetLocalIP(self):
+    def test_get_local_ip(self):
         """
         Verify get_local_ip().
         """
@@ -60,7 +60,7 @@ class EnvironmentTests(utc.UnitTest):
                         "get_local_ip() returned '%s' which is not "
                         "between 7 and 15 chars")
 
-    def test_IsHostOnLocalNet(self):
+    def test_is_host_on_local_net(self):
         """
         Verify is_host_on_local_net() runs as expected.
 
@@ -104,7 +104,7 @@ class EnvironmentTests(utc.UnitTest):
                              "test_case=%s, expected=%s, actual=%s" %
                              (test_case[0], test_case[2], result))
 
-    def test_GetPythonVersion(self):
+    def test_get_python_version(self):
         """Verify get_python_version()."""
         major_version, minor_version = util.get_python_version()
 
@@ -138,7 +138,7 @@ class EnvironmentTests(utc.UnitTest):
 
         print("test passed all checks")
 
-    def test_DynamicModuleImport(self):
+    def test_dynamic_module_import(self):
         """
         Verify dynamic_module_import() runs without error
 
@@ -149,10 +149,10 @@ class EnvironmentTests(utc.UnitTest):
         """
 
         # test successful case
-        pkg = api.dynamic_module_import(api.DEFAULT_THERMOSTAT)
+        pkg = util.dynamic_module_import(api.DEFAULT_THERMOSTAT)
         print("default thermostat returned package type %s" % type(pkg))
         self.assertTrue(isinstance(pkg, object),
-                        "api.dynamic_module_import() returned type(%s),"
+                        "dynamic_module_import() returned type(%s),"
                         " expected an object" % type(pkg))
         del sys.modules[api.DEFAULT_THERMOSTAT]
         del pkg
@@ -160,7 +160,7 @@ class EnvironmentTests(utc.UnitTest):
         # test failing case
         with self.assertRaises(ImportError):
             print("attempting to open bogus package name, expect exception...")
-            pkg = api.dynamic_module_import("bogus")
+            pkg = util.dynamic_module_import("bogus")
             print("'bogus' module returned package type %s" % type(pkg))
         print("test passed")
 
@@ -175,7 +175,7 @@ class FileAndLoggingTests(utc.UnitTest):
     def tearDown(self):
         self.print_test_result()
 
-    def test_LogMsgCreateFolder(self):
+    def test_log_msg_create_folder(self):
         """
         Confirm log_msg() will create folder if needed
         """
@@ -207,7 +207,7 @@ class FileAndLoggingTests(utc.UnitTest):
             # restore original data file name
             util.file_path = path_backup
 
-    def test_LogMsgWrite(self):
+    def test_log_msg_write(self):
         """
         Confirm log_msg() can write and append to file.
         """
@@ -243,7 +243,7 @@ class FileAndLoggingTests(utc.UnitTest):
         #                 test_msg1_length + test_msg2_length)
         self.assertGreater(file_size_bytes, 60)
 
-    def test_GetFileSizeBytes(self):
+    def test_get_file_size_bytes(self):
         """
         Confirm get_file_size_bytes() works as expected.
         """
@@ -261,7 +261,7 @@ class FileAndLoggingTests(utc.UnitTest):
                         "file size for bogus file is %s, expected == 0" %
                         result)
 
-    def test_LogRotateFile(self):
+    def test_log_rotate_file(self):
         """
         Confirm log_rotate_file() works as expected.
         """
@@ -286,7 +286,7 @@ class FileAndLoggingTests(utc.UnitTest):
                          "be reset to 0, expected size=%s, actual size=%s" %
                          (expected_size, file_size_bytes_new))
 
-    def test_WriteToFile(self):
+    def test_write_to_file(self):
         """
         Verify write_to_file() function.
         """
@@ -327,7 +327,7 @@ class FileAndLoggingTests(utc.UnitTest):
                          "writing to existent file, bytes expected=%s, "
                          "file size=%s" % (bytes_expected, bytes_present))
 
-    def test_GetFullFilePath(self):
+    def test_get_full_file_path(self):
         """
         Verify get_full_file_path() function.
         """
@@ -366,7 +366,7 @@ class MetricsTests(utc.UnitTest):
     def tearDown(self):
         self.print_test_result()
 
-    def test_TempValueWithUnits(self):
+    def test_temp_value_with_units(self):
         """Verify function attaches units as expected."""
 
         for test_case in [44, -1, 101, 2, "13", "-13", None]:
@@ -394,7 +394,7 @@ class MetricsTests(utc.UnitTest):
         with self.assertRaises(ValueError):
             util.temp_value_with_units(-13, "bogus", 1)
 
-    def test_HumidityValueWithUnits(self):
+    def test_humidity_value_with_units(self):
         """Verify function attaches units as expected."""
 
         for test_case in [44, -1, 101, 2, "13", "-13", None]:
@@ -422,7 +422,7 @@ class MetricsTests(utc.UnitTest):
         with self.assertRaises(ValueError):
             util.humidity_value_with_units(-13, "bogus", 1)
 
-    def test_CtoF(self):
+    def test_c_to_f(self):
         """Verify C to F calculations."""
 
         # int and float cases
@@ -445,7 +445,7 @@ class MetricsTests(utc.UnitTest):
             #                  "expected=%s, actual=%s" %
             #                  (tempc, expected_tempf, tempf))
 
-    def test_FtoC(self):
+    def test_f_to_c(self):
         """Verify F to C calculations."""
 
         # int and float cases
@@ -479,7 +479,7 @@ class MiscTests(utc.UnitTest):
     def tearDown(self):
         self.print_test_result()
 
-    def test_GetFunctionName(self):
+    def test_get_function_name(self):
         """
         Confirm get_function_name works as expected.
         """
@@ -521,7 +521,7 @@ class MiscTests(utc.UnitTest):
                              "expected=%s, actual=%s" %
                              (expected_value, actual_value))
 
-    def test_GetKeyFromValue(self):
+    def test_get_key_from_value(self):
         """Verify get_key_from_value()."""
         test_dict = {'A': 1, 'B': 2, 'C': 1}
 

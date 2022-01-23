@@ -6,23 +6,21 @@ import pprint
 import sys
 import unittest
 
-# thermostat configs
-import sht31_config
-
 # local imports
+import sht31_config
 import supervise as sup
 import thermostat_api as api
 import thermostat_common as tc
 import utilities as util
 
 # enable modes
-enable_functional_integration_tests = False  # enable func int tests
-enable_performance_integration_tests = False  # enable performance int tests
-enable_supervise_integration_tests = True  # enable supervise int tests
-enable_flask_integration_tests = False  # enable flask int tests
-enable_kumolocal_tests = True  # Kumolocal is local net only
-enable_mmm_tests = True  # mmm50 is local net only
-enable_sht31_tests = True  # sht31 can fail on occasion
+ENABLE_FUNCTIONAL_INTEGRATION_TESTS = True  # enable func int tests
+ENABLE_PERFORMANCE_INTEGRATION_TESTS = False  # enable performance int tests
+ENABLE_SUPERVISE_INTEGRATION_TESTS = True  # enable supervise int tests
+ENABLE_FLASK_INTEGRATION_TESTS = True  # enable flask int tests
+ENABLE_KUMOLOCAL_TESTS = False  # Kumolocal is local net only
+ENABLE_MMM_TESTS = False  # mmm50 is local net only
+ENABLE_SHT31_TESTS = True  # sht31 can fail on occasion
 
 
 # generic argv list for unit testing
@@ -60,7 +58,7 @@ class UnitTest(unittest.TestCase):
     Zone = None
     is_off_mode_bckup = None
 
-    def setUp_mock_thermostat_zone(self):
+    def setup_mock_thermostat_zone(self):
         """Setup mock thermostat settings."""
         api.thermostats[self.thermostat_type] = {  # dummy unit test thermostat
             "required_env_variables": {
@@ -85,7 +83,7 @@ class UnitTest(unittest.TestCase):
         self.is_off_mode_bckup = self.Zone.is_off_mode
         self.Zone.is_off_mode = lambda *_, **__: 1
 
-    def tearDown_mock_thermostat_zone(self):
+    def teardown_mock_thermostat_zone(self):
         """Tear down the mock thermostat settings."""
         del api.thermostats[self.thermostat_type]
         api.user_inputs = self.user_inputs_backup
@@ -116,6 +114,8 @@ class UnitTest(unittest.TestCase):
         """Parse reason from list."""
         if exc_list and exc_list[-1][0] is self:
             return exc_list[-1][1]
+        else:
+            return None
 
     def print_test_name(self):
         """Print out the unit test name to the console."""
@@ -146,7 +146,7 @@ class IntegrationTest(UnitTest):
     humidity_repeatability_measurements = None
     poll_interval_sec = None
 
-    def setUpCommon(self):
+    def setup_common(self):
         """Test attributes common to all integration tests."""
         self.timeout_limit = 30  # 6 sigma timing upper limit in sec.
         self.timing_measurements = 10  # number of timing measurements.
@@ -157,7 +157,7 @@ class IntegrationTest(UnitTest):
         self.humidity_repeatability_measurements = 10  # number of humid msmts.
         self.poll_interval_sec = 0  # delay between repeat measurements
 
-    def setUpThermostatZone(self):
+    def setup_thermostat_zone(self):
         """Create a Thermostat and Zone instance for unit testing if needed."""
         # create new Thermostat and Zone instances
         if self.Thermostat is None and self.Zone is None:
@@ -179,14 +179,14 @@ class IntegrationTest(UnitTest):
         self.print_test_result()
 
 
-@unittest.skipIf(not enable_functional_integration_tests,
+@unittest.skipIf(not ENABLE_FUNCTIONAL_INTEGRATION_TESTS,
                  "functional integration tests are disabled")
 class FunctionalIntegrationTest(IntegrationTest):
     """Functional integration tests."""
     metadata_field = None  # thermostat-specific
     metadata_type = str  # thermostat-specific
 
-    def test_A_ThermostatBasicCheckout(self):
+    def test_a_thermostat_basic_checkout(self):
         """
         Verify thermostat_basic_checkout on target thermostat.
 
@@ -201,12 +201,12 @@ class FunctionalIntegrationTest(IntegrationTest):
                 self.mod.ThermostatClass, self.mod.ThermostatZone
                 )
 
-    def test_ReportHeatingParameters(self):
+    def test_report_heating_parameters(self):
         """
         Verify report_heating_parameters().
         """
         # setup class instances
-        self.Thermostat, self.Zone = self.setUpThermostatZone()
+        self.Thermostat, self.Zone = self.setup_thermostat_zone()
 
         for test_case in self.mod_config.supported_configs["modes"]:
             print("-" * 80)
@@ -214,12 +214,12 @@ class FunctionalIntegrationTest(IntegrationTest):
             self.Zone.report_heating_parameters(test_case)
             print("-" * 80)
 
-    def test_GetAllMetaData(self):
+    def test_get_all_meta_data(self):
         """
         Verify get_all_metadata().
         """
         # setup class instances
-        self.Thermostat, self.Zone = self.setUpThermostatZone()
+        self.Thermostat, self.Zone = self.setup_thermostat_zone()
 
         expected_return_type = dict
         metadata = self.Thermostat.get_all_metadata(
@@ -229,12 +229,12 @@ class FunctionalIntegrationTest(IntegrationTest):
                         "expected type '%s'" %
                         (type(metadata), expected_return_type))
 
-    def test_GetMetaData(self):
+    def test_get_meta_data(self):
         """
         Verify get_metadata().
         """
         # setup class instances
-        self.Thermostat, self.Zone = self.setUpThermostatZone()
+        self.Thermostat, self.Zone = self.setup_thermostat_zone()
 
         # test None case
         parameter = None
@@ -259,17 +259,17 @@ class FunctionalIntegrationTest(IntegrationTest):
                         (parameter, type(metadata), expected_return_type))
 
 
-@unittest.skipIf(not enable_supervise_integration_tests,
+@unittest.skipIf(not ENABLE_SUPERVISE_INTEGRATION_TESTS,
                  "supervise integration test is disabled")
 class SuperviseIntegrationTest(IntegrationTest):
     """Supervise integration tests common to all thermostat types."""
 
-    def test_Supervise(self):
+    def test_supervise(self):
         """
         Verify supervisor loop on target thermostat.
         """
         # setup class instances
-        self.Thermostat, self.Zone = self.setUpThermostatZone()
+        self.Thermostat, self.Zone = self.setup_thermostat_zone()
 
         return_status = sup.exec_supervise(
             debug=True, argv_list=self.unit_test_argv)
@@ -277,17 +277,17 @@ class SuperviseIntegrationTest(IntegrationTest):
                         return_status)
 
 
-@unittest.skipIf(not enable_performance_integration_tests,
+@unittest.skipIf(not ENABLE_PERFORMANCE_INTEGRATION_TESTS,
                  "performance integration tests are disabled")
 class PerformanceIntegrationTest(IntegrationTest):
     """Performance integration tests common to all thermostat types."""
 
-    def test_NetworkTiming(self):
+    def test_network_timing(self):
         """
         Verify network timing..
         """
         # setup class instances
-        self.Thermostat, self.Zone = self.setUpThermostatZone()
+        self.Thermostat, self.Zone = self.setup_thermostat_zone()
 
         # measure thermostat response time
         measurements = self.timing_measurements
@@ -311,12 +311,12 @@ class PerformanceIntegrationTest(IntegrationTest):
                         "timout setting (%s)" % (meas_data['6sigma_upper'],
                                                  self.timeout_limit))
 
-    def test_TemperatureRepeatability(self):
+    def test_temperature_repeatability(self):
         """
         Verify temperature repeatability.
         """
         # setup class instances
-        self.Thermostat, self.Zone = self.setUpThermostatZone()
+        self.Thermostat, self.Zone = self.setup_thermostat_zone()
 
         # measure thermostat temp repeatability
         measurements = self.temp_repeatability_measurements
@@ -338,12 +338,12 @@ class PerformanceIntegrationTest(IntegrationTest):
             "temp repeatability limit (%s)" % (act_val,
                                                self.temp_stdev_limit))
 
-    def test_HumidityRepeatability(self):
+    def test__humidity_repeatability(self):
         """
         Verify humidity repeatability.
         """
         # setup class instances
-        self.Thermostat, self.Zone = self.setUpThermostatZone()
+        self.Thermostat, self.Zone = self.setup_thermostat_zone()
 
         # check for humidity support
         if not self.Zone.get_is_humidity_supported():
@@ -401,7 +401,7 @@ def parse_unit_test_runtime_parameters():
     1 = enable integration tests (default = enabled)
     """
     # parameter 1: enable integration tests
-    global_par = "enable_functional_integration_tests"
+    global_par = "ENABLE_FUNCTIONAL_INTEGRATION_TESTS"
     enable_flag = getattr(sys.modules[__name__], global_par)
 
     # parse runtime parameters
@@ -417,8 +417,8 @@ def parse_unit_test_runtime_parameters():
 
 if __name__ == "__main__":
     parse_unit_test_runtime_parameters()
-    print("DEBUG: enable_functional_integration_tests=%s" %
-          enable_functional_integration_tests)
-    print("DEBUG: enable_performance_integration_tests=%s" %
-          enable_performance_integration_tests)
+    print("DEBUG: ENABLE_FUNCTIONAL_INTEGRATION_TESTS=%s" %
+          ENABLE_FUNCTIONAL_INTEGRATION_TESTS)
+    print("DEBUG: ENABLE_PERFORMANCE_INTEGRATION_TESTS=%s" %
+          ENABLE_PERFORMANCE_INTEGRATION_TESTS)
     run_all_tests()

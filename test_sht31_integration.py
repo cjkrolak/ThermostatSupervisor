@@ -18,7 +18,7 @@ class IntegrationTest(utc.IntegrationTest):
     Test functions in sht31.py.
     """
     def setUpIntTest(self):
-        self.setUpCommon()
+        self.setup_common()
         self.print_test_name()
 
         # argv list must be valid settings
@@ -73,7 +73,7 @@ class PerformanceIntegrationTest(IntegrationTest,
         # network timing measurement
         # mean timing = 0.5 sec per measurement plus 0.75 sec overhead
         self.timeout_limit = (6.0 * 0.1 +
-                              (sht31_config.measurements * 0.5 + 0.75))
+                              (sht31_config.MEASUREMENTS * 0.5 + 0.75))
 
         # temperature and humidity repeatability measurements
         # settings below are tuned short term repeatability assessment

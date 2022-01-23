@@ -2,16 +2,17 @@
 Unit tes module for email_notification.py.
 """
 # built-in libraries
-import email_notification as eml
 import os
 import unittest
 
 # local libraries
+import email_notification as eml
 import unit_test_common as utc
 import utilities as util
 
 
 class Test(utc.UnitTest):
+    """Test email_notification.py functions."""
 
     to_address = None
     from_address = None
@@ -23,7 +24,7 @@ class Test(utc.UnitTest):
     def tearDown(self):
         self.print_test_result()
 
-    def test_CheckEmailEnvVariables(self):
+    def test_check_email_env_variables(self):
         """
         Verify all required email email env variables are present for tests.
 
@@ -43,7 +44,7 @@ class Test(utc.UnitTest):
                             "from environment" % env_key)
                 self.fail(fail_msg)
 
-    def test_SendEmailAlerts(self):
+    def test_send_email_alerts(self):
         """Test send_email_alerts() functionality."""
 
         # send message with no inputs, UTIL.NO_ERROR expected

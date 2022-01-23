@@ -31,30 +31,32 @@ class Test(utc.UnitTest):
 
     def setUp(self):
         self.print_test_name()
-        self.setUp_mock_thermostat_zone()
+        self.setup_mock_thermostat_zone()
 
     def tearDown(self):
-        self.tearDown_mock_thermostat_zone()
+        self.teardown_mock_thermostat_zone()
         self.print_test_result()
 
-    def test_PrintAllThermostatMetaData(self):
+    def test_print_all_thermostat_meta_data(self):
         """
         Verify print_all_thermostat_metadata() runs without error.
         """
         self.Thermostat.print_all_thermostat_metadata(api.user_inputs["zone"])
 
-    def test_SetMode(self):
+    def test_set_mode(self):
         """
         Verify set_mode() runs without error.
         """
         result = self.Zone.set_mode("bogus_mode")
         self.assertFalse(result, "Zone.set_mode() should have returned False")
 
-    def test_StoreCurrentMode(self):
+    def test_store_current_mode(self):
         """
         Verify store_current_mode() runs without error.
         """
-        def dummy_true(): return 1  # functions return ints
+        def dummy_true():
+            """Return 1."""
+            return 1
 
         test_cases = [["is_heat_mode", self.Zone.HEAT_MODE],
                       ["is_cool_mode", self.Zone.COOL_MODE],
@@ -99,7 +101,7 @@ class Test(utc.UnitTest):
                 if test_case[0]:
                     setattr(self.Zone, test_case[0], backup_func)
 
-    def test_CheckReturnTypes(self):
+    def test_check_return_types(self):
         """
         Verify return type of each function is as expected.
         """
@@ -249,20 +251,20 @@ class Test(utc.UnitTest):
                 "args": [0, "this is a dummy msg from unit test"],
                 "return_type": type(None)},
             }
-        for k, v in func_dict.items():
-            print("key=%s" % k)
-            print("v=%s" % v)
-            expected_type = v["return_type"]
+        for key, value in func_dict.items():
+            print("key=%s" % key)
+            print("value=%s" % value)
+            expected_type = value["return_type"]
             print("expected type=%s" % expected_type)
-            if v["args"] is not None:
-                return_val = v["key"](*v["args"])
+            if value["args"] is not None:
+                return_val = value["key"](*value["args"])
             else:
-                return_val = v["key"]()
+                return_val = value["key"]()
             self.assertTrue(isinstance(return_val, expected_type),
                             "func=%s, expected type=%s, actual type=%s" %
-                            (k, expected_type, type(return_val)))
+                            (key, expected_type, type(return_val)))
 
-    def test_ValidateNumeric(self):
+    def test_validate_numeric(self):
         """Test validate_numeric() function."""
         for test_case in [1, 1.0, "1", True, None]:
             print("test case=%s" % type(test_case))
@@ -282,7 +284,7 @@ class Test(utc.UnitTest):
                     self.Zone.validate_numeric(
                         test_case, "test_case")
 
-    def test_WarnIfOutsideGlobalLimit(self):
+    def test_warn_if_outside_global_limit(self):
         """Test warn_if_outside_global_limit() function."""
         self.assertTrue(self.Zone.warn_if_outside_global_limit(
             self.Zone.max_scheduled_heat_allowed + 1,
@@ -301,7 +303,7 @@ class Test(utc.UnitTest):
             self.Zone.min_scheduled_cool_allowed, operator.lt, "cool"),
             "function result should have been False")
 
-    def test_RevertThermostatMode(self):
+    def test_revert_thermostat_mode(self):
         """
         Test the revert_thermostat_mode() function.
         """
@@ -325,7 +327,7 @@ class Test(utc.UnitTest):
                              (test_case, new_mode, expected_mode))
             self.Zone.current_mode = test_case
 
-    def test_MeasureThermostatResponseTime(self):
+    def test_measure_thermostat_response_time(self):
         """
         Test the measure_thermostat_response_time() function.
         """
@@ -344,7 +346,7 @@ class Test(utc.UnitTest):
                          "match number of masurements requested(%s)" %
                          (meas_data["measurements"], measurements))
 
-    def test_GetCurrentMode(self):
+    def test_get_current_mode(self):
         """
         Verify get_current_mode runs in all permutations.
 
@@ -618,7 +620,7 @@ class Test(utc.UnitTest):
         self.Zone.get_is_humidity_supported = self.get_humid_support_bckup
         self.Zone.revert_setpoint_func = self.revert_setpoint_func_bckup
 
-    def test_DisplayBasicThermostatSummary(self):
+    def test_display_basic_thermostat_summary(self):
         """Confirm print_basic_thermostat_summary() works without error."""
 
         # override switch position function to be determinant
@@ -631,9 +633,9 @@ class Test(utc.UnitTest):
         finally:
             self.Zone.get_system_switch_position = self.switch_position_backup
 
-    @unittest.skipIf(not utc.enable_sht31_tests,
+    @unittest.skipIf(not utc.ENABLE_SHT31_TESTS,
                      "sht31 tests are disabled")
-    def test_ThermostatBasicCheckout(self):
+    def test_thermostat_basic_checkout(self):
         """Verify thermostat_basic_checkout()."""
 
         # override switch position function to be determinant
@@ -647,19 +649,19 @@ class Test(utc.UnitTest):
             zone_number = int(utc.unit_test_argv[api.get_argv_position(
                 "zone")])
             mod = api.load_hardware_library(thermostat_type)
-            Thermostat, Zone = \
+            thermostat, zone = \
                 tc.thermostat_basic_checkout(
                     api,
                     thermostat_type,
                     zone_number,
                     mod.ThermostatClass, mod.ThermostatZone
                     )
-            print("thermotat=%s" % type(Thermostat))
-            print("thermotat=%s" % type(Zone))
+            print("thermotat=%s" % type(thermostat))
+            print("thermotat=%s" % type(zone))
         finally:
             self.Zone.get_system_switch_position = self.switch_position_backup
 
-    def test_RevertTemperatureDeviation(self):
+    def test_revert_temperature_deviation(self):
         """Verify revert_temperature_deviation()."""
 
         def mock_revert_setpoint_func(setpoint):
@@ -713,7 +715,7 @@ class Test(utc.UnitTest):
         finally:
             self.restore_functions()
 
-    def test_ReportHeatingParameters(self):
+    def test_report_heating_parameters(self):
         """Verify report_heating_parameters()."""
         test_cases = [tc.ThermostatCommonZone.OFF_MODE]
         for test_case in test_cases:

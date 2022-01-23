@@ -18,7 +18,8 @@ class IntegrationTest(utc.IntegrationTest):
     Test functions in emulator.py.
     """
     def setUpIntTest(self):
-        self.setUpCommon()
+        """Setup common to integration tests."""
+        self.setup_common()
         self.print_test_name()
 
         # emulator argv list must be valid settings
