@@ -18,7 +18,7 @@ class IntegrationTest(utc.IntegrationTest):
     Test functions in sht31.py.
     """
     def setUpIntTest(self):
-        self.setUpCommon()
+        self.setup_common()
         self.print_test_name()
 
         # argv list must be valid settings

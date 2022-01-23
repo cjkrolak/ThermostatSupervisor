@@ -16,11 +16,11 @@ import unit_test_common as utc
 import utilities as util
 
 
-@unittest.skipIf(not utc.enable_sht31_tests,
+@unittest.skipIf(not utc.ENABLE_SHT31_TESTS,
                  "sht31 tests are disabled")
 @unittest.skipIf(util.is_azure_environment(),
                  "this test not supported on Azure Pipelines")
-@unittest.skipIf(not utc.enable_flask_integration_tests,
+@unittest.skipIf(not utc.ENABLE_FLASK_INTEGRATION_TESTS,
                  "flask integration tests are disabled")
 class IntegrationTest(utc.UnitTest):
     """Test functions in sht31_flask_server.py."""

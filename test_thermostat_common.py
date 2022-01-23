@@ -31,10 +31,10 @@ class Test(utc.UnitTest):
 
     def setUp(self):
         self.print_test_name()
-        self.setUp_mock_thermostat_zone()
+        self.setup_mock_thermostat_zone()
 
     def tearDown(self):
-        self.tearDown_mock_thermostat_zone()
+        self.teardown_mock_thermostat_zone()
         self.print_test_result()
 
     def test_print_all_thermostat_meta_data(self):
@@ -633,7 +633,7 @@ class Test(utc.UnitTest):
         finally:
             self.Zone.get_system_switch_position = self.switch_position_backup
 
-    @unittest.skipIf(not utc.enable_sht31_tests,
+    @unittest.skipIf(not utc.ENABLE_SHT31_TESTS,
                      "sht31 tests are disabled")
     def test_thermostat_basic_checkout(self):
         """Verify thermostat_basic_checkout()."""

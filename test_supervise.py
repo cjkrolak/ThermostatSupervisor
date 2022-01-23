@@ -16,10 +16,10 @@ class Test(utc.UnitTest):
 
     def setUp(self):
         self.print_test_name()
-        self.setUp_mock_thermostat_zone()
+        self.setup_mock_thermostat_zone()
 
     def tearDown(self):
-        self.tearDown_mock_thermostat_zone()
+        self.teardown_mock_thermostat_zone()
         self.print_test_result()
 
     def test_display_session_settings(self):

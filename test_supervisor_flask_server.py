@@ -24,7 +24,7 @@ import utilities as util
                  "this test not supported on Azure Pipelines")
 @unittest.skipIf(not util.is_interactive_environment(),
                  "this test hangs when run from the command line")
-@unittest.skipIf(not utc.enable_flask_integration_tests,
+@unittest.skipIf(not utc.ENABLE_FLASK_INTEGRATION_TESTS,
                  "flask integration tests are disabled")
 class IntegrationTest(utc.UnitTest):
     """Test functions in supervisor_flask_server.py."""

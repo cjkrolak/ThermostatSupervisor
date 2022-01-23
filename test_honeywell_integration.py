@@ -19,7 +19,7 @@ class IntegrationTest(utc.IntegrationTest):
     """
     def setUpIntTest(self):
         """Setup common to integration tests."""
-        self.setUpCommon()
+        self.setup_common()
         self.print_test_name()
 
         # Honeywell argv list must be valid settings
