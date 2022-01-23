@@ -118,10 +118,10 @@ class IntegrationTest(utc.UnitTest):
 
         # verify measurements
         self.assertEqual(meta_data["measurements"],
-                         sht31_config.measurements,
+                         sht31_config.MEASUREMENTS,
                          "measurements: actual=%s, expected=%s" %
                          (meta_data["measurements"],
-                          sht31_config.measurements))
+                          sht31_config.MEASUREMENTS))
 
         # verify metadata
         test_cases = {

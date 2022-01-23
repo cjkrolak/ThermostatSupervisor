@@ -49,16 +49,16 @@ class ThermostatClass(tc.ThermostatCommon):
         self.path = path
 
         # URL and port configuration
-        self.port = str(sht31_config.flask_port)  # Flask server port on host
+        self.port = str(sht31_config.FLASK_PORT)  # Flask server port on host
         if (self.zone_number == sht31_config.UNIT_TEST_ZONE and
                 self.path == sht31_config.flask_folder.production):
             self.path = sht31_config.flask_folder.unit_test
-            self.unit_test_seed = "?seed=" + str(sht31_config.unit_test_seed)
+            self.unit_test_seed = "?seed=" + str(sht31_config.UNIT_TEST_SEED)
         else:
             # self.path = ""
             self.unit_test_seed = ""
-        self.measurements = "?measurements=" + str(sht31_config.measurements)
-        self.url = (sht31_config.flask_url_prefix + self.ip_address + ":" +
+        self.measurements = "?measurements=" + str(sht31_config.MEASUREMENTS)
+        self.url = (sht31_config.FLASK_URL_PREFIX + self.ip_address + ":" +
                     self.port + self.path + self.measurements +
                     self.unit_test_seed)
         self.device_id = self.url
@@ -118,9 +118,9 @@ class ThermostatClass(tc.ThermostatCommon):
         sht31_fs.debug = False
         self.flask_server = threading.Thread(target=sht31_fs.app.run,
                                              args=('0.0.0.0',
-                                                   sht31_config.flask_port,
+                                                   sht31_config.FLASK_PORT,
                                                    sht31_fs.debug),
-                                             kwargs=sht31_config.flask_kwargs)
+                                             kwargs=sht31_config.FLASK_KWARGS)
         self.flask_server.daemon = True  # make thread daemonic
         self.flask_server.start()
         util.log_msg("thread alive status=%s" %

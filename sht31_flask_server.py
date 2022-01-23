@@ -235,9 +235,9 @@ class Sensors(object):
         """
         # get runtime parameters
         measurements = request.args.get('measurements',
-                                        sht31_config.measurements,
+                                        sht31_config.MEASUREMENTS,
                                         type=int)
-        seed = request.args.get('seed', sht31_config.unit_test_seed, type=int)
+        seed = request.args.get('seed', sht31_config.UNIT_TEST_SEED, type=int)
 
         # data structure
         temp_f_lst = []
@@ -274,8 +274,8 @@ class Sensors(object):
         measurements = request.args.get('measurements', 1, type=int)
 
         # set address pin on SHT31
-        self.set_sht31_address(sht31_config.i2c_address, sht31_config.addr_pin,
-                               sht31_config.alert_pin)
+        self.set_sht31_address(sht31_config.I2C_ADDRESS, sht31_config.ADDR_PIN,
+                               sht31_config.ALERT_PIN)
 
         # activate smbus
         bus = smbus.SMBus(1)
@@ -290,11 +290,11 @@ class Sensors(object):
             # loop for n measurements
             for _ in range(measurements):
                 # send single shot read command
-                self.send_i2c_cmd(bus, sht31_config.i2c_address,
+                self.send_i2c_cmd(bus, sht31_config.I2C_ADDRESS,
                                   cs_enabled_high)
 
                 # read the measurement data
-                data = self.read_i2c_data(bus, sht31_config.i2c_address,
+                data = self.read_i2c_data(bus, sht31_config.I2C_ADDRESS,
                                           register=0x00, length=0x06)
 
                 # convert the data
@@ -323,8 +323,8 @@ class Sensors(object):
             (dict): parsed fault register data.
         """
         # set address pin on SHT31
-        self.set_sht31_address(sht31_config.i2c_address, sht31_config.addr_pin,
-                               sht31_config.alert_pin)
+        self.set_sht31_address(sht31_config.I2C_ADDRESS, sht31_config.ADDR_PIN,
+                               sht31_config.ALERT_PIN)
 
         # activate smbus
         bus = smbus.SMBus(1)
@@ -332,14 +332,14 @@ class Sensors(object):
 
         try:
             # send single shot command
-            self.send_i2c_cmd(bus, sht31_config.i2c_address,
+            self.send_i2c_cmd(bus, sht31_config.I2C_ADDRESS,
                               i2c_command)
 
             # small delay
             time.sleep(1.0)
 
             # read the measurement data, 2 bytes data, 1 byte checksum
-            data = self.read_i2c_data(bus, sht31_config.i2c_address,
+            data = self.read_i2c_data(bus, sht31_config.I2C_ADDRESS,
                                       register=0x00, length=0x03)
 
             # parse data into registers
@@ -491,7 +491,7 @@ if __name__ == "__main__":
 
     # launch the Flask API on development server
     app.run(host='0.0.0.0',
-            port=sht31_config.flask_port,
+            port=sht31_config.FLASK_PORT,
             debug=debug,
             threaded=True,  # threaded=True may speed up rendering on web page
-            ssl_context=sht31_config.flask_ssl_cert)
+            ssl_context=sht31_config.FLASK_SSL_CERT)
