@@ -57,7 +57,7 @@ class FunctionalIntegrationTest(IntegrationTest,
 
         # verify function return value
         result = self.Thermostat.get_ui_data(self.Thermostat.zone_number)
-        print("Thermostat.get_ui_data returned %s" % result)
+        print(f"Thermostat.get_ui_data returned {result}")
         self.assertTrue(isinstance(result, dict),
                         "result returned is type (%s), "
                         "expected a dictionary" % type(result))
@@ -85,12 +85,12 @@ class FunctionalIntegrationTest(IntegrationTest,
 
         # verify default option
         result = self.Zone.get_zone_name()
-        print("Zone.get_zone_name() returned %s" % result)
+        print(f"Zone.get_zone_name() returned {result}")
 
         # verify override option
         result = self.Zone.get_zone_name(self.Thermostat.zone_number)
-        print("Zone.get_zone_name(%s) returned %s" %
-              (self.Thermostat.zone_number, result))
+        print(f"Zone.get_zone_name({self.Thermostat.zone_number}) "
+              f"returned {result}")
 
 
 @unittest.skipIf(not utc.ENABLE_MMM_TESTS,

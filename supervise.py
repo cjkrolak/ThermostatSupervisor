@@ -126,7 +126,7 @@ def supervisor(thermostat_type, zone_str):
 
         # get Zone object based on deviceID
         Zone = mod.ThermostatZone(Thermostat)
-        util.log_msg("zone name=%s" % Zone.zone_name, mode=util.BOTH_LOG,
+        util.log_msg(f"zone name={Zone.zone_name}", mode=util.BOTH_LOG,
                      func_name=1)
 
         # update runtime overrides

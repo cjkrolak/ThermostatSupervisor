@@ -108,7 +108,7 @@ class UnitTest(unittest.TestCase):
         if not result_ok:
             typ, text = ('ERROR', error) if error else ('FAIL', failure)
             msg = [x for x in text.split('\n')[1:] if not x.startswith(' ')][0]
-            print("\n%s: %s\n     %s" % (typ, self.id(), msg))
+            print(f"\n{typ}: {self.id()}\n     {msg}")
 
     def list2reason(self, exc_list):
         """Parse reason from list."""
@@ -121,7 +121,7 @@ class UnitTest(unittest.TestCase):
         """Print out the unit test name to the console."""
         print("\n")
         print("-" * 60)
-        print("testing '%s'" % self.id())  # util.get_function_name(2))
+        print(f"testing '{self.id()}'")  # util.get_function_name(2))
         print("-" * 60)
 
 
@@ -210,7 +210,7 @@ class FunctionalIntegrationTest(IntegrationTest):
 
         for test_case in self.mod_config.supported_configs["modes"]:
             print("-" * 80)
-            print("test_case='%s'" % test_case)
+            print(f"test_case='{test_case}'")
             self.Zone.report_heating_parameters(test_case)
             print("-" * 80)
 
@@ -273,8 +273,8 @@ class SuperviseIntegrationTest(IntegrationTest):
 
         return_status = sup.exec_supervise(
             debug=True, argv_list=self.unit_test_argv)
-        self.assertTrue(return_status, "return status=%s, expected True" %
-                        return_status)
+        self.assertTrue(return_status,
+                        f"return status={return_status}, expected True")
 
 
 @unittest.skipIf(not ENABLE_PERFORMANCE_INTEGRATION_TESTS,
@@ -386,7 +386,7 @@ def run_all_tests():
     # flush stdout so that the following output will be at the end
     sys.stdout.flush()
     print("-" * 80)
-    print("skipped tests(%s):" % len(result.skipped))
+    print(f"skipped tests({len(result.skipped)}):")
     for name, reason in result.skipped:
         print(name, reason)
     print("-" * 80)
@@ -411,7 +411,7 @@ def parse_unit_test_runtime_parameters():
 
     # update global parameter
     setattr(sys.modules[__name__], global_par, enable_flag)
-    print("integration tests are %s" % ["disabled", "enabled"][enable_flag])
+    print(f"integration tests are {['disabled', 'enabled'][enable_flag]}")
     return enable_flag
 
 

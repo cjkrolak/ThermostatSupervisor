@@ -81,7 +81,7 @@ def send_email_alert(to_address=None,
     status = util.NO_ERROR  # default
 
     # add trace
-    body += "\n\n%s" % email_trace
+    body += f"\n\n{email_trace}"
 
     # build email message
     msg = MIMEText(body)
@@ -89,7 +89,7 @@ def send_email_alert(to_address=None,
     msg['From'] = from_address
     msg['To'] = to_address
 
-    util.log_msg("message text=%s" % msg.as_string(),
+    util.log_msg(f"message text={msg.as_string()}",
                  mode=util.DEBUG_LOG + util.CONSOLE_LOG, func_name=1)
 
     try:
@@ -100,7 +100,7 @@ def send_email_alert(to_address=None,
             TimeoutError,  # observed on Windows for bad port
             OSError  # on AzDO with bad port
             ) as ex:
-        util.log_msg("exception during smtp connection: %s" % str(ex),
+        util.log_msg(f"exception during smtp connection: {str(ex)}",
                      mode=util.BOTH_LOG, func_name=1)
         return (util.CONNECTION_ERROR, return_status_msg_dict[status])
     server.ehlo()

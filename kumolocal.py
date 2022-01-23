@@ -91,7 +91,7 @@ class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
                          "timeout", mode=util.BOTH_LOG, func_name=1)
             time.sleep(10)
             units = list(self.get_indoor_units())  # retry
-        util.log_msg("indoor unit serial numbers: %s" % str(units),
+        util.log_msg(f"indoor unit serial numbers: {str(units)}",
                      mode=util.DEBUG_LOG+util.CONSOLE_LOG, func_name=1)
         for serial_number in units:
             util.log_msg("Unit %s: address: %s credentials: %s" %
@@ -537,7 +537,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         # heating status
         if switch_position == \
                 self.system_switch_position[self.HEAT_MODE]:
-            util.log_msg("heat mode=%s" % self.is_heat_mode(),
+            util.log_msg(f"heat mode={self.is_heat_mode()}",
                          mode=util.BOTH_LOG)
             util.log_msg("heat setpoint=%s" %
                          self.get_heat_setpoint_raw(), mode=util.BOTH_LOG)
@@ -548,7 +548,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         # cooling status
         if switch_position == \
                 self.system_switch_position[self.COOL_MODE]:
-            util.log_msg("cool mode=%s" % self.is_cool_mode(),
+            util.log_msg(f"cool mode={self.is_cool_mode()}",
                          mode=util.BOTH_LOG)
             util.log_msg("cool setpoint=%s" %
                          self.get_cool_setpoint_raw(), mode=util.BOTH_LOG)
@@ -559,7 +559,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         # hold settings
         util.log_msg("is in vacation hold mode=%s" %
                      self.get_is_invacation_hold_mode(), mode=util.BOTH_LOG)
-        util.log_msg("vacation hold=%s" % self.get_vacation_hold(),
+        util.log_msg(f"vacation hold={self.get_vacation_hold()}",
                      mode=util.BOTH_LOG)
         util.log_msg("vacation hold until time=%s" %
                      self.get_vacation_hold_until_time(), mode=util.BOTH_LOG)

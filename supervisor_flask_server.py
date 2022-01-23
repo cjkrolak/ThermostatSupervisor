@@ -81,16 +81,15 @@ def index():
     """index route"""
     def run_supervise():
         sup.argv = argv  # pass runtime overrides to supervise
-        print("DEBUG: in run_supervise, argv=%s" % argv)
+        print(f"DEBUG: in run_supervise, argv={argv}")
         user_inputs = api.parse_all_runtime_parameters(argv)
-        print("DEBUG: in run_supervise, user_inputs=%s" %
-              user_inputs)
+        print(f"DEBUG: in run_supervise, user_inputs={user_inputs}")
         thermostat_type = user_inputs["thermostat_type"]
         zone = user_inputs["zone"]
         measurements = user_inputs["measurements"]
         title = ("%s thermostat zone %s, %s measurements" %
                  (thermostat_type, zone, measurements))
-        yield "<!doctype html><title>%s</title>" % title
+        yield f"<!doctype html><title>{title}</title>"
 
         # runtime variabless
         executable = "python"
@@ -103,11 +102,11 @@ def index():
             arg_list = [executable, dont_buffer, script] + sys.argv[1:]
         else:
             arg_list = [executable, dont_buffer, script]
-        print("DEBUG: arg_list=%s" % arg_list)
+        print(f"DEBUG: arg_list={arg_list}")
         with Popen(arg_list, stdin=DEVNULL, stdout=PIPE, stderr=STDOUT,
                    bufsize=1, universal_newlines=True, shell=True) as p_out:
             for i, line in enumerate(p_out.stdout):
-                print("DEBUG: line %s: %s" % (i, line), file=sys.stderr)
+                print(f"DEBUG: line {i}: {line}", file=sys.stderr)
                 yield "<code>{}</code>".format(html.escape(line.rstrip("\n")))
                 yield "<br>\n"
     return Response(run_supervise(), mimetype='text/html')
