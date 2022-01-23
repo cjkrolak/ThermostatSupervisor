@@ -41,7 +41,7 @@ DATA_LOG = 0x010  # print to data log
 BOTH_LOG = 0x011  # log to both console and data logs
 DEBUG_LOG = 0x100  # print only if debug mode is on
 
-file_path = ".//data"
+FILE_PATH = ".//data"
 MAX_LOG_SIZE_BYTES = 2**20  # logs rotate at this max size
 MIN_PYTHON_MAJOR_VERSION = 3  # minimum python major version required
 MIN_PYTHON_MINOR_VERSION = 7  # minimum python minor version required
@@ -178,9 +178,9 @@ def log_msg(msg, mode, func_name=-1, file_name=None):
     # log to data file
     if (mode & DATA_LOG) and not filter_debug_msg:
         # create directory if needed
-        if not os.path.exists(file_path):
-            print(f"data folder '{file_path}' created.")
-            os.makedirs(file_path)
+        if not os.path.exists(FILE_PATH):
+            print(f"data folder '{FILE_PATH}' created.")
+            os.makedirs(FILE_PATH)
 
         # build full file name
         full_path = get_full_file_path(log_msg.file_name)
@@ -254,12 +254,12 @@ def write_to_file(full_path, file_size_bytes, msg):
         (int): number of bytes written to file.
     """
     if file_size_bytes == 0:
-        file_handle = open(full_path, "w")  # writing
+        write_mode = "w"  # writing
     else:
-        file_handle = open(full_path, "a")  # appending
-    msg_to_write = msg + "\n"
-    file_handle.write(msg_to_write)
-    file_handle.close()
+        write_mode = "a"  # appending
+    with open(full_path, write_mode, encoding="utf8") as file_handle:
+        msg_to_write = msg + "\n"
+        file_handle.write(msg_to_write)
     return utf8len(msg_to_write)
 
 
@@ -277,7 +277,7 @@ def get_full_file_path(file_name):
     returns:
         (str) full file name and path
     """
-    return file_path + "//" + file_name
+    return FILE_PATH + "//" + file_name
 
 
 def utf8len(input_string):

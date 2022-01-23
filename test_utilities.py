@@ -180,15 +180,15 @@ class FileAndLoggingTests(utc.UnitTest):
         Confirm log_msg() will create folder if needed
         """
         # override data file path
-        path_backup = util.file_path
-        util.file_path = ".//unittest_data"
+        path_backup = util.FILE_PATH
+        util.FILE_PATH = ".//unittest_data"
 
         file_name = "unit_test.txt"
         full_path = util.get_full_file_path(file_name)
         try:
             # remove directory if it already exists
-            if os.path.exists(util.file_path):
-                shutil.rmtree(util.file_path)
+            if os.path.exists(util.FILE_PATH):
+                shutil.rmtree(util.FILE_PATH)
 
             # write to file and path that does not exist
             test_msg1 = "first test message from unit test"
@@ -203,9 +203,9 @@ class FileAndLoggingTests(utc.UnitTest):
             self.assertGreater(file_size_bytes, 30)
         finally:
             # remove the directory
-            shutil.rmtree(util.file_path)
+            shutil.rmtree(util.FILE_PATH)
             # restore original data file name
-            util.file_path = path_backup
+            util.FILE_PATH = path_backup
 
     def test_log_msg_write(self):
         """
@@ -332,7 +332,7 @@ class FileAndLoggingTests(utc.UnitTest):
         """
         file_name = "dummy.txt"
         full_path = util.get_full_file_path(file_name)
-        expected_value = util.file_path + "//" + file_name
+        expected_value = util.FILE_PATH + "//" + file_name
         print(f"full path={full_path}")
         self.assertEqual(expected_value, full_path,
                          f"expected={expected_value}, actual={full_path}")
