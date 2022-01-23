@@ -740,9 +740,10 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
         # log fatal failure
         email_notification.send_email_alert(
             subject=("fatal JSON decode error during refresh zone"),
-            body="%s: trial %s of %s at %s" % (util.get_function_name(),
-                                               trial_number, number_of_retries,
-                                               time_now))
+            body="{}: trial {} of {} at {}".format(util.get_function_name(),
+                                                   trial_number,
+                                                   number_of_retries,
+                                                   time_now))
         raise pyhtcc.ZoneNotFoundError(f"Missing device: {self.device_id}")
 
 
