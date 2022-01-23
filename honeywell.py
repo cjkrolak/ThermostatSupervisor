@@ -101,7 +101,7 @@ class ThermostatClass(pyhtcc.PyHTCC, tc.ThermostatCommon):
           (dict) thermostat meta data.
         """
         return_data = self.get_metadata(zone, parameter=None)
-        util.log_msg("all meta data: %s" % return_data,
+        util.log_msg(f"all meta data: {return_data}",
                      mode=util.DEBUG_LOG + util.CONSOLE_LOG, func_name=1)
         return return_data
 
@@ -120,13 +120,12 @@ class ThermostatClass(pyhtcc.PyHTCC, tc.ThermostatCommon):
         zone_info_list = self.get_zones_info()
         if parameter is None:
             return_data = zone_info_list[zone]
-            util.log_msg("zone%s info: %s" % (zone, return_data),
+            util.log_msg(f"zone{zone} info: {return_data}",
                          mode=util.DEBUG_LOG + util.CONSOLE_LOG, func_name=1)
             return return_data
         else:
             return_data = zone_info_list[zone].get(parameter)
-            util.log_msg("zone%s parameter '%s': %s" %
-                         (zone, parameter, return_data),
+            util.log_msg(f"zone{zone} parameter '{parameter}': {return_data}",
                          mode=util.DEBUG_LOG + util.CONSOLE_LOG, func_name=1)
             return return_data
 
@@ -143,7 +142,7 @@ class ThermostatClass(pyhtcc.PyHTCC, tc.ThermostatCommon):
         """
         latest_data_dict = self.get_metadata(zone).get('latestData')
         if debug:
-            util.log_msg("zone%s latestData: %s" % (zone, latest_data_dict),
+            util.log_msg(f"zone{zone} latestData: {latest_data_dict}",
                          mode=util.BOTH_LOG, func_name=1)
         return latest_data_dict
 
@@ -157,7 +156,7 @@ class ThermostatClass(pyhtcc.PyHTCC, tc.ThermostatCommon):
           (dict) ui data from thermostat.
         """
         ui_data_dict = self.get_latestdata(zone).get('uiData')
-        util.log_msg("zone%s latestData: %s" % (zone, ui_data_dict),
+        util.log_msg(f"zone{zone} latestData: {ui_data_dict}",
                      mode=util.DEBUG_LOG + util.CONSOLE_LOG, func_name=1)
         return ui_data_dict
 
@@ -174,8 +173,8 @@ class ThermostatClass(pyhtcc.PyHTCC, tc.ThermostatCommon):
         """
         parameter_data = self.get_ui_data(
             zone=honeywell_config.default_zone).get(parameter)
-        util.log_msg("zone%s uiData parameter %s: %s" %
-                     (zone, parameter, parameter_data),
+        util.log_msg(f"zone{zone} uiData parameter {parameter}: "
+                     f"{parameter_data}",
                      mode=util.DEBUG_LOG + util.CONSOLE_LOG,
                      func_name=1)
         return parameter_data
@@ -652,7 +651,7 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
         # heating status
         if switch_position == \
                 self.system_switch_position[self.HEAT_MODE]:
-            util.log_msg("heat mode=%s" % self.is_heat_mode(),
+            util.log_msg(f"heat mode={self.is_heat_mode()}",
                          mode=util.BOTH_LOG)
             util.log_msg("heat setpoint=%s" %
                          self.get_heat_setpoint(), mode=util.BOTH_LOG)
@@ -665,7 +664,7 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
         # cooling status
         if switch_position == \
                 self.system_switch_position[self.COOL_MODE]:
-            util.log_msg("cool mode=%s" % self.is_cool_mode(),
+            util.log_msg(f"cool mode={self.is_cool_mode()}",
                          mode=util.BOTH_LOG)
             util.log_msg("cool setpoint=%s" %
                          self.get_cool_setpoint(), mode=util.BOTH_LOG)
@@ -678,7 +677,7 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
         # hold settings
         util.log_msg("is in vacation hold mode=%s" %
                      self.get_is_invacation_hold_mode(), mode=util.BOTH_LOG)
-        util.log_msg("vacation hold=%s" % self.get_vacation_hold(),
+        util.log_msg(f"vacation hold={self.get_vacation_hold()}",
                      mode=util.BOTH_LOG)
         util.log_msg("vacation hold until time=%s" %
                      self.get_vacation_hold_until_time(), mode=util.BOTH_LOG)
@@ -790,7 +789,7 @@ if __name__ == "__main__":
 
     # measure thermostat response time
     MEASUREMENTS = 30
-    print("Thermostat response times for %s measurements..." % MEASUREMENTS)
+    print(f"Thermostat response times for {MEASUREMENTS} measurements...")
     meas_data = Zone.measure_thermostat_response_time(
         MEASUREMENTS, func=Zone.pyhtcc.get_zones_info)
     ppp = pprint.PrettyPrinter(indent=4)

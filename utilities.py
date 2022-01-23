@@ -2,7 +2,7 @@
 
 # built-in libraries
 import datetime
-import importlib
+import importlib.util
 import inspect
 import os
 import platform
@@ -41,9 +41,10 @@ DATA_LOG = 0x010  # print to data log
 BOTH_LOG = 0x011  # log to both console and data logs
 DEBUG_LOG = 0x100  # print only if debug mode is on
 
-file_path = ".//data"
+FILE_PATH = ".//data"
 MAX_LOG_SIZE_BYTES = 2**20  # logs rotate at this max size
-MIN_PYTHON_VERSION = 3.7  # minimum python version required
+MIN_PYTHON_MAJOR_VERSION = 3  # minimum python major version required
+MIN_PYTHON_MINOR_VERSION = 7  # minimum python minor version required
 
 # all environment variables required by code should be registered here
 env_variables = {
@@ -109,7 +110,7 @@ def get_env_variable(env_key):
         else:
             value_shown = return_buffer["value"]
 
-        log_msg("%s=%s" % (env_key, value_shown),
+        log_msg(f"{env_key}={value_shown}",
                 mode=DEBUG_LOG)
     except KeyError:
         log_msg("FATAL ERROR: required environment variable '%s'"
@@ -128,7 +129,7 @@ def load_all_env_variables():
         None, populates env_variables dict.
     """
     for key in env_variables:
-        log_msg("checking key: %s" % key,
+        log_msg(f"checking key: {key}",
                 mode=BOTH_LOG, func_name=1)
         env_variables[key] = get_env_variable(key)["value"]
 
@@ -172,14 +173,14 @@ def log_msg(msg, mode, func_name=-1, file_name=None):
 
     # build message string
     if func_name > 0:
-        msg = "[%s]: %s" % (get_function_name(func_name), msg)
+        msg = f"[{get_function_name(func_name)}]: {msg}"
 
     # log to data file
     if (mode & DATA_LOG) and not filter_debug_msg:
         # create directory if needed
-        if not os.path.exists(file_path):
-            print("data folder '%s' created." % file_path)
-            os.makedirs(file_path)
+        if not os.path.exists(FILE_PATH):
+            print(f"data folder '{FILE_PATH}' created.")
+            os.makedirs(FILE_PATH)
 
         # build full file name
         full_path = get_full_file_path(log_msg.file_name)
@@ -253,12 +254,12 @@ def write_to_file(full_path, file_size_bytes, msg):
         (int): number of bytes written to file.
     """
     if file_size_bytes == 0:
-        file_handle = open(full_path, "w")  # writing
+        write_mode = "w"  # writing
     else:
-        file_handle = open(full_path, "a")  # appending
-    msg_to_write = msg + "\n"
-    file_handle.write(msg_to_write)
-    file_handle.close()
+        write_mode = "a"  # appending
+    with open(full_path, write_mode, encoding="utf8") as file_handle:
+        msg_to_write = msg + "\n"
+        file_handle.write(msg_to_write)
     return utf8len(msg_to_write)
 
 
@@ -276,7 +277,7 @@ def get_full_file_path(file_name):
     returns:
         (str) full file name and path
     """
-    return file_path + "//" + file_name
+    return FILE_PATH + "//" + file_name
 
 
 def utf8len(input_string):
@@ -299,8 +300,8 @@ def is_interactive_environment():
     elif parent == "eclipse.exe":
         return True
     else:
-        print("DEBUG: parent process=%s" % parent)
-        raise EnvironmentError("unrecognized environment: %s" % parent)
+        print(f"DEBUG: parent process={parent}")
+        raise EnvironmentError(f"unrecognized environment: {parent}")
 
 
 def temp_value_with_units(raw, disp_unit='F', precision=1) -> str:
@@ -328,7 +329,7 @@ def temp_value_with_units(raw, disp_unit='F', precision=1) -> str:
             pass
 
     if raw is None:
-        formatted = "%s" % (raw)
+        formatted = f"{raw}"
     elif precision == 0:
         formatted = "%d" % (raw)
     else:
@@ -361,7 +362,7 @@ def humidity_value_with_units(raw, disp_unit=' RH', precision=0) -> str:
             pass
 
     if raw is None:
-        formatted = "%s" % (raw)
+        formatted = f"{raw}"
     elif precision == 0:
         formatted = "%d" % (raw)
     else:
@@ -382,8 +383,7 @@ def get_key_from_value(input_dict, val):
     for key, value in input_dict.items():
         if val == value:
             return key
-    raise KeyError("key not found in dict '%s' with value='%s'" %
-                   (input_dict, val))
+    raise KeyError(f"key not found in dict '{input_dict}' with value='{val}'")
 
 
 def c_to_f(tempc) -> float:
@@ -400,7 +400,7 @@ def c_to_f(tempc) -> float:
     elif isinstance(tempc, (int, float)):
         return tempc * 9.0 / 5 + 32
     else:
-        raise TypeError("raw value '%s' is not an int or float" % tempc)
+        raise TypeError(f"raw value '{tempc}' is not an int or float")
 
 
 def f_to_c(tempf) -> float:
@@ -417,7 +417,7 @@ def f_to_c(tempf) -> float:
     elif isinstance(tempf, (int, float)):
         return (tempf - 32) * 5 / 9.0
     else:
-        raise TypeError("raw value '%s' is not an int or float" % tempf)
+        raise TypeError(f"raw value '{tempf}' is not an int or float")
 
 
 def is_host_on_local_net(host_name, ip_address=None):
@@ -443,7 +443,7 @@ def is_host_on_local_net(host_name, ip_address=None):
         except socket.gaierror:
             return False, None
         if host_found:
-            print("host %s found at %s" % (host_name, host_found))
+            print(f"host {host_name} found at {host_found}")
             return True, host_found
         else:
             return False, None
@@ -457,8 +457,8 @@ def is_host_on_local_net(host_name, ip_address=None):
         if host_name == host_found[0]:
             return True, ip_address
         else:
-            print("DEBUG: expected host=%s, actual host=%s" %
-                  (host_name, host_found))
+            print(f"DEBUG: expected host={host_name}, "
+                  f"actual host={host_found}")
             return False, None
 
 
@@ -472,33 +472,49 @@ def is_azure_environment():
     return '192.' not in get_local_ip()
 
 
-def get_python_version(min_version=MIN_PYTHON_VERSION, display_version=True):
+def get_python_version(min_major_version=MIN_PYTHON_MAJOR_VERSION,
+                       min_minor_version=MIN_PYTHON_MINOR_VERSION,
+                       display_version=True):
     """
     Print current Python version to the screen.
 
     inputs:
-        min_version(float): min allowed version
+        min_major_version(int): min allowed major version
+        min_minor_version(int): min allowed minor version
         display_version(bool): True to print to screen.
     return:
         (tuple): (major version, minor version)
     """
     major_version = sys.version_info.major
     minor_version = sys.version_info.minor
-    version_float = float(str(major_version) + "." + str(minor_version))
 
     # display version
     if display_version:
-        print("running on Python version %s" % version_float)
+        print(f"running on Python version {major_version}.{minor_version}")
 
-    # check version
-    if min_version is not None:
-        if not isinstance(min_version, (int, float)):
-            raise TypeError("input parameter 'min_version is type (%s), "
-                            "not int or float" % type(min_version))
-        if version_float < min_version:
-            raise EnvironmentError("current python version (%s) is less than "
-                                   "min python version required (%s)" %
-                                   (version_float, min_version))
+    # check major version
+    major_version_fail = False
+    if min_major_version is not None:
+        if not isinstance(min_major_version, (int, float)):
+            raise TypeError("input parameter 'min_major_version is type (%s), "
+                            "not int or float" % type(min_major_version))
+        if major_version < min_major_version:
+            major_version_fail = True
+
+    # check major version
+    minor_version_fail = False
+    if min_minor_version is not None:
+        if not isinstance(min_minor_version, (int, float)):
+            raise TypeError("input parameter 'min_minor_version is type (%s), "
+                            "not int or float" % type(min_minor_version))
+        if minor_version < min_minor_version:
+            minor_version_fail = True
+
+    if major_version_fail or minor_version_fail:
+        raise EnvironmentError(
+            f"current python major version ({major_version}.{minor_version}) "
+            f"is less than min python version required "
+            f"({min_major_version}.{min_minor_version})")
 
     return (major_version, minor_version)
 

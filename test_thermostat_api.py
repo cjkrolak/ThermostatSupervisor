@@ -117,7 +117,7 @@ class Test(utc.UnitTest):
             }
 
         for key, inputs in test_cases.items():
-            print("testing parse of input parameter=%s" % key)
+            print(f"testing parse of input parameter={key}")
             expected_value = inputs["datatype"](test_list[
                 api.get_argv_position(key)])
             actual_value = api.parse_runtime_parameter(
@@ -127,11 +127,11 @@ class Test(utc.UnitTest):
                 inputs["supported_values"],
                 inputs["input_list"]
                 )
-            print("key=%s, actual=%s, expected=%s" % (key, actual_value,
-                                                      expected_value))
+            print(f"key={key}, actual={actual_value}, "
+                  f"expected={expected_value}")
             self.assertEqual(actual_value, expected_value,
-                             "actual=%s, expected=%s" %
-                             (actual_value, expected_value))
+                             f"actual={actual_value}, "
+                             f"expected={expected_value}")
 
         # test out of range parameter
         # parse the tolerance override:
@@ -166,8 +166,8 @@ class Test(utc.UnitTest):
                                             range(0, 10),
                                             test_list)
             self.assertEqual(measurements_input, default_value,
-                             "actual=%s, expected=%s" %
-                             (measurements_input, default_value))
+                             f"actual={measurements_input}, "
+                             f"expected={default_value}")
         finally:
             test_list = test_list_backup  # restore original
 
@@ -183,7 +183,7 @@ class Test(utc.UnitTest):
                 test_list)
 
         # test default behavior with input_list == None
-        print("argv list=%s" % sys.argv)
+        print(f"argv list={sys.argv}")
         expected_result = [api.DEFAULT_THERMOSTAT]
         argv0 = api.parse_runtime_parameter(
             "thermostat_type",
@@ -216,7 +216,7 @@ class Test(utc.UnitTest):
                          api.user_inputs["measurements"])
 
         # test default case
-        print("argv list=%s" % sys.argv)
+        print(f"argv list={sys.argv}")
         # argv=['python -m unittest', 'discover', '-v'] case
         if '-v' in sys.argv:
             # parsing should fail parsing -v from argv list
@@ -225,7 +225,7 @@ class Test(utc.UnitTest):
                       "unittest argv list, should fail for ValueError since "
                       "'-v' is not parseable into a value...")
                 return_list = api.parse_all_runtime_parameters()
-                print("parsed input parameter list=%s" % return_list)
+                print(f"parsed input parameter list={return_list}")
         else:
             if len(sys.argv) > 1:
                 # argv list > 1, arbitrary list, can't evaluate
@@ -247,7 +247,7 @@ class Test(utc.UnitTest):
         """
         # test successful case
         pkg = api.load_hardware_library(api.DEFAULT_THERMOSTAT)
-        print("default thermostat returned package type %s" % type(pkg))
+        print(f"default thermostat returned package type {type(pkg)}")
         self.assertTrue(isinstance(pkg, object),
                         "dynamic_module_import() returned type(%s),"
                         " expected an object" % type(pkg))

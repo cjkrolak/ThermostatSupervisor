@@ -105,7 +105,7 @@ class ThermostatClass(tc.ThermostatCommon):
         returns:
             (dict) of meta data
         """
-        util.log_msg("querying thermostat zone %s for meta data..." % zone,
+        util.log_msg(f"querying thermostat zone {zone} for meta data...",
                      mode=util.BOTH_LOG, func_name=1)
         attr_dict = {}
         ignore_fields = ['get', 'post', 'reboot', 'set_day_program']
@@ -162,7 +162,7 @@ class ThermostatClass(tc.ThermostatCommon):
         """
         latest_data_dict = self.get_meta_data_dict(zone)
         if debug:
-            util.log_msg("zone%s latestData: %s" % (zone, latest_data_dict),
+            util.log_msg(f"zone{zone} latestData: {latest_data_dict}",
                          mode=util.BOTH_LOG, func_name=1)
         return latest_data_dict
 
@@ -401,8 +401,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         """
         sp_lst = sp_dict['raw'][str(day)]
         if len(sp_lst) != 8:
-            raise Exception("setpoint list is not 8 elements long: %s" %
-                            sp_lst)
+            raise Exception(f"setpoint list is not 8 elements long: {sp_lst}")
         return sp_dict['raw'][str(day)]
 
     def get_previous_days_setpoint(self, sp_dict) -> int:
@@ -458,8 +457,8 @@ class ThermostatZone(tc.ThermostatCommonZone):
         """
         result = self.device_id.t_heat['raw']
         if not isinstance(result, float):
-            raise Exception("heat set point is type %s, "
-                            "should be float" % type(result))
+            raise Exception(f"heat set point is type {type(result)}, "
+                            f"should be float")
         return result
 
     def get_heat_setpoint_raw(self) -> float:
@@ -719,7 +718,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         # heating status
         if switch_position == \
                 self.system_switch_position[self.HEAT_MODE]:
-            util.log_msg("heat mode=%s" % self.is_heat_mode(),
+            util.log_msg(f"heat mode={self.is_heat_mode()}",
                          mode=util.BOTH_LOG)
             util.log_msg("heat setpoint=%s" %
                          self.get_heat_setpoint_raw(), mode=util.BOTH_LOG)
@@ -730,7 +729,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         # cooling status
         if switch_position == \
                 self.system_switch_position[self.COOL_MODE]:
-            util.log_msg("cool mode=%s" % self.is_cool_mode(),
+            util.log_msg(f"cool mode={self.is_cool_mode()}",
                          mode=util.BOTH_LOG)
             util.log_msg("cool setpoint=%s" %
                          self.get_cool_setpoint_raw(), mode=util.BOTH_LOG)
@@ -741,7 +740,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         # hold settings
         util.log_msg("is in vacation hold mode=%s" %
                      self.get_is_invacation_hold_mode(), mode=util.BOTH_LOG)
-        util.log_msg("vacation hold=%s" % self.get_vacation_hold(),
+        util.log_msg(f"vacation hold={self.get_vacation_hold()}",
                      mode=util.BOTH_LOG)
         util.log_msg("vacation hold until time=%s" %
                      self.get_vacation_hold_until_time(), mode=util.BOTH_LOG)
@@ -775,7 +774,7 @@ if __name__ == "__main__":
     # measure thermostat response time
     MEASUREMENTS = 60  # running higher than normal count here because
     # intermittent failures have been observed.
-    print("Thermostat response times for %s measurements..." % MEASUREMENTS)
+    print(f"Thermostat response times for {MEASUREMENTS} measurements...")
     meas_data = Zone.measure_thermostat_response_time(MEASUREMENTS)
     ppp = pprint.PrettyPrinter(indent=4)
     ppp.pprint(meas_data)

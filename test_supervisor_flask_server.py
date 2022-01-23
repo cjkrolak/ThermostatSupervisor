@@ -40,14 +40,14 @@ class IntegrationTest(utc.UnitTest):
         if not util.is_azure_environment():
             # mock the argv list
             sfs.argv = utc.unit_test_argv
-            print("DEBUG: in setup supervise sfs.argv=%s" % sfs.argv)
+            print(f"DEBUG: in setup supervise sfs.argv={sfs.argv}")
             print("starting supervise flask server thread...")
             self.flask_server = threading.Thread(
                 target=sfs.app.run, args=('0.0.0.0', sfs.FLASK_PORT, False),
                 kwargs=sfs.flask_kwargs)
             self.flask_server.daemon = True  # make thread daemonic
             self.flask_server.start()
-            print("thread alive status=%s" % self.flask_server.is_alive())
+            print(f"thread alive status={self.flask_server.is_alive()}")
             print("Flask server setup is complete")
         else:
             print("WARNING: flask server tests not currently supported on "
@@ -55,7 +55,7 @@ class IntegrationTest(utc.UnitTest):
 
     def tearDown(self):
         if not util.is_azure_environment():
-            print("thread alive status=%s" % self.flask_server.is_alive())
+            print(f"thread alive status={self.flask_server.is_alive()}")
             if self.flask_server.daemon:
                 print("flask server is daemon thread, "
                       "thread will terminate when main thread terminates")
@@ -85,15 +85,15 @@ class IntegrationTest(utc.UnitTest):
             time.sleep(polling_interval_sec)  # polling interval
 
         # grab web page and check response code
-        print("grabbing web page results from: %s" % flask_url)
+        print(f"grabbing web page results from: {flask_url}")
         results = requests.get(flask_url)
-        print("web page response code=%s" % results.status_code)
+        print(f"web page response code={results.status_code}")
         self.assertEqual(results.status_code, 200,
-                         "web page response was %s, expected 200" %
-                         results.status_code)
+                         f"web page response was {results.status_code}, "
+                         f"expected 200")
 
         # check web page content vs. expectations
-        print("web page contents: %s" % results.content)
+        print(f"web page contents: {results.content}")
         exp_substr = \
             ("<title>%s thermostat zone %s, %s measurements</title>" %
              (utc.unit_test_argv[1], utc.unit_test_argv[2],

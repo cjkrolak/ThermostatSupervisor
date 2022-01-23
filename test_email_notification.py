@@ -36,12 +36,12 @@ class Test(utc.UnitTest):
         # make sure email account environmental variables are present
         for env_key in ['GMAIL_USERNAME', 'GMAIL_PASSWORD']:
             try:
-                print("checking for environment variable key %s" % env_key)
+                print(f"checking for environment variable key {env_key}")
                 _ = os.environ[env_key]
-                print("environment variable key %s was found (PASS)" % env_key)
+                print(f"environment variable key {env_key} was found (PASS)")
             except KeyError:
-                fail_msg = ("%s environment variable missing "
-                            "from environment" % env_key)
+                fail_msg = (f"{env_key} environment variable missing from "
+                            f"environment")
                 self.fail(fail_msg)
 
     def test_send_email_alerts(self):

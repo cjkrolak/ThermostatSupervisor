@@ -48,7 +48,7 @@ class IntegrationTest(utc.UnitTest):
                         util.is_host_on_local_net(local_host)[0]])
 
         for test_case in sht31_config.flask_folder:
-            print("test_case=%s" % test_case)
+            print(f"test_case={test_case}")
             Thermostat = \
                 sht31.ThermostatClass(
                     zone, path=sht31_config.flask_folder[test_case])
@@ -106,13 +106,12 @@ class IntegrationTest(utc.UnitTest):
         Zone.update_runtime_parameters(api.user_inputs)
 
         print("current thermostat settings...")
-        print("switch position: %s" % Zone.get_system_switch_position())
-        print("heat mode=%s" % Zone.is_heat_mode())
-        print("cool mode=%s" % Zone.is_cool_mode())
-        print("temporary hold minutes=%s" %
-              Zone.get_temporary_hold_until_time())
+        print(f"switch position: {Zone.get_system_switch_position()}")
+        print(f"heat mode={Zone.is_heat_mode()}")
+        print(f"cool mode={Zone.is_cool_mode()}")
+        print(f"temporary hold minutes={Zone.get_temporary_hold_until_time()}")
         meta_data = Thermostat.get_all_metadata(sht31_config.UNIT_TEST_ZONE)
-        print("thermostat meta data=%s" % meta_data)
+        print(f"thermostat meta data={meta_data}")
         print("thermostat display temp=%s" %
               util.temp_value_with_units(Zone.get_display_temp()))
 
@@ -131,7 +130,7 @@ class IntegrationTest(utc.UnitTest):
             }
         for param, limits in test_cases.items():
             return_val = getattr(Zone, param)()
-            print("'%s'=%s" % (param, return_val))
+            print(f"'{param}'={return_val}")
             min_val = limits["min_val"]
             max_val = limits["max_val"]
             self.assertTrue(min_val <= return_val <= max_val,

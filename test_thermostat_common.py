@@ -65,20 +65,20 @@ class Test(utc.UnitTest):
                       ["is_fan_mode", self.Zone.FAN_MODE],
                       ["is_off_mode", self.Zone.OFF_MODE]]
 
-        print("thermostat_type=%s" % self.Zone.thermostat_type)
+        print(f"thermostat_type={self.Zone.thermostat_type}")
 
         for test_case in test_cases:
-            print("testing %s" % test_case[0])
+            print(f"testing {test_case[0]}")
             try:
                 # mock up the is_X_mode() functions
                 if test_case[0]:
                     backup_func = getattr(self.Zone, test_case[0])
                     setattr(self.Zone, test_case[0], dummy_true)
-                print("current mode(pre)=%s" % self.Zone.current_mode)
+                print(f"current mode(pre)={self.Zone.current_mode}")
 
                 # store the current mode and check cache
                 self.Zone.store_current_mode()
-                print("current mode(post)=%s" % self.Zone.current_mode)
+                print(f"current mode(post)={self.Zone.current_mode}")
                 self.assertEqual(test_case[1], self.Zone.current_mode,
                                  "Zone.set_current_mode() failed to "
                                  "cache mode=%s" % test_case[1])
@@ -252,10 +252,10 @@ class Test(utc.UnitTest):
                 "return_type": type(None)},
             }
         for key, value in func_dict.items():
-            print("key=%s" % key)
-            print("value=%s" % value)
+            print(f"key={key}")
+            print(f"value={value}")
             expected_type = value["return_type"]
-            print("expected type=%s" % expected_type)
+            print(f"expected type={expected_type}")
             if value["args"] is not None:
                 return_val = value["key"](*value["args"])
             else:
@@ -267,7 +267,7 @@ class Test(utc.UnitTest):
     def test_validate_numeric(self):
         """Test validate_numeric() function."""
         for test_case in [1, 1.0, "1", True, None]:
-            print("test case=%s" % type(test_case))
+            print(f"test case={type(test_case)}")
             if isinstance(test_case, (int, float)):
                 expected_val = test_case
                 actual_val = self.Zone.validate_numeric(test_case,
@@ -318,8 +318,8 @@ class Test(utc.UnitTest):
                 expected_mode = self.Zone.OFF_MODE
             else:
                 expected_mode = test_case
-            print("reverting to '%s' mode, expected mode=%s" %
-                  (test_case, expected_mode))
+            print(f"reverting to '{test_case}' mode, "
+                  f"expected mode={expected_mode}")
             new_mode = self.Zone.revert_thermostat_mode(test_case)
             self.assertEqual(new_mode, expected_mode,
                              "reverting to %s mode failed, "
@@ -333,14 +333,13 @@ class Test(utc.UnitTest):
         """
         # measure thermostat response time
         measurements = 3
-        print("Thermostat response times for %s measurements..." %
-              measurements)
+        print(f"Thermostat response times for {measurements} measurements...")
         meas_data = self.Zone.measure_thermostat_response_time(measurements)
         ppp = pprint.PrettyPrinter(indent=4)
         ppp.pprint(meas_data)
         self.assertTrue(isinstance(meas_data, dict),
-                        "return data is type(%s), expected a dict" %
-                        type(meas_data))
+                        f"return data is type({type(meas_data)}), "
+                        f"expected a dict")
         self.assertEqual(meas_data["measurements"], measurements,
                          "number of measurements in return data(%s) doesn't "
                          "match number of masurements requested(%s)" %
@@ -445,7 +444,7 @@ class Test(utc.UnitTest):
 
                 # call function and print return value
                 ret_dict = self.Zone.get_current_mode(1, 1, True, False)
-                print("test case '%s' result: '%s'" % (test_case, ret_dict))
+                print(f"test case '{test_case}' result: '{ret_dict}'")
 
                 # verify return states are correct
                 for return_val in ["heat_mode", "cool_mode", "heat_deviation",
@@ -561,7 +560,7 @@ class Test(utc.UnitTest):
                 (lambda *_, **__: True)
             self.Zone.current_mode = self.Zone.OFF_MODE
         else:
-            self.fail("mock mode '%s' is not supported" % mock_mode)
+            self.fail(f"mock mode '{mock_mode}' is not supported")
 
     def mock_set_point_deviation(self, heat_deviation, cool_deviation):
         """
@@ -656,8 +655,8 @@ class Test(utc.UnitTest):
                     zone_number,
                     mod.ThermostatClass, mod.ThermostatZone
                     )
-            print("thermotat=%s" % type(thermostat))
-            print("thermotat=%s" % type(zone))
+            print(f"thermotat={type(thermostat)}")
+            print(f"thermotat={type(zone)}")
         finally:
             self.Zone.get_system_switch_position = self.switch_position_backup
 
@@ -719,7 +718,7 @@ class Test(utc.UnitTest):
         """Verify report_heating_parameters()."""
         test_cases = [tc.ThermostatCommonZone.OFF_MODE]
         for test_case in test_cases:
-            print("test_case=%s" % test_case)
+            print(f"test_case={test_case}")
             self.Zone.report_heating_parameters(switch_position=test_case)
 
 

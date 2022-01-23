@@ -241,8 +241,8 @@ class ThermostatZone(tc.ThermostatCommonZone):
         returns:
             True if successful, else False
         """
-        print("DEBUG(%s): setting mode to %s" % (util.get_function_name(2),
-                                                 target_mode))
+        print(f"DEBUG({util.get_function_name(2)}): setting mode to "
+              f"{target_mode}")
         self.set_parameter('switch_position',
                            self.system_switch_position[
                                getattr(tc.ThermostatCommonZone, target_mode)])
@@ -527,7 +527,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         # heating status
         if switch_position == \
                 self.system_switch_position[self.HEAT_MODE]:
-            util.log_msg("heat mode=%s" % self.is_heat_mode(),
+            util.log_msg(f"heat mode={self.is_heat_mode()}",
                          mode=util.BOTH_LOG)
             util.log_msg("heat setpoint=%s" %
                          self.get_heat_setpoint_raw(), mode=util.BOTH_LOG)
@@ -538,7 +538,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         # cooling status
         if switch_position == \
                 self.system_switch_position[self.COOL_MODE]:
-            util.log_msg("cool mode=%s" % self.is_cool_mode(),
+            util.log_msg(f"cool mode={self.is_cool_mode()}",
                          mode=util.BOTH_LOG)
             util.log_msg("cool setpoint=%s" %
                          self.get_cool_setpoint_raw(), mode=util.BOTH_LOG)
@@ -549,7 +549,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         # hold settings
         util.log_msg("is in vacation hold mode=%s" %
                      self.get_is_invacation_hold_mode(), mode=util.BOTH_LOG)
-        util.log_msg("vacation hold=%s" % self.get_vacation_hold(),
+        util.log_msg(f"vacation hold={self.get_vacation_hold()}",
                      mode=util.BOTH_LOG)
         util.log_msg("vacation hold until time=%s" %
                      self.get_vacation_hold_until_time(), mode=util.BOTH_LOG)

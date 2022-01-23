@@ -215,7 +215,7 @@ class ThermostatCommonZone():
             self.revert_setpoint_func = self.function_not_supported
             self.get_setpoint_func = self.function_not_supported
         else:
-            print("DEBUG: zone info: %s" % self.zone_info)
+            print(f"DEBUG: zone info: {self.zone_info}")
             raise ValueError("unknown thermostat mode")
 
         self.temperature_is_deviated = self.is_temp_deviated_from_schedule()
@@ -292,8 +292,8 @@ class ThermostatCommonZone():
         if self.is_temp_deviated_from_schedule() and self.is_controlled_mode():
             self.hold_mode = True  # True = not following schedule
             self.hold_temporary = (self.get_temporary_hold_until_time() > 0)
-            status_msg += (" (%s)" % ["persistent",
-                                      "temporary"][self.hold_temporary])
+            status_msg += (
+                f" ({['persistent', 'temporary'][self.hold_temporary]})")
         else:
             self.hold_mode = False
             self.hold_temporary = False
@@ -334,8 +334,7 @@ class ThermostatCommonZone():
         returns:
             True if successful, else False
         """
-        print("DEBUG in set_mode, target_mode=%s, doing nothing" %
-              target_mode)
+        print(f"DEBUG in set_mode, target_mode={target_mode}, doing nothing")
         return False
 
     def store_current_mode(self):
@@ -393,10 +392,10 @@ class ThermostatCommonZone():
                        self.thermostat_type, self.zone_number, label.upper(),
                        util.temp_value_with_units(setpoint), level,
                        util.temp_value_with_units(limit_value)))
-            util.log_msg("WARNING: %s" % msg, mode=util.BOTH_LOG)
+            util.log_msg(f"WARNING: {msg}", mode=util.BOTH_LOG)
             eml.send_email_alert(
                     subject=msg,
-                    body="%s: %s" % (util.get_function_name(), msg))
+                    body=f"{util.get_function_name()}: {msg}")
             return True
         else:
             return False
@@ -656,7 +655,7 @@ class ThermostatCommonZone():
             user_input = user_inputs.get(inp)
             if user_input is not None:
                 setattr(self, cls_method, user_input)
-                util.log_msg("%s=%s" % (inp, user_input),
+                util.log_msg(f"{inp}={user_input}",
                              mode=util.BOTH_LOG, func_name=1)
 
     def verify_current_mode(self, target_mode):
@@ -733,7 +732,7 @@ class ThermostatCommonZone():
             # accumulate stats
             tdelta = time1 - time0
             delta_lst.append(tdelta)
-            util.log_msg("measurement %s=%.2f seconds" % (n, tdelta),
+            util.log_msg(f"measurement {n}={tdelta:.2f} seconds",
                          mode=util.BOTH_LOG, func_name=1)
 
         # calc stats
@@ -807,7 +806,7 @@ class ThermostatCommonZone():
         print("\n")
         util.log_msg("current thermostat settings...",
                      mode=mode, func_name=1)
-        util.log_msg("zone name='%s'" % self.zone_name,
+        util.log_msg(f"zone name='{self.zone_name}'",
                      mode=mode, func_name=1)
         util.log_msg("system switch position: %s (%s)" %
                      (self.get_system_switch_position(),
@@ -834,12 +833,12 @@ class ThermostatCommonZone():
         util.log_msg("cool schedule set point=%s" %
                      util.temp_value_with_units(self.get_schedule_cool_sp()),
                      mode=mode, func_name=1)
-        util.log_msg("(schedule) heat program=%s" %
-                     self.get_schedule_program_heat(),
-                     mode=mode, func_name=1)
-        util.log_msg("(schedule) cool program=%s" %
-                     self.get_schedule_program_cool(),
-                     mode=mode, func_name=1)
+        util.log_msg(
+            f"(schedule) heat program={self.get_schedule_program_heat()}",
+            mode=mode, func_name=1)
+        util.log_msg(
+            f"(schedule) cool program={self.get_schedule_program_cool()}",
+            mode=mode, func_name=1)
         util.log_msg("heat mode=%s (actively heating=%s)" %
                      (self.is_heat_mode(), self.is_heating()),
                      mode=mode, func_name=1)
@@ -855,13 +854,13 @@ class ThermostatCommonZone():
         util.log_msg("fan mode=%s (actively fanning=%s)" %
                      (self.is_fan_mode(), self.is_fanning()),
                      mode=mode, func_name=1)
-        util.log_msg("off mode=%s" % self.is_off_mode(),
+        util.log_msg(f"off mode={self.is_off_mode()}",
                      mode=mode, func_name=1)
-        util.log_msg("hold=%s" % self.get_vacation_hold(),
+        util.log_msg(f"hold={self.get_vacation_hold()}",
                      mode=mode, func_name=1)
-        util.log_msg("temporary hold minutes=%s" %
-                     self.get_temporary_hold_until_time(),
-                     mode=mode, func_name=1)
+        util.log_msg(
+            f"temporary hold minutes={self.get_temporary_hold_until_time()}",
+            mode=mode, func_name=1)
 
     def revert_temperature_deviation(self, setpoint=None, msg=""):
         """

@@ -119,12 +119,11 @@ class ThermostatClass(tc.ThermostatCommon):
         self.flask_server = threading.Thread(target=sht31_fs.app.run,
                                              args=('0.0.0.0',
                                                    sht31_config.FLASK_PORT,
-                                                   sht31_fs.debug),
+                                                   sht31_fs.DEBUG),
                                              kwargs=sht31_config.FLASK_KWARGS)
         self.flask_server.daemon = True  # make thread daemonic
         self.flask_server.start()
-        util.log_msg("thread alive status=%s" %
-                     self.flask_server.is_alive(),
+        util.log_msg(f"thread alive status={self.flask_server.is_alive()}",
                      mode=util.BOTH_LOG, func_name=1)
         util.log_msg("Flask server setup is complete",
                      mode=util.BOTH_LOG, func_name=1)
@@ -432,7 +431,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         # heating status
         if switch_position == \
                 self.system_switch_position[self.HEAT_MODE]:
-            util.log_msg("heat mode=%s" % self.is_heat_mode(),
+            util.log_msg(f"heat mode={self.is_heat_mode()}",
                          mode=util.BOTH_LOG)
             util.log_msg("heat setpoint=%s" %
                          self.get_heat_setpoint(), mode=util.BOTH_LOG)
@@ -445,7 +444,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         # cooling status
         if switch_position == \
                 self.system_switch_position[self.COOL_MODE]:
-            util.log_msg("cool mode=%s" % self.is_cool_mode(),
+            util.log_msg(f"cool mode={self.is_cool_mode()}",
                          mode=util.BOTH_LOG)
             util.log_msg("cool setpoint=%s" %
                          self.get_cool_setpoint(), mode=util.BOTH_LOG)
@@ -458,7 +457,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         # hold settings
         util.log_msg("is in vacation hold mode=%s" %
                      self.get_is_invacation_hold_mode(), mode=util.BOTH_LOG)
-        util.log_msg("vacation hold=%s" % self.get_vacation_hold(),
+        util.log_msg(f"vacation hold={self.get_vacation_hold()}",
                      mode=util.BOTH_LOG)
         util.log_msg("vacation hold until time=%s" %
                      self.get_vacation_hold_until_time(), mode=util.BOTH_LOG)

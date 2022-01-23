@@ -28,7 +28,7 @@ class Test(utc.UnitTest):
         """
         for revert_setting in [False, True]:
             for revert_all_setting in [False, True]:
-                print("%s" % ("-" * 60))
+                print(f"{'-' * 60}")
                 print("testing revert=%s, revert all=%s" %
                       (revert_setting, revert_all_setting))
                 sup.display_session_settings(self.thermostat_type,

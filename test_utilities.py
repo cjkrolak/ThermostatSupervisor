@@ -47,7 +47,7 @@ class EnvironmentTests(utc.UnitTest):
         Confirm all env variables can be loaded.
         """
         util.load_all_env_variables()
-        print("env var dict=%s" % util.env_variables)
+        print(f"env var dict={util.env_variables}")
 
     def test_get_local_ip(self):
         """
@@ -96,8 +96,8 @@ class EnvironmentTests(utc.UnitTest):
                                  (ip_length_symbol + str(ip_length_min))))
             else:
                 self.assertTrue(ip_address is None,
-                                "ip_address returned (%s) is not None" %
-                                ip_address)
+                                f"ip_address returned ({ip_address}) "
+                                f"is not None")
 
             # verify expected result
             self.assertEqual(result, test_case[2],
@@ -109,14 +109,14 @@ class EnvironmentTests(utc.UnitTest):
         major_version, minor_version = util.get_python_version()
 
         # verify major version
-        min_major = int(util.MIN_PYTHON_VERSION)
+        min_major = int(util.MIN_PYTHON_MAJOR_VERSION)
         self.assertTrue(major_version >= min_major,
                         "python major version (%s) is not gte min required "
                         "value (%s)" % (major_version, min_major))
 
         # verify minor version
-        min_minor = int(str(util.MIN_PYTHON_VERSION)[
-            str(util.MIN_PYTHON_VERSION).find(".") + 1:])
+        min_minor = int(str(util.MIN_PYTHON_MAJOR_VERSION)[
+            str(util.MIN_PYTHON_MAJOR_VERSION).find(".") + 1:])
         self.assertTrue(minor_version >= min_minor,
                         "python minor version (%s) is not gte min required "
                         "value (%s)" % (minor_version, min_minor))
@@ -125,16 +125,16 @@ class EnvironmentTests(utc.UnitTest):
         with self.assertRaises(TypeError):
             print("attempting to invalid input parameter type, "
                   "expect exception...")
-            util.get_python_version("3.7")
+            util.get_python_version("3", 7)
 
         # no decimal point
-        util.get_python_version(3)
+        util.get_python_version(3, None)
 
         # min value exception
         with self.assertRaises(EnvironmentError):
             print("attempting to verify version gte 99.99, "
                   "expect exception...")
-            util.get_python_version(99.99)
+            util.get_python_version(99, 99)
 
         print("test passed all checks")
 
@@ -150,7 +150,7 @@ class EnvironmentTests(utc.UnitTest):
 
         # test successful case
         pkg = util.dynamic_module_import(api.DEFAULT_THERMOSTAT)
-        print("default thermostat returned package type %s" % type(pkg))
+        print(f"default thermostat returned package type {type(pkg)}")
         self.assertTrue(isinstance(pkg, object),
                         "dynamic_module_import() returned type(%s),"
                         " expected an object" % type(pkg))
@@ -161,7 +161,7 @@ class EnvironmentTests(utc.UnitTest):
         with self.assertRaises(ImportError):
             print("attempting to open bogus package name, expect exception...")
             pkg = util.dynamic_module_import("bogus")
-            print("'bogus' module returned package type %s" % type(pkg))
+            print(f"'bogus' module returned package type {type(pkg)}")
         print("test passed")
 
 
@@ -180,15 +180,15 @@ class FileAndLoggingTests(utc.UnitTest):
         Confirm log_msg() will create folder if needed
         """
         # override data file path
-        path_backup = util.file_path
-        util.file_path = ".//unittest_data"
+        path_backup = util.FILE_PATH
+        util.FILE_PATH = ".//unittest_data"
 
         file_name = "unit_test.txt"
         full_path = util.get_full_file_path(file_name)
         try:
             # remove directory if it already exists
-            if os.path.exists(util.file_path):
-                shutil.rmtree(util.file_path)
+            if os.path.exists(util.FILE_PATH):
+                shutil.rmtree(util.FILE_PATH)
 
             # write to file and path that does not exist
             test_msg1 = "first test message from unit test"
@@ -203,9 +203,9 @@ class FileAndLoggingTests(utc.UnitTest):
             self.assertGreater(file_size_bytes, 30)
         finally:
             # remove the directory
-            shutil.rmtree(util.file_path)
+            shutil.rmtree(util.FILE_PATH)
             # restore original data file name
-            util.file_path = path_backup
+            util.FILE_PATH = path_backup
 
     def test_log_msg_write(self):
         """
@@ -252,14 +252,13 @@ class FileAndLoggingTests(utc.UnitTest):
         # assuming file exists, should return non-zero value
         result = util.get_file_size_bytes(full_path)
         self.assertTrue(result > 0,
-                        "file size for existing file is %s, expected > 0" %
-                        result)
+                        f"file size for existing file is {result}, "
+                        f"expected > 0")
 
         # bogus file, should return zero value
         result = util.get_file_size_bytes("bogus.123")
         self.assertTrue(result == 0,
-                        "file size for bogus file is %s, expected == 0" %
-                        result)
+                        f"file size for bogus file is {result}, expected == 0")
 
     def test_log_rotate_file(self):
         """
@@ -298,7 +297,7 @@ class FileAndLoggingTests(utc.UnitTest):
 
         # test message
         msg = "unit test bogus message"
-        print("test message=%s bytes" % util.utf8len(msg))
+        print(f"test message={util.utf8len(msg)} bytes")
 
         # write to non-existing file, bytes written + EOF == bytes read
         bytes_written = util.write_to_file(full_path, 0, msg)
@@ -333,11 +332,10 @@ class FileAndLoggingTests(utc.UnitTest):
         """
         file_name = "dummy.txt"
         full_path = util.get_full_file_path(file_name)
-        expected_value = util.file_path + "//" + file_name
-        print("full path=%s" % full_path)
+        expected_value = util.FILE_PATH + "//" + file_name
+        print(f"full path={full_path}")
         self.assertEqual(expected_value, full_path,
-                         "expected=%s, actual=%s" %
-                         (expected_value, full_path))
+                         f"expected={expected_value}, actual={full_path}")
 
     def delete_test_file(self, full_path):
         """Delete the test file.
@@ -349,10 +347,10 @@ class FileAndLoggingTests(utc.UnitTest):
         """
         try:
             os.remove(full_path)
-            print("unit test file '%s' deleted." % full_path)
+            print(f"unit test file '{full_path}' deleted.")
             return True
         except FileNotFoundError:
-            print("unit test file '%s' did not exist." % full_path)
+            print(f"unit test file '{full_path}' did not exist.")
             return False
 
 
@@ -485,23 +483,22 @@ class MiscTests(utc.UnitTest):
         """
         # default
         test = "<default>"
-        print("testing util.get_function_name(%s)" % test)
-        ev_1 = "test_GetFunctionName"
+        print(f"testing util.get_function_name({test})")
+        ev_1 = "test_get_function_name"
         result_1 = util.get_function_name()
-        self.assertEqual(ev_1, result_1, "expected=%s, actual=%s" %
-                         (ev_1, result_1))
+        self.assertEqual(ev_1, result_1, f"expected={ev_1}, actual={result_1}")
 
         # test 1
         test = 1
-        print("testing util.get_function_name(%s)" % test)
-        ev_1 = "test_GetFunctionName"
+        print(f"testing util.get_function_name({test})")
+        ev_1 = "test_get_function_name"
         result_1 = util.get_function_name(test)
         self.assertEqual(ev_1, result_1, "test%s: expected=%s, actual=%s" %
                          (test, ev_1, result_1))
 
         # test 2
         test = 2
-        print("testing util.get_function_name(%s)" % test)
+        print(f"testing util.get_function_name({test})")
         ev_1 = ["run",  # Linux
                 "_callTestMethod",  # windows
                 ]
@@ -514,12 +511,12 @@ class MiscTests(utc.UnitTest):
         Verify utf8len().
         """
         for test_case in ["A", "BB", "ccc", "dd_d"]:
-            print("testing util.utf8len(%s)" % test_case)
+            print(f"testing util.utf8len({test_case})")
             expected_value = 1 * len(test_case)
             actual_value = util.utf8len(test_case)
             self.assertEqual(expected_value, actual_value,
-                             "expected=%s, actual=%s" %
-                             (expected_value, actual_value))
+                             f"expected={expected_value}, "
+                             f"actual={actual_value}")
 
     def test_get_key_from_value(self):
         """Verify get_key_from_value()."""
