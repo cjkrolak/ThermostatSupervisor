@@ -48,13 +48,13 @@ class FunctionalIntegrationTest(IntegrationTest,
         self.metadata_type = dict
 
     def test_ThermostatGetUiData(self):
-        """Verify Thermostat.get_uiData() function"""
+        """Verify Thermostat.get_ui_data() function"""
         # setup class instances
         self.Thermostat, self.Zone = self.setUpThermostatZone()
 
         # verify function return value
-        result = self.Thermostat.get_uiData(self.Thermostat.zone_number)
-        print("Thermostat.get_uiData returned %s" % result)
+        result = self.Thermostat.get_ui_data(self.Thermostat.zone_number)
+        print("Thermostat.get_ui_data returned %s" % result)
         self.assertTrue(isinstance(result, dict),
                         "result returned is type (%s), "
                         "expected a dictionary" % type(result))
@@ -107,7 +107,7 @@ class PerformanceIntegrationTest(IntegrationTest,
     def setUp(self):
         self.setUpIntTest()
         # network timing measurement
-        self.timeout_limit = mmm.socket_timeout
+        self.timeout_limit = mmm.SOCKET_TIMEOUT
         self.timing_measurements = 100
 
 

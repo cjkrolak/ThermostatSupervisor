@@ -147,7 +147,7 @@ class ThermostatClass(pyhtcc.PyHTCC, tc.ThermostatCommon):
                          mode=util.BOTH_LOG, func_name=1)
         return latest_data_dict
 
-    def get_uiData(self, zone=honeywell_config.default_zone) -> dict:
+    def get_ui_data(self, zone=honeywell_config.default_zone) -> dict:
         """
         Return the latest thermostat ui data.
 
@@ -172,7 +172,7 @@ class ThermostatClass(pyhtcc.PyHTCC, tc.ThermostatCommon):
         returns:
           (dict)  # need to verify return data type.
         """
-        parameter_data = self.get_uiData(
+        parameter_data = self.get_ui_data(
             zone=honeywell_config.default_zone).get(parameter)
         util.log_msg("zone%s uiData parameter %s: %s" %
                      (zone, parameter, parameter_data),

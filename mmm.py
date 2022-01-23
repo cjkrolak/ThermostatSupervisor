@@ -6,27 +6,24 @@ import datetime
 import os
 import pprint
 import socket
-import sys
+import urllib
 from dns.exception import DNSException
 
-# add github version of radiotherm to path
-sys.path.append(os.path.abspath('../radiotherm'))
-# insert gitub version of radiotherm to front of path for debugging
-# sys.path.insert(0, os.path.abspath('../radiotherm'))  # front of path list
-import radiotherm  # noqa F405
-# print("path=%s" % sys.path)
-# print("radiotherm=%s" % radiotherm)  # show imported object
-
-import urllib  # noqa E402
-
 # local imports
-import mmm_config  # noqa E402
-import thermostat_api as api  # noqa E402
-import thermostat_common as tc  # noqa E402
-import utilities as util  # noqa E402
+import mmm_config
+import thermostat_api as api
+import thermostat_common as tc
+import utilities as util
 
+# radiotherm import
+MMM_DEBUG = True  # debug uses local radiotherm repo instead of pkg
+if MMM_DEBUG and not util.is_azure_environment():
+    radiotherm = util.dynamic_module_import("radiotherm",
+                                            os.path.abspath('../radiotherm'))
+else:
+    import radiotherm  # noqa E402, from path / site packages
 
-socket_timeout = 45  # http socket timeout override
+SOCKET_TIMEOUT = 45  # http socket timeout override
 
 
 class ThermostatClass(tc.ThermostatCommon):
@@ -169,7 +166,7 @@ class ThermostatClass(tc.ThermostatCommon):
                          mode=util.BOTH_LOG, func_name=1)
         return latest_data_dict
 
-    def get_uiData(self, zone) -> dict:
+    def get_ui_data(self, zone) -> dict:
         """
         Get the latest thermostat ui data
 
@@ -441,12 +438,12 @@ class ThermostatZone(tc.ThermostatCommonZone):
         todays_setpoint_lst = self.get_setpoint_list(sp_dict,
                                                      datetime.datetime.today(
                                                          ).weekday())
-        for t in [0, 2, 4, 6]:
-            if todays_setpoint_lst[t] > minutes_since_midnight:
+        for idx in [0, 2, 4, 6]:
+            if todays_setpoint_lst[idx] > minutes_since_midnight:
                 return current_sp
             else:
                 # store setpoint corresponding to this time
-                current_sp = todays_setpoint_lst[t + 1]
+                current_sp = todays_setpoint_lst[idx + 1]
         return current_sp
 
     def get_heat_setpoint(self) -> float:
@@ -640,9 +637,10 @@ class ThermostatZone(tc.ThermostatCommonZone):
         todays_setpoint_lst = self.get_setpoint_list(sp_dict,
                                                      datetime.datetime.today(
                                                          ).weekday())
-        for t in [0, 2, 4, 6]:
-            if todays_setpoint_lst[t] > minutes_since_midnight:
-                time_delta = todays_setpoint_lst[t] - minutes_since_midnight
+        for idx in [0, 2, 4, 6]:
+            if todays_setpoint_lst[idx] > minutes_since_midnight:
+                time_delta = (todays_setpoint_lst[idx] -
+                              minutes_since_midnight)
                 break  # found next timer
             else:
                 time_delta = 24 * 60 - minutes_since_midnight
@@ -753,7 +751,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
 
 # monkeypatch radiotherm.thermostat.Thermostat __init__ method with longer
 # socket.timeout delay, based on radiotherm version 2.1
-def __init__(self, host, timeout=socket_timeout):  # changed from 4 (default)
+def __init__(self, host, timeout=SOCKET_TIMEOUT):  # changed from 4 (default)
     self.host = host
     self.timeout = timeout
 
@@ -775,9 +773,9 @@ if __name__ == "__main__":
         ThermostatClass, ThermostatZone)
 
     # measure thermostat response time
-    measurements = 60  # running higher than normal count here because
+    MEASUREMENTS = 60  # running higher than normal count here because
     # intermittent failures have been observed.
-    print("Thermostat response times for %s measurements..." % measurements)
-    meas_data = Zone.measure_thermostat_response_time(measurements)
+    print("Thermostat response times for %s measurements..." % MEASUREMENTS)
+    meas_data = Zone.measure_thermostat_response_time(MEASUREMENTS)
     ppp = pprint.PrettyPrinter(indent=4)
     ppp.pprint(meas_data)
