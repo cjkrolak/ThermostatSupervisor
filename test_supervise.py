@@ -4,10 +4,8 @@ Unit test module for supervise.py.
 # built-in imports
 import unittest
 
-# thermostat config files
-import sht31_config
-
 # local imports
+import sht31_config
 import supervise as sup
 import unit_test_common as utc
 import utilities as util

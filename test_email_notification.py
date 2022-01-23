@@ -2,11 +2,11 @@
 Unit tes module for email_notification.py.
 """
 # built-in libraries
-import email_notification as eml
 import os
 import unittest
 
 # local libraries
+import email_notification as eml
 import unit_test_common as utc
 import utilities as util
 

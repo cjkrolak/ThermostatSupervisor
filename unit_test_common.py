@@ -6,10 +6,8 @@ import pprint
 import sys
 import unittest
 
-# thermostat configs
-import sht31_config
-
 # local imports
+import sht31_config
 import supervise as sup
 import thermostat_api as api
 import thermostat_common as tc
