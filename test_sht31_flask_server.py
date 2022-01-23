@@ -79,13 +79,13 @@ class IntegrationTest(utc.UnitTest):
         """
         Confirm Flask server returns valid data.
         """
-        measurements_bckup = sht31_config.measurements
+        measurements_bckup = sht31_config.MEASUREMENTS
         try:
             for sht31_config.measurements in [1, 10, 100, 1000]:
                 print("\ntesting SHT31 flask server with %s %s..." %
-                      (sht31_config.measurements,
+                      (sht31_config.MEASUREMENTS,
                        ["measurement", "measurements"][
-                           sht31_config.measurements > 1]))
+                           sht31_config.MEASUREMENTS > 1]))
                 self.validate_flask_server()
         finally:
             sht31_config.measurements = measurements_bckup

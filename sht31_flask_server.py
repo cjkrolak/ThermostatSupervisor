@@ -357,6 +357,7 @@ class Controller(Resource):
         pass
 
     def get(self):
+        """Map the get method."""
         helper = Sensors()
         return helper.get()
 
@@ -367,6 +368,7 @@ class ControllerUnit(Resource):
         pass
 
     def get(self):
+        """Map the get method."""
         helper = Sensors()
         return helper.get_unit_test()
 
@@ -377,6 +379,7 @@ class ReadFaultRegister(Resource):
         pass
 
     def get(self):
+        """Map the get method."""
         helper = Sensors()
         return helper.send_cmd_get_diag(read_status_register)
 
@@ -387,6 +390,7 @@ class ClearFaultRegister(Resource):
         pass
 
     def get(self):
+        """Map the get method."""
         helper = Sensors()
         return helper.send_cmd_get_diag(clear_status_register)
 
@@ -397,6 +401,7 @@ class EnableHeater(Resource):
         pass
 
     def get(self):
+        """Map the get method."""
         helper = Sensors()
         return helper.send_cmd_get_diag(enable_heater)
 
@@ -407,6 +412,7 @@ class DisableHeater(Resource):
         pass
 
     def get(self):
+        """Map the get method."""
         helper = Sensors()
         return helper.send_cmd_get_diag(disable_heater)
 
@@ -417,6 +423,7 @@ class SoftReset(Resource):
         pass
 
     def get(self):
+        """Map the get method."""
         helper = Sensors()
         return helper.send_cmd_get_diag(soft_reset)
 
@@ -427,12 +434,13 @@ class Reset(Resource):
         pass
 
     def get(self):
+        """Map the get method."""
         helper = Sensors()
         return helper.send_cmd_get_diag(reset)
 
 
 def create_app():
-
+    """Create the api object."""
     app_ = Flask(__name__)
 
     # add API routes
@@ -462,6 +470,7 @@ app.config.update(
 
 @app.route('/favicon.ico')
 def favicon():
+    """Set favicon for browser tab."""
     return send_from_directory(os.path.join(app.root_path, 'image'),
                                'sht31.ico',
                                mimetype='image/vnd.microsoft.icon')
@@ -487,11 +496,11 @@ if __name__ == "__main__":
     util.get_python_version()
 
     # parse runtime parameters
-    debug = parse_runtime_parameters()
+    DEBUG = parse_runtime_parameters()
 
     # launch the Flask API on development server
     app.run(host='0.0.0.0',
             port=sht31_config.FLASK_PORT,
-            debug=debug,
+            debug=DEBUG,
             threaded=True,  # threaded=True may speed up rendering on web page
             ssl_context=sht31_config.FLASK_SSL_CERT)

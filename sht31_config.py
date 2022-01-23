@@ -37,7 +37,7 @@ flask_folder.soft_reset = "/soft_reset"
 flask_folder.reset = "/reset"
 
 # SHT31 API field names
-API_MEASUREMENT_CNT = 'MEASUREMENTS'
+API_MEASUREMENT_CNT = 'measurements'
 API_TEMPC_MEAN = 'Temp(C) mean'
 API_TEMPC_STD = 'Temp(C) std'
 API_TEMPF_MEAN = 'Temp(F) mean'
@@ -67,7 +67,7 @@ supported_configs = {"module": "sht31",
 
 sht31_metadata = {
     LOFT_SHT31: {"zone_name": "Loft (local)",
-                 "host_name": "raspberrypi.lan",
+                 "host_name": "raspberrypi0.lan",
                  },
     LOFT_SHT31_REMOTE: {"zone_name": "loft (remote)",
                         "host_name": "none",
