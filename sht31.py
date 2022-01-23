@@ -115,12 +115,11 @@ class ThermostatClass(tc.ThermostatCommon):
         import sht31_flask_server as sht31_fs  # noqa E402
         # pylint: disable=import-outside-toplevel
 
-        sht31_fs.debug = False
-        self.flask_server = threading.Thread(target=sht31_fs.app.run,
-                                             args=('0.0.0.0',
-                                                   sht31_config.FLASK_PORT,
-                                                   sht31_fs.DEBUG),
-                                             kwargs=sht31_config.FLASK_KWARGS)
+        self.flask_server = threading.Thread(
+            target=sht31_fs.app.run,
+            args=('0.0.0.0', sht31_config.FLASK_PORT,
+                  sht31_config.FLASK_DEBUG_MODE),
+            kwargs=sht31_config.FLASK_KWARGS)
         self.flask_server.daemon = True  # make thread daemonic
         self.flask_server.start()
         util.log_msg(f"thread alive status={self.flask_server.is_alive()}",
