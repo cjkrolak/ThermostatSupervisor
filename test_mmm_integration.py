@@ -18,6 +18,7 @@ class IntegrationTest(utc.IntegrationTest):
     Test functions in mmm.py.
     """
     def setUpIntTest(self):
+        """Setup common to integration tests."""
         self.setUpCommon()
         self.print_test_name()
 
@@ -47,7 +48,7 @@ class FunctionalIntegrationTest(IntegrationTest,
         self.metadata_field = "network"
         self.metadata_type = dict
 
-    def test_ThermostatGetUiData(self):
+    def test_thermostat_get_ui_data(self):
         """Verify Thermostat.get_ui_data() function"""
         # setup class instances
         self.Thermostat, self.Zone = self.setUpThermostatZone()
@@ -59,7 +60,7 @@ class FunctionalIntegrationTest(IntegrationTest,
                         "result returned is type (%s), "
                         "expected a dictionary" % type(result))
 
-    def test_ThermostatGetUiDataParam(self):
+    def test_thermostat_get_ui_data_param(self):
         """Verify Thermostat.get_ui_data_param() function"""
         # setup class instances
         self.Thermostat, self.Zone = self.setUpThermostatZone()
@@ -75,7 +76,7 @@ class FunctionalIntegrationTest(IntegrationTest,
                         "result returned is type (%s), "
                         "expected a %s" % (type(result), expected_data_type))
 
-    def test_ZoneGetZoneName(self):
+    def test_zone_get_zone_name(self):
         """Verify Zone.get_zone_name() function"""
         # setup class instances
         self.Thermostat, self.Zone = self.setUpThermostatZone()

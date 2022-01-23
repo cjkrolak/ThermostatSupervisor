@@ -18,6 +18,7 @@ class IntegrationTest(utc.IntegrationTest):
     Test functions in kumocloud.py.
     """
     def setUpIntTest(self):
+        """Setup common to integration tests."""
         self.setUpCommon()
         self.print_test_name()
 

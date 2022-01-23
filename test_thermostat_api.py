@@ -28,7 +28,7 @@ class Test(utc.UnitTest):
         del api.thermostats[self.tstat]
         self.print_test_result()
 
-    def test_VerifyRequiredEnvVariables(self):
+    def test_verify_required_env_variables(self):
         """
         Verify verify_required_env_variables() passes in nominal
         condition and fails with missing key.
@@ -58,7 +58,7 @@ class Test(utc.UnitTest):
             api.thermostats[self.tstat][
                 "required_env_variables"].pop(missing_key)
 
-    def test_ParseRuntimeParameter(self):
+    def test_parse_runtime_parameter(self):
         """
         Verify test parse_runtime_parameter() returns expected
         values when input known values.
@@ -194,7 +194,7 @@ class Test(utc.UnitTest):
         self.assertTrue(argv0 in expected_result, "actual=%s, expected=%s" %
                         (argv0, expected_result))
 
-    def test_ParseAllRuntimeParameters(self):
+    def test_parse_all_runtime_parameters(self):
         """
         Verify test parse_all_runtime_parameters() runs without error
         and return values match user_inputs dict.
@@ -241,7 +241,7 @@ class Test(utc.UnitTest):
                     "actual=%s, expected=%s" %
                     (return_list["thermostat_type"], expected_result))
 
-    def test_LoadHardwareLibrary(self):
+    def test_load_hardware_library(self):
         """
         Verify load_hardware_library() runs without error
         """
@@ -263,7 +263,7 @@ class Test(utc.UnitTest):
             del pkg
         print("test passed")
 
-    def test_MaxMeasurementCountExceeded(self):
+    def test_max_measurement_count_exceeded(self):
         """
         Verify max_measurement_count_exceeded() runs as expected.
         """
