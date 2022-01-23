@@ -71,7 +71,7 @@ clear_status_register = (0x30, [0x41])
 read_status_register = (0xf3, [0x2d])
 
 
-class Sensors(object):
+class Sensors:
     """Sensor data."""
     def __init__(self):
         pass

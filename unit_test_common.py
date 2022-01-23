@@ -96,7 +96,7 @@ class UnitTest(unittest.TestCase):
             result = self.defaultTestResult()
             self._feedErrorsToResult(result, self._outcome.errors)
         else:  # Python 3.2 - 3.3 or 3.0 - 3.1 and 2.7
-            raise EnvironmentError(
+            raise OSError(
                 "this code is designed to work on Python 3.4+")
             # result = getattr(self, '_outcomeForDoCleanups',
             #                 self._resultForDoCleanups)

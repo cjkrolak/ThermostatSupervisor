@@ -301,7 +301,7 @@ def is_interactive_environment():
         return True
     else:
         print(f"DEBUG: parent process={parent}")
-        raise EnvironmentError(f"unrecognized environment: {parent}")
+        raise OSError(f"unrecognized environment: {parent}")
 
 
 def temp_value_with_units(raw, disp_unit='F', precision=1) -> str:
@@ -511,7 +511,7 @@ def get_python_version(min_major_version=MIN_PYTHON_MAJOR_VERSION,
             minor_version_fail = True
 
     if major_version_fail or minor_version_fail:
-        raise EnvironmentError(
+        raise OSError(
             f"current python major version ({major_version}.{minor_version}) "
             f"is less than min python version required "
             f"({min_major_version}.{min_minor_version})")
