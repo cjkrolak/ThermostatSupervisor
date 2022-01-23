@@ -15,6 +15,7 @@ UNIT_TEST_SEED = 0x7F
 UNIT_TEST_ENV_KEY = "SHT31_REMOTE_IP_ADDRESS_" + str(UNIT_TEST_ZONE)
 FLASK_PORT = 5000  # note: ports below 1024 require root access on Linux
 FLASK_USE_HTTPS = False  # HTTPS requires a cert to be installed.
+FLASK_DEBUG_MODE = False  # True to enable flask debugging mode
 if FLASK_USE_HTTPS:
     FLASK_SSL_CERT = 'adhoc'  # adhoc
     FLASK_KWARGS = {'ssl_context': FLASK_SSL_CERT}

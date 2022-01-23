@@ -338,7 +338,7 @@ class PerformanceIntegrationTest(IntegrationTest):
             "temp repeatability limit (%s)" % (act_val,
                                                self.temp_stdev_limit))
 
-    def test__humidity_repeatability(self):
+    def test_humidity_repeatability(self):
         """
         Verify humidity repeatability.
         """
