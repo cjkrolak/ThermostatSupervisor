@@ -37,6 +37,8 @@ class IntegrationTest(utc.IntegrationTest):
         self.mod_config = mmm_config
 
 
+@unittest.skipIf(not utc.enable_mmm_tests,
+                 "mmm tests are disabled")
 class FunctionalIntegrationTest(IntegrationTest,
                                 utc.FunctionalIntegrationTest):
     """
@@ -91,6 +93,8 @@ class FunctionalIntegrationTest(IntegrationTest,
               (self.Thermostat.zone_number, result))
 
 
+@unittest.skipIf(not utc.enable_mmm_tests,
+                 "mmm tests are disabled")
 class SuperviseIntegrationTest(IntegrationTest,
                                utc.SuperviseIntegrationTest):
     """
@@ -100,6 +104,8 @@ class SuperviseIntegrationTest(IntegrationTest,
         self.setUpIntTest()
 
 
+@unittest.skipIf(not utc.enable_mmm_tests,
+                 "mmm tests are disabled")
 class PerformanceIntegrationTest(IntegrationTest,
                                  utc.PerformanceIntegrationTest):
     """
