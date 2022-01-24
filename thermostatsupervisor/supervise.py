@@ -102,7 +102,7 @@ def supervisor(thermostat_type, zone_str):
     api.verify_required_env_variables(thermostat_type, zone_str)
 
     # starting parameters
-    previous_mode = {}
+    previous_mode_dict = {}
 
     # connection timer loop
     session_count = 1
@@ -139,15 +139,17 @@ def supervisor(thermostat_type, zone_str):
         # poll thermostat settings
         while not api.max_measurement_count_exceeded(measurement):
             # query thermostat for current settings and set points
-            current_mode = Zone.get_current_mode(
+            current_mode_dict = Zone.get_current_mode(
                 session_count, poll_count,
                 flag_all_deviations=revert_all_deviations)
 
             # debug data on change from previous poll
-            if current_mode != previous_mode:
+            # note this check is probably hyper-sensitive, since status msg
+            # change could trigger this extra report.
+            if current_mode_dict != previous_mode_dict:
                 if debug:
                     Zone.report_heating_parameters()
-                previous_mode = current_mode  # latch
+                previous_mode_dict = current_mode_dict  # latch
 
             # revert thermostat mode if not matching target
             if not Zone.verify_current_mode(api.user_inputs["target_mode"]):
@@ -157,7 +159,8 @@ def supervisor(thermostat_type, zone_str):
             # revert thermostat to schedule if heat override is detected
             if (revert_deviations and Zone.is_controlled_mode() and
                     Zone.is_temp_deviated_from_schedule()):
-                Zone.revert_temperature_deviation(Zone.schedule_setpoint)
+                Zone.revert_temperature_deviation(
+                    Zone.schedule_setpoint, current_mode_dict["status_msg"])
 
             # polling delay
             time.sleep(Zone.poll_time_sec)
