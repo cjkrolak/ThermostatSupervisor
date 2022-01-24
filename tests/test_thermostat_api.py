@@ -6,6 +6,7 @@ import sys
 import unittest
 
 # local imports
+from thermostatsupervisor import emulator_config
 from thermostatsupervisor import thermostat_api as api
 from tests import unit_test_common as utc
 from thermostatsupervisor import utilities as util
@@ -63,7 +64,7 @@ class Test(utc.UnitTest):
         Verify test parse_runtime_parameter() returns expected
         values when input known values.
         """
-        tstat_type = api.DEFAULT_THERMOSTAT
+        tstat_type = emulator_config.ALIAS
         test_list = [
             "supervise.py",  # script
             tstat_type,  # thermostat_type
@@ -178,17 +179,17 @@ class Test(utc.UnitTest):
             tstat_type = api.parse_runtime_parameter(
                 "thermostat_type",
                 "bogus",  # datatype
-                api.DEFAULT_THERMOSTAT,
+                emulator_config.ALIAS,
                 api.SUPPORTED_THERMOSTATS,
                 test_list)
 
         # test default behavior with input_list == None
         print(f"argv list={sys.argv}")
-        expected_result = [api.DEFAULT_THERMOSTAT]
+        expected_result = [emulator_config.ALIAS]
         argv0 = api.parse_runtime_parameter(
             "thermostat_type",
             str,
-            api.DEFAULT_THERMOSTAT,
+            emulator_config.ALIAS,
             expected_result,
             argv_list=None)
         self.assertTrue(argv0 in expected_result, "actual=%s, expected=%s" %
@@ -246,11 +247,12 @@ class Test(utc.UnitTest):
         Verify load_hardware_library() runs without error
         """
         # test successful case
-        pkg = api.load_hardware_library(api.DEFAULT_THERMOSTAT)
+        pkg = api.load_hardware_library(emulator_config.ALIAS)
         print(f"default thermostat returned package type {type(pkg)}")
         self.assertTrue(isinstance(pkg, object),
                         "dynamic_module_import() returned type(%s),"
                         " expected an object" % type(pkg))
+        del sys.modules[pkg.__name__]
         del pkg
 
         # test failing case
