@@ -8,13 +8,13 @@ any changes to thermostat configs.
 import sys
 
 # local imports
-import emulator_config
-import honeywell_config
-import kumocloud_config
-import kumolocal_config
-import mmm_config
-import sht31_config
-import utilities as util
+from thermostatsupervisor import emulator_config
+from thermostatsupervisor import honeywell_config
+from thermostatsupervisor import kumocloud_config
+from thermostatsupervisor import kumolocal_config
+from thermostatsupervisor import mmm_config
+from thermostatsupervisor import sht31_config
+from thermostatsupervisor import utilities as util
 
 # thermostat types
 DEFAULT_THERMOSTAT = honeywell_config.ALIAS
@@ -237,8 +237,9 @@ def load_hardware_library(thermostat_type):
     returns:
         module
     """
-    mod = util.dynamic_module_import(
-        SUPPORTED_THERMOSTATS[thermostat_type]["module"])
+    pkg_name = (util.PACKAGE_NAME + "." +
+                SUPPORTED_THERMOSTATS[thermostat_type]["module"])
+    mod = util.dynamic_module_import(pkg_name)
     return mod
 
 

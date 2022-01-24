@@ -6,8 +6,8 @@ import sys
 import time
 
 # local imports
-import thermostat_api as api
-import utilities as util
+from thermostatsupervisor import thermostat_api as api
+from thermostatsupervisor import utilities as util
 
 argv = []  # runtime parameter override
 

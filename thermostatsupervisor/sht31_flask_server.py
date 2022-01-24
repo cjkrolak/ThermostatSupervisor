@@ -27,8 +27,8 @@ from flask_restful import Resource, Api  # noqa F405
 from flask_wtf.csrf import CSRFProtect
 
 # local imports
-import sht31_config
-import utilities as util
+from thermostatsupervisor import sht31_config
+from thermostatsupervisor import utilities as util
 
 # SHT31D write commands (register, [data])
 # spec: https://cdn-shop.adafruit.com/product-files/

@@ -14,11 +14,13 @@ import traceback
 import psutil
 
 # thermostat config files
-import honeywell_config
-import kumocloud_config
-import kumolocal_config
-import mmm_config
-import sht31_config
+from thermostatsupervisor import honeywell_config
+from thermostatsupervisor import kumocloud_config
+from thermostatsupervisor import kumolocal_config
+from thermostatsupervisor import mmm_config
+from thermostatsupervisor import sht31_config
+
+PACKAGE_NAME = 'thermostatsupervisor'  # should match name in __init__.py
 
 # error codes
 NO_ERROR = 0
@@ -538,7 +540,7 @@ def dynamic_module_import(name, path=None):
         # load_modules loads the module
         spec = importlib.util.find_spec(name, path)
         if spec is None:
-            raise ModuleNotFoundError("module '%s' could not be found")
+            raise ModuleNotFoundError("module '%s' could not be found" % name)
         mod = spec.loader.load_module()
     except Exception as ex:
         log_msg(traceback.format_exc(),

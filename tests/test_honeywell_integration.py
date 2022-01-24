@@ -1,58 +1,59 @@
 """
-Integration test module for kumocloud.py.
+Integration test module for honeywell.py.
 
-This test requires connection to Kumocloud thermostat.
+This test requires connection to Honeywell thermostat.
 """
 # built-in imports
 import unittest
 
 # local imports
-import kumocloud
-import kumocloud_config
-import unit_test_common as utc
-import utilities as util
+from thermostatsupervisor import honeywell
+from thermostatsupervisor import honeywell_config
+from tests import unit_test_common as utc
+from thermostatsupervisor import utilities as util
 
 
 class IntegrationTest(utc.IntegrationTest):
     """
-    Test functions in kumocloud.py.
+    Test functions in honeywell.py.
     """
     def setUpIntTest(self):
         """Setup common to integration tests."""
         self.setup_common()
         self.print_test_name()
 
-        # argv list must be valid settings
+        # Honeywell argv list must be valid settings
         self.unit_test_argv = [
             "supervise.py",  # module
-            "kumocloud",  # thermostat
+            "honeywell",  # thermostat
             "0",  # zone
-            "30",  # poll time in sec
+            "30",  # poll time in sec, this value violates min
+            # cycle time for TCC if reverting temperature deviation
             "1000",  # reconnect time in sec
             "2",  # tolerance
             "",  # thermostat mode, no target
             "3",  # number of measurements
             ]
-        self.mod = kumocloud
-        self.mod_config = kumocloud_config
+        self.mod = honeywell
+        self.mod_config = honeywell_config
 
 
 class FunctionalIntegrationTest(IntegrationTest,
                                 utc.FunctionalIntegrationTest):
     """
-    Test functional performance of kumocloud.py.
+    Test functional performance of honeywell.py.
     """
     def setUp(self):
         self.setUpIntTest()
         # test_GetMetaData input parameters
-        self.metadata_field = "address"
-        self.metadata_type = str
+        self.metadata_field = "DeviceID"
+        self.metadata_type = int
 
 
 class SuperviseIntegrationTest(IntegrationTest,
                                utc.SuperviseIntegrationTest):
     """
-    Test supervise functionality of kumocloud.py.
+    Test supervise functionality of honeywell.py.
     """
     def setUp(self):
         self.setUpIntTest()
@@ -61,20 +62,21 @@ class SuperviseIntegrationTest(IntegrationTest,
 class PerformanceIntegrationTest(IntegrationTest,
                                  utc.PerformanceIntegrationTest):
     """
-    Test performance of in kumocloud.py.
+    Test performance of in honeywell.py.
     """
     def setUp(self):
         self.setUpIntTest()
         # network timing measurement
-        self.timeout_limit = 30
-        self.timing_measurements = 30
+        self.timeout_limit = honeywell.HTTP_TIMEOUT
+        self.timing_measurements = 30  # fast measurement
 
         # temperature and humidity repeatability measurements
+        # TCC server polling period to thermostat appears to be about 5-6 min
         # temperature and humidity data are int values
         # settings below are tuned for 12 minutes, 4 measurements per minute.
-        self.temp_stdev_limit = 2.0  # 1 sigma temp repeatability limit in F
+        self.temp_stdev_limit = 0.5  # 1 sigma temp repeatability limit in F
         self.temp_repeatability_measurements = 48  # number of temp msmts.
-        self.humidity_stdev_limit = 2.0  # 1 sigma humid repeat. limit %RH
+        self.humidity_stdev_limit = 0.5  # 1 sigma humid repeat. limit %RH
         self.humidity_repeatability_measurements = 48  # number of temp msmts.
         self.poll_interval_sec = 15  # delay between repeatability measurements
 

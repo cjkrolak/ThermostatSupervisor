@@ -14,10 +14,10 @@ import requests
 
 # local imports
 # thermostat_api is imported but not used to avoid a circular import
-import thermostat_api as api  # noqa F401, pylint: disable=unused-import.
-import supervisor_flask_server as sfs
-import unit_test_common as utc
-import utilities as util
+from thermostatsupervisor import thermostat_api as api  # noqa F401, pylint: disable=unused-import.
+from thermostatsupervisor import supervisor_flask_server as sfs
+from tests import unit_test_common as utc
+from thermostatsupervisor import utilities as util
 
 
 @unittest.skipIf(util.is_azure_environment(),

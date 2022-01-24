@@ -8,10 +8,10 @@ import random
 import unittest
 
 # local imports
-import thermostat_api as api
-import thermostat_common as tc
-import unit_test_common as utc
-import utilities as util
+from thermostatsupervisor import thermostat_api as api
+from thermostatsupervisor import thermostat_common as tc
+from tests import unit_test_common as utc
+from thermostatsupervisor import utilities as util
 
 
 class Test(utc.UnitTest):

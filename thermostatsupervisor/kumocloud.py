@@ -4,10 +4,10 @@ import time
 import traceback
 
 # local imports
-import kumocloud_config
-import thermostat_api as api
-import thermostat_common as tc
-import utilities as util
+from thermostatsupervisor import kumocloud_config
+from thermostatsupervisor import thermostat_api as api
+from thermostatsupervisor import thermostat_common as tc
+from thermostatsupervisor import utilities as util
 
 # pykumo import
 PYKUMO_DEBUG = False  # debug uses local pykumo repo instead of pkg

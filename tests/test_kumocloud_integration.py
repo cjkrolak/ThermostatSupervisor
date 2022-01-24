@@ -1,21 +1,21 @@
 """
-Integration test module for kumolocal.py.
+Integration test module for kumocloud.py.
 
-This test requires connection to kumolocal thermostat.
+This test requires connection to Kumocloud thermostat.
 """
 # built-in imports
 import unittest
 
 # local imports
-import kumolocal
-import kumolocal_config
-import unit_test_common as utc
-import utilities as util
+from thermostatsupervisor import kumocloud
+from thermostatsupervisor import kumocloud_config
+from tests import unit_test_common as utc
+from thermostatsupervisor import utilities as util
 
 
 class IntegrationTest(utc.IntegrationTest):
     """
-    Test functions in kumolocal.py.
+    Test functions in kumocloud.py.
     """
     def setUpIntTest(self):
         """Setup common to integration tests."""
@@ -25,7 +25,7 @@ class IntegrationTest(utc.IntegrationTest):
         # argv list must be valid settings
         self.unit_test_argv = [
             "supervise.py",  # module
-            "kumolocal",  # thermostat
+            "kumocloud",  # thermostat
             "0",  # zone
             "30",  # poll time in sec
             "1000",  # reconnect time in sec
@@ -33,41 +33,35 @@ class IntegrationTest(utc.IntegrationTest):
             "",  # thermostat mode, no target
             "3",  # number of measurements
             ]
-        self.mod = kumolocal
-        self.mod_config = kumolocal_config
+        self.mod = kumocloud
+        self.mod_config = kumocloud_config
 
 
-@unittest.skipIf(not utc.ENABLE_KUMOLOCAL_TESTS,
-                 "kumolocal tests are disabled")
 class FunctionalIntegrationTest(IntegrationTest,
                                 utc.FunctionalIntegrationTest):
     """
-    Test functional performance of kumolocal.py.
+    Test functional performance of kumocloud.py.
     """
     def setUp(self):
         self.setUpIntTest()
         # test_GetMetaData input parameters
-        self.metadata_field = "status"
-        self.metadata_type = dict
+        self.metadata_field = "address"
+        self.metadata_type = str
 
 
-@unittest.skipIf(not utc.ENABLE_KUMOLOCAL_TESTS,
-                 "kumolocal tests are disabled")
 class SuperviseIntegrationTest(IntegrationTest,
                                utc.SuperviseIntegrationTest):
     """
-    Test supervise functionality of kumolocal.py.
+    Test supervise functionality of kumocloud.py.
     """
     def setUp(self):
         self.setUpIntTest()
 
 
-@unittest.skipIf(not utc.ENABLE_KUMOLOCAL_TESTS,
-                 "kumolocal tests are disabled")
 class PerformanceIntegrationTest(IntegrationTest,
                                  utc.PerformanceIntegrationTest):
     """
-    Test performance of in kumolocal.py.
+    Test performance of in kumocloud.py.
     """
     def setUp(self):
         self.setUpIntTest()

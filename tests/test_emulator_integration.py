@@ -7,10 +7,10 @@ This test requires connection to emulator thermostat.
 import unittest
 
 # local imports
-import emulator
-import emulator_config
-import unit_test_common as utc
-import utilities as util
+from thermostatsupervisor import emulator
+from thermostatsupervisor import emulator_config
+from tests import unit_test_common as utc
+from thermostatsupervisor import utilities as util
 
 
 class IntegrationTest(utc.IntegrationTest):

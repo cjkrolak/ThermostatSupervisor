@@ -20,10 +20,10 @@ import traceback
 import requests
 
 # local imports
-import sht31_config
-import thermostat_api as api
-import thermostat_common as tc
-import utilities as util
+from thermostatsupervisor import sht31_config
+from thermostatsupervisor import thermostat_api as api
+from thermostatsupervisor import thermostat_common as tc
+from thermostatsupervisor import utilities as util
 
 
 class ThermostatClass(tc.ThermostatCommon):
@@ -112,7 +112,7 @@ class ThermostatClass(tc.ThermostatCommon):
         returns:
         """
         # flask server used in unit test mode
-        import sht31_flask_server as sht31_fs  # noqa E402
+        from thermostatsupervisor import sht31_flask_server as sht31_fs  # noqa E402
         # pylint: disable=import-outside-toplevel
 
         self.flask_server = threading.Thread(
