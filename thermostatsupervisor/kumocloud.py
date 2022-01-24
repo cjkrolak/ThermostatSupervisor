@@ -484,9 +484,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         self.refresh_zone_info()
         # first check if power is on
         # if power is off then operation_mode key may be missing.
-        power_on = self.get_parameter('power_on', 'more',
-                                      'reportedCondition')
-        if not power_on:
+        if not self.is_power_on():
             return self.system_switch_position[
                 tc.ThermostatCommonZone.OFF_MODE]
         else:
