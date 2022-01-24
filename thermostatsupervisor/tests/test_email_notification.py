@@ -6,7 +6,7 @@ import os
 import unittest
 
 # local libraries
-from src import email_notification as eml
+from thermostatsupervisor import email_notification as eml
 from thermostatsupervisor.tests import unit_test_common as utc
 from thermostatsupervisor import utilities as util
 

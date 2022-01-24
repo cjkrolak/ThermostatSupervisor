@@ -7,8 +7,8 @@ This test requires connection to Honeywell thermostat.
 import unittest
 
 # local imports
-from src import honeywell
-from src import honeywell_config
+from thermostatsupervisor import honeywell
+from thermostatsupervisor import honeywell_config
 from thermostatsupervisor.tests import unit_test_common as utc
 from thermostatsupervisor import utilities as util
 

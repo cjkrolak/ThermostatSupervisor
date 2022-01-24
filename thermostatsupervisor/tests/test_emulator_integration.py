@@ -7,8 +7,8 @@ This test requires connection to emulator thermostat.
 import unittest
 
 # local imports
-from src import emulator
-from src import emulator_config
+from thermostatsupervisor import emulator
+from thermostatsupervisor import emulator_config
 from thermostatsupervisor.tests import unit_test_common as utc
 from thermostatsupervisor import utilities as util
 

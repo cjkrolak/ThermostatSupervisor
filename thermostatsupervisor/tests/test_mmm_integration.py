@@ -7,8 +7,8 @@ This test requires connection to mmm thermostat.
 import unittest
 
 # local imports
-from src import mmm
-from src import mmm_config
+from thermostatsupervisor import mmm
+from thermostatsupervisor import mmm_config
 from thermostatsupervisor.tests import unit_test_common as utc
 from thermostatsupervisor import utilities as util
 

@@ -8,11 +8,11 @@ any changes to thermostat configs.
 import sys
 
 # local imports
-from src import emulator_config
-from src import honeywell_config
-from src import kumocloud_config
-from src import kumolocal_config
-from src import mmm_config
+from thermostatsupervisor import emulator_config
+from thermostatsupervisor import honeywell_config
+from thermostatsupervisor import kumocloud_config
+from thermostatsupervisor import kumolocal_config
+from thermostatsupervisor import mmm_config
 from thermostatsupervisor import sht31_config
 from thermostatsupervisor import utilities as util
 

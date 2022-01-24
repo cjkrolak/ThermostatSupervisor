@@ -10,7 +10,7 @@ import urllib
 from dns.exception import DNSException
 
 # local imports
-from src import mmm_config
+from thermostatsupervisor import mmm_config
 from thermostatsupervisor import thermostat_api as api
 from thermostatsupervisor import thermostat_common as tc
 from thermostatsupervisor import utilities as util

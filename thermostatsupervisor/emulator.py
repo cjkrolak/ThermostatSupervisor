@@ -2,7 +2,7 @@
 import traceback
 
 # local imports
-from src import emulator_config
+from thermostatsupervisor import emulator_config
 from thermostatsupervisor import thermostat_api as api
 from thermostatsupervisor import thermostat_common as tc
 from thermostatsupervisor import utilities as util

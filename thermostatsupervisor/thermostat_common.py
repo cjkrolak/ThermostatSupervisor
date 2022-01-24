@@ -10,7 +10,7 @@ import time
 import traceback
 
 # local imports
-from src import email_notification as eml
+from thermostatsupervisor import email_notification as eml
 from thermostatsupervisor import utilities as util
 
 

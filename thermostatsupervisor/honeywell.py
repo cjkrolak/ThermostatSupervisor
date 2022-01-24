@@ -15,8 +15,8 @@ import traceback
 import pyhtcc
 
 # local imports
-from src import email_notification
-from src import honeywell_config
+from thermostatsupervisor import email_notification
+from thermostatsupervisor import honeywell_config
 from thermostatsupervisor import thermostat_api as api
 from thermostatsupervisor import thermostat_common as tc
 from thermostatsupervisor import utilities as util

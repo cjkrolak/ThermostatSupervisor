@@ -7,8 +7,8 @@ This test requires connection to kumolocal thermostat.
 import unittest
 
 # local imports
-from src import kumolocal
-from src import kumolocal_config
+from thermostatsupervisor import kumolocal
+from thermostatsupervisor import kumolocal_config
 from thermostatsupervisor.tests import unit_test_common as utc
 from thermostatsupervisor import utilities as util
 
