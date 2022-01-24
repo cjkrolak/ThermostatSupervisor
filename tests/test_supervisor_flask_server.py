@@ -16,7 +16,7 @@ import requests
 # thermostat_api is imported but not used to avoid a circular import
 from thermostatsupervisor import thermostat_api as api  # noqa F401, pylint: disable=unused-import.
 from thermostatsupervisor import supervisor_flask_server as sfs
-from thermostatsupervisor.tests import unit_test_common as utc
+from tests import unit_test_common as utc
 from thermostatsupervisor import utilities as util
 
 

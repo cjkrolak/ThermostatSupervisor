@@ -20,6 +20,8 @@ from thermostatsupervisor import kumolocal_config
 from thermostatsupervisor import mmm_config
 from thermostatsupervisor import sht31_config
 
+PACKAGE_NAME = 'thermostatsupervisor'  # should match name in __init__.py
+
 # error codes
 NO_ERROR = 0
 CONNECTION_ERROR = 1

@@ -237,8 +237,9 @@ def load_hardware_library(thermostat_type):
     returns:
         module
     """
-    mod = util.dynamic_module_import(
-        SUPPORTED_THERMOSTATS[thermostat_type]["module"])
+    pkg_name = (util.PACKAGE_NAME + "." +
+                SUPPORTED_THERMOSTATS[thermostat_type]["module"])
+    mod = util.dynamic_module_import(pkg_name)
     return mod
 
 

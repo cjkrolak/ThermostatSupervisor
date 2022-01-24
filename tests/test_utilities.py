@@ -9,7 +9,7 @@ import unittest
 
 # local imports
 from thermostatsupervisor import thermostat_api as api
-from thermostatsupervisor.tests import unit_test_common as utc
+from tests import unit_test_common as utc
 from thermostatsupervisor import utilities as util
 
 
@@ -149,18 +149,19 @@ class EnvironmentTests(utc.UnitTest):
         """
 
         # test successful case
-        pkg = util.dynamic_module_import(api.DEFAULT_THERMOSTAT)
+        package_name = util.PACKAGE_NAME + "." + api.DEFAULT_THERMOSTAT
+        pkg = util.dynamic_module_import(package_name)
         print(f"default thermostat returned package type {type(pkg)}")
         self.assertTrue(isinstance(pkg, object),
                         "dynamic_module_import() returned type(%s),"
                         " expected an object" % type(pkg))
-        del sys.modules[api.DEFAULT_THERMOSTAT]
+        del sys.modules[package_name]
         del pkg
 
         # test failing case
         with self.assertRaises(ImportError):
             print("attempting to open bogus package name, expect exception...")
-            pkg = util.dynamic_module_import("bogus")
+            pkg = util.dynamic_module_import(util.PACKAGE_NAME + "." + "bogus")
             print(f"'bogus' module returned package type {type(pkg)}")
         print("test passed")
 

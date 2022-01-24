@@ -30,7 +30,7 @@ def code_coverage_all_tests():
     # starts so that all imports are included in
     # coverage metric.
     # pylint: disable=import-outside-toplevel
-    from thermostatsupervisor.tests import unit_test_common as utc  # noqa E402
+    from tests import unit_test_common as utc  # noqa E402
     utc.parse_unit_test_runtime_parameters()
     utc.run_all_tests()
 

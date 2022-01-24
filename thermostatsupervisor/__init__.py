@@ -1,1 +1,2 @@
+# package name
 name = 'thermostatsupervisor'

@@ -10,7 +10,7 @@ import unittest
 # local imports
 from thermostatsupervisor import thermostat_api as api
 from thermostatsupervisor import thermostat_common as tc
-from thermostatsupervisor.tests import unit_test_common as utc
+from tests import unit_test_common as utc
 from thermostatsupervisor import utilities as util
 
 
