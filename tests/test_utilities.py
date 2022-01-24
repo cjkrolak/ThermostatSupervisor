@@ -8,7 +8,7 @@ import sys
 import unittest
 
 # local imports
-from thermostatsupervisor import thermostat_api as api
+from thermostatsupervisor import emulator_config
 from tests import unit_test_common as utc
 from thermostatsupervisor import utilities as util
 
@@ -149,7 +149,7 @@ class EnvironmentTests(utc.UnitTest):
         """
 
         # test successful case
-        package_name = util.PACKAGE_NAME + "." + api.DEFAULT_THERMOSTAT
+        package_name = util.PACKAGE_NAME + "." + emulator_config.ALIAS
         pkg = util.dynamic_module_import(package_name)
         print(f"default thermostat returned package type {type(pkg)}")
         self.assertTrue(isinstance(pkg, object),
