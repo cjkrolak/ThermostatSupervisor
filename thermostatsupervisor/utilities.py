@@ -14,11 +14,11 @@ import traceback
 import psutil
 
 # thermostat config files
-import honeywell_config
-import kumocloud_config
-import kumolocal_config
-import mmm_config
-import sht31_config
+from src import honeywell_config
+from src import kumocloud_config
+from src import kumolocal_config
+from src import mmm_config
+from thermostatsupervisor import sht31_config
 
 # error codes
 NO_ERROR = 0

@@ -7,11 +7,11 @@ import sys
 import unittest
 
 # local imports
-import sht31_config
-import supervise as sup
-import thermostat_api as api
-import thermostat_common as tc
-import utilities as util
+from thermostatsupervisor import sht31_config
+from thermostatsupervisor import supervise as sup
+from thermostatsupervisor import thermostat_api as api
+from thermostatsupervisor import thermostat_common as tc
+from thermostatsupervisor import utilities as util
 
 # enable modes
 ENABLE_FUNCTIONAL_INTEGRATION_TESTS = True  # enable func int tests

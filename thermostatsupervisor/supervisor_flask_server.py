@@ -13,9 +13,9 @@ from flask import Flask, Response, send_from_directory
 from flask_wtf.csrf import CSRFProtect
 
 # local imports
-import supervise as sup
-import thermostat_api as api
-import utilities as util
+from thermostatsupervisor import supervise as sup
+from thermostatsupervisor import thermostat_api as api
+from thermostatsupervisor import utilities as util
 
 # flask server
 if util.is_windows_environment():

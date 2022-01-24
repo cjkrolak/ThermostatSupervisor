@@ -27,8 +27,8 @@ from flask_restful import Resource, Api  # noqa F405
 from flask_wtf.csrf import CSRFProtect
 
 # local imports
-import sht31_config
-import utilities as util
+from thermostatsupervisor import sht31_config
+from thermostatsupervisor import utilities as util
 
 # SHT31D write commands (register, [data])
 # spec: https://cdn-shop.adafruit.com/product-files/
@@ -106,13 +106,13 @@ class Sensors:
         returns:
             (dict): data structure.
         """
-        return {sht31_config.API_MEASUREMENT_CNT: len(temp_f_lst),
-                sht31_config.API_TEMPC_MEAN:  statistics.mean(temp_c_lst),
-                sht31_config.API_TEMPC_STD: statistics.pstdev(temp_c_lst),
-                sht31_config.API_TEMPF_MEAN: statistics.mean(temp_f_lst),
-                sht31_config.API_TEMPF_STD: statistics.pstdev(temp_f_lst),
-                sht31_config.API_HUMIDITY_MEAN: statistics.mean(humidity_lst),
-                sht31_config.API_HUMIDITY_STD: statistics.pstdev(humidity_lst),
+        return {sht31_cosht31_configSUREMENT_CNT: len(temp_f_lst),
+                sht31_cosht31_configPC_MEAN:  statistics.mean(temp_c_lst),
+                sht31_cosht31_configPC_STD: statistics.pstdev(temp_c_lst),
+                sht31_cosht31_configPF_MEAN: statistics.mean(temp_f_lst),
+                sht31_cosht31_configPF_STD: statistics.pstdev(temp_f_lst),
+                sht31_cosht31_configIDITY_MEAN: statistics.mean(humidity_lst),
+                sht31_cosht31_configIDITY_STD: statistics.pstdev(humidity_lst),
                 }
 
     def set_sht31_address(self, i2c_addr, addr_pin, alert_pin):
@@ -235,9 +235,9 @@ class Sensors:
         """
         # get runtime parameters
         measurements = request.args.get('measurements',
-                                        sht31_config.MEASUREMENTS,
+                                        sht31_cosht31_configMENTS,
                                         type=int)
-        seed = request.args.get('seed', sht31_config.UNIT_TEST_SEED, type=int)
+        seed = request.args.get('seed', sht31_cosht31_configST_SEED, type=int)
 
         # data structure
         temp_f_lst = []
@@ -274,8 +274,8 @@ class Sensors:
         measurements = request.args.get('measurements', 1, type=int)
 
         # set address pin on SHT31
-        self.set_sht31_address(sht31_config.I2C_ADDRESS, sht31_config.ADDR_PIN,
-                               sht31_config.ALERT_PIN)
+        self.set_sht31_address(sht31_cosht31_configRESS, sht31_cosht31_configN,
+                               sht31_cosht31_configIN)
 
         # activate smbus
         bus = smbus.SMBus(1)
@@ -290,11 +290,11 @@ class Sensors:
             # loop for n measurements
             for _ in range(measurements):
                 # send single shot read command
-                self.send_i2c_cmd(bus, sht31_config.I2C_ADDRESS,
+                self.send_i2c_cmd(bus, sht31_cosht31_configRESS,
                                   cs_enabled_high)
 
                 # read the measurement data
-                data = self.read_i2c_data(bus, sht31_config.I2C_ADDRESS,
+                data = self.read_i2c_data(bus, sht31_cosht31_configRESS,
                                           register=0x00, length=0x06)
 
                 # convert the data
@@ -323,8 +323,8 @@ class Sensors:
             (dict): parsed fault register data.
         """
         # set address pin on SHT31
-        self.set_sht31_address(sht31_config.I2C_ADDRESS, sht31_config.ADDR_PIN,
-                               sht31_config.ALERT_PIN)
+        self.set_sht31_address(sht31_cosht31_configRESS, sht31_cosht31_configN,
+                               sht31_cosht31_configIN)
 
         # activate smbus
         bus = smbus.SMBus(1)
@@ -332,14 +332,14 @@ class Sensors:
 
         try:
             # send single shot command
-            self.send_i2c_cmd(bus, sht31_config.I2C_ADDRESS,
+            self.send_i2c_cmd(bus, sht31_cosht31_configRESS,
                               i2c_command)
 
             # small delay
             time.sleep(1.0)
 
             # read the measurement data, 2 bytes data, 1 byte checksum
-            data = self.read_i2c_data(bus, sht31_config.I2C_ADDRESS,
+            data = self.read_i2c_data(bus, sht31_cosht31_configRESS,
                                       register=0x00, length=0x03)
 
             # parse data into registers
@@ -446,13 +446,13 @@ def create_app():
     # add API routes
     api = Api(app_)
     api.add_resource(Controller, "/")
-    api.add_resource(ControllerUnit, sht31_config.flask_folder.unit_test)
-    api.add_resource(ReadFaultRegister, sht31_config.flask_folder.diag)
-    api.add_resource(ClearFaultRegister, sht31_config.flask_folder.clear_diag)
-    api.add_resource(EnableHeater, sht31_config.flask_folder.enable_heater)
-    api.add_resource(DisableHeater, sht31_config.flask_folder.disable_heater)
-    api.add_resource(Reset, sht31_config.flask_folder.reset)
-    api.add_resource(SoftReset, sht31_config.flask_folder.soft_reset)
+    api.add_resource(ControllerUnit, sht31_cosht31_configolder.unit_test)
+    api.add_resource(ReadFaultRegister, sht31_cosht31_configolder.diag)
+    api.add_resource(ClearFaultRegister, sht31_cosht31_configolder.clear_diag)
+    api.add_resource(EnableHeater, sht31_cosht31_configolder.enable_heater)
+    api.add_resource(DisableHeater, sht31_cosht31_configolder.disable_heater)
+    api.add_resource(Reset, sht31_cosht31_configolder.reset)
+    api.add_resource(SoftReset, sht31_cosht31_configolder.soft_reset)
     return app_
 
 
@@ -500,7 +500,7 @@ if __name__ == "__main__":
 
     # launch the Flask API on development server
     app.run(host='0.0.0.0',
-            port=sht31_config.FLASK_PORT,
+            port=sht31_cosht31_configORT,
             debug=debug,
             threaded=True,  # threaded=True may speed up rendering on web page
-            ssl_context=sht31_config.FLASK_SSL_CERT)
+            ssl_context=sht31_cosht31_configSL_CERT)

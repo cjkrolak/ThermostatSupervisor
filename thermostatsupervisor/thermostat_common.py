@@ -10,8 +10,8 @@ import time
 import traceback
 
 # local imports
-import email_notification as eml
-import utilities as util
+from src import email_notification as eml
+from thermostatsupervisor import utilities as util
 
 
 DEGREE_SIGN = "\N{DEGREE SIGN}"

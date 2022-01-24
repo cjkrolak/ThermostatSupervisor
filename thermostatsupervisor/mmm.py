@@ -10,10 +10,10 @@ import urllib
 from dns.exception import DNSException
 
 # local imports
-import mmm_config
-import thermostat_api as api
-import thermostat_common as tc
-import utilities as util
+from src import mmm_config
+from thermostatsupervisor import thermostat_api as api
+from thermostatsupervisor import thermostat_common as tc
+from thermostatsupervisor import utilities as util
 
 # radiotherm import
 MMM_DEBUG = False  # debug uses local radiotherm repo instead of pkg

@@ -9,11 +9,11 @@ import unittest
 
 # local imports
 # thermostat_api is imported but not used to avoid a circular import
-import thermostat_api as api  # pylint: disable=unused-import.
-import sht31
-import sht31_config
-import unit_test_common as utc
-import utilities as util
+from thermostatsupervisor import thermostat_api as api  # pylint: disable=unused-import.
+from thermostatsupervisor import sht31
+from thermostatsupervisor import sht31_config
+from thermostatsupervisor.tests import unit_test_common as utc
+from thermostatsupervisor import utilities as util
 
 
 @unittest.skipIf(not utc.ENABLE_SHT31_TESTS,

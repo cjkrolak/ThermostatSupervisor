@@ -5,10 +5,10 @@ Unit test module for supervise.py.
 import unittest
 
 # local imports
-import sht31_config
-import supervise as sup
-import unit_test_common as utc
-import utilities as util
+from thermostatsupervisor import sht31_config
+from thermostatsupervisor import supervise as sup
+from thermostatsupervisor.tests import unit_test_common as utc
+from thermostatsupervisor import utilities as util
 
 
 class Test(utc.UnitTest):

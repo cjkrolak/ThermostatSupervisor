@@ -8,9 +8,9 @@ import sys
 import unittest
 
 # local imports
-import thermostat_api as api
-import unit_test_common as utc
-import utilities as util
+from thermostatsupervisor import thermostat_api as api
+from thermostatsupervisor.tests import unit_test_common as utc
+from thermostatsupervisor import utilities as util
 
 
 class EnvironmentTests(utc.UnitTest):

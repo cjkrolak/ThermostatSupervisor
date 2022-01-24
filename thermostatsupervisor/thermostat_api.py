@@ -8,13 +8,13 @@ any changes to thermostat configs.
 import sys
 
 # local imports
-import emulator_config
-import honeywell_config
-import kumocloud_config
-import kumolocal_config
-import mmm_config
-import sht31_config
-import utilities as util
+from src import emulator_config
+from src import honeywell_config
+from src import kumocloud_config
+from src import kumolocal_config
+from src import mmm_config
+from thermostatsupervisor import sht31_config
+from thermostatsupervisor import utilities as util
 
 # thermostat types
 DEFAULT_THERMOSTAT = honeywell_config.ALIAS

@@ -6,9 +6,9 @@ import os
 import unittest
 
 # local libraries
-import email_notification as eml
-import unit_test_common as utc
-import utilities as util
+from src import email_notification as eml
+from thermostatsupervisor.tests import unit_test_common as utc
+from thermostatsupervisor import utilities as util
 
 
 class Test(utc.UnitTest):
