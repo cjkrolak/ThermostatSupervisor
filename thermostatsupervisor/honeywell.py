@@ -11,15 +11,20 @@ import pprint
 import time
 import traceback
 
-# third party imports
-import pyhtcc
-
 # local imports
 from thermostatsupervisor import email_notification
 from thermostatsupervisor import honeywell_config
 from thermostatsupervisor import thermostat_api as api
 from thermostatsupervisor import thermostat_common as tc
 from thermostatsupervisor import utilities as util
+
+# honeywell import
+HONEYWELL_DEBUG = False  # debug uses local pyhtcc repo instead of pkg
+if HONEYWELL_DEBUG and not util.is_azure_environment():
+    pyhtcc = util.dynamic_module_import("pyhtcc",
+                                        "..\\..\\pyhtcc\\pyhtcc")
+else:
+    import pyhtcc  # noqa E402, from path / site packages
 
 
 class ThermostatClass(pyhtcc.PyHTCC, tc.ThermostatCommon):
@@ -48,6 +53,10 @@ class ThermostatClass(pyhtcc.PyHTCC, tc.ThermostatCommon):
         self.thermostat_type = honeywell_config.ALIAS
         self.zone_number = int(zone)
         self.device_id = self.get_target_zone_id(self.zone_number)
+
+    def __del__(self):
+        """Clean-up session created in pyhtcc."""
+        self.session.close()
 
     def _get_zone_device_ids(self) -> list:
         """

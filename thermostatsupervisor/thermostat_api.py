@@ -230,12 +230,12 @@ def parse_all_runtime_parameters(argv_list=None):
 
 def load_hardware_library(thermostat_type):
     """
-    Dynamic load library for requested hardware type.
+    Dynamic load 3rd party library for requested hardware type.
 
     inputs:
-        thermostat_type(str): thermostat type
+        thermostat_type(str): thermostat alias string
     returns:
-        module
+        (obj): loaded python module
     """
     pkg_name = (util.PACKAGE_NAME + "." +
                 SUPPORTED_THERMOSTATS[thermostat_type]["module"])

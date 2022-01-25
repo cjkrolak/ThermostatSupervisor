@@ -3,7 +3,6 @@ connection to 3m50 thermoststat on local net.
 """
 # built-in imports
 import datetime
-import os
 import pprint
 import socket
 import urllib
@@ -16,10 +15,10 @@ from thermostatsupervisor import thermostat_common as tc
 from thermostatsupervisor import utilities as util
 
 # radiotherm import
-MMM_DEBUG = False  # debug uses local radiotherm repo instead of pkg
+MMM_DEBUG = True  # debug uses local radiotherm repo instead of pkg
 if MMM_DEBUG and not util.is_azure_environment():
     radiotherm = util.dynamic_module_import("radiotherm",
-                                            os.path.abspath('../radiotherm'))
+                                            "..//..//radiotherm")
 else:
     import radiotherm  # noqa E402, from path / site packages
 
