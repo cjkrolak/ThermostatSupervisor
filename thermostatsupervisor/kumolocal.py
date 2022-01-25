@@ -11,8 +11,8 @@ from thermostatsupervisor import utilities as util
 # pykumo
 PYKUMO_DEBUG = False  # debug uses local pykumo repo instead of pkg
 if PYKUMO_DEBUG and not util.is_azure_environment():
-    pykumo = util.dynamic_module_import("pykumo.py",
-                                        "..\\pykumo\\pykumo\\pykumo.py")
+    pykumo = util.dynamic_module_import("pykumo",
+                                        "..\\..\\pykumo\\pykumo")
 else:
     import pykumo  # noqa E402, from path / site packages
 

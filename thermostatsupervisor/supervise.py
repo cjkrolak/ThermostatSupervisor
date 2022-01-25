@@ -186,6 +186,8 @@ def supervisor(thermostat_type, zone_str):
     # clean-up and exit
     util.log_msg("\n %s measurements completed, exiting program\n" %
                  measurement, mode=util.BOTH_LOG)
+
+    # delete packages
     del Zone
     del Thermostat
 

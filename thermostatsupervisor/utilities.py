@@ -532,16 +532,28 @@ def dynamic_module_import(name, path=None):
 
     inputs:
         name(str): module name
-        path(str): file path, if None use current directory
+        path(str): file path (either relative or abs path),
+                   if path is None then will import from installed packages
     returns:
         mod(module): module object
     """
     try:
-        # load_modules loads the module
-        spec = importlib.util.find_spec(name, path)
-        if spec is None:
-            raise ModuleNotFoundError("module '%s' could not be found" % name)
-        mod = spec.loader.load_module()
+        if path:
+            # local file import from relative or abs path
+            print(f"DEBUG attempting local import from {os.getcwd()}...")
+            print(f"target dir contents={os.listdir(path)}")
+            sys.path.insert(1, path)
+            mod = importlib.import_module(name)
+            if mod is None:
+                raise ModuleNotFoundError(f"module '{name}' could not "
+                                          f"be found at {path}")
+        else:
+            # installed package import
+            spec = importlib.util.find_spec(name, path)
+            if spec is None:
+                raise ModuleNotFoundError(f"module '{name}' could "
+                                          "not be found")
+            mod = spec.loader.load_module()
     except Exception as ex:
         log_msg(traceback.format_exc(),
                 mode=BOTH_LOG, func_name=1)
