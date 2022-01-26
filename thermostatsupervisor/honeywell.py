@@ -19,7 +19,7 @@ from thermostatsupervisor import thermostat_common as tc
 from thermostatsupervisor import utilities as util
 
 # honeywell import
-HONEYWELL_DEBUG = True  # debug uses local pyhtcc repo instead of pkg
+HONEYWELL_DEBUG = False  # debug uses local pyhtcc repo instead of pkg
 if HONEYWELL_DEBUG and not util.is_azure_environment():
     pyhtcc = util.dynamic_module_import("pyhtcc",
                                         "..\\..\\pyhtcc\\pyhtcc")
