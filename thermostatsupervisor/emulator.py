@@ -1,4 +1,5 @@
 """emulator integration"""
+import random
 import traceback
 
 # local imports
@@ -195,7 +196,8 @@ class ThermostatZone(tc.ThermostatCommonZone):
 
     def get_display_temp(self) -> float:  # used
         """
-        Refresh the cached zone information and return Indoor Temp in Deg F.
+        Refresh the cached zone information and return Indoor Temp in Deg F
+        with +/- 1 degree noise value.
 
         inputs:
             None
@@ -203,11 +205,13 @@ class ThermostatZone(tc.ThermostatCommonZone):
             (float): indoor temp in deg F.
         """
         self.refresh_zone_info()
-        return self.get_parameter('display_temp')
+        return (self.get_parameter('display_temp') +
+                random.uniform(-1.0, 1.0))
 
     def get_display_humidity(self) -> (float, None):
         """
-        Refresh the cached zone information and return IndoorHumidity.
+        Refresh the cached zone information and return IndoorHumidity
+        with random +/-1% noise value.
 
         inputs:
             None
@@ -217,7 +221,8 @@ class ThermostatZone(tc.ThermostatCommonZone):
         if not self.get_is_humidity_supported():
             return None
         else:
-            return self.get_parameter('display_humidity')
+            return (self.get_parameter('display_humidity') +
+                    random.uniform(-1.0, 1.0))
 
     def get_is_humidity_supported(self) -> bool:  # used
         """
