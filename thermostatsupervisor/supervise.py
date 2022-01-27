@@ -166,7 +166,7 @@ def supervisor(thermostat_type, zone_str):
             time.sleep(Zone.poll_time_sec)
 
             # refresh zone info
-            # print("DEBUG: %s: refreshing zone..." % util.get_function_name())
+            print("DEBUG: %s: refreshing zone..." % util.get_function_name())
             Zone.refresh_zone_info()
 
             # reconnect

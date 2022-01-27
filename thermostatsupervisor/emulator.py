@@ -29,10 +29,10 @@ class ThermostatClass(tc.ThermostatCommon):
         self.device_id = self.get_target_zone_id(self.zone_number)
         self.serial_number = None  # will be populated when unit is queried.
         self.meta_data_dict = {}
-        self.populate_meta_data_dict()
+        self.initialize_meta_data_dict()
 
-    def populate_meta_data_dict(self):
-        """Populate the meta data dict"""
+    def initialize_meta_data_dict(self):
+        """Initialize the meta data dict"""
         # add zone keys
         for key in emulator_config.supported_configs["zones"]:
             self.meta_data_dict[key] = {}
@@ -115,7 +115,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         self.poll_time_sec = 1 * 60  # default to 1 minutes
         self.connection_time_sec = 1 * 60 * 60  # default to 1 hours
 
-        # switch config for this thermostat
+        # switch config for this thermostat, numbers are unique and arbitrary
         self.system_switch_position[
             tc.ThermostatCommonZone.OFF_MODE] = 0
         self.system_switch_position[
@@ -137,15 +137,16 @@ class ThermostatZone(tc.ThermostatCommonZone):
         self.zone_info = Thermostat_obj.get_all_metadata(
             Thermostat_obj.zone_number)
         self.zone_name = self.get_zone_name()
-        self.populate_meta_data_dict()
+        self.initialize_meta_data_dict()
 
-    def populate_meta_data_dict(self):
-        """Populate the meta data dict"""
+    def initialize_meta_data_dict(self):
+        """Initialize the meta data dict"""
         # add parameters and values
-        self.set_heat_setpoint(70)
-        self.set_cool_setpoint(72)
-        self.set_parameter('display_temp', 69.1)
-        self.set_parameter('display_humidity', 45.1)
+        self.set_heat_setpoint(emulator_config.STARTING_TEMP)
+        self.set_cool_setpoint(emulator_config.STARTING_TEMP)
+        self.set_parameter('display_temp', emulator_config.STARTING_TEMP)
+        self.set_parameter('display_humidity',
+                           emulator_config.STARTING_HUMIDITY)
         self.set_parameter('humidity_support', True)
         self.set_parameter('power_on', True)
         self.set_parameter('fan_on', True)
@@ -153,7 +154,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         self.set_parameter('defrost', False)
         self.set_parameter('standby', False)
         self.set_parameter('vacation_hold', False)
-        self.set_mode("HEAT_MODE")
+        self.set_mode(emulator_config.STARTING_MODE)
 
     def get_parameter(self, key,
                       default_val=None):
@@ -206,7 +207,8 @@ class ThermostatZone(tc.ThermostatCommonZone):
         """
         self.refresh_zone_info()
         return (self.get_parameter('display_temp') +
-                random.uniform(-1.0, 1.0))
+                random.uniform(-emulator_config.NORMAL_TEMP_VARIATION,
+                               emulator_config.NORMAL_TEMP_VARIATION))
 
     def get_display_humidity(self) -> (float, None):
         """
@@ -222,7 +224,8 @@ class ThermostatZone(tc.ThermostatCommonZone):
             return None
         else:
             return (self.get_parameter('display_humidity') +
-                    random.uniform(-1.0, 1.0))
+                    random.uniform(-emulator_config.NORMAL_HUMIDITY_VARIATION,
+                                   emulator_config.NORMAL_HUMIDITY_VARIATION))
 
     def get_is_humidity_supported(self) -> bool:  # used
         """
@@ -477,27 +480,23 @@ class ThermostatZone(tc.ThermostatCommonZone):
         """
         Set a new heat setpoint.
 
-        This will also attempt to turn the thermostat to 'Heat'
         inputs:
             temp(int): desired temperature in F
         returns:
             None
         """
         self.set_parameter('heat_setpoint', temp)
-        self.set_mode("HEAT_MODE")
 
     def set_cool_setpoint(self, temp: int) -> None:
         """
         Set a new cool setpoint.
 
-        This will also attempt to turn the thermostat to 'Cool'
         inputs:
             temp(int): desired temperature in deg F.
         returns:
             None
         """
         self.set_parameter('cool_setpoint', temp)
-        self.set_mode("COOL_MODE")
 
     def refresh_zone_info(self, force_refresh=False):
         """
