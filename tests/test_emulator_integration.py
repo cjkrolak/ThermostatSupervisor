@@ -4,6 +4,7 @@ Integration test module for emulator.py.
 This test requires connection to emulator thermostat.
 """
 # built-in imports
+import math
 import unittest
 
 # local imports
@@ -67,18 +68,18 @@ class PerformanceIntegrationTest(IntegrationTest,
     def setUp(self):
         self.setUpIntTest()
         # network timing measurement
-        self.timeout_limit = 30
+        self.timeout_limit = 1
         self.timing_measurements = 30  # fast measurement
 
         # temperature and humidity repeatability measurements
-        # TCC server polling period to thermostat appears to be about 5-6 min
-        # temperature and humidity data are int values
-        # settings below are tuned for 12 minutes, 4 measurements per minute.
-        self.temp_stdev_limit = 0.5  # 1 sigma temp repeatability limit in F
-        self.temp_repeatability_measurements = 48  # number of temp msmts.
-        self.humidity_stdev_limit = 0.5  # 1 sigma humid repeat. limit %RH
-        self.humidity_repeatability_measurements = 48  # number of temp msmts.
-        self.poll_interval_sec = 5  # delay between repeatability measurements
+        # data is uniform distribution, 1 std= (range)/sqrt(12)
+        self.temp_stdev_limit = \
+            emulator_config.NORMAL_TEMP_VARIATION * 2 / math.sqrt(12)
+        self.temp_repeatability_measurements = 100  # number of temp msmts.
+        self.humidity_stdev_limit = \
+            emulator_config.NORMAL_HUMIDITY_VARIATION * 2 / math.sqrt(12)
+        self.humidity_repeatability_measurements = 100  # number of temp msmts.
+        self.poll_interval_sec = 0.5  # delay between repeatability msmts
 
 
 if __name__ == "__main__":
