@@ -7,7 +7,7 @@ import sys
 import unittest
 
 # local imports
-from thermostatsupervisor import sht31_config
+from thermostatsupervisor import emulator_config
 from thermostatsupervisor import supervise as sup
 from thermostatsupervisor import thermostat_api as api
 from thermostatsupervisor import thermostat_common as tc
@@ -51,8 +51,8 @@ unit_test_argv = unit_test_sht31
 class UnitTest(unittest.TestCase):
     """Extensions to unit test framework."""
 
-    thermostat_type = sht31_config.ALIAS  # was "UNITTEST"
-    zone = sht31_config.UNIT_TEST_ZONE  # was 1
+    thermostat_type = emulator_config.ALIAS  # was "UNITTEST"
+    zone = emulator_config.supported_configs["zones"][0]
     user_inputs_backup = None
     Thermostat = None
     Zone = None
@@ -128,8 +128,8 @@ class UnitTest(unittest.TestCase):
 class IntegrationTest(UnitTest):
     """Common integration test framework."""
 
-    # thermostat_type = sht31_config.ALIAS  # was "UNITTEST"
-    # zone = sht31_config.UNIT_TEST_ZONE  # was 1
+    # thermostat_type = emulator_config.ALIAS  # was "UNITTEST"
+    # zone = emulator_config.UNIT_TEST_ZONE  # was 1
     # user_inputs_backup = None
     # Thermostat = None
     Thermostat = None  # Thermostat object instance
@@ -254,9 +254,10 @@ class FunctionalIntegrationTest(IntegrationTest):
             zone=self.Thermostat.zone_number,
             parameter=parameter)
         self.assertTrue(isinstance(metadata, expected_return_type),
-                        "parameter='%s', metadata is type '%s', "
+                        "parameter='%s', value=%s, metadata is type '%s', "
                         "expected type '%s'" %
-                        (parameter, type(metadata), expected_return_type))
+                        (parameter, metadata, type(metadata),
+                         expected_return_type))
 
 
 @unittest.skipIf(not ENABLE_SUPERVISE_INTEGRATION_TESTS,

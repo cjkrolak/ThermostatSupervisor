@@ -65,13 +65,13 @@ class ThermostatCommonZone():
     """Class methods common to all thermostat zones."""
 
     # supported thermostat modes and label text
-    OFF_MODE = "off"
-    HEAT_MODE = "heat"
-    COOL_MODE = "cool"
-    AUTO_MODE = "auto"
-    DRY_MODE = "dry"
-    FAN_MODE = "fan"
-    UNKNOWN_MODE = "unknown"
+    OFF_MODE = "OFF_MODE"
+    HEAT_MODE = "HEAT_MODE"
+    COOL_MODE = "COOL_MODE"
+    AUTO_MODE = "AUTO_MODE"
+    DRY_MODE = "DRY_MODE"
+    FAN_MODE = "FAN_MODE"
+    UNKNOWN_MODE = "UNKNOWN_MODE"
 
     # modes where heat is applied
     heat_modes = [HEAT_MODE, AUTO_MODE]
@@ -274,7 +274,7 @@ class ThermostatCommonZone():
                                           self.current_mode)
 
         if self.is_temp_deviated_from_schedule() and self.is_controlled_mode():
-            status_msg = ("[%s_MODE deviation] act temp=%s" %
+            status_msg = ("[%s deviation] act temp=%s" %
                           (self.current_mode.upper(),
                            util.temp_value_with_units(self.display_temp)))
         else:
@@ -305,7 +305,7 @@ class ThermostatCommonZone():
                             util.temp_value_with_units(self.tolerance_degrees),
                             util.temp_value_with_units(self.current_setpoint)))
 
-        full_status_msg = ("%s: (session:%s, poll:%s) %s_MODE %s" %
+        full_status_msg = ("%s: (session:%s, poll:%s) %s %s" %
                            (datetime.datetime.now().
                             strftime("%Y-%m-%d %H:%M:%S"),
                             session_count, poll_count,
@@ -387,7 +387,7 @@ class ThermostatCommonZone():
         else:
             level = "below min"
         if oper(setpoint, limit_value):
-            msg = ("%s zone %s: scheduled %s_MODE set point (%s) is "
+            msg = ("%s zone %s: scheduled %s set point (%s) is "
                    "%s limit (%s)" % (
                        self.thermostat_type, self.zone_number, label.upper(),
                        util.temp_value_with_units(setpoint), level,
@@ -686,7 +686,7 @@ class ThermostatCommonZone():
         # do not switch directly from hot to cold
         if (self.current_mode in self.heat_modes and
                 target_mode in self.cool_modes):
-            util.log_msg("WARNING: target mode=%s, switching from %s mode to "
+            util.log_msg("WARNING: target mode=%s, switching from %s to "
                          "OFF_MODE to prevent damage to HVAC" %
                          (target_mode, self.current_mode),
                          mode=util.BOTH_LOG, func_name=1)
@@ -695,7 +695,7 @@ class ThermostatCommonZone():
         # do not switch directly from cold to hot
         elif (self.current_mode in self.cool_modes and
               target_mode in self.heat_modes):
-            util.log_msg("WARNING: target mode=%s, switching from %s mode to "
+            util.log_msg("WARNING: target mode=%s, switching from %s to "
                          "OFF_MODE to prevent damage to HVAC" %
                          (target_mode, self.current_mode),
                          mode=util.BOTH_LOG, func_name=1)
@@ -876,11 +876,11 @@ class ThermostatCommonZone():
             setpoint = self.current_setpoint
 
         eml.send_email_alert(
-            subject=("%s %s_MODE deviation alert on zone %s" %
+            subject=("%s %s deviation alert on zone %s" %
                      (self.thermostat_type, self.current_mode.upper(),
                       self.zone_number)),
             body=msg)
-        util.log_msg("\n*** %s %s_MODE deviation detected on zone %s,"
+        util.log_msg("\n*** %s %s deviation detected on zone %s,"
                      " reverting thermostat to heat schedule ***\n" %
                      (self.thermostat_type, self.current_mode.upper(),
                       self.zone_number), mode=util.BOTH_LOG)

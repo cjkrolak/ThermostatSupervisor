@@ -81,9 +81,7 @@ def index():
     """index route"""
     def run_supervise():
         sup.argv = argv  # pass runtime overrides to supervise
-        print(f"DEBUG: in run_supervise, argv={argv}")
         user_inputs = api.parse_all_runtime_parameters(argv)
-        print(f"DEBUG: in run_supervise, user_inputs={user_inputs}")
         thermostat_type = user_inputs["thermostat_type"]
         zone = user_inputs["zone"]
         measurements = user_inputs["measurements"]
@@ -102,7 +100,6 @@ def index():
             arg_list = [executable, dont_buffer, script] + sys.argv[1:]
         else:
             arg_list = [executable, dont_buffer, script]
-        print(f"DEBUG: arg_list={arg_list}")
         with Popen(arg_list, stdin=DEVNULL, stdout=PIPE, stderr=STDOUT,
                    bufsize=1, universal_newlines=True, shell=True) as p_out:
             for i, line in enumerate(p_out.stdout):
