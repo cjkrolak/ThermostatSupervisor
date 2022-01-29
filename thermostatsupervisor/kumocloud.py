@@ -542,7 +542,6 @@ class ThermostatZone(tc.ThermostatCommonZone):
             self.Thermostat._need_fetch = True \
                 # pylint: disable=protected-access
             try:
-                print("DEBUG: refreshing data from cloud")
                 self.Thermostat._fetch_if_needed() \
                     # pylint: disable=protected-access
             except UnboundLocalError:  # patch for issue #205
