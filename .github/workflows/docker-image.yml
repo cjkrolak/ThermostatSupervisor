@@ -21,11 +21,10 @@ jobs:
       with:
         version: latest
     - name: Build the Docker image
-      run: docker buildx build \
+      run: docker buildx build . \
         --file Dockerfile \
         --tag thermostatsupervisor:$(date +%s) \
-        --platform linux/amd64,linux/arm/v7,linux/arm64 \
-        .
+        --platform linux/amd64,linux/arm/v7,linux/arm64
 
   push_to_registry:
     name: Push Docker image to Docker Hub
@@ -39,8 +38,7 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
       - name: build the image
-        run: docker buildx build --push \
+        run: docker buildx build . --push \
           --tag thermostatsupervisor:$(date +%s) \
-          --platform linux/amd64,linux/arm/v7,linux/arm64 \
-          .
+          --platform linux/amd64,linux/arm/v7,linux/arm64
           
