@@ -15,7 +15,8 @@ from thermostatsupervisor import utilities as util
 
 # enable modes
 ENABLE_FUNCTIONAL_INTEGRATION_TESTS = True  # enable func int tests
-ENABLE_PERFORMANCE_INTEGRATION_TESTS = False  # enable performance int tests
+ENABLE_PERFORMANCE_INTEGRATION_TESTS = False and \
+    not util.is_azure_environment()  # enable performance int tests
 ENABLE_SUPERVISE_INTEGRATION_TESTS = True  # enable supervise int tests
 ENABLE_FLASK_INTEGRATION_TESTS = True  # enable flask int tests
 ENABLE_KUMOLOCAL_TESTS = False  # Kumolocal is local net only
