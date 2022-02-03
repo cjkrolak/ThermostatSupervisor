@@ -21,7 +21,7 @@ jobs:
       with:
         version: latest
     - name: Build the Docker image
-      run: docker buildx build . --file Dockerfile --tag ${{ secrets.DOCKER_USERNAME }}/thermostatsupervisor:latest --platform linux/amd64,linux/arm/v7,linux/arm64
+      run: docker buildx build . --file Dockerfile --tag ${{ secrets.DOCKER_USERNAME }}/thermostatsupervisor:latest --platform linux/amd64,linux/arm/v6,linux/arm/v7,linux/arm64
 
   push_to_registry:
     name: Push Docker image to Docker Hub
@@ -35,7 +35,7 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
       - name: create the image
-        run: docker buildx create --platform linux/amd64,linux/arm/v7,linux/arm64 –-use 
+        run: docker buildx create --platform linux/amd64,linux/arm/v6,linux/arm/v7,linux/arm64 –-use 
       - name: build the image
         run: docker buildx build . --push --tag ${{ secrets.DOCKER_USERNAME }}/thermostatsupervisor:latest
           
