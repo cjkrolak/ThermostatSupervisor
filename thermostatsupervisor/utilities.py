@@ -299,6 +299,8 @@ def is_interactive_environment():
     parent = psutil.Process(os.getpid()).parent().name()
     if parent == "cmd.exe":
         return False
+    elif parent == "bash":
+        return False
     elif parent == "eclipse.exe":
         return True
     else:
