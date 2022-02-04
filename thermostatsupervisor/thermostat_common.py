@@ -114,7 +114,7 @@ class ThermostatCommonZone():
         self.last_fetch_time = None  # last fetch of zone_info
 
         # abstraction vars and funcs, defined in query_thermostat_zone
-        self.current_mode = None  # integer representing mode
+        self.current_mode = None  # str representing mode
         self.current_setpoint = util.BOGUS_INT  # current setpoint
         self.schedule_setpoint = util.BOGUS_INT  # current scheduled setpoint
         self.tolerance_sign = 1  # +1 for heat, -1 for cool

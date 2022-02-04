@@ -80,7 +80,7 @@ class Test(utc.UnitTest):
                 self.Zone.store_current_mode()
                 print(f"current mode(post)={self.Zone.current_mode}")
                 self.assertEqual(test_case[1], self.Zone.current_mode,
-                                 "Zone.set_current_mode() failed to "
+                                 "Zone.store_current_mode() failed to "
                                  "cache mode=%s" % test_case[1])
 
                 # confirm verify_current_mode()

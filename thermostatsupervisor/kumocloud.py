@@ -162,6 +162,8 @@ class ThermostatZone(tc.ThermostatCommonZone):
             tc.ThermostatCommonZone.DRY_MODE] = 2  # dry     0 0010
         self.system_switch_position[
             tc.ThermostatCommonZone.COOL_MODE] = 3  # cool   0 0011
+        self.system_switch_position[
+            tc.ThermostatCommonZone.AUTO_MODE] = 33  # auto   0 0101
 
         # zone info
         self.thermostat_type = kumocloud_config.ALIAS
