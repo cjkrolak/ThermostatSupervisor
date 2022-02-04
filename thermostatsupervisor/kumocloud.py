@@ -191,21 +191,33 @@ class ThermostatZone(tc.ThermostatCommonZone):
                 parent_dict = grandparent_dict[parent_key]
                 return_val = parent_dict[key]
             except KeyError:
-                util.log_msg(traceback.format_exc(),
-                             mode=util.BOTH_LOG, func_name=1)
+                if default_val is None:
+                    # if no default val, then display detailed key error
+                    util.log_msg(traceback.format_exc(),
+                                 mode=util.BOTH_LOG, func_name=1)
+                    util.log_msg(f"raw parent dict={parent_dict}",
+                                 mode=util.BOTH_LOG, func_name=1)
         elif parent_key is not None:
             try:
                 parent_dict = self.zone_info[parent_key]
                 return_val = parent_dict[key]
             except KeyError:
-                util.log_msg(traceback.format_exc(),
-                             mode=util.BOTH_LOG, func_name=1)
+                if default_val is None:
+                    # if no default val, then display detailed key error
+                    util.log_msg(traceback.format_exc(),
+                                 mode=util.BOTH_LOG, func_name=1)
+                    util.log_msg(f"raw parent dict={parent_dict}",
+                                 mode=util.BOTH_LOG, func_name=1)
         else:
             try:
                 return_val = self.zone_info[key]
             except KeyError:
-                util.log_msg(traceback.format_exc(),
-                             mode=util.BOTH_LOG, func_name=1)
+                if default_val is None:
+                    # if no default val, then display detailed key error
+                    util.log_msg(traceback.format_exc(),
+                                 mode=util.BOTH_LOG, func_name=1)
+                    util.log_msg(f"raw zone_info dict={self.zone_info}",
+                                 mode=util.BOTH_LOG, func_name=1)
         return return_val
 
     def get_zone_name(self):
@@ -231,7 +243,8 @@ class ThermostatZone(tc.ThermostatCommonZone):
         """
         self.refresh_zone_info()
         return util.c_to_f(self.get_parameter('room_temp',
-                                              'reportedCondition'))
+                                              'reportedCondition',
+                                              default_val=util.BOGUS_INT))
 
     def get_display_humidity(self) -> (float, None):
         """
@@ -248,7 +261,8 @@ class ThermostatZone(tc.ThermostatCommonZone):
             # untested, don't have humidity support
             # zone refreshed during if clause above
             return util.c_to_f(self.get_parameter('humidity',
-                                                  'reportedCondition'))
+                                                  'reportedCondition',
+                                                  default_val=util.BOGUS_INT))
 
     def get_is_humidity_supported(self) -> bool:  # used
         """
@@ -370,14 +384,20 @@ class ThermostatZone(tc.ThermostatCommonZone):
     def is_power_on(self):
         """Return 1 if power relay is active, else 0."""
         self.refresh_zone_info()
-        return self.get_parameter('power', 'reportedCondition')
+        return self.get_parameter('power', 'reportedCondition', default_val=0)
 
     def is_fan_on(self):
         """Return 1 if fan relay is active, else 0."""
-        self.refresh_zone_info()
-        return (self.get_parameter('fan_speed', 'reportedCondition') > 0 or
-                self.get_parameter('fan_speed_text', 'more',
-                                   'reportedCondition') != 'off')
+        if self.is_power_on():
+            fan_speed = self.get_parameter('fan_speed', 'reportedCondition')
+            if fan_speed is None:
+                return 0  # no fan_speed key, return 0
+            else:
+                return int(fan_speed > 0 or
+                           self.get_parameter('fan_speed_text', 'more',
+                                              'reportedCondition') != 'off')
+        else:
+            return 0
 
     def is_defrosting(self):
         """Return 1 if defrosting is active, else 0."""
