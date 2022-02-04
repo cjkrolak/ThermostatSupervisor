@@ -32,7 +32,7 @@ FILE_NOT_FOUND_ERROR = 5
 OTHER_ERROR = 99
 
 # bogus values to identify uninitialized data
-BOGUS_INT = -13
+BOGUS_INT = -123456789
 BOGUS_BOOL = False
 BOGUS_STR = "<missing value>"
 bogus_dict = {}
