@@ -17,6 +17,7 @@ class IntegrationTest(utc.IntegrationTest):
     """
     Test functions in mmm.py.
     """
+
     def setUpIntTest(self):
         """Setup common to integration tests."""
         self.setup_common()
@@ -32,7 +33,7 @@ class IntegrationTest(utc.IntegrationTest):
             "2",  # tolerance
             "",  # thermostat mode, no target
             "3",  # number of measurements
-            ]
+        ]
         self.mod = mmm
         self.mod_config = mmm_config
 
@@ -44,6 +45,7 @@ class FunctionalIntegrationTest(IntegrationTest,
     """
     Test functional performance of mmm.py.
     """
+
     def setUp(self):
         self.setUpIntTest()
         # test_GetMetaData input parameters
@@ -100,6 +102,7 @@ class SuperviseIntegrationTest(IntegrationTest,
     """
     Test supervise functionality of mmm.py.
     """
+
     def setUp(self):
         self.setUpIntTest()
 
@@ -111,6 +114,7 @@ class PerformanceIntegrationTest(IntegrationTest,
     """
     Test performance of in mmm.py.
     """
+
     def setUp(self):
         self.setUpIntTest()
         # network timing measurement

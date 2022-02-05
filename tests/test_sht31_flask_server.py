@@ -128,7 +128,7 @@ class IntegrationTest(utc.UnitTest):
             "get_display_temp": {"min_val": 80, "max_val": 120},
             "get_is_humidity_supported": {"min_val": True, "max_val": True},
             "get_display_humidity": {"min_val": 49, "max_val": 51},
-            }
+        }
         for param, limits in test_cases.items():
             return_val = getattr(Zone, param)()
             print(f"'{param}'={return_val}")

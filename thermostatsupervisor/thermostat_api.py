@@ -33,7 +33,7 @@ SUPPORTED_THERMOSTATS = {
     # "type" = thermostat type index number
     # "zones" = zone numbers supported
     # "modes" = modes supported
-    }
+}
 for config_module in config_modules:
     SUPPORTED_THERMOSTATS.update(
         {config_module.ALIAS: config_module.supported_configs})
@@ -56,7 +56,7 @@ argv_order = {
     5: "tolerance_degrees",
     6: "target_mode",
     7: "measurements",
-    }
+}
 
 # initialize user input (runtime overrides) dict
 user_inputs = {}

@@ -250,7 +250,7 @@ class Test(utc.UnitTest):
                 "key": self.Zone.revert_temperature_deviation,
                 "args": [0, "this is a dummy msg from unit test"],
                 "return_type": type(None)},
-            }
+        }
         for key, value in func_dict.items():
             print(f"key={key}")
             print(f"value={value}")
@@ -365,7 +365,7 @@ class Test(utc.UnitTest):
                 "heat_deviation": False,
                 "cool_deviation": False,
                 "hold_mode": False,
-                },
+            },
             "heat mode and following schedule and humidity": {
                 "mode": self.Zone.HEAT_MODE,
                 "humidity": True,
@@ -374,7 +374,7 @@ class Test(utc.UnitTest):
                 "heat_deviation": False,
                 "cool_deviation": False,
                 "hold_mode": False,
-                },
+            },
             "heat mode and deviation": {
                 "mode": self.Zone.HEAT_MODE,
                 "humidity": False,
@@ -383,7 +383,7 @@ class Test(utc.UnitTest):
                 "heat_deviation": True,
                 "cool_deviation": False,
                 "hold_mode": True,
-                },
+            },
             "heat mode and deviation and humidity": {
                 "mode": self.Zone.HEAT_MODE,
                 "humidity": True,
@@ -392,7 +392,7 @@ class Test(utc.UnitTest):
                 "heat_deviation": True,
                 "cool_deviation": False,
                 "hold_mode": True,
-                },
+            },
             "cool mode and following schedule": {
                 "mode": self.Zone.COOL_MODE,
                 "humidity": False,
@@ -401,7 +401,7 @@ class Test(utc.UnitTest):
                 "heat_deviation": False,
                 "cool_deviation": False,
                 "hold_mode": False,
-                },
+            },
             "cool mode and following schedule and humidity": {
                 "mode": self.Zone.COOL_MODE,
                 "humidity": True,
@@ -410,7 +410,7 @@ class Test(utc.UnitTest):
                 "heat_deviation": False,
                 "cool_deviation": False,
                 "hold_mode": False,
-                },
+            },
             "cool mode and deviation": {
                 "mode": self.Zone.COOL_MODE,
                 "humidity": False,
@@ -419,7 +419,7 @@ class Test(utc.UnitTest):
                 "heat_deviation": False,
                 "cool_deviation": True,
                 "hold_mode": True,
-                },
+            },
             "cool mode and deviation and humidity": {
                 "mode": self.Zone.COOL_MODE,
                 "humidity": True,
@@ -428,8 +428,8 @@ class Test(utc.UnitTest):
                 "heat_deviation": False,
                 "cool_deviation": True,
                 "hold_mode": True,
-                },
-            }
+            },
+        }
 
         self.backup_functions()
         try:
@@ -654,7 +654,7 @@ class Test(utc.UnitTest):
                     thermostat_type,
                     zone_number,
                     mod.ThermostatClass, mod.ThermostatZone
-                    )
+                )
             print(f"thermotat={type(thermostat)}")
             print(f"thermotat={type(zone)}")
         finally:

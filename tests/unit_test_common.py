@@ -44,7 +44,7 @@ unit_test_honeywell = [
     "3",  # tolerance
     "OFF_MODE",  # thermostat mode
     "2",  # number of measurements
-    ]
+]
 
 unit_test_argv = unit_test_sht31
 
@@ -65,8 +65,8 @@ class UnitTest(unittest.TestCase):
             "required_env_variables": {
                 "GMAIL_USERNAME": None,
                 "GMAIL_PASSWORD": None,
-                },
-            }
+            },
+        }
         self.user_inputs_backup = api.user_inputs
         api.user_inputs = {
             "thermostat_type": self.thermostat_type,
@@ -75,7 +75,7 @@ class UnitTest(unittest.TestCase):
             "connection_time_sec": 155,
             "target_mode": "OFF_MODE",
             "measurements": 3,
-            }
+        }
 
         self.Thermostat = tc.ThermostatCommon()
         self.Zone = tc.ThermostatCommonZone()
@@ -200,7 +200,7 @@ class FunctionalIntegrationTest(IntegrationTest):
                 self.unit_test_argv[api.get_argv_position("thermostat_type")],
                 int(self.unit_test_argv[api.get_argv_position("zone")]),
                 self.mod.ThermostatClass, self.mod.ThermostatZone
-                )
+            )
 
     def test_report_heating_parameters(self):
         """

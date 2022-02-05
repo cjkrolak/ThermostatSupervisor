@@ -12,13 +12,13 @@ NORMAL_HUMIDITY_VARIATION = 3.0  # reported val variation +/- this val
 
 # all environment variables required by code should be registered here
 env_variables = {
-    }
+}
 
 # min required env variables on all runs
 required_env_variables = {
     "GMAIL_USERNAME": None,
     "GMAIL_PASSWORD": None,
-    }
+}
 
 # supported thermostat configs
 supported_configs = {"module": "emulator",

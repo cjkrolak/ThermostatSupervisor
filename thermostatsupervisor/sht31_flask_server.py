@@ -73,6 +73,7 @@ read_status_register = (0xf3, [0x2d])
 
 class Sensors:
     """Sensor data."""
+
     def __init__(self):
         pass
 
@@ -107,7 +108,7 @@ class Sensors:
             (dict): data structure.
         """
         return {sht31_config.API_MEASUREMENT_CNT: len(temp_f_lst),
-                sht31_config.API_TEMPC_MEAN:  statistics.mean(temp_c_lst),
+                sht31_config.API_TEMPC_MEAN: statistics.mean(temp_c_lst),
                 sht31_config.API_TEMPC_STD: statistics.pstdev(temp_c_lst),
                 sht31_config.API_TEMPF_MEAN: statistics.mean(temp_f_lst),
                 sht31_config.API_TEMPF_STD: statistics.pstdev(temp_f_lst),
@@ -215,7 +216,7 @@ class Sensors:
                 'Write data checksum status(0=correct,1=failed)':
                     (date_val >> 0) & 1,
                 # bit 0: 0=correct, 1=failed
-                }
+            }
         except IndexError:
             # parsing error, just return raw data
             print("WARNING: fault register parsing error, just returning "
@@ -353,6 +354,7 @@ class Sensors:
 
 class Controller(Resource):
     """Production controller."""
+
     def __init__(self):
         pass
 
@@ -364,6 +366,7 @@ class Controller(Resource):
 
 class ControllerUnit(Resource):
     """Unit test Controller."""
+
     def __init__(self):
         pass
 
@@ -375,6 +378,7 @@ class ControllerUnit(Resource):
 
 class ReadFaultRegister(Resource):
     """Diagnostic Controller."""
+
     def __init__(self):
         pass
 
@@ -386,6 +390,7 @@ class ReadFaultRegister(Resource):
 
 class ClearFaultRegister(Resource):
     """Clear Diagnostic Controller."""
+
     def __init__(self):
         pass
 
@@ -397,6 +402,7 @@ class ClearFaultRegister(Resource):
 
 class EnableHeater(Resource):
     """Enable heater Controller."""
+
     def __init__(self):
         pass
 
@@ -408,6 +414,7 @@ class EnableHeater(Resource):
 
 class DisableHeater(Resource):
     """Enable heater Controller."""
+
     def __init__(self):
         pass
 
@@ -419,6 +426,7 @@ class DisableHeater(Resource):
 
 class SoftReset(Resource):
     """Enable heater Controller."""
+
     def __init__(self):
         pass
 
@@ -430,6 +438,7 @@ class SoftReset(Resource):
 
 class Reset(Resource):
     """Enable heater Controller."""
+
     def __init__(self):
         pass
 

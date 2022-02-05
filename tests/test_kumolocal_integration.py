@@ -17,6 +17,7 @@ class IntegrationTest(utc.IntegrationTest):
     """
     Test functions in kumolocal.py.
     """
+
     def setUpIntTest(self):
         """Setup common to integration tests."""
         self.setup_common()
@@ -32,7 +33,7 @@ class IntegrationTest(utc.IntegrationTest):
             "2",  # tolerance
             "",  # thermostat mode, no target
             "3",  # number of measurements
-            ]
+        ]
         self.mod = kumolocal
         self.mod_config = kumolocal_config
 
@@ -44,6 +45,7 @@ class FunctionalIntegrationTest(IntegrationTest,
     """
     Test functional performance of kumolocal.py.
     """
+
     def setUp(self):
         self.setUpIntTest()
         # test_GetMetaData input parameters
@@ -58,6 +60,7 @@ class SuperviseIntegrationTest(IntegrationTest,
     """
     Test supervise functionality of kumolocal.py.
     """
+
     def setUp(self):
         self.setUpIntTest()
 
@@ -69,6 +72,7 @@ class PerformanceIntegrationTest(IntegrationTest,
     """
     Test performance of in kumolocal.py.
     """
+
     def setUp(self):
         self.setUpIntTest()
         # network timing measurement

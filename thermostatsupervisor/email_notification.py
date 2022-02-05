@@ -59,7 +59,7 @@ def send_email_alert(to_address=None,
                                 "receiving addresses"),
         util.ENVIRONMENT_ERROR: ("failed to retrieve email credentials "
                                  "from environment variable"),
-        }
+    }
 
     # default email addresses from env variables
     if not to_address:

@@ -8,7 +8,7 @@ default_zone = 0
 env_variables = {
     "TCC_USERNAME": None,
     "TCC_PASSWORD": None,
-    }
+}
 
 # min required env variables on all runs
 required_env_variables = {
@@ -16,7 +16,7 @@ required_env_variables = {
     "TCC_PASSWORD": None,
     "GMAIL_USERNAME": None,
     "GMAIL_PASSWORD": None,
-    }
+}
 
 # supported thermostat configs
 supported_configs = {"module": "honeywell",

@@ -17,6 +17,7 @@ class IntegrationTest(utc.IntegrationTest):
     """
     Test functions in sht31.py.
     """
+
     def setUpIntTest(self):
         self.setup_common()
         self.print_test_name()
@@ -37,7 +38,7 @@ class IntegrationTest(utc.IntegrationTest):
             "2",  # tolerance
             "",  # thermostat mode, no target
             "3",  # number of measurements
-            ]
+        ]
         self.mod = sht31
         self.mod_config = sht31_config
 
@@ -47,6 +48,7 @@ class FunctionalIntegrationTest(IntegrationTest,
     """
     Test functional performance of sht31.py.
     """
+
     def setUp(self):
         self.setUpIntTest()
         # test_GetMetaData input parameters
@@ -59,6 +61,7 @@ class SuperviseIntegrationTest(IntegrationTest,
     """
     Test supervise functionality of sht31.py.
     """
+
     def setUp(self):
         self.setUpIntTest()
 
@@ -68,6 +71,7 @@ class PerformanceIntegrationTest(IntegrationTest,
     """
     Test performance of in honeywell.py.
     """
+
     def setUp(self):
         self.setUpIntTest()
         # network timing measurement
