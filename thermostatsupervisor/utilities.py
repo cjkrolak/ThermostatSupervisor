@@ -52,7 +52,7 @@ MIN_PYTHON_MINOR_VERSION = 7  # minimum python minor version required
 env_variables = {
     "GMAIL_USERNAME": None,
     "GMAIL_PASSWORD": None,
-    }
+}
 env_variables.update(honeywell_config.env_variables)
 env_variables.update(kumocloud_config.env_variables)
 env_variables.update(kumolocal_config.env_variables)
@@ -97,7 +97,7 @@ def get_env_variable(env_key):
         "status": NO_ERROR,
         "value": None,
         "key": env_key,
-        }
+    }
 
     try:
         # unit test key is not required to be in env var list
@@ -162,7 +162,7 @@ def log_msg(msg, mode, func_name=-1, file_name=None):
     """
     return_buffer = {
         "status": NO_ERROR,
-        }
+    }
 
     # set debug mode
     debug_enabled = getattr(log_msg, "debug", False)

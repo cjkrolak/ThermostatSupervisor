@@ -51,14 +51,14 @@ env_variables = {
     "SHT31_REMOTE_IP_ADDRESS_0": None,
     "SHT31_REMOTE_IP_ADDRESS_1": None,
     UNIT_TEST_ENV_KEY: None,
-    }
+}
 
 # min required env variables on all runs
 required_env_variables = {
-            "GMAIL_USERNAME": None,
-            "GMAIL_PASSWORD": None,
-            "SHT31_REMOTE_IP_ADDRESS_": None,  # prefix only, excludes zone
-            }
+    "GMAIL_USERNAME": None,
+    "GMAIL_PASSWORD": None,
+    "SHT31_REMOTE_IP_ADDRESS_": None,  # prefix only, excludes zone
+}
 
 # supported thermostat configs
 supported_configs = {"module": "sht31",
@@ -76,7 +76,7 @@ sht31_metadata = {
     UNIT_TEST_ZONE: {"zone_name": "unittest",
                      "host_name": "none",
                      },
-    }
+}
 
 # SHT31D config
 I2C_ADDRESS = 0x45  # i2c address b

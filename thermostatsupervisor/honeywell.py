@@ -770,6 +770,7 @@ HTTP_TIMEOUT = 2.5  # 6 sigma limit in seconds
 class TimeoutHTTPAdapter(HTTPAdapter):
     """Override TimeoutHTTPAdapter to include timeout parameter.
     """
+
     def __init__(self, *args, **kwargs):
         self.timeout = HTTP_TIMEOUT
         if "timeout" in kwargs:

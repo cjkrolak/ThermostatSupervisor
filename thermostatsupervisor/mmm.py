@@ -432,10 +432,10 @@ class ThermostatZone(tc.ThermostatCommonZone):
         now = datetime.datetime.now()
         minutes_since_midnight = (
             now - now.replace(hour=0, minute=0, second=0, microsecond=0)
-            ).total_seconds() / 60
+        ).total_seconds() / 60
         todays_setpoint_lst = self.get_setpoint_list(sp_dict,
                                                      datetime.datetime.today(
-                                                         ).weekday())
+                                                     ).weekday())
         for idx in [0, 2, 4, 6]:
             if todays_setpoint_lst[idx] > minutes_since_midnight:
                 return current_sp
@@ -634,7 +634,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
                               microsecond=0)).total_seconds() / 60
         todays_setpoint_lst = self.get_setpoint_list(sp_dict,
                                                      datetime.datetime.today(
-                                                         ).weekday())
+                                                     ).weekday())
         for idx in [0, 2, 4, 6]:
             if todays_setpoint_lst[idx] > minutes_since_midnight:
                 time_delta = (todays_setpoint_lst[idx] -

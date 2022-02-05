@@ -91,7 +91,7 @@ class ThermostatCommonZone():
         DRY_MODE: util.BOGUS_INT - 4,
         FAN_MODE: util.BOGUS_INT - 5,
         OFF_MODE: util.BOGUS_INT - 6,
-        }
+    }
     max_scheduled_heat_allowed = 74  # warn if scheduled heat value exceeds.
     min_scheduled_cool_allowed = 68  # warn if scheduled cool value exceeds.
     tolerance_degrees_default = 2  # allowed override vs. the scheduled value.
@@ -262,7 +262,7 @@ class ThermostatCommonZone():
             "cool_deviation": util.BOGUS_BOOL,  # True: cool is deviated below
             "hold_mode": util.BOGUS_BOOL,  # True if hold is enabled
             "status_msg": "",  # status message
-            }
+        }
 
         self.flag_all_deviations = flag_all_deviations
         self.query_thermostat_zone()
@@ -394,8 +394,8 @@ class ThermostatCommonZone():
                        util.temp_value_with_units(limit_value)))
             util.log_msg(f"WARNING: {msg}", mode=util.BOTH_LOG)
             eml.send_email_alert(
-                    subject=msg,
-                    body=f"{util.get_function_name()}: {msg}")
+                subject=msg,
+                body=f"{util.get_function_name()}: {msg}")
             return True
         else:
             return False
@@ -646,7 +646,7 @@ class ThermostatCommonZone():
             "tolerance_degrees": "tolerance_degrees",
             "target_mode": "target_mode",
             "measurements": "measurements",
-            }
+        }
 
         print("\n")
         util.log_msg("supervisor runtime parameters:",

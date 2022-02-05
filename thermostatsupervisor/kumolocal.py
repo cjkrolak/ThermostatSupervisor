@@ -92,13 +92,13 @@ class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
             time.sleep(10)
             units = list(self.get_indoor_units())  # retry
         util.log_msg(f"indoor unit serial numbers: {str(units)}",
-                     mode=util.DEBUG_LOG+util.CONSOLE_LOG, func_name=1)
+                     mode=util.DEBUG_LOG + util.CONSOLE_LOG, func_name=1)
         for serial_number in units:
             util.log_msg("Unit %s: address: %s credentials: %s" %
                          (self.get_name(serial_number),
                           self.get_address(serial_number),
                           self.get_credentials(serial_number)),
-                         mode=util.DEBUG_LOG+util.CONSOLE_LOG, func_name=1)
+                         mode=util.DEBUG_LOG + util.CONSOLE_LOG, func_name=1)
         if zone is None:
             # returned cached raw data for all zones
             raw_json = self.get_raw_json()  # does not fetch results,

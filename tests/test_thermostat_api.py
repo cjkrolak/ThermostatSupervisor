@@ -22,8 +22,8 @@ class Test(utc.UnitTest):
             "required_env_variables": {
                 "GMAIL_USERNAME": None,
                 "GMAIL_PASSWORD": None,
-                },
-            }
+            },
+        }
 
     def tearDown(self):
         del api.thermostats[self.tstat]
@@ -49,8 +49,8 @@ class Test(utc.UnitTest):
         try:
             self.assertFalse(api.verify_required_env_variables(
                 self.tstat, "0"),
-                             "test passed with missing key '%s',"
-                             " should have failed" % missing_key)
+                "test passed with missing key '%s',"
+                " should have failed" % missing_key)
         except KeyError:
             print("KeyError raised as expected for missing key")
         else:
@@ -74,7 +74,7 @@ class Test(utc.UnitTest):
             "3",  # tolerance
             "HEAT_MODE",  # target mode
             1,  # measurements
-            ]
+        ]
 
         # test case default should be different from test_list above
         test_cases = {
@@ -115,7 +115,7 @@ class Test(utc.UnitTest):
                              "supported_values": range(0, 100000),
                              "input_list": test_list,
                              },
-            }
+        }
 
         for key, inputs in test_cases.items():
             print(f"testing parse of input parameter={key}")
@@ -127,7 +127,7 @@ class Test(utc.UnitTest):
                 inputs["default_value"],
                 inputs["supported_values"],
                 inputs["input_list"]
-                )
+            )
             print(f"key={key}, actual={actual_value}, "
                   f"expected={expected_value}")
             self.assertEqual(actual_value, expected_value,
@@ -278,7 +278,7 @@ class Test(utc.UnitTest):
                            "exp_result": True},
             "default": {"measurement": 13, "max_measurements": None,
                         "exp_result": False},
-            }
+        }
         max_measurement_bkup = api.user_inputs["measurements"]
         try:
             for test_case, parameters in test_cases.items():

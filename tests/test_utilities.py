@@ -78,7 +78,7 @@ class EnvironmentTests(utc.UnitTest):
             ['bogus_host', '192.168.86.145', False],  # bogus host
             ['bogus_host', None, False],  # bogus host without IP
             ['dns.google', '8.8.8.8', True],  # should pass everywhere
-            ]
+        ]
 
         for test_case in test_cases:
             print("testing for '%s' at %s, expect %s" %
