@@ -14,5 +14,5 @@ COPY . .
 # execute the script, default to Honeywell zone 0 if runtime parameters are not provided
 #CMD ["supervise.py", "honeywell", "0"]
 #ENTRYPOINT ["python3"]
-ENTRYPOINT ["python3", "-m", "supervise"]
+ENTRYPOINT ["python3", "-m", "thermostatsupervisor.supervise"]
 CMD ["honeywell", "0"]

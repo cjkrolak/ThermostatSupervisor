@@ -5,3 +5,6 @@
 supervisor-env.txt
 **/htmlcov
 .coverage
+.project
+.pydevproject
+
