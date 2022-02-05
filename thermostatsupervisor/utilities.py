@@ -115,8 +115,8 @@ def get_env_variable(env_key):
         log_msg(f"{env_key}={value_shown}",
                 mode=DEBUG_LOG)
     except KeyError:
-        log_msg("FATAL ERROR: required environment variable '%s'"
-                " is missing." % env_key, mode=CONSOLE_LOG + DATA_LOG)
+        log_msg(f"FATAL ERROR: required environment variable '{env_key}'"
+                " is missing.", mode=CONSOLE_LOG + DATA_LOG)
         return_buffer["status"] = ENVIRONMENT_ERROR
     return return_buffer
 
@@ -320,8 +320,8 @@ def temp_value_with_units(raw, disp_unit='F', precision=1) -> str:
         (str): temperature and units.
     """
     if disp_unit.upper() not in ['C', 'F', 'K']:
-        raise ValueError("%s: '%s' is not a valid temperature unit" %
-                         (get_function_name(), disp_unit))
+        raise ValueError(f"{get_function_name()}: '{disp_unit}' is not a "
+                         "valid temperature unit")
 
     # if string try to convert to float
     if isinstance(raw, str):
@@ -353,8 +353,8 @@ def humidity_value_with_units(raw, disp_unit=' RH', precision=0) -> str:
         (str): temperature and units.
     """
     if disp_unit.upper() not in ['RH', ' RH']:
-        raise ValueError("%s: '%s' is not a valid humidity unit" %
-                         (get_function_name(), disp_unit))
+        raise ValueError(f"{get_function_name()}: '{disp_unit}' is not a "
+                         " valid humidity unit")
 
     # if string try to convert to float
     if isinstance(raw, str):
@@ -500,8 +500,8 @@ def get_python_version(min_major_version=MIN_PYTHON_MAJOR_VERSION,
     major_version_fail = False
     if min_major_version is not None:
         if not isinstance(min_major_version, (int, float)):
-            raise TypeError("input parameter 'min_major_version is type (%s), "
-                            "not int or float" % type(min_major_version))
+            raise TypeError(f"input parameter 'min_major_version is type "
+                            f"({type(min_major_version)}), not int or float")
         if major_version < min_major_version:
             major_version_fail = True
 
@@ -509,8 +509,8 @@ def get_python_version(min_major_version=MIN_PYTHON_MAJOR_VERSION,
     minor_version_fail = False
     if min_minor_version is not None:
         if not isinstance(min_minor_version, (int, float)):
-            raise TypeError("input parameter 'min_minor_version is type (%s), "
-                            "not int or float" % type(min_minor_version))
+            raise TypeError(f"input parameter 'min_minor_version is type "
+                            f"({type(min_minor_version)}), not int or float")
         if minor_version < min_minor_version:
             minor_version_fail = True
 
