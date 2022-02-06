@@ -58,6 +58,7 @@ class UnitTest(unittest.TestCase):
     Thermostat = None
     Zone = None
     is_off_mode_bckup = None
+    util.unit_test_mode = True
 
     def setup_mock_thermostat_zone(self):
         """Setup mock thermostat settings."""
@@ -378,9 +379,6 @@ def run_all_tests():
     """
     Run all enabled unit tests.
     """
-    # set unit test flag
-    util.unit_test_mode = True
-
     # discover all unit test files in current directory
     print("discovering tests...")
     suite = unittest.TestLoader().discover('.', pattern="test_*.py")
