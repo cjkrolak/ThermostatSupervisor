@@ -85,7 +85,7 @@ def send_email_alert(to_address=None,
 
     # build email message
     msg = MIMEText(body)
-    msg['Subject'] = subject
+    msg['Subject'] = ["", "(unittest) "][util.unit_test_mode] + subject
     msg['From'] = from_address
     msg['To'] = to_address
 

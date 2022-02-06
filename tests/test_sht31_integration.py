@@ -13,6 +13,8 @@ from tests import unit_test_common as utc
 from thermostatsupervisor import utilities as util
 
 
+@unittest.skipIf(not utc.ENABLE_SHT31_TESTS,
+                 "sht31 tests are disabled")
 class IntegrationTest(utc.IntegrationTest):
     """
     Test functions in sht31.py.
@@ -43,6 +45,8 @@ class IntegrationTest(utc.IntegrationTest):
         self.mod_config = sht31_config
 
 
+@unittest.skipIf(not utc.ENABLE_SHT31_TESTS,
+                 "sht31 tests are disabled")
 class FunctionalIntegrationTest(IntegrationTest,
                                 utc.FunctionalIntegrationTest):
     """
@@ -56,6 +60,8 @@ class FunctionalIntegrationTest(IntegrationTest,
         self.metadata_type = float
 
 
+@unittest.skipIf(not utc.ENABLE_SHT31_TESTS,
+                 "sht31 tests are disabled")
 class SuperviseIntegrationTest(IntegrationTest,
                                utc.SuperviseIntegrationTest):
     """
@@ -66,6 +72,8 @@ class SuperviseIntegrationTest(IntegrationTest,
         self.setUpIntTest()
 
 
+@unittest.skipIf(not utc.ENABLE_SHT31_TESTS,
+                 "sht31 tests are disabled")
 class PerformanceIntegrationTest(IntegrationTest,
                                  utc.PerformanceIntegrationTest):
     """

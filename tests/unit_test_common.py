@@ -21,7 +21,7 @@ ENABLE_SUPERVISE_INTEGRATION_TESTS = True  # enable supervise int tests
 ENABLE_FLASK_INTEGRATION_TESTS = True  # enable flask int tests
 ENABLE_KUMOLOCAL_TESTS = False  # Kumolocal is local net only
 ENABLE_MMM_TESTS = False  # mmm50 is local net only
-ENABLE_SHT31_TESTS = True  # sht31 can fail on occasion
+ENABLE_SHT31_TESTS = False  # sht31 can fail on occasion
 
 
 # generic argv list for unit testing
@@ -58,6 +58,7 @@ class UnitTest(unittest.TestCase):
     Thermostat = None
     Zone = None
     is_off_mode_bckup = None
+    util.unit_test_mode = True
 
     def setup_mock_thermostat_zone(self):
         """Setup mock thermostat settings."""
