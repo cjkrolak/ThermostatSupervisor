@@ -62,7 +62,7 @@ class Test(utc.UnitTest):
                 "SMTP port input, should fail.")
         return_status, return_status_msg = \
             eml.send_email_alert(server_port=13,
-                                 subject="(unittest) test email alert "
+                                 subject="test email alert "
                                  "(bad port)", body=body)
         fail_msg = ("send email with bad server port failed for status code"
                     ": %s: %s" % (return_status, return_status_msg))
@@ -73,7 +73,7 @@ class Test(utc.UnitTest):
                 "sender email address, should fail.")
         return_status, return_status_msg = \
             eml.send_email_alert(from_address="bogus@gmail.com",
-                                 subject="(unittest) test email alert "
+                                 subject="test email alert "
                                  "(bad from address)", body=body)
         fail_msg = ("send email with bad from addresss failed for status code"
                     ": %s: %s" % (return_status, return_status_msg))

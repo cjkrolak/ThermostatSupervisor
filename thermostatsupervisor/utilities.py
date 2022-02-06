@@ -77,6 +77,7 @@ def get_local_ip():
 
 
 # set unit test IP address, same as client
+unit_test_mode = False  # in unit test mode
 unit_test_ip_address = get_local_ip()
 
 
