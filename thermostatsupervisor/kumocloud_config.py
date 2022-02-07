@@ -5,7 +5,7 @@ ALIAS = "kumocloud"
 MAX_HEAT_SETPOINT = 68
 MIN_COOL_SETPOINT = 70
 
-# all environment variables required by code should be registered here
+# all environment variables specific to this thermostat type
 env_variables = {
     "KUMO_USERNAME": None,
     "KUMO_PASSWORD": None,
@@ -13,8 +13,6 @@ env_variables = {
 
 # min required env variables on all runs
 required_env_variables = {
-    "GMAIL_USERNAME": None,
-    "GMAIL_PASSWORD": None,
     'KUMO_USERNAME': None,
     'KUMO_PASSWORD': None,
 }

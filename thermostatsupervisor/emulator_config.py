@@ -10,14 +10,12 @@ NORMAL_TEMP_VARIATION = 16.0  # reported value variation +/- this value
 STARTING_HUMIDITY = 45.0  # starting humidity when emulator starts
 NORMAL_HUMIDITY_VARIATION = 3.0  # reported val variation +/- this val
 
-# all environment variables required by code should be registered here
+# all environment variables specific to this thermostat type
 env_variables = {
 }
 
 # min required env variables on all runs
 required_env_variables = {
-    "GMAIL_USERNAME": None,
-    "GMAIL_PASSWORD": None,
 }
 
 # supported thermostat configs
