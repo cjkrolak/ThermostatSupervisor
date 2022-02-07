@@ -51,7 +51,7 @@ class Test(utc.UnitTest):
         # send message with no inputs, UTIL.NO_ERROR expected
         body = "this is a test of the email notification alert."
         return_status, return_status_msg = \
-            eml.send_email_alert(subject="(unittest) test email alert",
+            eml.send_email_alert(subject="test email alert",
                                  body=body)
 
         fail_msg = ("send email with defaults failed for status code: %s: %s" %
@@ -87,7 +87,7 @@ class Test(utc.UnitTest):
         # send message with no inputs, UTIL.NO_ERROR expected
         body = "this is a test of the email notification alert."
         return_status, return_status_msg = \
-            eml.send_email_alert(subject="(unittest) test email alert with "
+            eml.send_email_alert(subject="test email alert with "
                                  "no email address env key",
                                  body=body)
 
