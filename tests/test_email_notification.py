@@ -4,6 +4,7 @@ Unit tes module for email_notification.py.
 # built-in libraries
 import os
 import unittest
+from unittest import mock
 
 # local libraries
 from thermostatsupervisor import email_notification as eml
@@ -50,7 +51,7 @@ class Test(utc.UnitTest):
         # send message with no inputs, UTIL.NO_ERROR expected
         body = "this is a test of the email notification alert."
         return_status, return_status_msg = \
-            eml.send_email_alert(subject="(unittest) test email alert",
+            eml.send_email_alert(subject="test email alert",
                                  body=body)
 
         fail_msg = ("send email with defaults failed for status code: %s: %s" %
@@ -78,6 +79,21 @@ class Test(utc.UnitTest):
         fail_msg = ("send email with bad from addresss failed for status code"
                     ": %s: %s" % (return_status, return_status_msg))
         self.assertEqual(return_status, util.AUTHORIZATION_ERROR, fail_msg)
+
+    @mock.patch.dict(os.environ, {}, clear=True)
+    def test_send_email_alert_no_env_key(self):
+        """Test send_email_alerts() functionality without email address."""
+
+        # send message with no inputs, UTIL.NO_ERROR expected
+        body = "this is a test of the email notification alert."
+        return_status, return_status_msg = \
+            eml.send_email_alert(subject="test email alert with "
+                                 "no email address env key",
+                                 body=body)
+
+        fail_msg = (f"send email with no email env key failed for "
+                    f"status code: {return_status}: {return_status_msg}")
+        self.assertEqual(return_status, util.ENVIRONMENT_ERROR, fail_msg)
 
 
 if __name__ == "__main__":

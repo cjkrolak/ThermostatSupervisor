@@ -3,14 +3,12 @@ mmm config file.
 """
 ALIAS = "mmm50"
 
-# all environment variables required by code should be registered here
+# all environment variables specific to this thermostat type
 env_variables = {
 }
 
 # min required env variables on all runs
 required_env_variables = {
-    "GMAIL_USERNAME": None,
-    "GMAIL_PASSWORD": None,
 }
 
 # supported thermostat configs
