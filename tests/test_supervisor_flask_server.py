@@ -94,10 +94,10 @@ class IntegrationTest(utc.UnitTest):
 
         # check web page content vs. expectations
         print(f"web page contents: {results.content}")
-        exp_substr = \
-            ("<title>%s thermostat zone %s, %s measurements</title>" %
-             (utc.unit_test_argv[1], utc.unit_test_argv[2],
-              utc.unit_test_argv[7]))
+        exp_substr = (
+            f"<title>{utc.unit_test_argv[1]} thermostat zone "
+            f"{utc.unit_test_argv[2]}, {utc.unit_test_argv[7]} "
+            f"measurements</title>")
         self.assertTrue(exp_substr in results.content.decode("utf-8"),
                         "did not find substring '%s' in web page response")
 

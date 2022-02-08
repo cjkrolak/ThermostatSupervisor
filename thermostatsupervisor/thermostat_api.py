@@ -99,9 +99,10 @@ def verify_required_env_variables(tstat, zone_str):
         if util.env_variables[key] is not None:
             print("OK")
         else:
-            util.log_msg("%s: zone %s: FATAL error: one or more required "
-                         "environemental keys are missing, exiting program" %
-                         (tstat, zone_str), mode=util.BOTH_LOG)
+            util.log_msg(
+                f"{tstat}: zone {zone_str}: FATAL error: one or more required"
+                f" environemental keys are missing, exiting program",
+                mode=util.BOTH_LOG)
             key_status = False
             raise KeyError
     print("\n")
@@ -126,19 +127,27 @@ def parse_runtime_parameter(key, datatype, default_value,
     # if no override exists in argv_list, use argv value
     try:
         proposed_val = str(argv_list[get_argv_position(key)])
-        util.log_msg("key='%s': using user override value '%s'" %
-                     (key, argv_list[get_argv_position(key)]),
-                     mode=util.DEBUG_LOG + util.CONSOLE_LOG, func_name=1)
+        util.log_msg(
+            f"key='{key}': using user override value "
+            f"'{argv_list[get_argv_position(key)]}'",
+            mode=util.DEBUG_LOG +
+            util.CONSOLE_LOG,
+            func_name=1)
     except TypeError:
-        util.log_msg("key='%s': argv parsing error, using default value '%s'" %
-                     (key, default_value),
-                     mode=util.DEBUG_LOG + util.CONSOLE_LOG, func_name=1)
+        util.log_msg(
+            f"key='{key}': argv parsing error, using default value "
+            f"'{default_value}'",
+            mode=util.DEBUG_LOG +
+            util.CONSOLE_LOG,
+            func_name=1)
         proposed_val = str(default_value)
     except IndexError:
-        util.log_msg("key='%s': argv parameter missing, "
-                     "using default value '%s'" %
-                     (key, default_value),
-                     mode=util.DEBUG_LOG + util.CONSOLE_LOG, func_name=1)
+        util.log_msg(
+            f"key='{key}': argv parameter missing, using default value "
+            f"'{default_value}'",
+            mode=util.DEBUG_LOG +
+            util.CONSOLE_LOG,
+            func_name=1)
         proposed_val = str(default_value)
 
     # cast input for these keys into uppercase and target data type.
@@ -157,9 +166,11 @@ def parse_runtime_parameter(key, datatype, default_value,
 
     # check for valid range
     if proposed_val != default_value and proposed_val not in valid_range:
-        util.log_msg("WARNING: '%s' is not a valid choice for '%s', "
-                     "using default(%s)" % (proposed_val, key, default_value),
-                     mode=util.BOTH_LOG, func_name=1)
+        util.log_msg(
+            f"WARNING: '{proposed_val}' is not a valid choice for '{key}', "
+            f"using default({default_value})",
+            mode=util.BOTH_LOG,
+            func_name=1)
         proposed_val = default_value
 
     # populate the user_input dictionary
@@ -180,13 +191,17 @@ def parse_all_runtime_parameters(argv_list=None):
         argv_list = []
     result = {}
     if argv_list:
-        util.log_msg("parse_all_runtime_parameters from user dictionary: %s" %
-                     argv_list, mode=util.DEBUG_LOG + util.CONSOLE_LOG,
-                     func_name=1)
+        util.log_msg(
+            f"parse_all_runtime_parameters from user dictionary: {argv_list}",
+            mode=util.DEBUG_LOG +
+            util.CONSOLE_LOG,
+            func_name=1)
     else:
-        util.log_msg("parse_all_runtime_parameters from sys.argv: %s" %
-                     sys.argv, mode=util.DEBUG_LOG + util.CONSOLE_LOG,
-                     func_name=1)
+        util.log_msg(
+            f"parse_all_runtime_parameters from sys.argv: {sys.argv}",
+            mode=util.DEBUG_LOG +
+            util.CONSOLE_LOG,
+            func_name=1)
         argv_list = sys.argv
 
     # parse thermostat type parameter (argv[1] if present):

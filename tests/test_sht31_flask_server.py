@@ -72,9 +72,8 @@ class IntegrationTest(utc.UnitTest):
             else:
                 expected_key = "bogus"
             self.assertTrue(expected_key in return_data,
-                            "test_case '%s': key '%s' was not found in "
-                            "return data: %s" %
-                            (test_case, expected_key, return_data))
+                            f"test_case '{test_case}': key '{expected_key}' "
+                            f"was not found in return data: {return_data}")
 
     def test_SHT31_FlaskServer(self):
         """
@@ -83,10 +82,10 @@ class IntegrationTest(utc.UnitTest):
         measurements_bckup = sht31_config.MEASUREMENTS
         try:
             for sht31_config.measurements in [1, 10, 100, 1000]:
-                print("\ntesting SHT31 flask server with %s %s..." %
-                      (sht31_config.MEASUREMENTS,
-                       ["measurement", "measurements"][
-                           sht31_config.MEASUREMENTS > 1]))
+                msg = ['measurement', 'measurements'][
+                    sht31_config.MEASUREMENTS > 1]
+                print(f"\ntesting SHT31 flask server with "
+                      f"{sht31_config.MEASUREMENTS} {msg}...")
                 self.validate_flask_server()
         finally:
             sht31_config.measurements = measurements_bckup
@@ -113,15 +112,14 @@ class IntegrationTest(utc.UnitTest):
         print(f"temporary hold minutes={Zone.get_temporary_hold_until_time()}")
         meta_data = Thermostat.get_all_metadata(sht31_config.UNIT_TEST_ZONE)
         print(f"thermostat meta data={meta_data}")
-        print("thermostat display temp=%s" %
-              util.temp_value_with_units(Zone.get_display_temp()))
+        print(f"thermostat display temp="
+              f"{util.temp_value_with_units(Zone.get_display_temp())}")
 
         # verify measurements
         self.assertEqual(meta_data["measurements"],
                          sht31_config.MEASUREMENTS,
-                         "measurements: actual=%s, expected=%s" %
-                         (meta_data["measurements"],
-                          sht31_config.MEASUREMENTS))
+                         f"measurements: actual={meta_data['measurements']}, "
+                         f"expected={sht31_config.MEASUREMENTS}")
 
         # verify metadata
         test_cases = {
@@ -135,8 +133,8 @@ class IntegrationTest(utc.UnitTest):
             min_val = limits["min_val"]
             max_val = limits["max_val"]
             self.assertTrue(min_val <= return_val <= max_val,
-                            "'%s'=%s, not between %s and %s" %
-                            (param, return_val, min_val, max_val))
+                            f"'{param}'={return_val}, not between {min_val} "
+                            f"and {max_val}")
         # cleanup
         del Zone
         del Thermostat

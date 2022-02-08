@@ -268,9 +268,9 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
             None
         """
         if not isinstance(Thermostat_obj.device_id, int):
-            raise TypeError("device_id is type %s, "
-                            "expected type 'int'" %
-                            type(Thermostat_obj.device_id))
+            raise TypeError(
+                f"device_id is type {type(Thermostat_obj.device_id)}, "
+                f"expected type 'int'")
 
         # call both parent class __init__
         self.args = [Thermostat_obj.device_id, Thermostat_obj]
@@ -649,9 +649,10 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
             None
         """
         # current temp as measured by thermostat
-        util.log_msg("display temp=%s" %
-                     util.temp_value_with_units(self.get_display_temp()),
-                     mode=util.BOTH_LOG, func_name=1)
+        util.log_msg(f"display temp="
+                     f"{util.temp_value_with_units(self.get_display_temp())}",
+                     mode=util.BOTH_LOG,
+                     func_name=1)
 
         # get switch position
         if switch_position is None:
@@ -662,12 +663,14 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
                 self.system_switch_position[self.HEAT_MODE]:
             util.log_msg(f"heat mode={self.is_heat_mode()}",
                          mode=util.BOTH_LOG)
-            util.log_msg("heat setpoint=%s" %
-                         self.get_heat_setpoint(), mode=util.BOTH_LOG)
+            util.log_msg(
+                f"heat setpoint={self.get_heat_setpoint()}",
+                mode=util.BOTH_LOG)
             # util.log_msg("heat setpoint raw=%s" %
             #              zone.get_heat_setpoint_raw())
-            util.log_msg("schedule heat sp=%s" %
-                         self.get_schedule_heat_sp(), mode=util.BOTH_LOG)
+            util.log_msg(
+                f"schedule heat sp={self.get_schedule_heat_sp()}",
+                mode=util.BOTH_LOG)
             util.log_msg("\n", mode=util.BOTH_LOG)
 
         # cooling status
@@ -675,23 +678,28 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
                 self.system_switch_position[self.COOL_MODE]:
             util.log_msg(f"cool mode={self.is_cool_mode()}",
                          mode=util.BOTH_LOG)
-            util.log_msg("cool setpoint=%s" %
-                         self.get_cool_setpoint(), mode=util.BOTH_LOG)
+            util.log_msg(
+                f"cool setpoint={self.get_cool_setpoint()}",
+                mode=util.BOTH_LOG)
             # util.log_msg("cool setpoint raw=%s" %
             #              zone.get_cool_setpoint_raw(), mode=util.BOTH_LOG)
-            util.log_msg("schedule cool sp=%s" %
-                         self.get_schedule_cool_sp(), mode=util.BOTH_LOG)
+            util.log_msg(
+                f"schedule cool sp={self.get_schedule_cool_sp()}",
+                mode=util.BOTH_LOG)
             util.log_msg("\n", mode=util.BOTH_LOG)
 
         # hold settings
-        util.log_msg("is in vacation hold mode=%s" %
-                     self.get_is_invacation_hold_mode(), mode=util.BOTH_LOG)
+        util.log_msg(
+            f"is in vacation hold mode={self.get_is_invacation_hold_mode()}",
+            mode=util.BOTH_LOG)
         util.log_msg(f"vacation hold={self.get_vacation_hold()}",
                      mode=util.BOTH_LOG)
-        util.log_msg("vacation hold until time=%s" %
-                     self.get_vacation_hold_until_time(), mode=util.BOTH_LOG)
-        util.log_msg("temporary hold until time=%s" %
-                     self.get_temporary_hold_until_time(), mode=util.BOTH_LOG)
+        util.log_msg(
+            f"vacation hold until time={self.get_vacation_hold_until_time()}",
+            mode=util.BOTH_LOG)
+        util.log_msg(f"temporary hold until time="
+                     f"{self.get_temporary_hold_until_time()}",
+                     mode=util.BOTH_LOG)
 
     def refresh_zone_info(self) -> None:
         """
@@ -733,11 +741,11 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
                 # log the mitigated failure
                 if trial_number > 1:
                     email_notification.send_email_alert(
-                        subject=("intermittent JSON decode error "
-                                 "during refresh zone"),
-                        body="%s: trial %s of %s at %s" %
-                        (util.get_function_name(), trial_number,
-                         number_of_retries, time_now))
+                        subject=(
+                            "intermittent JSON decode error "
+                            "during refresh zone"),
+                        body=f"{util.get_function_name()}: trial "
+                        f"{trial_number} of {number_of_retries} at {time_now}")
                 for zone_data in all_zones_info:
                     if zone_data['DeviceID'] == self.device_id:
                         pyhtcc.logger.debug(f"Refreshed zone info for \
@@ -749,10 +757,8 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
         # log fatal failure
         email_notification.send_email_alert(
             subject=("fatal JSON decode error during refresh zone"),
-            body="{}: trial {} of {} at {}".format(util.get_function_name(),
-                                                   trial_number,
-                                                   number_of_retries,
-                                                   time_now))
+            body=(f"{util.get_function_name()}: trial {trial_number} of "
+                  f"{number_of_retries} at {time_now}"))
         raise pyhtcc.ZoneNotFoundError(f"Missing device: {self.device_id}")
 
 

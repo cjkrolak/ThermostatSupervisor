@@ -61,8 +61,8 @@ class FunctionalIntegrationTest(IntegrationTest,
         result = self.Thermostat.get_ui_data(self.Thermostat.zone_number)
         print(f"Thermostat.get_ui_data returned {result}")
         self.assertTrue(isinstance(result, dict),
-                        "result returned is type (%s), "
-                        "expected a dictionary" % type(result))
+                        f"result returned is type ({type(result)}), "
+                        "expected a dictionary")
 
     def test_thermostat_get_ui_data_param(self):
         """Verify Thermostat.get_ui_data_param() function"""
@@ -74,11 +74,11 @@ class FunctionalIntegrationTest(IntegrationTest,
         expected_data_type = dict
         result = self.Thermostat.get_ui_data_param(self.Thermostat.zone_number,
                                                    param)
-        print("Thermostat.get_ui_data_param(%s, %s) returned %s" %
-              (self.Thermostat.zone_number, param, result))
+        print(f"Thermostat.get_ui_data_param({self.Thermostat.zone_number}, "
+              f" {param}) returned {result}")
         self.assertTrue(isinstance(result, expected_data_type),
-                        "result returned is type (%s), "
-                        "expected a %s" % (type(result), expected_data_type))
+                        f"result returned is type ({type(result)}), expected "
+                        f"a {expected_data_type}")
 
     def test_zone_get_zone_name(self):
         """Verify Zone.get_zone_name() function"""
