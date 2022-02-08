@@ -226,10 +226,12 @@ class FunctionalIntegrationTest(IntegrationTest):
         expected_return_type = dict
         metadata = self.Thermostat.get_all_metadata(
             zone=self.Thermostat.zone_number)
-        self.assertTrue(isinstance(metadata, expected_return_type),
-                        "metadata is type '%s', "
-                        "expected type '%s'" %
-                        (type(metadata), expected_return_type))
+        self.assertTrue(
+            isinstance(
+                metadata,
+                expected_return_type),
+            f"metadata is type '{type(metadata)}', "
+            f"expected type '{expected_return_type}'")
 
     def test_get_meta_data(self):
         """
@@ -244,10 +246,12 @@ class FunctionalIntegrationTest(IntegrationTest):
         metadata = self.Thermostat.get_metadata(
             zone=self.Thermostat.zone_number,
             parameter=parameter)
-        self.assertTrue(isinstance(metadata, expected_return_type),
-                        "parameter='%s', metadata is type '%s', "
-                        "expected type '%s'" %
-                        (parameter, type(metadata), expected_return_type))
+        self.assertTrue(
+            isinstance(
+                metadata,
+                expected_return_type),
+            f"parameter='{parameter}', metadata is type '{type(metadata)}', "
+            f"expected type '{expected_return_type}'")
 
         # test parameter case
         parameter = self.metadata_field
@@ -255,11 +259,12 @@ class FunctionalIntegrationTest(IntegrationTest):
         metadata = self.Thermostat.get_metadata(
             zone=self.Thermostat.zone_number,
             parameter=parameter)
-        self.assertTrue(isinstance(metadata, expected_return_type),
-                        "parameter='%s', value=%s, metadata is type '%s', "
-                        "expected type '%s'" %
-                        (parameter, metadata, type(metadata),
-                         expected_return_type))
+        self.assertTrue(
+            isinstance(
+                metadata,
+                expected_return_type),
+            f"parameter='{parameter}', value={metadata}, metadata is type "
+            f"'{type(metadata)}', expected type '{expected_return_type}'")
 
 
 @unittest.skipIf(not ENABLE_SUPERVISE_INTEGRATION_TESTS,
@@ -294,8 +299,9 @@ class PerformanceIntegrationTest(IntegrationTest):
 
         # measure thermostat response time
         measurements = self.timing_measurements
-        print("%s Thermostat zone %s response times for %s measurements..." %
-              (self.Zone.thermostat_type, self.Zone.zone_number, measurements))
+        print(f"{self.Zone.thermostat_type} Thermostat zone "
+              f"{self.Zone.zone_number} response times for {measurements} "
+              f"measurements...")
         meas_data = \
             self.Zone.measure_thermostat_response_time(measurements)
         print("network timing stats (sec)")
@@ -303,16 +309,16 @@ class PerformanceIntegrationTest(IntegrationTest):
         ppp.pprint(meas_data)
 
         # fail test if any measurement fails the limit.
-        self.assertTrue(meas_data['max'] <= self.timeout_limit,
-                        "max value observed (%s) is greater than "
-                        "timout setting (%s)" % (meas_data['max'],
-                                                 self.timeout_limit))
+        self.assertTrue(
+            meas_data['max'] <= self.timeout_limit,
+            f"max value observed ({meas_data['max']}) is greater than timout"
+            f" setting ({self.timeout_limit})")
 
         # fail test if thermostat timing margin is poor vs. 6 sigma value
-        self.assertTrue(meas_data['6sigma_upper'] <= self.timeout_limit,
-                        "6 sigma timing margin (%s) is greater than "
-                        "timout setting (%s)" % (meas_data['6sigma_upper'],
-                                                 self.timeout_limit))
+        self.assertTrue(
+            meas_data['6sigma_upper'] <= self.timeout_limit,
+            f"6 sigma timing margin ({meas_data['6sigma_upper']}) is greater "
+            f"than timout setting ({self.timeout_limit})")
 
     def test_temperature_repeatability(self):
         """
@@ -323,10 +329,10 @@ class PerformanceIntegrationTest(IntegrationTest):
 
         # measure thermostat temp repeatability
         measurements = self.temp_repeatability_measurements
-        print("%s Thermostat zone %s temperature repeatability for %s "
-              "measurements with %s sec delay between each measurement..." %
-              (self.Zone.thermostat_type, self.Zone.zone_number, measurements,
-               self.poll_interval_sec))
+        print(f"{self.Zone.thermostat_type} Thermostat zone "
+              f"{self.Zone.zone_number} temperature repeatability for "
+              f"{measurements} measurements with {self.poll_interval_sec} "
+              f"sec delay between each measurement...")
         meas_data = self.Zone.measure_thermostat_repeatability(
             measurements, self.poll_interval_sec)
         print("temperature repeatability stats (deg F)")
@@ -337,9 +343,8 @@ class PerformanceIntegrationTest(IntegrationTest):
         act_val = meas_data['stdev']
         self.assertTrue(
             act_val <= self.temp_stdev_limit,
-            "temperature stdev (%s) is greater than "
-            "temp repeatability limit (%s)" % (act_val,
-                                               self.temp_stdev_limit))
+            f"temperature stdev ({act_val}) is greater than temp repeatability"
+            f" limit ({self.temp_stdev_limit})")
 
     def test_humidity_repeatability(self):
         """
@@ -355,10 +360,10 @@ class PerformanceIntegrationTest(IntegrationTest):
 
         # measure thermostat humidity repeatability
         measurements = self.temp_repeatability_measurements
-        print("%s Thermostat zone %s humidity repeatability for %s "
-              "measurements with %s sec delay betweeen each measurement..." %
-              (self.Zone.thermostat_type, self.Zone.zone_number, measurements,
-               self.poll_interval_sec))
+        print(f"{self.Zone.thermostat_type} Thermostat zone "
+              f"{self.Zone.zone_number} humidity repeatability for "
+              f"{measurements} measurements with {self.poll_interval_sec} "
+              f"sec delay betweeen each measurement...")
         meas_data = self.Zone.measure_thermostat_repeatability(
             measurements, self.poll_interval_sec,
             self.Zone.get_display_humidity)
@@ -370,9 +375,8 @@ class PerformanceIntegrationTest(IntegrationTest):
         act_val = meas_data['stdev']
         self.assertTrue(
             act_val <= self.humidity_stdev_limit,
-            "humidity stdev (%s) is greater than "
-            "humidity repeatability limit (%s)" %
-            (act_val, self.humidity_stdev_limit))
+            f"humidity stdev ({act_val}) is greater than humidity "
+            f"repeatability limit ({self.humidity_stdev_limit})")
 
 
 def run_all_tests():
@@ -420,8 +424,10 @@ def parse_unit_test_runtime_parameters():
 
 if __name__ == "__main__":
     parse_unit_test_runtime_parameters()
-    print("DEBUG: ENABLE_FUNCTIONAL_INTEGRATION_TESTS=%s" %
-          ENABLE_FUNCTIONAL_INTEGRATION_TESTS)
-    print("DEBUG: ENABLE_PERFORMANCE_INTEGRATION_TESTS=%s" %
-          ENABLE_PERFORMANCE_INTEGRATION_TESTS)
+    print(
+        f"DEBUG: ENABLE_FUNCTIONAL_INTEGRATION_TESTS="
+        f"{ENABLE_FUNCTIONAL_INTEGRATION_TESTS}")
+    print(
+        f"DEBUG: ENABLE_PERFORMANCE_INTEGRATION_TESTS="
+        f"{ENABLE_PERFORMANCE_INTEGRATION_TESTS}")
     run_all_tests()

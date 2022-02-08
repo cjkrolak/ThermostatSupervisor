@@ -80,8 +80,8 @@ class Test(utc.UnitTest):
                 self.Zone.store_current_mode()
                 print(f"current mode(post)={self.Zone.current_mode}")
                 self.assertEqual(test_case[1], self.Zone.current_mode,
-                                 "Zone.store_current_mode() failed to "
-                                 "cache mode=%s" % test_case[1])
+                                 f"Zone.store_current_mode() failed to cache"
+                                 f" mode={test_case[1]}")
 
                 # confirm verify_current_mode()
                 none_act = self.Zone.verify_current_mode(None)
@@ -261,8 +261,8 @@ class Test(utc.UnitTest):
             else:
                 return_val = value["key"]()
             self.assertTrue(isinstance(return_val, expected_type),
-                            "func=%s, expected type=%s, actual type=%s" %
-                            (key, expected_type, type(return_val)))
+                            f"func={key}, expected type={expected_type}, "
+                            f"actual type={type(return_val)}")
 
     def test_validate_numeric(self):
         """Test validate_numeric() function."""
@@ -274,9 +274,9 @@ class Test(utc.UnitTest):
                                                         "test_case")
                 self.assertEqual(
                     expected_val, actual_val,
-                    "expected return value=%s, type(%s), actual=%s,"
-                    "type(%s)" % (expected_val, type(expected_val), actual_val,
-                                  type(actual_val)))
+                    f"expected return value={expected_val}, "
+                    f"type({type(expected_val)}), "
+                    f"actual={actual_val},type({type(actual_val)})")
             else:
                 with self.assertRaises(TypeError):
                     print("attempting to input bad parameter type, "
@@ -322,9 +322,8 @@ class Test(utc.UnitTest):
                   f"expected mode={expected_mode}")
             new_mode = self.Zone.revert_thermostat_mode(test_case)
             self.assertEqual(new_mode, expected_mode,
-                             "reverting to %s mode failed, "
-                             "new mode is '%s', expected '%s'" %
-                             (test_case, new_mode, expected_mode))
+                             f"reverting to {test_case} mode failed, new mode"
+                             f" is '{new_mode}', expected '{expected_mode}'")
             self.Zone.current_mode = test_case
 
     def test_measure_thermostat_response_time(self):
@@ -341,9 +340,9 @@ class Test(utc.UnitTest):
                         f"return data is type({type(meas_data)}), "
                         f"expected a dict")
         self.assertEqual(meas_data["measurements"], measurements,
-                         "number of measurements in return data(%s) doesn't "
-                         "match number of masurements requested(%s)" %
-                         (meas_data["measurements"], measurements))
+                         f"number of measurements in return data("
+                         f"{meas_data['measurements']}) doesn't match number "
+                         f"of masurements requested({measurements})")
 
     def test_get_current_mode(self):
         """
@@ -451,11 +450,10 @@ class Test(utc.UnitTest):
                                    "cool_deviation", "hold_mode"]:
                     self.assertEqual(ret_dict[return_val],
                                      test_cases[test_case][return_val],
-                                     "test case '%s' parameter '%s', "
-                                     "result=%s, expected=%s" %
-                                     (test_case, return_val,
-                                      ret_dict[return_val],
-                                      test_cases[test_case][return_val]))
+                                     f"test case '{test_case}' parameter "
+                                     f"'{return_val}', result="
+                                     f"{ret_dict[return_val]}, expected="
+                                     f"{test_cases[test_case][return_val]}")
 
                 # verify humidity reporting
                 if test_cases[test_case]["humidity"]:
@@ -681,35 +679,35 @@ class Test(utc.UnitTest):
                 current_setpoint = self.Zone.current_setpoint
 
                 # revert setpoint
-                msg = ("reverting setpoint from %s to %s" %
-                       (util.temp_value_with_units(current_setpoint),
-                        util.temp_value_with_units(new_setpoint)))
+                msg = (f"reverting setpoint from "
+                       f"{util.temp_value_with_units(current_setpoint)} to "
+                       f"{util.temp_value_with_units(new_setpoint)}")
                 self.Zone.revert_temperature_deviation(new_setpoint, msg)
 
                 # verify setpoint
                 actual_setpoint = self.Zone.current_setpoint
-                self.assertEqual(new_setpoint, actual_setpoint,
-                                 "reverting setpoint failed, actual=%s, "
-                                 "expected=%s" % (util.temp_value_with_units(
-                                     actual_setpoint),
-                                     util.temp_value_with_units(new_setpoint)))
+                self.assertEqual(
+                    new_setpoint, actual_setpoint,
+                    f"reverting setpoint failed, actual="
+                    f"{util.temp_value_with_units(actual_setpoint)}, expected="
+                    f"{util.temp_value_with_units(new_setpoint)}")
 
             # verify function default behavior
             new_setpoint = self.Zone.current_setpoint = 56
 
             # revert setpoint
-            msg = ("reverting setpoint from %s to %s" %
-                   (util.temp_value_with_units(actual_setpoint),
-                    util.temp_value_with_units(new_setpoint)))
+            msg = (f"reverting setpoint from "
+                   f"{util.temp_value_with_units(actual_setpoint)} to "
+                   f"{util.temp_value_with_units(new_setpoint)}")
             self.Zone.revert_temperature_deviation(msg=msg)
 
             # verify setpoint
             actual_setpoint = self.Zone.current_setpoint
-            self.assertEqual(new_setpoint, actual_setpoint,
-                             "reverting setpoint failed, actual=%s, "
-                             "expected=%s" % (util.temp_value_with_units(
-                                 actual_setpoint),
-                                 util.temp_value_with_units(new_setpoint)))
+            self.assertEqual(
+                new_setpoint, actual_setpoint,
+                f"reverting setpoint failed, actual="
+                f"{util.temp_value_with_units(actual_setpoint)}, expected="
+                f"{util.temp_value_with_units(new_setpoint)}")
 
         finally:
             self.restore_functions()

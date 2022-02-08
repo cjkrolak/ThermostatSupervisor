@@ -32,8 +32,9 @@ def display_session_settings(thermostat_type, zone,
     util.log_msg.file_name = (thermostat_type + "_" +
                               str(zone) + ".txt")
 
-    util.log_msg("%s thermostat zone %s monitoring service\n" %
-                 (thermostat_type, zone), mode=util.BOTH_LOG)
+    util.log_msg(
+        f"{thermostat_type} thermostat zone {zone} monitoring service\n",
+        mode=util.BOTH_LOG)
 
     util.log_msg("session settings:", mode=util.BOTH_LOG)
 
@@ -58,18 +59,21 @@ def display_runtime_settings(Zone):
         None
     """
     # poll time setting:
-    util.log_msg("polling time set to %.1f minutes" %
-                 (Zone.poll_time_sec / 60.0), mode=util.BOTH_LOG)
+    util.log_msg(
+        f"polling time set to {Zone.poll_time_sec / 60.0:.1f} minutes",
+        mode=util.BOTH_LOG)
 
     # reconnection time to thermostat server:
-    util.log_msg("server re-connect time set to %.1f minutes" %
-                 (Zone.connection_time_sec / 60.0),
-                 mode=util.BOTH_LOG)
+    util.log_msg(
+        f"server re-connect time set to {Zone.connection_time_sec / 60.0:.1f}"
+        f" minutes",
+        mode=util.BOTH_LOG)
 
     # tolerance to set point:
-    util.log_msg("tolerance to set point is set to %s" %
-                 util.temp_value_with_units(Zone.tolerance_degrees),
-                 mode=util.BOTH_LOG)
+    util.log_msg(
+        f"tolerance to set point is set to "
+        f"{util.temp_value_with_units(Zone.tolerance_degrees)}",
+        mode=util.BOTH_LOG)
 
 
 def supervisor(thermostat_type, zone_str):
@@ -112,8 +116,10 @@ def supervisor(thermostat_type, zone_str):
         mod = api.load_hardware_library(thermostat_type)
         zone_num = api.user_inputs["zone"]
 
-        util.log_msg("connecting to thermostat zone %s (session:%s)..." %
-                     (zone_num, session_count), mode=util.BOTH_LOG)
+        util.log_msg(
+            f"connecting to thermostat zone {zone_num} "
+            f"(session:{session_count})...",
+            mode=util.BOTH_LOG)
         Thermostat = mod.ThermostatClass(zone_num)
 
         time0 = time.time()  # connection timer
@@ -183,8 +189,9 @@ def supervisor(thermostat_type, zone_str):
         session_count += 1
 
     # clean-up and exit
-    util.log_msg("\n %s measurements completed, exiting program\n" %
-                 measurement, mode=util.BOTH_LOG)
+    util.log_msg(
+        f"\n {measurement} measurements completed, exiting program\n",
+        mode=util.BOTH_LOG)
 
     # delete packages
     del Zone

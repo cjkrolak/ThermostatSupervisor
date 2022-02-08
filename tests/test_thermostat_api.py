@@ -49,8 +49,8 @@ class Test(utc.UnitTest):
         try:
             self.assertFalse(api.verify_required_env_variables(
                 self.tstat, "0"),
-                "test passed with missing key '%s',"
-                " should have failed" % missing_key)
+                f"test passed with missing key '{missing_key}', "
+                f"should have failed")
         except KeyError:
             print("KeyError raised as expected for missing key")
         else:
@@ -148,8 +148,8 @@ class Test(utc.UnitTest):
                 api.parse_runtime_parameter(key, int, default_value,
                                             range(0, 10), test_list)
             self.assertEqual(tolerance_degrees_input, default_value,
-                             "actual=%s, expected=%s" %
-                             (tolerance_degrees_input, default_value))
+                             f"actual={tolerance_degrees_input}, "
+                             f"expected={default_value}")
         finally:
             test_list = test_list_backup  # restore original
 
@@ -192,8 +192,8 @@ class Test(utc.UnitTest):
             emulator_config.ALIAS,
             expected_result,
             argv_list=None)
-        self.assertTrue(argv0 in expected_result, "actual=%s, expected=%s" %
-                        (argv0, expected_result))
+        self.assertTrue(argv0 in expected_result, f"actual={argv0}, "
+                        f"expected={expected_result}")
 
     def test_parse_all_runtime_parameters(self):
         """
@@ -239,8 +239,8 @@ class Test(utc.UnitTest):
 
                 self.assertTrue(return_list[
                     "thermostat_type"] in expected_result,
-                    "actual=%s, expected=%s" %
-                    (return_list["thermostat_type"], expected_result))
+                    f"actual={return_list['thermostat_type']}, "
+                    f"expected={expected_result}")
 
     def test_load_hardware_library(self):
         """
@@ -250,8 +250,8 @@ class Test(utc.UnitTest):
         pkg = api.load_hardware_library(emulator_config.ALIAS)
         print(f"default thermostat returned package type {type(pkg)}")
         self.assertTrue(isinstance(pkg, object),
-                        "dynamic_module_import() returned type(%s),"
-                        " expected an object" % type(pkg))
+                        f"dynamic_module_import() returned type({type(pkg)}), "
+                        f"expected an object")
         del sys.modules[pkg.__name__]
         del pkg
 
@@ -260,8 +260,8 @@ class Test(utc.UnitTest):
             print("attempting to access 'bogus' dictionary key, "
                   "expect exception...")
             pkg = api.load_hardware_library("bogus")
-            print("'bogus' returned package type %s, "
-                  "exception should have been raised" % type(pkg))
+            print(f"'bogus' returned package type {type(pkg)}, exception "
+                  f"should have been raised")
             del pkg
         print("test passed")
 
@@ -288,8 +288,8 @@ class Test(utc.UnitTest):
                     parameters["measurement"])
                 exp_result = parameters["exp_result"]
                 self.assertEqual(exp_result, act_result,
-                                 "test case '%s', expected=%s, actual=%s" %
-                                 (test_case, exp_result, act_result))
+                                 f"test case '{test_case}', "
+                                 f"expected={exp_result}, actual={act_result}")
         finally:
             api.user_inputs["measurements"] = max_measurement_bkup
 

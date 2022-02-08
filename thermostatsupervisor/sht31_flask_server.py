@@ -152,9 +152,9 @@ class Sensors:
         try:
             bus.write_i2c_block_data(i2c_addr, register, data)
         except OSError as exc:
-            print("FATAL ERROR(%s): i2c device at address %s is "
-                  "not responding" %
-                  (util.get_function_name(), hex(i2c_addr)))
+            print(
+                f"FATAL ERROR({util.get_function_name()}): i2c device at "
+                f"address {hex(i2c_addr)} is not responding")
             raise exc
         time.sleep(0.5)
 
@@ -179,9 +179,9 @@ class Sensors:
                                                register,
                                                length)
         except OSError as exc:
-            print("FATAL ERROR(%s): i2c device at address %s is "
-                  "not responding" %
-                  (util.get_function_name(), hex(i2c_addr)))
+            print(
+                f"FATAL ERROR({util.get_function_name()}): i2c device at "
+                f"address {hex(i2c_addr)} is not responding")
             raise exc
         return response
 

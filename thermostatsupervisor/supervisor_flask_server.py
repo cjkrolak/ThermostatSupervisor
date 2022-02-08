@@ -85,8 +85,8 @@ def index():
         thermostat_type = user_inputs["thermostat_type"]
         zone = user_inputs["zone"]
         measurements = user_inputs["measurements"]
-        title = ("%s thermostat zone %s, %s measurements" %
-                 (thermostat_type, zone, measurements))
+        title = (f"{thermostat_type} thermostat zone {zone}, "
+                 f"{measurements} measurements")
         yield f"<!doctype html><title>{title}</title>"
 
         # runtime variabless

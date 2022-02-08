@@ -36,9 +36,8 @@ class EnvironmentTests(utc.UnitTest):
         """
         for env_key in ["GMAIL_USERNAME", "GMAIL_PASSWORD"]:
             buff = util.get_env_variable(env_key)
-            print("env${}={}".format(env_key,
-                                     [buff["value"],
-                                      "(hidden)"]['PASSWORD' in env_key]))
+            print(f"env${env_key}="
+                  f"{[buff['value'], '(hidden)']['PASSWORD' in env_key]}")
             self.assertEqual(buff["status"], util.NO_ERROR)
             self.assertGreater(len(buff["value"]), 0)
 
@@ -81,8 +80,8 @@ class EnvironmentTests(utc.UnitTest):
         ]
 
         for test_case in test_cases:
-            print("testing for '%s' at %s, expect %s" %
-                  (test_case[0], test_case[1], test_case[2]))
+            print(f"testing for '{test_case[0]}' at {test_case[1]}, expect "
+                  f"{test_case[2]}")
             result, ip_address = util.is_host_on_local_net(test_case[0],
                                                            test_case[1])
             # verify IP length returned
@@ -90,10 +89,9 @@ class EnvironmentTests(utc.UnitTest):
                 ip_length_symbol = ">="
                 ip_length_min = 7
                 self.assertTrue(len(ip_address) >= ip_length_min,
-                                "ip_address returned (%s) did not meet length "
-                                "expectations (%s)" %
-                                (ip_address,
-                                 (ip_length_symbol + str(ip_length_min))))
+                                f"ip_address returned ({ip_address}) did not "
+                                f"meet length expectations ("
+                                f"{ip_length_symbol + str(ip_length_min)})")
             else:
                 self.assertTrue(ip_address is None,
                                 f"ip_address returned ({ip_address}) "
@@ -101,8 +99,8 @@ class EnvironmentTests(utc.UnitTest):
 
             # verify expected result
             self.assertEqual(result, test_case[2],
-                             "test_case=%s, expected=%s, actual=%s" %
-                             (test_case[0], test_case[2], result))
+                             f"test_case={test_case[0]}, expected="
+                             f"{test_case[2]}, actual={result}")
 
     def test_get_python_version(self):
         """Verify get_python_version()."""
@@ -111,15 +109,15 @@ class EnvironmentTests(utc.UnitTest):
         # verify major version
         min_major = int(util.MIN_PYTHON_MAJOR_VERSION)
         self.assertTrue(major_version >= min_major,
-                        "python major version (%s) is not gte min required "
-                        "value (%s)" % (major_version, min_major))
+                        f"python major version ({major_version}) is not gte "
+                        f"min required value ({min_major})")
 
         # verify minor version
         min_minor = int(str(util.MIN_PYTHON_MAJOR_VERSION)[
             str(util.MIN_PYTHON_MAJOR_VERSION).find(".") + 1:])
         self.assertTrue(minor_version >= min_minor,
-                        "python minor version (%s) is not gte min required "
-                        "value (%s)" % (minor_version, min_minor))
+                        f"python minor version ({minor_version}) is not gte "
+                        f"min required value ({min_minor})")
 
         # error checking invalid input parmeter
         with self.assertRaises(TypeError):
@@ -153,8 +151,8 @@ class EnvironmentTests(utc.UnitTest):
         pkg = util.dynamic_module_import(package_name)
         print(f"default thermostat returned package type {type(pkg)}")
         self.assertTrue(isinstance(pkg, object),
-                        "dynamic_module_import() returned type(%s),"
-                        " expected an object" % type(pkg))
+                        f"dynamic_module_import() returned type({type(pkg)}),"
+                        f" expected an object")
         del sys.modules[package_name]
         del pkg
 
@@ -273,18 +271,18 @@ class FileAndLoggingTests(utc.UnitTest):
         file_size_bytes_same = util.log_rotate_file(full_path, file_size_bytes,
                                                     file_size_bytes + 1)
         self.assertEqual(file_size_bytes, file_size_bytes_same,
-                         "log_rotate_file under max limit, file size should "
-                         "not change, expected size=%s, actual size=%s" %
-                         (file_size_bytes, file_size_bytes_same))
+                         f"log_rotate_file under max limit, file size should "
+                         f"not change, expected size={file_size_bytes}, actual"
+                         f" size={file_size_bytes_same}")
 
         # check while above max limit, should rotate file and return 0
         file_size_bytes_new = util.log_rotate_file(full_path, file_size_bytes,
                                                    file_size_bytes - 1)
         expected_size = 0
         self.assertEqual(expected_size, file_size_bytes_new,
-                         "log_rotate_file above max limit, file size should "
-                         "be reset to 0, expected size=%s, actual size=%s" %
-                         (expected_size, file_size_bytes_new))
+                         f"log_rotate_file above max limit, file size should "
+                         f"be reset to 0, expected size={expected_size}, "
+                         f"actual size={file_size_bytes_new}")
 
     def test_write_to_file(self):
         """
@@ -305,17 +303,17 @@ class FileAndLoggingTests(utc.UnitTest):
         bytes_expected = bytes_written + [0, 1][util.is_windows_environment()]
         bytes_present = util.get_file_size_bytes(full_path)
         self.assertEqual(bytes_expected, bytes_present,
-                         "writing to non-existent file, bytes written=%s, "
-                         "file size=%s" % (bytes_expected, bytes_present))
+                         f"writing to non-existent file, bytes written="
+                         f"{bytes_expected}, file size={bytes_present}")
 
         # write to existing file with reset, bytes written == bytes read
         bytes_written = util.write_to_file(full_path, 0, msg)
         bytes_expected = bytes_written + [0, 1][util.is_windows_environment()]
         bytes_present = util.get_file_size_bytes(full_path)
         self.assertEqual(bytes_expected, bytes_present,
-                         "writing to existing file with override option, "
-                         "bytes written=%s, "
-                         "file size=%s" % (bytes_expected, bytes_present))
+                         f"writing to existing file with override option, "
+                         f"bytes written={bytes_expected}, "
+                         f"file size={bytes_present}")
 
         # write to existing file, bytes written < bytes read
         file_size_bytes = util.get_file_size_bytes(full_path)
@@ -324,8 +322,9 @@ class FileAndLoggingTests(utc.UnitTest):
                           [0, 1][util.is_windows_environment()])
         bytes_present = util.get_file_size_bytes(full_path)
         self.assertEqual(bytes_expected, bytes_present,
-                         "writing to existent file, bytes expected=%s, "
-                         "file size=%s" % (bytes_expected, bytes_present))
+                         f"writing to existent file, bytes "
+                         f"expected={bytes_expected}, "
+                         f"file size={bytes_present}")
 
     def test_get_full_file_path(self):
         """
@@ -371,8 +370,8 @@ class MetricsTests(utc.UnitTest):
         for test_case in [44, -1, 101, 2, "13", "-13", None]:
             for precision in [0, 1, 2]:
                 for disp_unit in ['F', 'c']:
-                    print("test case: value=%s, precision=%s, units=%s" %
-                          (test_case, precision, disp_unit))
+                    print(f"test case: value={test_case}, precision="
+                          f"{precision}, units={disp_unit}")
                     if test_case is None:
                         formatted = "None"
                     else:
@@ -385,9 +384,9 @@ class MetricsTests(utc.UnitTest):
                                                             disp_unit,
                                                             precision)
                     self.assertEqual(expected_val, actual_val,
-                                     "test case: %s, expected_val=%s, "
-                                     "actual_val=%s" %
-                                     (test_case, expected_val, actual_val))
+                                     f"test case: {test_case}, expected_val="
+                                     f"{expected_val}, actual_val="
+                                     f"{actual_val}")
 
         # test failing case
         with self.assertRaises(ValueError):
@@ -399,8 +398,8 @@ class MetricsTests(utc.UnitTest):
         for test_case in [44, -1, 101, 2, "13", "-13", None]:
             for precision in [0, 1, 2]:
                 for disp_unit in ['RH']:
-                    print("test case: value=%s, precision=%s, units=%s" %
-                          (test_case, precision, disp_unit))
+                    print(f"test case: value={test_case}, precision="
+                          f"{precision}, units={disp_unit}")
                     if test_case is None:
                         formatted = "None"
                     else:
@@ -413,9 +412,9 @@ class MetricsTests(utc.UnitTest):
                                                                 disp_unit,
                                                                 precision)
                     self.assertEqual(expected_val, actual_val,
-                                     "test case: %s, expected_val=%s, "
-                                     "actual_val=%s" %
-                                     (test_case, expected_val, actual_val))
+                                     f"test case: {test_case}, expected_val="
+                                     f"{expected_val}, actual_val="
+                                     f"{actual_val}")
 
         # test failing case
         with self.assertRaises(ValueError):
@@ -431,9 +430,8 @@ class MetricsTests(utc.UnitTest):
                 expected_tempf = None  # pass-thru
             else:
                 expected_tempf = tempc * 9.0 / 5 + 32
-            self.assertEqual(expected_tempf, tempf, "test case %s: "
-                             "expected=%s, actual=%s" %
-                             (tempc, expected_tempf, tempf))
+            self.assertEqual(expected_tempf, tempf, f"test case {tempc}: "
+                             f"expected={expected_tempf}, actual={tempf}")
 
         # verify exception cases
         for tempc in ['0', "", "*"]:
@@ -454,9 +452,8 @@ class MetricsTests(utc.UnitTest):
                 expected_tempc = None  # pass-thru
             else:
                 expected_tempc = (tempf - 32) * 5 / 9.0
-            self.assertEqual(expected_tempc, tempc, "test case %s: "
-                             "expected=%s, actual=%s" %
-                             (tempf, expected_tempc, tempc))
+            self.assertEqual(expected_tempc, tempc, f"test case {tempf}: "
+                             f"expected={expected_tempc}, actual={tempc}")
 
         # verify exception case
         for tempf in ['0', "", "*"]:
@@ -494,8 +491,8 @@ class MiscTests(utc.UnitTest):
         print(f"testing util.get_function_name({test})")
         ev_1 = "test_get_function_name"
         result_1 = util.get_function_name(test)
-        self.assertEqual(ev_1, result_1, "test%s: expected=%s, actual=%s" %
-                         (test, ev_1, result_1))
+        self.assertEqual(ev_1, result_1, f"test{test}: expected={ev_1}, "
+                         f"actual={result_1}")
 
         # test 2
         test = 2
@@ -504,8 +501,8 @@ class MiscTests(utc.UnitTest):
                 "_callTestMethod",  # windows
                 ]
         result_1 = util.get_function_name(test)
-        self.assertTrue(result_1 in ev_1, "test%s: expected values=%s, "
-                        "actual=%s" % (test, ev_1, result_1))
+        self.assertTrue(result_1 in ev_1, f"test{test}: expected values={ev_1}"
+                        f", actual={result_1}")
 
     def test_utf8len(self):
         """
@@ -528,16 +525,16 @@ class MiscTests(utc.UnitTest):
         expected_val = ['B']
         actual_val = util.get_key_from_value(test_dict, test_case)
         self.assertTrue(actual_val in expected_val,
-                        "test case: %s, expected_val=%s, actual_val=%s" %
-                        (test_case, expected_val, actual_val))
+                        f"test case: {test_case}, expected_val={expected_val},"
+                        f" actual_val={actual_val}")
 
         # test keys with same value, indeterminant case
         test_case = 1
         expected_val = ['A', 'C']
         actual_val = util.get_key_from_value(test_dict, test_case)
         self.assertTrue(actual_val in expected_val,
-                        "test case: %s, expected_val=%s, actual_val=%s" %
-                        (test_case, expected_val, actual_val))
+                        f"test case: {test_case}, expected_val={expected_val},"
+                        f" actual_val={actual_val}")
 
         # test key not found
         with self.assertRaises(KeyError):
