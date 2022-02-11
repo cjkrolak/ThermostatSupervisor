@@ -1,6 +1,7 @@
 """Common utilitity functions and globals."""
 
 # built-in libraries
+import argparse
 import datetime
 import importlib.util
 import inspect
@@ -19,6 +20,7 @@ from thermostatsupervisor import kumocloud_config
 from thermostatsupervisor import kumolocal_config
 from thermostatsupervisor import mmm_config
 from thermostatsupervisor import sht31_config
+from _ast import mod
 
 PACKAGE_NAME = 'thermostatsupervisor'  # should match name in __init__.py
 
@@ -565,3 +567,234 @@ def dynamic_module_import(name, path=None):
         raise ex
     else:
         return mod
+
+
+def parse_runtime_parameters(argv_list=None, argv_dict=None):
+    """
+    Parse all runtime parameters from list, argv list or named
+    arguments.
+
+    If argv_list is input then algo will default to input list.
+    ElIf hyphen is found in argv the algo will default to named args.
+    inputs:
+       argv_list: list override for sys.argv
+       argv_dict(dict): dictionary of runtime args with these elements:
+        <key>: {  # key = argument name
+            "order": 0,  # order in the argv list
+            "value": None,   # initialized to None
+            "type": str,  # datatype
+            "default": "supervise.py",  # default value
+            "sflag": "-s",  # short flag identifier
+            "lflag": "--script",  # long flag identifier
+            "help": "script name"},  # help text
+            "valid": None,  # valid choices
+    returns:
+      argv_dict(dict)
+    """
+    if argv_list:
+        # argument list input
+        argv_dict = parse_argv_list(argv_list, argv_dict)
+    elif "-" in sys.argv:
+        # named arguments
+        argv_dict = parse_named_arguments(argv_dict)
+    else:
+        # sys.argv parsing
+        argv_dict = parse_argv_list(sys.argv, argv_dict)
+
+    argv_dict = validate_argv_inputs(argv_dict)
+
+    return argv_dict
+
+
+def parse_named_arguments(argv_dict):
+    """
+    Parse all possible named arguments.
+
+    inputs:
+        argv_dict(dict): dictionary of runtime args with these elements:
+        <key>: {  # key = argument name
+            "order": 0,  # order in the argv list
+            "value": None,   # initialized to None
+            "type": str,  # datatype
+            "default": "supervise.py",  # default value
+            "sflag": "-s",  # short flag identifier
+            "lflag": "--script",  # long flag identifier
+            "help": "script name"},  # help text
+            "valid": None,  # valid choices
+    returns:
+        (dict) of all runtime parameters.
+    """
+    # setup parser
+    parser = argparse.ArgumentParser()
+
+    # load parser contents
+    for _, attr in argv_dict.items:
+        parser.add(attr["lflag"], attr["sflag"], help=attr["help"],
+                   type=attr["type"], default=attr["default"])
+
+    # parse the argument list
+    args = parser.parse_args()
+    for key in argv_dict:
+        if key == "script":
+            # add script name
+            argv_dict[key]["value"] = sys.argv[0]
+        else:
+            argv_dict[key]["value"] = getattr(args, key, None)
+
+    return argv_dict
+
+
+def parse_argv_list(argv_list=None, argv_dict=None):
+    """
+    Parse un-named arguments from list.
+
+    inputs:
+        argv_list(list): list of runtime arguments in the order
+        specified in argv_dict "order" fields.
+    returns:
+        (dict) of all runtime parameters.
+    """
+    # if argv list is set use that, else use sys.argv
+    if argv_list:
+        log_msg(
+            f"parse_all_runtime_parameters from user input list: {argv_list}",
+            mode=DEBUG_LOG +
+            CONSOLE_LOG,
+            func_name=1)
+        argv_inputs = argv_list
+    else:
+        log_msg(
+            f"parse_all_runtime_parameters from sys.argv: {sys.argv}",
+            mode=DEBUG_LOG +
+            CONSOLE_LOG,
+            func_name=1)
+        argv_inputs = sys.argv
+
+    # populate dict with values from list
+    for key, attr in argv_dict.items:
+        if attr["order"] <= len(argv_inputs) - 1:
+            argv_dict[key]["value"] = argv_inputs[attr["order"]]
+
+    return argv_dict
+
+
+def validate_argv_inputs(argv_dict):
+    """
+    Validate argv inputs and update reset to defaults if necessary.
+
+    inputs:
+        argv_dict(dict): dictionary of runtime args with these elements:
+        <key>: {  # key = argument name
+            "order": 0,  # order in the argv list
+            "value": None,   # initialized to None
+            "type": str,  # datatype
+            "default": "supervise.py",  # default value
+            "sflag": "-s",  # short flag identifier
+            "lflag": "--script",  # long flag identifier
+            "help": "script name"},  # help text
+            "valid": None,  # valid choices
+    returns:
+        (dict) of all runtime parameters.
+    """
+    for key, attr in argv_dict.items:
+        proposed_value = attr["value"]
+        default_value = attr["default"]
+        # missing value check
+        if proposed_value is None:
+            log_msg(
+                f"key='{key}': argv parameter missing, using default value "
+                f"'{default_value}'",
+                mode=DEBUG_LOG +
+                CONSOLE_LOG,
+                func_name=1)
+            attr["value"] = attr["default"]
+
+        # wrong datatype check
+        elif type(proposed_value) != attr["type"]:
+            log_msg(
+                f"key='{key}': argv parsing error, using default value "
+                f"'{default_value}'",
+                mode=DEBUG_LOG +
+                CONSOLE_LOG,
+                func_name=1)
+            attr["value"] = attr["default"]
+
+        # out of range check
+        elif proposed_value not in attr["valid_range"]:
+            log_msg(
+                f"WARNING: '{proposed_value}' is not a valid choice for "
+                f"'{key}', using default({default_value})",
+                mode=BOTH_LOG,
+                func_name=1)
+            attr["value"] = attr["default"]
+
+    return argv_dict
+
+
+# def parse_runtime_parameter(key, datatype, default_value,
+#                             valid_range, argv_list=None):
+#     """
+#     Parse the runtime parameter parameter list and store in a dict.
+#
+#     inputs:
+#         key(str): name of runtime parameter in api.user_input dict.
+#         datatype(int or str): data type to cast input str to.
+#         default_value(int or str):  default value.
+#         valid_range(list, dict, range): set of valid values.
+#         argv_list(list):  argv or list
+#     returns:
+#         (int or str): user input runtime value.
+#         This function also updates api.user_inputs dictionary
+#     """
+#     # if no override exists in argv_list, use argv value
+#     try:
+#         proposed_val = str(argv_list[get_argv_position(key)])
+#         util.log_msg(
+#             f"key='{key}': using user override value "
+#             f"'{argv_list[get_argv_position(key)]}'",
+#             mode=util.DEBUG_LOG +
+#             util.CONSOLE_LOG,
+#             func_name=1)
+#     except TypeError:
+#         util.log_msg(
+#             f"key='{key}': argv parsing error, using default value "
+#             f"'{default_value}'",
+#             mode=util.DEBUG_LOG +
+#             util.CONSOLE_LOG,
+#             func_name=1)
+#         proposed_val = str(default_value)
+#     except IndexError:
+#         util.log_msg(
+#             f"key='{key}': argv parameter missing, using default value "
+#             f"'{default_value}'",
+#             mode=util.DEBUG_LOG +
+#             util.CONSOLE_LOG,
+#             func_name=1)
+#         proposed_val = str(default_value)
+#
+#     # cast input for these keys into uppercase and target data type.
+#     # all other keys are cast lowercase.
+#     uppercase_key_list = ["target_mode"]
+#
+#     # truncate decimal if converting to int to avoid float str->int error
+#     if datatype == int and '.' in proposed_val:
+#         proposed_val = proposed_val[:proposed_val.index('.')]
+#
+#     # datatype conversion and type cast
+#     if key in uppercase_key_list:
+#         proposed_val = datatype(proposed_val.upper())
+#     else:
+#         proposed_val = datatype(proposed_val.lower())
+#
+#     # check for valid range
+#     if proposed_val != default_value and proposed_val not in valid_range:
+#         util.log_msg(
+#             f"WARNING: '{proposed_val}' is not a valid choice for '{key}', "
+#             f"using default({default_value})",
+#             mode=util.BOTH_LOG,
+#             func_name=1)
+#         proposed_val = default_value
+#
+#     # populate the user_input dictionary
+#     user_inputs[key]["value"] = proposed_val
+#     return proposed_val
