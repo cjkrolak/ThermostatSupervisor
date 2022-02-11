@@ -46,25 +46,76 @@ for config_module in config_modules:
         {config_module.ALIAS: {"required_env_variables":
                                config_module.required_env_variables}})
 
-# runtime overrides
-argv_order = {
-    0: "script",
-    1: "thermostat_type",
-    2: "zone",
-    3: "poll_time_sec",
-    4: "connection_time_sec",
-    5: "tolerance_degrees",
-    6: "target_mode",
-    7: "measurements",
+
+# runtime override parameters
+user_inputs = {
+    "script": {
+        "order": 0,
+        "value": None,
+        "type": str,
+        "default": "supervise.py",
+        "sflag": "-s",
+        "lflag": "--script",
+        "help": "script name"},
+    "thermostat_type": {
+        "order": 1,
+        "value": None, "type": str,
+        "default": DEFAULT_THERMOSTAT,
+        "sflag": "-t",
+        "lflag": "--thermostat_type",
+        "help": "thermostat type"},
+    "zone": {
+        "order": 2,
+        "value": None,
+        "type": int,
+        "default": 0,
+        "sflag": "-z",
+        "lflag": "--zone",
+        "help": "target zone number"},
+    "poll_time_sec": {
+        "order": 3,
+        "value": None,
+        "type": int,
+        "default": 60 * 10,
+        "sflag": "-p",
+        "lflag": "--poll_time",
+        "help": "poll time (sec)"},
+    "connection_time_sec": {
+        "order": 4,
+        "value": None,
+        "type": int,
+        "default": 60 * 10 * 8,
+        "sflag": "-c",
+        "lflag": "--connection_time",
+        "help": "server connection time (sec)"},
+    "target_mode": {
+        "order": 5,
+        "value": None,
+        "type": int,
+        "default": 2,
+        "sflag": "-to",
+        "lflag": "--tolerance",
+        "help": "tolerance (deg F)"},
+    "target_mode": {
+        "order": 6,
+        "value": None,
+        "type": str,
+        "default": "OFF_MODE",
+        "sflag": "-m",
+        "lflag": "--target_mode",
+        "help": "target thermostat mode"},
+    "measurements": {
+        "order": 7,
+        "value": None,
+        "type": int,
+        "default": 10000,
+        "sflag": "-n",
+        "lflag": "--measurements",
+        "help": "number of measurements"},
 }
 
-# initialize user input (runtime overrides) dict
-user_inputs = {}
-for k, v in argv_order.items():
-    user_inputs[v] = None
 
-
-def get_argv_position(key):
+def get_argv_position(input_dict, key):
     """
     Return the argv list position for specified key.
 
@@ -73,7 +124,39 @@ def get_argv_position(key):
     returns:
         (int): position in argv list
     """
-    return util.get_key_from_value(argv_order, key)
+    return user_inputs[key]["order"]
+
+
+def get_key_at_position(input_dict, position):
+    """
+    Return the argv list key for specified position.
+
+    inputs:
+        input_dict(dict): user input dictionary
+        position(int): position in argv list
+    returns:
+        key(str): argv key.
+    """
+    # initialization
+    max_position = -1
+    key_at_max_position = None
+
+    # traverse dict and find first element with order matching desired val
+    for key, val in input_dict.items():
+        # log last k,v pair
+        if val.get("order") > max_position:
+            max_position = val["order"]
+            key_at_max_position = key
+        # return desired key
+        if val.get("order") == position:
+            return key
+
+    # handle -1 case
+    if position == -1:
+        return key_at_max_position
+
+    raise ValueError(f"no element was found in dictionary with "
+                     "'position'={position}")
 
 
 def verify_required_env_variables(tstat, zone_str):
@@ -174,7 +257,7 @@ def parse_runtime_parameter(key, datatype, default_value,
         proposed_val = default_value
 
     # populate the user_input dictionary
-    user_inputs[key] = proposed_val
+    user_inputs[key]["value"] = proposed_val
     return proposed_val
 
 
@@ -183,7 +266,7 @@ def parse_all_runtime_parameters(argv_list=None):
     Parse all possible runtime parameters.
 
     inputs:
-        argv_list(dict): dict of argv overrides
+        argv_list(list): list of argv overrides
     returns:
         (dict) of all runtime parameters.
     """
@@ -267,7 +350,7 @@ def max_measurement_count_exceeded(measurement):
     returns:
         (bool): True if max measurement reached.
     """
-    max_measurements = user_inputs["measurements"]
+    max_measurements = user_inputs["measurements"]["value"]
     if max_measurements is None:
         return False
     elif measurement > max_measurements:

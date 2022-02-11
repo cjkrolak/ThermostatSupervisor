@@ -120,7 +120,7 @@ class Test(utc.UnitTest):
         for key, inputs in test_cases.items():
             print(f"testing parse of input parameter={key}")
             expected_value = inputs["datatype"](test_list[
-                api.get_argv_position(key)])
+                api.user_inputs[key]["order"]])
             actual_value = api.parse_runtime_parameter(
                 key,
                 inputs["datatype"],
@@ -157,7 +157,7 @@ class Test(utc.UnitTest):
         # parse the tolerance override:
         test_list_backup = test_list
         try:
-            key = api.argv_order[len(api.argv_order) - 1]
+            key = api.get_key_at_position(api.user_inputs, -1)
             test_list.pop(-1)  # pop last element
             # defaults should be used
             default_value = 2
@@ -203,18 +203,18 @@ class Test(utc.UnitTest):
 
         return_list = api.parse_all_runtime_parameters(utc.unit_test_argv)
         self.assertEqual(return_list["thermostat_type"],
-                         api.user_inputs["thermostat_type"])
-        self.assertEqual(return_list["zone"], api.user_inputs["zone"])
+                         api.user_inputs["thermostat_type"]["value"])
+        self.assertEqual(return_list["zone"], api.user_inputs["zone"]["value"])
         self.assertEqual(return_list["poll_time_sec"],
-                         api.user_inputs["poll_time_sec"])
+                         api.user_inputs["poll_time_sec"]["value"])
         self.assertEqual(return_list["connection_time_sec"],
-                         api.user_inputs["connection_time_sec"])
+                         api.user_inputs["connection_time_sec"]["value"])
         self.assertEqual(return_list["tolerance_degrees"],
-                         api.user_inputs["tolerance_degrees"])
+                         api.user_inputs["tolerance_degrees"]["value"])
         self.assertEqual(return_list["target_mode"],
-                         api.user_inputs["target_mode"])
+                         api.user_inputs["target_mode"]["value"])
         self.assertEqual(return_list["measurements"],
-                         api.user_inputs["measurements"])
+                         api.user_inputs["measurements"]["value"])
 
         # test default case
         print(f"argv list={sys.argv}")
@@ -279,10 +279,10 @@ class Test(utc.UnitTest):
             "default": {"measurement": 13, "max_measurements": None,
                         "exp_result": False},
         }
-        max_measurement_bkup = api.user_inputs["measurements"]
+        max_measurement_bkup = api.user_inputs["measurements"]["value"]
         try:
             for test_case, parameters in test_cases.items():
-                api.user_inputs["measurements"] = \
+                api.user_inputs["measurements"]["value"] = \
                     parameters["max_measurements"]
                 act_result = api.max_measurement_count_exceeded(
                     parameters["measurement"])
@@ -291,7 +291,7 @@ class Test(utc.UnitTest):
                                  f"test case '{test_case}', "
                                  f"expected={exp_result}, actual={act_result}")
         finally:
-            api.user_inputs["measurements"] = max_measurement_bkup
+            api.user_inputs["measurements"]["value"] = max_measurement_bkup
 
 
 if __name__ == "__main__":

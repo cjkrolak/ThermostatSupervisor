@@ -82,9 +82,9 @@ def index():
     def run_supervise():
         sup.argv = argv  # pass runtime overrides to supervise
         user_inputs = api.parse_all_runtime_parameters(argv)
-        thermostat_type = user_inputs["thermostat_type"]
-        zone = user_inputs["zone"]
-        measurements = user_inputs["measurements"]
+        thermostat_type = user_inputs["thermostat_type"]["value"]
+        zone = user_inputs["zone"]["value"]
+        measurements = user_inputs["measurements"]["value"]
         title = (f"{thermostat_type} thermostat zone {zone}, "
                  f"{measurements} measurements")
         yield f"<!doctype html><title>{title}</title>"
