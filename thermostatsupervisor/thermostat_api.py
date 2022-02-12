@@ -47,6 +47,17 @@ for config_module in config_modules:
                                config_module.required_env_variables}})
 
 
+def update_thermostat_specific_values(thermostat_type):
+    """
+    Update thermostat-specific values in user_inputs dict.
+    """
+    user_inputs["thermostat_type"] = thermostat_type
+    user_inputs["zone"]["valid_range"] = SUPPORTED_THERMOSTATS[
+            thermostat_type]["zones"]
+    user_inputs["target_mode"]["valid_range"] = SUPPORTED_THERMOSTATS[
+            thermostat_type]["modes"]
+
+
 # runtime override parameters
 user_inputs = {
     "script": {
@@ -54,6 +65,7 @@ user_inputs = {
         "value": None,
         "type": str,
         "default": "supervise.py",
+        "valid_range": None,
         "sflag": "-s",
         "lflag": "--script",
         "help": "script name"},
@@ -61,6 +73,7 @@ user_inputs = {
         "order": 1,
         "value": None, "type": str,
         "default": DEFAULT_THERMOSTAT,
+        "valid_range": list(SUPPORTED_THERMOSTATS.keys()),
         "sflag": "-t",
         "lflag": "--thermostat_type",
         "help": "thermostat type"},
@@ -69,6 +82,7 @@ user_inputs = {
         "value": None,
         "type": int,
         "default": 0,
+        "valid_range": None,
         "sflag": "-z",
         "lflag": "--zone",
         "help": "target zone number"},
@@ -77,6 +91,7 @@ user_inputs = {
         "value": None,
         "type": int,
         "default": 60 * 10,
+        "valid_range": range(0, 24 * 60 * 60),
         "sflag": "-p",
         "lflag": "--poll_time",
         "help": "poll time (sec)"},
@@ -85,14 +100,16 @@ user_inputs = {
         "value": None,
         "type": int,
         "default": 60 * 10 * 8,
+        "valid_range": range(0, 24 * 60 * 60 * 60),
         "sflag": "-c",
         "lflag": "--connection_time",
         "help": "server connection time (sec)"},
-    "target_mode": {
+    "tolerance": {
         "order": 5,
         "value": None,
         "type": int,
         "default": 2,
+        "valid_range": range(0, 10),
         "sflag": "-to",
         "lflag": "--tolerance",
         "help": "tolerance (deg F)"},
@@ -101,6 +118,7 @@ user_inputs = {
         "value": None,
         "type": str,
         "default": "OFF_MODE",
+        "valid_range": None,
         "sflag": "-m",
         "lflag": "--target_mode",
         "help": "target thermostat mode"},
@@ -109,6 +127,7 @@ user_inputs = {
         "value": None,
         "type": int,
         "default": 10000,
+        "valid_range": range(1, 1100),
         "sflag": "-n",
         "lflag": "--measurements",
         "help": "number of measurements"},

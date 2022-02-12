@@ -670,10 +670,11 @@ def parse_argv_list(argv_list=None, argv_dict=None):
             func_name=1)
         argv_inputs = sys.argv
 
+    print("DEBUG: argv_dict is type(%s): %s" % (type(argv_dict), argv_dict))
     # populate dict with values from list
-    for key, attr in argv_dict.items:
-        if attr["order"] <= len(argv_inputs) - 1:
-            argv_dict[key]["value"] = argv_inputs[attr["order"]]
+    for k, v in argv_dict.items():
+        if v["order"] <= len(argv_inputs) - 1:
+            argv_dict[k]["value"] = argv_inputs[v["order"]]
 
     return argv_dict
 
@@ -720,7 +721,8 @@ def validate_argv_inputs(argv_dict):
             attr["value"] = attr["default"]
 
         # out of range check
-        elif proposed_value not in attr["valid_range"]:
+        elif (attr["valid_range"] is not None and
+              proposed_value not in attr["valid_range"]):
             log_msg(
                 f"WARNING: '{proposed_value}' is not a valid choice for "
                 f"'{key}', using default({default_value})",
