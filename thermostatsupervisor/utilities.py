@@ -591,6 +591,8 @@ def parse_runtime_parameters(argv_list=None, argv_dict=None):
     returns:
       argv_dict(dict)
     """
+    if not argv_dict:
+        raise ValueError("argv_dict cannot be None")
     if argv_list:
         # argument list input
         argv_dict = parse_argv_list(argv_list, argv_dict)
@@ -606,11 +608,12 @@ def parse_runtime_parameters(argv_list=None, argv_dict=None):
     return argv_dict
 
 
-def parse_named_arguments(argv_dict):
+def parse_named_arguments(argv_list=None, argv_dict=None, description=None):
     """
     Parse all possible named arguments.
 
     inputs:
+        argv_list(list): override sys.argv (for testing)
         argv_dict(dict): dictionary of runtime args with these elements:
         <key>: {  # key = argument name
             "order": 0,  # order in the argv list
@@ -621,24 +624,31 @@ def parse_named_arguments(argv_dict):
             "lflag": "--script",  # long flag identifier
             "help": "script name"},  # help text
             "valid": None,  # valid choices
+        description(str): description for help screen.
     returns:
         (dict) of all runtime parameters.
     """
     # setup parser
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(description=description)
 
     # load parser contents
-    for _, attr in argv_dict.items:
-        parser.add(attr["lflag"], attr["sflag"], help=attr["help"],
-                   type=attr["type"], default=attr["default"])
+    for _, attr in argv_dict.items():
+        print("DEBUG: attr=%s" % attr)
+        parser.add_argument(attr["lflag"], attr["sflag"], help=attr["help"],
+                            type=attr["type"], default=attr["default"])
 
     # parse the argument list
-    args = parser.parse_args()
+    if argv_list is not None:
+        # test mode, override sys.argv
+        args = parser.parse_args(argv_list[1:])
+    else:
+        args = parser.parse_args()
     for key in argv_dict:
         if key == "script":
             # add script name
             argv_dict[key]["value"] = sys.argv[0]
         else:
+            print("DEBUG: args[%s]=%s" % (key, getattr(args, key, None)))
             argv_dict[key]["value"] = getattr(args, key, None)
 
     return argv_dict
@@ -697,7 +707,7 @@ def validate_argv_inputs(argv_dict):
     returns:
         (dict) of all runtime parameters.
     """
-    for key, attr in argv_dict.items:
+    for key, attr in argv_dict.items():
         proposed_value = attr["value"]
         default_value = attr["default"]
         # missing value check
