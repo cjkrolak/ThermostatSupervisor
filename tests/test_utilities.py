@@ -548,7 +548,7 @@ class MiscTests(utc.UnitTest):
 class RuntimeParameterTests(utc.UnitTest):
     """Runtime parameter util tests."""
 
-    script = "supervise.py"
+    script = os.path.realpath(__file__)
     thermostat_type = emulator_config.ALIAS
     zone = 0
     poll_time_sec = 9
@@ -559,31 +559,54 @@ class RuntimeParameterTests(utc.UnitTest):
     test_list = [
         script,  # script
         thermostat_type,  # thermostat_type
-        str(zone),  # zone
-        str(poll_time_sec),  # poll time sec
-        str(connection_time_sec),  # connection time
-        str(tolerance),  # tolerance
+        zone,  # zone
+        poll_time_sec,  # poll time sec
+        connection_time_sec,  # connection time
+        tolerance,  # tolerance
         target_mode,  # target mode
-        str(measurements),  # measurements
+        measurements,  # measurements
+    ]
+    test_list_named_sflag = [
+        script,  # script,
+        api.user_inputs["thermostat_type"]["sflag"] + " " + thermostat_type,
+        api.user_inputs["zone"]["sflag"] + " " + str(zone),
+        api.user_inputs["poll_time"]["sflag"] + " " + str(poll_time_sec),
+        api.user_inputs["connection_time"][
+            "sflag"] + " " + str(connection_time_sec),
+        api.user_inputs["tolerance"]["sflag"] + " " + str(tolerance),
+        api.user_inputs["target_mode"]["sflag"] + " " + target_mode,
+        api.user_inputs["measurements"]["sflag"] + " " + str(measurements),
+    ]
+
+    test_list_named_lflag = [
+        # script,
+        api.user_inputs["thermostat_type"]["lflag"] + " " + thermostat_type,
+        api.user_inputs["zone"]["lflag"] + " " + str(zone),
+        api.user_inputs["poll_time"]["lflag"] + " " + str(poll_time_sec),
+        api.user_inputs["connection_time"][
+            "lflag"] + " " + str(connection_time_sec),
+        api.user_inputs["tolerance"]["lflag"] + " " + str(tolerance),
+        api.user_inputs["target_mode"]["lflag"] + " " + target_mode,
+        api.user_inputs["measurements"]["lflag"] + " " + str(measurements),
     ]
 
     etype = [  # expected data types
         api.user_inputs["script"]["type"],  # script
         api.user_inputs["thermostat_type"]["type"],  # thermostat_type
         api.user_inputs["zone"]["type"],  # zone
-        api.user_inputs["poll_time_sec"]["type"],  # poll time sec
-        api.user_inputs["connection_time_sec"]["type"],  # connection time
+        api.user_inputs["poll_time"]["type"],  # poll time sec
+        api.user_inputs["connection_time"]["type"],  # connection time
         api.user_inputs["tolerance"]["type"],  # tolerance
         api.user_inputs["target_mode"]["type"],  # target mode
         api.user_inputs["measurements"]["type"],  # measurements
     ]
 
     expected_values = {
-        "script": script,
+        "script": os.path.realpath(__file__),  # actual file name
         "thermostat_type": thermostat_type,  # thermostat_type
         "zone": zone,  # zone
-        "poll_time_sec": poll_time_sec,  # poll time sec
-        "connection_time_sec": connection_time_sec,  # connection time
+        "poll_time": poll_time_sec,  # poll time sec
+        "connection_time": connection_time_sec,  # connection time
         "tolerance": tolerance,  # tolerance
         "target_mode": target_mode,  # target mode
         "measurements": measurements,  # measurements
@@ -592,6 +615,7 @@ class RuntimeParameterTests(utc.UnitTest):
     def setUp(self):
         self.print_test_name()
         util.log_msg.file_name = "unit_test.txt"
+        self.initialize_api_user_inputs()
 
     def tearDown(self):
         self.print_test_result()
@@ -605,41 +629,41 @@ class RuntimeParameterTests(utc.UnitTest):
             api.user_inputs["script"]["value"],
             api.user_inputs["thermostat_type"]["value"],
             api.user_inputs["zone"]["value"],
-            api.user_inputs["poll_time_sec"]["value"],
-            api.user_inputs["connection_time_sec"]["value"],
+            api.user_inputs["poll_time"]["value"],
+            api.user_inputs["connection_time"]["value"],
             api.user_inputs["tolerance"]["value"],
             api.user_inputs["target_mode"]["value"],
             api.user_inputs["measurements"]["value"],
             ]
         return actual_values
 
+    def verify_parsed_values(self):
+        """
+        Verify values were parsed correctly by comparing to expected values.
+        """
+        for k in self.expected_values:
+            self.assertEqual(self.expected_values[k],
+                             api.user_inputs[k]["value"],
+                             f"expected {self.expected_values[k]} != "
+                             f"actual {api.user_inputs[k]['value']}")
+
+    def initialize_api_user_inputs(self):
+        """
+        Re-initialize api_user_inputs dict.
+        """
+        for k in api.user_inputs:
+            api.user_inputs[k]["value"] = None
+
 # validate_argv_inputs(argv_dict)
-# parse_runtime_parameters(argv_list=None, argv_dict=None)
 
     def test_parse_argv_list(self):
         """
         Verify test parse_argv_list() returns expected
         values when input known values.
         """
-        tstat_type = emulator_config.ALIAS
-        test_list = [
-            "supervise.py",  # script
-            tstat_type,  # thermostat_type
-            "0",  # zone
-            "9",  # poll time sec
-            "90",  # connection time
-            "3",  # tolerance
-            "HEAT_MODE",  # target mode
-            "1",  # measurements
-        ]
-
-        util.parse_argv_list(test_list, api.user_inputs)
-        actual_values = self.parse_user_inputs_dict()
-
-        for x in range(len(test_list)):
-            self.assertEqual(test_list[x], actual_values[x],
-                             f"expected {test_list[x]} != "
-                             f"actual {actual_values[x]}")
+        argv_dict = util.parse_argv_list(self.test_list, api.user_inputs)
+        print(f"argv_dict={argv_dict}")
+        self.verify_parsed_values()
 
     def test_parser(self):
         """
@@ -653,91 +677,66 @@ class RuntimeParameterTests(utc.UnitTest):
         args = parser.parse_args(argv)
         assert(args.a == 1)
 
-    def test_parse_named_arguments(self):
+    def test_parse_named_arguments_sflag(self):
+        """
+        Verify test parse_named_arguments() returns expected
+        values when input known values with sflag.
+        """
+        self.parse_named_arguments(self.test_list_named_sflag,
+                                   "unittest parsing named sflag arguments")
+
+    def test_parse_named_arguments_lflag(self):
+        """
+        Verify test parse_named_arguments() returns expected
+        values when input known values with sflag.
+        """
+        return # not yet working
+        self.parse_named_arguments(self.test_list_named_lflag,
+                                   "unittest parsing named lflag arguments")
+
+    def parse_named_arguments(self, test_list, label_str):
         """
         Verify test parse_named_arguments() returns expected
         values when input known values.
-        """
-        return  # test is not yet working
-        tstat_type = emulator_config.ALIAS
-        zone = 6
-        poll_time_sec = 9
-        test_list = [
-            sys._getframe(1).f_globals['__name__'],  # script
-            # "-t",  # thermostat flag
-            # "-t " + tstat_type,  # thermostat_type
-            "-z",  # zone flag
-            str(zone),  # zone
-            "-p",  # poll time flag
-            str(poll_time_sec),  # poll time sec
-            # "-c",  # connection time flag
-            # "90",  # connection time
-            # "-to",  # tolerance flag
-            # "3",  # tolerance
-            # "-m",  # mode flag
-            # "HEAT_MODE",  # target mode
-            # "-n",  # measurments flag
-            # "1",  # measurements
-        ]
-        test_list2 = ["supervise.py, -t emulator"]
-        # with patch('argparse._sys.argv', test_list):
-        argv_dict = util.parse_named_arguments(test_list,
-                api.user_inputs, "unittest parsing named arguments")
-        print(f"argv_dict={argv_dict}")
-        actual_values = [
-            argv_dict["script"]["value"],
-            argv_dict["thermostat_type"]["value"],
-            argv_dict["zone"]["value"],
-            argv_dict["poll_time_sec"]["value"],
-            argv_dict["connection_time_sec"]["value"],
-            argv_dict["tolerance"]["value"],
-            argv_dict["target_mode"]["value"],
-            argv_dict["measurements"]["value"],
-            ]
-        expected_values = [
-            argv_dict["script"]["value"],
-            argv_dict["thermostat_type"]["default"],
-            zone,
-            poll_time_sec,
-            argv_dict["connection_time_sec"]["default"],
-            argv_dict["tolerance"]["default"],
-            argv_dict["target_mode"]["default"],
-            argv_dict["measurements"]["default"],
-            ]
 
-        for x in range(1, len(test_list)):
-            self.assertEqual(expected_values[x],
-                             self.etype[x](actual_values[x]),
-                             f"expected {expected_values[x]} != "
-                             f"actual {actual_values[x]}")
+        inputs:
+            test_list(list): list of named arguments
+            label_str(str): description pass-thru
+        """
+        print(f"testing named arg list='{test_list}")
+        argv_dict = util.parse_named_arguments(test_list,
+                                               api.user_inputs,
+                                               label_str)
+        print(f"argv_dict={argv_dict}")
+        self.verify_parsed_values()
 
     def test_parse_runtime_parameters(self):
         """
         Test the upper level function for parsing.
         """
-        # test 1, input None
+        # test 1, input None, will raise error
         with self.assertRaises(ValueError):
             util.parse_runtime_parameters(argv_list=None, argv_dict=None)
 
-        # test 2, input list
-        util.parse_runtime_parameters(argv_list=self.test_list,
-                                      argv_dict=api.user_inputs)
-        actual_values = self.parse_user_inputs_dict()
-        for x in range(len(self.test_list)):
-            self.assertEqual(self.etype[x](self.test_list[x]),
-                             actual_values[x],
-                             f"expected {self.test_list[x]} != "
-                             f"actual {actual_values[x]}")
+        # test 2, input list, will parse list
+        self.initialize_api_user_inputs()
+        util.parse_runtime_parameters(
+            argv_list=self.test_list, argv_dict=api.user_inputs)
+        self.verify_parsed_values()
 
-        # test 3, input dict
-        util.parse_runtime_parameters(argv_list=None,
-                                      argv_dict=api.user_inputs)
-        for k in self.expected_values:
-            self.assertEqual(self.expected_values[k],
-                             api.user_inputs[k]["value"],
-                             f"expected {self.expected_values[k]} != "
-                             f"actual {api.user_inputs[k]['value']}")
+        # test 3, input dict, will parse sys.argv
+        self.initialize_api_user_inputs()
+        with patch.object(sys, 'argv', self.test_list):
+            util.parse_runtime_parameters(argv_list=None,
+                                          argv_dict=api.user_inputs)
+        self.verify_parsed_values()
 
+        # test 4, input dict, will parse sys.argv named args
+        self.initialize_api_user_inputs()
+        with patch.object(sys, 'argv', self.test_list_named_sflag):
+            util.parse_runtime_parameters(argv_list=None,
+                                          argv_dict=api.user_inputs)
+        self.verify_parsed_values()
 
     # def test_parse_all_runtime_parameters(self):
     #     """

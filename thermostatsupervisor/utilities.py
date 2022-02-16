@@ -591,16 +591,21 @@ def parse_runtime_parameters(argv_list=None, argv_dict=None):
     returns:
       argv_dict(dict)
     """
+    print("DEBUG: sys.argv=%s" % sys.argv)
     if not argv_dict:
         raise ValueError("argv_dict cannot be None")
+    valid_sflags = [argv_dict[k]["sflag"] for k in argv_dict]
     if argv_list:
         # argument list input
+        print("parsing arguments from input list")
         argv_dict = parse_argv_list(argv_list, argv_dict)
-    elif "-" in sys.argv:
-        # named arguments
+    elif (flag in sys.argv for flag in valid_sflags):
+        # named arguments from sys.argv
+        print("parsing named arguments from sys.argv")
         argv_dict = parse_named_arguments(argv_dict)
     else:
         # sys.argv parsing
+        print("parsing arguments from sys.argv")
         argv_dict = parse_argv_list(sys.argv, argv_dict)
 
     argv_dict = validate_argv_inputs(argv_dict)
@@ -643,6 +648,7 @@ def parse_named_arguments(argv_list=None, argv_dict=None, description=None):
         args = parser.parse_args(argv_list[1:])
     else:
         args = parser.parse_args()
+    print("DEBUG: args=%s" % args)
     for key in argv_dict:
         if key == "script":
             # add script name
@@ -650,6 +656,9 @@ def parse_named_arguments(argv_list=None, argv_dict=None, description=None):
         else:
             print("DEBUG: args[%s]=%s" % (key, getattr(args, key, None)))
             argv_dict[key]["value"] = getattr(args, key, None)
+            if isinstance(argv_dict[key]["value"], str):
+                # str parsing has leading spaces for some reason
+                argv_dict[key]["value"] = argv_dict[key]["value"].strip()
 
     return argv_dict
 
@@ -710,6 +719,8 @@ def validate_argv_inputs(argv_dict):
     for key, attr in argv_dict.items():
         proposed_value = attr["value"]
         default_value = attr["default"]
+        proposed_type = type(proposed_value)
+        expected_type = attr["type"]
         # missing value check
         if proposed_value is None:
             log_msg(
@@ -721,9 +732,10 @@ def validate_argv_inputs(argv_dict):
             attr["value"] = attr["default"]
 
         # wrong datatype check
-        elif type(proposed_value) != attr["type"]:
+        elif proposed_type != expected_type:
             log_msg(
-                f"key='{key}': argv parsing error, using default value "
+                f"key='{key}': datatype error, expected={expected_type}, "
+                f"actual={proposed_type}, using default value "
                 f"'{default_value}'",
                 mode=DEBUG_LOG +
                 CONSOLE_LOG,

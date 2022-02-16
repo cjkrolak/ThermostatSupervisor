@@ -71,7 +71,8 @@ user_inputs = {
         "help": "script name"},
     "thermostat_type": {
         "order": 1,
-        "value": None, "type": str,
+        "value": None,
+        "type": str,
         "default": DEFAULT_THERMOSTAT,
         "valid_range": list(SUPPORTED_THERMOSTATS.keys()),
         "sflag": "-t",
@@ -86,7 +87,7 @@ user_inputs = {
         "sflag": "-z",
         "lflag": "--zone",
         "help": "target zone number"},
-    "poll_time_sec": {
+    "poll_time": {
         "order": 3,
         "value": None,
         "type": int,
@@ -95,7 +96,7 @@ user_inputs = {
         "sflag": "-p",
         "lflag": "--poll_time",
         "help": "poll time (sec)"},
-    "connection_time_sec": {
+    "connection_time": {
         "order": 4,
         "value": None,
         "type": int,
@@ -110,7 +111,7 @@ user_inputs = {
         "type": int,
         "default": 2,
         "valid_range": range(0, 10),
-        "sflag": "-to",
+        "sflag": "-d",
         "lflag": "--tolerance",
         "help": "tolerance (deg F)"},
     "target_mode": {
@@ -132,6 +133,7 @@ user_inputs = {
         "lflag": "--measurements",
         "help": "number of measurements"},
 }
+valid_sflags = [user_inputs[k]["sflag"] for k in user_inputs]
 
 
 def get_argv_position(input_dict, key):
