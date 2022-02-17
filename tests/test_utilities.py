@@ -559,12 +559,12 @@ class RuntimeParameterTests(utc.UnitTest):
     test_list = [
         script,  # script
         thermostat_type,  # thermostat_type
-        zone,  # zone
-        poll_time_sec,  # poll time sec
-        connection_time_sec,  # connection time
-        tolerance,  # tolerance
+        str(zone),  # zone
+        str(poll_time_sec),  # poll time sec
+        str(connection_time_sec),  # connection time
+        str(tolerance),  # tolerance
         target_mode,  # target mode
-        measurements,  # measurements
+        str(measurements),  # measurements
     ]
     test_list_named_sflag = [
         script,  # script,
@@ -644,8 +644,10 @@ class RuntimeParameterTests(utc.UnitTest):
         for k in self.expected_values:
             self.assertEqual(self.expected_values[k],
                              api.user_inputs[k]["value"],
-                             f"expected {self.expected_values[k]} != "
-                             f"actual {api.user_inputs[k]['value']}")
+                             f"expected({type(self.expected_values[k])}) "
+                             f"{self.expected_values[k]} != "
+                             f"actual({type(api.user_inputs[k]['value'])}) "
+                             f"{api.user_inputs[k]['value']}")
 
     def initialize_api_user_inputs(self):
         """
@@ -653,8 +655,6 @@ class RuntimeParameterTests(utc.UnitTest):
         """
         for k in api.user_inputs:
             api.user_inputs[k]["value"] = None
-
-# validate_argv_inputs(argv_dict)
 
     def test_parse_argv_list(self):
         """
@@ -673,9 +673,10 @@ class RuntimeParameterTests(utc.UnitTest):
         parser = argparse.ArgumentParser()
         parser.add_argument('-a', type=int)
         # argv = '-a 1'.split()  # or ['-a','1','foo']
-        argv = ["-a 1"]
+        argv = ["-a 1", "--b 2"]
         args = parser.parse_args(argv)
         assert(args.a == 1)
+        assert(args.b == 2)
 
     def test_parse_named_arguments_sflag(self):
         """
@@ -727,6 +728,8 @@ class RuntimeParameterTests(utc.UnitTest):
         # test 3, input dict, will parse sys.argv
         self.initialize_api_user_inputs()
         with patch.object(sys, 'argv', self.test_list):
+            print("DEBUG: mocked sys.argv=%s" % sys.argv)
+            print("DEBUG: api.user_inputs=%s" % api.user_inputs)
             util.parse_runtime_parameters(argv_list=None,
                                           argv_dict=api.user_inputs)
         self.verify_parsed_values()
@@ -738,52 +741,70 @@ class RuntimeParameterTests(utc.UnitTest):
                                           argv_dict=api.user_inputs)
         self.verify_parsed_values()
 
-    # def test_parse_all_runtime_parameters(self):
-    #     """
-    #     Verify test parse_all_runtime_parameters() runs without error
-    #     and return values match user_inputs dict.
-    #     """
-    #
-    #     return_list = api.parse_all_runtime_parameters(utc.unit_test_argv)
-    #     self.assertEqual(return_list["thermostat_type"],
-    #                      api.user_inputs["thermostat_type"]["value"])
-    #     self.assertEqual(return_list["zone"], api.user_inputs["zone"]["value"])
-    #     self.assertEqual(return_list["poll_time_sec"],
-    #                      api.user_inputs["poll_time_sec"]["value"])
-    #     self.assertEqual(return_list["connection_time_sec"],
-    #                      api.user_inputs["connection_time_sec"]["value"])
-    #     self.assertEqual(return_list["tolerance_degrees"],
-    #                      api.user_inputs["tolerance_degrees"]["value"])
-    #     self.assertEqual(return_list["target_mode"],
-    #                      api.user_inputs["target_mode"]["value"])
-    #     self.assertEqual(return_list["measurements"],
-    #                      api.user_inputs["measurements"]["value"])
-    #
-    #     # test default case
-    #     print(f"argv list={sys.argv}")
-    #     # argv=['python -m unittest', 'discover', '-v'] case
-    #     if '-v' in sys.argv:
-    #         # parsing should fail parsing -v from argv list
-    #         with self.assertRaises(ValueError):
-    #             print("attempting to run parse_all_runtime_parameters() with "
-    #                   "unittest argv list, should fail for ValueError since "
-    #                   "'-v' is not parseable into a value...")
-    #             return_list = api.parse_all_runtime_parameters()
-    #             print(f"parsed input parameter list={return_list}")
-    #     else:
-    #         if len(sys.argv) > 1:
-    #             # argv list > 1, arbitrary list, can't evaluate
-    #             print("unittest sys.argv list is not empty, parsing result "
-    #                   "is indeterminant")
-    #         else:
-    #             # argv list is 1 element, thermostat_type missing, will default
-    #             expected_result = [api.DEFAULT_THERMOSTAT]
-    #             return_list = api.parse_all_runtime_parameters()
-    #
-    #             self.assertTrue(return_list[
-    #                 "thermostat_type"] in expected_result,
-    #                 f"actual={return_list['thermostat_type']}, "
-    #                 f"expected={expected_result}")
+    def test_validate_argv_inputs(self):
+        """
+        Verify validate_argv_inputs() works as expected.
+        """
+        test_cases = {
+            "fail_missing_value": {
+                "value": None,
+                "type": int,
+                "default": 1,
+                "valid_range": range(0, 4),
+                "expected_value": 1,
+                },
+            "fail_datatype_error": {
+                "value": "5",
+                "type": int,
+                "default": 2,
+                "valid_range": range(0, 10),
+                "expected_value": 2,
+                },
+            "fail_out_of_range_int": {
+                "value": 6,
+                "type": int,
+                "default": 3,
+                "valid_range": range(0, 3),
+                "expected_value": 3,
+                },
+            "fail_out_of_range_str": {
+                "value": "6",
+                "type": str,
+                "default": "4",
+                "valid_range": ["a", "b"],
+                "expected_value": "4",
+                },
+            "in_range_int": {
+                "value": 7,
+                "type": int,
+                "default": 4,
+                "valid_range": range(0, 10),
+                "expected_value": 7,
+                },
+            "in_range_str": {
+                "value": "8",
+                "type": str,
+                "default": "5",
+                "valid_range": ["a", "8", "abc"],
+                "expected_value": "8",
+                },
+            }
+
+        key = "test_case"
+        for test_case, test_dict in test_cases.items():
+            result_dict = util.validate_argv_inputs({key: test_dict})
+            actual_value = result_dict[key]["value"]
+
+            if "fail_" in test_case:
+                expected_value = result_dict[key]["default"]
+            else:
+                expected_value = result_dict[key]["expected_value"]
+
+            self.assertEqual(expected_value, actual_value,
+                             f"test case ({test_case}), "
+                             f"expected={expected_value}, "
+                             f"actual={actual_value}")
+
 
 if __name__ == "__main__":
     util.log_msg.debug = True

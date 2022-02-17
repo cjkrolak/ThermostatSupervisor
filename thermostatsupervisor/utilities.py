@@ -602,7 +602,7 @@ def parse_runtime_parameters(argv_list=None, argv_dict=None):
     elif (flag in sys.argv for flag in valid_sflags):
         # named arguments from sys.argv
         print("parsing named arguments from sys.argv")
-        argv_dict = parse_named_arguments(argv_dict)
+        argv_dict = parse_named_arguments(argv_dict=argv_dict)
     else:
         # sys.argv parsing
         print("parsing arguments from sys.argv")
@@ -637,6 +637,7 @@ def parse_named_arguments(argv_list=None, argv_dict=None, description=None):
     parser = argparse.ArgumentParser(description=description)
 
     # load parser contents
+    print("DEBUG: argv_dict=%s" % argv_dict)
     for _, attr in argv_dict.items():
         print("DEBUG: attr=%s" % attr)
         parser.add_argument(attr["lflag"], attr["sflag"], help=attr["help"],
@@ -647,6 +648,7 @@ def parse_named_arguments(argv_list=None, argv_dict=None, description=None):
         # test mode, override sys.argv
         args = parser.parse_args(argv_list[1:])
     else:
+        print("DEBUG: sys.argv=%s" % sys.argv)
         args = parser.parse_args()
     print("DEBUG: args=%s" % args)
     for key in argv_dict:
@@ -693,7 +695,8 @@ def parse_argv_list(argv_list=None, argv_dict=None):
     # populate dict with values from list
     for k, v in argv_dict.items():
         if v["order"] <= len(argv_inputs) - 1:
-            argv_dict[k]["value"] = argv_inputs[v["order"]]
+            argv_dict[k]["value"] = argv_dict[k]["type"](
+                argv_inputs[v["order"]])
 
     return argv_dict
 
@@ -755,70 +758,3 @@ def validate_argv_inputs(argv_dict):
     return argv_dict
 
 
-# def parse_runtime_parameter(key, datatype, default_value,
-#                             valid_range, argv_list=None):
-#     """
-#     Parse the runtime parameter parameter list and store in a dict.
-#
-#     inputs:
-#         key(str): name of runtime parameter in api.user_input dict.
-#         datatype(int or str): data type to cast input str to.
-#         default_value(int or str):  default value.
-#         valid_range(list, dict, range): set of valid values.
-#         argv_list(list):  argv or list
-#     returns:
-#         (int or str): user input runtime value.
-#         This function also updates api.user_inputs dictionary
-#     """
-#     # if no override exists in argv_list, use argv value
-#     try:
-#         proposed_val = str(argv_list[get_argv_position(key)])
-#         util.log_msg(
-#             f"key='{key}': using user override value "
-#             f"'{argv_list[get_argv_position(key)]}'",
-#             mode=util.DEBUG_LOG +
-#             util.CONSOLE_LOG,
-#             func_name=1)
-#     except TypeError:
-#         util.log_msg(
-#             f"key='{key}': argv parsing error, using default value "
-#             f"'{default_value}'",
-#             mode=util.DEBUG_LOG +
-#             util.CONSOLE_LOG,
-#             func_name=1)
-#         proposed_val = str(default_value)
-#     except IndexError:
-#         util.log_msg(
-#             f"key='{key}': argv parameter missing, using default value "
-#             f"'{default_value}'",
-#             mode=util.DEBUG_LOG +
-#             util.CONSOLE_LOG,
-#             func_name=1)
-#         proposed_val = str(default_value)
-#
-#     # cast input for these keys into uppercase and target data type.
-#     # all other keys are cast lowercase.
-#     uppercase_key_list = ["target_mode"]
-#
-#     # truncate decimal if converting to int to avoid float str->int error
-#     if datatype == int and '.' in proposed_val:
-#         proposed_val = proposed_val[:proposed_val.index('.')]
-#
-#     # datatype conversion and type cast
-#     if key in uppercase_key_list:
-#         proposed_val = datatype(proposed_val.upper())
-#     else:
-#         proposed_val = datatype(proposed_val.lower())
-#
-#     # check for valid range
-#     if proposed_val != default_value and proposed_val not in valid_range:
-#         util.log_msg(
-#             f"WARNING: '{proposed_val}' is not a valid choice for '{key}', "
-#             f"using default({default_value})",
-#             mode=util.BOTH_LOG,
-#             func_name=1)
-#         proposed_val = default_value
-#
-#     # populate the user_input dictionary
-#     user_inputs[key]["value"] = proposed_val
-#     return proposed_val
