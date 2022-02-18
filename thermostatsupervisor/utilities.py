@@ -592,16 +592,25 @@ def parse_runtime_parameters(argv_list=None, argv_dict=None):
       argv_dict(dict)
     """
     print("DEBUG: sys.argv=%s" % sys.argv)
+    sysargv_sflags = [elem[:2] for elem in sys.argv]
+    print("DEBUG: sysargv_sflags=%s" % sysargv_sflags)
     if not argv_dict:
         raise ValueError("argv_dict cannot be None")
     valid_sflags = [argv_dict[k]["sflag"] for k in argv_dict]
     if argv_list:
-        # argument list input
-        print("parsing arguments from input list")
-        argv_dict = parse_argv_list(argv_list, argv_dict)
-    elif (flag in sys.argv for flag in valid_sflags):
+        # argument list input, support parsing list
+        argvlist_sflags = [elem[:2] for elem in argv_list]
+        if any([flag in argvlist_sflags for flag in valid_sflags]):
+            print("parsing named arguments from input list")
+            argv_dict = parse_named_arguments(argv_list=argv_list,
+                                              argv_dict=argv_dict)
+        else:
+            print("parsing arguments from input list")
+            argv_dict = parse_argv_list(argv_list, argv_dict)
+    elif any([flag in sysargv_sflags for flag in valid_sflags]):
         # named arguments from sys.argv
         print("parsing named arguments from sys.argv")
+        print("DEBUG: valid flags=%s" % valid_sflags)
         argv_dict = parse_named_arguments(argv_dict=argv_dict)
     else:
         # sys.argv parsing
