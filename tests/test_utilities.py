@@ -14,7 +14,7 @@ from thermostatsupervisor import thermostat_api as api
 from thermostatsupervisor import utilities as util
 from tests import unit_test_common as utc
 
-@unittest.skipIf(True, "debug")
+
 class EnvironmentTests(utc.UnitTest):
     """Test functions related to environment and env variables."""
 
@@ -165,7 +165,7 @@ class EnvironmentTests(utc.UnitTest):
             print(f"'bogus' module returned package type {type(pkg)}")
         print("test passed")
 
-@unittest.skipIf(True, "debug")
+
 class FileAndLoggingTests(utc.UnitTest):
     """Test functions related to logging functions."""
 
@@ -355,7 +355,7 @@ class FileAndLoggingTests(utc.UnitTest):
             print(f"unit test file '{full_path}' did not exist.")
             return False
 
-@unittest.skipIf(True, "debug")
+
 class MetricsTests(utc.UnitTest):
     """Test functions related temperature/humidity metrics."""
 
@@ -466,7 +466,7 @@ class MetricsTests(utc.UnitTest):
             #                  "expected=%s, actual=%s" %
             #                  (tempf, expected_tempc, tempc))
 
-@unittest.skipIf(True, "debug")
+
 class MiscTests(utc.UnitTest):
     """Miscellaneous util tests."""
 
@@ -579,7 +579,7 @@ class RuntimeParameterTests(utc.UnitTest):
     ]
 
     test_list_named_lflag = [
-        # script,
+        script,
         api.user_inputs["thermostat_type"]["lflag"] + " " + thermostat_type,
         api.user_inputs["zone"]["lflag"] + " " + str(zone),
         api.user_inputs["poll_time"]["lflag"] + " " + str(poll_time_sec),
@@ -591,7 +591,7 @@ class RuntimeParameterTests(utc.UnitTest):
     ]
 
     etype = [  # expected data types
-        api.user_inputs["script"]["type"],  # script
+        # api.user_inputs["script"]["type"],  # script
         api.user_inputs["thermostat_type"]["type"],  # thermostat_type
         api.user_inputs["zone"]["type"],  # zone
         api.user_inputs["poll_time"]["type"],  # poll time sec
@@ -602,7 +602,7 @@ class RuntimeParameterTests(utc.UnitTest):
     ]
 
     expected_values = {
-        "script": os.path.realpath(__file__),  # actual file name
+        # "script": os.path.realpath(__file__),  # actual file name
         "thermostat_type": thermostat_type,  # thermostat_type
         "zone": zone,  # zone
         "poll_time": poll_time_sec,  # poll time sec
@@ -692,7 +692,7 @@ class RuntimeParameterTests(utc.UnitTest):
         Verify test parse_named_arguments() returns expected
         values when input known values with sflag.
         """
-        return # not yet working
+        return  # not yet working
         self.parse_named_arguments(self.test_list_named_lflag,
                                    "unittest parsing named lflag arguments")
 

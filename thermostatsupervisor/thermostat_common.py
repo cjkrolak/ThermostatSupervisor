@@ -644,9 +644,9 @@ class ThermostatCommonZone():
         user_input_to_class_mapping = {
             "thermostat_type": "thermostat_type",
             "zone": "zone_number",
-            "poll_time_sec": "poll_time_sec",
-            "connection_time_sec": "connection_time_sec",
-            "tolerance_degrees": "tolerance_degrees",
+            "poll_time": "poll_time_sec",
+            "connection_time": "connection_time_sec",
+            "tolerance": "tolerance_degrees",
             "target_mode": "target_mode",
             "measurements": "measurements",
         }

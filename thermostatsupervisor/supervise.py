@@ -213,7 +213,7 @@ def exec_supervise(debug=True, argv_list=None):
     util.log_msg.debug = debug  # debug mode set
 
     # parse all runtime parameters
-    api.user_inputs = api.parse_all_runtime_parameters(argv_list)
+    util.parse_runtime_parameters(argv_dict=api.user_inputs)
 
     # main supervise function
     supervisor(api.user_inputs["thermostat_type"]["value"],
@@ -224,32 +224,11 @@ def exec_supervise(debug=True, argv_list=None):
 
 if __name__ == "__main__":
 
-    import argparse
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--thermostat', '-t', help="thermostat type",
-                        type=str, default=api.DEFAULT_THERMOSTAT)
-    parser.add_argument('--zone', '-z', help="zone",
-                        type=int, default=0)
-    parser.add_argument('--poll_time', '-p', help="poll time (sec)",
-                        type=int, default=60*10)
-    parser.add_argument('--connect_time', '-c', help="connect time (sec)",
-                        type=int, default=60*10*8)
-    parser.add_argument('--tolerance', '-to', help="tolerance (deg F)",
-                        type=int, default=3)
-    parser.add_argument('--target_mode', '-m', help="target mode",
-                        type=str, default="OFF_MODE")
-    parser.add_argument('--measurements', '-n', help="measurements",
-                        type=int, default=10000)
-    args = parser.parse_args()
-    args_list = ["supervise.py", args.thermostat, args.zone, args.poll_time,
-                 args.connect_time, args.tolerance, args.target_mode,
-                 args.measurements]
-
     # if argv list is set use that, else use sys.argv
     if argv:
         argv_inputs = argv
     else:
-        argv_inputs = args_list
+        argv_inputs = sys.argv
 
     # verify environment
     util.get_python_version()

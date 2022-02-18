@@ -20,7 +20,6 @@ from thermostatsupervisor import kumocloud_config
 from thermostatsupervisor import kumolocal_config
 from thermostatsupervisor import mmm_config
 from thermostatsupervisor import sht31_config
-from _ast import mod
 
 PACKAGE_NAME = 'thermostatsupervisor'  # should match name in __init__.py
 
@@ -591,12 +590,11 @@ def parse_runtime_parameters(argv_list=None, argv_dict=None):
     returns:
       argv_dict(dict)
     """
-    print("DEBUG: sys.argv=%s" % sys.argv)
-    sysargv_sflags = [elem[:2] for elem in sys.argv]
-    print("DEBUG: sysargv_sflags=%s" % sysargv_sflags)
+    sysargv_sflags = [elem[:2] for elem in sys.argv[1:]]
     if not argv_dict:
         raise ValueError("argv_dict cannot be None")
     valid_sflags = [argv_dict[k]["sflag"] for k in argv_dict]
+    valid_sflags += ["-h", "--"]  # add help and double dash
     if argv_list:
         # argument list input, support parsing list
         argvlist_sflags = [elem[:2] for elem in argv_list]
@@ -610,7 +608,6 @@ def parse_runtime_parameters(argv_list=None, argv_dict=None):
     elif any([flag in sysargv_sflags for flag in valid_sflags]):
         # named arguments from sys.argv
         print("parsing named arguments from sys.argv")
-        print("DEBUG: valid flags=%s" % valid_sflags)
         argv_dict = parse_named_arguments(argv_dict=argv_dict)
     else:
         # sys.argv parsing
@@ -646,9 +643,7 @@ def parse_named_arguments(argv_list=None, argv_dict=None, description=None):
     parser = argparse.ArgumentParser(description=description)
 
     # load parser contents
-    print("DEBUG: argv_dict=%s" % argv_dict)
     for _, attr in argv_dict.items():
-        print("DEBUG: attr=%s" % attr)
         parser.add_argument(attr["lflag"], attr["sflag"], help=attr["help"],
                             type=attr["type"], default=attr["default"])
 
@@ -657,15 +652,12 @@ def parse_named_arguments(argv_list=None, argv_dict=None, description=None):
         # test mode, override sys.argv
         args = parser.parse_args(argv_list[1:])
     else:
-        print("DEBUG: sys.argv=%s" % sys.argv)
         args = parser.parse_args()
-    print("DEBUG: args=%s" % args)
     for key in argv_dict:
         if key == "script":
             # add script name
             argv_dict[key]["value"] = sys.argv[0]
         else:
-            print("DEBUG: args[%s]=%s" % (key, getattr(args, key, None)))
             argv_dict[key]["value"] = getattr(args, key, None)
             if isinstance(argv_dict[key]["value"], str):
                 # str parsing has leading spaces for some reason
@@ -700,7 +692,6 @@ def parse_argv_list(argv_list=None, argv_dict=None):
             func_name=1)
         argv_inputs = sys.argv
 
-    print("DEBUG: argv_dict is type(%s): %s" % (type(argv_dict), argv_dict))
     # populate dict with values from list
     for k, v in argv_dict.items():
         if v["order"] <= len(argv_inputs) - 1:
@@ -765,5 +756,3 @@ def validate_argv_inputs(argv_dict):
             attr["value"] = attr["default"]
 
     return argv_dict
-
-

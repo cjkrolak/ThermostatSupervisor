@@ -485,16 +485,25 @@ def favicon():
                                mimetype='image/vnd.microsoft.icon')
 
 
-def parse_runtime_parameters():
-    """Parse runtime parameters."""
-    # parse runtime parameters, argv[1] is flask server debug mode
-    debug_flag = False  # default
-    if len(sys.argv) > 1:
-        argv3_str = sys.argv[1]
-        if argv3_str.lower() in ["1", "true"]:
-            debug_flag = True
-            print("Flask debug mode is enabled", file=sys.stderr)
-    return debug_flag
+# runtime override parameters
+user_inputs = {
+    "debug": {
+        "order": 0,
+        "value": None,
+        "type": bool,
+        "default": False,
+        "valid_range": [True, False, 1, 0],
+        "sflag": "-d",
+        "lflag": "--debug",
+        "help": "flask server debug mode"},
+    }
+
+
+def get_runtime_argument(key):
+    """
+    Return the target key's value from user_inputs.
+    """
+    return user_inputs[key]["value"]
 
 
 if __name__ == "__main__":
@@ -505,7 +514,10 @@ if __name__ == "__main__":
     util.get_python_version()
 
     # parse runtime parameters
-    debug = parse_runtime_parameters()
+    util.parse_runtime_parameters(argv_dict=user_inputs)
+    debug = get_runtime_argument("debug")
+    if debug:
+        print("Flask debug mode is enabled", file=sys.stderr)
 
     # launch the Flask API on development server
     app.run(host='0.0.0.0',

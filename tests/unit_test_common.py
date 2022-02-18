@@ -164,10 +164,9 @@ class IntegrationTest(UnitTest):
         # create new Thermostat and Zone instances
         if self.Thermostat is None and self.Zone is None:
             util.log_msg.debug = True  # debug mode set
-
-            thermostat_type = self.unit_test_argv[
-                api.get_argv_position("thermostat_type")]
-            zone = int(self.unit_test_argv[api.get_argv_position("zone")])
+            util.parse_runtime_parameters(self.unit_test_argv, api.user_inputs)
+            thermostat_type = api.get_runtime_argument("thermostat_type")
+            zone = api.get_runtime_argument("zone")
 
             # create class instances
             self.Thermostat, self.Zone = tc.create_thermostat_instance(
@@ -195,11 +194,12 @@ class FunctionalIntegrationTest(IntegrationTest):
         This test also creates the class instances so it should be run
         first in the integration test sequence.
         """
+        util.parse_runtime_parameters(self.unit_test_argv, api.user_inputs)
         IntegrationTest.Thermostat, IntegrationTest.Zone = \
             tc.thermostat_basic_checkout(
                 api,
-                self.unit_test_argv[api.get_argv_position("thermostat_type")],
-                int(self.unit_test_argv[api.get_argv_position("zone")]),
+                api.get_runtime_argument("thermostat_type"),
+                api.get_runtime_argument("zone"),
                 self.mod.ThermostatClass, self.mod.ThermostatZone
             )
 
