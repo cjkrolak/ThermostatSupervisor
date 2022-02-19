@@ -2,9 +2,11 @@
 Common functions used in multiple unit tests.
 """
 # global imports
+import os
 import pprint
 import sys
 import unittest
+from unittest.mock import patch
 
 # local imports
 from thermostatsupervisor import emulator_config
@@ -49,6 +51,8 @@ unit_test_honeywell = [
 unit_test_argv = unit_test_sht31
 
 
+# mock argv to prevent azure runtime args from polluting test.
+@patch.object(sys, 'argv', [os.path.realpath(__file__)])  # noqa e501, pylint:disable=undefined-variable
 class UnitTest(unittest.TestCase):
     """Extensions to unit test framework."""
 
