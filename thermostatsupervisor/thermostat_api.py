@@ -5,7 +5,6 @@ This file should be updated for any new thermostats supported and
 any changes to thermostat configs.
 """
 # built ins
-import sys
 
 # local imports
 from thermostatsupervisor import emulator_config
@@ -46,34 +45,95 @@ for config_module in config_modules:
         {config_module.ALIAS: {"required_env_variables":
                                config_module.required_env_variables}})
 
-# runtime overrides
-argv_order = {
-    0: "script",
-    1: "thermostat_type",
-    2: "zone",
-    3: "poll_time_sec",
-    4: "connection_time_sec",
-    5: "tolerance_degrees",
-    6: "target_mode",
-    7: "measurements",
+
+def update_thermostat_specific_values(thermostat_type):
+    """
+    Update thermostat-specific values in user_inputs dict.
+    """
+    set_user_inputs(THERMOSTAT_TYPE_FLD, thermostat_type)
+    user_inputs[ZONE_FLD]["valid_range"] = SUPPORTED_THERMOSTATS[
+            thermostat_type]["zones"]
+    user_inputs[TARGET_MODE_FLD]["valid_range"] = SUPPORTED_THERMOSTATS[
+            thermostat_type]["modes"]
+
+
+# runtime override parameters
+# note script name is omitted, starting with first parameter
+# index 0 (script name) is not included in this dict because it is
+# not a runtime argument
+THERMOSTAT_TYPE_FLD = "thermostat_type"
+ZONE_FLD = "zone"
+POLL_TIME_FLD = "poll_time"
+CONNECT_TIME_FLD = "connection_time"
+TOLERANCE_FLD = "tolerance"
+TARGET_MODE_FLD = "target_mode"
+MEASUREMENTS_FLD = "measurements"
+user_inputs = {
+    THERMOSTAT_TYPE_FLD: {
+        "order": 1,  # index in the argv list
+        "value": None,
+        "type": str,
+        "default": DEFAULT_THERMOSTAT,
+        "valid_range": list(SUPPORTED_THERMOSTATS.keys()),
+        "sflag": "-t",
+        "lflag": "--thermostat_type",
+        "help": "thermostat type"},
+    ZONE_FLD: {
+        "order": 2,  # index in the argv list
+        "value": None,
+        "type": int,
+        "default": 0,
+        "valid_range": None,  # updated once thermostat is known
+        "sflag": "-z",
+        "lflag": "--zone",
+        "help": "target zone number"},
+    POLL_TIME_FLD: {
+        "order": 3,  # index in the argv list
+        "value": None,
+        "type": int,
+        "default": 60 * 10,
+        "valid_range": range(0, 24 * 60 * 60),
+        "sflag": "-p",
+        "lflag": "--poll_time",
+        "help": "poll time (sec)"},
+    CONNECT_TIME_FLD: {
+        "order": 4,  # index in the argv list
+        "value": None,
+        "type": int,
+        "default": 60 * 10 * 8,
+        "valid_range": range(0, 24 * 60 * 60 * 60),
+        "sflag": "-c",
+        "lflag": "--connection_time",
+        "help": "server connection time (sec)"},
+    TOLERANCE_FLD: {
+        "order": 5,  # index in the argv list
+        "value": None,
+        "type": int,
+        "default": 2,
+        "valid_range": range(0, 10),
+        "sflag": "-d",
+        "lflag": "--tolerance",
+        "help": "tolerance (deg F)"},
+    TARGET_MODE_FLD: {
+        "order": 6,  # index in the argv list
+        "value": None,
+        "type": str,
+        "default": "UNKNOWN_MODE",
+        "valid_range": None,  # updated once thermostat is known
+        "sflag": "-m",
+        "lflag": "--target_mode",
+        "help": "target thermostat mode"},
+    MEASUREMENTS_FLD: {
+        "order": 7,  # index in the argv list
+        "value": None,
+        "type": int,
+        "default": 10000,
+        "valid_range": range(1, 10001),
+        "sflag": "-n",
+        "lflag": "--measurements",
+        "help": "number of measurements"},
 }
-
-# initialize user input (runtime overrides) dict
-user_inputs = {}
-for k, v in argv_order.items():
-    user_inputs[v] = None
-
-
-def get_argv_position(key):
-    """
-    Return the argv list position for specified key.
-
-    inputs:
-        key(str): argv key.
-    returns:
-        (int): position in argv list
-    """
-    return util.get_key_from_value(argv_order, key)
+valid_sflags = [user_inputs[k]["sflag"] for k in user_inputs]
 
 
 def verify_required_env_variables(tstat, zone_str):
@@ -109,138 +169,31 @@ def verify_required_env_variables(tstat, zone_str):
     return key_status
 
 
-def parse_runtime_parameter(key, datatype, default_value,
-                            valid_range, argv_list=None):
+def get_user_inputs(key, field="value"):
     """
-    Parse the runtime parameter parameter list and store in a dict.
+    Return the target key's value from user_inputs.
 
     inputs:
-        key(str): name of runtime parameter in api.user_input dict.
-        datatype(int or str): data type to cast input str to.
-        default_value(int or str):  default value.
-        valid_range(list, dict, range): set of valid values.
-        argv_list(list):  argv or list
+        key(str): argument name
+        field(str): field name, default = "value"
     returns:
-        (int or str): user input runtime value.
-        This function also updates api.user_inputs dictionary
+        None
     """
-    # if no override exists in argv_list, use argv value
-    try:
-        proposed_val = str(argv_list[get_argv_position(key)])
-        util.log_msg(
-            f"key='{key}': using user override value "
-            f"'{argv_list[get_argv_position(key)]}'",
-            mode=util.DEBUG_LOG +
-            util.CONSOLE_LOG,
-            func_name=1)
-    except TypeError:
-        util.log_msg(
-            f"key='{key}': argv parsing error, using default value "
-            f"'{default_value}'",
-            mode=util.DEBUG_LOG +
-            util.CONSOLE_LOG,
-            func_name=1)
-        proposed_val = str(default_value)
-    except IndexError:
-        util.log_msg(
-            f"key='{key}': argv parameter missing, using default value "
-            f"'{default_value}'",
-            mode=util.DEBUG_LOG +
-            util.CONSOLE_LOG,
-            func_name=1)
-        proposed_val = str(default_value)
-
-    # cast input for these keys into uppercase and target data type.
-    # all other keys are cast lowercase.
-    uppercase_key_list = ["target_mode"]
-
-    # truncate decimal if converting to int to avoid float str->int error
-    if datatype == int and '.' in proposed_val:
-        proposed_val = proposed_val[:proposed_val.index('.')]
-
-    # datatype conversion and type cast
-    if key in uppercase_key_list:
-        proposed_val = datatype(proposed_val.upper())
-    else:
-        proposed_val = datatype(proposed_val.lower())
-
-    # check for valid range
-    if proposed_val != default_value and proposed_val not in valid_range:
-        util.log_msg(
-            f"WARNING: '{proposed_val}' is not a valid choice for '{key}', "
-            f"using default({default_value})",
-            mode=util.BOTH_LOG,
-            func_name=1)
-        proposed_val = default_value
-
-    # populate the user_input dictionary
-    user_inputs[key] = proposed_val
-    return proposed_val
+    return user_inputs[key][field]
 
 
-def parse_all_runtime_parameters(argv_list=None):
+def set_user_inputs(key, input_val, field="value"):
     """
-    Parse all possible runtime parameters.
+    Set the target key's value from user_inputs.
 
     inputs:
-        argv_list(dict): dict of argv overrides
+        key(str): argument name
+        input_val(str, int, float, etc.):  value to set.
+        field(str): field name, default = "value"
     returns:
-        (dict) of all runtime parameters.
+        None, updates api.user_inputs dict.
     """
-    if argv_list is None:
-        argv_list = []
-    result = {}
-    if argv_list:
-        util.log_msg(
-            f"parse_all_runtime_parameters from user dictionary: {argv_list}",
-            mode=util.DEBUG_LOG +
-            util.CONSOLE_LOG,
-            func_name=1)
-    else:
-        util.log_msg(
-            f"parse_all_runtime_parameters from sys.argv: {sys.argv}",
-            mode=util.DEBUG_LOG +
-            util.CONSOLE_LOG,
-            func_name=1)
-        argv_list = sys.argv
-
-    # parse thermostat type parameter (argv[1] if present):
-    result["thermostat_type"] = parse_runtime_parameter(
-        "thermostat_type", str, DEFAULT_THERMOSTAT,
-        list(SUPPORTED_THERMOSTATS.keys()), argv_list=argv_list)
-
-    # parse zone number parameter (argv[2] if present):
-    result["zone"] = parse_runtime_parameter(
-        "zone", int, 0, SUPPORTED_THERMOSTATS[
-            result["thermostat_type"]]["zones"],
-        argv_list=argv_list)
-
-    # parse the poll time override (argv[3] if present):
-    result["poll_time_sec"] = parse_runtime_parameter(
-        "poll_time_sec", int, 10 * 60, range(0, 24 * 60 * 60),
-        argv_list=argv_list)
-
-    # parse the connection time override (argv[4] if present):
-    result["connection_time_sec"] = parse_runtime_parameter(
-        "connection_time_sec", int, 24 * 60 * 60, range(0, 24 * 60 * 60),
-        argv_list=argv_list)
-
-    # parse the tolerance override (argv[5] if present):
-    result["tolerance_degrees"] = parse_runtime_parameter(
-        "tolerance_degrees", int, 2, range(0, 10),
-        argv_list=argv_list)
-
-    # parse the target mode (argv[6] if present):
-    result["target_mode"] = parse_runtime_parameter(
-        "target_mode", str, "OFF_MODE", SUPPORTED_THERMOSTATS[
-            result["thermostat_type"]]["modes"], argv_list=argv_list)
-
-    # parse the number of measurements (argv[7] if present):
-    result["measurements"] = parse_runtime_parameter(
-        "measurements", int, 1e6, range(1, 11),
-        argv_list=argv_list)
-
-    return result
+    user_inputs[key][field] = input_val
 
 
 def load_hardware_library(thermostat_type):
@@ -267,7 +220,7 @@ def max_measurement_count_exceeded(measurement):
     returns:
         (bool): True if max measurement reached.
     """
-    max_measurements = user_inputs["measurements"]
+    max_measurements = get_user_inputs("measurements")
     if max_measurements is None:
         return False
     elif measurement > max_measurements:

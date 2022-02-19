@@ -2,9 +2,11 @@
 Common functions used in multiple unit tests.
 """
 # global imports
+import os
 import pprint
 import sys
 import unittest
+from unittest.mock import patch
 
 # local imports
 from thermostatsupervisor import emulator_config
@@ -21,7 +23,7 @@ ENABLE_SUPERVISE_INTEGRATION_TESTS = True  # enable supervise int tests
 ENABLE_FLASK_INTEGRATION_TESTS = True  # enable flask int tests
 ENABLE_KUMOLOCAL_TESTS = False  # Kumolocal is local net only
 ENABLE_MMM_TESTS = False  # mmm50 is local net only
-ENABLE_SHT31_TESTS = False  # sht31 can fail on occasion
+ENABLE_SHT31_TESTS = True  # sht31 can fail on occasion
 
 
 # generic argv list for unit testing
@@ -49,6 +51,8 @@ unit_test_honeywell = [
 unit_test_argv = unit_test_sht31
 
 
+# mock argv to prevent azure runtime args from polluting test.
+@patch.object(sys, 'argv', [os.path.realpath(__file__)])  # noqa e501, pylint:disable=undefined-variable
 class UnitTest(unittest.TestCase):
     """Extensions to unit test framework."""
 
@@ -69,14 +73,12 @@ class UnitTest(unittest.TestCase):
             },
         }
         self.user_inputs_backup = api.user_inputs
-        api.user_inputs = {
-            "thermostat_type": self.thermostat_type,
-            "zone": self.zone,
-            "poll_time_sec": 55,
-            "connection_time_sec": 155,
-            "target_mode": "OFF_MODE",
-            "measurements": 3,
-        }
+        api.set_user_inputs(api.THERMOSTAT_TYPE_FLD, self.thermostat_type)
+        api.set_user_inputs(api.ZONE_FLD, self.zone)
+        api.set_user_inputs(api.POLL_TIME_FLD, 55)
+        api.set_user_inputs(api.CONNECT_TIME_FLD, 155)
+        api.set_user_inputs(api.TARGET_MODE_FLD, "OFF_MODE")
+        api.set_user_inputs(api.MEASUREMENTS_FLD, 3)
 
         self.Thermostat = tc.ThermostatCommon()
         self.Zone = tc.ThermostatCommonZone()
@@ -164,10 +166,9 @@ class IntegrationTest(UnitTest):
         # create new Thermostat and Zone instances
         if self.Thermostat is None and self.Zone is None:
             util.log_msg.debug = True  # debug mode set
-
-            thermostat_type = self.unit_test_argv[
-                api.get_argv_position("thermostat_type")]
-            zone = int(self.unit_test_argv[api.get_argv_position("zone")])
+            util.parse_runtime_parameters(self.unit_test_argv, api.user_inputs)
+            thermostat_type = api.get_user_inputs(api.THERMOSTAT_TYPE_FLD)
+            zone = api.get_user_inputs(api.ZONE_FLD)
 
             # create class instances
             self.Thermostat, self.Zone = tc.create_thermostat_instance(
@@ -195,11 +196,12 @@ class FunctionalIntegrationTest(IntegrationTest):
         This test also creates the class instances so it should be run
         first in the integration test sequence.
         """
+        util.parse_runtime_parameters(self.unit_test_argv, api.user_inputs)
         IntegrationTest.Thermostat, IntegrationTest.Zone = \
             tc.thermostat_basic_checkout(
                 api,
-                self.unit_test_argv[api.get_argv_position("thermostat_type")],
-                int(self.unit_test_argv[api.get_argv_position("zone")]),
+                api.get_user_inputs(api.THERMOSTAT_TYPE_FLD),
+                api.get_user_inputs(api.ZONE_FLD),
                 self.mod.ThermostatClass, self.mod.ThermostatZone
             )
 
@@ -269,6 +271,7 @@ class FunctionalIntegrationTest(IntegrationTest):
 
 @unittest.skipIf(not ENABLE_SUPERVISE_INTEGRATION_TESTS,
                  "supervise integration test is disabled")
+@patch.object(sys, 'argv', [os.path.realpath(__file__)])  # noqa e501, pylint:disable=undefined-variable
 class SuperviseIntegrationTest(IntegrationTest):
     """Supervise integration tests common to all thermostat types."""
 

@@ -81,7 +81,12 @@ class ThermostatClass(pyhtcc.PyHTCC, tc.ThermostatCommon):
         returns:
             (int): zone device id number
         """
-        return self._get_zone_device_ids()[zone]
+        try:
+            zone_id = self._get_zone_device_ids()[zone]
+        except IndexError:
+            raise ValueError(f"zone '{zone}' is not a valid choice for this "
+                             "Honeywell thermostat")
+        return zone_id
 
     def print_all_thermostat_metadata(self, zone, debug=False):
         """
@@ -797,7 +802,8 @@ if __name__ == "__main__":
     util.get_python_version()
 
     # get zone override
-    zone_number = api.parse_all_runtime_parameters()["zone"]
+    util.parse_runtime_parameters(argv_dict=api.user_inputs)
+    zone_number = api.get_user_inputs(api.ZONE_FLD)
 
     _, Zone = tc.thermostat_basic_checkout(
         api, honeywell_config.ALIAS,

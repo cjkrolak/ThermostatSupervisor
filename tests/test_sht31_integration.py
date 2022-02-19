@@ -38,7 +38,7 @@ class IntegrationTest(utc.IntegrationTest):
             "30",  # poll time in sec
             "1000",  # reconnect time in sec
             "2",  # tolerance
-            "",  # thermostat mode, no target
+            "UNKNOWN_MODE",  # thermostat mode, no target
             "3",  # number of measurements
         ]
         self.mod = sht31

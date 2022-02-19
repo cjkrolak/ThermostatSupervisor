@@ -1,6 +1,7 @@
 """Common utilitity functions and globals."""
 
 # built-in libraries
+import argparse
 import datetime
 import importlib.util
 import inspect
@@ -565,3 +566,194 @@ def dynamic_module_import(name, path=None):
         raise ex
     else:
         return mod
+
+
+def parse_runtime_parameters(argv_list=None, argv_dict=None):
+    """
+    Parse all runtime parameters from list, argv list or named
+    arguments.
+
+    If argv_list is input then algo will default to input list.
+    ElIf hyphen is found in argv the algo will default to named args.
+    inputs:
+       argv_list: list override for sys.argv
+       argv_dict(dict): dictionary of runtime args with these elements:
+        <key>: {  # key = argument name
+            "order": 0,  # order in the argv list
+            "value": None,   # initialized to None
+            "type": str,  # datatype
+            "default": "supervise.py",  # default value
+            "sflag": "-s",  # short flag identifier
+            "lflag": "--script",  # long flag identifier
+            "help": "script name"},  # help text
+            "valid": None,  # valid choices
+    returns:
+      argv_dict(dict)
+    """
+    sysargv_sflags = [elem[:2] for elem in sys.argv[1:]]
+    if not argv_dict:
+        raise ValueError("argv_dict cannot be None")
+    valid_sflags = [argv_dict[k]["sflag"] for k in argv_dict]
+    valid_sflags += ["-h", "--"]  # add help and double dash
+    if argv_list:
+        # argument list input, support parsing list
+        argvlist_sflags = [elem[:2] for elem in argv_list]
+        if any([flag in argvlist_sflags for flag in valid_sflags]):
+            print(f"parsing named arguments from input list: {argv_list}")
+            argv_dict = parse_named_arguments(argv_list=argv_list,
+                                              argv_dict=argv_dict)
+        else:
+            print(f"parsing arguments from input list: {argv_list}")
+            argv_dict = parse_argv_list(argv_list, argv_dict)
+    elif any([flag in sysargv_sflags for flag in valid_sflags]):
+        # named arguments from sys.argv
+        print(f"parsing named arguments from sys.argv: {sys.argv}")
+        argv_dict = parse_named_arguments(argv_dict=argv_dict)
+    else:
+        # sys.argv parsing
+        print(f"parsing arguments from sys.argv: {sys.argv}")
+        argv_dict = parse_argv_list(sys.argv, argv_dict)
+
+    argv_dict = validate_argv_inputs(argv_dict)
+
+    return argv_dict
+
+
+def parse_named_arguments(argv_list=None, argv_dict=None, description=None):
+    """
+    Parse all possible named arguments.
+
+    inputs:
+        argv_list(list): override sys.argv (for testing)
+        argv_dict(dict): dictionary of runtime args with these elements:
+        <key>: {  # key = argument name
+            "order": 0,  # order in the argv list
+            "value": None,   # initialized to None
+            "type": str,  # datatype
+            "default": "supervise.py",  # default value
+            "sflag": "-s",  # short flag identifier
+            "lflag": "--script",  # long flag identifier
+            "help": "script name"},  # help text
+            "valid": None,  # valid choices
+        description(str): description for help screen.
+    returns:
+        (dict) of all runtime parameters.
+    """
+    # setup parser
+    parser = argparse.ArgumentParser(description=description)
+
+    # load parser contents
+    for _, attr in argv_dict.items():
+        parser.add_argument(attr["lflag"], attr["sflag"], help=attr["help"],
+                            type=attr["type"], default=attr["default"])
+
+    # parse the argument list
+    if argv_list is not None:
+        # test mode, override sys.argv
+        args = parser.parse_args(argv_list[1:])
+    else:
+        args = parser.parse_args()
+    for key in argv_dict:
+        if key == "script":
+            # add script name
+            argv_dict[key]["value"] = sys.argv[0]
+        else:
+            argv_dict[key]["value"] = getattr(args, key, None)
+            if isinstance(argv_dict[key]["value"], str):
+                # str parsing has leading spaces for some reason
+                argv_dict[key]["value"] = argv_dict[key]["value"].strip()
+
+    return argv_dict
+
+
+def parse_argv_list(argv_list=None, argv_dict=None):
+    """
+    Parse un-named arguments from list.
+
+    inputs:
+        argv_list(list): list of runtime arguments in the order
+                         argv_list[0] should be script name.
+        specified in argv_dict "order" fields.
+    returns:
+        (dict) of all runtime parameters.
+    """
+    # if argv list is set use that, else use sys.argv
+    if argv_list:
+        log_msg(
+            f"parse_all_runtime_parameters from user input list: {argv_list}",
+            mode=DEBUG_LOG +
+            CONSOLE_LOG,
+            func_name=1)
+        argv_inputs = argv_list
+    else:
+        log_msg(
+            f"parse_all_runtime_parameters from sys.argv: {sys.argv}",
+            mode=DEBUG_LOG +
+            CONSOLE_LOG,
+            func_name=1)
+        argv_inputs = sys.argv
+
+    # populate dict with values from list
+    for k, v in argv_dict.items():
+        if v["order"] <= len(argv_inputs) - 1:
+            argv_dict[k]["value"] = argv_dict[k]["type"](
+                argv_inputs[v["order"]])
+
+    return argv_dict
+
+
+def validate_argv_inputs(argv_dict):
+    """
+    Validate argv inputs and update reset to defaults if necessary.
+
+    inputs:
+        argv_dict(dict): dictionary of runtime args with these elements:
+        <key>: {  # key = argument name
+            "order": 0,  # order in the argv list
+            "value": None,   # initialized to None
+            "type": str,  # datatype
+            "default": "supervise.py",  # default value
+            "sflag": "-s",  # short flag identifier
+            "lflag": "--script",  # long flag identifier
+            "help": "script name"},  # help text
+            "valid": None,  # valid choices
+    returns:
+        (dict) of all runtime parameters.
+    """
+    for key, attr in argv_dict.items():
+        proposed_value = attr["value"]
+        default_value = attr["default"]
+        proposed_type = type(proposed_value)
+        expected_type = attr["type"]
+        # missing value check
+        if proposed_value is None:
+            log_msg(
+                f"key='{key}': argv parameter missing, using default value "
+                f"'{default_value}'",
+                mode=DEBUG_LOG +
+                CONSOLE_LOG,
+                func_name=1)
+            attr["value"] = attr["default"]
+
+        # wrong datatype check
+        elif proposed_type != expected_type:
+            log_msg(
+                f"key='{key}': datatype error, expected={expected_type}, "
+                f"actual={proposed_type}, using default value "
+                f"'{default_value}'",
+                mode=DEBUG_LOG +
+                CONSOLE_LOG,
+                func_name=1)
+            attr["value"] = attr["default"]
+
+        # out of range check
+        elif (attr["valid_range"] is not None and
+              proposed_value not in attr["valid_range"]):
+            log_msg(
+                f"WARNING: '{proposed_value}' is not a valid choice for "
+                f"'{key}', using default({default_value})",
+                mode=BOTH_LOG,
+                func_name=1)
+            attr["value"] = attr["default"]
+
+    return argv_dict

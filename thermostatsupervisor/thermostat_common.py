@@ -11,6 +11,7 @@ import traceback
 
 # local imports
 from thermostatsupervisor import email_notification as eml
+from thermostatsupervisor import thermostat_api as api
 from thermostatsupervisor import utilities as util
 
 
@@ -73,7 +74,7 @@ class ThermostatCommonZone():
     AUTO_MODE = "AUTO_MODE"
     DRY_MODE = "DRY_MODE"
     FAN_MODE = "FAN_MODE"
-    UNKNOWN_MODE = "UNKNOWN_MODE"
+    UNKNOWN_MODE = "UNKNOWN_MODE"  # bypass set mode or unable to detect
 
     # modes where heat is applied
     heat_modes = [HEAT_MODE, AUTO_MODE]
@@ -105,6 +106,7 @@ class ThermostatCommonZone():
         self.device_id = util.BOGUS_INT  # placeholder
         self.poll_time_sec = util.BOGUS_INT  # placeholder
         self.connection_time_sec = util.BOGUS_INT  # placeholder
+        self.target_mode = "OFF_MODE"  # placeholder
         self.flag_all_deviations = False  #
         self.temperature_is_deviated = False  # temp deviated from schedule
         self.display_temp = None  # current temperature in deg F
@@ -639,23 +641,23 @@ class ThermostatCommonZone():
         returns:
             None, updates class variables.
         """
-        # map user input keys to class methods
+        # map user input keys to class members.
         # "thermostat_type is not overwritten
         user_input_to_class_mapping = {
-            "thermostat_type": "thermostat_type",
-            "zone": "zone_number",
-            "poll_time_sec": "poll_time_sec",
-            "connection_time_sec": "connection_time_sec",
-            "tolerance_degrees": "tolerance_degrees",
-            "target_mode": "target_mode",
-            "measurements": "measurements",
+            api.THERMOSTAT_TYPE_FLD: "thermostat_type",
+            api.ZONE_FLD: "zone_number",
+            api.POLL_TIME_FLD: "poll_time_sec",
+            api.CONNECT_TIME_FLD: "connection_time_sec",
+            api.TOLERANCE_FLD: "tolerance_degrees",
+            api.TARGET_MODE_FLD: "target_mode",
+            api.MEASUREMENTS_FLD: "measurements",
         }
 
         print("\n")
         util.log_msg("supervisor runtime parameters:",
                      mode=util.BOTH_LOG, func_name=1)
         for inp, cls_method in user_input_to_class_mapping.items():
-            user_input = user_inputs.get(inp)
+            user_input = api.get_user_inputs(inp)
             if user_input is not None:
                 setattr(self, cls_method, user_input)
                 util.log_msg(f"{inp}={user_input}",
@@ -707,7 +709,12 @@ class ThermostatCommonZone():
             target_mode = self.OFF_MODE
 
         # revert the mode to target
-        self.set_mode(target_mode)
+        # UNKNOWN mode is bypassed
+        if target_mode == self.UNKNOWN_MODE:
+            print(f"{util.get_function_name()}: target_mode='{target_mode}', "
+                  "doing nothing.")
+        else:
+            self.set_mode(target_mode)
 
         return target_mode
 
@@ -953,8 +960,8 @@ def create_thermostat_instance(api, thermostat_type, zone,
     Zone = ThermostatZone(Thermostat)
 
     # update runtime overrides
-    api.user_inputs["thermostat_type"] = thermostat_type
-    api.user_inputs["zone"] = zone
+    api.set_user_inputs(api.THERMOSTAT_TYPE_FLD, thermostat_type)
+    api.set_user_inputs(api.ZONE_FLD, zone)
     Zone.update_runtime_parameters(api.user_inputs)
 
     return Thermostat, Zone

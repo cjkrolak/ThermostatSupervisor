@@ -5,7 +5,7 @@ Unit test module for supervise.py.
 import unittest
 
 # local imports
-from thermostatsupervisor import sht31_config
+from thermostatsupervisor import emulator_config
 from thermostatsupervisor import supervise as sup
 from tests import unit_test_common as utc
 from thermostatsupervisor import utilities as util
@@ -44,7 +44,8 @@ class Test(utc.UnitTest):
                      "this test not supported on Azure Pipelines")
     def test_supervisor(self):
         """Verify main supervisor loop."""
-        sup.supervisor(sht31_config.ALIAS, sht31_config.UNIT_TEST_ZONE)
+        sup.supervisor(emulator_config.ALIAS,
+                       emulator_config.supported_configs["zones"][0])
 
 
 if __name__ == "__main__":

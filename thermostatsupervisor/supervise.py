@@ -114,7 +114,7 @@ def supervisor(thermostat_type, zone_str):
     while not api.max_measurement_count_exceeded(measurement):
         # make connection to thermostat
         mod = api.load_hardware_library(thermostat_type)
-        zone_num = api.user_inputs["zone"]
+        zone_num = api.get_user_inputs(api.ZONE_FLD)
 
         util.log_msg(
             f"connecting to thermostat zone {zone_num} "
@@ -158,9 +158,14 @@ def supervisor(thermostat_type, zone_str):
                 previous_mode_dict = current_mode_dict  # latch
 
             # revert thermostat mode if not matching target
-            if not Zone.verify_current_mode(api.user_inputs["target_mode"]):
-                api.user_inputs["target_mode"] = \
-                    Zone.revert_thermostat_mode(api.user_inputs["target_mode"])
+            print("DEBUG: target_mode=%s" % api.get_user_inputs(
+                    api.TARGET_MODE_FLD))
+            if not Zone.verify_current_mode(api.get_user_inputs(
+                    api.TARGET_MODE_FLD)):
+                api.set_user_inputs(api.TARGET_MODE_FLD,
+                                    Zone.revert_thermostat_mode(
+                                        api.get_user_inputs(
+                                            api.TARGET_MODE_FLD)))
 
             # revert thermostat to schedule if heat override is detected
             if (revert_deviations and Zone.is_controlled_mode() and
@@ -190,7 +195,7 @@ def supervisor(thermostat_type, zone_str):
 
     # clean-up and exit
     util.log_msg(
-        f"\n {measurement - 1} measurements completed, exiting program\n",
+        f"\n{measurement - 1} measurements completed, exiting program\n",
         mode=util.BOTH_LOG)
 
     # delete packages
@@ -211,15 +216,17 @@ def exec_supervise(debug=True, argv_list=None):
     util.log_msg.debug = debug  # debug mode set
 
     # parse all runtime parameters
-    api.user_inputs = api.parse_all_runtime_parameters(argv_list)
+    util.parse_runtime_parameters(argv_dict=api.user_inputs)
 
     # main supervise function
-    supervisor(api.user_inputs["thermostat_type"], api.user_inputs["zone"])
+    supervisor(api.get_user_inputs(api.THERMOSTAT_TYPE_FLD),
+               api.get_user_inputs(api.ZONE_FLD))
 
     return True
 
 
 if __name__ == "__main__":
+
     # if argv list is set use that, else use sys.argv
     if argv:
         argv_inputs = argv

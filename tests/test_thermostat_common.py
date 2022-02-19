@@ -41,7 +41,8 @@ class Test(utc.UnitTest):
         """
         Verify print_all_thermostat_metadata() runs without error.
         """
-        self.Thermostat.print_all_thermostat_metadata(api.user_inputs["zone"])
+        self.Thermostat.print_all_thermostat_metadata(
+            api.get_user_inputs("zone"))
 
     def test_set_mode(self):
         """
@@ -224,7 +225,7 @@ class Test(utc.UnitTest):
                 "return_type": type(None)},
             "update_runtime_parameters": {
                 "key": self.Zone.update_runtime_parameters,
-                "args": [{"zone": 1}],
+                "args": [{api.ZONE_FLD: 1}],
                 "return_type": type(None)},
             "get_schedule_program_heat": {
                 "key": self.Zone.get_schedule_program_heat,
@@ -309,7 +310,8 @@ class Test(utc.UnitTest):
         """
         test_cases = [self.Zone.HEAT_MODE, self.Zone.COOL_MODE,
                       self.Zone.DRY_MODE, self.Zone.AUTO_MODE,
-                      self.Zone.FAN_MODE, self.Zone.OFF_MODE]
+                      self.Zone.FAN_MODE, self.Zone.OFF_MODE,
+                      self.Zone.UNKNOWN_MODE]
         for test_case in random.choices(test_cases, k=20):
             if ((self.Zone.current_mode in self.Zone.heat_modes and
                  test_case in self.Zone.cool_modes)
@@ -641,10 +643,9 @@ class Test(utc.UnitTest):
             self.Zone.get_system_switch_position = \
                 (lambda *_, **__: self.Zone.system_switch_position[
                     tc.ThermostatCommonZone.DRY_MODE])
-            thermostat_type = utc.unit_test_argv[api.get_argv_position(
-                "thermostat_type")]
-            zone_number = int(utc.unit_test_argv[api.get_argv_position(
-                "zone")])
+            util.parse_runtime_parameters(utc.unit_test_argv, api.user_inputs)
+            thermostat_type = api.get_user_inputs(api.THERMOSTAT_TYPE_FLD)
+            zone_number = api.get_user_inputs(api.ZONE_FLD)
             mod = api.load_hardware_library(thermostat_type)
             thermostat, zone = \
                 tc.thermostat_basic_checkout(
@@ -714,7 +715,8 @@ class Test(utc.UnitTest):
 
     def test_report_heating_parameters(self):
         """Verify report_heating_parameters()."""
-        test_cases = [tc.ThermostatCommonZone.OFF_MODE]
+        test_cases = [tc.ThermostatCommonZone.UNKNOWN_MODE,
+                      tc.ThermostatCommonZone.UNKNOWN_MODE]
         for test_case in test_cases:
             print(f"test_case={test_case}")
             self.Zone.report_heating_parameters(switch_position=test_case)
