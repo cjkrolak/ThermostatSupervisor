@@ -271,6 +271,7 @@ class FunctionalIntegrationTest(IntegrationTest):
 
 @unittest.skipIf(not ENABLE_SUPERVISE_INTEGRATION_TESTS,
                  "supervise integration test is disabled")
+@patch.object(sys, 'argv', [os.path.realpath(__file__)])  # noqa e501, pylint:disable=undefined-variable
 class SuperviseIntegrationTest(IntegrationTest):
     """Supervise integration tests common to all thermostat types."""
 
