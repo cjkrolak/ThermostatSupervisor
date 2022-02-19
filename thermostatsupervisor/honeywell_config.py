@@ -20,4 +20,5 @@ required_env_variables = {
 supported_configs = {"module": "honeywell",
                      "type": 1,
                      "zones": [default_zone],
-                     "modes": ["OFF_MODE", "HEAT_MODE", "COOL_MODE"]}
+                     "modes": ["OFF_MODE", "HEAT_MODE", "COOL_MODE",
+                               "UNKNOWN_MODE"]}

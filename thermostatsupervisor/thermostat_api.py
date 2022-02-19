@@ -50,18 +50,27 @@ def update_thermostat_specific_values(thermostat_type):
     """
     Update thermostat-specific values in user_inputs dict.
     """
-    user_inputs["thermostat_type"] = thermostat_type
-    user_inputs["zone"]["valid_range"] = SUPPORTED_THERMOSTATS[
+    set_user_inputs(THERMOSTAT_TYPE_FLD, thermostat_type)
+    user_inputs[ZONE_FLD]["valid_range"] = SUPPORTED_THERMOSTATS[
             thermostat_type]["zones"]
-    user_inputs["target_mode"]["valid_range"] = SUPPORTED_THERMOSTATS[
+    user_inputs[TARGET_MODE_FLD]["valid_range"] = SUPPORTED_THERMOSTATS[
             thermostat_type]["modes"]
 
 
 # runtime override parameters
 # note script name is omitted, starting with first parameter
+# index 0 (script name) is not included in this dict because it is
+# not a runtime argument
+THERMOSTAT_TYPE_FLD = "thermostat_type"
+ZONE_FLD = "zone"
+POLL_TIME_FLD = "poll_time"
+CONNECT_TIME_FLD = "connection_time"
+TOLERANCE_FLD = "tolerance"
+TARGET_MODE_FLD = "target_mode"
+MEASUREMENTS_FLD = "measurements"
 user_inputs = {
-    "thermostat_type": {
-        "order": 0,
+    THERMOSTAT_TYPE_FLD: {
+        "order": 1,  # index in the argv list
         "value": None,
         "type": str,
         "default": DEFAULT_THERMOSTAT,
@@ -69,17 +78,17 @@ user_inputs = {
         "sflag": "-t",
         "lflag": "--thermostat_type",
         "help": "thermostat type"},
-    "zone": {
-        "order": 1,
+    ZONE_FLD: {
+        "order": 2,  # index in the argv list
         "value": None,
         "type": int,
         "default": 0,
-        "valid_range": None,
+        "valid_range": None,  # updated once thermostat is known
         "sflag": "-z",
         "lflag": "--zone",
         "help": "target zone number"},
-    "poll_time": {
-        "order": 2,
+    POLL_TIME_FLD: {
+        "order": 3,  # index in the argv list
         "value": None,
         "type": int,
         "default": 60 * 10,
@@ -87,8 +96,8 @@ user_inputs = {
         "sflag": "-p",
         "lflag": "--poll_time",
         "help": "poll time (sec)"},
-    "connection_time": {
-        "order": 3,
+    CONNECT_TIME_FLD: {
+        "order": 4,  # index in the argv list
         "value": None,
         "type": int,
         "default": 60 * 10 * 8,
@@ -96,8 +105,8 @@ user_inputs = {
         "sflag": "-c",
         "lflag": "--connection_time",
         "help": "server connection time (sec)"},
-    "tolerance": {
-        "order": 4,
+    TOLERANCE_FLD: {
+        "order": 5,  # index in the argv list
         "value": None,
         "type": int,
         "default": 2,
@@ -105,17 +114,17 @@ user_inputs = {
         "sflag": "-d",
         "lflag": "--tolerance",
         "help": "tolerance (deg F)"},
-    "target_mode": {
-        "order": 5,
+    TARGET_MODE_FLD: {
+        "order": 6,  # index in the argv list
         "value": None,
         "type": str,
-        "default": "OFF_MODE",
-        "valid_range": None,
+        "default": "UNKNOWN_MODE",
+        "valid_range": None,  # updated once thermostat is known
         "sflag": "-m",
         "lflag": "--target_mode",
         "help": "target thermostat mode"},
-    "measurements": {
-        "order": 6,
+    MEASUREMENTS_FLD: {
+        "order": 7,  # index in the argv list
         "value": None,
         "type": int,
         "default": 10000,
@@ -160,11 +169,31 @@ def verify_required_env_variables(tstat, zone_str):
     return key_status
 
 
-def get_runtime_argument(key):
+def get_user_inputs(key, field="value"):
     """
     Return the target key's value from user_inputs.
+
+    inputs:
+        key(str): argument name
+        field(str): field name, default = "value"
+    returns:
+        None
     """
-    return user_inputs[key]["value"]
+    return user_inputs[key][field]
+
+
+def set_user_inputs(key, input_val, field="value"):
+    """
+    Set the target key's value from user_inputs.
+
+    inputs:
+        key(str): argument name
+        input_val(str, int, float, etc.):  value to set.
+        field(str): field name, default = "value"
+    returns:
+        None, updates api.user_inputs dict.
+    """
+    user_inputs[key][field] = input_val
 
 
 def load_hardware_library(thermostat_type):
@@ -191,7 +220,7 @@ def max_measurement_count_exceeded(measurement):
     returns:
         (bool): True if max measurement reached.
     """
-    max_measurements = user_inputs["measurements"]["value"]
+    max_measurements = get_user_inputs("measurements")
     if max_measurements is None:
         return False
     elif measurement > max_measurements:

@@ -114,7 +114,7 @@ def supervisor(thermostat_type, zone_str):
     while not api.max_measurement_count_exceeded(measurement):
         # make connection to thermostat
         mod = api.load_hardware_library(thermostat_type)
-        zone_num = api.user_inputs["zone"]["value"]
+        zone_num = api.get_user_inputs(api.ZONE_FLD)
 
         util.log_msg(
             f"connecting to thermostat zone {zone_num} "
@@ -158,11 +158,14 @@ def supervisor(thermostat_type, zone_str):
                 previous_mode_dict = current_mode_dict  # latch
 
             # revert thermostat mode if not matching target
-            if not Zone.verify_current_mode(api.user_inputs[
-                    "target_mode"]["value"]):
-                api.user_inputs["target_mode"]["value"] = \
-                    Zone.revert_thermostat_mode(api.user_inputs[
-                        "target_mode"]["value"])
+            print("DEBUG: target_mode=%s" % api.get_user_inputs(
+                    api.TARGET_MODE_FLD))
+            if not Zone.verify_current_mode(api.get_user_inputs(
+                    api.TARGET_MODE_FLD)):
+                api.set_user_inputs(api.TARGET_MODE_FLD,
+                                    Zone.revert_thermostat_mode(
+                                        api.get_user_inputs(
+                                            api.TARGET_MODE_FLD)))
 
             # revert thermostat to schedule if heat override is detected
             if (revert_deviations and Zone.is_controlled_mode() and
@@ -216,8 +219,8 @@ def exec_supervise(debug=True, argv_list=None):
     util.parse_runtime_parameters(argv_dict=api.user_inputs)
 
     # main supervise function
-    supervisor(api.user_inputs["thermostat_type"]["value"],
-               api.user_inputs["zone"]["value"])
+    supervisor(api.get_user_inputs(api.THERMOSTAT_TYPE_FLD),
+               api.get_user_inputs(api.ZONE_FLD))
 
     return True
 

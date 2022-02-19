@@ -672,6 +672,7 @@ def parse_argv_list(argv_list=None, argv_dict=None):
 
     inputs:
         argv_list(list): list of runtime arguments in the order
+                         argv_list[0] should be script name.
         specified in argv_dict "order" fields.
     returns:
         (dict) of all runtime parameters.

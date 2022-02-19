@@ -567,49 +567,48 @@ class RuntimeParameterTests(utc.UnitTest):
         str(measurements),  # measurements
     ]
     test_list_named_sflag = [
-        script,  # script,
-        api.user_inputs["thermostat_type"]["sflag"] + " " + thermostat_type,
-        api.user_inputs["zone"]["sflag"] + " " + str(zone),
-        api.user_inputs["poll_time"]["sflag"] + " " + str(poll_time_sec),
-        api.user_inputs["connection_time"][
-            "sflag"] + " " + str(connection_time_sec),
-        api.user_inputs["tolerance"]["sflag"] + " " + str(tolerance),
-        api.user_inputs["target_mode"]["sflag"] + " " + target_mode,
-        api.user_inputs["measurements"]["sflag"] + " " + str(measurements),
+        script,  # placeholder for list, script does not have sflag
+        api.get_user_inputs(api.THERMOSTAT_TYPE_FLD, "sflag") + " " + \
+        thermostat_type,
+        api.get_user_inputs(api.ZONE_FLD, "sflag") + " " + str(zone),
+        api.get_user_inputs(api.POLL_TIME_FLD, "sflag") + " " + \
+        str(poll_time_sec),
+        api.get_user_inputs(api.CONNECT_TIME_FLD, "sflag") + " " + \
+        str(connection_time_sec),
+        api.get_user_inputs(api.TOLERANCE_FLD, "sflag") + " " + \
+        str(tolerance),
+        api.get_user_inputs(api.TARGET_MODE_FLD, "sflag") + " " + \
+        target_mode,
+        api.get_user_inputs(api.MEASUREMENTS_FLD, "sflag") + " " + \
+        str(measurements),
     ]
 
     test_list_named_lflag = [
-        script,
-        api.user_inputs["thermostat_type"]["lflag"] + " " + thermostat_type,
-        api.user_inputs["zone"]["lflag"] + " " + str(zone),
-        api.user_inputs["poll_time"]["lflag"] + " " + str(poll_time_sec),
-        api.user_inputs["connection_time"][
-            "lflag"] + " " + str(connection_time_sec),
-        api.user_inputs["tolerance"]["lflag"] + " " + str(tolerance),
-        api.user_inputs["target_mode"]["lflag"] + " " + target_mode,
-        api.user_inputs["measurements"]["lflag"] + " " + str(measurements),
-    ]
-
-    etype = [  # expected data types
-        # api.user_inputs["script"]["type"],  # script
-        api.user_inputs["thermostat_type"]["type"],  # thermostat_type
-        api.user_inputs["zone"]["type"],  # zone
-        api.user_inputs["poll_time"]["type"],  # poll time sec
-        api.user_inputs["connection_time"]["type"],  # connection time
-        api.user_inputs["tolerance"]["type"],  # tolerance
-        api.user_inputs["target_mode"]["type"],  # target mode
-        api.user_inputs["measurements"]["type"],  # measurements
+        script,  # placeholder for list, script does not have lflag
+        api.get_user_inputs(api.THERMOSTAT_TYPE_FLD, "lflag") + " " + \
+        thermostat_type,
+        api.get_user_inputs(api.ZONE_FLD, "lflag") + " " + str(zone),
+        api.get_user_inputs(api.POLL_TIME_FLD, "lflag") + " " + \
+        str(poll_time_sec),
+        api.get_user_inputs(api.CONNECT_TIME_FLD, "lflag") + " " + \
+        str(connection_time_sec),
+        api.get_user_inputs(api.TOLERANCE_FLD, "lflag") + " " + \
+        str(tolerance),
+        api.get_user_inputs(api.TARGET_MODE_FLD, "lflag") + " " + \
+        target_mode,
+        api.get_user_inputs(api.MEASUREMENTS_FLD, "lflag") + " " + \
+        str(measurements),
     ]
 
     expected_values = {
         # "script": os.path.realpath(__file__),  # actual file name
-        "thermostat_type": thermostat_type,  # thermostat_type
-        "zone": zone,  # zone
-        "poll_time": poll_time_sec,  # poll time sec
-        "connection_time": connection_time_sec,  # connection time
-        "tolerance": tolerance,  # tolerance
-        "target_mode": target_mode,  # target mode
-        "measurements": measurements,  # measurements
+        api.THERMOSTAT_TYPE_FLD: thermostat_type,  # thermostat_type
+        api.ZONE_FLD: zone,  # zone
+        api.POLL_TIME_FLD: poll_time_sec,  # poll time sec
+        api.CONNECT_TIME_FLD: connection_time_sec,  # connection time
+        api.TOLERANCE_FLD: tolerance,  # tolerance
+        api.TARGET_MODE_FLD: target_mode,  # target mode
+        api.MEASUREMENTS_FLD: measurements,  # measurements
         }
 
     def setUp(self):
@@ -626,14 +625,14 @@ class RuntimeParameterTests(utc.UnitTest):
         order of test_list.
         """
         actual_values = [
-            api.user_inputs["script"]["value"],
-            api.user_inputs["thermostat_type"]["value"],
-            api.user_inputs["zone"]["value"],
-            api.user_inputs["poll_time"]["value"],
-            api.user_inputs["connection_time"]["value"],
-            api.user_inputs["tolerance"]["value"],
-            api.user_inputs["target_mode"]["value"],
-            api.user_inputs["measurements"]["value"],
+            api.get_user_inputs("script"),
+            api.get_user_inputs(api.THERMOSTAT_TYPE_FLD),
+            api.get_user_inputs(api.ZONE_FLD),
+            api.get_user_inputs(api.POLL_TIME_FLD),
+            api.get_user_inputs(api.CONNECT_TIME_FLD),
+            api.get_user_inputs(api.TOLERANCE_FLD),
+            api.get_user_inputs(api.TARGET_MODE_FLD),
+            api.get_user_inputs(api.MEASUREMENTS_FLD),
             ]
         return actual_values
 
@@ -643,18 +642,18 @@ class RuntimeParameterTests(utc.UnitTest):
         """
         for k in self.expected_values:
             self.assertEqual(self.expected_values[k],
-                             api.user_inputs[k]["value"],
+                             api.get_user_inputs(k),
                              f"expected({type(self.expected_values[k])}) "
                              f"{self.expected_values[k]} != "
-                             f"actual({type(api.user_inputs[k]['value'])}) "
-                             f"{api.user_inputs[k]['value']}")
+                             f"actual({type(api.get_user_inputs(k))}) "
+                             f"{api.get_user_inputs(k)}")
 
     def initialize_api_user_inputs(self):
         """
         Re-initialize api_user_inputs dict.
         """
         for k in api.user_inputs:
-            api.user_inputs[k]["value"] = None
+            api.set_user_inputs(k, None)
 
     def test_parse_argv_list(self):
         """
@@ -734,7 +733,7 @@ class RuntimeParameterTests(utc.UnitTest):
 
         print("test 4, input dict, will parse sys.argv argument list")
         self.initialize_api_user_inputs()
-        with patch.object(sys, 'argv', self.test_list):
+        with patch.object(sys, 'argv', self.test_list):  # noqa e501, pylint:disable=undefined-variable
             print("DEBUG: mocked sys.argv=%s" % sys.argv)
             print("DEBUG: api.user_inputs=%s" % api.user_inputs)
             util.parse_runtime_parameters(argv_list=None,
@@ -743,7 +742,7 @@ class RuntimeParameterTests(utc.UnitTest):
 
         print("test 5, input dict, will parse sys.argv named args")
         self.initialize_api_user_inputs()
-        with patch.object(sys, 'argv', self.test_list_named_sflag):
+        with patch.object(sys, 'argv', self.test_list_named_sflag):  # noqa e501, pylint:disable=undefined-variable
             print("DEBUG: mocked sys.argv=%s" % sys.argv)
             print("DEBUG: api.user_inputs=%s" % api.user_inputs)
             util.parse_runtime_parameters(argv_list=None,

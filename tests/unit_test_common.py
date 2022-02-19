@@ -21,7 +21,7 @@ ENABLE_SUPERVISE_INTEGRATION_TESTS = True  # enable supervise int tests
 ENABLE_FLASK_INTEGRATION_TESTS = True  # enable flask int tests
 ENABLE_KUMOLOCAL_TESTS = False  # Kumolocal is local net only
 ENABLE_MMM_TESTS = False  # mmm50 is local net only
-ENABLE_SHT31_TESTS = False  # sht31 can fail on occasion
+ENABLE_SHT31_TESTS = True  # sht31 can fail on occasion
 
 
 # generic argv list for unit testing
@@ -69,14 +69,12 @@ class UnitTest(unittest.TestCase):
             },
         }
         self.user_inputs_backup = api.user_inputs
-        api.user_inputs = {
-            "thermostat_type": self.thermostat_type,
-            "zone": self.zone,
-            "poll_time_sec": 55,
-            "connection_time_sec": 155,
-            "target_mode": "OFF_MODE",
-            "measurements": 3,
-        }
+        api.set_user_inputs(api.THERMOSTAT_TYPE_FLD, self.thermostat_type)
+        api.set_user_inputs(api.ZONE_FLD, self.zone)
+        api.set_user_inputs(api.POLL_TIME_FLD, 55)
+        api.set_user_inputs(api.CONNECT_TIME_FLD, 155)
+        api.set_user_inputs(api.TARGET_MODE_FLD, "OFF_MODE")
+        api.set_user_inputs(api.MEASUREMENTS_FLD, 3)
 
         self.Thermostat = tc.ThermostatCommon()
         self.Zone = tc.ThermostatCommonZone()
@@ -165,8 +163,8 @@ class IntegrationTest(UnitTest):
         if self.Thermostat is None and self.Zone is None:
             util.log_msg.debug = True  # debug mode set
             util.parse_runtime_parameters(self.unit_test_argv, api.user_inputs)
-            thermostat_type = api.get_runtime_argument("thermostat_type")
-            zone = api.get_runtime_argument("zone")
+            thermostat_type = api.get_user_inputs(api.THERMOSTAT_TYPE_FLD)
+            zone = api.get_user_inputs(api.ZONE_FLD)
 
             # create class instances
             self.Thermostat, self.Zone = tc.create_thermostat_instance(
@@ -198,8 +196,8 @@ class FunctionalIntegrationTest(IntegrationTest):
         IntegrationTest.Thermostat, IntegrationTest.Zone = \
             tc.thermostat_basic_checkout(
                 api,
-                api.get_runtime_argument("thermostat_type"),
-                api.get_runtime_argument("zone"),
+                api.get_user_inputs(api.THERMOSTAT_TYPE_FLD),
+                api.get_user_inputs(api.ZONE_FLD),
                 self.mod.ThermostatClass, self.mod.ThermostatZone
             )
 

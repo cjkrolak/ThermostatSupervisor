@@ -82,9 +82,9 @@ def index():
     def run_supervise():
         sup.argv = argv  # pass runtime overrides to supervise
         util.parse_runtime_parameters(argv, api.user_inputs)
-        thermostat_type = api.get_runtime_argument("thermostat_type")
-        zone = api.get_runtime_argument("zone")
-        measurements = api.get_runtime_argument("measurements")
+        thermostat_type = api.get_user_inputs(api.THERMOSTAT_TYPE_FLD)
+        zone = api.get_user_inputs(api.ZONE_FLD)
+        measurements = api.get_user_inputs(api.MEASUREMENTS_FLD)
         title = (f"{thermostat_type} thermostat zone {zone}, "
                  f"{measurements} measurements")
         yield f"<!doctype html><title>{title}</title>"

@@ -62,7 +62,7 @@ required_env_variables = {
 supported_configs = {"module": "sht31",
                      "type": 3,
                      "zones": [0, 1, UNIT_TEST_ZONE],
-                     "modes": ["OFF_MODE"]}
+                     "modes": ["OFF_MODE", "UNKNOWN_MODE"]}
 
 sht31_metadata = {
     LOFT_SHT31: {"zone_name": "Loft (local)",

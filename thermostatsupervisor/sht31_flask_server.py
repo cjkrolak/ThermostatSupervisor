@@ -486,9 +486,11 @@ def favicon():
 
 
 # runtime override parameters
+# index 0 (script name) is not included in this dict because it is
+# not a runtime argument
 user_inputs = {
     "debug": {
-        "order": 0,
+        "order": 1,    # index in the argv list
         "value": None,
         "type": bool,
         "default": False,
@@ -499,11 +501,31 @@ user_inputs = {
     }
 
 
-def get_runtime_argument(key):
+def get_user_inputs(key, field="value"):
     """
     Return the target key's value from user_inputs.
+
+    inputs:
+        key(str): argument name
+        field(str): field name, default = "value"
+    returns:
+        None
     """
-    return user_inputs[key]["value"]
+    return user_inputs[key][field]
+
+
+def set_user_inputs(key, input_val, field="value"):
+    """
+    Set the target key's value from user_inputs.
+
+    inputs:
+        key(str): argument name
+        input_val(str, int, float, etc.):  value to set.
+        field(str): field name, default = "value"
+    returns:
+        None, updates api.user_inputs dict.
+    """
+    user_inputs[key][field] = input_val
 
 
 if __name__ == "__main__":
@@ -515,7 +537,7 @@ if __name__ == "__main__":
 
     # parse runtime parameters
     util.parse_runtime_parameters(argv_dict=user_inputs)
-    debug = get_runtime_argument("debug")
+    debug = get_user_inputs("debug")
     if debug:
         print("Flask debug mode is enabled", file=sys.stderr)
 

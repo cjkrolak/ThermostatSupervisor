@@ -15,7 +15,8 @@ required_env_variables = {
 supported_configs = {"module": "mmm",
                      "type": 2,
                      "zones": [0, 1],
-                     "modes": ["OFF_MODE", "HEAT_MODE", "COOL_MODE"]}
+                     "modes": ["OFF_MODE", "HEAT_MODE", "COOL_MODE",
+                               "UNKNOWN_MODE"]}
 
 # 3m50 thermostat IP addresses (on local net)
 # user should configure these zones and IP addresses for their application.

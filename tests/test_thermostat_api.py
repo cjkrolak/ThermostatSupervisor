@@ -96,11 +96,11 @@ class Test(utc.UnitTest):
             "default": {"measurement": 13, "max_measurements": None,
                         "exp_result": False},
         }
-        max_measurement_bkup = api.user_inputs["measurements"]["value"]
+        max_measurement_bkup = api.get_user_inputs(api.MEASUREMENTS_FLD)
         try:
             for test_case, parameters in test_cases.items():
-                api.user_inputs["measurements"]["value"] = \
-                    parameters["max_measurements"]
+                api.set_user_inputs(api.MEASUREMENTS_FLD,
+                                    parameters["max_measurements"])
                 act_result = api.max_measurement_count_exceeded(
                     parameters["measurement"])
                 exp_result = parameters["exp_result"]
@@ -108,7 +108,7 @@ class Test(utc.UnitTest):
                                  f"test case '{test_case}', "
                                  f"expected={exp_result}, actual={act_result}")
         finally:
-            api.user_inputs["measurements"]["value"] = max_measurement_bkup
+            api.set_user_inputs(api.MEASUREMENTS_FLD, max_measurement_bkup)
 
 
 if __name__ == "__main__":

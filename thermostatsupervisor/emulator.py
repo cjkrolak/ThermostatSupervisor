@@ -576,7 +576,7 @@ if __name__ == "__main__":
 
     # get zone override
     util.parse_runtime_parameters(argv_dict=api.user_inputs)
-    zone_number = api.get_runtime_argument("zone")
+    zone_number = api.get_user_inputs(api.ZONE_FLD)
 
     tc.thermostat_basic_checkout(
         api, emulator_config.ALIAS,

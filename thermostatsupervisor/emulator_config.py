@@ -23,4 +23,4 @@ supported_configs = {"module": "emulator",
                      "type": 0,
                      "zones": [0, 1],
                      "modes": ["OFF_MODE", "HEAT_MODE", "COOL_MODE",
-                               "DRY_MODE", "AUTO_MODE"]}
+                               "DRY_MODE", "AUTO_MODE", "UNKNOWN_MODE"]}
