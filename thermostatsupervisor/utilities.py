@@ -599,19 +599,19 @@ def parse_runtime_parameters(argv_list=None, argv_dict=None):
         # argument list input, support parsing list
         argvlist_sflags = [elem[:2] for elem in argv_list]
         if any([flag in argvlist_sflags for flag in valid_sflags]):
-            print("parsing named arguments from input list")
+            print(f"parsing named arguments from input list: {argv_list}")
             argv_dict = parse_named_arguments(argv_list=argv_list,
                                               argv_dict=argv_dict)
         else:
-            print("parsing arguments from input list")
+            print(f"parsing arguments from input list: {argv_list}")
             argv_dict = parse_argv_list(argv_list, argv_dict)
     elif any([flag in sysargv_sflags for flag in valid_sflags]):
         # named arguments from sys.argv
-        print("parsing named arguments from sys.argv")
+        print(f"parsing named arguments from sys.argv: {sys.argv}")
         argv_dict = parse_named_arguments(argv_dict=argv_dict)
     else:
         # sys.argv parsing
-        print("parsing arguments from sys.argv")
+        print(f"parsing arguments from sys.argv: {sys.argv}")
         argv_dict = parse_argv_list(sys.argv, argv_dict)
 
     argv_dict = validate_argv_inputs(argv_dict)
