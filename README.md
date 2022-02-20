@@ -83,11 +83,11 @@ command line usage (named):  "*python -m thermostatsupervisor.supervise -t \<the
 ## supervisor_flask_server.py:
 This module will render supervise.py output on an HTML page using Flask.<br/>
 Same runtime parameters as supervise.py can be specified to override defaults:<br/>
-Port is currently hard-coded to 5001, access at server's local IP address<br/><br/><br/>
+Port is currently hard-coded to 5001, access at server's local IP address<br/><br/>
 command line usage:  "*python -m thermostatsupervisor.supervisor_flask_server \<runtime parameters\>*"
 
 ## emulator.py:
-Script will run an emulator with fabribated thermostat meta data.<br/>
+Script will run an emulator with fabribated thermostat meta data.<br/><br/>
 command line usage:  "*python -m thermostatsupervisor.emulator \<thermostat type\> \<zone\>*"
 
 ## honeywell.py:
