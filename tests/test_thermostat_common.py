@@ -643,7 +643,7 @@ class Test(utc.UnitTest):
             self.Zone.get_system_switch_position = \
                 (lambda *_, **__: self.Zone.system_switch_position[
                     tc.ThermostatCommonZone.DRY_MODE])
-            util.parse_runtime_parameters(utc.unit_test_argv, api.user_inputs)
+            util.parse_runtime_parameters(utc.unit_test_argv, api.uip.user_inputs)
             thermostat_type = api.get_user_inputs(api.THERMOSTAT_TYPE_FLD)
             zone_number = api.get_user_inputs(api.ZONE_FLD)
             mod = api.load_hardware_library(thermostat_type)

@@ -103,7 +103,7 @@ class IntegrationTest(utc.UnitTest):
         Zone = sht31.ThermostatZone(Thermostat)
 
         # update runtime overrides
-        Zone.update_runtime_parameters(api.user_inputs)
+        Zone.update_runtime_parameters(api.uip.user_inputs)
 
         print("current thermostat settings...")
         print(f"switch position: {Zone.get_system_switch_position()}")

@@ -72,17 +72,17 @@ class UnitTest(unittest.TestCase):
                 "GMAIL_PASSWORD": None,
             },
         }
-        self.user_inputs_backup = api.user_inputs
-        api.set_user_inputs(api.THERMOSTAT_TYPE_FLD, self.thermostat_type)
-        api.set_user_inputs(api.ZONE_FLD, self.zone)
-        api.set_user_inputs(api.POLL_TIME_FLD, 55)
-        api.set_user_inputs(api.CONNECT_TIME_FLD, 155)
-        api.set_user_inputs(api.TARGET_MODE_FLD, "OFF_MODE")
-        api.set_user_inputs(api.MEASUREMENTS_FLD, 3)
+        self.user_inputs_backup = api.uip.user_inputs
+        api.uip.set_user_inputs(api.THERMOSTAT_TYPE_FLD, self.thermostat_type)
+        api.uip.set_user_inputs(api.ZONE_FLD, self.zone)
+        api.uip.set_user_inputs(api.POLL_TIME_FLD, 55)
+        api.uip.set_user_inputs(api.CONNECT_TIME_FLD, 155)
+        api.uip.set_user_inputs(api.TARGET_MODE_FLD, "OFF_MODE")
+        api.uip.set_user_inputs(api.MEASUREMENTS_FLD, 3)
 
         self.Thermostat = tc.ThermostatCommon()
         self.Zone = tc.ThermostatCommonZone()
-        self.Zone.update_runtime_parameters(api.user_inputs)
+        self.Zone.update_runtime_parameters(api.uip.user_inputs)
         self.Zone.current_mode = self.Zone.OFF_MODE
         self.is_off_mode_bckup = self.Zone.is_off_mode
         self.Zone.is_off_mode = lambda *_, **__: 1
@@ -90,7 +90,7 @@ class UnitTest(unittest.TestCase):
     def teardown_mock_thermostat_zone(self):
         """Tear down the mock thermostat settings."""
         del api.thermostats[self.thermostat_type]
-        api.user_inputs = self.user_inputs_backup
+        api.uip.user_inputs = self.user_inputs_backup
         self.Zone.is_off_mode = self.is_off_mode_bckup
 
     def print_test_result(self):
@@ -166,9 +166,10 @@ class IntegrationTest(UnitTest):
         # create new Thermostat and Zone instances
         if self.Thermostat is None and self.Zone is None:
             util.log_msg.debug = True  # debug mode set
-            util.parse_runtime_parameters(self.unit_test_argv, api.user_inputs)
-            thermostat_type = api.get_user_inputs(api.THERMOSTAT_TYPE_FLD)
-            zone = api.get_user_inputs(api.ZONE_FLD)
+            api.uip.parse_runtime_parameters(self.unit_test_argv,
+                                             api.uip.user_inputs)
+            thermostat_type = api.uip.get_user_inputs(api.THERMOSTAT_TYPE_FLD)
+            zone = api.uip.get_user_inputs(api.ZONE_FLD)
 
             # create class instances
             self.Thermostat, self.Zone = tc.create_thermostat_instance(
@@ -196,12 +197,13 @@ class FunctionalIntegrationTest(IntegrationTest):
         This test also creates the class instances so it should be run
         first in the integration test sequence.
         """
-        util.parse_runtime_parameters(self.unit_test_argv, api.user_inputs)
+        api.uip.parse_runtime_parameters(self.unit_test_argv,
+                                         api.uip.user_inputs)
         IntegrationTest.Thermostat, IntegrationTest.Zone = \
             tc.thermostat_basic_checkout(
                 api,
-                api.get_user_inputs(api.THERMOSTAT_TYPE_FLD),
-                api.get_user_inputs(api.ZONE_FLD),
+                api.uip.get_user_inputs(api.THERMOSTAT_TYPE_FLD),
+                api.uip.get_user_inputs(api.ZONE_FLD),
                 self.mod.ThermostatClass, self.mod.ThermostatZone
             )
 

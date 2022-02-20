@@ -230,21 +230,3 @@ def load_hardware_library(thermostat_type):
                 SUPPORTED_THERMOSTATS[thermostat_type]["module"])
     mod = util.dynamic_module_import(pkg_name)
     return mod
-
-
-def max_measurement_count_exceeded(measurement):
-    """
-    Return True if max measurement reached.
-
-    inputs:
-        measurement(int): current measurement value
-    returns:
-        (bool): True if max measurement reached.
-    """
-    max_measurements = uip.get_user_inputs("measurements")
-    if max_measurements is None:
-        return False
-    elif measurement > max_measurements:
-        return True
-    else:
-        return False

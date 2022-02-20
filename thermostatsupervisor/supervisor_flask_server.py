@@ -81,7 +81,7 @@ def index():
     """index route"""
     def run_supervise():
         sup.argv = argv  # pass runtime overrides to supervise
-        util.parse_runtime_parameters(argv, api.user_inputs)
+        util.parse_runtime_parameters(argv, api.uip.user_inputs)
         thermostat_type = api.get_user_inputs(api.THERMOSTAT_TYPE_FLD)
         zone = api.get_user_inputs(api.ZONE_FLD)
         measurements = api.get_user_inputs(api.MEASUREMENTS_FLD)

@@ -523,7 +523,7 @@ def set_user_inputs(key, input_val, field="value"):
         input_val(str, int, float, etc.):  value to set.
         field(str): field name, default = "value"
     returns:
-        None, updates api.user_inputs dict.
+        None, updates api.uip.user_inputs dict.
     """
     user_inputs[key][field] = input_val
 

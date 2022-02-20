@@ -546,8 +546,9 @@ class MiscTests(utc.UnitTest):
 
 
 class RuntimeParameterTests(utc.UnitTest):
-    """Runtime parameter util tests."""
+    """API Runtime parameter tests."""
 
+    uip = None
     script = os.path.realpath(__file__)
     thermostat_type = emulator_config.ALIAS
     zone = 0
@@ -566,39 +567,6 @@ class RuntimeParameterTests(utc.UnitTest):
         target_mode,  # target mode
         str(measurements),  # measurements
     ]
-    test_list_named_sflag = [
-        script,  # placeholder for list, script does not have sflag
-        api.get_user_inputs(api.THERMOSTAT_TYPE_FLD, "sflag") + " " + \
-        thermostat_type,
-        api.get_user_inputs(api.ZONE_FLD, "sflag") + " " + str(zone),
-        api.get_user_inputs(api.POLL_TIME_FLD, "sflag") + " " + \
-        str(poll_time_sec),
-        api.get_user_inputs(api.CONNECT_TIME_FLD, "sflag") + " " + \
-        str(connection_time_sec),
-        api.get_user_inputs(api.TOLERANCE_FLD, "sflag") + " " + \
-        str(tolerance),
-        api.get_user_inputs(api.TARGET_MODE_FLD, "sflag") + " " + \
-        target_mode,
-        api.get_user_inputs(api.MEASUREMENTS_FLD, "sflag") + " " + \
-        str(measurements),
-    ]
-
-    test_list_named_lflag = [
-        script,  # placeholder for list, script does not have lflag
-        api.get_user_inputs(api.THERMOSTAT_TYPE_FLD, "lflag") + " " + \
-        thermostat_type,
-        api.get_user_inputs(api.ZONE_FLD, "lflag") + " " + str(zone),
-        api.get_user_inputs(api.POLL_TIME_FLD, "lflag") + " " + \
-        str(poll_time_sec),
-        api.get_user_inputs(api.CONNECT_TIME_FLD, "lflag") + " " + \
-        str(connection_time_sec),
-        api.get_user_inputs(api.TOLERANCE_FLD, "lflag") + " " + \
-        str(tolerance),
-        api.get_user_inputs(api.TARGET_MODE_FLD, "lflag") + " " + \
-        target_mode,
-        api.get_user_inputs(api.MEASUREMENTS_FLD, "lflag") + " " + \
-        str(measurements),
-    ]
 
     expected_values = {
         # "script": os.path.realpath(__file__),  # actual file name
@@ -610,6 +578,34 @@ class RuntimeParameterTests(utc.UnitTest):
         api.TARGET_MODE_FLD: target_mode,  # target mode
         api.MEASUREMENTS_FLD: measurements,  # measurements
         }
+
+    def get_named_list(self, flag):
+        """
+        Return the named parameter list.
+
+        inputs:
+            flag(str): flag.
+        returns:
+            (list): named parameter list
+        """
+        test_list_named_flag = [
+            self.script,  # placeholder for list, script does not have lflag
+            self.uip.get_user_inputs(api.THERMOSTAT_TYPE_FLD, flag) + " " + \
+            self.thermostat_type,
+            self.uip.get_user_inputs(api.ZONE_FLD, flag) + " " + \
+            str(self.zone),
+            self.uip.get_user_inputs(api.POLL_TIME_FLD, flag) + " " + \
+            str(self.poll_time_sec),
+            self.uip.get_user_inputs(api.CONNECT_TIME_FLD, flag) + " " + \
+            str(self.connection_time_sec),
+            self.uip.get_user_inputs(api.TOLERANCE_FLD, flag) + " " + \
+            str(self.tolerance),
+            self.uip.get_user_inputs(api.TARGET_MODE_FLD, flag) + " " + \
+            self.target_mode,
+            self.uip.get_user_inputs(api.MEASUREMENTS_FLD, flag) + " " + \
+            str(self.measurements),
+        ]
+        return test_list_named_flag
 
     def setUp(self):
         self.print_test_name()
@@ -625,14 +621,14 @@ class RuntimeParameterTests(utc.UnitTest):
         order of test_list.
         """
         actual_values = [
-            api.get_user_inputs("script"),
-            api.get_user_inputs(api.THERMOSTAT_TYPE_FLD),
-            api.get_user_inputs(api.ZONE_FLD),
-            api.get_user_inputs(api.POLL_TIME_FLD),
-            api.get_user_inputs(api.CONNECT_TIME_FLD),
-            api.get_user_inputs(api.TOLERANCE_FLD),
-            api.get_user_inputs(api.TARGET_MODE_FLD),
-            api.get_user_inputs(api.MEASUREMENTS_FLD),
+            self.uip.get_user_inputs("script"),
+            self.uip.get_user_inputs(api.THERMOSTAT_TYPE_FLD),
+            self.uip.get_user_inputs(api.ZONE_FLD),
+            self.uip.get_user_inputs(api.POLL_TIME_FLD),
+            self.uip.get_user_inputs(api.CONNECT_TIME_FLD),
+            self.uip.get_user_inputs(api.TOLERANCE_FLD),
+            self.uip.get_user_inputs(api.TARGET_MODE_FLD),
+            self.uip.get_user_inputs(api.MEASUREMENTS_FLD),
             ]
         return actual_values
 
@@ -642,26 +638,26 @@ class RuntimeParameterTests(utc.UnitTest):
         """
         for k in self.expected_values:
             self.assertEqual(self.expected_values[k],
-                             api.get_user_inputs(k),
+                             self.uip.get_user_inputs(k),
                              f"expected({type(self.expected_values[k])}) "
                              f"{self.expected_values[k]} != "
-                             f"actual({type(api.get_user_inputs(k))}) "
-                             f"{api.get_user_inputs(k)}")
+                             f"actual({type(self.uip.get_user_inputs(k))}) "
+                             f"{self.uip.get_user_inputs(k)}")
 
     def initialize_api_user_inputs(self):
         """
         Re-initialize api_user_inputs dict.
         """
-        for k in api.user_inputs:
-            api.set_user_inputs(k, None)
+        for k in self.uip.user_inputs:
+            self.uip.set_user_inputs(k, None)
 
     def test_parse_argv_list(self):
         """
         Verify test parse_argv_list() returns expected
         values when input known values.
         """
-        argv_dict = util.parse_argv_list(self.test_list, api.user_inputs)
-        print(f"argv_dict={argv_dict}")
+        self.uip = util.UserInputs(self.test_list)
+        print(f"user_inputs={self.uip.user_inputs}")
         self.verify_parsed_values()
 
     def test_parser(self):
@@ -683,8 +679,9 @@ class RuntimeParameterTests(utc.UnitTest):
         Verify test parse_named_arguments() returns expected
         values when input known values with sflag.
         """
-        self.parse_named_arguments(self.test_list_named_sflag,
+        self.uip = util.UserInputs(self.get_named_list("sflag"),
                                    "unittest parsing named sflag arguments")
+        self.verify_parsed_values()
 
     def test_parse_named_arguments_lflag(self):
         """
@@ -692,8 +689,9 @@ class RuntimeParameterTests(utc.UnitTest):
         values when input known values with sflag.
         """
         return  # not yet working
-        self.parse_named_arguments(self.test_list_named_lflag,
+        self.uip = util.UserInputs(self.get_named_list("lflag"),
                                    "unittest parsing named lflag arguments")
+        self.verify_parsed_values()
 
     def parse_named_arguments(self, test_list, label_str):
         """
@@ -705,9 +703,9 @@ class RuntimeParameterTests(utc.UnitTest):
             label_str(str): description pass-thru
         """
         print(f"testing named arg list='{test_list}")
-        argv_dict = util.parse_named_arguments(test_list,
-                                               api.user_inputs,
-                                               label_str)
+        argv_dict = self.uip.parse_named_arguments(test_list,
+                                                   self.uip.user_inputs,
+                                                   label_str)
         print(f"argv_dict={argv_dict}")
         self.verify_parsed_values()
 
@@ -717,36 +715,36 @@ class RuntimeParameterTests(utc.UnitTest):
         """
         print("test 1, input None, will raise error")
         with self.assertRaises(ValueError):
-            util.parse_runtime_parameters(argv_list=None, argv_dict=None)
+            self.uip.parse_runtime_parameters(argv_list=None, argv_dict=None)
 
         print("test 2, input list, will parse list")
         self.initialize_api_user_inputs()
-        util.parse_runtime_parameters(
-            argv_list=self.test_list, argv_dict=api.user_inputs)
+        self.uip.parse_runtime_parameters(
+            argv_list=self.test_list, argv_dict=self.uip.user_inputs)
         self.verify_parsed_values()
 
         print("test 3, input named parameter list, will parse list")
         self.initialize_api_user_inputs()
-        util.parse_runtime_parameters(
-            argv_list=self.test_list_named_sflag, argv_dict=api.user_inputs)
+        self.uip.parse_runtime_parameters(
+            argv_list=self.test_list_named_sflag, argv_dict=self.uip.user_inputs)
         self.verify_parsed_values()
 
         print("test 4, input dict, will parse sys.argv argument list")
         self.initialize_api_user_inputs()
         with patch.object(sys, 'argv', self.test_list):  # noqa e501, pylint:disable=undefined-variable
             print("DEBUG: mocked sys.argv=%s" % sys.argv)
-            print("DEBUG: api.user_inputs=%s" % api.user_inputs)
-            util.parse_runtime_parameters(argv_list=None,
-                                          argv_dict=api.user_inputs)
+            print("DEBUG: self.uip.user_inputs=%s" % self.uip.user_inputs)
+            self.uip.parse_runtime_parameters(argv_list=None,
+                                          argv_dict=self.uip.user_inputs)
         self.verify_parsed_values()
 
         print("test 5, input dict, will parse sys.argv named args")
         self.initialize_api_user_inputs()
         with patch.object(sys, 'argv', self.test_list_named_sflag):  # noqa e501, pylint:disable=undefined-variable
             print("DEBUG: mocked sys.argv=%s" % sys.argv)
-            print("DEBUG: api.user_inputs=%s" % api.user_inputs)
-            util.parse_runtime_parameters(argv_list=None,
-                                          argv_dict=api.user_inputs)
+            print("DEBUG: self.uip.user_inputs=%s" % self.uip.user_inputs)
+            self.uip.parse_runtime_parameters(argv_list=None,
+                                              argv_dict=self.uip.user_inputs)
         self.verify_parsed_values()
 
     def test_validate_argv_inputs(self):
@@ -800,7 +798,7 @@ class RuntimeParameterTests(utc.UnitTest):
 
         key = "test_case"
         for test_case, test_dict in test_cases.items():
-            result_dict = util.validate_argv_inputs({key: test_dict})
+            result_dict = self.uip.validate_argv_inputs({key: test_dict})
             actual_value = result_dict[key]["value"]
 
             if "fail_" in test_case:

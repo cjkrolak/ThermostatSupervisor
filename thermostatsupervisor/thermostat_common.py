@@ -657,7 +657,7 @@ class ThermostatCommonZone():
         util.log_msg("supervisor runtime parameters:",
                      mode=util.BOTH_LOG, func_name=1)
         for inp, cls_method in user_input_to_class_mapping.items():
-            user_input = api.get_user_inputs(inp)
+            user_input = api.uip.get_user_inputs(inp)
             if user_input is not None:
                 setattr(self, cls_method, user_input)
                 util.log_msg(f"{inp}={user_input}",
@@ -960,9 +960,9 @@ def create_thermostat_instance(api, thermostat_type, zone,
     Zone = ThermostatZone(Thermostat)
 
     # update runtime overrides
-    api.set_user_inputs(api.THERMOSTAT_TYPE_FLD, thermostat_type)
-    api.set_user_inputs(api.ZONE_FLD, zone)
-    Zone.update_runtime_parameters(api.user_inputs)
+    api.uip.set_user_inputs(api.THERMOSTAT_TYPE_FLD, thermostat_type)
+    api.uip.set_user_inputs(api.ZONE_FLD, zone)
+    Zone.update_runtime_parameters(api.uip.user_inputs)
 
     return Thermostat, Zone
 
