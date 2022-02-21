@@ -571,12 +571,17 @@ def dynamic_module_import(name, path=None):
 class UserInputs():
     """Manage runtime arguments."""
 
-    def __init__(self, argv_list, *args, **kwargs):
+    def __init__(self, argv_list, help_description, *args, **kwargs):
         """Constructor."""
         self.argv_list = argv_list
+        self.help_description = help_description
         self.user_inputs = {}
         self.initialize_user_inputs()
-        self.parse_runtime_parameters(self.argv_list)
+        self.parse_runtime_parameters(argv_list)
+
+    def initialize_user_inputs(self):
+        """Populate user_inputs dictionary."""
+        pass  # placeholder, is instance-specific
 
     def parse_runtime_parameters(self, argv_list=None):
         """
@@ -591,7 +596,7 @@ class UserInputs():
           argv_dict(dict)
         """
         sysargv_sflags = [elem[:2] for elem in sys.argv[1:]]
-        if not self.user_inputs:
+        if self.user_inputs is None:
             raise ValueError("user_inputs cannot be None")
         valid_sflags = [self.user_inputs[k]["sflag"] for k in self.user_inputs]
         valid_sflags += ["-h", "--"]  # add help and double dash
@@ -622,18 +627,17 @@ class UserInputs():
 
         return self.user_inputs
 
-    def parse_named_arguments(self, argv_list=None, description=None):
+    def parse_named_arguments(self, argv_list=None):
         """
         Parse all possible named arguments.
 
         inputs:
             argv_list(list): override sys.argv (for testing)
-            description(str): description for help screen.
         returns:
             (dict) of all runtime parameters.
         """
         # setup parser
-        parser = argparse.ArgumentParser(description=description)
+        parser = argparse.ArgumentParser(description=self.help_description)
 
         # load parser contents
         for _, attr in self.user_inputs.items():

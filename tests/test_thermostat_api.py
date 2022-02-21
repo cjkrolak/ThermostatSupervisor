@@ -2,6 +2,7 @@
 Unit test module for thermostat_api.py.
 """
 # built-in imports
+import os
 import sys
 import unittest
 
@@ -96,6 +97,7 @@ class Test(utc.UnitTest):
             "default": {"measurement": 13, "max_measurements": None,
                         "exp_result": False},
         }
+        api.uip = api.UserInputs(None, "unit test parser")
         max_measurement_bkup = api.uip.get_user_inputs(api.MEASUREMENTS_FLD)
         try:
             for test_case, parameters in test_cases.items():
@@ -109,6 +111,34 @@ class Test(utc.UnitTest):
                                  f"expected={exp_result}, actual={act_result}")
         finally:
             api.uip.set_user_inputs(api.MEASUREMENTS_FLD, max_measurement_bkup)
+
+
+class RuntimeParameterTest(utc.RuntimeParameterTest):
+    """API Runtime parameter tests."""
+
+    mod = api  # module to test
+
+    script = os.path.realpath(__file__)
+    thermostat_type = emulator_config.ALIAS
+    zone = 0
+    poll_time_sec = 9
+    connection_time_sec = 90
+    tolerance = 3
+    target_mode = "HEAT_MODE"
+    measurements = 1
+
+    # fields for testing, mapped to class variables.
+    # (value, field name)
+    test_fields = [
+        (script, os.path.realpath(__file__)),
+        (thermostat_type, api.THERMOSTAT_TYPE_FLD),
+        (zone, api.ZONE_FLD),
+        (poll_time_sec, api.POLL_TIME_FLD),
+        (connection_time_sec, api.CONNECT_TIME_FLD),
+        (tolerance, api.TOLERANCE_FLD),
+        (target_mode, api.TARGET_MODE_FLD),
+        (measurements, api.MEASUREMENTS_FLD),
+    ]
 
 
 if __name__ == "__main__":

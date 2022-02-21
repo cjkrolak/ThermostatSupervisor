@@ -5,14 +5,15 @@ Flask server tests currently do not work on Azure pipelines
 because ports cannot be opened on shared pool.
 """
 # built-in imports
+import os
 import unittest
 
 # local imports
 # thermostat_api is imported but not used to avoid a circular import
-from thermostatsupervisor import thermostat_api as api
-# pylint: disable=unused-import.
+from thermostatsupervisor import thermostat_api as api  # pylint: disable=unused-import.
 from thermostatsupervisor import sht31
 from thermostatsupervisor import sht31_config
+from thermostatsupervisor import sht31_flask_server as sfs
 from tests import unit_test_common as utc
 from thermostatsupervisor import utilities as util
 
@@ -103,7 +104,7 @@ class IntegrationTest(utc.UnitTest):
         Zone = sht31.ThermostatZone(Thermostat)
 
         # update runtime overrides
-        Zone.update_runtime_parameters(api.uip.user_inputs)
+        Zone.update_runtime_parameters(sfs.uip.user_inputs)
 
         print("current thermostat settings...")
         print(f"switch position: {Zone.get_system_switch_position()}")
@@ -138,6 +139,21 @@ class IntegrationTest(utc.UnitTest):
         # cleanup
         del Zone
         del Thermostat
+
+
+class RuntimeParameterTest(utc.RuntimeParameterTest):
+    """sht31 flask server Runtime parameter tests."""
+
+    mod = sfs  # module to test
+    script = os.path.realpath(__file__)
+    debug = False
+
+    # fields for testing, mapped to class variables.
+    # (value, field name)
+    test_fields = [
+        (script, os.path.realpath(__file__)),
+        (debug, sfs.DEBUG_FLD),
+    ]
 
 
 if __name__ == "__main__":

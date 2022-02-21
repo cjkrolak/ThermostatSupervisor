@@ -384,6 +384,273 @@ class PerformanceIntegrationTest(IntegrationTest):
             f"repeatability limit ({self.humidity_stdev_limit})")
 
 
+class RuntimeParameterTest(UnitTest):
+    """Runtime parameter tests."""
+
+    uip = None
+    mod = None
+
+    def get_test_list(self):
+        """Return the test list with string elemeents."""
+        test_list = []
+        for k, _ in self.test_fields:
+            test_list.append(str(k))
+        return test_list
+
+    def get_expected_vals_dict(self):
+        """Return the expected values dictionary."""
+        expected_values = {}
+        # element 0 (script) is omitted from expected_values dict.
+        for x in range(1, len(self.test_fields)):
+            expected_values[self.test_fields[x][1]] = self.test_fields[x][0]
+        return expected_values
+
+    def get_named_list(self, flag):
+        """
+        Return the named parameter list.
+
+        inputs:
+            flag(str): flag.
+        returns:
+            (list): named parameter list
+        """
+        test_list_named_flag = []
+        # script placeholder for 0 element
+        test_list_named_flag.append(self.test_fields[0][1])
+
+        # element 0 (script) is omitted from expected_values dict.
+        for x in range(1, len(self.test_fields)):
+            test_list_named_flag.append(self.uip.get_user_inputs(
+                self.test_fields[x][1], flag) + " " +
+                str(self.test_fields[x][0]))
+            print("DEBUG: testlist[%s]=%s" % (x, test_list_named_flag[x]))
+        return test_list_named_flag
+
+    def parse_user_inputs_dict(self):
+        """
+        Parse the user_inputs_dict into list matching
+        order of test_list.
+        """
+        actual_values = []
+        for x in range(0, len(self.test_fields)):
+            actual_values.append(self.uip.get_user_inputs(
+                self.test_fields[x][1]))
+        return actual_values
+
+    def setUp(self):
+        self.print_test_name()
+        util.log_msg.file_name = "unit_test.txt"
+        self.initialize_user_inputs()
+
+    def tearDown(self):
+        self.print_test_result()
+
+    def verify_parsed_values(self):
+        """
+        Verify values were parsed correctly by comparing to expected values.
+        """
+        expected_values = self.get_expected_vals_dict()
+        for k in expected_values:
+            self.assertEqual(expected_values[k],
+                             self.uip.get_user_inputs(k),
+                             f"expected({type(expected_values[k])}) "
+                             f"{expected_values[k]} != "
+                             f"actual({type(self.uip.get_user_inputs(k))}) "
+                             f"{self.uip.get_user_inputs(k)}")
+
+    def initialize_user_inputs(self):
+        """
+        Re-initialize user_inputs dict.
+        """
+        self.uip = self.mod.UserInputs()
+        for k in self.uip.user_inputs:
+            self.uip.set_user_inputs(k, None)
+
+    def test_parse_argv_list(self):
+        """
+        Verify test parse_argv_list() returns expected
+        values when input known values.
+        """
+        test_list = self.get_test_list()
+        print(f"test_list={test_list}")
+        self.uip = self.mod.UserInputs(test_list, "unit test parser")
+        print(f"user_inputs={self.uip.user_inputs}")
+        self.verify_parsed_values()
+
+    def test_parser(self):
+        """
+        Generic test for argparser.
+        """
+        import argparse
+        parser = argparse.ArgumentParser()
+        parser.add_argument('-a', type=int)
+        # argv = '-a 1'.split()  # or ['-a','1','foo']
+        # argv = ["-a 1", "--b 2"]  # double dash doesn't work yet.
+        argv = ["-a 1"]
+        args = parser.parse_args(argv)
+        assert(args.a == 1)
+        # assert(args.b == 2)
+
+    def test_parse_named_arguments_sflag(self):
+        """
+        Verify test parse_named_arguments() returns expected
+        values when input known values with sflag.
+        """
+        # build the named sflag list
+        self.uip = self.mod.UserInputs()
+        named_sflag_list = self.get_named_list("sflag")
+        print("sflag_list=%s" % named_sflag_list)
+
+        # clear out user inputs
+        self.initialize_user_inputs()
+
+        # parse named sflag list
+        self.uip = self.mod.UserInputs(
+            named_sflag_list, "unittest parsing named sflag arguments")
+        self.verify_parsed_values()
+
+    def test_parse_named_arguments_lflag(self):
+        """
+        Verify test parse_named_arguments() returns expected
+        values when input known values with sflag.
+        """
+        return  # not yet working
+
+        # build the named sflag list
+        self.uip = self.mod.UserInputs()
+        named_lflag_list = self.get_named_list("lflag")
+        print("lflag_list=%s" % named_lflag_list)
+
+        # clear out user inputs
+        self.initialize_user_inputs()
+
+        # parse named sflag list
+        self.uip = self.mod.UserInputs(
+            named_lflag_list, "unittest parsing named sflag arguments")
+        self.verify_parsed_values()
+
+    def parse_named_arguments(self, test_list, label_str):
+        """
+        Verify test parse_named_arguments() returns expected
+        values when input known values.
+
+        inputs:
+            test_list(list): list of named arguments
+            label_str(str): description pass-thru
+        """
+        print(f"testing named arg list='{test_list}")
+        self.uip = self.mod.UserInputs(test_list, label_str)
+        print(f"user_inputs={self.uip.user_inputs}")
+        self.verify_parsed_values()
+
+    def test_parse_runtime_parameters(self):
+        """
+        Test the upper level function for parsing.
+        """
+        self.uip = self.mod.UserInputs()
+        # print("test 1, input None, will raise error")
+        # self.initialize_user_inputs()
+        # with self.assertRaises(ValueError):
+        #     self.uip.parse_runtime_parameters(argv_list=None)
+
+        # initialize parser so that lower level functions can be tested.
+        self.uip = self.mod.UserInputs(help_description="unit test parsing")
+
+        print("test 2, input list, will parse list")
+        self.initialize_user_inputs()
+        test_list = self.get_test_list()
+        print("test2 test_list=%s" % test_list)
+        self.uip.parse_runtime_parameters(
+            argv_list=test_list)
+        self.verify_parsed_values()
+
+        print("test 3, input named parameter list, will parse list")
+        self.initialize_user_inputs()
+        self.uip.parse_runtime_parameters(
+            argv_list=self.get_named_list("sflag"))
+        self.verify_parsed_values()
+
+        print("test 4, input dict, will parse sys.argv argument list")
+        self.initialize_user_inputs()
+        with patch.object(sys, 'argv', self.get_test_list()):  # noqa e501, pylint:disable=undefined-variable
+            print("DEBUG: mocked sys.argv=%s" % sys.argv)
+            print("DEBUG: self.uip.user_inputs=%s" % self.uip.user_inputs)
+            self.uip.parse_runtime_parameters(argv_list=None)
+        self.verify_parsed_values()
+
+        print("test 5, input dict, will parse sys.argv named args")
+        self.initialize_user_inputs()
+        with patch.object(sys, 'argv', self.get_named_list("sflag")):  # noqa e501, pylint:disable=undefined-variable
+            print("DEBUG: mocked sys.argv=%s" % sys.argv)
+            print("DEBUG: self.uip.user_inputs=%s" % self.uip.user_inputs)
+            self.uip.parse_runtime_parameters()
+        self.verify_parsed_values()
+
+    def test_validate_argv_inputs(self):
+        """
+        Verify validate_argv_inputs() works as expected.
+        """
+        test_cases = {
+            "fail_missing_value": {
+                "value": None,
+                "type": int,
+                "default": 1,
+                "valid_range": range(0, 4),
+                "expected_value": 1,
+                },
+            "fail_datatype_error": {
+                "value": "5",
+                "type": int,
+                "default": 2,
+                "valid_range": range(0, 10),
+                "expected_value": 2,
+                },
+            "fail_out_of_range_int": {
+                "value": 6,
+                "type": int,
+                "default": 3,
+                "valid_range": range(0, 3),
+                "expected_value": 3,
+                },
+            "fail_out_of_range_str": {
+                "value": "6",
+                "type": str,
+                "default": "4",
+                "valid_range": ["a", "b"],
+                "expected_value": "4",
+                },
+            "in_range_int": {
+                "value": 7,
+                "type": int,
+                "default": 4,
+                "valid_range": range(0, 10),
+                "expected_value": 7,
+                },
+            "in_range_str": {
+                "value": "8",
+                "type": str,
+                "default": "5",
+                "valid_range": ["a", "8", "abc"],
+                "expected_value": "8",
+                },
+            }
+
+        key = "test_case"
+        for test_case, test_dict in test_cases.items():
+            result_dict = self.uip.validate_argv_inputs({key: test_dict})
+            actual_value = result_dict[key]["value"]
+
+            if "fail_" in test_case:
+                expected_value = result_dict[key]["default"]
+            else:
+                expected_value = result_dict[key]["expected_value"]
+
+            self.assertEqual(expected_value, actual_value,
+                             f"test case ({test_case}), "
+                             f"expected={expected_value}, "
+                             f"actual={actual_value}")
+
+
 def run_all_tests():
     """
     Run all enabled unit tests.

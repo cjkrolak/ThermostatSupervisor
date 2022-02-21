@@ -64,19 +64,22 @@ uip = None  # user inputs object
 class UserInputs(util.UserInputs):
     """Manage runtime arguments for thermostat_api."""
 
-    def __init__(self, argv_list, thermostat_type=DEFAULT_THERMOSTAT):
+    def __init__(self, argv_list=None, help_description=None,
+                 thermostat_type=DEFAULT_THERMOSTAT):
         """
         UserInputs constructor for thermostat_api.
 
         inputs:
             argv_list(list): override runtime values
+            help_description(str): description field for help text
             thermostat_type(str): thermostat type
         """
         print("DEBUG in init, thermostat_type=%s" % thermostat_type)
+        self.argv_list = argv_list
         self.thermostat_type = thermostat_type  # default if not provided
 
         # initialize parent class
-        super().__init__(argv_list)
+        super().__init__(argv_list, help_description)
 
     def initialize_user_inputs(self):
         """
