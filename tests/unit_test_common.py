@@ -2,6 +2,7 @@
 Common functions used in multiple unit tests.
 """
 # global imports
+import distutils
 import os
 import pprint
 import sys
@@ -166,8 +167,7 @@ class IntegrationTest(UnitTest):
         # create new Thermostat and Zone instances
         if self.Thermostat is None and self.Zone is None:
             util.log_msg.debug = True  # debug mode set
-            api.uip.parse_runtime_parameters(self.unit_test_argv,
-                                             api.uip.user_inputs)
+            api.uip.parse_runtime_parameters(self.unit_test_argv)
             thermostat_type = api.uip.get_user_inputs(api.THERMOSTAT_TYPE_FLD)
             zone = api.uip.get_user_inputs(api.ZONE_FLD)
 
@@ -197,8 +197,7 @@ class FunctionalIntegrationTest(IntegrationTest):
         This test also creates the class instances so it should be run
         first in the integration test sequence.
         """
-        api.uip.parse_runtime_parameters(self.unit_test_argv,
-                                         api.uip.user_inputs)
+        api.uip.parse_runtime_parameters(self.unit_test_argv)
         IntegrationTest.Thermostat, IntegrationTest.Zone = \
             tc.thermostat_basic_checkout(
                 api,
@@ -394,7 +393,7 @@ class RuntimeParameterTest(UnitTest):
         """Return the test list with string elemeents."""
         test_list = []
         for k, _ in self.test_fields:
-            test_list.append(str(k))
+            test_list.append(k)
         return test_list
 
     def get_expected_vals_dict(self):
@@ -649,6 +648,78 @@ class RuntimeParameterTest(UnitTest):
                              f"test case ({test_case}), "
                              f"expected={expected_value}, "
                              f"actual={actual_value}")
+
+
+# user input fields
+BOOL_FLD = "bool_field"
+INT_FLD = "int_field"
+FLOAT_FLD = "float_field"
+STR_FLD = "str_field"
+uip = {}
+
+
+class UserInputs(util.UserInputs):
+    """Manage runtime arguments for generic unit testing."""
+
+    def __init__(self, argv_list=None, help_description=None):
+        """
+        UserInputs constructor for generic unit testing.
+
+        inputs:
+            argv_list(list): override runtime values
+            help_description(str): description field for help text
+        """
+        self.argv_list = argv_list
+
+        # initialize parent class
+        super().__init__(argv_list, help_description)
+
+    def initialize_user_inputs(self):
+        """
+        Populate user_inputs dict.
+        """
+        # define the user_inputs dict.
+        self.user_inputs = {
+            BOOL_FLD: {
+                "order": 1,    # index in the argv list
+                "value": None,
+                "type": lambda x: bool(distutils.util.strtobool(
+                    str(x).strip())),
+                "default": False,
+                "valid_range": [True, False, 1, 0],
+                "sflag": "-b",
+                "lflag": "--" + BOOL_FLD,
+                "help": "bool input parameter"},
+            INT_FLD: {
+                "order": 2,    # index in the argv list
+                "value": None,
+                "type": int,
+                "default": 49,
+                "valid_range": range(0, 99),
+                "sflag": "-i",
+                "lflag": "--" + INT_FLD,
+                "help": "int input parameter"},
+            FLOAT_FLD: {
+                "order": 3,    # index in the argv list
+                "value": None,
+                "type": float,
+                "default": 59.0,
+                "valid_range": None,
+                "sflag": "-f",
+                "lflag": "--" + FLOAT_FLD,
+                "help": "float input parameter"},
+            STR_FLD: {
+                "order": 4,    # index in the argv list
+                "value": None,
+                "type": str,
+                "default": "this is a string",
+                "valid_range": None,
+                "sflag": "-s",
+                "lflag": "--" + STR_FLD,
+                "help": "str input parameter"},
+        }
+        self.valid_sflags = [self.user_inputs[k]["sflag"]
+                             for k in self.user_inputs]
 
 
 def run_all_tests():

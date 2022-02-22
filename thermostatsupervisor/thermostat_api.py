@@ -94,7 +94,7 @@ class UserInputs(util.UserInputs):
                 "default": self.thermostat_type,
                 "valid_range": list(SUPPORTED_THERMOSTATS.keys()),
                 "sflag": "-t",
-                "lflag": "--thermostat_type",
+                "lflag": "--" + THERMOSTAT_TYPE_FLD,
                 "help": "thermostat type"},
             ZONE_FLD: {
                 "order": 2,  # index in the argv list
@@ -103,7 +103,7 @@ class UserInputs(util.UserInputs):
                 "default": 0,
                 "valid_range": None,  # updated once thermostat is known
                 "sflag": "-z",
-                "lflag": "--zone",
+                "lflag": "--" + ZONE_FLD,
                 "help": "target zone number"},
             POLL_TIME_FLD: {
                 "order": 3,  # index in the argv list
@@ -112,7 +112,7 @@ class UserInputs(util.UserInputs):
                 "default": 60 * 10,
                 "valid_range": range(0, 24 * 60 * 60),
                 "sflag": "-p",
-                "lflag": "--poll_time",
+                "lflag": "--" + POLL_TIME_FLD,
                 "help": "poll time (sec)"},
             CONNECT_TIME_FLD: {
                 "order": 4,  # index in the argv list
@@ -121,7 +121,7 @@ class UserInputs(util.UserInputs):
                 "default": 60 * 10 * 8,
                 "valid_range": range(0, 24 * 60 * 60 * 60),
                 "sflag": "-c",
-                "lflag": "--connection_time",
+                "lflag": "--" + CONNECT_TIME_FLD,
                 "help": "server connection time (sec)"},
             TOLERANCE_FLD: {
                 "order": 5,  # index in the argv list
@@ -130,7 +130,7 @@ class UserInputs(util.UserInputs):
                 "default": 2,
                 "valid_range": range(0, 10),
                 "sflag": "-d",
-                "lflag": "--tolerance",
+                "lflag": "--" + TOLERANCE_FLD,
                 "help": "tolerance (deg F)"},
             TARGET_MODE_FLD: {
                 "order": 6,  # index in the argv list
@@ -139,7 +139,7 @@ class UserInputs(util.UserInputs):
                 "default": "UNKNOWN_MODE",
                 "valid_range": None,  # updated once thermostat is known
                 "sflag": "-m",
-                "lflag": "--target_mode",
+                "lflag": "--" + TARGET_MODE_FLD,
                 "help": "target thermostat mode"},
             MEASUREMENTS_FLD: {
                 "order": 7,  # index in the argv list
@@ -148,7 +148,7 @@ class UserInputs(util.UserInputs):
                 "default": 10000,
                 "valid_range": range(1, 10001),
                 "sflag": "-n",
-                "lflag": "--measurements",
+                "lflag": "--" + MEASUREMENTS_FLD,
                 "help": "number of measurements"},
         }
         self.valid_sflags = [self.user_inputs[k]["sflag"]

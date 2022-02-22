@@ -3,6 +3,7 @@
 # built-in libraries
 import argparse
 import datetime
+import distutils
 import importlib.util
 import inspect
 import os
@@ -568,6 +569,18 @@ def dynamic_module_import(name, path=None):
         return mod
 
 
+def cast2bool(x):
+    """
+    Cast to bool.
+
+    inputs:
+        x(int, str, bool, etc.) variable of any datatype.
+    returns:
+        (bool): bool equivalent.
+    """
+    return bool(distutils.util.strtobool(str(x).strip()))
+
+
 class UserInputs():
     """Manage runtime arguments."""
 
@@ -595,14 +608,14 @@ class UserInputs():
         returns:
           argv_dict(dict)
         """
-        sysargv_sflags = [elem[:2] for elem in sys.argv[1:]]
+        sysargv_sflags = [str(elem)[:2] for elem in sys.argv[1:]]
         if self.user_inputs is None:
             raise ValueError("user_inputs cannot be None")
         valid_sflags = [self.user_inputs[k]["sflag"] for k in self.user_inputs]
         valid_sflags += ["-h", "--"]  # add help and double dash
         if argv_list:
             # argument list input, support parsing list
-            argvlist_sflags = [elem[:2] for elem in argv_list]
+            argvlist_sflags = [str(elem)[:2] for elem in argv_list]
             if any([flag in argvlist_sflags for flag in valid_sflags]):
                 print(f"parsing named arguments from input list: {argv_list}")
                 self.user_inputs = \
@@ -651,6 +664,7 @@ class UserInputs():
             args = parser.parse_args(argv_list[1:])
         else:
             args = parser.parse_args()
+        print("DEBUG: parser args=%s" % args)
         for key in self.user_inputs:
             if key == "script":
                 # add script name
@@ -661,6 +675,7 @@ class UserInputs():
                     # str parsing has leading spaces for some reason
                     self.user_inputs[key]["value"] = \
                         self.user_inputs[key]["value"].strip()
+                print("DEBUG: key=%s, val=%s (%s)" % (key, self.user_inputs[key]["value"], type(self.user_inputs[key]["value"])))
 
         return self.user_inputs
 
@@ -695,6 +710,7 @@ class UserInputs():
         # populate dict with values from list
         for k, v in self.user_inputs.items():
             if v["order"] <= len(argv_inputs) - 1:
+                print("DEBUG: setting %s=%s (%s)" % (self.user_inputs[k], argv_inputs[v["order"]], type(argv_inputs[v["order"]])))
                 self.user_inputs[k]["value"] = self.user_inputs[k]["type"](
                     argv_inputs[v["order"]])
 

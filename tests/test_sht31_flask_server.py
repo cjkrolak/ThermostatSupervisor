@@ -13,7 +13,7 @@ import unittest
 from thermostatsupervisor import thermostat_api as api  # pylint: disable=unused-import.
 from thermostatsupervisor import sht31
 from thermostatsupervisor import sht31_config
-from thermostatsupervisor import sht31_flask_server as sfs
+from thermostatsupervisor import sht31_flask_server as sht31_fs
 from tests import unit_test_common as utc
 from thermostatsupervisor import utilities as util
 
@@ -100,11 +100,14 @@ class IntegrationTest(utc.UnitTest):
         print("printing thermostat meta data:")
         Thermostat.print_all_thermostat_metadata(sht31_config.UNIT_TEST_ZONE)
 
+        # create mock runtime args
+        api.uip = api.UserInputs(utc.unit_test_argv)
+
         # create Zone object
         Zone = sht31.ThermostatZone(Thermostat)
 
         # update runtime overrides
-        Zone.update_runtime_parameters(sfs.uip.user_inputs)
+        Zone.update_runtime_parameters(api.uip.user_inputs)
 
         print("current thermostat settings...")
         print(f"switch position: {Zone.get_system_switch_position()}")
@@ -144,7 +147,7 @@ class IntegrationTest(utc.UnitTest):
 class RuntimeParameterTest(utc.RuntimeParameterTest):
     """sht31 flask server Runtime parameter tests."""
 
-    mod = sfs  # module to test
+    mod = sht31_fs  # module to test
     script = os.path.realpath(__file__)
     debug = False
 
@@ -152,7 +155,7 @@ class RuntimeParameterTest(utc.RuntimeParameterTest):
     # (value, field name)
     test_fields = [
         (script, os.path.realpath(__file__)),
-        (debug, sfs.DEBUG_FLD),
+        (debug, sht31_fs.DEBUG_FLD),
     ]
 
 

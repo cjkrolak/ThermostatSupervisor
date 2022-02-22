@@ -12,6 +12,7 @@ data structure expected:
 """
 # built-in imports
 import json
+import os
 import threading
 import time
 import traceback
@@ -115,6 +116,12 @@ class ThermostatClass(tc.ThermostatCommon):
         from thermostatsupervisor import sht31_flask_server as sht31_fs  # noqa E402
         # pylint: disable=import-outside-toplevel
 
+        # setup flask runtime variables
+        sht31_fs.uip = sht31_fs.UserInputs(
+            [os.path.realpath(__file__),
+             sht31_config.FLASK_DEBUG_MODE])
+
+        # start flask server thread
         self.flask_server = threading.Thread(
             target=sht31_fs.app.run,
             args=('0.0.0.0', sht31_config.FLASK_PORT,

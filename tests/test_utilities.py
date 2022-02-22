@@ -543,6 +543,27 @@ class MiscTests(utc.UnitTest):
             actual_val = util.get_key_from_value(test_dict, "bogus_value")
 
 
+class RuntimeParameterTest(utc.RuntimeParameterTest):
+    """Generic runtime parameter tests."""
+
+    mod = utc  # module to test
+    script = os.path.realpath(__file__)
+    bool_val = False
+    int_val = 9
+    float_val = 8.8
+    str_val = "test str"
+
+    # fields for testing, mapped to class variables.
+    # (value, field name)
+    test_fields = [
+        (script, os.path.realpath(__file__)),
+        (bool_val, utc.BOOL_FLD),
+        (int_val, utc.INT_FLD),
+        (float_val, utc.FLOAT_FLD),
+        (str_val, utc.STR_FLD),
+    ]
+
+
 if __name__ == "__main__":
     util.log_msg.debug = True
     unittest.main(verbosity=2)

@@ -16,6 +16,7 @@ except ImportError as ex:
     pi_library_exception = ex  # unsuccessful
 
 # built-in imports
+import distutils
 import os
 import statistics
 import sys
@@ -514,11 +515,12 @@ class UserInputs(util.UserInputs):
             DEBUG_FLD: {
                 "order": 1,    # index in the argv list
                 "value": None,
-                "type": bool,
+                "type": lambda x: bool(distutils.util.strtobool(
+                    str(x).strip())),
                 "default": False,
                 "valid_range": [True, False, 1, 0],
                 "sflag": "-d",
-                "lflag": "--debug",
+                "lflag": "--" + DEBUG_FLD,
                 "help": "flask server debug mode"},
         }
         self.valid_sflags = [self.user_inputs[k]["sflag"]
