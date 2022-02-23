@@ -10,7 +10,8 @@ import unittest
 
 # local imports
 # thermostat_api is imported but not used to avoid a circular import
-from thermostatsupervisor import thermostat_api as api  # pylint: disable=unused-import.
+
+from thermostatsupervisor import thermostat_api as api  # noqa F401, pylint: disable=unused-import.
 from thermostatsupervisor import sht31
 from thermostatsupervisor import sht31_config
 from thermostatsupervisor import sht31_flask_server as sht31_fs

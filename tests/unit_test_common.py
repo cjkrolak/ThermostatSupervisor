@@ -28,6 +28,17 @@ ENABLE_SHT31_TESTS = True  # sht31 can fail on occasion
 
 
 # generic argv list for unit testing
+unit_test_emulator = [
+    "supervise.py",  # module
+    "emulator",  # thermostat
+    emulator_config.supported_configs["zones"][0],  # zone
+    "19",  # poll time in sec
+    "359",  # reconnect time in sec
+    "3",  # tolerance
+    "OFF_MODE",  # thermostat mode
+    "2",  # number of measurements
+    ]
+
 unit_test_sht31 = ["supervise.py",  # module
                    "sht31",  # thermostat
                    ["99", "1"][util.is_azure_environment()],  # zone
@@ -49,7 +60,7 @@ unit_test_honeywell = [
     "2",  # number of measurements
 ]
 
-unit_test_argv = unit_test_sht31
+unit_test_argv = unit_test_emulator
 
 
 # mock argv to prevent azure runtime args from polluting test.
@@ -57,13 +68,21 @@ unit_test_argv = unit_test_sht31
 class UnitTest(unittest.TestCase):
     """Extensions to unit test framework."""
 
-    thermostat_type = emulator_config.ALIAS  # was "UNITTEST"
-    zone = emulator_config.supported_configs["zones"][0]
+    thermostat_type = unit_test_argv[1]
+    zone = unit_test_argv[2]
     user_inputs_backup = None
     Thermostat = None
     Zone = None
     is_off_mode_bckup = None
     util.unit_test_mode = True
+
+    def setUp(self):
+        """Default setup method."""
+        self.print_test_name()
+
+    def tearDown(self):
+        """Default teardown method."""
+        self.print_test_result()
 
     def setup_mock_thermostat_zone(self):
         """Setup mock thermostat settings."""
@@ -74,12 +93,15 @@ class UnitTest(unittest.TestCase):
             },
         }
         self.user_inputs_backup = api.uip.user_inputs
-        api.uip.set_user_inputs(api.THERMOSTAT_TYPE_FLD, self.thermostat_type)
-        api.uip.set_user_inputs(api.ZONE_FLD, self.zone)
-        api.uip.set_user_inputs(api.POLL_TIME_FLD, 55)
-        api.uip.set_user_inputs(api.CONNECT_TIME_FLD, 155)
-        api.uip.set_user_inputs(api.TARGET_MODE_FLD, "OFF_MODE")
-        api.uip.set_user_inputs(api.MEASUREMENTS_FLD, 3)
+        # parse runtime arguments
+        api.uip = api.UserInputs(self.unit_test_argv)
+        # api.uip.set_user_inputs(api.THERMOSTAT_TYPE_FLD,
+        # self.thermostat_type)
+        # api.uip.set_user_inputs(api.ZONE_FLD, self.zone)
+        # api.uip.set_user_inputs(api.POLL_TIME_FLD, 55)
+        # api.uip.set_user_inputs(api.CONNECT_TIME_FLD, 155)
+        # api.uip.set_user_inputs(api.TARGET_MODE_FLD, "OFF_MODE")
+        # api.uip.set_user_inputs(api.MEASUREMENTS_FLD, 3)
 
         self.Thermostat = tc.ThermostatCommon()
         self.Zone = tc.ThermostatCommonZone()
@@ -163,11 +185,17 @@ class IntegrationTest(UnitTest):
         self.poll_interval_sec = 0  # delay between repeat measurements
 
     def setup_thermostat_zone(self):
-        """Create a Thermostat and Zone instance for unit testing if needed."""
+        """
+        Create a Thermostat and Zone instance for unit testing if needed.
+
+        This function is called at the beginning of integration tests.
+        """
+        # parse runtime arguments
+        api.uip = api.UserInputs(self.unit_test_argv)
+
         # create new Thermostat and Zone instances
         if self.Thermostat is None and self.Zone is None:
             util.log_msg.debug = True  # debug mode set
-            api.uip.parse_runtime_parameters(self.unit_test_argv)
             thermostat_type = api.uip.get_user_inputs(api.THERMOSTAT_TYPE_FLD)
             zone = api.uip.get_user_inputs(api.ZONE_FLD)
 
@@ -178,9 +206,6 @@ class IntegrationTest(UnitTest):
 
         # return instances
         return self.Thermostat, self.Zone
-
-    def tearDown(self):
-        self.print_test_result()
 
 
 @unittest.skipIf(not ENABLE_FUNCTIONAL_INTEGRATION_TESTS,
@@ -197,7 +222,8 @@ class FunctionalIntegrationTest(IntegrationTest):
         This test also creates the class instances so it should be run
         first in the integration test sequence.
         """
-        api.uip.parse_runtime_parameters(self.unit_test_argv)
+        api.uip = api.UserInputs(self.unit_test_argv)
+
         IntegrationTest.Thermostat, IntegrationTest.Zone = \
             tc.thermostat_basic_checkout(
                 api,

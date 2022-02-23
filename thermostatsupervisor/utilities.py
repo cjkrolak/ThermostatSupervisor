@@ -590,6 +590,7 @@ class UserInputs():
         self.help_description = help_description
         self.user_inputs = {}
         self.initialize_user_inputs()
+        # parse the runtime arguments from input list or sys.argv
         self.parse_runtime_parameters(argv_list)
 
     def initialize_user_inputs(self):
@@ -675,7 +676,8 @@ class UserInputs():
                     # str parsing has leading spaces for some reason
                     self.user_inputs[key]["value"] = \
                         self.user_inputs[key]["value"].strip()
-                print("DEBUG: key=%s, val=%s (%s)" % (key, self.user_inputs[key]["value"], type(self.user_inputs[key]["value"])))
+                print("DEBUG: key=%s, val=%s (%s)" % (key, self.user_inputs[
+                    key]["value"], type(self.user_inputs[key]["value"])))
 
         return self.user_inputs
 
@@ -710,7 +712,10 @@ class UserInputs():
         # populate dict with values from list
         for k, v in self.user_inputs.items():
             if v["order"] <= len(argv_inputs) - 1:
-                print("DEBUG: setting %s=%s (%s)" % (self.user_inputs[k], argv_inputs[v["order"]], type(argv_inputs[v["order"]])))
+                print("DEBUG: setting %s=%s (%s)" % (self.user_inputs[k],
+                                                     argv_inputs[v["order"]],
+                                                     type(argv_inputs[v[
+                                                         "order"]])))
                 self.user_inputs[k]["value"] = self.user_inputs[k]["type"](
                     argv_inputs[v["order"]])
 
