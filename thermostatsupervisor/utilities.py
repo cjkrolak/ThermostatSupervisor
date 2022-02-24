@@ -3,7 +3,7 @@
 # built-in libraries
 import argparse
 import datetime
-import distutils
+import distutils.util
 import importlib.util
 import inspect
 import os

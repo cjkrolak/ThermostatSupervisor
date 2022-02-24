@@ -2,7 +2,7 @@
 Common functions used in multiple unit tests.
 """
 # global imports
-import distutils
+import distutils.util
 import os
 import pprint
 import sys
