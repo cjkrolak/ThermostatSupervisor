@@ -79,10 +79,34 @@ class UnitTest(unittest.TestCase):
     def setUp(self):
         """Default setup method."""
         self.print_test_name()
+        self.unit_test_argv = unit_test_argv
 
     def tearDown(self):
         """Default teardown method."""
         self.print_test_result()
+
+    def setup_thermostat_zone(self):
+        """
+        Create a Thermostat and Zone instance for unit testing if needed.
+
+        This function is called at the beginning of integration tests.
+        """
+        # parse runtime arguments
+        api.uip = api.UserInputs(self.unit_test_argv)
+
+        # create new Thermostat and Zone instances
+        if self.Thermostat is None and self.Zone is None:
+            util.log_msg.debug = True  # debug mode set
+            thermostat_type = api.uip.get_user_inputs(api.THERMOSTAT_TYPE_FLD)
+            zone = api.uip.get_user_inputs(api.ZONE_FLD)
+
+            # create class instances
+            self.Thermostat, self.Zone = tc.create_thermostat_instance(
+                api, thermostat_type, zone, self.mod.ThermostatClass,
+                self.mod.ThermostatZone)
+
+        # return instances
+        return self.Thermostat, self.Zone
 
     def setup_mock_thermostat_zone(self):
         """Setup mock thermostat settings."""
@@ -92,7 +116,8 @@ class UnitTest(unittest.TestCase):
                 "GMAIL_PASSWORD": None,
             },
         }
-        self.user_inputs_backup = api.uip.user_inputs
+        self.unit_test_argv = unit_test_argv  # use defaults
+        self.user_inputs_backup = getattr(api.uip, "user_inputs", None)
         # parse runtime arguments
         api.uip = api.UserInputs(self.unit_test_argv)
         # api.uip.set_user_inputs(api.THERMOSTAT_TYPE_FLD,
@@ -186,11 +211,14 @@ class IntegrationTest(UnitTest):
 
     def setup_thermostat_zone(self):
         """
-        Create a Thermostat and Zone instance for unit testing if needed.
+        Create a Thermostat and Zone instance for integration testing.
 
         This function is called at the beginning of integration tests.
+        If an existing thermostat/zone exists from previous test this function
+        will use the existing instances.
         """
         # parse runtime arguments
+        print("DEBUG(%s): setting up user inputs" % util.get_function_name())
         api.uip = api.UserInputs(self.unit_test_argv)
 
         # create new Thermostat and Zone instances
@@ -203,6 +231,9 @@ class IntegrationTest(UnitTest):
             self.Thermostat, self.Zone = tc.create_thermostat_instance(
                 api, thermostat_type, zone, self.mod.ThermostatClass,
                 self.mod.ThermostatZone)
+
+        # update runtime parameters
+        self.Zone.update_runtime_parameters(api.uip.user_inputs)
 
         # return instances
         return self.Thermostat, self.Zone
@@ -448,7 +479,6 @@ class RuntimeParameterTest(UnitTest):
             test_list_named_flag.append(self.uip.get_user_inputs(
                 self.test_fields[x][1], flag) + " " +
                 str(self.test_fields[x][0]))
-            print("DEBUG: testlist[%s]=%s" % (x, test_list_named_flag[x]))
         return test_list_named_flag
 
     def parse_user_inputs_dict(self):
@@ -598,16 +628,12 @@ class RuntimeParameterTest(UnitTest):
         print("test 4, input dict, will parse sys.argv argument list")
         self.initialize_user_inputs()
         with patch.object(sys, 'argv', self.get_test_list()):  # noqa e501, pylint:disable=undefined-variable
-            print("DEBUG: mocked sys.argv=%s" % sys.argv)
-            print("DEBUG: self.uip.user_inputs=%s" % self.uip.user_inputs)
             self.uip.parse_runtime_parameters(argv_list=None)
         self.verify_parsed_values()
 
         print("test 5, input dict, will parse sys.argv named args")
         self.initialize_user_inputs()
         with patch.object(sys, 'argv', self.get_named_list("sflag")):  # noqa e501, pylint:disable=undefined-variable
-            print("DEBUG: mocked sys.argv=%s" % sys.argv)
-            print("DEBUG: self.uip.user_inputs=%s" % self.uip.user_inputs)
             self.uip.parse_runtime_parameters()
         self.verify_parsed_values()
 

@@ -618,19 +618,37 @@ class UserInputs():
             # argument list input, support parsing list
             argvlist_sflags = [str(elem)[:2] for elem in argv_list]
             if any([flag in argvlist_sflags for flag in valid_sflags]):
-                print(f"parsing named arguments from input list: {argv_list}")
+                log_msg(
+                    f"parsing named runtime parameters from user input list: "
+                    f"{argv_list}",
+                    mode=DEBUG_LOG +
+                    CONSOLE_LOG,
+                    func_name=1)
                 self.user_inputs = \
                     self.parse_named_arguments(argv_list=argv_list)
             else:
-                print(f"parsing arguments from input list: {argv_list}")
+                log_msg(
+                    f"parsing runtime parameters from user input list: "
+                    f"{argv_list}",
+                    mode=DEBUG_LOG +
+                    CONSOLE_LOG,
+                    func_name=1)
                 self.user_inputs = self.parse_argv_list(argv_list)
         elif any([flag in sysargv_sflags for flag in valid_sflags]):
             # named arguments from sys.argv
-            print(f"parsing named arguments from sys.argv: {sys.argv}")
+            log_msg(
+                f"parsing named runtime parameters from sys.argv: {sys.argv}",
+                mode=DEBUG_LOG +
+                CONSOLE_LOG,
+                func_name=1)
             self.user_inputs = self.parse_named_arguments()
         else:
             # sys.argv parsing
-            print(f"parsing arguments from sys.argv: {sys.argv}")
+            log_msg(
+                f"parsing runtime parameters from sys.argv: {sys.argv}",
+                mode=DEBUG_LOG +
+                CONSOLE_LOG,
+                func_name=1)
             self.user_inputs = self.parse_argv_list(sys.argv)
 
         # update validation range based on input data
@@ -665,7 +683,6 @@ class UserInputs():
             args = parser.parse_args(argv_list[1:])
         else:
             args = parser.parse_args()
-        print("DEBUG: parser args=%s" % args)
         for key in self.user_inputs:
             if key == "script":
                 # add script name
@@ -676,8 +693,6 @@ class UserInputs():
                     # str parsing has leading spaces for some reason
                     self.user_inputs[key]["value"] = \
                         self.user_inputs[key]["value"].strip()
-                print("DEBUG: key=%s, val=%s (%s)" % (key, self.user_inputs[
-                    key]["value"], type(self.user_inputs[key]["value"])))
 
         return self.user_inputs
 
@@ -694,28 +709,13 @@ class UserInputs():
         """
         # if argv list is set use that, else use sys.argv
         if argv_list:
-            log_msg(
-                f"parse_all_runtime_parameters from user input list: "
-                f"{argv_list}",
-                mode=DEBUG_LOG +
-                CONSOLE_LOG,
-                func_name=1)
             argv_inputs = argv_list
         else:
-            log_msg(
-                f"parse_all_runtime_parameters from sys.argv: {sys.argv}",
-                mode=DEBUG_LOG +
-                CONSOLE_LOG,
-                func_name=1)
             argv_inputs = sys.argv
 
         # populate dict with values from list
         for k, v in self.user_inputs.items():
             if v["order"] <= len(argv_inputs) - 1:
-                print("DEBUG: setting %s=%s (%s)" % (self.user_inputs[k],
-                                                     argv_inputs[v["order"]],
-                                                     type(argv_inputs[v[
-                                                         "order"]])))
                 self.user_inputs[k]["value"] = self.user_inputs[k]["type"](
                     argv_inputs[v["order"]])
 

@@ -74,7 +74,6 @@ class UserInputs(util.UserInputs):
             help_description(str): description field for help text
             thermostat_type(str): thermostat type
         """
-        print("DEBUG in init, thermostat_type=%s" % thermostat_type)
         self.argv_list = argv_list
         self.thermostat_type = thermostat_type  # default if not provided
 
@@ -159,11 +158,9 @@ class UserInputs(util.UserInputs):
         Update thermostat-specific values in user_inputs dict.
         """
         # if thermostat is not set yet, default it based on module
-        print("DEBUG: user_inputs=%s" % self.user_inputs)
         thermostat_type = self.get_user_inputs(THERMOSTAT_TYPE_FLD)
         if thermostat_type is None:
             thermostat_type = self.thermostat_type
-        print("DEBUG: thermostat type=%s" % thermostat_type)
         self.user_inputs[ZONE_FLD]["valid_range"] = SUPPORTED_THERMOSTATS[
                 thermostat_type]["zones"]
         self.user_inputs[TARGET_MODE_FLD]["valid_range"] = \

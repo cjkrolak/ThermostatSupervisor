@@ -215,8 +215,8 @@ def exec_supervise(debug=True, argv_list=None):
     """
     util.log_msg.debug = debug  # debug mode set
 
-    # parse all runtime parameters
-    api.uip = api.UserInputs(argv_list=None)
+    # parse all runtime parameters if necessary
+    api.uip = api.UserInputs(argv_list)
 
     # main supervise function
     supervisor(api.uip.get_user_inputs(api.THERMOSTAT_TYPE_FLD),
