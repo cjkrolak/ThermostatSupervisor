@@ -24,7 +24,7 @@ ENABLE_SUPERVISE_INTEGRATION_TESTS = True  # enable supervise int tests
 ENABLE_FLASK_INTEGRATION_TESTS = True  # enable flask int tests
 ENABLE_KUMOLOCAL_TESTS = False  # Kumolocal is local net only
 ENABLE_MMM_TESTS = False  # mmm50 is local net only
-ENABLE_SHT31_TESTS = True  # sht31 can fail on occasion
+ENABLE_SHT31_TESTS = False  # sht31 can fail on occasion
 
 
 # generic argv list for unit testing
@@ -63,10 +63,23 @@ unit_test_honeywell = [
 unit_test_argv = unit_test_emulator
 
 
+class PatchMeta(type):
+    """A metaclass to patch all inherited classes."""
+
+    def __init__(cls, *args, **kwargs):
+        super(PatchMeta, self).__init__(*args, **kwargs)
+        patch(*cls.patch_args)(cls)
+
+
 # mock argv to prevent azure runtime args from polluting test.
-@patch.object(sys, 'argv', [os.path.realpath(__file__)])  # noqa e501, pylint:disable=undefined-variable
+# @patch.object(sys, 'argv', [os.path.realpath(__file__)])  # noqa e501, pylint:disable=undefined-variable
 class UnitTest(unittest.TestCase):
     """Extensions to unit test framework."""
+
+    # mock argv to prevent unit test runtime arguments from polluting tests
+    # that use argv parameters.  Azure pipelines is susceptible to this issue.
+    __metaclass__ = PatchMeta
+    patch_args = (sys.argv, [os.path.realpath(__file__)])
 
     thermostat_type = unit_test_argv[1]
     zone = unit_test_argv[2]
@@ -329,7 +342,7 @@ class FunctionalIntegrationTest(IntegrationTest):
 
 @unittest.skipIf(not ENABLE_SUPERVISE_INTEGRATION_TESTS,
                  "supervise integration test is disabled")
-@patch.object(sys, 'argv', [os.path.realpath(__file__)])  # noqa e501, pylint:disable=undefined-variable
+# @patch.object(sys, 'argv', [os.path.realpath(__file__)])  # noqa e501, pylint:disable=undefined-variable
 class SuperviseIntegrationTest(IntegrationTest):
     """Supervise integration tests common to all thermostat types."""
 
