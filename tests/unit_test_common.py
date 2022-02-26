@@ -68,30 +68,33 @@ class PatchMeta(type):
 
     def __init__(cls, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        print("DEBUG: in PatchMeta")
+        print("DEBUG: in PatchMeta for %s, patch args=%s" %
+              (cls, str(cls.patch_args)))
         patch.object(*cls.patch_args)(cls)
 
 
 # mock argv to prevent unit test runtime arguments from polluting tests
 # that use argv parameters.  Azure pipelines is susceptible to this issue.
 def mock_patch(_cls):
-    print("DEBUG: in mock patch decorator")
+    print("DEBUG: in mock patch decorator for %s" % _cls)
 
     def wrapper():
-        patch.object(sys, 'argv', [os.path.realpath(__file__)])
-        return _cls()
+        print("DEBUG: sys.argv before patch=%s" % sys.argv)
+        with patch.object(sys, 'argv', [os.path.realpath(__file__)]):
+            print("DEBUG: sys.argv after patch=%s" % sys.argv)
+            return _cls()
     return wrapper
 
 
 # mock argv to prevent azure runtime args from polluting test.
 #@patch.object(sys, 'argv', [os.path.realpath(__file__)])  # noqa e501, pylint:disable=undefined-variable
-class UnitTest(unittest.TestCase):
+class UnitTest(unittest.TestCase, metaclass=PatchMeta):
     """Extensions to unit test framework."""
 
     # mock argv to prevent unit test runtime arguments from polluting tests
     # that use argv parameters.  Azure pipelines is susceptible to this issue.
     __metaclass__ = PatchMeta
-    patch_args = (sys.argv, [os.path.realpath(__file__)])
+    patch_args = (sys, 'argv', [os.path.realpath(__file__)])
 
     thermostat_type = unit_test_argv[1]
     zone = unit_test_argv[2]
@@ -100,8 +103,8 @@ class UnitTest(unittest.TestCase):
     Zone = None
     is_off_mode_bckup = None
 
-    def __init_subclass__(cls, **kwargs):
-        return mock_patch(_cls=cls)
+    # def __init_subclass__(cls, **kwargs):
+    #    return mock_patch(_cls=cls)
 
     def setUp(self):
         """Default setup method."""
@@ -476,8 +479,8 @@ class RuntimeParameterTest(UnitTest):
 
     # mock argv to prevent unit test runtime arguments from polluting tests
     # that use argv parameters.  Azure pipelines is susceptible to this issue.
-    __metaclass__ = PatchMeta
-    patch_args = (sys.argv, [os.path.realpath(__file__)])
+    # __metaclass__ = PatchMeta
+    # patch_args = (sys.argv, [os.path.realpath(__file__)])
 
     uip = None
     mod = None

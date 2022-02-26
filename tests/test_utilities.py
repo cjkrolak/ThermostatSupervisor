@@ -479,11 +479,15 @@ class MiscTests(utc.UnitTest):
         """
         Confirm get_function_name works as expected.
         """
+        for test in range(1, 4):
+            print(f"get_function_name({test})={util.get_function_name(test)}")
+
         # default
         test = "<default>"
         print(f"testing util.get_function_name({test})")
         ev_1 = "test_get_function_name"
         result_1 = util.get_function_name()
+        print(f"get_function_name({test})={result_1}")
         self.assertEqual(ev_1, result_1, f"expected={ev_1}, actual={result_1}")
 
         # test 1
@@ -491,16 +495,28 @@ class MiscTests(utc.UnitTest):
         print(f"testing util.get_function_name({test})")
         ev_1 = "test_get_function_name"
         result_1 = util.get_function_name(test)
+        print(f"get_function_name({test})={result_1}")
         self.assertEqual(ev_1, result_1, f"test{test}: expected={ev_1}, "
                          f"actual={result_1}")
 
         # test 2
         test = 2
         print(f"testing util.get_function_name({test})")
+        ev_1 = ["patched",  # mock patch decorator
+                ]
+        result_1 = util.get_function_name(test)
+        print(f"get_function_name({test})={result_1}")
+        self.assertTrue(result_1 in ev_1, f"test{test}: expected values={ev_1}"
+                        f", actual={result_1}")
+
+        # test 3
+        test = 3
+        print(f"testing util.get_function_name({test})")
         ev_1 = ["run",  # Linux
                 "_callTestMethod",  # windows
                 ]
         result_1 = util.get_function_name(test)
+        print(f"get_function_name({test})={result_1}")
         self.assertTrue(result_1 in ev_1, f"test{test}: expected values={ev_1}"
                         f", actual={result_1}")
 
