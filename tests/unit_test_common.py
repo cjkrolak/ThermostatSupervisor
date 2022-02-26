@@ -68,11 +68,23 @@ class PatchMeta(type):
 
     def __init__(cls, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        print("DEBUG: in PatchMeta")
         patch.object(*cls.patch_args)(cls)
 
 
+# mock argv to prevent unit test runtime arguments from polluting tests
+# that use argv parameters.  Azure pipelines is susceptible to this issue.
+def mock_patch(_cls):
+    print("DEBUG: in mock patch decorator")
+
+    def wrapper():
+        patch.object(sys, 'argv', [os.path.realpath(__file__)])
+        return _cls()
+    return wrapper
+
+
 # mock argv to prevent azure runtime args from polluting test.
-# @patch.object(sys, 'argv', [os.path.realpath(__file__)])  # noqa e501, pylint:disable=undefined-variable
+#@patch.object(sys, 'argv', [os.path.realpath(__file__)])  # noqa e501, pylint:disable=undefined-variable
 class UnitTest(unittest.TestCase):
     """Extensions to unit test framework."""
 
@@ -87,7 +99,9 @@ class UnitTest(unittest.TestCase):
     Thermostat = None
     Zone = None
     is_off_mode_bckup = None
-    util.unit_test_mode = True
+
+    def __init_subclass__(cls, **kwargs):
+        return mock_patch(_cls=cls)
 
     def setUp(self):
         """Default setup method."""
@@ -190,7 +204,7 @@ class UnitTest(unittest.TestCase):
         print("-" * 60)
 
 
-@patch.object(sys, 'argv', [os.path.realpath(__file__)])  # noqa e501, pylint:disable=undefined-variable
+#@patch.object(sys, 'argv', [os.path.realpath(__file__)])  # noqa e501, pylint:disable=undefined-variable
 class IntegrationTest(UnitTest):
     """Common integration test framework."""
 
@@ -255,7 +269,7 @@ class IntegrationTest(UnitTest):
 
 @unittest.skipIf(not ENABLE_FUNCTIONAL_INTEGRATION_TESTS,
                  "functional integration tests are disabled")
-@patch.object(sys, 'argv', [os.path.realpath(__file__)])  # noqa e501, pylint:disable=undefined-variable
+#@patch.object(sys, 'argv', [os.path.realpath(__file__)])  # noqa e501, pylint:disable=undefined-variable
 class FunctionalIntegrationTest(IntegrationTest):
     """Functional integration tests."""
     metadata_field = None  # thermostat-specific
@@ -363,7 +377,7 @@ class SuperviseIntegrationTest(IntegrationTest):
 
 @unittest.skipIf(not ENABLE_PERFORMANCE_INTEGRATION_TESTS,
                  "performance integration tests are disabled")
-@patch.object(sys, 'argv', [os.path.realpath(__file__)])  # noqa e501, pylint:disable=undefined-variable
+#@patch.object(sys, 'argv', [os.path.realpath(__file__)])  # noqa e501, pylint:disable=undefined-variable
 class PerformanceIntegrationTest(IntegrationTest):
     """Performance integration tests common to all thermostat types."""
 
@@ -456,9 +470,14 @@ class PerformanceIntegrationTest(IntegrationTest):
             f"repeatability limit ({self.humidity_stdev_limit})")
 
 
-@patch.object(sys, 'argv', [os.path.realpath(__file__)])  # noqa e501, pylint:disable=undefined-variable
+#@patch.object(sys, 'argv', [os.path.realpath(__file__)])  # noqa e501, pylint:disable=undefined-variable
 class RuntimeParameterTest(UnitTest):
     """Runtime parameter tests."""
+
+    # mock argv to prevent unit test runtime arguments from polluting tests
+    # that use argv parameters.  Azure pipelines is susceptible to this issue.
+    __metaclass__ = PatchMeta
+    patch_args = (sys.argv, [os.path.realpath(__file__)])
 
     uip = None
     mod = None
