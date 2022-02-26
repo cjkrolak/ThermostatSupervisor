@@ -67,7 +67,7 @@ class PatchMeta(type):
     """A metaclass to patch all inherited classes."""
 
     def __init__(cls, *args, **kwargs):
-        super(PatchMeta, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         patch(*cls.patch_args)(cls)
 
 
