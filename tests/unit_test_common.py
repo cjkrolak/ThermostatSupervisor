@@ -68,7 +68,7 @@ class PatchMeta(type):
 
     def __init__(cls, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        patch(*cls.patch_args)(cls)
+        patch.object(*cls.patch_args)(cls)
 
 
 # mock argv to prevent azure runtime args from polluting test.
