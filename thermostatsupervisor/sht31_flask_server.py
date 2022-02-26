@@ -16,7 +16,7 @@ except ImportError as ex:
     pi_library_exception = ex  # unsuccessful
 
 # built-in imports
-import distutils
+import distutils.util
 import os
 import statistics
 import sys

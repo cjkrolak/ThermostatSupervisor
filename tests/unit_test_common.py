@@ -2,7 +2,7 @@
 Common functions used in multiple unit tests.
 """
 # global imports
-import distutils
+import distutils.util
 import os
 import pprint
 import sys
@@ -190,6 +190,7 @@ class UnitTest(unittest.TestCase):
         print("-" * 60)
 
 
+@patch.object(sys, 'argv', [os.path.realpath(__file__)])  # noqa e501, pylint:disable=undefined-variable
 class IntegrationTest(UnitTest):
     """Common integration test framework."""
 
@@ -254,6 +255,7 @@ class IntegrationTest(UnitTest):
 
 @unittest.skipIf(not ENABLE_FUNCTIONAL_INTEGRATION_TESTS,
                  "functional integration tests are disabled")
+@patch.object(sys, 'argv', [os.path.realpath(__file__)])  # noqa e501, pylint:disable=undefined-variable
 class FunctionalIntegrationTest(IntegrationTest):
     """Functional integration tests."""
     metadata_field = None  # thermostat-specific
@@ -361,6 +363,7 @@ class SuperviseIntegrationTest(IntegrationTest):
 
 @unittest.skipIf(not ENABLE_PERFORMANCE_INTEGRATION_TESTS,
                  "performance integration tests are disabled")
+@patch.object(sys, 'argv', [os.path.realpath(__file__)])  # noqa e501, pylint:disable=undefined-variable
 class PerformanceIntegrationTest(IntegrationTest):
     """Performance integration tests common to all thermostat types."""
 
@@ -453,6 +456,7 @@ class PerformanceIntegrationTest(IntegrationTest):
             f"repeatability limit ({self.humidity_stdev_limit})")
 
 
+@patch.object(sys, 'argv', [os.path.realpath(__file__)])  # noqa e501, pylint:disable=undefined-variable
 class RuntimeParameterTest(UnitTest):
     """Runtime parameter tests."""
 
