@@ -3,7 +3,6 @@ flask API for raspberry pi
 example from http://www.pibits.net/code/raspberry-pi-sht31-sensor-example.php
 """
 
-
 # raspberry pi libraries
 try:
     from RPi import GPIO  # noqa F405 raspberry pi GPIO library
@@ -284,7 +283,7 @@ class Sensors:
                                sht31_config.ALERT_PIN)
 
         # activate smbus
-        bus = smbus.SMBus(1)
+        bus = smbus.SMBus(sht31_config.I2C_BUS)
         time.sleep(0.5)
 
         # data structure
@@ -321,7 +320,7 @@ class Sensors:
 
     def send_cmd_get_diag(self, i2c_command):
         """
-        Send i2c command and read status register..
+        Send i2c command and read status register.
 
         inputs:
             i2c_command(int): i2c command to send
@@ -333,7 +332,7 @@ class Sensors:
                                sht31_config.ALERT_PIN)
 
         # activate smbus
-        bus = smbus.SMBus(1)
+        bus = smbus.SMBus(sht31_config.I2C_BUS)
         time.sleep(0.5)
 
         try:
@@ -354,6 +353,40 @@ class Sensors:
         finally:
             # close the smbus connection
             bus.close()
+            GPIO.cleanup()  # clean up GPIO
+
+    def i2c_recovery(self):
+        """
+        Send 10 clock cycles on SCL IO pin to clear locked i2c bus.
+
+        inputs:
+             None
+        returns:
+            (dict): status message
+        """
+        addr_pin = sht31_config.SCL_PIN
+        num_clock_cycles = 10
+        recovery_freq_hz = 100000  # 100 KHz
+        recovery_delay_sec = 1.0 / (2.0 * recovery_freq_hz)
+
+        try:
+            # set SCL pin for output
+            GPIO.setmode(GPIO.BCM)  # broadcom pin numbering
+            GPIO.setup(addr_pin, GPIO.OUT)  # address pin set as output
+
+            # set pin high to start
+            GPIO.output(addr_pin, GPIO.HIGH)
+
+            # send clock cycles
+            for _ in range(num_clock_cycles):
+                time.sleep(recovery_delay_sec)
+                GPIO.output(addr_pin, GPIO.LOW)
+                time.sleep(recovery_delay_sec)
+                GPIO.output(addr_pin, GPIO.HIGH)
+            # status message
+            msg = f"{num_clock_cycles} completed at {recovery_freq_hz} Hz"
+            return {"i2c_recovery": msg}
+        finally:
             GPIO.cleanup()  # clean up GPIO
 
 
@@ -418,7 +451,7 @@ class EnableHeater(Resource):
 
 
 class DisableHeater(Resource):
-    """Enable heater Controller."""
+    """Disable heater Controller."""
 
     def __init__(self):
         pass
@@ -430,7 +463,7 @@ class DisableHeater(Resource):
 
 
 class SoftReset(Resource):
-    """Enable heater Controller."""
+    """i2C soft reset."""
 
     def __init__(self):
         pass
@@ -442,7 +475,7 @@ class SoftReset(Resource):
 
 
 class Reset(Resource):
-    """Enable heater Controller."""
+    """i2C hard reset."""
 
     def __init__(self):
         pass
@@ -451,6 +484,18 @@ class Reset(Resource):
         """Map the get method."""
         helper = Sensors()
         return helper.send_cmd_get_diag(reset)
+
+
+class I2CRecovery(Resource):
+    """Issue i2c recovery sequence."""
+
+    def __init__(self):
+        pass
+
+    def get(self):
+        """Map the get method."""
+        helper = Sensors()
+        return helper.i2c_recovery()
 
 
 def create_app():
@@ -465,8 +510,9 @@ def create_app():
     api.add_resource(ClearFaultRegister, sht31_config.flask_folder.clear_diag)
     api.add_resource(EnableHeater, sht31_config.flask_folder.enable_heater)
     api.add_resource(DisableHeater, sht31_config.flask_folder.disable_heater)
-    api.add_resource(Reset, sht31_config.flask_folder.reset)
     api.add_resource(SoftReset, sht31_config.flask_folder.soft_reset)
+    api.add_resource(Reset, sht31_config.flask_folder.reset)
+    api.add_resource(I2CRecovery, sht31_config.flask_folder.i2c_recovery)
     return app_
 
 

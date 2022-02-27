@@ -36,6 +36,7 @@ flask_folder.enable_heater = "/enable_heater"
 flask_folder.disable_heater = "/disable_heater"
 flask_folder.soft_reset = "/soft_reset"
 flask_folder.reset = "/reset"
+flask_folder.i2c_recovery = "/i2c_recovery"
 
 # SHT31 API field names
 API_MEASUREMENT_CNT = 'measurements'
@@ -77,9 +78,14 @@ sht31_metadata = {
 }
 
 # SHT31D config
-I2C_ADDRESS = 0x45  # i2c address b
+I2C_BUS = 1  # 0 = /dev/i2c-0 (port I2C0), 1 = /dev/i2c-1 (port I2C1)
+I2C_ADDRESS = 0x45  # i2c address, 0x44=a, 0x45=b
 MEASUREMENTS = 10  # number of MEASUREMENTS to average
 
-# pi0 config
-ALERT_PIN = 17  # yellow wire, GPIO17 (pi pin 11)
-ADDR_PIN = 4  # white wire, GPIO4, low = 0x44, high=0x45 (pi pin 7)
+# pi0 / sht31 connection config, -1 means non-addressible pin
+V3_PIN = -1  # 3.3v power pin (red), (pi pin 1)
+SDA_PIN = 2  # i2c data signal (brown), GPIO2 (pi pin 3)
+SCL_PIN = 3  # i2c clock signal (orange), GPIO3 (pi pin 5)
+ADDR_PIN = 4  # i2c address (white), GPIO4, low = 0x44, high=0x45 (pi pin 7)
+GND_PIN = -1  # ground wire (black), (pi pin 9)
+ALERT_PIN = 17  # i2c alert pint (yellow), GPIO17 (pi pin 11)
