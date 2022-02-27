@@ -24,7 +24,7 @@ ENABLE_SUPERVISE_INTEGRATION_TESTS = True  # enable supervise int tests
 ENABLE_FLASK_INTEGRATION_TESTS = True  # enable flask int tests
 ENABLE_KUMOLOCAL_TESTS = False  # Kumolocal is local net only
 ENABLE_MMM_TESTS = False  # mmm50 is local net only
-ENABLE_SHT31_TESTS = False  # sht31 can fail on occasion
+ENABLE_SHT31_TESTS = True  # sht31 can fail on occasion
 
 
 # generic argv list for unit testing
@@ -68,26 +68,12 @@ class PatchMeta(type):
 
     def __init__(cls, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        # mock argv to prevent azure runtime args from polluting test.
         print("DEBUG: in PatchMeta for %s, patch args=%s" %
               (cls, str(cls.patch_args)))
-        patch.object(*cls.patch_args)(cls)
+        patch.object(*cls.patch_args)(cls)  # noqa e501, pylint:disable=undefined-variable
 
 
-# mock argv to prevent unit test runtime arguments from polluting tests
-# that use argv parameters.  Azure pipelines is susceptible to this issue.
-def mock_patch(_cls):
-    print("DEBUG: in mock patch decorator for %s" % _cls)
-
-    def wrapper():
-        print("DEBUG: sys.argv before patch=%s" % sys.argv)
-        with patch.object(sys, 'argv', [os.path.realpath(__file__)]):
-            print("DEBUG: sys.argv after patch=%s" % sys.argv)
-            return _cls()
-    return wrapper
-
-
-# mock argv to prevent azure runtime args from polluting test.
-#@patch.object(sys, 'argv', [os.path.realpath(__file__)])  # noqa e501, pylint:disable=undefined-variable
 class UnitTest(unittest.TestCase, metaclass=PatchMeta):
     """Extensions to unit test framework."""
 
@@ -102,9 +88,6 @@ class UnitTest(unittest.TestCase, metaclass=PatchMeta):
     Thermostat = None
     Zone = None
     is_off_mode_bckup = None
-
-    # def __init_subclass__(cls, **kwargs):
-    #    return mock_patch(_cls=cls)
 
     @classmethod
     def setUpClass(cls):
@@ -212,7 +195,6 @@ class UnitTest(unittest.TestCase, metaclass=PatchMeta):
         print("-" * 60)
 
 
-#@patch.object(sys, 'argv', [os.path.realpath(__file__)])  # noqa e501, pylint:disable=undefined-variable
 class IntegrationTest(UnitTest):
     """Common integration test framework."""
 
@@ -277,9 +259,9 @@ class IntegrationTest(UnitTest):
 
 @unittest.skipIf(not ENABLE_FUNCTIONAL_INTEGRATION_TESTS,
                  "functional integration tests are disabled")
-#@patch.object(sys, 'argv', [os.path.realpath(__file__)])  # noqa e501, pylint:disable=undefined-variable
 class FunctionalIntegrationTest(IntegrationTest):
     """Functional integration tests."""
+
     metadata_field = None  # thermostat-specific
     metadata_type = str  # thermostat-specific
 
@@ -366,7 +348,6 @@ class FunctionalIntegrationTest(IntegrationTest):
 
 @unittest.skipIf(not ENABLE_SUPERVISE_INTEGRATION_TESTS,
                  "supervise integration test is disabled")
-# @patch.object(sys, 'argv', [os.path.realpath(__file__)])  # noqa e501, pylint:disable=undefined-variable
 class SuperviseIntegrationTest(IntegrationTest):
     """Supervise integration tests common to all thermostat types."""
 
@@ -385,7 +366,6 @@ class SuperviseIntegrationTest(IntegrationTest):
 
 @unittest.skipIf(not ENABLE_PERFORMANCE_INTEGRATION_TESTS,
                  "performance integration tests are disabled")
-#@patch.object(sys, 'argv', [os.path.realpath(__file__)])  # noqa e501, pylint:disable=undefined-variable
 class PerformanceIntegrationTest(IntegrationTest):
     """Performance integration tests common to all thermostat types."""
 
@@ -478,14 +458,8 @@ class PerformanceIntegrationTest(IntegrationTest):
             f"repeatability limit ({self.humidity_stdev_limit})")
 
 
-#@patch.object(sys, 'argv', [os.path.realpath(__file__)])  # noqa e501, pylint:disable=undefined-variable
 class RuntimeParameterTest(UnitTest):
     """Runtime parameter tests."""
-
-    # mock argv to prevent unit test runtime arguments from polluting tests
-    # that use argv parameters.  Azure pipelines is susceptible to this issue.
-    # __metaclass__ = PatchMeta
-    # patch_args = (sys.argv, [os.path.realpath(__file__)])
 
     uip = None
     mod = None
