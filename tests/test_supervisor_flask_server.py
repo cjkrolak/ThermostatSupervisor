@@ -32,7 +32,7 @@ class IntegrationTest(utc.UnitTest):
     app = sfs.create_app()
 
     def setUp(self):
-        self.print_test_name()
+        super().setUp()
         sfs.debug = False
         sfs.measurements = 10
         sfs.unit_test_mode = True
@@ -62,7 +62,7 @@ class IntegrationTest(utc.UnitTest):
             else:
                 print("WARNING: flask server is not daemon thread, "
                       "thread may still be active")
-        self.print_test_result()
+        super().tearDown()
 
     def test_supervisor_flask_server(self):
         """

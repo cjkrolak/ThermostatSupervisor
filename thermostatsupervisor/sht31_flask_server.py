@@ -16,6 +16,7 @@ except ImportError as ex:
     pi_library_exception = ex  # unsuccessful
 
 # built-in imports
+import distutils.util
 import os
 import statistics
 import sys
@@ -29,6 +30,10 @@ from flask_wtf.csrf import CSRFProtect
 # local imports
 from thermostatsupervisor import sht31_config
 from thermostatsupervisor import utilities as util
+
+# runtime override fields
+DEBUG_FLD = "debug"
+uip = None  # user inputs object
 
 # SHT31D write commands (register, [data])
 # spec: https://cdn-shop.adafruit.com/product-files/
@@ -485,47 +490,41 @@ def favicon():
                                mimetype='image/vnd.microsoft.icon')
 
 
-# runtime override parameters
-# index 0 (script name) is not included in this dict because it is
-# not a runtime argument
-user_inputs = {
-    "debug": {
-        "order": 1,    # index in the argv list
-        "value": None,
-        "type": bool,
-        "default": False,
-        "valid_range": [True, False, 1, 0],
-        "sflag": "-d",
-        "lflag": "--debug",
-        "help": "flask server debug mode"},
-    }
+class UserInputs(util.UserInputs):
+    """Manage runtime arguments for sht31_flask_server."""
 
+    def __init__(self, argv_list=None, help_description=None):
+        """
+        UserInputs constructor for sht31_flask_server.
 
-def get_user_inputs(key, field="value"):
-    """
-    Return the target key's value from user_inputs.
+        inputs:
+            argv_list(list): override runtime values
+            help_description(str): description field for help text
+        """
+        self.argv_list = argv_list
 
-    inputs:
-        key(str): argument name
-        field(str): field name, default = "value"
-    returns:
-        None
-    """
-    return user_inputs[key][field]
+        # initialize parent class
+        super().__init__(argv_list, help_description)
 
-
-def set_user_inputs(key, input_val, field="value"):
-    """
-    Set the target key's value from user_inputs.
-
-    inputs:
-        key(str): argument name
-        input_val(str, int, float, etc.):  value to set.
-        field(str): field name, default = "value"
-    returns:
-        None, updates api.user_inputs dict.
-    """
-    user_inputs[key][field] = input_val
+    def initialize_user_inputs(self):
+        """
+        Populate user_inputs dict.
+        """
+        # define the user_inputs dict.
+        self.user_inputs = {
+            DEBUG_FLD: {
+                "order": 1,    # index in the argv list
+                "value": None,
+                "type": lambda x: bool(distutils.util.strtobool(
+                    str(x).strip())),
+                "default": False,
+                "valid_range": [True, False, 1, 0],
+                "sflag": "-d",
+                "lflag": "--" + DEBUG_FLD,
+                "help": "flask server debug mode"},
+        }
+        self.valid_sflags = [self.user_inputs[k]["sflag"]
+                             for k in self.user_inputs]
 
 
 if __name__ == "__main__":
@@ -536,8 +535,8 @@ if __name__ == "__main__":
     util.get_python_version()
 
     # parse runtime parameters
-    util.parse_runtime_parameters(argv_dict=user_inputs)
-    debug = get_user_inputs("debug")
+    uip = UserInputs()
+    debug = uip.get_user_inputs("debug")
     if debug:
         print("Flask debug mode is enabled", file=sys.stderr)
 

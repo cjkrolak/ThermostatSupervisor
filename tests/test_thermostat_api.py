@@ -2,6 +2,7 @@
 Unit test module for thermostat_api.py.
 """
 # built-in imports
+import os
 import sys
 import unittest
 
@@ -17,7 +18,7 @@ class Test(utc.UnitTest):
     tstat = "UNITTEST"
 
     def setUp(self):
-        self.print_test_name()
+        super().setUp()
         api.thermostats[self.tstat] = {  # dummy unit test thermostat
             "required_env_variables": {
                 "GMAIL_USERNAME": None,
@@ -27,7 +28,7 @@ class Test(utc.UnitTest):
 
     def tearDown(self):
         del api.thermostats[self.tstat]
-        self.print_test_result()
+        super().tearDown()
 
     def test_verify_required_env_variables(self):
         """
@@ -96,19 +97,48 @@ class Test(utc.UnitTest):
             "default": {"measurement": 13, "max_measurements": None,
                         "exp_result": False},
         }
-        max_measurement_bkup = api.get_user_inputs(api.MEASUREMENTS_FLD)
+        api.uip = api.UserInputs(None, "unit test parser")
+        max_measurement_bkup = api.uip.get_user_inputs(api.MEASUREMENTS_FLD)
         try:
             for test_case, parameters in test_cases.items():
-                api.set_user_inputs(api.MEASUREMENTS_FLD,
-                                    parameters["max_measurements"])
-                act_result = api.max_measurement_count_exceeded(
+                api.uip.set_user_inputs(api.MEASUREMENTS_FLD,
+                                        parameters["max_measurements"])
+                act_result = api.uip.max_measurement_count_exceeded(
                     parameters["measurement"])
                 exp_result = parameters["exp_result"]
                 self.assertEqual(exp_result, act_result,
                                  f"test case '{test_case}', "
                                  f"expected={exp_result}, actual={act_result}")
         finally:
-            api.set_user_inputs(api.MEASUREMENTS_FLD, max_measurement_bkup)
+            api.uip.set_user_inputs(api.MEASUREMENTS_FLD, max_measurement_bkup)
+
+
+class RuntimeParameterTest(utc.RuntimeParameterTest):
+    """API Runtime parameter tests."""
+
+    mod = api  # module to test
+
+    script = os.path.realpath(__file__)
+    thermostat_type = emulator_config.ALIAS
+    zone = 0
+    poll_time_sec = 9
+    connection_time_sec = 90
+    tolerance = 3
+    target_mode = "HEAT_MODE"
+    measurements = 1
+
+    # fields for testing, mapped to class variables.
+    # (value, field name)
+    test_fields = [
+        (script, os.path.realpath(__file__)),
+        (thermostat_type, api.THERMOSTAT_TYPE_FLD),
+        (zone, api.ZONE_FLD),
+        (poll_time_sec, api.POLL_TIME_FLD),
+        (connection_time_sec, api.CONNECT_TIME_FLD),
+        (tolerance, api.TOLERANCE_FLD),
+        (target_mode, api.TARGET_MODE_FLD),
+        (measurements, api.MEASUREMENTS_FLD),
+    ]
 
 
 if __name__ == "__main__":

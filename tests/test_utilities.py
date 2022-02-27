@@ -6,11 +6,9 @@ import os
 import shutil
 import sys
 import unittest
-from unittest.mock import patch
 
 # local imports
 from thermostatsupervisor import emulator_config
-from thermostatsupervisor import thermostat_api as api
 from thermostatsupervisor import utilities as util
 from tests import unit_test_common as utc
 
@@ -19,11 +17,8 @@ class EnvironmentTests(utc.UnitTest):
     """Test functions related to environment and env variables."""
 
     def setUp(self):
-        self.print_test_name()
+        super().setUp()
         util.log_msg.file_name = "unit_test.txt"
-
-    def tearDown(self):
-        self.print_test_result()
 
     def test_is_interactive_environment(self):
         """
@@ -170,11 +165,8 @@ class FileAndLoggingTests(utc.UnitTest):
     """Test functions related to logging functions."""
 
     def setUp(self):
-        self.print_test_name()
+        super().setUp()
         util.log_msg.file_name = "unit_test.txt"
-
-    def tearDown(self):
-        self.print_test_result()
 
     def test_log_msg_create_folder(self):
         """
@@ -360,11 +352,8 @@ class MetricsTests(utc.UnitTest):
     """Test functions related temperature/humidity metrics."""
 
     def setUp(self):
-        self.print_test_name()
+        super().setUp()
         util.log_msg.file_name = "unit_test.txt"
-
-    def tearDown(self):
-        self.print_test_result()
 
     def test_temp_value_with_units(self):
         """Verify function attaches units as expected."""
@@ -471,21 +460,22 @@ class MiscTests(utc.UnitTest):
     """Miscellaneous util tests."""
 
     def setUp(self):
-        self.print_test_name()
+        super().setUp()
         util.log_msg.file_name = "unit_test.txt"
-
-    def tearDown(self):
-        self.print_test_result()
 
     def test_get_function_name(self):
         """
         Confirm get_function_name works as expected.
         """
+        for test in range(1, 4):
+            print(f"get_function_name({test})={util.get_function_name(test)}")
+
         # default
         test = "<default>"
         print(f"testing util.get_function_name({test})")
         ev_1 = "test_get_function_name"
         result_1 = util.get_function_name()
+        print(f"get_function_name({test})={result_1}")
         self.assertEqual(ev_1, result_1, f"expected={ev_1}, actual={result_1}")
 
         # test 1
@@ -493,16 +483,28 @@ class MiscTests(utc.UnitTest):
         print(f"testing util.get_function_name({test})")
         ev_1 = "test_get_function_name"
         result_1 = util.get_function_name(test)
+        print(f"get_function_name({test})={result_1}")
         self.assertEqual(ev_1, result_1, f"test{test}: expected={ev_1}, "
                          f"actual={result_1}")
 
         # test 2
         test = 2
         print(f"testing util.get_function_name({test})")
+        ev_1 = ["patched",  # mock patch decorator
+                ]
+        result_1 = util.get_function_name(test)
+        print(f"get_function_name({test})={result_1}")
+        self.assertTrue(result_1 in ev_1, f"test{test}: expected values={ev_1}"
+                        f", actual={result_1}")
+
+        # test 3
+        test = 3
+        print(f"testing util.get_function_name({test})")
         ev_1 = ["run",  # Linux
                 "_callTestMethod",  # windows
                 ]
         result_1 = util.get_function_name(test)
+        print(f"get_function_name({test})={result_1}")
         self.assertTrue(result_1 in ev_1, f"test{test}: expected values={ev_1}"
                         f", actual={result_1}")
 
@@ -545,273 +547,25 @@ class MiscTests(utc.UnitTest):
             actual_val = util.get_key_from_value(test_dict, "bogus_value")
 
 
-class RuntimeParameterTests(utc.UnitTest):
-    """Runtime parameter util tests."""
+class RuntimeParameterTest(utc.RuntimeParameterTest):
+    """Generic runtime parameter tests."""
 
+    mod = utc  # module to test
     script = os.path.realpath(__file__)
-    thermostat_type = emulator_config.ALIAS
-    zone = 0
-    poll_time_sec = 9
-    connection_time_sec = 90
-    tolerance = 3
-    target_mode = "HEAT_MODE"
-    measurements = 1
-    test_list = [
-        script,  # script
-        thermostat_type,  # thermostat_type
-        str(zone),  # zone
-        str(poll_time_sec),  # poll time sec
-        str(connection_time_sec),  # connection time
-        str(tolerance),  # tolerance
-        target_mode,  # target mode
-        str(measurements),  # measurements
+    bool_val = False
+    int_val = 9
+    float_val = 8.8
+    str_val = "test str"
+
+    # fields for testing, mapped to class variables.
+    # (value, field name)
+    test_fields = [
+        (script, os.path.realpath(__file__)),
+        (bool_val, utc.BOOL_FLD),
+        (int_val, utc.INT_FLD),
+        (float_val, utc.FLOAT_FLD),
+        (str_val, utc.STR_FLD),
     ]
-    test_list_named_sflag = [
-        script,  # placeholder for list, script does not have sflag
-        api.get_user_inputs(api.THERMOSTAT_TYPE_FLD, "sflag") + " " + \
-        thermostat_type,
-        api.get_user_inputs(api.ZONE_FLD, "sflag") + " " + str(zone),
-        api.get_user_inputs(api.POLL_TIME_FLD, "sflag") + " " + \
-        str(poll_time_sec),
-        api.get_user_inputs(api.CONNECT_TIME_FLD, "sflag") + " " + \
-        str(connection_time_sec),
-        api.get_user_inputs(api.TOLERANCE_FLD, "sflag") + " " + \
-        str(tolerance),
-        api.get_user_inputs(api.TARGET_MODE_FLD, "sflag") + " " + \
-        target_mode,
-        api.get_user_inputs(api.MEASUREMENTS_FLD, "sflag") + " " + \
-        str(measurements),
-    ]
-
-    test_list_named_lflag = [
-        script,  # placeholder for list, script does not have lflag
-        api.get_user_inputs(api.THERMOSTAT_TYPE_FLD, "lflag") + " " + \
-        thermostat_type,
-        api.get_user_inputs(api.ZONE_FLD, "lflag") + " " + str(zone),
-        api.get_user_inputs(api.POLL_TIME_FLD, "lflag") + " " + \
-        str(poll_time_sec),
-        api.get_user_inputs(api.CONNECT_TIME_FLD, "lflag") + " " + \
-        str(connection_time_sec),
-        api.get_user_inputs(api.TOLERANCE_FLD, "lflag") + " " + \
-        str(tolerance),
-        api.get_user_inputs(api.TARGET_MODE_FLD, "lflag") + " " + \
-        target_mode,
-        api.get_user_inputs(api.MEASUREMENTS_FLD, "lflag") + " " + \
-        str(measurements),
-    ]
-
-    expected_values = {
-        # "script": os.path.realpath(__file__),  # actual file name
-        api.THERMOSTAT_TYPE_FLD: thermostat_type,  # thermostat_type
-        api.ZONE_FLD: zone,  # zone
-        api.POLL_TIME_FLD: poll_time_sec,  # poll time sec
-        api.CONNECT_TIME_FLD: connection_time_sec,  # connection time
-        api.TOLERANCE_FLD: tolerance,  # tolerance
-        api.TARGET_MODE_FLD: target_mode,  # target mode
-        api.MEASUREMENTS_FLD: measurements,  # measurements
-        }
-
-    def setUp(self):
-        self.print_test_name()
-        util.log_msg.file_name = "unit_test.txt"
-        self.initialize_api_user_inputs()
-
-    def tearDown(self):
-        self.print_test_result()
-
-    def parse_user_inputs_dict(self):
-        """
-        Parse the user_inputs_dict into list matching
-        order of test_list.
-        """
-        actual_values = [
-            api.get_user_inputs("script"),
-            api.get_user_inputs(api.THERMOSTAT_TYPE_FLD),
-            api.get_user_inputs(api.ZONE_FLD),
-            api.get_user_inputs(api.POLL_TIME_FLD),
-            api.get_user_inputs(api.CONNECT_TIME_FLD),
-            api.get_user_inputs(api.TOLERANCE_FLD),
-            api.get_user_inputs(api.TARGET_MODE_FLD),
-            api.get_user_inputs(api.MEASUREMENTS_FLD),
-            ]
-        return actual_values
-
-    def verify_parsed_values(self):
-        """
-        Verify values were parsed correctly by comparing to expected values.
-        """
-        for k in self.expected_values:
-            self.assertEqual(self.expected_values[k],
-                             api.get_user_inputs(k),
-                             f"expected({type(self.expected_values[k])}) "
-                             f"{self.expected_values[k]} != "
-                             f"actual({type(api.get_user_inputs(k))}) "
-                             f"{api.get_user_inputs(k)}")
-
-    def initialize_api_user_inputs(self):
-        """
-        Re-initialize api_user_inputs dict.
-        """
-        for k in api.user_inputs:
-            api.set_user_inputs(k, None)
-
-    def test_parse_argv_list(self):
-        """
-        Verify test parse_argv_list() returns expected
-        values when input known values.
-        """
-        argv_dict = util.parse_argv_list(self.test_list, api.user_inputs)
-        print(f"argv_dict={argv_dict}")
-        self.verify_parsed_values()
-
-    def test_parser(self):
-        """
-        Generic test for argparser.
-        """
-        import argparse
-        parser = argparse.ArgumentParser()
-        parser.add_argument('-a', type=int)
-        # argv = '-a 1'.split()  # or ['-a','1','foo']
-        # argv = ["-a 1", "--b 2"]  # double dash doesn't work yet.
-        argv = ["-a 1"]
-        args = parser.parse_args(argv)
-        assert(args.a == 1)
-        # assert(args.b == 2)
-
-    def test_parse_named_arguments_sflag(self):
-        """
-        Verify test parse_named_arguments() returns expected
-        values when input known values with sflag.
-        """
-        self.parse_named_arguments(self.test_list_named_sflag,
-                                   "unittest parsing named sflag arguments")
-
-    def test_parse_named_arguments_lflag(self):
-        """
-        Verify test parse_named_arguments() returns expected
-        values when input known values with sflag.
-        """
-        return  # not yet working
-        self.parse_named_arguments(self.test_list_named_lflag,
-                                   "unittest parsing named lflag arguments")
-
-    def parse_named_arguments(self, test_list, label_str):
-        """
-        Verify test parse_named_arguments() returns expected
-        values when input known values.
-
-        inputs:
-            test_list(list): list of named arguments
-            label_str(str): description pass-thru
-        """
-        print(f"testing named arg list='{test_list}")
-        argv_dict = util.parse_named_arguments(test_list,
-                                               api.user_inputs,
-                                               label_str)
-        print(f"argv_dict={argv_dict}")
-        self.verify_parsed_values()
-
-    def test_parse_runtime_parameters(self):
-        """
-        Test the upper level function for parsing.
-        """
-        print("test 1, input None, will raise error")
-        with self.assertRaises(ValueError):
-            util.parse_runtime_parameters(argv_list=None, argv_dict=None)
-
-        print("test 2, input list, will parse list")
-        self.initialize_api_user_inputs()
-        util.parse_runtime_parameters(
-            argv_list=self.test_list, argv_dict=api.user_inputs)
-        self.verify_parsed_values()
-
-        print("test 3, input named parameter list, will parse list")
-        self.initialize_api_user_inputs()
-        util.parse_runtime_parameters(
-            argv_list=self.test_list_named_sflag, argv_dict=api.user_inputs)
-        self.verify_parsed_values()
-
-        print("test 4, input dict, will parse sys.argv argument list")
-        self.initialize_api_user_inputs()
-        with patch.object(sys, 'argv', self.test_list):  # noqa e501, pylint:disable=undefined-variable
-            print("DEBUG: mocked sys.argv=%s" % sys.argv)
-            print("DEBUG: api.user_inputs=%s" % api.user_inputs)
-            util.parse_runtime_parameters(argv_list=None,
-                                          argv_dict=api.user_inputs)
-        self.verify_parsed_values()
-
-        print("test 5, input dict, will parse sys.argv named args")
-        self.initialize_api_user_inputs()
-        with patch.object(sys, 'argv', self.test_list_named_sflag):  # noqa e501, pylint:disable=undefined-variable
-            print("DEBUG: mocked sys.argv=%s" % sys.argv)
-            print("DEBUG: api.user_inputs=%s" % api.user_inputs)
-            util.parse_runtime_parameters(argv_list=None,
-                                          argv_dict=api.user_inputs)
-        self.verify_parsed_values()
-
-    def test_validate_argv_inputs(self):
-        """
-        Verify validate_argv_inputs() works as expected.
-        """
-        test_cases = {
-            "fail_missing_value": {
-                "value": None,
-                "type": int,
-                "default": 1,
-                "valid_range": range(0, 4),
-                "expected_value": 1,
-                },
-            "fail_datatype_error": {
-                "value": "5",
-                "type": int,
-                "default": 2,
-                "valid_range": range(0, 10),
-                "expected_value": 2,
-                },
-            "fail_out_of_range_int": {
-                "value": 6,
-                "type": int,
-                "default": 3,
-                "valid_range": range(0, 3),
-                "expected_value": 3,
-                },
-            "fail_out_of_range_str": {
-                "value": "6",
-                "type": str,
-                "default": "4",
-                "valid_range": ["a", "b"],
-                "expected_value": "4",
-                },
-            "in_range_int": {
-                "value": 7,
-                "type": int,
-                "default": 4,
-                "valid_range": range(0, 10),
-                "expected_value": 7,
-                },
-            "in_range_str": {
-                "value": "8",
-                "type": str,
-                "default": "5",
-                "valid_range": ["a", "8", "abc"],
-                "expected_value": "8",
-                },
-            }
-
-        key = "test_case"
-        for test_case, test_dict in test_cases.items():
-            result_dict = util.validate_argv_inputs({key: test_dict})
-            actual_value = result_dict[key]["value"]
-
-            if "fail_" in test_case:
-                expected_value = result_dict[key]["default"]
-            else:
-                expected_value = result_dict[key]["expected_value"]
-
-            self.assertEqual(expected_value, actual_value,
-                             f"test case ({test_case}), "
-                             f"expected={expected_value}, "
-                             f"actual={actual_value}")
 
 
 if __name__ == "__main__":

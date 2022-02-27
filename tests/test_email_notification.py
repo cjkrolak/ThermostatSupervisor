@@ -19,12 +19,6 @@ class Test(utc.UnitTest):
     from_address = None
     from_password = None
 
-    def setUp(self):
-        self.print_test_name()
-
-    def tearDown(self):
-        self.print_test_result()
-
     def test_check_email_env_variables(self):
         """
         Verify all required email email env variables are present for tests.

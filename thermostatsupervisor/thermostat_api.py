@@ -46,17 +46,6 @@ for config_module in config_modules:
                                config_module.required_env_variables}})
 
 
-def update_thermostat_specific_values(thermostat_type):
-    """
-    Update thermostat-specific values in user_inputs dict.
-    """
-    set_user_inputs(THERMOSTAT_TYPE_FLD, thermostat_type)
-    user_inputs[ZONE_FLD]["valid_range"] = SUPPORTED_THERMOSTATS[
-            thermostat_type]["zones"]
-    user_inputs[TARGET_MODE_FLD]["valid_range"] = SUPPORTED_THERMOSTATS[
-            thermostat_type]["modes"]
-
-
 # runtime override parameters
 # note script name is omitted, starting with first parameter
 # index 0 (script name) is not included in this dict because it is
@@ -68,72 +57,131 @@ CONNECT_TIME_FLD = "connection_time"
 TOLERANCE_FLD = "tolerance"
 TARGET_MODE_FLD = "target_mode"
 MEASUREMENTS_FLD = "measurements"
-user_inputs = {
-    THERMOSTAT_TYPE_FLD: {
-        "order": 1,  # index in the argv list
-        "value": None,
-        "type": str,
-        "default": DEFAULT_THERMOSTAT,
-        "valid_range": list(SUPPORTED_THERMOSTATS.keys()),
-        "sflag": "-t",
-        "lflag": "--thermostat_type",
-        "help": "thermostat type"},
-    ZONE_FLD: {
-        "order": 2,  # index in the argv list
-        "value": None,
-        "type": int,
-        "default": 0,
-        "valid_range": None,  # updated once thermostat is known
-        "sflag": "-z",
-        "lflag": "--zone",
-        "help": "target zone number"},
-    POLL_TIME_FLD: {
-        "order": 3,  # index in the argv list
-        "value": None,
-        "type": int,
-        "default": 60 * 10,
-        "valid_range": range(0, 24 * 60 * 60),
-        "sflag": "-p",
-        "lflag": "--poll_time",
-        "help": "poll time (sec)"},
-    CONNECT_TIME_FLD: {
-        "order": 4,  # index in the argv list
-        "value": None,
-        "type": int,
-        "default": 60 * 10 * 8,
-        "valid_range": range(0, 24 * 60 * 60 * 60),
-        "sflag": "-c",
-        "lflag": "--connection_time",
-        "help": "server connection time (sec)"},
-    TOLERANCE_FLD: {
-        "order": 5,  # index in the argv list
-        "value": None,
-        "type": int,
-        "default": 2,
-        "valid_range": range(0, 10),
-        "sflag": "-d",
-        "lflag": "--tolerance",
-        "help": "tolerance (deg F)"},
-    TARGET_MODE_FLD: {
-        "order": 6,  # index in the argv list
-        "value": None,
-        "type": str,
-        "default": "UNKNOWN_MODE",
-        "valid_range": None,  # updated once thermostat is known
-        "sflag": "-m",
-        "lflag": "--target_mode",
-        "help": "target thermostat mode"},
-    MEASUREMENTS_FLD: {
-        "order": 7,  # index in the argv list
-        "value": None,
-        "type": int,
-        "default": 10000,
-        "valid_range": range(1, 10001),
-        "sflag": "-n",
-        "lflag": "--measurements",
-        "help": "number of measurements"},
-}
-valid_sflags = [user_inputs[k]["sflag"] for k in user_inputs]
+
+uip = None  # user inputs object
+
+
+class UserInputs(util.UserInputs):
+    """Manage runtime arguments for thermostat_api."""
+
+    def __init__(self, argv_list=None, help_description=None,
+                 thermostat_type=DEFAULT_THERMOSTAT):
+        """
+        UserInputs constructor for thermostat_api.
+
+        inputs:
+            argv_list(list): override runtime values
+            help_description(str): description field for help text
+            thermostat_type(str): thermostat type
+        """
+        self.argv_list = argv_list
+        self.thermostat_type = thermostat_type  # default if not provided
+
+        # initialize parent class
+        super().__init__(argv_list, help_description)
+
+    def initialize_user_inputs(self):
+        """
+        Populate user_inputs dict.
+        """
+        # define the user_inputs dict.
+        self.user_inputs = {
+            THERMOSTAT_TYPE_FLD: {
+                "order": 1,  # index in the argv list
+                "value": None,
+                "type": str,
+                "default": self.thermostat_type,
+                "valid_range": list(SUPPORTED_THERMOSTATS.keys()),
+                "sflag": "-t",
+                "lflag": "--" + THERMOSTAT_TYPE_FLD,
+                "help": "thermostat type"},
+            ZONE_FLD: {
+                "order": 2,  # index in the argv list
+                "value": None,
+                "type": int,
+                "default": 0,
+                "valid_range": None,  # updated once thermostat is known
+                "sflag": "-z",
+                "lflag": "--" + ZONE_FLD,
+                "help": "target zone number"},
+            POLL_TIME_FLD: {
+                "order": 3,  # index in the argv list
+                "value": None,
+                "type": int,
+                "default": 60 * 10,
+                "valid_range": range(0, 24 * 60 * 60),
+                "sflag": "-p",
+                "lflag": "--" + POLL_TIME_FLD,
+                "help": "poll time (sec)"},
+            CONNECT_TIME_FLD: {
+                "order": 4,  # index in the argv list
+                "value": None,
+                "type": int,
+                "default": 60 * 10 * 8,
+                "valid_range": range(0, 24 * 60 * 60 * 60),
+                "sflag": "-c",
+                "lflag": "--" + CONNECT_TIME_FLD,
+                "help": "server connection time (sec)"},
+            TOLERANCE_FLD: {
+                "order": 5,  # index in the argv list
+                "value": None,
+                "type": int,
+                "default": 2,
+                "valid_range": range(0, 10),
+                "sflag": "-d",
+                "lflag": "--" + TOLERANCE_FLD,
+                "help": "tolerance (deg F)"},
+            TARGET_MODE_FLD: {
+                "order": 6,  # index in the argv list
+                "value": None,
+                "type": str,
+                "default": "UNKNOWN_MODE",
+                "valid_range": None,  # updated once thermostat is known
+                "sflag": "-m",
+                "lflag": "--" + TARGET_MODE_FLD,
+                "help": "target thermostat mode"},
+            MEASUREMENTS_FLD: {
+                "order": 7,  # index in the argv list
+                "value": None,
+                "type": int,
+                "default": 10000,
+                "valid_range": range(1, 10001),
+                "sflag": "-n",
+                "lflag": "--" + MEASUREMENTS_FLD,
+                "help": "number of measurements"},
+        }
+        self.valid_sflags = [self.user_inputs[k]["sflag"]
+                             for k in self.user_inputs]
+
+    def dynamic_update_user_inputs(self):
+        """
+        Update thermostat-specific values in user_inputs dict.
+        """
+        # if thermostat is not set yet, default it based on module
+        thermostat_type = self.get_user_inputs(THERMOSTAT_TYPE_FLD)
+        if thermostat_type is None:
+            thermostat_type = self.thermostat_type
+        self.user_inputs[ZONE_FLD]["valid_range"] = SUPPORTED_THERMOSTATS[
+                thermostat_type]["zones"]
+        self.user_inputs[TARGET_MODE_FLD]["valid_range"] = \
+            SUPPORTED_THERMOSTATS[thermostat_type]["modes"]
+
+    def max_measurement_count_exceeded(self, measurement):
+        """
+        Return True if max measurement reached.
+
+        inputs:
+            measurement(int): current measurement value
+        returns:
+            (bool): True if max measurement reached.
+        """
+        max_measurements = self.get_user_inputs("measurements")
+        if max_measurements is None:
+            return False
+        elif measurement > max_measurements:
+            return True
+        else:
+            return False
 
 
 def verify_required_env_variables(tstat, zone_str):
@@ -169,33 +217,6 @@ def verify_required_env_variables(tstat, zone_str):
     return key_status
 
 
-def get_user_inputs(key, field="value"):
-    """
-    Return the target key's value from user_inputs.
-
-    inputs:
-        key(str): argument name
-        field(str): field name, default = "value"
-    returns:
-        None
-    """
-    return user_inputs[key][field]
-
-
-def set_user_inputs(key, input_val, field="value"):
-    """
-    Set the target key's value from user_inputs.
-
-    inputs:
-        key(str): argument name
-        input_val(str, int, float, etc.):  value to set.
-        field(str): field name, default = "value"
-    returns:
-        None, updates api.user_inputs dict.
-    """
-    user_inputs[key][field] = input_val
-
-
 def load_hardware_library(thermostat_type):
     """
     Dynamic load 3rd party library for requested hardware type.
@@ -220,7 +241,7 @@ def max_measurement_count_exceeded(measurement):
     returns:
         (bool): True if max measurement reached.
     """
-    max_measurements = get_user_inputs("measurements")
+    max_measurements = uip.get_user_inputs("measurements")
     if max_measurements is None:
         return False
     elif measurement > max_measurements:

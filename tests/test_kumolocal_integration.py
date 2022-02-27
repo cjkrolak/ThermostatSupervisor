@@ -47,6 +47,7 @@ class FunctionalIntegrationTest(IntegrationTest,
     """
 
     def setUp(self):
+        super().setUp()
         self.setUpIntTest()
         # test_GetMetaData input parameters
         self.metadata_field = "status"
@@ -62,6 +63,7 @@ class SuperviseIntegrationTest(IntegrationTest,
     """
 
     def setUp(self):
+        super().setUp()
         self.setUpIntTest()
 
 
@@ -74,6 +76,7 @@ class PerformanceIntegrationTest(IntegrationTest,
     """
 
     def setUp(self):
+        super().setUp()
         self.setUpIntTest()
         # network timing measurement
         self.timeout_limit = 30

@@ -5,14 +5,16 @@ Flask server tests currently do not work on Azure pipelines
 because ports cannot be opened on shared pool.
 """
 # built-in imports
+import os
 import unittest
 
 # local imports
 # thermostat_api is imported but not used to avoid a circular import
-from thermostatsupervisor import thermostat_api as api
-# pylint: disable=unused-import.
+
+from thermostatsupervisor import thermostat_api as api  # noqa F401, pylint: disable=unused-import.
 from thermostatsupervisor import sht31
 from thermostatsupervisor import sht31_config
+from thermostatsupervisor import sht31_flask_server as sht31_fs
 from tests import unit_test_common as utc
 from thermostatsupervisor import utilities as util
 
@@ -31,10 +33,7 @@ class IntegrationTest(utc.UnitTest):
     def setUp(self):
         # sht31 flask server is automatically spawned in sht31
         # Thermostat class if unit test zone is being used.
-        self.print_test_name()
-
-    def tearDown(self):
-        self.print_test_result()
+        super().setUp()
 
     def test_SHT31_FlaskServer_All_Pages(self):
         """
@@ -99,11 +98,14 @@ class IntegrationTest(utc.UnitTest):
         print("printing thermostat meta data:")
         Thermostat.print_all_thermostat_metadata(sht31_config.UNIT_TEST_ZONE)
 
+        # create mock runtime args
+        api.uip = api.UserInputs(utc.unit_test_argv)
+
         # create Zone object
         Zone = sht31.ThermostatZone(Thermostat)
 
         # update runtime overrides
-        Zone.update_runtime_parameters(api.user_inputs)
+        Zone.update_runtime_parameters(api.uip.user_inputs)
 
         print("current thermostat settings...")
         print(f"switch position: {Zone.get_system_switch_position()}")
@@ -138,6 +140,21 @@ class IntegrationTest(utc.UnitTest):
         # cleanup
         del Zone
         del Thermostat
+
+
+class RuntimeParameterTest(utc.RuntimeParameterTest):
+    """sht31 flask server Runtime parameter tests."""
+
+    mod = sht31_fs  # module to test
+    script = os.path.realpath(__file__)
+    debug = False
+
+    # fields for testing, mapped to class variables.
+    # (value, field name)
+    test_fields = [
+        (script, os.path.realpath(__file__)),
+        (debug, sht31_fs.DEBUG_FLD),
+    ]
 
 
 if __name__ == "__main__":
