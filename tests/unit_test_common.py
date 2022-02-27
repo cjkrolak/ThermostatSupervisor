@@ -89,15 +89,11 @@ class UnitTest(unittest.TestCase, metaclass=PatchMeta):
     Zone = None
     is_off_mode_bckup = None
 
-    @classmethod
-    def setUpClass(cls):
-        print(f"DEBUG: setupClass:argv={sys.argv}")
-
     def setUp(self):
         """Default setup method."""
         self.print_test_name()
         self.unit_test_argv = unit_test_argv
-        print(f"DEBUG: setup:argv={sys.argv}")
+        util.unit_test_mode = True
 
     def tearDown(self):
         """Default teardown method."""
