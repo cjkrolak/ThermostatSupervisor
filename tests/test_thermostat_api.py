@@ -18,7 +18,7 @@ class Test(utc.UnitTest):
     tstat = "UNITTEST"
 
     def setUp(self):
-        self.print_test_name()
+        super().setUp()
         api.thermostats[self.tstat] = {  # dummy unit test thermostat
             "required_env_variables": {
                 "GMAIL_USERNAME": None,
@@ -28,7 +28,7 @@ class Test(utc.UnitTest):
 
     def tearDown(self):
         del api.thermostats[self.tstat]
-        self.print_test_result()
+        super().tearDown()
 
     def test_verify_required_env_variables(self):
         """

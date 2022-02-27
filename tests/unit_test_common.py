@@ -106,10 +106,15 @@ class UnitTest(unittest.TestCase, metaclass=PatchMeta):
     # def __init_subclass__(cls, **kwargs):
     #    return mock_patch(_cls=cls)
 
+    @classmethod
+    def setUpClass(cls):
+        print(f"DEBUG: setupClass:argv={sys.argv}")
+
     def setUp(self):
         """Default setup method."""
         self.print_test_name()
         self.unit_test_argv = unit_test_argv
+        print(f"DEBUG: setup:argv={sys.argv}")
 
     def tearDown(self):
         """Default teardown method."""

@@ -33,10 +33,7 @@ class IntegrationTest(utc.UnitTest):
     def setUp(self):
         # sht31 flask server is automatically spawned in sht31
         # Thermostat class if unit test zone is being used.
-        self.print_test_name()
-
-    def tearDown(self):
-        self.print_test_result()
+        super().setUp()
 
     def test_SHT31_FlaskServer_All_Pages(self):
         """

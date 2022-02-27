@@ -30,12 +30,12 @@ class Test(utc.UnitTest):
     revert_setpoint_func_bckup = None
 
     def setUp(self):
-        self.print_test_name()
+        super().setUp()
         self.setup_mock_thermostat_zone()
 
     def tearDown(self):
         self.teardown_mock_thermostat_zone()
-        self.print_test_result()
+        super().tearDown()
 
     def test_print_all_thermostat_meta_data(self):
         """

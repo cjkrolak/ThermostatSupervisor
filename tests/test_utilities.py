@@ -17,11 +17,8 @@ class EnvironmentTests(utc.UnitTest):
     """Test functions related to environment and env variables."""
 
     def setUp(self):
-        self.print_test_name()
+        super().setUp()
         util.log_msg.file_name = "unit_test.txt"
-
-    def tearDown(self):
-        self.print_test_result()
 
     def test_is_interactive_environment(self):
         """
@@ -168,11 +165,8 @@ class FileAndLoggingTests(utc.UnitTest):
     """Test functions related to logging functions."""
 
     def setUp(self):
-        self.print_test_name()
+        super().setUp()
         util.log_msg.file_name = "unit_test.txt"
-
-    def tearDown(self):
-        self.print_test_result()
 
     def test_log_msg_create_folder(self):
         """
@@ -358,11 +352,8 @@ class MetricsTests(utc.UnitTest):
     """Test functions related temperature/humidity metrics."""
 
     def setUp(self):
-        self.print_test_name()
+        super().setUp()
         util.log_msg.file_name = "unit_test.txt"
-
-    def tearDown(self):
-        self.print_test_result()
 
     def test_temp_value_with_units(self):
         """Verify function attaches units as expected."""
@@ -469,11 +460,8 @@ class MiscTests(utc.UnitTest):
     """Miscellaneous util tests."""
 
     def setUp(self):
-        self.print_test_name()
+        super().setUp()
         util.log_msg.file_name = "unit_test.txt"
-
-    def tearDown(self):
-        self.print_test_result()
 
     def test_get_function_name(self):
         """

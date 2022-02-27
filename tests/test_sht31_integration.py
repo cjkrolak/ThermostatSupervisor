@@ -67,8 +67,8 @@ class SuperviseIntegrationTest(IntegrationTest,
     """
     Test supervise functionality of sht31.py.
     """
-
     def setUp(self):
+        super().setUp()
         self.setUpIntTest()
 
 
@@ -79,8 +79,8 @@ class PerformanceIntegrationTest(IntegrationTest,
     """
     Test performance of in honeywell.py.
     """
-
     def setUp(self):
+        super().setUp()
         self.setUpIntTest()
         # network timing measurement
         # mean timing = 0.5 sec per measurement plus 0.75 sec overhead
