@@ -113,7 +113,7 @@ class ThermostatClass(tc.ThermostatCommon):
         returns:
         """
         # flask server used in unit test mode
-        from thermostatsupervisor import sht31_flask_server as sht31_fs  # noqa E402
+        from thermostatsupervisor import sht31_flask_server as sht31_fs  # noqa E402, C0415
         # pylint: disable=import-outside-toplevel
 
         # setup flask runtime variables
@@ -501,6 +501,6 @@ if __name__ == "__main__":
     zone_number = api.uip.get_user_inputs(api.ZONE_FLD)
 
     tc.thermostat_basic_checkout(
-        api, sht31_config.ALIAS,
+        sht31_config.ALIAS,
         zone_number,
         ThermostatClass, ThermostatZone)

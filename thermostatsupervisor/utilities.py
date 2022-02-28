@@ -569,22 +569,22 @@ def dynamic_module_import(name, path=None):
         return mod
 
 
-def cast2bool(x):
+def cast2bool(input_val):
     """
     Cast to bool.
 
     inputs:
-        x(int, str, bool, etc.) variable of any datatype.
+        input_val(int, str, bool, etc.) variable of any datatype.
     returns:
         (bool): bool equivalent.
     """
-    return bool(distutils.util.strtobool(str(x).strip()))
+    return bool(distutils.util.strtobool(str(input_val).strip()))
 
 
 class UserInputs():
     """Manage runtime arguments."""
 
-    def __init__(self, argv_list, help_description, *args, **kwargs):
+    def __init__(self, argv_list, help_description, *_, **__):
         """Constructor."""
         self.argv_list = argv_list
         self.help_description = help_description
@@ -714,10 +714,10 @@ class UserInputs():
             argv_inputs = sys.argv
 
         # populate dict with values from list
-        for k, v in self.user_inputs.items():
-            if v["order"] <= len(argv_inputs) - 1:
-                self.user_inputs[k]["value"] = self.user_inputs[k]["type"](
-                    argv_inputs[v["order"]])
+        for key, val in self.user_inputs.items():
+            if val["order"] <= len(argv_inputs) - 1:
+                self.user_inputs[key]["value"] = self.user_inputs[key]["type"](
+                    argv_inputs[val["order"]])
 
         return self.user_inputs
 

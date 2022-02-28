@@ -7,8 +7,8 @@ import unittest
 # local imports
 from thermostatsupervisor import emulator_config
 from thermostatsupervisor import supervise as sup
-from tests import unit_test_common as utc
 from thermostatsupervisor import utilities as util
+from tests import unit_test_common as utc
 
 
 class Test(utc.UnitTest):

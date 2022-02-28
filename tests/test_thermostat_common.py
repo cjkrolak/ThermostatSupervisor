@@ -10,8 +10,8 @@ import unittest
 # local imports
 from thermostatsupervisor import thermostat_api as api
 from thermostatsupervisor import thermostat_common as tc
-from tests import unit_test_common as utc
 from thermostatsupervisor import utilities as util
+from tests import unit_test_common as utc
 
 
 class Test(utc.UnitTest):
@@ -225,7 +225,7 @@ class Test(utc.UnitTest):
                 "return_type": type(None)},
             "update_runtime_parameters": {
                 "key": self.Zone.update_runtime_parameters,
-                "args": [{api.ZONE_FLD: 1}],
+                "args": None,
                 "return_type": type(None)},
             "get_schedule_program_heat": {
                 "key": self.Zone.get_schedule_program_heat,
@@ -649,7 +649,6 @@ class Test(utc.UnitTest):
             mod = api.load_hardware_library(thermostat_type)
             thermostat, zone = \
                 tc.thermostat_basic_checkout(
-                    api,
                     thermostat_type,
                     zone_number,
                     mod.ThermostatClass, mod.ThermostatZone

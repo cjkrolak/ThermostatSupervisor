@@ -706,16 +706,17 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
                      f"{self.get_temporary_hold_until_time()}",
                      mode=util.BOTH_LOG)
 
-    def refresh_zone_info(self) -> None:
+    def refresh_zone_info(self, force_refresh=False) -> None:
         """
         Refresh the zone_info attribute.
 
         Method overridden from base class to add retry on connection errors.
         inputs:
-            None
+            force_refresh(bool): not used in this method
         returns:
             None, populates self.zone_info dict.
         """
+        del force_refresh  # not used
         number_of_retries = 3
         trial_number = 1
         retry_delay_sec = 60
@@ -730,14 +731,15 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
                 util.log_msg(traceback.format_exc(),
                              mode=util.BOTH_LOG,
                              func_name=1)
-                util.log_msg("%s: exception during refresh_zone_info, "
-                             "on trial %s of %s, probably a"
-                             " connection issue%s" %
-                             (time_now, trial_number, number_of_retries,
-                              ["",
-                               ", waiting %s seconds and then retrying..." %
-                               retry_delay_sec]
-                              [trial_number < number_of_retries]),
+                msg_suffix = (
+                    ["",
+                     " waiting {retry_delay_sec} seconds and then " +
+                     "retrying..."][trial_number < number_of_retries])
+                util.log_msg(f"{time_now}: exception during refresh_zone"
+                             f"_info, on trial {trial_number} of "
+                             f"{number_of_retries}, probably a"
+                             f" connection issue"
+                             f"{msg_suffix}",
                              mode=util.BOTH_LOG, func_name=1)
                 if trial_number < number_of_retries:
                     time.sleep(retry_delay_sec)
@@ -807,7 +809,7 @@ if __name__ == "__main__":
     zone_number = api.uip.get_user_inputs(api.ZONE_FLD)
 
     _, Zone = tc.thermostat_basic_checkout(
-        api, honeywell_config.ALIAS,
+        honeywell_config.ALIAS,
         zone_number,
         ThermostatClass, ThermostatZone)
 
