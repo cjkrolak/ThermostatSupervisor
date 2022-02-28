@@ -384,7 +384,8 @@ class Sensors:
                 time.sleep(recovery_delay_sec)
                 GPIO.output(addr_pin, GPIO.HIGH)
             # status message
-            msg = f"{num_clock_cycles} completed at {recovery_freq_hz} Hz"
+            msg = (f"{num_clock_cycles} completed at {recovery_freq_hz} Hz.  "
+                   "Please reboot pi and restart flask server.")
             return {"i2c_recovery": msg}
         finally:
             GPIO.cleanup()  # clean up GPIO
