@@ -8,8 +8,8 @@ from unittest import mock
 
 # local libraries
 from thermostatsupervisor import email_notification as eml
-from tests import unit_test_common as utc
 from thermostatsupervisor import utilities as util
+from tests import unit_test_common as utc
 
 
 class Test(utc.UnitTest):
@@ -74,7 +74,7 @@ class Test(utc.UnitTest):
                     f"code: {return_status}: {return_status_msg}")
         self.assertEqual(return_status, util.AUTHORIZATION_ERROR, fail_msg)
 
-    @mock.patch.dict(os.environ, {}, clear=True)  # false import error
+    @mock.patch.dict(os.environ, {}, clear=True)  # noqa e501, pylint:disable=undefined-variable
     def test_send_email_alert_no_env_key(self):
         """Test send_email_alerts() functionality without email address."""
 

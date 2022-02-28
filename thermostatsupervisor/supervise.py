@@ -136,7 +136,7 @@ def supervisor(thermostat_type, zone_str):
                      func_name=1)
 
         # update runtime overrides
-        Zone.update_runtime_parameters(api.uip.user_inputs)
+        Zone.update_runtime_parameters()
 
         # display runtime settings
         display_runtime_settings(Zone)
@@ -158,8 +158,6 @@ def supervisor(thermostat_type, zone_str):
                 previous_mode_dict = current_mode_dict  # latch
 
             # revert thermostat mode if not matching target
-            print("DEBUG: target_mode=%s" % api.uip.get_user_inputs(
-                    api.TARGET_MODE_FLD))
             if not Zone.verify_current_mode(api.uip.get_user_inputs(
                     api.TARGET_MODE_FLD)):
                 api.uip.set_user_inputs(api.TARGET_MODE_FLD,

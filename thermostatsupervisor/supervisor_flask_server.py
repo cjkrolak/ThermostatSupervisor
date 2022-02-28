@@ -84,9 +84,9 @@ def index():
         api.uip = api.UserInputs(argv)
         thermostat_type = api.uip.get_user_inputs(api.THERMOSTAT_TYPE_FLD)
         zone = api.uip.get_user_inputs(api.ZONE_FLD)
-        measurements = api.uip.get_user_inputs(api.MEASUREMENTS_FLD)
+        measurement_cnt = api.uip.get_user_inputs(api.MEASUREMENTS_FLD)
         title = (f"{thermostat_type} thermostat zone {zone}, "
-                 f"{measurements} measurements")
+                 f"{measurement_cnt} measurements")
         yield f"<!doctype html><title>{title}</title>"
 
         # runtime variabless

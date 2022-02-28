@@ -27,7 +27,7 @@ class ThermostatCommon():
         self.device_id = util.BOGUS_INT  # placeholder
         self.ip_address = None  # placeholder
 
-    def print_all_thermostat_metadata(self, zone, debug=False):
+    def print_all_thermostat_metadata(self, zone, debug=False):  # noqa R0201
         """
         Print initial meta data queried from thermostat for specified zone.
 
@@ -37,7 +37,7 @@ class ThermostatCommon():
         returns:
             None
         """
-        del debug
+        del debug  # placeholder function
         util.log_msg(
             f"WARNING: print_all_thermostat_metatdata({zone}) not yet "
             f"implemented for this thermostat type\n",
@@ -437,27 +437,27 @@ class ThermostatCommonZone():
         """Return True if mode is being controlled."""
         return self.current_mode in self.controlled_modes
 
-    def is_heating(self):
+    def is_heating(self):  # noqa R0201
         """Return 1 if heating relay is active, else 0."""
         return util.BOGUS_INT
 
-    def is_cooling(self):
+    def is_cooling(self):  # noqa R0201
         """Return 1 if cooling relay is active, else 0."""
         return util.BOGUS_INT
 
-    def is_drying(self):
+    def is_drying(self):  # noqa R0201
         """Return 1 if drying relay is active, else 0."""
         return util.BOGUS_INT
 
-    def is_auto(self):
+    def is_auto(self):  # noqa R0201
         """Return 1 if auto relay is active, else 0."""
         return util.BOGUS_INT
 
-    def is_fanning(self):
+    def is_fanning(self):  # noqa R0201
         """Return 1 if fan relay is active, else 0."""
         return util.BOGUS_INT
 
-    def set_heat_setpoint(self, temp: int) -> None:
+    def set_heat_setpoint(self, temp: int) -> None:  # noqa R0201
         """
         Set a new heat setpoint.
 
@@ -474,7 +474,7 @@ class ThermostatCommonZone():
             mode=util.BOTH_LOG,
             func_name=1)
 
-    def set_cool_setpoint(self, temp: int) -> None:
+    def set_cool_setpoint(self, temp: int) -> None:  # noqa R0201
         """
         Set a new cool setpoint.
 
@@ -514,33 +514,33 @@ class ThermostatCommonZone():
         return self.is_cool_mode() and self.is_temp_deviated_from_schedule()
 
     # Thermostat-specific methods will be overloaded
-    def get_display_temp(self) -> float:
+    def get_display_temp(self) -> float:  # noqa R0201
         """Return the displayed temperature."""
         return float(util.BOGUS_INT)  # placeholder
 
-    def get_display_humidity(self) -> float:
+    def get_display_humidity(self) -> float:  # noqa R0201
         """Return the displayed humidity."""
         return float(util.BOGUS_INT)  # placeholder
 
-    def get_is_humidity_supported(self) -> bool:
+    def get_is_humidity_supported(self) -> bool:  # noqa R0201
         """Return humidity sensor status."""
         return util.BOGUS_BOOL  # placeholder
 
-    def get_system_switch_position(self) -> int:
+    def get_system_switch_position(self) -> int:  # noqa R0201
         """Return the 'SystemSwitchPosition'
             'SystemSwitchPosition' = 1 for heat, 2 for off
         """
         return util.BOGUS_INT  # placeholder
 
-    def get_heat_setpoint_raw(self) -> int:
+    def get_heat_setpoint_raw(self) -> int:  # noqa R0201
         """Return raw heat set point(number only, no units)."""
         return util.BOGUS_INT  # placeholder
 
-    def get_heat_setpoint(self) -> int:
+    def get_heat_setpoint(self) -> int:  # noqa R0201
         """Return raw heat set point(number and units)."""
         return util.BOGUS_INT  # placeholder
 
-    def get_schedule_program_heat(self) -> dict:
+    def get_schedule_program_heat(self) -> dict:  # noqa R0201
         """
         Return the heat setpoint schedule.
 
@@ -559,15 +559,15 @@ class ThermostatCommonZone():
         else:
             return util.BOGUS_INT  # placeholder
 
-    def get_cool_setpoint_raw(self) -> int:
+    def get_cool_setpoint_raw(self) -> int:  # noqa R0201
         """Return raw cool set point (number only, no units)."""
         return util.BOGUS_INT  # placeholder
 
-    def get_cool_setpoint(self) -> int:
+    def get_cool_setpoint(self) -> int:  # noqa R0201
         """Return raw cool set point (number and units)."""
         return util.BOGUS_INT  # placeholder
 
-    def get_schedule_program_cool(self) -> dict:
+    def get_schedule_program_cool(self) -> dict:  # noqa R0201
         """
         Return the cool setpoint schedule.
 
@@ -586,15 +586,15 @@ class ThermostatCommonZone():
         else:
             return util.BOGUS_INT  # placeholder
 
-    def get_vacation_hold(self) -> bool:
+    def get_vacation_hold(self) -> bool:  # noqa R0201
         """Return True if thermostat is in vacation hold mode."""
         return util.BOGUS_BOOL  # placeholder
 
-    def get_is_invacation_hold_mode(self) -> bool:
+    def get_is_invacation_hold_mode(self) -> bool:  # noqa R0201
         """Return the 'IsInVacationHoldMode' setting."""
         return util.BOGUS_BOOL  # placeholder
 
-    def get_temporary_hold_until_time(self) -> int:
+    def get_temporary_hold_until_time(self) -> int:  # noqa R0201
         """Return the 'TemporaryHoldUntilTime' """
         return util.BOGUS_INT  # placeholder
 
@@ -611,7 +611,7 @@ class ThermostatCommonZone():
         self.zone_info = {}
         self.last_fetch_time = time.time()
 
-    def report_heating_parameters(self, switch_position=None):
+    def report_heating_parameters(self, switch_position=None):  # noqa R0201
         """
         Display critical thermostat settings and reading to the screen.
 
@@ -620,9 +620,9 @@ class ThermostatCommonZone():
         returns:
             None
         """
-        del switch_position
+        del switch_position  # placeholder
 
-    def get_vacation_hold_until_time(self) -> int:
+    def get_vacation_hold_until_time(self) -> int:  # noqa R0201
         """
         Return the 'VacationHoldUntilTime'.
 
@@ -633,11 +633,11 @@ class ThermostatCommonZone():
          """
         return util.BOGUS_INT  # not implemented
 
-    def update_runtime_parameters(self, user_inputs):
+    def update_runtime_parameters(self):
         """use runtime parameter overrides.
 
         inputs:
-            user_inputs(dict): runtime overrides.
+            None
         returns:
             None, updates class variables.
         """
@@ -736,7 +736,7 @@ class ThermostatCommonZone():
             func = self.get_display_temp
 
         # measurement loop
-        for n in range(measurements):
+        for measurement in range(measurements):
             time0 = time.time()
             func()  # target command
             time1 = time.time()
@@ -744,7 +744,7 @@ class ThermostatCommonZone():
             # accumulate stats
             tdelta = time1 - time0
             delta_lst.append(tdelta)
-            util.log_msg(f"measurement {n}={tdelta:.2f} seconds",
+            util.log_msg(f"measurement {measurement}={tdelta:.2f} seconds",
                          mode=util.BOTH_LOG, func_name=1)
 
         # calc stats
@@ -779,17 +779,17 @@ class ThermostatCommonZone():
             func = self.get_display_temp
 
         # measurement loop
-        for n in range(measurements):
-            t0 = time.time()
+        for measurement in range(measurements):
+            t_start = time.time()
             data = func()  # target command
-            t1 = time.time()
+            t_end = time.time()
 
             # accumulate stats
-            tdelta = t1 - t0
+            tdelta = t_end - t_start
             data_lst.append(data)
             util.log_msg(
-                f"measurement {n}={data} (deltaTime={tdelta:.2f} sec, "
-                f"delay={poll_interval_sec} sec)",
+                f"measurement {measurement}={data} (deltaTime={tdelta:.2f} "
+                f"sec, delay={poll_interval_sec} sec)",
                 mode=util.BOTH_LOG,
                 func_name=1)
             time.sleep(poll_interval_sec)
@@ -929,13 +929,12 @@ class ThermostatCommonZone():
             mode=util.BOTH_LOG)
 
 
-def create_thermostat_instance(api, thermostat_type, zone,
+def create_thermostat_instance(thermostat_type, zone,
                                ThermostatClass, ThermostatZone):
     """
     Create Thermostat and Zone instances.
 
     inputs:
-        api(module): thermostat_api module.
         tstat(int):  thermostat_type
         zone(int): zone number
         ThermostatClass(cls): Thermostat class
@@ -962,18 +961,17 @@ def create_thermostat_instance(api, thermostat_type, zone,
     # update runtime overrides
     api.uip.set_user_inputs(api.THERMOSTAT_TYPE_FLD, thermostat_type)
     api.uip.set_user_inputs(api.ZONE_FLD, zone)
-    Zone.update_runtime_parameters(api.uip.user_inputs)
+    Zone.update_runtime_parameters()
 
     return Thermostat, Zone
 
 
-def thermostat_basic_checkout(api, thermostat_type, zone,
+def thermostat_basic_checkout(thermostat_type, zone,
                               ThermostatClass, ThermostatZone):
     """
     Perform basic Thermostat checkout.
 
     inputs:
-        api(module): thermostat_api module.
         tstat(int):  thermostat_type
         zone(int): zone number
         ThermostatClass(cls): Thermostat class
@@ -985,7 +983,7 @@ def thermostat_basic_checkout(api, thermostat_type, zone,
     util.log_msg.debug = True  # debug mode set
 
     # create class instances
-    Thermostat, Zone = create_thermostat_instance(api, thermostat_type, zone,
+    Thermostat, Zone = create_thermostat_instance(thermostat_type, zone,
                                                   ThermostatClass,
                                                   ThermostatZone)
 

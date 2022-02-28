@@ -9,8 +9,8 @@ import unittest
 # local imports
 from thermostatsupervisor import kumocloud
 from thermostatsupervisor import kumocloud_config
-from tests import unit_test_common as utc
 from thermostatsupervisor import utilities as util
+from tests import unit_test_common as utc
 
 
 class IntegrationTest(utc.IntegrationTest):

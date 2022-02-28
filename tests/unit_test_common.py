@@ -2,6 +2,7 @@
 Common functions used in multiple unit tests.
 """
 # global imports
+import argparse
 import distutils.util
 import os
 import pprint
@@ -69,8 +70,6 @@ class PatchMeta(type):
     def __init__(cls, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # mock argv to prevent azure runtime args from polluting test.
-        print("DEBUG: in PatchMeta for %s, patch args=%s" %
-              (cls, str(cls.patch_args)))
         patch.object(*cls.patch_args)(cls)  # noqa e501, pylint:disable=undefined-variable
 
 
@@ -82,17 +81,21 @@ class UnitTest(unittest.TestCase, metaclass=PatchMeta):
     __metaclass__ = PatchMeta
     patch_args = (sys, 'argv', [os.path.realpath(__file__)])
 
-    thermostat_type = unit_test_argv[1]
-    zone = unit_test_argv[2]
+    mod = None  # imported module
+    thermostat_type = None  # thermostat type
+    zone = None  # zone number
+    Thermostat = None  # thermostat instance
+    Zone = None  # zone instance
+
     user_inputs_backup = None
-    Thermostat = None
-    Zone = None
     is_off_mode_bckup = None
 
     def setUp(self):
         """Default setup method."""
         self.print_test_name()
         self.unit_test_argv = unit_test_argv
+        self.thermostat_type = unit_test_argv[1]
+        self.zone = unit_test_argv[2]
         util.unit_test_mode = True
 
     def tearDown(self):
@@ -116,7 +119,7 @@ class UnitTest(unittest.TestCase, metaclass=PatchMeta):
 
             # create class instances
             self.Thermostat, self.Zone = tc.create_thermostat_instance(
-                api, thermostat_type, zone, self.mod.ThermostatClass,
+                thermostat_type, zone, self.mod.ThermostatClass,
                 self.mod.ThermostatZone)
 
         # return instances
@@ -144,7 +147,7 @@ class UnitTest(unittest.TestCase, metaclass=PatchMeta):
 
         self.Thermostat = tc.ThermostatCommon()
         self.Zone = tc.ThermostatCommonZone()
-        self.Zone.update_runtime_parameters(api.uip.user_inputs)
+        self.Zone.update_runtime_parameters()
         self.Zone.current_mode = self.Zone.OFF_MODE
         self.is_off_mode_bckup = self.Zone.is_off_mode
         self.Zone.is_off_mode = lambda *_, **__: 1
@@ -243,11 +246,11 @@ class IntegrationTest(UnitTest):
 
             # create class instances
             self.Thermostat, self.Zone = tc.create_thermostat_instance(
-                api, thermostat_type, zone, self.mod.ThermostatClass,
+                thermostat_type, zone, self.mod.ThermostatClass,
                 self.mod.ThermostatZone)
 
         # update runtime parameters
-        self.Zone.update_runtime_parameters(api.uip.user_inputs)
+        self.Zone.update_runtime_parameters()
 
         # return instances
         return self.Thermostat, self.Zone
@@ -272,7 +275,6 @@ class FunctionalIntegrationTest(IntegrationTest):
 
         IntegrationTest.Thermostat, IntegrationTest.Zone = \
             tc.thermostat_basic_checkout(
-                api,
                 api.uip.get_user_inputs(api.THERMOSTAT_TYPE_FLD),
                 api.uip.get_user_inputs(api.ZONE_FLD),
                 self.mod.ThermostatClass, self.mod.ThermostatZone
@@ -459,6 +461,7 @@ class RuntimeParameterTest(UnitTest):
 
     uip = None
     mod = None
+    test_fields = None  # placeholder, will be populated by child classes
 
     def get_test_list(self):
         """Return the test list with string elemeents."""
@@ -489,10 +492,10 @@ class RuntimeParameterTest(UnitTest):
         test_list_named_flag.append(self.test_fields[0][1])
 
         # element 0 (script) is omitted from expected_values dict.
-        for x in range(1, len(self.test_fields)):
+        for field in range(1, len(self.test_fields)):
             test_list_named_flag.append(self.uip.get_user_inputs(
-                self.test_fields[x][1], flag) + " " +
-                str(self.test_fields[x][0]))
+                self.test_fields[field][1], flag) + " " +
+                str(self.test_fields[field][0]))
         return test_list_named_flag
 
     def parse_user_inputs_dict(self):
@@ -550,7 +553,6 @@ class RuntimeParameterTest(UnitTest):
         """
         Generic test for argparser.
         """
-        import argparse
         parser = argparse.ArgumentParser()
         parser.add_argument('-a', type=int)
         # argv = '-a 1'.split()  # or ['-a','1','foo']
@@ -568,7 +570,7 @@ class RuntimeParameterTest(UnitTest):
         # build the named sflag list
         self.uip = self.mod.UserInputs()
         named_sflag_list = self.get_named_list("sflag")
-        print("sflag_list=%s" % named_sflag_list)
+        print(f"sflag_list={named_sflag_list}")
 
         # clear out user inputs
         self.initialize_user_inputs()
@@ -588,7 +590,7 @@ class RuntimeParameterTest(UnitTest):
         # build the named sflag list
         self.uip = self.mod.UserInputs()
         named_lflag_list = self.get_named_list("lflag")
-        print("lflag_list=%s" % named_lflag_list)
+        print(f"lflag_list={named_lflag_list}")
 
         # clear out user inputs
         self.initialize_user_inputs()
@@ -628,7 +630,7 @@ class RuntimeParameterTest(UnitTest):
         print("test 2, input list, will parse list")
         self.initialize_user_inputs()
         test_list = self.get_test_list()
-        print("test2 test_list=%s" % test_list)
+        print(f"test2 test_list={test_list}")
         self.uip.parse_runtime_parameters(
             argv_list=test_list)
         self.verify_parsed_values()

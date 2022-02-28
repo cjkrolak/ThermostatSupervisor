@@ -580,6 +580,6 @@ if __name__ == "__main__":
     zone_number = api.uip.get_user_inputs(api.ZONE_FLD)
 
     tc.thermostat_basic_checkout(
-        api, emulator_config.ALIAS,
+        emulator_config.ALIAS,
         zone_number,
         ThermostatClass, ThermostatZone)

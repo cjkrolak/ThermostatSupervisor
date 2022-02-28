@@ -9,8 +9,8 @@ import unittest
 # local imports
 from thermostatsupervisor import sht31
 from thermostatsupervisor import sht31_config
-from tests import unit_test_common as utc
 from thermostatsupervisor import utilities as util
+from tests import unit_test_common as utc
 
 
 @unittest.skipIf(not utc.ENABLE_SHT31_TESTS,

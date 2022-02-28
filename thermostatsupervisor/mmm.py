@@ -789,7 +789,7 @@ if __name__ == "__main__":
     zone_number = api.uip.get_user_inputs(api.ZONE_FLD)
 
     _, Zone = tc.thermostat_basic_checkout(
-        api, mmm_config.ALIAS,
+        mmm_config.ALIAS,
         zone_number,
         ThermostatClass, ThermostatZone)
 

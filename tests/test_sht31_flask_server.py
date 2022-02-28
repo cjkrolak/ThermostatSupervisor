@@ -15,8 +15,8 @@ from thermostatsupervisor import thermostat_api as api  # noqa F401, pylint: dis
 from thermostatsupervisor import sht31
 from thermostatsupervisor import sht31_config
 from thermostatsupervisor import sht31_flask_server as sht31_fs
-from tests import unit_test_common as utc
 from thermostatsupervisor import utilities as util
+from tests import unit_test_common as utc
 
 
 @unittest.skipIf(not utc.ENABLE_SHT31_TESTS,
@@ -28,14 +28,10 @@ from thermostatsupervisor import utilities as util
 class IntegrationTest(utc.UnitTest):
     """Test functions in sht31_flask_server.py."""
 
-    # app = sht31_fs.create_app()
+    # sht31 flask server is automatically spawned in sht31
+    # Thermostat class if unit test zone is being used.
 
-    def setUp(self):
-        # sht31 flask server is automatically spawned in sht31
-        # Thermostat class if unit test zone is being used.
-        super().setUp()
-
-    def test_SHT31_FlaskServer_All_Pages(self):
+    def test_sht31_flask_server_all_pages(self):
         """
         Confirm all pages return data from Flask server.
         """
@@ -74,7 +70,7 @@ class IntegrationTest(utc.UnitTest):
                             f"test_case '{test_case}': key '{expected_key}' "
                             f"was not found in return data: {return_data}")
 
-    def test_SHT31_FlaskServer(self):
+    def test_sht31_flask_server(self):
         """
         Confirm Flask server returns valid data.
         """
@@ -105,7 +101,7 @@ class IntegrationTest(utc.UnitTest):
         Zone = sht31.ThermostatZone(Thermostat)
 
         # update runtime overrides
-        Zone.update_runtime_parameters(api.uip.user_inputs)
+        Zone.update_runtime_parameters()
 
         print("current thermostat settings...")
         print(f"switch position: {Zone.get_system_switch_position()}")
