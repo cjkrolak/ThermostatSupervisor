@@ -413,6 +413,7 @@ class Sensors:
         # cmdout = str(p.communicate())
 
         # read in raw data
+        print("DEBUG: parsing output...")
         parsed_device_dict = {}
         bus_dict = {}
         for addr_base in range(0, 9):
