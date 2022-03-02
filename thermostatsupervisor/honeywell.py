@@ -322,8 +322,7 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
         returns:
             (float): display temperature in degrees F.
         """
-        self.refresh_zone_info()
-        return float(self.zone_info['latestData']['uiData']['DispTemperature'])
+        return float(self.get_indoor_temperature_raw())
 
     def get_display_humidity(self) -> (float, None):
         """
@@ -334,8 +333,7 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
         returns:
             (float, None): indoor humidity in %RH, None if not supported.
         """
-        self.refresh_zone_info()
-        raw_humidity = self.zone_info['latestData']['uiData']['IndoorHumidity']
+        raw_humidity = self.get_indoor_humidity_raw()
         if raw_humidity is not None:
             return float(raw_humidity)
         else:
