@@ -407,7 +407,7 @@ class Sensors:
         """
         # send command
         print("DEBUG: in i2c_detect, bus=%s" % bus)
-        p = subprocess.Popen(['sudo i2cdetect', '-y',
+        p = subprocess.Popen(['sudo', 'i2cdetect', '-y',
                               str(bus)],
                              stdout=subprocess.PIPE,)
         # cmdout = str(p.communicate())
