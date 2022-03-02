@@ -416,7 +416,7 @@ class Sensors:
         print("DEBUG: parsing output...")
         parsed_device_dict = {}
         bus_dict = {}
-        for addr_base in range(0, 9):
+        for _ in range(0, 9):
             line = str(p.stdout.readline())
             print("DEBUG: input line=%s" % line)
 
@@ -430,9 +430,9 @@ class Sensors:
                 device_dict = {}
                 for match in re.finditer("[0-9][0-9]:.*[0-9][0-9]", line):
                     if match:
-                        print("DEBUG: device found: %s" % str(match.group()))
+                        print("DEBUG: device found: %s" % match.group())
                         device_dict["dev_" + str(device)] = str(match.group())
-                        bus_dict["addr_" + str(addr_base)] = device_dict
+                        bus_dict["addr_" + str(line[0:2])] = device_dict
                         device += 1
 
         parsed_device_dict["bus_" + str(bus)] = bus_dict
