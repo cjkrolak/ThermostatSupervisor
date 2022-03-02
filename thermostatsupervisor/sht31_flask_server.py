@@ -436,8 +436,6 @@ class Sensors:
                         device_addr = match.group(0)
                         print("DEBUG: device found: %s" % device_addr)
                         print(match.group(0))
-                        print(match.group(1))
-                        print(match.group(2))
                         device_dict["dev_" + str(device) + "_addr"] = \
                             str(device_addr)
                         bus_dict["addr_base_" + str(addr_base)] = device_dict
