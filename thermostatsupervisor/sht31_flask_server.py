@@ -419,7 +419,9 @@ class Sensors:
         for _ in range(0, 9):
             line = str(p.stdout.readline())
             addr_base = line[2:4]
-            print("DEBUG: input line=%s, addr_base=%s" % (line, addr_base))
+            addr_payload = line[5:]
+            print("DEBUG: input line=%s, addr_base=%s" % (addr_payload,
+                                                          addr_base))
 
             # catch error condition
             if "Error" in line:
@@ -429,7 +431,7 @@ class Sensors:
                 print("DEBUG: parsing devices on line=%s" % line)
                 device = 0
                 device_dict = {}
-                for match in re.finditer("[0-9][0-9]:.*[0-9][0-9]", line):
+                for match in re.finditer("[0-9][0-9]", addr_payload):
                     if match:
                         device_addr = match.group(0)
                         print("DEBUG: device found: %s" % device_addr)
