@@ -544,8 +544,20 @@ class I2CRecovery(Resource):
         return helper.i2c_recovery()
 
 
+class I2CDetectBus(Resource):
+    """Issue i2c detect on default bus."""
+
+    def __init__(self):
+        pass
+
+    def get(self):
+        """Map the get method."""
+        helper = Sensors()
+        return helper.i2c_detect()
+
+
 class I2CDetectBus0(Resource):
-    """Issue i2c recovery sequence."""
+    """Issue i2c detect on bus 0."""
 
     def __init__(self):
         pass
@@ -557,7 +569,7 @@ class I2CDetectBus0(Resource):
 
 
 class I2CDetectBus1(Resource):
-    """Issue i2c recovery sequence."""
+    """Issue i2c detect on bus 1."""
 
     def __init__(self):
         pass
@@ -583,8 +595,9 @@ def create_app():
     api.add_resource(SoftReset, sht31_config.flask_folder.soft_reset)
     api.add_resource(Reset, sht31_config.flask_folder.reset)
     api.add_resource(I2CRecovery, sht31_config.flask_folder.i2c_recovery)
-    api.add_resource(I2CDetectBus0, sht31_config.flask_folder.i2c_detect0)
-    api.add_resource(I2CDetectBus1, sht31_config.flask_folder.i2c_detect1)
+    api.add_resource(I2CDetectBus, sht31_config.flask_folder.i2c_detect)
+    api.add_resource(I2CDetectBus0, sht31_config.flask_folder.i2c_detect_0)
+    api.add_resource(I2CDetectBus1, sht31_config.flask_folder.i2c_detect_1)
     return app_
 
 
