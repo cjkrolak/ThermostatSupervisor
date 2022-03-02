@@ -418,7 +418,7 @@ class Sensors:
         bus_dict = {}
         for _ in range(0, 9):
             line = str(p.stdout.readline())
-            addr_base = line[2:3]
+            addr_base = line[2:4]
             print("DEBUG: input line=%s, addr_base=%s" % (line, addr_base))
 
             # catch error condition
@@ -433,6 +433,9 @@ class Sensors:
                     if match:
                         device_addr = match.group(0)
                         print("DEBUG: device found: %s" % device_addr)
+                        print(match.group(0))
+                        print(match.group(1))
+                        print(match.group(2))
                         device_dict["dev_" + str(device) + "_addr"] = \
                             str(device_addr)
                         bus_dict["addr_base_" + str(addr_base)] = device_dict
