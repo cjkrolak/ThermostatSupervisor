@@ -406,35 +406,29 @@ class Sensors:
             (dict): parsed device dictionary.
         """
         # send command
-        print("DEBUG: in i2c_detect, bus=%s" % bus)
         p = subprocess.Popen(['sudo', 'i2cdetect', '-y',
                               str(bus)],
                              stdout=subprocess.PIPE,)
         # cmdout = str(p.communicate())
 
         # read in raw data
-        print("DEBUG: parsing output...")
         parsed_device_dict = {}
         bus_dict = {}
         for _ in range(0, 9):
             line = str(p.stdout.readline())
             addr_base = line[2:4]
             addr_payload = line[5:]
-            print("DEBUG: input line=%s, addr_base=%s" % (addr_payload,
-                                                          addr_base))
 
             # catch error condition
             if "Error" in line:
                 bus_dict["error"] = line
             else:
                 # find devices on bus
-                print("DEBUG: parsing devices on line=%s" % line)
                 device = 0
                 device_dict = {}
                 for match in re.finditer("[0-9][0-9]", addr_payload):
                     if match:
                         device_addr = match.group(0)
-                        print("DEBUG: device found: %s" % device_addr)
                         print(match.group(0))
                         device_dict["dev_" + str(device) + "_addr"] = \
                             str(device_addr)
