@@ -425,6 +425,7 @@ class Sensors:
                 bus_dict["error"] = line
             else:
                 # find devices on bus
+                print("DEBUG: parsing devices on line=%s" % line)
                 device = 0
                 device_dict = {}
                 for match in re.finditer("[0-9][0-9]:.*[0-9][0-9]", line):
@@ -434,8 +435,8 @@ class Sensors:
                         bus_dict["addr_" + str(addr_base)] = device_dict
                         device += 1
 
-            parsed_device_dict["bus_" + str(bus)] = bus_dict
-            return parsed_device_dict
+        parsed_device_dict["bus_" + str(bus)] = bus_dict
+        return parsed_device_dict
 
 
 class Controller(Resource):
