@@ -406,6 +406,7 @@ class Sensors:
             (dict): parsed device dictionary.
         """
         # send command
+        print("DEBUG: in i2c_detect, bus=%s" % bus)
         p = subprocess.Popen(['sudo i2cdetect', '-y',
                               str(bus)],
                              stdout=subprocess.PIPE,)
@@ -544,7 +545,7 @@ class I2CRecovery(Resource):
         return helper.i2c_recovery()
 
 
-class I2CDetectBus(Resource):
+class I2CDetect(Resource):
     """Issue i2c detect on default bus."""
 
     def __init__(self):
@@ -595,7 +596,7 @@ def create_app():
     api.add_resource(SoftReset, sht31_config.flask_folder.soft_reset)
     api.add_resource(Reset, sht31_config.flask_folder.reset)
     api.add_resource(I2CRecovery, sht31_config.flask_folder.i2c_recovery)
-    api.add_resource(I2CDetectBus, sht31_config.flask_folder.i2c_detect)
+    api.add_resource(I2CDetect, sht31_config.flask_folder.i2c_detect)
     api.add_resource(I2CDetectBus0, sht31_config.flask_folder.i2c_detect_0)
     api.add_resource(I2CDetectBus1, sht31_config.flask_folder.i2c_detect_1)
     return app_
