@@ -412,7 +412,7 @@ class Sensors:
         # cmdout = str(p.communicate())
 
         # read in raw data
-        parsed_device_dict = {}
+        parsed_device_dict = {"i2c_detect": {}}
         bus_dict = {}
         for _ in range(0, 9):
             line = str(p.stdout.readline())
@@ -421,7 +421,7 @@ class Sensors:
 
             # catch error condition
             if "Error" in line:
-                bus_dict["error"] = line
+                bus_dict["i2c_detect"]["error"] = line
             else:
                 # find devices on bus
                 device = 0
@@ -434,8 +434,7 @@ class Sensors:
                             str(device_addr)
                         bus_dict["addr_base_" + str(addr_base)] = device_dict
                         device += 1
-
-        parsed_device_dict["bus_" + str(bus)] = bus_dict
+        parsed_device_dict["i2c_detect"]["bus_" + str(bus)] = bus_dict
         return parsed_device_dict
 
 
