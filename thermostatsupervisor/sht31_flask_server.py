@@ -17,7 +17,9 @@ except ImportError as ex:
 # built-in imports
 import distutils.util
 import os
+import re
 import statistics
+import subprocess
 import sys
 import time
 
@@ -384,11 +386,57 @@ class Sensors:
                 time.sleep(recovery_delay_sec)
                 GPIO.output(addr_pin, GPIO.HIGH)
             # status message
-            msg = (f"{num_clock_cycles} completed at {recovery_freq_hz} Hz.  "
-                   "Please reboot pi and restart flask server.")
-            return {"i2c_recovery": msg}
+            msg_dict = {}
+            msg_dict["action_complete"] = (f"{num_clock_cycles} SCL clock "
+                                           f"toggles completed at "
+                                           f"{recovery_freq_hz} Hz")
+            msg_dict["next_step"] = ("please reboot pi and restart "
+                                     "flask server.")
+            return {"i2c_recovery": msg_dict}
         finally:
             GPIO.cleanup()  # clean up GPIO
+
+    def i2c_detect(self, bus=sht31_config.I2C_BUS):
+        """
+        Detect i2c device on bus.
+
+        inputs:
+             bus(int): i2c bus number
+        returns:
+            (dict): parsed device dictionary.
+        """
+        # send command
+        p = subprocess.Popen(['sudo', 'i2cdetect', '-y',
+                              str(bus)],
+                             stdout=subprocess.PIPE,)
+        # cmdout = str(p.communicate())
+
+        # read in raw data
+        parsed_device_dict = {}
+        bus_dict = {}
+        for _ in range(0, 9):
+            line = str(p.stdout.readline())
+            addr_base = line[2:4]
+            addr_payload = line[5:]
+
+            # catch error condition
+            if "Error" in line:
+                bus_dict["error"] = line
+            else:
+                # find devices on bus
+                device = 0
+                device_dict = {}
+                for match in re.finditer("[0-9][0-9]", addr_payload):
+                    if match:
+                        device_addr = match.group(0)
+                        print(match.group(0))
+                        device_dict["dev_" + str(device) + "_addr"] = \
+                            str(device_addr)
+                        bus_dict["addr_base_" + str(addr_base)] = device_dict
+                        device += 1
+
+        parsed_device_dict["bus_" + str(bus)] = bus_dict
+        return parsed_device_dict
 
 
 class Controller(Resource):
@@ -499,6 +547,42 @@ class I2CRecovery(Resource):
         return helper.i2c_recovery()
 
 
+class I2CDetect(Resource):
+    """Issue i2c detect on default bus."""
+
+    def __init__(self):
+        pass
+
+    def get(self):
+        """Map the get method."""
+        helper = Sensors()
+        return helper.i2c_detect()
+
+
+class I2CDetectBus0(Resource):
+    """Issue i2c detect on bus 0."""
+
+    def __init__(self):
+        pass
+
+    def get(self):
+        """Map the get method."""
+        helper = Sensors()
+        return helper.i2c_detect(0)
+
+
+class I2CDetectBus1(Resource):
+    """Issue i2c detect on bus 1."""
+
+    def __init__(self):
+        pass
+
+    def get(self):
+        """Map the get method."""
+        helper = Sensors()
+        return helper.i2c_detect(1)
+
+
 def create_app():
     """Create the api object."""
     app_ = Flask(__name__)
@@ -514,6 +598,9 @@ def create_app():
     api.add_resource(SoftReset, sht31_config.flask_folder.soft_reset)
     api.add_resource(Reset, sht31_config.flask_folder.reset)
     api.add_resource(I2CRecovery, sht31_config.flask_folder.i2c_recovery)
+    api.add_resource(I2CDetect, sht31_config.flask_folder.i2c_detect)
+    api.add_resource(I2CDetectBus0, sht31_config.flask_folder.i2c_detect_0)
+    api.add_resource(I2CDetectBus1, sht31_config.flask_folder.i2c_detect_1)
     return app_
 
 

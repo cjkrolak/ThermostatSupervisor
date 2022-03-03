@@ -37,6 +37,9 @@ flask_folder.disable_heater = "/disable_heater"
 flask_folder.soft_reset = "/soft_reset"
 flask_folder.reset = "/reset"
 flask_folder.i2c_recovery = "/i2c_recovery"
+flask_folder.i2c_detect = "/i2c_detect"
+flask_folder.i2c_detect_0 = "/i2c_detect/0"
+flask_folder.i2c_detect_1 = "/i2c_detect/1"
 
 # SHT31 API field names
 API_MEASUREMENT_CNT = 'measurements'
