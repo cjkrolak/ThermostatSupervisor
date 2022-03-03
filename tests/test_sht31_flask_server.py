@@ -35,6 +35,9 @@ class IntegrationTest(utc.UnitTest):
         """
         Confirm all pages return data from Flask server.
         """
+        # do not test these pages
+        no_test_list = ["i2c_recovery", "reset"]
+
         # loopback does not work so use local sht31 zone if testing
         # on the local net.  If not, use the DNS name.
         local_host = sht31_config.sht31_metadata[
@@ -44,6 +47,10 @@ class IntegrationTest(utc.UnitTest):
                         util.is_host_on_local_net(local_host)[0]])
 
         for test_case in sht31_config.flask_folder:
+            if test_case in no_test_list:
+                print(f"test_case={test_case}: bypassing this test case")
+                continue
+
             print(f"test_case={test_case}")
             Thermostat = \
                 sht31.ThermostatClass(
@@ -62,6 +69,10 @@ class IntegrationTest(utc.UnitTest):
             elif test_case in ["diag", "clear_diag", "enable_heater",
                                "disable_heater", "soft_reset"]:
                 expected_key = "raw_binary"
+            elif test_case in ["i2c_detect", "i2c_detect_0", "i2c_detect_1"]:
+                expected_key = "i2c_detect"
+            elif test_case == "i2c_recovery":
+                expected_key = "i2c_recovery"
             elif test_case == "reset":
                 expected_key = "message"
             else:
@@ -95,7 +106,7 @@ class IntegrationTest(utc.UnitTest):
         Thermostat.print_all_thermostat_metadata(sht31_config.UNIT_TEST_ZONE)
 
         # create mock runtime args
-        api.uip = api.UserInputs(utc.unit_test_argv)
+        api.uip = api.UserInputs(utc.unit_test_sht31)
 
         # create Zone object
         Zone = sht31.ThermostatZone(Thermostat)
