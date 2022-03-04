@@ -3,7 +3,6 @@
 # built-in libraries
 import argparse
 import datetime
-import distutils.util
 import importlib.util
 import inspect
 import os
@@ -567,18 +566,6 @@ def dynamic_module_import(name, path=None):
         raise ex
     else:
         return mod
-
-
-def cast2bool(input_val):
-    """
-    Cast to bool.
-
-    inputs:
-        input_val(int, str, bool, etc.) variable of any datatype.
-    returns:
-        (bool): bool equivalent.
-    """
-    return bool(distutils.util.strtobool(str(input_val).strip()))
 
 
 class UserInputs():

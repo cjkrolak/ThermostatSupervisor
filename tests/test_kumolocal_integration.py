@@ -28,11 +28,11 @@ class IntegrationTest(utc.IntegrationTest):
             "supervise.py",  # module
             "kumolocal",  # thermostat
             "0",  # zone
-            "30",  # poll time in sec
-            "1000",  # reconnect time in sec
+            "20",  # poll time in sec
+            "50",  # reconnect time in sec
             "2",  # tolerance
             "UNKNOWN_MODE",  # thermostat mode, no target
-            "3",  # number of measurements
+            "6",  # number of measurements
         ]
         self.mod = kumolocal
         self.mod_config = kumolocal_config

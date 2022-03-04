@@ -35,11 +35,11 @@ class IntegrationTest(utc.IntegrationTest):
             str([sht31_config.LOFT_SHT31_REMOTE,
                  sht31_config.LOFT_SHT31][
                      util.is_host_on_local_net(local_host)[0]]),
-            "30",  # poll time in sec
-            "1000",  # reconnect time in sec
+            "5",  # poll time in sec
+            "12",  # reconnect time in sec
             "2",  # tolerance
             "UNKNOWN_MODE",  # thermostat mode, no target
-            "3",  # number of measurements
+            "6",  # number of measurements
         ]
         self.mod = sht31
         self.mod_config = sht31_config

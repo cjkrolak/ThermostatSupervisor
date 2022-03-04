@@ -171,6 +171,10 @@ def supervisor(thermostat_type, zone_str):
                 Zone.revert_temperature_deviation(
                     Zone.schedule_setpoint, current_mode_dict["status_msg"])
 
+            # increment poll count
+            poll_count += 1
+            measurement += 1
+
             # polling delay
             time.sleep(Zone.poll_time_sec)
 
@@ -184,10 +188,6 @@ def supervisor(thermostat_type, zone_str):
                 del Thermostat
                 break  # force reconnection
 
-            # increment poll count
-            poll_count += 1
-            measurement += 1
-
         # increment connection count
         session_count += 1
 
@@ -196,9 +196,13 @@ def supervisor(thermostat_type, zone_str):
         f"\n{measurement - 1} measurements completed, exiting program\n",
         mode=util.BOTH_LOG)
 
-    # delete packages
-    del Zone
-    del Thermostat
+    # delete packages if necessary
+    if 'Zone' in locals():
+        del Zone
+    if 'Thermostat' in locals():
+        del Thermostat
+    if 'mod' in locals():
+        del mod
 
 
 def exec_supervise(debug=True, argv_list=None):

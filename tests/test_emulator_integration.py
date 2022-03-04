@@ -31,10 +31,10 @@ class IntegrationTest(utc.IntegrationTest):
             "0",  # zone
             "5",  # poll time in sec, this value violates min
             # cycle time for TCC if reverting temperature deviation
-            "1000",  # reconnect time in sec
+            "11",  # reconnect time in sec
             "2",  # tolerance
             "UNKNOWN_MODE",  # thermostat mode, no target
-            "3",  # number of measurements
+            "6",  # number of measurements
         ]
         self.mod = emulator
         self.mod_config = emulator_config
