@@ -16,8 +16,8 @@ import requests
 # thermostat_api is imported but not used to avoid a circular import
 from thermostatsupervisor import thermostat_api as api  # noqa F401, pylint: disable=unused-import.
 from thermostatsupervisor import supervisor_flask_server as sfs
-from tests import unit_test_common as utc
 from thermostatsupervisor import utilities as util
+from tests import unit_test_common as utc
 
 
 @unittest.skipIf(util.is_azure_environment(),
@@ -32,7 +32,7 @@ class IntegrationTest(utc.UnitTest):
     app = sfs.create_app()
 
     def setUp(self):
-        self.print_test_name()
+        super().setUp()
         sfs.debug = False
         sfs.measurements = 10
         sfs.unit_test_mode = True
@@ -62,7 +62,7 @@ class IntegrationTest(utc.UnitTest):
             else:
                 print("WARNING: flask server is not daemon thread, "
                       "thread may still be active")
-        self.print_test_result()
+        super().tearDown()
 
     def test_supervisor_flask_server(self):
         """
@@ -94,10 +94,10 @@ class IntegrationTest(utc.UnitTest):
 
         # check web page content vs. expectations
         print(f"web page contents: {results.content}")
-        exp_substr = \
-            ("<title>%s thermostat zone %s, %s measurements</title>" %
-             (utc.unit_test_argv[1], utc.unit_test_argv[2],
-              utc.unit_test_argv[7]))
+        exp_substr = (
+            f"<title>{utc.unit_test_argv[1]} thermostat zone "
+            f"{utc.unit_test_argv[2]}, {utc.unit_test_argv[7]} "
+            f"measurements</title>")
         self.assertTrue(exp_substr in results.content.decode("utf-8"),
                         "did not find substring '%s' in web page response")
 

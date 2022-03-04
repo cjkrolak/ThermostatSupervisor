@@ -9,10 +9,12 @@ import unittest
 # local imports
 from thermostatsupervisor import sht31
 from thermostatsupervisor import sht31_config
-from tests import unit_test_common as utc
 from thermostatsupervisor import utilities as util
+from tests import unit_test_common as utc
 
 
+@unittest.skipIf(not utc.ENABLE_SHT31_TESTS,
+                 "sht31 tests are disabled")
 class IntegrationTest(utc.IntegrationTest):
     """
     Test functions in sht31.py.
@@ -33,16 +35,18 @@ class IntegrationTest(utc.IntegrationTest):
             str([sht31_config.LOFT_SHT31_REMOTE,
                  sht31_config.LOFT_SHT31][
                      util.is_host_on_local_net(local_host)[0]]),
-            "30",  # poll time in sec
-            "1000",  # reconnect time in sec
+            "5",  # poll time in sec
+            "12",  # reconnect time in sec
             "2",  # tolerance
-            "",  # thermostat mode, no target
-            "3",  # number of measurements
+            "UNKNOWN_MODE",  # thermostat mode, no target
+            "6",  # number of measurements
         ]
         self.mod = sht31
         self.mod_config = sht31_config
 
 
+@unittest.skipIf(not utc.ENABLE_SHT31_TESTS,
+                 "sht31 tests are disabled")
 class FunctionalIntegrationTest(IntegrationTest,
                                 utc.FunctionalIntegrationTest):
     """
@@ -56,23 +60,27 @@ class FunctionalIntegrationTest(IntegrationTest,
         self.metadata_type = float
 
 
+@unittest.skipIf(not utc.ENABLE_SHT31_TESTS,
+                 "sht31 tests are disabled")
 class SuperviseIntegrationTest(IntegrationTest,
                                utc.SuperviseIntegrationTest):
     """
     Test supervise functionality of sht31.py.
     """
-
     def setUp(self):
+        super().setUp()
         self.setUpIntTest()
 
 
+@unittest.skipIf(not utc.ENABLE_SHT31_TESTS,
+                 "sht31 tests are disabled")
 class PerformanceIntegrationTest(IntegrationTest,
                                  utc.PerformanceIntegrationTest):
     """
     Test performance of in honeywell.py.
     """
-
     def setUp(self):
+        super().setUp()
         self.setUpIntTest()
         # network timing measurement
         # mean timing = 0.5 sec per measurement plus 0.75 sec overhead

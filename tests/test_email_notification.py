@@ -4,11 +4,12 @@ Unit tes module for email_notification.py.
 # built-in libraries
 import os
 import unittest
+from unittest import mock
 
 # local libraries
 from thermostatsupervisor import email_notification as eml
-from tests import unit_test_common as utc
 from thermostatsupervisor import utilities as util
+from tests import unit_test_common as utc
 
 
 class Test(utc.UnitTest):
@@ -17,12 +18,6 @@ class Test(utc.UnitTest):
     to_address = None
     from_address = None
     from_password = None
-
-    def setUp(self):
-        self.print_test_name()
-
-    def tearDown(self):
-        self.print_test_result()
 
     def test_check_email_env_variables(self):
         """
@@ -50,11 +45,11 @@ class Test(utc.UnitTest):
         # send message with no inputs, UTIL.NO_ERROR expected
         body = "this is a test of the email notification alert."
         return_status, return_status_msg = \
-            eml.send_email_alert(subject="(unittest) test email alert",
+            eml.send_email_alert(subject="test email alert",
                                  body=body)
 
-        fail_msg = ("send email with defaults failed for status code: %s: %s" %
-                    (return_status, return_status_msg))
+        fail_msg = (f"send email with defaults failed for status code: "
+                    f"{return_status}: {return_status_msg}")
         self.assertEqual(return_status, util.NO_ERROR, fail_msg)
 
         # send message with bad port, UTIL.CONNECTION_ERROR expected
@@ -62,10 +57,10 @@ class Test(utc.UnitTest):
                 "SMTP port input, should fail.")
         return_status, return_status_msg = \
             eml.send_email_alert(server_port=13,
-                                 subject="(unittest) test email alert "
+                                 subject="test email alert "
                                  "(bad port)", body=body)
-        fail_msg = ("send email with bad server port failed for status code"
-                    ": %s: %s" % (return_status, return_status_msg))
+        fail_msg = (f"send email with bad server port failed for status code: "
+                    f"{return_status}: {return_status_msg}")
         self.assertEqual(return_status, util.CONNECTION_ERROR, fail_msg)
 
         # send message with bad email addre, util.AUTHORIZATION_ERROR expected
@@ -73,11 +68,26 @@ class Test(utc.UnitTest):
                 "sender email address, should fail.")
         return_status, return_status_msg = \
             eml.send_email_alert(from_address="bogus@gmail.com",
-                                 subject="(unittest) test email alert "
+                                 subject="test email alert "
                                  "(bad from address)", body=body)
-        fail_msg = ("send email with bad from addresss failed for status code"
-                    ": %s: %s" % (return_status, return_status_msg))
+        fail_msg = (f"send email with bad from addresss failed for status "
+                    f"code: {return_status}: {return_status_msg}")
         self.assertEqual(return_status, util.AUTHORIZATION_ERROR, fail_msg)
+
+    @mock.patch.dict(os.environ, {}, clear=True)  # noqa e501, pylint:disable=undefined-variable
+    def test_send_email_alert_no_env_key(self):
+        """Test send_email_alerts() functionality without email address."""
+
+        # send message with no inputs, UTIL.NO_ERROR expected
+        body = "this is a test of the email notification alert."
+        return_status, return_status_msg = \
+            eml.send_email_alert(subject="test email alert with "
+                                 "no email address env key",
+                                 body=body)
+
+        fail_msg = (f"send email with no email env key failed for "
+                    f"status code: {return_status}: {return_status_msg}")
+        self.assertEqual(return_status, util.ENVIRONMENT_ERROR, fail_msg)
 
 
 if __name__ == "__main__":

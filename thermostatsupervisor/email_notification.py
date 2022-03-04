@@ -20,8 +20,8 @@ from thermostatsupervisor import utilities as util
 module_name = sys.modules[__name__]
 host_name = socket.gethostname()
 host_ip = socket.gethostbyname(host_name)
-email_trace = ("email sent from module '%s' running on %s (%s)" %
-               (module_name, host_name, host_ip))
+email_trace = (f"email sent from module '{module_name}' running on "
+               f"{host_name} ({host_ip})")
 
 
 def send_email_alert(to_address=None,
@@ -85,7 +85,7 @@ def send_email_alert(to_address=None,
 
     # build email message
     msg = MIMEText(body)
-    msg['Subject'] = subject
+    msg['Subject'] = ["", "(unittest) "][util.unit_test_mode] + subject
     msg['From'] = from_address
     msg['To'] = to_address
 
@@ -106,15 +106,15 @@ def send_email_alert(to_address=None,
     server.ehlo()
     try:
         server.login(from_address, from_password)
-        util.log_msg("email account authorization "
-                     "for account %s successful" % from_address,
+        util.log_msg(f"email account authorization for account {from_address}"
+                     f" successful",
                      mode=util.DEBUG_LOG + util.CONSOLE_LOG, func_name=1)
     except (smtplib.SMTPHeloError, smtplib.SMTPAuthenticationError,
             smtplib.SMTPNotSupportedError, smtplib.SMTPException):
         util.log_msg(traceback.format_exc(),
                      mode=util.BOTH_LOG, func_name=1)
-        util.log_msg("exception during email account authorization "
-                     "for account %s" % from_address,
+        util.log_msg(f"exception during email account authorization for "
+                     f"account {from_address}",
                      mode=util.BOTH_LOG, func_name=1)
         server.close()
         return (util.AUTHORIZATION_ERROR, return_status_msg_dict[status])

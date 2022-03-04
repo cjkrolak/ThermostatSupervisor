@@ -12,14 +12,10 @@ pool:
 
 strategy:
   matrix:
-    # Python27:
-    #  python.version: '2.7'
-    #Python35:  # not compatible with pyhtcc
-    #  python.version: '3.5'
-    #Python36:
-    #  python.version: '3.6'
-    Python37:
-      python.version: '3.7'
+    # Python37:
+    #  python.version: '3.7'
+    Python310:
+      python.version: '3.10'
 
 steps:
 - task: UsePythonVersion@0
@@ -50,7 +46,9 @@ steps:
  
 # python unit tests
 - script: |
-    python -m unittest discover -v
+    # python -m unittest discover -v
+    # discover process is not allowing argv override so calling unit_test_common instead.
+    python -m tests.unit_test_common
   displayName: 'Unit Tests'
   env:
     GMAIL_USERNAME: '$(GMAIL_USERNAME)'  # used for some unit tests

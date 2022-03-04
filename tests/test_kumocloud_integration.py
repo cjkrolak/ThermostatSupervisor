@@ -9,8 +9,8 @@ import unittest
 # local imports
 from thermostatsupervisor import kumocloud
 from thermostatsupervisor import kumocloud_config
-from tests import unit_test_common as utc
 from thermostatsupervisor import utilities as util
+from tests import unit_test_common as utc
 
 
 class IntegrationTest(utc.IntegrationTest):
@@ -31,7 +31,7 @@ class IntegrationTest(utc.IntegrationTest):
             "30",  # poll time in sec
             "1000",  # reconnect time in sec
             "2",  # tolerance
-            "",  # thermostat mode, no target
+            "UNKNOWN_MODE",  # thermostat mode, no target
             "3",  # number of measurements
         ]
         self.mod = kumocloud
@@ -45,6 +45,7 @@ class FunctionalIntegrationTest(IntegrationTest,
     """
 
     def setUp(self):
+        super().setUp()
         self.setUpIntTest()
         # test_GetMetaData input parameters
         self.metadata_field = "address"
@@ -58,6 +59,7 @@ class SuperviseIntegrationTest(IntegrationTest,
     """
 
     def setUp(self):
+        super().setUp()
         self.setUpIntTest()
 
 
@@ -68,6 +70,7 @@ class PerformanceIntegrationTest(IntegrationTest,
     """
 
     def setUp(self):
+        super().setUp()
         self.setUpIntTest()
         # network timing measurement
         self.timeout_limit = 30

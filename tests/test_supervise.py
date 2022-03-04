@@ -5,22 +5,22 @@ Unit test module for supervise.py.
 import unittest
 
 # local imports
-from thermostatsupervisor import sht31_config
+from thermostatsupervisor import emulator_config
 from thermostatsupervisor import supervise as sup
-from tests import unit_test_common as utc
 from thermostatsupervisor import utilities as util
+from tests import unit_test_common as utc
 
 
 class Test(utc.UnitTest):
     """Test functions in supervise.py."""
 
     def setUp(self):
-        self.print_test_name()
+        super().setUp()
         self.setup_mock_thermostat_zone()
 
     def tearDown(self):
         self.teardown_mock_thermostat_zone()
-        self.print_test_result()
+        super().tearDown()
 
     def test_display_session_settings(self):
         """
@@ -29,8 +29,8 @@ class Test(utc.UnitTest):
         for revert_setting in [False, True]:
             for revert_all_setting in [False, True]:
                 print(f"{'-' * 60}")
-                print("testing revert=%s, revert all=%s" %
-                      (revert_setting, revert_all_setting))
+                print(f"testing revert={revert_setting}, "
+                      f"revert all={revert_all_setting}")
                 sup.display_session_settings(self.thermostat_type,
                                              self.zone,
                                              revert_setting,
@@ -44,7 +44,8 @@ class Test(utc.UnitTest):
                      "this test not supported on Azure Pipelines")
     def test_supervisor(self):
         """Verify main supervisor loop."""
-        sup.supervisor(sht31_config.ALIAS, sht31_config.UNIT_TEST_ZONE)
+        sup.supervisor(emulator_config.ALIAS,
+                       emulator_config.supported_configs["zones"][0])
 
 
 if __name__ == "__main__":

@@ -10,8 +10,8 @@ import unittest
 # local imports
 from thermostatsupervisor import emulator
 from thermostatsupervisor import emulator_config
-from tests import unit_test_common as utc
 from thermostatsupervisor import utilities as util
+from tests import unit_test_common as utc
 
 
 class IntegrationTest(utc.IntegrationTest):
@@ -31,10 +31,10 @@ class IntegrationTest(utc.IntegrationTest):
             "0",  # zone
             "5",  # poll time in sec, this value violates min
             # cycle time for TCC if reverting temperature deviation
-            "1000",  # reconnect time in sec
+            "11",  # reconnect time in sec
             "2",  # tolerance
-            "",  # thermostat mode, no target
-            "3",  # number of measurements
+            "UNKNOWN_MODE",  # thermostat mode, no target
+            "6",  # number of measurements
         ]
         self.mod = emulator
         self.mod_config = emulator_config
@@ -47,6 +47,7 @@ class FunctionalIntegrationTest(IntegrationTest,
     """
 
     def setUp(self):
+        super().setUp()
         self.setUpIntTest()
         # test_GetMetaData input parameters
         self.metadata_field = "display_temp"
@@ -60,6 +61,7 @@ class SuperviseIntegrationTest(IntegrationTest,
     """
 
     def setUp(self):
+        super().setUp()
         self.setUpIntTest()
 
 
@@ -70,6 +72,7 @@ class PerformanceIntegrationTest(IntegrationTest,
     """
 
     def setUp(self):
+        super().setUp()
         self.setUpIntTest()
         # network timing measurement
         self.timeout_limit = 1

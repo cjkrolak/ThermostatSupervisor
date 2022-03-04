@@ -10,8 +10,8 @@ import unittest
 # local imports
 from thermostatsupervisor import thermostat_api as api
 from thermostatsupervisor import thermostat_common as tc
-from tests import unit_test_common as utc
 from thermostatsupervisor import utilities as util
+from tests import unit_test_common as utc
 
 
 class Test(utc.UnitTest):
@@ -30,18 +30,19 @@ class Test(utc.UnitTest):
     revert_setpoint_func_bckup = None
 
     def setUp(self):
-        self.print_test_name()
+        super().setUp()
         self.setup_mock_thermostat_zone()
 
     def tearDown(self):
         self.teardown_mock_thermostat_zone()
-        self.print_test_result()
+        super().tearDown()
 
     def test_print_all_thermostat_meta_data(self):
         """
         Verify print_all_thermostat_metadata() runs without error.
         """
-        self.Thermostat.print_all_thermostat_metadata(api.user_inputs["zone"])
+        self.Thermostat.print_all_thermostat_metadata(
+            api.uip.get_user_inputs("zone"))
 
     def test_set_mode(self):
         """
@@ -80,8 +81,8 @@ class Test(utc.UnitTest):
                 self.Zone.store_current_mode()
                 print(f"current mode(post)={self.Zone.current_mode}")
                 self.assertEqual(test_case[1], self.Zone.current_mode,
-                                 "Zone.store_current_mode() failed to "
-                                 "cache mode=%s" % test_case[1])
+                                 f"Zone.store_current_mode() failed to cache"
+                                 f" mode={test_case[1]}")
 
                 # confirm verify_current_mode()
                 none_act = self.Zone.verify_current_mode(None)
@@ -224,7 +225,7 @@ class Test(utc.UnitTest):
                 "return_type": type(None)},
             "update_runtime_parameters": {
                 "key": self.Zone.update_runtime_parameters,
-                "args": [{"zone": 1}],
+                "args": None,
                 "return_type": type(None)},
             "get_schedule_program_heat": {
                 "key": self.Zone.get_schedule_program_heat,
@@ -261,8 +262,8 @@ class Test(utc.UnitTest):
             else:
                 return_val = value["key"]()
             self.assertTrue(isinstance(return_val, expected_type),
-                            "func=%s, expected type=%s, actual type=%s" %
-                            (key, expected_type, type(return_val)))
+                            f"func={key}, expected type={expected_type}, "
+                            f"actual type={type(return_val)}")
 
     def test_validate_numeric(self):
         """Test validate_numeric() function."""
@@ -274,9 +275,9 @@ class Test(utc.UnitTest):
                                                         "test_case")
                 self.assertEqual(
                     expected_val, actual_val,
-                    "expected return value=%s, type(%s), actual=%s,"
-                    "type(%s)" % (expected_val, type(expected_val), actual_val,
-                                  type(actual_val)))
+                    f"expected return value={expected_val}, "
+                    f"type({type(expected_val)}), "
+                    f"actual={actual_val},type({type(actual_val)})")
             else:
                 with self.assertRaises(TypeError):
                     print("attempting to input bad parameter type, "
@@ -309,7 +310,8 @@ class Test(utc.UnitTest):
         """
         test_cases = [self.Zone.HEAT_MODE, self.Zone.COOL_MODE,
                       self.Zone.DRY_MODE, self.Zone.AUTO_MODE,
-                      self.Zone.FAN_MODE, self.Zone.OFF_MODE]
+                      self.Zone.FAN_MODE, self.Zone.OFF_MODE,
+                      self.Zone.UNKNOWN_MODE]
         for test_case in random.choices(test_cases, k=20):
             if ((self.Zone.current_mode in self.Zone.heat_modes and
                  test_case in self.Zone.cool_modes)
@@ -322,9 +324,8 @@ class Test(utc.UnitTest):
                   f"expected mode={expected_mode}")
             new_mode = self.Zone.revert_thermostat_mode(test_case)
             self.assertEqual(new_mode, expected_mode,
-                             "reverting to %s mode failed, "
-                             "new mode is '%s', expected '%s'" %
-                             (test_case, new_mode, expected_mode))
+                             f"reverting to {test_case} mode failed, new mode"
+                             f" is '{new_mode}', expected '{expected_mode}'")
             self.Zone.current_mode = test_case
 
     def test_measure_thermostat_response_time(self):
@@ -341,9 +342,9 @@ class Test(utc.UnitTest):
                         f"return data is type({type(meas_data)}), "
                         f"expected a dict")
         self.assertEqual(meas_data["measurements"], measurements,
-                         "number of measurements in return data(%s) doesn't "
-                         "match number of masurements requested(%s)" %
-                         (meas_data["measurements"], measurements))
+                         f"number of measurements in return data("
+                         f"{meas_data['measurements']}) doesn't match number "
+                         f"of masurements requested({measurements})")
 
     def test_get_current_mode(self):
         """
@@ -451,11 +452,10 @@ class Test(utc.UnitTest):
                                    "cool_deviation", "hold_mode"]:
                     self.assertEqual(ret_dict[return_val],
                                      test_cases[test_case][return_val],
-                                     "test case '%s' parameter '%s', "
-                                     "result=%s, expected=%s" %
-                                     (test_case, return_val,
-                                      ret_dict[return_val],
-                                      test_cases[test_case][return_val]))
+                                     f"test case '{test_case}' parameter "
+                                     f"'{return_val}', result="
+                                     f"{ret_dict[return_val]}, expected="
+                                     f"{test_cases[test_case][return_val]}")
 
                 # verify humidity reporting
                 if test_cases[test_case]["humidity"]:
@@ -643,14 +643,12 @@ class Test(utc.UnitTest):
             self.Zone.get_system_switch_position = \
                 (lambda *_, **__: self.Zone.system_switch_position[
                     tc.ThermostatCommonZone.DRY_MODE])
-            thermostat_type = utc.unit_test_argv[api.get_argv_position(
-                "thermostat_type")]
-            zone_number = int(utc.unit_test_argv[api.get_argv_position(
-                "zone")])
+            api.uip = api.UserInputs(self.unit_test_argv)
+            thermostat_type = api.uip.get_user_inputs(api.THERMOSTAT_TYPE_FLD)
+            zone_number = api.uip.get_user_inputs(api.ZONE_FLD)
             mod = api.load_hardware_library(thermostat_type)
             thermostat, zone = \
                 tc.thermostat_basic_checkout(
-                    api,
                     thermostat_type,
                     zone_number,
                     mod.ThermostatClass, mod.ThermostatZone
@@ -681,42 +679,43 @@ class Test(utc.UnitTest):
                 current_setpoint = self.Zone.current_setpoint
 
                 # revert setpoint
-                msg = ("reverting setpoint from %s to %s" %
-                       (util.temp_value_with_units(current_setpoint),
-                        util.temp_value_with_units(new_setpoint)))
+                msg = (f"reverting setpoint from "
+                       f"{util.temp_value_with_units(current_setpoint)} to "
+                       f"{util.temp_value_with_units(new_setpoint)}")
                 self.Zone.revert_temperature_deviation(new_setpoint, msg)
 
                 # verify setpoint
                 actual_setpoint = self.Zone.current_setpoint
-                self.assertEqual(new_setpoint, actual_setpoint,
-                                 "reverting setpoint failed, actual=%s, "
-                                 "expected=%s" % (util.temp_value_with_units(
-                                     actual_setpoint),
-                                     util.temp_value_with_units(new_setpoint)))
+                self.assertEqual(
+                    new_setpoint, actual_setpoint,
+                    f"reverting setpoint failed, actual="
+                    f"{util.temp_value_with_units(actual_setpoint)}, expected="
+                    f"{util.temp_value_with_units(new_setpoint)}")
 
             # verify function default behavior
             new_setpoint = self.Zone.current_setpoint = 56
 
             # revert setpoint
-            msg = ("reverting setpoint from %s to %s" %
-                   (util.temp_value_with_units(actual_setpoint),
-                    util.temp_value_with_units(new_setpoint)))
+            msg = (f"reverting setpoint from "
+                   f"{util.temp_value_with_units(actual_setpoint)} to "
+                   f"{util.temp_value_with_units(new_setpoint)}")
             self.Zone.revert_temperature_deviation(msg=msg)
 
             # verify setpoint
             actual_setpoint = self.Zone.current_setpoint
-            self.assertEqual(new_setpoint, actual_setpoint,
-                             "reverting setpoint failed, actual=%s, "
-                             "expected=%s" % (util.temp_value_with_units(
-                                 actual_setpoint),
-                                 util.temp_value_with_units(new_setpoint)))
+            self.assertEqual(
+                new_setpoint, actual_setpoint,
+                f"reverting setpoint failed, actual="
+                f"{util.temp_value_with_units(actual_setpoint)}, expected="
+                f"{util.temp_value_with_units(new_setpoint)}")
 
         finally:
             self.restore_functions()
 
     def test_report_heating_parameters(self):
         """Verify report_heating_parameters()."""
-        test_cases = [tc.ThermostatCommonZone.OFF_MODE]
+        test_cases = [tc.ThermostatCommonZone.UNKNOWN_MODE,
+                      tc.ThermostatCommonZone.UNKNOWN_MODE]
         for test_case in test_cases:
             print(f"test_case={test_case}")
             self.Zone.report_heating_parameters(switch_position=test_case)

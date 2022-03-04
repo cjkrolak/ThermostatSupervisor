@@ -520,9 +520,10 @@ class ThermostatZone(tc.ThermostatCommonZone):
             None
         """
         # current temp as measured by thermostat
-        util.log_msg("display temp=%s" %
-                     util.temp_value_with_units(self.get_display_temp()),
-                     mode=util.BOTH_LOG, func_name=1)
+        util.log_msg(f"display temp="
+                     f"{util.temp_value_with_units(self.get_display_temp())}",
+                     mode=util.BOTH_LOG,
+                     func_name=1)
 
         # get switch position
         if switch_position is None:
@@ -533,10 +534,12 @@ class ThermostatZone(tc.ThermostatCommonZone):
                 self.system_switch_position[self.HEAT_MODE]:
             util.log_msg(f"heat mode={self.is_heat_mode()}",
                          mode=util.BOTH_LOG)
-            util.log_msg("heat setpoint=%s" %
-                         self.get_heat_setpoint_raw(), mode=util.BOTH_LOG)
-            util.log_msg("schedule heat sp=%s" %
-                         self.get_schedule_heat_sp(), mode=util.BOTH_LOG)
+            util.log_msg(
+                f"heat setpoint={self.get_heat_setpoint_raw()}",
+                mode=util.BOTH_LOG)
+            util.log_msg(
+                f"schedule heat sp={self.get_schedule_heat_sp()}",
+                mode=util.BOTH_LOG)
             util.log_msg("\n", mode=util.BOTH_LOG)
 
         # cooling status
@@ -544,21 +547,26 @@ class ThermostatZone(tc.ThermostatCommonZone):
                 self.system_switch_position[self.COOL_MODE]:
             util.log_msg(f"cool mode={self.is_cool_mode()}",
                          mode=util.BOTH_LOG)
-            util.log_msg("cool setpoint=%s" %
-                         self.get_cool_setpoint_raw(), mode=util.BOTH_LOG)
-            util.log_msg("schedule cool sp=%s" %
-                         self.get_schedule_cool_sp(), mode=util.BOTH_LOG)
+            util.log_msg(
+                f"cool setpoint={self.get_cool_setpoint_raw()}",
+                mode=util.BOTH_LOG)
+            util.log_msg(
+                f"schedule cool sp={self.get_schedule_cool_sp()}",
+                mode=util.BOTH_LOG)
             util.log_msg("\n", mode=util.BOTH_LOG)
 
         # hold settings
-        util.log_msg("is in vacation hold mode=%s" %
-                     self.get_is_invacation_hold_mode(), mode=util.BOTH_LOG)
+        util.log_msg(
+            f"is in vacation hold mode={self.get_is_invacation_hold_mode()}",
+            mode=util.BOTH_LOG)
         util.log_msg(f"vacation hold={self.get_vacation_hold()}",
                      mode=util.BOTH_LOG)
-        util.log_msg("vacation hold until time=%s" %
-                     self.get_vacation_hold_until_time(), mode=util.BOTH_LOG)
-        util.log_msg("temporary hold until time=%s" %
-                     self.get_temporary_hold_until_time(), mode=util.BOTH_LOG)
+        util.log_msg(
+            f"vacation hold until time={self.get_vacation_hold_until_time()}",
+            mode=util.BOTH_LOG)
+        util.log_msg(f"temporary hold until time="
+                     f"{self.get_temporary_hold_until_time()}",
+                     mode=util.BOTH_LOG)
 
 
 if __name__ == "__main__":
@@ -567,9 +575,11 @@ if __name__ == "__main__":
     util.get_python_version()
 
     # get zone override
-    zone_number = api.parse_all_runtime_parameters()["zone"]
+    api.uip = api.UserInputs(argv_list=None,
+                             thermostat_type=emulator_config.ALIAS)
+    zone_number = api.uip.get_user_inputs(api.ZONE_FLD)
 
     tc.thermostat_basic_checkout(
-        api, emulator_config.ALIAS,
+        emulator_config.ALIAS,
         zone_number,
         ThermostatClass, ThermostatZone)

@@ -32,8 +32,9 @@ def display_session_settings(thermostat_type, zone,
     util.log_msg.file_name = (thermostat_type + "_" +
                               str(zone) + ".txt")
 
-    util.log_msg("%s thermostat zone %s monitoring service\n" %
-                 (thermostat_type, zone), mode=util.BOTH_LOG)
+    util.log_msg(
+        f"{thermostat_type} thermostat zone {zone} monitoring service\n",
+        mode=util.BOTH_LOG)
 
     util.log_msg("session settings:", mode=util.BOTH_LOG)
 
@@ -58,18 +59,21 @@ def display_runtime_settings(Zone):
         None
     """
     # poll time setting:
-    util.log_msg("polling time set to %.1f minutes" %
-                 (Zone.poll_time_sec / 60.0), mode=util.BOTH_LOG)
+    util.log_msg(
+        f"polling time set to {Zone.poll_time_sec / 60.0:.1f} minutes",
+        mode=util.BOTH_LOG)
 
     # reconnection time to thermostat server:
-    util.log_msg("server re-connect time set to %.1f minutes" %
-                 (Zone.connection_time_sec / 60.0),
-                 mode=util.BOTH_LOG)
+    util.log_msg(
+        f"server re-connect time set to {Zone.connection_time_sec / 60.0:.1f}"
+        f" minutes",
+        mode=util.BOTH_LOG)
 
     # tolerance to set point:
-    util.log_msg("tolerance to set point is set to %s" %
-                 util.temp_value_with_units(Zone.tolerance_degrees),
-                 mode=util.BOTH_LOG)
+    util.log_msg(
+        f"tolerance to set point is set to "
+        f"{util.temp_value_with_units(Zone.tolerance_degrees)}",
+        mode=util.BOTH_LOG)
 
 
 def supervisor(thermostat_type, zone_str):
@@ -107,13 +111,15 @@ def supervisor(thermostat_type, zone_str):
     # connection timer loop
     session_count = 1
     measurement = 1
-    while not api.max_measurement_count_exceeded(measurement):
+    while not api.uip.max_measurement_count_exceeded(measurement):
         # make connection to thermostat
         mod = api.load_hardware_library(thermostat_type)
-        zone_num = api.user_inputs["zone"]
+        zone_num = api.uip.get_user_inputs(api.ZONE_FLD)
 
-        util.log_msg("connecting to thermostat zone %s (session:%s)..." %
-                     (zone_num, session_count), mode=util.BOTH_LOG)
+        util.log_msg(
+            f"connecting to thermostat zone {zone_num} "
+            f"(session:{session_count})...",
+            mode=util.BOTH_LOG)
         Thermostat = mod.ThermostatClass(zone_num)
 
         time0 = time.time()  # connection timer
@@ -130,14 +136,14 @@ def supervisor(thermostat_type, zone_str):
                      func_name=1)
 
         # update runtime overrides
-        Zone.update_runtime_parameters(api.user_inputs)
+        Zone.update_runtime_parameters()
 
         # display runtime settings
         display_runtime_settings(Zone)
 
         poll_count = 1
         # poll thermostat settings
-        while not api.max_measurement_count_exceeded(measurement):
+        while not api.uip.max_measurement_count_exceeded(measurement):
             # query thermostat for current settings and set points
             current_mode_dict = Zone.get_current_mode(
                 session_count, poll_count,
@@ -152,15 +158,22 @@ def supervisor(thermostat_type, zone_str):
                 previous_mode_dict = current_mode_dict  # latch
 
             # revert thermostat mode if not matching target
-            if not Zone.verify_current_mode(api.user_inputs["target_mode"]):
-                api.user_inputs["target_mode"] = \
-                    Zone.revert_thermostat_mode(api.user_inputs["target_mode"])
+            if not Zone.verify_current_mode(api.uip.get_user_inputs(
+                    api.TARGET_MODE_FLD)):
+                api.uip.set_user_inputs(api.TARGET_MODE_FLD,
+                                        Zone.revert_thermostat_mode(
+                                            api.uip.get_user_inputs(
+                                                api.TARGET_MODE_FLD)))
 
             # revert thermostat to schedule if heat override is detected
             if (revert_deviations and Zone.is_controlled_mode() and
                     Zone.is_temp_deviated_from_schedule()):
                 Zone.revert_temperature_deviation(
                     Zone.schedule_setpoint, current_mode_dict["status_msg"])
+
+            # increment poll count
+            poll_count += 1
+            measurement += 1
 
             # polling delay
             time.sleep(Zone.poll_time_sec)
@@ -175,20 +188,21 @@ def supervisor(thermostat_type, zone_str):
                 del Thermostat
                 break  # force reconnection
 
-            # increment poll count
-            poll_count += 1
-            measurement += 1
-
         # increment connection count
         session_count += 1
 
     # clean-up and exit
-    util.log_msg("\n %s measurements completed, exiting program\n" %
-                 measurement, mode=util.BOTH_LOG)
+    util.log_msg(
+        f"\n{measurement - 1} measurements completed, exiting program\n",
+        mode=util.BOTH_LOG)
 
-    # delete packages
-    del Zone
-    del Thermostat
+    # delete packages if necessary
+    if 'Zone' in locals():
+        del Zone
+    if 'Thermostat' in locals():
+        del Thermostat
+    if 'mod' in locals():
+        del mod
 
 
 def exec_supervise(debug=True, argv_list=None):
@@ -203,16 +217,18 @@ def exec_supervise(debug=True, argv_list=None):
     """
     util.log_msg.debug = debug  # debug mode set
 
-    # parse all runtime parameters
-    api.user_inputs = api.parse_all_runtime_parameters(argv_list)
+    # parse all runtime parameters if necessary
+    api.uip = api.UserInputs(argv_list)
 
     # main supervise function
-    supervisor(api.user_inputs["thermostat_type"], api.user_inputs["zone"])
+    supervisor(api.uip.get_user_inputs(api.THERMOSTAT_TYPE_FLD),
+               api.uip.get_user_inputs(api.ZONE_FLD))
 
     return True
 
 
 if __name__ == "__main__":
+
     # if argv list is set use that, else use sys.argv
     if argv:
         argv_inputs = argv

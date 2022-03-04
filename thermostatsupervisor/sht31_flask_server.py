@@ -3,7 +3,6 @@ flask API for raspberry pi
 example from http://www.pibits.net/code/raspberry-pi-sht31-sensor-example.php
 """
 
-
 # raspberry pi libraries
 try:
     from RPi import GPIO  # noqa F405 raspberry pi GPIO library
@@ -16,8 +15,11 @@ except ImportError as ex:
     pi_library_exception = ex  # unsuccessful
 
 # built-in imports
+import distutils.util
 import os
+import re
 import statistics
+import subprocess
 import sys
 import time
 
@@ -29,6 +31,10 @@ from flask_wtf.csrf import CSRFProtect
 # local imports
 from thermostatsupervisor import sht31_config
 from thermostatsupervisor import utilities as util
+
+# runtime override fields
+DEBUG_FLD = "debug"
+uip = None  # user inputs object
 
 # SHT31D write commands (register, [data])
 # spec: https://cdn-shop.adafruit.com/product-files/
@@ -152,9 +158,9 @@ class Sensors:
         try:
             bus.write_i2c_block_data(i2c_addr, register, data)
         except OSError as exc:
-            print("FATAL ERROR(%s): i2c device at address %s is "
-                  "not responding" %
-                  (util.get_function_name(), hex(i2c_addr)))
+            print(
+                f"FATAL ERROR({util.get_function_name()}): i2c device at "
+                f"address {hex(i2c_addr)} is not responding")
             raise exc
         time.sleep(0.5)
 
@@ -179,9 +185,9 @@ class Sensors:
                                                register,
                                                length)
         except OSError as exc:
-            print("FATAL ERROR(%s): i2c device at address %s is "
-                  "not responding" %
-                  (util.get_function_name(), hex(i2c_addr)))
+            print(
+                f"FATAL ERROR({util.get_function_name()}): i2c device at "
+                f"address {hex(i2c_addr)} is not responding")
             raise exc
         return response
 
@@ -279,7 +285,7 @@ class Sensors:
                                sht31_config.ALERT_PIN)
 
         # activate smbus
-        bus = smbus.SMBus(1)
+        bus = smbus.SMBus(sht31_config.I2C_BUS)
         time.sleep(0.5)
 
         # data structure
@@ -316,7 +322,7 @@ class Sensors:
 
     def send_cmd_get_diag(self, i2c_command):
         """
-        Send i2c command and read status register..
+        Send i2c command and read status register.
 
         inputs:
             i2c_command(int): i2c command to send
@@ -328,7 +334,7 @@ class Sensors:
                                sht31_config.ALERT_PIN)
 
         # activate smbus
-        bus = smbus.SMBus(1)
+        bus = smbus.SMBus(sht31_config.I2C_BUS)
         time.sleep(0.5)
 
         try:
@@ -350,6 +356,86 @@ class Sensors:
             # close the smbus connection
             bus.close()
             GPIO.cleanup()  # clean up GPIO
+
+    def i2c_recovery(self):
+        """
+        Send 10 clock cycles on SCL IO pin to clear locked i2c bus.
+
+        inputs:
+             None
+        returns:
+            (dict): status message
+        """
+        addr_pin = sht31_config.SCL_PIN
+        num_clock_cycles = 10
+        recovery_freq_hz = 100000  # 100 KHz
+        recovery_delay_sec = 1.0 / (2.0 * recovery_freq_hz)
+
+        try:
+            # set SCL pin for output
+            GPIO.setmode(GPIO.BCM)  # broadcom pin numbering
+            GPIO.setup(addr_pin, GPIO.OUT)  # address pin set as output
+
+            # set pin high to start
+            GPIO.output(addr_pin, GPIO.HIGH)
+
+            # send clock cycles
+            for _ in range(num_clock_cycles):
+                time.sleep(recovery_delay_sec)
+                GPIO.output(addr_pin, GPIO.LOW)
+                time.sleep(recovery_delay_sec)
+                GPIO.output(addr_pin, GPIO.HIGH)
+            # status message
+            msg_dict = {}
+            msg_dict["action_complete"] = (f"{num_clock_cycles} SCL clock "
+                                           f"toggles completed at "
+                                           f"{recovery_freq_hz} Hz")
+            msg_dict["next_step"] = ("please reboot pi and restart "
+                                     "flask server.")
+            return {"i2c_recovery": msg_dict}
+        finally:
+            GPIO.cleanup()  # clean up GPIO
+
+    def i2c_detect(self, bus=sht31_config.I2C_BUS):
+        """
+        Detect i2c device on bus.
+
+        inputs:
+             bus(int): i2c bus number
+        returns:
+            (dict): parsed device dictionary.
+        """
+        # send command
+        p = subprocess.Popen(['sudo', 'i2cdetect', '-y',
+                              str(bus)],
+                             stdout=subprocess.PIPE,)
+        # cmdout = str(p.communicate())
+
+        # read in raw data
+        parsed_device_dict = {"i2c_detect": {}}
+        bus_dict = {}
+        for _ in range(0, 9):
+            line = str(p.stdout.readline())
+            addr_base = line[2:4]
+            addr_payload = line[5:]
+
+            # catch error condition
+            if "Error" in line:
+                bus_dict["i2c_detect"]["error"] = line
+            else:
+                # find devices on bus
+                device = 0
+                device_dict = {}
+                for match in re.finditer("[0-9][0-9]", addr_payload):
+                    if match:
+                        device_addr = match.group(0)
+                        print(match.group(0))
+                        device_dict["dev_" + str(device) + "_addr"] = \
+                            str(device_addr)
+                        bus_dict["addr_base_" + str(addr_base)] = device_dict
+                        device += 1
+        parsed_device_dict["i2c_detect"]["bus_" + str(bus)] = bus_dict
+        return parsed_device_dict
 
 
 class Controller(Resource):
@@ -413,7 +499,7 @@ class EnableHeater(Resource):
 
 
 class DisableHeater(Resource):
-    """Enable heater Controller."""
+    """Disable heater Controller."""
 
     def __init__(self):
         pass
@@ -425,7 +511,7 @@ class DisableHeater(Resource):
 
 
 class SoftReset(Resource):
-    """Enable heater Controller."""
+    """i2C soft reset."""
 
     def __init__(self):
         pass
@@ -437,7 +523,7 @@ class SoftReset(Resource):
 
 
 class Reset(Resource):
-    """Enable heater Controller."""
+    """i2C hard reset."""
 
     def __init__(self):
         pass
@@ -446,6 +532,54 @@ class Reset(Resource):
         """Map the get method."""
         helper = Sensors()
         return helper.send_cmd_get_diag(reset)
+
+
+class I2CRecovery(Resource):
+    """Issue i2c recovery sequence."""
+
+    def __init__(self):
+        pass
+
+    def get(self):
+        """Map the get method."""
+        helper = Sensors()
+        return helper.i2c_recovery()
+
+
+class I2CDetect(Resource):
+    """Issue i2c detect on default bus."""
+
+    def __init__(self):
+        pass
+
+    def get(self):
+        """Map the get method."""
+        helper = Sensors()
+        return helper.i2c_detect()
+
+
+class I2CDetectBus0(Resource):
+    """Issue i2c detect on bus 0."""
+
+    def __init__(self):
+        pass
+
+    def get(self):
+        """Map the get method."""
+        helper = Sensors()
+        return helper.i2c_detect(0)
+
+
+class I2CDetectBus1(Resource):
+    """Issue i2c detect on bus 1."""
+
+    def __init__(self):
+        pass
+
+    def get(self):
+        """Map the get method."""
+        helper = Sensors()
+        return helper.i2c_detect(1)
 
 
 def create_app():
@@ -460,8 +594,12 @@ def create_app():
     api.add_resource(ClearFaultRegister, sht31_config.flask_folder.clear_diag)
     api.add_resource(EnableHeater, sht31_config.flask_folder.enable_heater)
     api.add_resource(DisableHeater, sht31_config.flask_folder.disable_heater)
-    api.add_resource(Reset, sht31_config.flask_folder.reset)
     api.add_resource(SoftReset, sht31_config.flask_folder.soft_reset)
+    api.add_resource(Reset, sht31_config.flask_folder.reset)
+    api.add_resource(I2CRecovery, sht31_config.flask_folder.i2c_recovery)
+    api.add_resource(I2CDetect, sht31_config.flask_folder.i2c_detect)
+    api.add_resource(I2CDetectBus0, sht31_config.flask_folder.i2c_detect_0)
+    api.add_resource(I2CDetectBus1, sht31_config.flask_folder.i2c_detect_1)
     return app_
 
 
@@ -485,16 +623,41 @@ def favicon():
                                mimetype='image/vnd.microsoft.icon')
 
 
-def parse_runtime_parameters():
-    """Parse runtime parameters."""
-    # parse runtime parameters, argv[1] is flask server debug mode
-    debug_flag = False  # default
-    if len(sys.argv) > 1:
-        argv3_str = sys.argv[1]
-        if argv3_str.lower() in ["1", "true"]:
-            debug_flag = True
-            print("Flask debug mode is enabled", file=sys.stderr)
-    return debug_flag
+class UserInputs(util.UserInputs):
+    """Manage runtime arguments for sht31_flask_server."""
+
+    def __init__(self, argv_list=None, help_description=None):
+        """
+        UserInputs constructor for sht31_flask_server.
+
+        inputs:
+            argv_list(list): override runtime values
+            help_description(str): description field for help text
+        """
+        self.argv_list = argv_list
+
+        # initialize parent class
+        super().__init__(argv_list, help_description)
+
+    def initialize_user_inputs(self):
+        """
+        Populate user_inputs dict.
+        """
+        # define the user_inputs dict.
+        self.user_inputs = {
+            DEBUG_FLD: {
+                "order": 1,    # index in the argv list
+                "value": None,
+                "type": lambda x: bool(distutils.util.strtobool(
+                    str(x).strip())),
+                "default": False,
+                "valid_range": [True, False, 1, 0],
+                "sflag": "-d",
+                "lflag": "--" + DEBUG_FLD,
+                "help": "flask server debug mode"},
+        }
+        self.valid_sflags = [self.user_inputs[k]["sflag"]
+                             for k in self.user_inputs]
 
 
 if __name__ == "__main__":
@@ -505,7 +668,10 @@ if __name__ == "__main__":
     util.get_python_version()
 
     # parse runtime parameters
-    debug = parse_runtime_parameters()
+    uip = UserInputs()
+    debug = uip.get_user_inputs("debug")
+    if debug:
+        print("Flask debug mode is enabled", file=sys.stderr)
 
     # launch the Flask API on development server
     app.run(host='0.0.0.0',

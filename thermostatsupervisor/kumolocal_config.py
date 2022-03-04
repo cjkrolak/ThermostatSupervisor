@@ -5,7 +5,7 @@ ALIAS = "kumolocal"
 MAX_HEAT_SETPOINT = 68
 MIN_COOL_SETPOINT = 70
 
-# all environment variables required by code should be registered here
+# all environment variables specific to this thermostat type
 env_variables = {
     "KUMO_USERNAME": None,
     "KUMO_PASSWORD": None,
@@ -13,8 +13,6 @@ env_variables = {
 
 # min required env variables on all runs
 required_env_variables = {
-    "GMAIL_USERNAME": None,
-    "GMAIL_PASSWORD": None,
     'KUMO_USERNAME': None,
     'KUMO_PASSWORD': None,
 }
@@ -24,7 +22,7 @@ supported_configs = {"module": "kumolocal",
                      "type": 5,
                      "zones": [0, 1],
                      "modes": ["OFF_MODE", "HEAT_MODE", "COOL_MODE",
-                               "DRY_MODE", "AUTO_MODE"]}
+                               "DRY_MODE", "AUTO_MODE", "UNKNOWN_MODE"]}
 
 # Kumocloud zone configuration (on local net)
 MAIN_KUMO = 0  # zone 0

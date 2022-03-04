@@ -24,8 +24,11 @@ coverage for code coverage analysis<br/>
 psutil for all thermostat types<br/>
 
 ## Run the Docker Image:
-docker run --rm --env-file 'envfile' 'username'/thermostatsupervisor 'runtime parameters'<br/>
-* 'envfile' is your environment variables passed in at runtime (see below)<br/>
+docker run --rm -it --privileged --env-file 'envfile' 'username'/thermostatsupervisor 'runtime parameters'<br/>
+* '--rm' removes the docker container when done<br/>
+* '-it' runs in interactive mode so that output is displayed in the console<br/>
+* '--env-file' specifies your env variables from file 'envfile', see below for required env variables<br/>
+* '--privileged' runs in privileged mode, this may be required to avoid PermissionErrors with device objects<br/>
 * 'username' is your DockerHub username<br/>
 * 'runtime parameters' are supervise runtime parameters as specified below.<br/>
 
@@ -60,40 +63,47 @@ Environment variables required depend on the thermostat being used.<br/>
 # Source Code Information:
 ## supervise.py:
 This is the main entry point script.<br/>
-runtime parameters can be specified to override defaults:<br/>
-* argv[1] = Thermostat type, currently support "honeywell", "mmm50", "sht31", "kumocloud", and "kumolocal".  Default is "honeywell".
-* argv[2] = zone, currently support:
+runtime parameters can be specified to override defaults either via single dash named parameters or values in order:<br/>
+* '-h'= help screen
+* argv[1] or '-t'= Thermostat type, currently support "honeywell", "mmm50", "sht31", "kumocloud", and "kumolocal".  Default is "honeywell".
+* argv[2] or '-z'= zone, currently support:
   * honeywell = zone 0 only
   * 3m50 = zones [0,1] on local net
   * sht31: 0 = local net, 1 = remote URL
   * kumocloud, kumolocal: [0,1]
-* argv[3] = poll time in seconds (default is thermostat-specific)
-* argv[4] = re-connect time in seconds (default is thermostat-specific)
-* argv[5] = tolerance from setpoint allowed in degrees (default is 2 degrees)
-* argv[6] = target thermostat mode (e.g. OFF_MODE, COOL_MODE, HEAT_MODE, DRY_MODE, etc.), not yet fully functional.
-* argv[7] = number of measurements (default is infinitity).<br/><br/>
-command line usage:  "*python supervise.py \<thermostat type\> \<zone\> \<poll time\> \<connection time\> \<target mode\> \<measurements\>*"
+  * emulator = zone 0 only
+* argv[3] or '-p'= poll time in seconds (default is thermostat-specific)
+* argv[4] or '-c'= re-connect time in seconds (default is thermostat-specific)
+* argv[5] or '-d'= tolerance from setpoint allowed in degrees (default is 2 degrees)
+* argv[6] or '-m'= target thermostat mode (e.g. OFF_MODE, COOL_MODE, HEAT_MODE, DRY_MODE, etc.), not yet fully functional.
+* argv[7] or '-n'= number of measurements (default is infinitity).<br/><br/>
+command line usage (unnamed):  "*python -m thermostatsupervisor.supervise \<thermostat type\> \<zone\> \<poll time\> \<connection time\> \<tolerance\> \<target mode\> \<measurements\>*".<br/>
+command line usage (named):  "*python -m thermostatsupervisor.supervise -t \<thermostat type\> -z \<zone\> -p \<poll time\> -c \<connection time\> -d \<tolerance\> -m \<target mode\> -n \<measurements\>*"
   
 ## supervisor_flask_server.py:
 This module will render supervise.py output on an HTML page using Flask.<br/>
 Same runtime parameters as supervise.py can be specified to override defaults:<br/>
-Port is currently hard-coded to 5001, access at server's local IP address<br/><br/><br/>
-command line usage:  "*python supervisor_flask_server.py \<runtime parameters\>*"
+Port is currently hard-coded to 5001, access at server's local IP address<br/><br/>
+command line usage:  "*python -m thermostatsupervisor.supervisor_flask_server \<runtime parameters\>*"
+
+## emulator.py:
+Script will run an emulator with fabribated thermostat meta data.<br/><br/>
+command line usage:  "*python -m thermostatsupervisor.emulator \<thermostat type\> \<zone\>*"
 
 ## honeywell.py:
 Script will logon to TCC web site and query thermostat meta data.<br/>
 Default poll time is currently set to 3 minutes, longer poll times experience connection errors, shorter poll times are impractical based on emperical data.<br/><br/>
-command line usage:  "*python honeywell.py \<thermostat type\> \<zone\>*"
+command line usage:  "*python -m thermostatsupervisor.honeywell \<thermostat type\> \<zone\>*"
 
 ## mmm50.py:
 Script will connect to 3m50 thermostat on local network, IP address stored in mmm_config.mmm_metadata.<br/>
 Default poll time is currently set to 10 minutes.<br/><br/>
-command line usage:  "*python mmm.py \<thermostat type\> \<zone\>*"
+command line usage:  "*python -m thermostatsupervisor.mmm \<thermostat type\> \<zone\>*"
 
 ## sht31.py:
 Script will connect to sht31 thermometer at URL specified (can be local IP or remote URL).<br/>
 Default poll time is currently set to 1 minute.<br/><br/>
-command line usage:  "*python sht31.py \<thermostat type\> \<zone\>*"
+command line usage:  "*python -m thermostatsupervisor.sht31 \<thermostat type\> \<zone\>*"
 
 ## sht31_flask_server.py:
 This module will render sht31 sensor output on an HTML page using Flask.<br/>
@@ -108,8 +118,9 @@ Production data is at root, subfolders provide additional commands:<br/>
 * /reset: perform hard reset<br/>
 
 ### server command line usage:<br/>
-"*python sht31_flask_server.py \<debug\>*"<br/>
+"*python -m thermostatsupervisor.sht31_flask_server \<debug\>*"<br/>
 argv[1] = debug (bool): True to enable Flask debug mode, False is default.<br/>
+
 ### client URL usage:<br/>
 production: "*\<ip\>:\<port\>?measurements=\<measurements\>*"<br/>
 unit test: "*\<ip\>:\<port\>/unit?measurements=\<measurements\>&seed=\<seed\>*"<br/>
@@ -121,13 +132,13 @@ seed=seed value for fabricated data in unit test mode (default=0x7F)<br/>
 Script will connect to Mitsubishi ductless thermostat through kumocloud account only.<br/>
 Default poll time is currently set to 10 minutes.<br/>
 Zone number refers to the thermostat order in kumocloud, 0=first thermostat data returned, 1=second thermostat, etc.<br/><br/>
-command line usage:  "*python kumocloud.py \<thermostat type\> \<zone\>*"
+command line usage:  "*python -m thermostatsupervisor.kumocloud \<thermostat type\> \<zone\>*"
 
 ## kumolocal.py:
 Script will connect to Mitsubishi ductless thermostat through kumocloud account and local network.<br/>
 Default poll time is currently set to 10 minutes.<br/>
 Zone number refers to the thermostat order in kumocloud, 0=first thermostat data returned, 1=second thermostat, etc.<br/><br/>
-command line usage:  "*python kumolocal.py \<thermostat type\> \<zone\>*"
+command line usage:  "*python -m thermostatsupervisor.kumolocal \<thermostat type\> \<zone\>*"
 
 ## Supervisor API required methods:<br/>
 **Thermostat class:**<br/>
