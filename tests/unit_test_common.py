@@ -618,11 +618,14 @@ class RuntimeParameterTest(UnitTest):
         """
         Test the upper level function for parsing.
         """
+        print("test 1, user_inputs=None, will raise error")
         self.uip = self.mod.UserInputs()
-        # print("test 1, input None, will raise error")
-        # self.initialize_user_inputs()
-        # with self.assertRaises(ValueError):
-        #     self.uip.parse_runtime_parameters(argv_list=None)
+        try:
+            self.uip.user_inputs = None
+            with self.assertRaises(ValueError):
+                self.uip.parse_runtime_parameters(argv_list=None)
+        finally:
+            self.uip = self.mod.UserInputs()
 
         # initialize parser so that lower level functions can be tested.
         self.uip = self.mod.UserInputs(help_description="unit test parsing")
