@@ -197,10 +197,6 @@ class UnitTest(unittest.TestCase, metaclass=PatchMeta):
 class IntegrationTest(UnitTest):
     """Common integration test framework."""
 
-    # thermostat_type = emulator_config.ALIAS  # was "UNITTEST"
-    # zone = emulator_config.UNIT_TEST_ZONE  # was 1
-    # user_inputs_backup = None
-    # Thermostat = None
     Thermostat = None  # Thermostat object instance
     Zone = None  # Zone object instance
     mod = None  # module object
@@ -834,6 +830,36 @@ def parse_unit_test_runtime_parameters():
     setattr(sys.modules[__name__], global_par, enable_flag)
     print(f"integration tests are {['disabled', 'enabled'][enable_flag]}")
     return enable_flag
+
+
+def mock_exception(exception_type,
+                   exception_args):
+    """
+    Mock an exception.
+
+    inputs:
+        exception_type(obj): exception type
+        exception_args(list): exception arguments.
+    returns:
+        None, raises an exception.
+    """
+    print("DEBUG: raising %s" % str(exception_type))
+    raise exception_type(*exception_args)
+
+
+def omit_env_vars(target_list):
+    """
+    Create mock env var dict with specified env vars omitted.
+
+    inputs:
+        target_list(ist): env vars to omit.
+    returns;
+        (dict): env var dict.
+    """
+    modified_environ = {
+        k: v for k, v in os.environ.items() if k not in target_list
+    }
+    return modified_environ
 
 
 if __name__ == "__main__":
