@@ -843,7 +843,6 @@ def mock_exception(exception_type,
     returns:
         None, raises an exception.
     """
-    print("DEBUG: raising %s" % str(exception_type))
     raise exception_type(*exception_args)
 
 
