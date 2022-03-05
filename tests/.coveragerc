@@ -1,6 +1,6 @@
 # .coveragerc to control coverage.py
 [run]
-branch = False
+branch = False  # branch option was causing understated result, so it's disabled.
 relative_files = True
 
 omit =
