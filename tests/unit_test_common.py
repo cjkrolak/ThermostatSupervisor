@@ -286,7 +286,11 @@ class FunctionalIntegrationTest(IntegrationTest):
         for test_case in self.mod_config.supported_configs["modes"]:
             print("-" * 80)
             print(f"test_case='{test_case}'")
-            self.Zone.report_heating_parameters(test_case)
+            with patch.object(self.Zone, "get_system_switch_position",  # noqa e501, pylint:disable=undefined-variable
+                              return_value=self.Zone.system_switch_position[
+                                  test_case]):
+                self.Zone.report_heating_parameters(
+                    self.Zone.system_switch_position[test_case])
             print("-" * 80)
 
     def test_get_all_meta_data(self):

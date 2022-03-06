@@ -715,10 +715,11 @@ class Test(utc.UnitTest):
     def test_report_heating_parameters(self):
         """Verify report_heating_parameters()."""
         test_cases = [tc.ThermostatCommonZone.UNKNOWN_MODE,
-                      tc.ThermostatCommonZone.UNKNOWN_MODE]
+                      tc.ThermostatCommonZone.OFF_MODE]
         for test_case in test_cases:
             print(f"test_case={test_case}")
-            self.Zone.report_heating_parameters(switch_position=test_case)
+            self.Zone.report_heating_parameters(
+                switch_position=self.Zone.system_switch_position[test_case])
 
 
 if __name__ == "__main__":
