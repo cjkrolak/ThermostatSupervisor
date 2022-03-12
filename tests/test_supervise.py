@@ -22,20 +22,6 @@ class Test(utc.UnitTest):
         self.teardown_mock_thermostat_zone()
         super().tearDown()
 
-    def test_display_session_settings(self):
-        """
-        Verify display_session_settings() with all permutations.
-        """
-        for revert_setting in [False, True]:
-            for revert_all_setting in [False, True]:
-                print(f"{'-' * 60}")
-                print(f"testing revert={revert_setting}, "
-                      f"revert all={revert_all_setting}")
-                sup.display_session_settings(self.thermostat_type,
-                                             self.zone,
-                                             revert_setting,
-                                             revert_all_setting)
-
     @unittest.skipIf(util.is_azure_environment(),
                      "this test not supported on Azure Pipelines")
     def test_supervisor(self):

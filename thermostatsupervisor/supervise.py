@@ -12,43 +12,6 @@ from thermostatsupervisor import utilities as util
 argv = []  # runtime parameter override
 
 
-def display_session_settings(thermostat_type, zone,
-                             revert_setting, revert_all_setting):
-    """
-    Display session settings to console.
-
-    inputs:
-        thermostat_type(int): thermostat type
-        zone(str or int):  zone
-        revert_setting(bool): True to revert deviation
-                              False to just monitor
-        revert_all_setting(bool): True to revert above and below deviations
-                                  False to just revert energy wasting
-                                  deviations.
-    returns:
-        None
-    """
-    # set log file name
-    util.log_msg.file_name = (thermostat_type + "_" +
-                              str(zone) + ".txt")
-
-    util.log_msg(
-        f"{thermostat_type} thermostat zone {zone} monitoring service\n",
-        mode=util.BOTH_LOG)
-
-    util.log_msg("session settings:", mode=util.BOTH_LOG)
-
-    util.log_msg("thermostat %s for %s\n" %
-                 (["is being monitored", "will be reverted"]
-                  [revert_setting],
-                  ["energy consuming deviations\n("
-                   "e.g. heat setpoint above schedule "
-                   "setpoint, cool setpoint below schedule"
-                   " setpoint)",
-                   "all schedule deviations"]
-                  [revert_all_setting]), mode=util.BOTH_LOG)
-
-
 def supervisor(thermostat_type, zone_str):
     """
     Monitor specified thermometer and zone for deviations up to max
@@ -64,32 +27,20 @@ def supervisor(thermostat_type, zone_str):
     # session variables:
     debug = False  # verbose debugging information
 
-    # Revert deviation or just monitor and alert deviations:
-    revert_deviations = True
-
-    # Revert all deviations or just those that waste energy
-    revert_all_deviations = False
-
-    # display banner and session settings
-    display_session_settings(thermostat_type, zone_str,
-                             revert_deviations,
-                             revert_all_deviations)
+    # load hardware library
+    mod = api.load_hardware_library(thermostat_type)
 
     # verify env variables are present
     api.verify_required_env_variables(thermostat_type, zone_str)
-
-    # starting parameters
-    previous_mode_dict = {}
 
     # connection timer loop
     session_count = 1
     measurement = 1
 
+    # outer loop: sessions
     while not api.uip.max_measurement_count_exceeded(measurement):
         # make connection to thermostat
-        mod = api.load_hardware_library(thermostat_type)
         zone_num = api.uip.get_user_inputs(api.ZONE_FLD)
-
         util.log_msg(
             f"connecting to thermostat zone {zone_num} "
             f"(session:{session_count})...",
@@ -107,6 +58,10 @@ def supervisor(thermostat_type, zone_str):
         util.log_msg(f"zone name={Zone.zone_name}", mode=util.BOTH_LOG,
                      func_name=1)
 
+        # display banner and session settings
+        Zone.display_session_settings()
+
+        # set start time for poll
         Zone.session_start_time_sec = time.time()
 
         # update runtime overrides
@@ -117,8 +72,7 @@ def supervisor(thermostat_type, zone_str):
 
         # supervisor inner loop
         measurement = Zone.supervisor_loop(Thermostat, session_count,
-                                           measurement, revert_deviations,
-                                           revert_all_deviations, debug)
+                                           measurement, debug)
 
         # increment connection count
         session_count += 1
