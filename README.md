@@ -1,4 +1,5 @@
 [![Codacy Security Scan](https://github.com/cjkrolak/ThermostatSupervisor/actions/workflows/codacy-analysis.yml/badge.svg)](https://github.com/cjkrolak/ThermostatSupervisor/actions/workflows/codacy-analysis.yml)
+[![CodeQL](https://github.com/cjkrolak/ThermostatSupervisor/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/cjkrolak/ThermostatSupervisor/actions/workflows/codeql-analysis.yml)
 
 # ThermostatSupervisor:
 supervisor to detect and correct thermostat deviations<br/>
