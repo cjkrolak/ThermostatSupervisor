@@ -725,6 +725,17 @@ class Test(utc.UnitTest):
         """Verify display_runtime_settings()."""
         self.Zone.display_runtime_settings()
 
+    def test_display_session_settings(self):
+        """
+        Verify display_session_settings() with all permutations.
+        """
+        for self.Zone.revert_deviations in [False, True]:
+            for self.Zone.revert_all_deviations in [False, True]:
+                print(f"{'-' * 60}")
+                print(f"testing revert={self.Zone.revert_deviations}, "
+                      f"revert all={self.Zone.revert_all_deviations}")
+                self.Zone.display_session_settings()
+
 
 if __name__ == "__main__":
     util.log_msg.debug = True

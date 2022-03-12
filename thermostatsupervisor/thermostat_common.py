@@ -109,6 +109,8 @@ class ThermostatCommonZone():
         self.connection_time_sec = util.BOGUS_INT  # placeholder
         self.target_mode = "OFF_MODE"  # placeholder
         self.flag_all_deviations = False  #
+        self.revert_deviations = True  # Revert deviation
+        self.revert_all_deviations = False  # Revert only energy-wasting events
         self.temperature_is_deviated = False  # temp deviated from schedule
         self.display_temp = None  # current temperature in deg F
         self.display_humidity = None  # current humidity in %RH
@@ -949,8 +951,38 @@ class ThermostatCommonZone():
             f"{util.temp_value_with_units(self.tolerance_degrees)}",
             mode=util.BOTH_LOG)
 
+    def display_session_settings(self):
+        """
+        Display session settings to console.
+
+        inputs:
+            None
+        returns:
+            None
+        """
+        # set log file name
+        util.log_msg.file_name = (self.thermostat_type + "_" +
+                                  str(self.zone_number) + ".txt")
+
+        util.log_msg(
+            f"{self.thermostat_type} thermostat zone {self.zone_number} "
+            f"monitoring service\n",
+            mode=util.BOTH_LOG)
+
+        util.log_msg("session settings:", mode=util.BOTH_LOG)
+
+        util.log_msg("thermostat %s for %s\n" %
+                     (["is being monitored", "will be reverted"]
+                      [self.revert_deviations],
+                      ["energy consuming deviations\n("
+                       "e.g. heat setpoint above schedule "
+                       "setpoint, cool setpoint below schedule"
+                       " setpoint)",
+                       "all schedule deviations"]
+                      [self.revert_all_deviations]), mode=util.BOTH_LOG)
+
     def supervisor_loop(self, Thermostat, session_count, measurement,
-                        revert_deviations, revert_all_deviations, debug):
+                        debug):
         """
         Loop through supervisor algorithm.
 
@@ -958,9 +990,6 @@ class ThermostatCommonZone():
             Thermostat(obj):  Thermostat instance object
             session_count(int):  current session
             measurement(int):  current measurement index
-            revert_deviations(bool): True to revert, False to just monitor
-            revert_all_deviations(bool): True to revert all, False to just
-                                         revert energy-wasting deviations.
             debug(bool): debug flag
         returns:
             measurement(int): current measurement count
@@ -974,7 +1003,7 @@ class ThermostatCommonZone():
             # query thermostat for current settings and set points
             current_mode_dict = self.get_current_mode(
                 session_count, poll_count,
-                flag_all_deviations=revert_all_deviations)
+                flag_all_deviations=self.revert_all_deviations)
 
             # debug data on change from previous poll
             # note this check is probably hyper-sensitive, since status msg
@@ -993,7 +1022,7 @@ class ThermostatCommonZone():
                                                 api.TARGET_MODE_FLD)))
 
             # revert thermostat to schedule if heat override is detected
-            if (revert_deviations and self.is_controlled_mode() and
+            if (self.revert_deviations and self.is_controlled_mode() and
                     self.is_temp_deviated_from_schedule()):
                 self.revert_temperature_deviation(
                     self.schedule_setpoint, current_mode_dict["status_msg"])
