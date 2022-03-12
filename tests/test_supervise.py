@@ -36,10 +36,6 @@ class Test(utc.UnitTest):
                                              revert_setting,
                                              revert_all_setting)
 
-    def test_display_runtime_settings(self):
-        """Verify display_runtime_settings()."""
-        sup.display_runtime_settings(self.Zone)
-
     @unittest.skipIf(util.is_azure_environment(),
                      "this test not supported on Azure Pipelines")
     def test_supervisor(self):
