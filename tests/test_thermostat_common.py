@@ -721,6 +721,10 @@ class Test(utc.UnitTest):
             self.Zone.report_heating_parameters(
                 switch_position=self.Zone.system_switch_position[test_case])
 
+    def test_display_runtime_settings(self):
+        """Verify display_runtime_settings()."""
+        self.Zone.display_runtime_settings()
+
 
 if __name__ == "__main__":
     util.log_msg.debug = True
