@@ -313,7 +313,8 @@ class ThermostatCommonZone():
         date_str = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         full_status_msg = (
             f"{date_str}: "
-            f"(session:{session_count}, poll:{poll_count}) "
+            f"(tstat:{self.thermostat_type}, zone:{self.zone_number}, "
+            f"session:{session_count}, poll:{poll_count}) "
             f"{self.current_mode.upper()} {status_msg}")
         if print_status:
             util.log_msg(full_status_msg, mode=util.BOTH_LOG)
