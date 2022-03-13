@@ -715,10 +715,26 @@ class Test(utc.UnitTest):
     def test_report_heating_parameters(self):
         """Verify report_heating_parameters()."""
         test_cases = [tc.ThermostatCommonZone.UNKNOWN_MODE,
-                      tc.ThermostatCommonZone.UNKNOWN_MODE]
+                      tc.ThermostatCommonZone.OFF_MODE]
         for test_case in test_cases:
             print(f"test_case={test_case}")
-            self.Zone.report_heating_parameters(switch_position=test_case)
+            self.Zone.report_heating_parameters(
+                switch_position=self.Zone.system_switch_position[test_case])
+
+    def test_display_runtime_settings(self):
+        """Verify display_runtime_settings()."""
+        self.Zone.display_runtime_settings()
+
+    def test_display_session_settings(self):
+        """
+        Verify display_session_settings() with all permutations.
+        """
+        for self.Zone.revert_deviations in [False, True]:
+            for self.Zone.revert_all_deviations in [False, True]:
+                print(f"{'-' * 60}")
+                print(f"testing revert={self.Zone.revert_deviations}, "
+                      f"revert all={self.Zone.revert_all_deviations}")
+                self.Zone.display_session_settings()
 
 
 if __name__ == "__main__":

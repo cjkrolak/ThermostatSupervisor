@@ -457,14 +457,14 @@ class ThermostatZone(tc.ThermostatCommonZone):
         # TODO, are vacationhold unique fields?  what used for?
         return self.get_parameter('vacation_hold')
 
-    def get_system_switch_position(self) -> str:  # used
+    def get_system_switch_position(self) -> int:  # used
         """
         Return the system switch position.
 
         inputs:
             None
         returns:
-            (str) current mode for unit, should match value
+            (int) current mode for unit, should match value
                   in self.system_switch_position
         """
         self.refresh_zone_info()
@@ -540,7 +540,6 @@ class ThermostatZone(tc.ThermostatCommonZone):
             util.log_msg(
                 f"schedule heat sp={self.get_schedule_heat_sp()}",
                 mode=util.BOTH_LOG)
-            util.log_msg("\n", mode=util.BOTH_LOG)
 
         # cooling status
         if switch_position == \
@@ -553,7 +552,6 @@ class ThermostatZone(tc.ThermostatCommonZone):
             util.log_msg(
                 f"schedule cool sp={self.get_schedule_cool_sp()}",
                 mode=util.BOTH_LOG)
-            util.log_msg("\n", mode=util.BOTH_LOG)
 
         # hold settings
         util.log_msg(

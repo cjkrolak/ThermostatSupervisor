@@ -105,9 +105,12 @@ class ThermostatCommonZone():
         self.zone_name = None  # placeholder
         self.device_id = util.BOGUS_INT  # placeholder
         self.poll_time_sec = util.BOGUS_INT  # placeholder
+        self.session_start_time_sec = util.BOGUS_INT  # placeholder
         self.connection_time_sec = util.BOGUS_INT  # placeholder
         self.target_mode = "OFF_MODE"  # placeholder
         self.flag_all_deviations = False  #
+        self.revert_deviations = True  # Revert deviation
+        self.revert_all_deviations = False  # Revert only energy-wasting events
         self.temperature_is_deviated = False  # temp deviated from schedule
         self.display_temp = None  # current temperature in deg F
         self.display_humidity = None  # current humidity in %RH
@@ -313,7 +316,8 @@ class ThermostatCommonZone():
         date_str = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         full_status_msg = (
             f"{date_str}: "
-            f"(session:{session_count}, poll:{poll_count}) "
+            f"(tstat:{self.thermostat_type}, zone:{self.zone_number}, "
+            f"session:{session_count}, poll:{poll_count}) "
             f"{self.current_mode.upper()} {status_msg}")
         if print_status:
             util.log_msg(full_status_msg, mode=util.BOTH_LOG)
@@ -553,11 +557,7 @@ class ThermostatCommonZone():
 
     def get_schedule_heat_sp(self) -> int:
         """Return the heat setpoint."""
-        if self.thermostat_type == "UNITTEST":
-            # unit test mode, return global min
-            return self.max_scheduled_heat_allowed
-        else:
-            return util.BOGUS_INT  # placeholder
+        return util.BOGUS_INT  # placeholder
 
     def get_cool_setpoint_raw(self) -> int:  # noqa R0201
         """Return raw cool set point (number only, no units)."""
@@ -580,11 +580,7 @@ class ThermostatCommonZone():
 
     def get_schedule_cool_sp(self) -> int:
         """Return the cool setpoint."""
-        if self.thermostat_type == "UNITTEST":
-            # unit test mode, return global min
-            return self.min_scheduled_cool_allowed
-        else:
-            return util.BOGUS_INT  # placeholder
+        return util.BOGUS_INT  # placeholder
 
     def get_vacation_hold(self) -> bool:  # noqa R0201
         """Return True if thermostat is in vacation hold mode."""
@@ -927,6 +923,130 @@ class ThermostatCommonZone():
             f"WARNING (in {util.get_function_name(2)}): function call is "
             f"not supported on this thermostat type",
             mode=util.BOTH_LOG)
+
+    def display_runtime_settings(self):
+        """
+        Display runtime settings to console.
+
+        inputs:
+            None
+        returns:
+            None
+        """
+        # poll time setting:
+        util.log_msg(
+            f"polling time set to {self.poll_time_sec / 60.0:.1f} minutes",
+            mode=util.BOTH_LOG)
+
+        # reconnection time to thermostat server:
+        util.log_msg(
+            f"server re-connect time set to "
+            f"{self.connection_time_sec / 60.0:.1f}"
+            f" minutes",
+            mode=util.BOTH_LOG)
+
+        # tolerance to set point:
+        util.log_msg(
+            f"tolerance to set point is set to "
+            f"{util.temp_value_with_units(self.tolerance_degrees)}",
+            mode=util.BOTH_LOG)
+
+    def display_session_settings(self):
+        """
+        Display session settings to console.
+
+        inputs:
+            None
+        returns:
+            None
+        """
+        # set log file name
+        util.log_msg.file_name = (self.thermostat_type + "_" +
+                                  str(self.zone_number) + ".txt")
+
+        util.log_msg(
+            f"{self.thermostat_type} thermostat zone {self.zone_number} "
+            f"monitoring service\n",
+            mode=util.BOTH_LOG)
+
+        util.log_msg("session settings:", mode=util.BOTH_LOG)
+
+        util.log_msg("thermostat %s for %s\n" %
+                     (["is being monitored", "will be reverted"]
+                      [self.revert_deviations],
+                      ["energy consuming deviations\n("
+                       "e.g. heat setpoint above schedule "
+                       "setpoint, cool setpoint below schedule"
+                       " setpoint)",
+                       "all schedule deviations"]
+                      [self.revert_all_deviations]), mode=util.BOTH_LOG)
+
+    def supervisor_loop(self, Thermostat, session_count, measurement,
+                        debug):
+        """
+        Loop through supervisor algorithm.
+
+        inputs:
+            Thermostat(obj):  Thermostat instance object
+            session_count(int):  current session
+            measurement(int):  current measurement index
+            debug(bool): debug flag
+        returns:
+            measurement(int): current measurement count
+        """
+        # initialize poll counter
+        poll_count = 1
+        previous_mode_dict = {}
+
+        # poll thermostat settings
+        while not api.uip.max_measurement_count_exceeded(measurement):
+            # query thermostat for current settings and set points
+            current_mode_dict = self.get_current_mode(
+                session_count, poll_count,
+                flag_all_deviations=self.revert_all_deviations)
+
+            # debug data on change from previous poll
+            # note this check is probably hyper-sensitive, since status msg
+            # change could trigger this extra report.
+            if current_mode_dict != previous_mode_dict:
+                if debug:
+                    self.report_heating_parameters()
+                previous_mode_dict = current_mode_dict  # latch
+
+            # revert thermostat mode if not matching target
+            if not self.verify_current_mode(api.uip.get_user_inputs(
+                    api.TARGET_MODE_FLD)):
+                api.uip.set_user_inputs(api.TARGET_MODE_FLD,
+                                        self.revert_thermostat_mode(
+                                            api.uip.get_user_inputs(
+                                                api.TARGET_MODE_FLD)))
+
+            # revert thermostat to schedule if heat override is detected
+            if (self.revert_deviations and self.is_controlled_mode() and
+                    self.is_temp_deviated_from_schedule()):
+                self.revert_temperature_deviation(
+                    self.schedule_setpoint, current_mode_dict["status_msg"])
+
+            # increment poll count
+            poll_count += 1
+            measurement += 1
+
+            # polling delay
+            time.sleep(self.poll_time_sec)
+
+            # refresh zone info
+            self.refresh_zone_info()
+
+            # reconnect
+            if ((time.time() - self.session_start_time_sec)
+                    > self.connection_time_sec):
+                util.log_msg("forcing re-connection to thermostat...",
+                             mode=util.BOTH_LOG)
+                del Thermostat
+                break  # force reconnection
+
+        # return measurement count
+        return measurement
 
 
 def create_thermostat_instance(thermostat_type, zone,

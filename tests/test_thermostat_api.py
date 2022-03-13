@@ -14,12 +14,13 @@ from tests import unit_test_common as utc
 
 
 class Test(utc.UnitTest):
-    """Test functions in utilities.py."""
-    tstat = "UNITTEST"
+    """Test functions in thermostat_api.py."""
+    tstat = emulator_config.ALIAS
 
     def setUp(self):
         super().setUp()
-        api.thermostats[self.tstat] = {  # dummy unit test thermostat
+        self.setup_mock_thermostat_zone()
+        api.thermostats[self.thermostat_type] = {  # dummy unit test thermostat
             "required_env_variables": {
                 "GMAIL_USERNAME": None,
                 "GMAIL_PASSWORD": None,
@@ -27,7 +28,7 @@ class Test(utc.UnitTest):
         }
 
     def tearDown(self):
-        del api.thermostats[self.tstat]
+        self.teardown_mock_thermostat_zone()
         super().tearDown()
 
     def test_verify_required_env_variables(self):
@@ -39,17 +40,18 @@ class Test(utc.UnitTest):
 
         # nominal condition, should pass
         print("testing nominal condition, will pass if gmail keys are present")
-        self.assertTrue(api.verify_required_env_variables(self.tstat, "0"),
-                        "test failed because one or more gmail keys "
-                        "are missing")
+        self.assertTrue(api.verify_required_env_variables(
+            self.thermostat_type, "0"),
+            "test failed because one or more gmail keys "
+            "are missing")
 
         # missing key, should raise exception
         print("testing for with missing key 'unit_test', should fail")
-        api.thermostats[self.tstat][
+        api.thermostats[self.thermostat_type][
             "required_env_variables"][missing_key] = "bogus_value"
         try:
             self.assertFalse(api.verify_required_env_variables(
-                self.tstat, "0"),
+                self.thermostat_type, "0"),
                 f"test passed with missing key '{missing_key}', "
                 f"should have failed")
         except KeyError:
@@ -57,7 +59,7 @@ class Test(utc.UnitTest):
         else:
             self.fail("expected KeyError but exception did not occur")
         finally:
-            api.thermostats[self.tstat][
+            api.thermostats[self.thermostat_type][
                 "required_env_variables"].pop(missing_key)
 
     def test_load_hardware_library(self):
