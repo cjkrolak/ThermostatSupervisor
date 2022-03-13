@@ -556,6 +556,7 @@ class RuntimeParameterTest(utc.RuntimeParameterTest):
     int_val = 9
     float_val = 8.8
     str_val = "test str"
+    required_val = "required"
 
     # fields for testing, mapped to class variables.
     # (value, field name)
@@ -565,6 +566,7 @@ class RuntimeParameterTest(utc.RuntimeParameterTest):
         (int_val, utc.INT_FLD),
         (float_val, utc.FLOAT_FLD),
         (str_val, utc.STR_FLD),
+        (required_val, utc.REQUIRED_FLD),
     ]
 
 

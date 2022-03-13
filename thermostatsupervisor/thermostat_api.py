@@ -94,7 +94,9 @@ class UserInputs(util.UserInputs):
                 "valid_range": list(SUPPORTED_THERMOSTATS.keys()),
                 "sflag": "-t",
                 "lflag": "--" + THERMOSTAT_TYPE_FLD,
-                "help": "thermostat type"},
+                "help": "thermostat type",
+                "required": False,  # default value is set if missing.
+                },
             ZONE_FLD: {
                 "order": 2,  # index in the argv list
                 "value": None,
@@ -103,7 +105,9 @@ class UserInputs(util.UserInputs):
                 "valid_range": None,  # updated once thermostat is known
                 "sflag": "-z",
                 "lflag": "--" + ZONE_FLD,
-                "help": "target zone number"},
+                "help": "target zone number",
+                "required": False,  # defaults to index 0 in supported zones
+                },
             POLL_TIME_FLD: {
                 "order": 3,  # index in the argv list
                 "value": None,
@@ -112,7 +116,9 @@ class UserInputs(util.UserInputs):
                 "valid_range": range(0, 24 * 60 * 60),
                 "sflag": "-p",
                 "lflag": "--" + POLL_TIME_FLD,
-                "help": "poll time (sec)"},
+                "help": "poll time (sec)",
+                "required": False,
+                },
             CONNECT_TIME_FLD: {
                 "order": 4,  # index in the argv list
                 "value": None,
@@ -121,7 +127,9 @@ class UserInputs(util.UserInputs):
                 "valid_range": range(0, 24 * 60 * 60 * 60),
                 "sflag": "-c",
                 "lflag": "--" + CONNECT_TIME_FLD,
-                "help": "server connection time (sec)"},
+                "help": "server connection time (sec)",
+                "required": False,
+                },
             TOLERANCE_FLD: {
                 "order": 5,  # index in the argv list
                 "value": None,
@@ -130,7 +138,9 @@ class UserInputs(util.UserInputs):
                 "valid_range": range(0, 10),
                 "sflag": "-d",
                 "lflag": "--" + TOLERANCE_FLD,
-                "help": "tolerance (deg F)"},
+                "help": "tolerance (deg F)",
+                "required": False,
+                },
             TARGET_MODE_FLD: {
                 "order": 6,  # index in the argv list
                 "value": None,
@@ -139,7 +149,9 @@ class UserInputs(util.UserInputs):
                 "valid_range": None,  # updated once thermostat is known
                 "sflag": "-m",
                 "lflag": "--" + TARGET_MODE_FLD,
-                "help": "target thermostat mode"},
+                "help": "target thermostat mode",
+                "required": False,
+                },
             MEASUREMENTS_FLD: {
                 "order": 7,  # index in the argv list
                 "value": None,
@@ -148,7 +160,9 @@ class UserInputs(util.UserInputs):
                 "valid_range": range(1, 10001),
                 "sflag": "-n",
                 "lflag": "--" + MEASUREMENTS_FLD,
-                "help": "number of measurements"},
+                "help": "number of measurements",
+                "required": False,
+                },
         }
         self.valid_sflags = [self.user_inputs[k]["sflag"]
                              for k in self.user_inputs]
@@ -156,6 +170,9 @@ class UserInputs(util.UserInputs):
     def dynamic_update_user_inputs(self):
         """
         Update thermostat-specific values in user_inputs dict.
+
+        This function expands each input parameter list to match
+        the length of the thermostat parameter field.
         """
         # if thermostat is not set yet, default it based on module
         thermostat_type = self.get_user_inputs(THERMOSTAT_TYPE_FLD)
@@ -230,21 +247,3 @@ def load_hardware_library(thermostat_type):
                 SUPPORTED_THERMOSTATS[thermostat_type]["module"])
     mod = util.dynamic_module_import(pkg_name)
     return mod
-
-
-# def max_measurement_count_exceeded(measurement):
-#     """
-#     Return True if max measurement reached.
-#
-#     inputs:
-#         measurement(int): current measurement value
-#     returns:
-#         (bool): True if max measurement reached.
-#     """
-#     max_measurements = uip.get_user_inputs("measurements")
-#     if max_measurements is None:
-#         return False
-#     elif measurement > max_measurements:
-#         return True
-#     else:
-#         return False
