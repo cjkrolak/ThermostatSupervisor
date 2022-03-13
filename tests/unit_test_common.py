@@ -667,6 +667,7 @@ class RuntimeParameterTest(UnitTest):
                 "default": 1,
                 "valid_range": range(0, 4),
                 "expected_value": 1,
+                "required": False,
                 },
             "fail_datatype_error": {
                 "value": "5",
@@ -674,6 +675,7 @@ class RuntimeParameterTest(UnitTest):
                 "default": 2,
                 "valid_range": range(0, 10),
                 "expected_value": 2,
+                "required": False,
                 },
             "fail_out_of_range_int": {
                 "value": 6,
@@ -681,6 +683,7 @@ class RuntimeParameterTest(UnitTest):
                 "default": 3,
                 "valid_range": range(0, 3),
                 "expected_value": 3,
+                "required": False,
                 },
             "fail_out_of_range_str": {
                 "value": "6",
@@ -688,6 +691,7 @@ class RuntimeParameterTest(UnitTest):
                 "default": "4",
                 "valid_range": ["a", "b"],
                 "expected_value": "4",
+                "required": False,
                 },
             "in_range_int": {
                 "value": 7,
@@ -695,6 +699,7 @@ class RuntimeParameterTest(UnitTest):
                 "default": 4,
                 "valid_range": range(0, 10),
                 "expected_value": 7,
+                "required": False,
                 },
             "in_range_str": {
                 "value": "8",
@@ -702,6 +707,7 @@ class RuntimeParameterTest(UnitTest):
                 "default": "5",
                 "valid_range": ["a", "8", "abc"],
                 "expected_value": "8",
+                "required": False,
                 },
             }
 
@@ -726,6 +732,7 @@ BOOL_FLD = "bool_field"
 INT_FLD = "int_field"
 FLOAT_FLD = "float_field"
 STR_FLD = "str_field"
+REQUIRED_FLD = "required_field"
 uip = {}
 
 
@@ -760,7 +767,9 @@ class UserInputs(util.UserInputs):
                 "valid_range": [True, False, 1, 0],
                 "sflag": "-b",
                 "lflag": "--" + BOOL_FLD,
-                "help": "bool input parameter"},
+                "help": "bool input parameter",
+                "required": False,
+                },
             INT_FLD: {
                 "order": 2,    # index in the argv list
                 "value": None,
@@ -769,7 +778,9 @@ class UserInputs(util.UserInputs):
                 "valid_range": range(0, 99),
                 "sflag": "-i",
                 "lflag": "--" + INT_FLD,
-                "help": "int input parameter"},
+                "help": "int input parameter",
+                "required": False,
+                },
             FLOAT_FLD: {
                 "order": 3,    # index in the argv list
                 "value": None,
@@ -778,7 +789,9 @@ class UserInputs(util.UserInputs):
                 "valid_range": None,
                 "sflag": "-f",
                 "lflag": "--" + FLOAT_FLD,
-                "help": "float input parameter"},
+                "help": "float input parameter",
+                "required": False,
+                },
             STR_FLD: {
                 "order": 4,    # index in the argv list
                 "value": None,
@@ -787,7 +800,20 @@ class UserInputs(util.UserInputs):
                 "valid_range": None,
                 "sflag": "-s",
                 "lflag": "--" + STR_FLD,
-                "help": "str input parameter"},
+                "help": "str input parameter",
+                "required": False,
+                },
+            REQUIRED_FLD: {
+                "order": 5,    # index in the argv list
+                "value": "required",
+                "type": str,
+                "default": "this is a required string",
+                "valid_range": None,
+                "sflag": "-r",
+                "lflag": "--" + REQUIRED_FLD,
+                "help": "required input parameter",
+                "required": True,
+                },
         }
         self.valid_sflags = [self.user_inputs[k]["sflag"]
                              for k in self.user_inputs]

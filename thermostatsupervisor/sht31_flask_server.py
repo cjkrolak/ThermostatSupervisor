@@ -654,7 +654,9 @@ class UserInputs(util.UserInputs):
                 "valid_range": [True, False, 1, 0],
                 "sflag": "-d",
                 "lflag": "--" + DEBUG_FLD,
-                "help": "flask server debug mode"},
+                "help": "flask server debug mode",
+                "required": False,
+                },
         }
         self.valid_sflags = [self.user_inputs[k]["sflag"]
                              for k in self.user_inputs]

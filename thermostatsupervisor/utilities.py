@@ -661,8 +661,9 @@ class UserInputs():
         # load parser contents
         for _, attr in self.user_inputs.items():
             parser.add_argument(attr["lflag"], attr["sflag"],
-                                help=attr["help"], type=attr["type"],
-                                default=attr["default"])
+                                default=attr["default"], type=attr["type"],
+                                required=attr["required"], help=attr["help"]
+                                )
 
         # parse the argument list
         if argv_list is not None:
@@ -727,6 +728,7 @@ class UserInputs():
                 "lflag": "--script",  # long flag identifier
                 "help": "script name"},  # help text
                 "valid": None,  # valid choices
+                "required": True,  # is parameter required?
         returns:
             (dict) of all runtime parameters.
         """
