@@ -114,8 +114,9 @@ class UnitTest(unittest.TestCase, metaclass=PatchMeta):
         # create new Thermostat and Zone instances
         if self.Thermostat is None and self.Zone is None:
             util.log_msg.debug = True  # debug mode set
-            thermostat_type = api.uip.get_user_inputs(api.THERMOSTAT_TYPE_FLD)
-            zone = api.uip.get_user_inputs(api.ZONE_FLD)
+            thermostat_type = api.uip.get_user_inputs(
+                api.input_flds.thermostat_type)
+            zone = api.uip.get_user_inputs(api.input_flds.zone)
 
             # create class instances
             self.Thermostat, self.Zone = tc.create_thermostat_instance(
@@ -137,13 +138,6 @@ class UnitTest(unittest.TestCase, metaclass=PatchMeta):
         self.user_inputs_backup = getattr(api.uip, "user_inputs", None)
         # parse runtime arguments
         api.uip = api.UserInputs(self.unit_test_argv)
-        # api.uip.set_user_inputs(api.THERMOSTAT_TYPE_FLD,
-        # self.thermostat_type)
-        # api.uip.set_user_inputs(api.ZONE_FLD, self.zone)
-        # api.uip.set_user_inputs(api.POLL_TIME_FLD, 55)
-        # api.uip.set_user_inputs(api.CONNECT_TIME_FLD, 155)
-        # api.uip.set_user_inputs(api.TARGET_MODE_FLD, "OFF_MODE")
-        # api.uip.set_user_inputs(api.MEASUREMENTS_FLD, 3)
 
         self.Thermostat = tc.ThermostatCommon()
         self.Zone = tc.ThermostatCommonZone()
@@ -237,8 +231,9 @@ class IntegrationTest(UnitTest):
         # create new Thermostat and Zone instances
         if self.Thermostat is None and self.Zone is None:
             util.log_msg.debug = True  # debug mode set
-            thermostat_type = api.uip.get_user_inputs(api.THERMOSTAT_TYPE_FLD)
-            zone = api.uip.get_user_inputs(api.ZONE_FLD)
+            thermostat_type = api.uip.get_user_inputs(
+                api.input_flds.thermostat_type)
+            zone = api.uip.get_user_inputs(api.input_flds.zone)
 
             # create class instances
             self.Thermostat, self.Zone = tc.create_thermostat_instance(
@@ -271,8 +266,8 @@ class FunctionalIntegrationTest(IntegrationTest):
 
         IntegrationTest.Thermostat, IntegrationTest.Zone = \
             tc.thermostat_basic_checkout(
-                api.uip.get_user_inputs(api.THERMOSTAT_TYPE_FLD),
-                api.uip.get_user_inputs(api.ZONE_FLD),
+                api.uip.get_user_inputs(api.input_flds.thermostat_type),
+                api.uip.get_user_inputs(api.input_flds.zone),
                 self.mod.ThermostatClass, self.mod.ThermostatZone
             )
 
@@ -462,11 +457,18 @@ class RuntimeParameterTest(UnitTest):
     uip = None
     mod = None
     test_fields = None  # placeholder, will be populated by child classes
+    test_fields_with_file = None  # placeholder, will be populated by child
 
-    def get_test_list(self):
-        """Return the test list with string elemeents."""
+    def get_test_list(self, test_fields):
+        """
+        Return the test list with string elemeents.
+
+        inputs:
+            test_fields(dict): dictionary of test fields.
+        returns:
+            (list): list of test fields."""
         test_list = []
-        for k, _ in self.test_fields:
+        for k, _ in test_fields:
             test_list.append(k)
         return test_list
 
@@ -478,24 +480,25 @@ class RuntimeParameterTest(UnitTest):
             expected_values[self.test_fields[x][1]] = self.test_fields[x][0]
         return expected_values
 
-    def get_named_list(self, flag):
+    def get_named_list(self, test_fields, flag):
         """
         Return the named parameter list.
 
         inputs:
+            test_fields(dict): test fields dict
             flag(str): flag.
         returns:
             (list): named parameter list
         """
         test_list_named_flag = []
         # script placeholder for 0 element
-        test_list_named_flag.append(self.test_fields[0][1])
+        test_list_named_flag.append(test_fields[0][1])
 
         # element 0 (script) is omitted from expected_values dict.
-        for field in range(1, len(self.test_fields)):
+        for field in range(1, len(test_fields)):
             test_list_named_flag.append(self.uip.get_user_inputs(
-                self.test_fields[field][1], flag) + " " +
-                str(self.test_fields[field][0]))
+                test_fields[field][1], flag) + "=" +
+                str(test_fields[field][0]))
         return test_list_named_flag
 
     def parse_user_inputs_dict(self):
@@ -521,7 +524,13 @@ class RuntimeParameterTest(UnitTest):
         """
         Verify values were parsed correctly by comparing to expected values.
         """
-        expected_values = self.get_expected_vals_dict()
+        if self.uip.using_input_file:
+            # use first key from user inputs file, this will need to be updated
+            # when we add support for site supervise.
+            expected_values = self.uip.user_inputs_file[
+                list(self.uip.user_inputs_file.keys())[0]]
+        else:
+            expected_values = self.get_expected_vals_dict()
         for k in expected_values:
             self.assertEqual(expected_values[k],
                              self.uip.get_user_inputs(k),
@@ -534,7 +543,11 @@ class RuntimeParameterTest(UnitTest):
         """
         Re-initialize user_inputs dict.
         """
-        self.uip = self.mod.UserInputs()
+        print(f"{util.get_function_name()}:initializing user_inputs with "
+              "defaults...")
+        self.uip = self.mod.UserInputs(suppress_warnings=True)
+        print(f"{util.get_function_name()}:user_inputs have been initialized.")
+        self.uip.suppress_warnings = False  # reset back to default
         for k in self.uip.user_inputs:
             self.uip.set_user_inputs(k, None)
 
@@ -543,7 +556,7 @@ class RuntimeParameterTest(UnitTest):
         Verify test parse_argv_list() returns expected
         values when input known values.
         """
-        test_list = self.get_test_list()
+        test_list = self.get_test_list(self.test_fields)
         print(f"test_list={test_list}")
         self.uip = self.mod.UserInputs(test_list, "unit test parser")
         print(f"user_inputs={self.uip.user_inputs}")
@@ -557,10 +570,40 @@ class RuntimeParameterTest(UnitTest):
         parser.add_argument('-a', type=int)
         # argv = '-a 1'.split()  # or ['-a','1','foo']
         # argv = ["-a 1", "--b 2"]  # double dash doesn't work yet.
-        argv = ["-a 1"]
+        argv = ["-a=1"]
         args = parser.parse_args(argv)
         assert(args.a == 1)
         # assert(args.b == 2)
+
+    def test_parser_input_file(self):
+        """
+        Generic test for argparser with input file.
+        """
+        input_file = "data/thermostat_api_input.ini"
+        parser = argparse.ArgumentParser()
+        parser.add_argument('-f',
+                            type=argparse.FileType('r',
+                                                   encoding='UTF-8')
+                            )
+        argv = ["-f" + input_file]  # space after sflag is appended onto str
+        args = parser.parse_args(argv)
+        print("args returned: %s" % args)
+        # assert(args.thermostat_type == "emulator")
+
+    def is_valid_file(self, parser, arg):
+        """
+        Verify file input is valid.
+
+        inputs:
+            arg(str): file name with path.
+        returns:
+            open file handle
+        """
+        arg = arg.strip()  # remove any leading spaces
+        if not os.path.exists(arg):
+            parser.error("The file %s does not exist!" % os.path.abspath(arg))
+        else:
+            return open(arg, 'r')  # return an open file handle
 
     def test_parse_named_arguments_sflag(self):
         """
@@ -569,13 +612,14 @@ class RuntimeParameterTest(UnitTest):
         """
         # build the named sflag list
         self.uip = self.mod.UserInputs()
-        named_sflag_list = self.get_named_list("sflag")
+        named_sflag_list = self.get_named_list(self.test_fields, "sflag")
         print(f"sflag_list={named_sflag_list}")
 
         # clear out user inputs
         self.initialize_user_inputs()
 
         # parse named sflag list
+        print("parsing named argument list")
         self.uip = self.mod.UserInputs(
             named_sflag_list, "unittest parsing named sflag arguments")
         self.verify_parsed_values()
@@ -589,7 +633,7 @@ class RuntimeParameterTest(UnitTest):
 
         # build the named sflag list
         self.uip = self.mod.UserInputs()
-        named_lflag_list = self.get_named_list("lflag")
+        named_lflag_list = self.get_named_list(self.test_fields, "lflag")
         print(f"lflag_list={named_lflag_list}")
 
         # clear out user inputs
@@ -618,6 +662,25 @@ class RuntimeParameterTest(UnitTest):
         """
         Test the upper level function for parsing.
         """
+        self.parse_runtime_parameters(self.test_fields)
+
+    def test_parse_runtime_parameters_from_file(self):
+        """
+        Test the upper level function for parsing.
+        """
+        if self.test_fields_with_file is not None:
+            self.parse_runtime_parameters(self.test_fields_with_file)
+        else:
+            print("self.test_list_file has not been setup yet, "
+                  "skipping this test.")
+
+    def parse_runtime_parameters(self, test_fields):
+        """
+        Test the upper level function for parsing.
+
+        inputs:
+            test_fields(list): input list to use for testing.
+        """
         print("test 1, user_inputs=None, will raise error")
         self.uip = self.mod.UserInputs()
         try:
@@ -632,7 +695,7 @@ class RuntimeParameterTest(UnitTest):
 
         print("test 2, input list, will parse list")
         self.initialize_user_inputs()
-        test_list = self.get_test_list()
+        test_list = self.get_test_list(test_fields)
         print(f"test2 test_list={test_list}")
         self.uip.parse_runtime_parameters(
             argv_list=test_list)
@@ -641,18 +704,18 @@ class RuntimeParameterTest(UnitTest):
         print("test 3, input named parameter list, will parse list")
         self.initialize_user_inputs()
         self.uip.parse_runtime_parameters(
-            argv_list=self.get_named_list("sflag"))
+            argv_list=self.get_named_list(test_fields, "sflag"))
         self.verify_parsed_values()
 
         print("test 4, input dict, will parse sys.argv argument list")
         self.initialize_user_inputs()
-        with patch.object(sys, 'argv', self.get_test_list()):  # noqa e501, pylint:disable=undefined-variable
+        with patch.object(sys, 'argv', self.get_test_list(test_fields)):  # noqa e501, pylint:disable=undefined-variable
             self.uip.parse_runtime_parameters(argv_list=None)
         self.verify_parsed_values()
 
         print("test 5, input dict, will parse sys.argv named args")
         self.initialize_user_inputs()
-        with patch.object(sys, 'argv', self.get_named_list("sflag")):  # noqa e501, pylint:disable=undefined-variable
+        with patch.object(sys, 'argv', self.get_named_list(test_fields, "sflag")):  # noqa e501, pylint:disable=undefined-variable
             self.uip.parse_runtime_parameters()
         self.verify_parsed_values()
 
@@ -713,6 +776,7 @@ class RuntimeParameterTest(UnitTest):
 
         key = "test_case"
         for test_case, test_dict in test_cases.items():
+            print(f"test case='{test_case}'")
             result_dict = self.uip.validate_argv_inputs({key: test_dict})
             actual_value = result_dict[key]["value"]
 
@@ -733,24 +797,30 @@ INT_FLD = "int_field"
 FLOAT_FLD = "float_field"
 STR_FLD = "str_field"
 REQUIRED_FLD = "required_field"
+INPUT_FILE_FLD = "input_file"
+INPUT_FILE = "data\\test_utilities_input.ini"
 uip = {}
 
 
 class UserInputs(util.UserInputs):
     """Manage runtime arguments for generic unit testing."""
 
-    def __init__(self, argv_list=None, help_description=None):
+    def __init__(self, argv_list=None, help_description=None,
+                 suppress_warnings=False):
         """
         UserInputs constructor for generic unit testing.
 
         inputs:
             argv_list(list): override runtime values
             help_description(str): description field for help text
+            suppress_warnings(bool): suppress warnings
         """
         self.argv_list = argv_list
+        self.help_description = help_description
+        self.suppress_warnings = suppress_warnings
 
         # initialize parent class
-        super().__init__(argv_list, help_description)
+        super().__init__(argv_list, help_description, suppress_warnings)
 
     def initialize_user_inputs(self):
         """
@@ -759,7 +829,7 @@ class UserInputs(util.UserInputs):
         # define the user_inputs dict.
         self.user_inputs = {
             BOOL_FLD: {
-                "order": 1,    # index in the argv list
+                "order": 1,  # index in the argv list
                 "value": None,
                 "type": lambda x: bool(distutils.util.strtobool(
                     str(x).strip())),
@@ -771,7 +841,7 @@ class UserInputs(util.UserInputs):
                 "required": False,
                 },
             INT_FLD: {
-                "order": 2,    # index in the argv list
+                "order": 2,  # index in the argv list
                 "value": None,
                 "type": int,
                 "default": 49,
@@ -782,18 +852,18 @@ class UserInputs(util.UserInputs):
                 "required": False,
                 },
             FLOAT_FLD: {
-                "order": 3,    # index in the argv list
+                "order": 3,  # index in the argv list
                 "value": None,
                 "type": float,
                 "default": 59.0,
                 "valid_range": None,
-                "sflag": "-f",
+                "sflag": "-l",
                 "lflag": "--" + FLOAT_FLD,
                 "help": "float input parameter",
                 "required": False,
                 },
             STR_FLD: {
-                "order": 4,    # index in the argv list
+                "order": 4,  # index in the argv list
                 "value": None,
                 "type": str,
                 "default": "this is a string",
@@ -804,7 +874,7 @@ class UserInputs(util.UserInputs):
                 "required": False,
                 },
             REQUIRED_FLD: {
-                "order": 5,    # index in the argv list
+                "order": 5,  # index in the argv list
                 "value": "required",
                 "type": str,
                 "default": "this is a required string",
@@ -813,6 +883,17 @@ class UserInputs(util.UserInputs):
                 "lflag": "--" + REQUIRED_FLD,
                 "help": "required input parameter",
                 "required": True,
+                },
+            INPUT_FILE_FLD: {
+                "order": 6,  # index in the argv list
+                "value": INPUT_FILE,
+                "type": str,
+                "default": "this is an input file",
+                "valid_range": None,
+                "sflag": "-f",
+                "lflag": "--" + INPUT_FILE_FLD,
+                "help": "input file parameter",
+                "required": False,
                 },
         }
         self.valid_sflags = [self.user_inputs[k]["sflag"]

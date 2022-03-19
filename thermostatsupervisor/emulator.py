@@ -575,7 +575,7 @@ if __name__ == "__main__":
     # get zone override
     api.uip = api.UserInputs(argv_list=None,
                              thermostat_type=emulator_config.ALIAS)
-    zone_number = api.uip.get_user_inputs(api.ZONE_FLD)
+    zone_number = api.uip.get_user_inputs(api.input_flds.zone)
 
     tc.thermostat_basic_checkout(
         emulator_config.ALIAS,

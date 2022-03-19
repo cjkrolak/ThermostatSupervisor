@@ -5,6 +5,7 @@ This file should be updated for any new thermostats supported and
 any changes to thermostat configs.
 """
 # built ins
+import bunch
 
 # local imports
 from thermostatsupervisor import emulator_config
@@ -50,13 +51,15 @@ for config_module in config_modules:
 # note script name is omitted, starting with first parameter
 # index 0 (script name) is not included in this dict because it is
 # not a runtime argument
-THERMOSTAT_TYPE_FLD = "thermostat_type"
-ZONE_FLD = "zone"
-POLL_TIME_FLD = "poll_time"
-CONNECT_TIME_FLD = "connection_time"
-TOLERANCE_FLD = "tolerance"
-TARGET_MODE_FLD = "target_mode"
-MEASUREMENTS_FLD = "measurements"
+input_flds = bunch.Bunch()
+input_flds.thermostat_type = "thermostat_type"
+input_flds.zone = "zone"
+input_flds.poll_time = "poll_time"
+input_flds.connection_time = "connection_time"
+input_flds.tolerance = "tolerance"
+input_flds.target_mode = "target_mode"
+input_flds.measurements = "measurements"
+input_flds.input_file = "input_file"
 
 uip = None  # user inputs object
 
@@ -65,20 +68,23 @@ class UserInputs(util.UserInputs):
     """Manage runtime arguments for thermostat_api."""
 
     def __init__(self, argv_list=None, help_description=None,
-                 thermostat_type=DEFAULT_THERMOSTAT):
+                 suppress_warnings=False, thermostat_type=DEFAULT_THERMOSTAT):
         """
         UserInputs constructor for thermostat_api.
 
         inputs:
-            argv_list(list): override runtime values
-            help_description(str): description field for help text
-            thermostat_type(str): thermostat type
+            argv_list(list): override runtime values.
+            help_description(str): description field for help text.
+            suppress_warnings(bool): True to suppress warning msgs.
+            thermostat_type(str): thermostat type.
         """
         self.argv_list = argv_list
+        self.help_description = help_description
+        self.suppress_warnings = suppress_warnings
         self.thermostat_type = thermostat_type  # default if not provided
 
         # initialize parent class
-        super().__init__(argv_list, help_description)
+        super().__init__(argv_list, help_description, suppress_warnings)
 
     def initialize_user_inputs(self):
         """
@@ -86,81 +92,93 @@ class UserInputs(util.UserInputs):
         """
         # define the user_inputs dict.
         self.user_inputs = {
-            THERMOSTAT_TYPE_FLD: {
+            input_flds.thermostat_type: {
                 "order": 1,  # index in the argv list
                 "value": None,
                 "type": str,
                 "default": self.thermostat_type,
                 "valid_range": list(SUPPORTED_THERMOSTATS.keys()),
                 "sflag": "-t",
-                "lflag": "--" + THERMOSTAT_TYPE_FLD,
+                "lflag": "--" + input_flds.thermostat_type,
                 "help": "thermostat type",
                 "required": False,  # default value is set if missing.
                 },
-            ZONE_FLD: {
+            input_flds.zone: {
                 "order": 2,  # index in the argv list
                 "value": None,
                 "type": int,
                 "default": 0,
                 "valid_range": None,  # updated once thermostat is known
                 "sflag": "-z",
-                "lflag": "--" + ZONE_FLD,
+                "lflag": "--" + input_flds.zone,
                 "help": "target zone number",
                 "required": False,  # defaults to index 0 in supported zones
                 },
-            POLL_TIME_FLD: {
+            input_flds.poll_time: {
                 "order": 3,  # index in the argv list
                 "value": None,
                 "type": int,
                 "default": 60 * 10,
                 "valid_range": range(0, 24 * 60 * 60),
                 "sflag": "-p",
-                "lflag": "--" + POLL_TIME_FLD,
+                "lflag": "--" + input_flds.poll_time,
                 "help": "poll time (sec)",
                 "required": False,
                 },
-            CONNECT_TIME_FLD: {
+            input_flds.connection_time: {
                 "order": 4,  # index in the argv list
                 "value": None,
                 "type": int,
                 "default": 60 * 10 * 8,
                 "valid_range": range(0, 24 * 60 * 60 * 60),
                 "sflag": "-c",
-                "lflag": "--" + CONNECT_TIME_FLD,
+                "lflag": "--" + input_flds.connection_time,
                 "help": "server connection time (sec)",
                 "required": False,
                 },
-            TOLERANCE_FLD: {
+            input_flds.tolerance: {
                 "order": 5,  # index in the argv list
                 "value": None,
                 "type": int,
                 "default": 2,
                 "valid_range": range(0, 10),
                 "sflag": "-d",
-                "lflag": "--" + TOLERANCE_FLD,
+                "lflag": "--" + input_flds.tolerance,
                 "help": "tolerance (deg F)",
                 "required": False,
                 },
-            TARGET_MODE_FLD: {
+            input_flds.target_mode: {
                 "order": 6,  # index in the argv list
                 "value": None,
                 "type": str,
                 "default": "UNKNOWN_MODE",
                 "valid_range": None,  # updated once thermostat is known
                 "sflag": "-m",
-                "lflag": "--" + TARGET_MODE_FLD,
+                "lflag": "--" + input_flds.target_mode,
                 "help": "target thermostat mode",
                 "required": False,
                 },
-            MEASUREMENTS_FLD: {
+            input_flds.measurements: {
                 "order": 7,  # index in the argv list
                 "value": None,
                 "type": int,
                 "default": 10000,
                 "valid_range": range(1, 10001),
                 "sflag": "-n",
-                "lflag": "--" + MEASUREMENTS_FLD,
+                "lflag": "--" + input_flds.measurements,
                 "help": "number of measurements",
+                "required": False,
+                },
+            input_flds.input_file: {
+                "order": 8,  # index in the argv list
+                "value": None,
+                # "type": lambda x: self.is_valid_file(x),
+                "type": str,  # argparse.FileType('r', encoding='UTF-8'),
+                "default": None,
+                "valid_range": None,
+                "sflag": "-f",
+                "lflag": "--" + input_flds.input_file,
+                "help": "input file",
                 "required": False,
                 },
         }
@@ -174,13 +192,36 @@ class UserInputs(util.UserInputs):
         This function expands each input parameter list to match
         the length of the thermostat parameter field.
         """
+        # file input will override any type of individual inputs
+        input_file = self.get_user_inputs(input_flds.input_file)
+        if input_file is not None:
+            self.using_input_file = True
+            print(f"DEBUG: reading runtime arguments from '{input_file}'...")
+            self.parse_input_file(input_file)
+            # todo: use first key for now, this should be updated to key off
+            # of thermostat name at some point
+            section = list(self.user_inputs_file.keys())[0]  # use first key
+            for fld in input_flds:
+                if self.user_inputs[fld]["type"] in [int, float, str]:
+                    # cast data type when reading value
+                    self.user_inputs[fld]["value"] = (self.user_inputs[fld][
+                        "type"](self.user_inputs_file[section].get(
+                            input_flds[fld])))
+                    # cast original input value in user_inputs_file as well
+                    self.user_inputs_file[section][fld] = self.user_inputs[
+                        fld]["value"]
+                else:
+                    # no casting, just read raw from list
+                    self.user_inputs[fld]["value"] = \
+                        ((self.user_inputs_file[section].get(input_flds[fld])))
+
         # if thermostat is not set yet, default it based on module
-        thermostat_type = self.get_user_inputs(THERMOSTAT_TYPE_FLD)
+        thermostat_type = self.get_user_inputs(input_flds.thermostat_type)
         if thermostat_type is None:
             thermostat_type = self.thermostat_type
-        self.user_inputs[ZONE_FLD]["valid_range"] = SUPPORTED_THERMOSTATS[
-                thermostat_type]["zones"]
-        self.user_inputs[TARGET_MODE_FLD]["valid_range"] = \
+        self.user_inputs[input_flds.zone]["valid_range"] = \
+            SUPPORTED_THERMOSTATS[thermostat_type]["zones"]
+        self.user_inputs[input_flds.target_mode]["valid_range"] = \
             SUPPORTED_THERMOSTATS[thermostat_type]["modes"]
 
     def max_measurement_count_exceeded(self, measurement):

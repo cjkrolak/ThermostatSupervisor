@@ -644,8 +644,9 @@ class Test(utc.UnitTest):
                 (lambda *_, **__: self.Zone.system_switch_position[
                     tc.ThermostatCommonZone.DRY_MODE])
             api.uip = api.UserInputs(self.unit_test_argv)
-            thermostat_type = api.uip.get_user_inputs(api.THERMOSTAT_TYPE_FLD)
-            zone_number = api.uip.get_user_inputs(api.ZONE_FLD)
+            thermostat_type = api.uip.get_user_inputs(
+                api.input_flds.thermostat_type)
+            zone_number = api.uip.get_user_inputs(api.input_flds.zone)
             mod = api.load_hardware_library(thermostat_type)
             thermostat, zone = \
                 tc.thermostat_basic_checkout(

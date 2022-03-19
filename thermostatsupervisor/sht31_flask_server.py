@@ -15,6 +15,7 @@ except ImportError as ex:
     pi_library_exception = ex  # unsuccessful
 
 # built-in imports
+import bunch
 import distutils.util
 import os
 import re
@@ -33,7 +34,9 @@ from thermostatsupervisor import sht31_config
 from thermostatsupervisor import utilities as util
 
 # runtime override fields
-DEBUG_FLD = "debug"
+input_flds = bunch.Bunch()
+input_flds.debug_fld = "debug"
+
 uip = None  # user inputs object
 
 # SHT31D write commands (register, [data])
@@ -626,18 +629,22 @@ def favicon():
 class UserInputs(util.UserInputs):
     """Manage runtime arguments for sht31_flask_server."""
 
-    def __init__(self, argv_list=None, help_description=None):
+    def __init__(self, argv_list=None, help_description=None,
+                 suppress_warnings=False):
         """
         UserInputs constructor for sht31_flask_server.
 
         inputs:
-            argv_list(list): override runtime values
-            help_description(str): description field for help text
+            argv_list(list): override runtime values.
+            help_description(str): description field for help text.
+            suppress_warnings(bool): True to suppress warning msgs.
         """
         self.argv_list = argv_list
+        self.help_description = help_description
+        self.suppress_warnings = suppress_warnings
 
         # initialize parent class
-        super().__init__(argv_list, help_description)
+        super().__init__(argv_list, help_description, suppress_warnings)
 
     def initialize_user_inputs(self):
         """
@@ -645,7 +652,7 @@ class UserInputs(util.UserInputs):
         """
         # define the user_inputs dict.
         self.user_inputs = {
-            DEBUG_FLD: {
+            input_flds.debug_fld: {
                 "order": 1,    # index in the argv list
                 "value": None,
                 "type": lambda x: bool(distutils.util.strtobool(
@@ -653,7 +660,7 @@ class UserInputs(util.UserInputs):
                 "default": False,
                 "valid_range": [True, False, 1, 0],
                 "sflag": "-d",
-                "lflag": "--" + DEBUG_FLD,
+                "lflag": "--" + input_flds.debug_fld,
                 "help": "flask server debug mode",
                 "required": False,
                 },

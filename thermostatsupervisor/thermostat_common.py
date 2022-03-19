@@ -640,13 +640,13 @@ class ThermostatCommonZone():
         # map user input keys to class members.
         # "thermostat_type is not overwritten
         user_input_to_class_mapping = {
-            api.THERMOSTAT_TYPE_FLD: "thermostat_type",
-            api.ZONE_FLD: "zone_number",
-            api.POLL_TIME_FLD: "poll_time_sec",
-            api.CONNECT_TIME_FLD: "connection_time_sec",
-            api.TOLERANCE_FLD: "tolerance_degrees",
-            api.TARGET_MODE_FLD: "target_mode",
-            api.MEASUREMENTS_FLD: "measurements",
+            api.input_flds.thermostat_type: "thermostat_type",
+            api.input_flds.zone: "zone_number",
+            api.input_flds.poll_time: "poll_time_sec",
+            api.input_flds.connection_time: "connection_time_sec",
+            api.input_flds.tolerance: "tolerance_degrees",
+            api.input_flds.target_mode: "target_mode",
+            api.input_flds.measurements: "measurements",
         }
 
         print("\n")
@@ -1015,11 +1015,12 @@ class ThermostatCommonZone():
 
             # revert thermostat mode if not matching target
             if not self.verify_current_mode(api.uip.get_user_inputs(
-                    api.TARGET_MODE_FLD)):
-                api.uip.set_user_inputs(api.TARGET_MODE_FLD,
+                    api.input_flds.target_mode)):
+                api.uip.set_user_inputs(api.input_flds.target_mode,
                                         self.revert_thermostat_mode(
                                             api.uip.get_user_inputs(
-                                                api.TARGET_MODE_FLD)))
+                                                api.input_flds.target_mode)
+                                            ))
 
             # revert thermostat to schedule if heat override is detected
             if (self.revert_deviations and self.is_controlled_mode() and
@@ -1079,8 +1080,9 @@ def create_thermostat_instance(thermostat_type, zone,
     Zone = ThermostatZone(Thermostat)
 
     # update runtime overrides
-    api.uip.set_user_inputs(api.THERMOSTAT_TYPE_FLD, thermostat_type)
-    api.uip.set_user_inputs(api.ZONE_FLD, zone)
+    api.uip.set_user_inputs(api.input_flds.thermostat_type,
+                            thermostat_type)
+    api.uip.set_user_inputs(api.input_flds.zone, zone)
     Zone.update_runtime_parameters()
 
     return Thermostat, Zone

@@ -2,6 +2,7 @@
 
 # built-in libraries
 import argparse
+import configparser
 import datetime
 import importlib.util
 import inspect
@@ -571,11 +572,24 @@ def dynamic_module_import(name, path=None):
 class UserInputs():
     """Manage runtime arguments."""
 
-    def __init__(self, argv_list, help_description, *_, **__):
-        """Constructor."""
+    def __init__(self, argv_list, help_description, suppress_warnings=False,
+                 *_, **__):
+        """
+        Base Class UserInputs Constructor.
+
+        inputs:
+            argv_list(list): override runtime values.
+            help_description(str): description field for help text.
+            suppress_warnings(bool): True to suppress warning msgs.
+        """
         self.argv_list = argv_list
         self.help_description = help_description
+        self.suppress_warnings = suppress_warnings
+        self.parser = argparse.ArgumentParser(
+            description=self.help_description)
         self.user_inputs = {}
+        self.user_inputs_file = {}
+        self.using_input_file = False
         self.initialize_user_inputs()
         # parse the runtime arguments from input list or sys.argv
         self.parse_runtime_parameters(argv_list)
@@ -637,7 +651,6 @@ class UserInputs():
                 CONSOLE_LOG,
                 func_name=1)
             self.user_inputs = self.parse_argv_list(sys.argv)
-
         # update validation range based on input data
         self.dynamic_update_user_inputs()
 
@@ -655,29 +668,28 @@ class UserInputs():
         returns:
             (dict) of all runtime parameters.
         """
-        # setup parser
-        parser = argparse.ArgumentParser(description=self.help_description)
-
         # load parser contents
         for _, attr in self.user_inputs.items():
-            parser.add_argument(attr["lflag"], attr["sflag"],
-                                default=attr["default"], type=attr["type"],
-                                required=attr["required"], help=attr["help"]
-                                )
-
+            self.parser.add_argument(attr["lflag"], attr["sflag"],
+                                     default=attr["default"],
+                                     type=attr["type"],
+                                     required=attr["required"],
+                                     help=attr["help"]
+                                     )
         # parse the argument list
         if argv_list is not None:
             # test mode, override sys.argv
-            args = parser.parse_args(argv_list[1:])
+            args = self.parser.parse_args(argv_list[1:])
         else:
-            args = parser.parse_args()
+            args = self.parser.parse_args()
         for key in self.user_inputs:
             if key == "script":
                 # add script name
                 self.user_inputs[key]["value"] = sys.argv[0]
             else:
                 self.user_inputs[key]["value"] = getattr(args, key, None)
-                if isinstance(self.user_inputs[key]["value"], str):
+                strip_types = (str)
+                if isinstance(self.user_inputs[key]["value"], strip_types):
                     # str parsing has leading spaces for some reason
                     self.user_inputs[key]["value"] = \
                         self.user_inputs[key]["value"].strip()
@@ -691,7 +703,7 @@ class UserInputs():
         inputs:
             argv_list(list): list of runtime arguments in the order
                              argv_list[0] should be script name.
-                             specified in argv_dict "order" fields.
+                             speci5fied in argv_dict "order" fields.
         returns:
             (dict) of all runtime parameters.
         """
@@ -704,8 +716,13 @@ class UserInputs():
         # populate dict with values from list
         for key, val in self.user_inputs.items():
             if val["order"] <= len(argv_inputs) - 1:
-                self.user_inputs[key]["value"] = self.user_inputs[key]["type"](
-                    argv_inputs[val["order"]])
+                if self.user_inputs[key]["type"] in [int, float, str]:
+                    # cast data type when reading value
+                    self.user_inputs[key]["value"] = (self.user_inputs[key][
+                        "type"](argv_inputs[val["order"]]))
+                else:
+                    # no casting, just read raw from list
+                    self.user_inputs[key]["value"] = argv_inputs[val["order"]]
 
         return self.user_inputs
 
@@ -739,33 +756,37 @@ class UserInputs():
             expected_type = attr["type"]
             # missing value check
             if proposed_value is None:
-                log_msg(
-                    f"key='{key}': argv parameter missing, using default "
-                    f"value '{default_value}'",
-                    mode=DEBUG_LOG +
-                    CONSOLE_LOG,
-                    func_name=1)
+                if not self.suppress_warnings:
+                    log_msg(
+                        f"key='{key}': argv parameter missing, using default "
+                        f"value '{default_value}'",
+                        mode=DEBUG_LOG +
+                        CONSOLE_LOG,
+                        func_name=1)
                 attr["value"] = attr["default"]
 
             # wrong datatype check
             elif proposed_type != expected_type:
-                log_msg(
-                    f"key='{key}': datatype error, expected={expected_type}, "
-                    f"actual={proposed_type}, using default value "
-                    f"'{default_value}'",
-                    mode=DEBUG_LOG +
-                    CONSOLE_LOG,
-                    func_name=1)
+                if not self.suppress_warnings:
+                    log_msg(
+                        f"key='{key}': datatype error, expected="
+                        f"{expected_type}, actual={proposed_type}, "
+                        "using default value "
+                        f"'{default_value}'",
+                        mode=DEBUG_LOG +
+                        CONSOLE_LOG,
+                        func_name=1)
                 attr["value"] = attr["default"]
 
             # out of range check
             elif (attr["valid_range"] is not None and
                   proposed_value not in attr["valid_range"]):
-                log_msg(
-                    f"WARNING: '{proposed_value}' is not a valid choice for "
-                    f"'{key}', using default({default_value})",
-                    mode=BOTH_LOG,
-                    func_name=1)
+                if not self.suppress_warnings:
+                    log_msg(
+                        f"WARNING: '{proposed_value}' is not a valid choice "
+                        f"'for {key}', using default({default_value})",
+                        mode=BOTH_LOG,
+                        func_name=1)
                 attr["value"] = attr["default"]
 
         return argv_dict
@@ -791,6 +812,42 @@ class UserInputs():
             input_val(str, int, float, etc.):  value to set.
             field(str): field name, default = "value"
         returns:
-            None, updates api.uip.user_inputs dict.
+            None, updates uip.user_inputs dict.
         """
         self.user_inputs[key][field] = input_val
+
+    def is_valid_file(self, arg):
+        """
+        Verify file input is valid.
+
+        inputs:
+            arg(str): file name with path.
+        returns:
+            open file handle
+        """
+        arg = arg.strip()  # remove any leading spaces
+        if not os.path.exists(arg):
+            self.parser.error("The file %s does not exist!" %
+                              os.path.abspath(arg))
+        else:
+            return open(arg, 'r')  # return an open file handle
+
+    def parse_input_file(self, input_file):
+        """
+        Parse an input file into a dict.
+
+        Primary key is the section.
+        Secondary key is the parameter.
+        """
+        input_file = input_file.strip()  # strip any whitespace
+        config = configparser.ConfigParser()
+        result = config.read(os.path.join(os.getcwd(), input_file))
+        if not result:
+            raise FileNotFoundError(f"file '{input_file}' was not found")
+        sections = config.sections()
+        if not sections:
+            raise ValueError("INI file must have sections")
+        for section in sections:
+            self.user_inputs_file[section] = {}
+            for key in config[section]:
+                self.user_inputs_file[section][key] = config[section][key]

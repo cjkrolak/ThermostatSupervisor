@@ -160,7 +160,7 @@ class RuntimeParameterTest(utc.RuntimeParameterTest):
     # (value, field name)
     test_fields = [
         (script, os.path.realpath(__file__)),
-        (debug, sht31_fs.DEBUG_FLD),
+        (debug, sht31_fs.input_flds.debug_fld),
     ]
 
 

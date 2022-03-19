@@ -587,7 +587,7 @@ if __name__ == "__main__":
     # get zone override
     api.uip = api.UserInputs(argv_list=None,
                              thermostat_type=kumolocal_config.ALIAS)
-    zone_number = api.uip.get_user_inputs(api.ZONE_FLD)
+    zone_number = api.uip.get_user_inputs(api.input_flds.zone)
 
     Thermostat, Zone = tc.thermostat_basic_checkout(
         kumolocal_config.ALIAS,

@@ -100,10 +100,11 @@ class Test(utc.UnitTest):
                         "exp_result": False},
         }
         api.uip = api.UserInputs(None, "unit test parser")
-        max_measurement_bkup = api.uip.get_user_inputs(api.MEASUREMENTS_FLD)
+        max_measurement_bkup = api.uip.get_user_inputs(
+            api.input_flds.measurements)
         try:
             for test_case, parameters in test_cases.items():
-                api.uip.set_user_inputs(api.MEASUREMENTS_FLD,
+                api.uip.set_user_inputs(api.input_flds.measurements,
                                         parameters["max_measurements"])
                 act_result = api.uip.max_measurement_count_exceeded(
                     parameters["measurement"])
@@ -112,7 +113,8 @@ class Test(utc.UnitTest):
                                  f"test case '{test_case}', "
                                  f"expected={exp_result}, actual={act_result}")
         finally:
-            api.uip.set_user_inputs(api.MEASUREMENTS_FLD, max_measurement_bkup)
+            api.uip.set_user_inputs(api.input_flds.measurements,
+                                    max_measurement_bkup)
 
 
 class RuntimeParameterTest(utc.RuntimeParameterTest):
@@ -128,19 +130,32 @@ class RuntimeParameterTest(utc.RuntimeParameterTest):
     tolerance = 3
     target_mode = "HEAT_MODE"
     measurements = 1
+    input_file = "data\\thermostat_api_input.ini"
 
     # fields for testing, mapped to class variables.
     # (value, field name)
     test_fields = [
         (script, os.path.realpath(__file__)),
-        (thermostat_type, api.THERMOSTAT_TYPE_FLD),
-        (zone, api.ZONE_FLD),
-        (poll_time_sec, api.POLL_TIME_FLD),
-        (connection_time_sec, api.CONNECT_TIME_FLD),
-        (tolerance, api.TOLERANCE_FLD),
-        (target_mode, api.TARGET_MODE_FLD),
-        (measurements, api.MEASUREMENTS_FLD),
+        (thermostat_type, api.input_flds.thermostat_type),
+        (zone, api.input_flds.zone),
+        (poll_time_sec, api.input_flds.poll_time),
+        (connection_time_sec, api.input_flds.connection_time),
+        (tolerance, api.input_flds.tolerance),
+        (target_mode, api.input_flds.target_mode),
+        (measurements, api.input_flds.measurements),
     ]
+    # test case with input file
+    test_fields_with_file = [
+        (script, os.path.realpath(__file__)),
+        (thermostat_type, api.input_flds.thermostat_type),
+        (zone, api.input_flds.zone),
+        (poll_time_sec, api.input_flds.poll_time),
+        (connection_time_sec, api.input_flds.connection_time),
+        (tolerance, api.input_flds.tolerance),
+        (target_mode, api.input_flds.target_mode),
+        (measurements, api.input_flds.measurements),
+        (input_file, api.input_flds.input_file),
+        ]
 
 
 if __name__ == "__main__":
