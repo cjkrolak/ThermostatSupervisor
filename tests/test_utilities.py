@@ -557,6 +557,7 @@ class RuntimeParameterTest(utc.RuntimeParameterTest):
     float_val = 8.8
     str_val = "test str"
     required_val = "required"
+    input_file = "data\\test_utilities_input.ini"
 
     # fields for testing, mapped to class variables.
     # (value, field name)
@@ -568,6 +569,16 @@ class RuntimeParameterTest(utc.RuntimeParameterTest):
         (str_val, utc.STR_FLD),
         (required_val, utc.REQUIRED_FLD),
     ]
+    # test case with input file
+    test_fields_with_file = [
+        (script, os.path.realpath(__file__)),
+        (bool_val, utc.BOOL_FLD),
+        (int_val, utc.INT_FLD),
+        (float_val, utc.FLOAT_FLD),
+        (str_val, utc.STR_FLD),
+        (required_val, utc.REQUIRED_FLD),
+        (input_file, utc.INPUT_FILE_FLD),
+        ]
 
 
 if __name__ == "__main__":
