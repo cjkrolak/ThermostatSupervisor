@@ -43,10 +43,10 @@ class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
         self.thermostat_type = kumolocal_config.ALIAS
 
         # configure zone info
-        self.zone_number = int(zone)
+        self.zone_name = int(zone)
         self.zone_name = None  # initialize
         self.device_id = None  # initialize
-        self.device_id = self.get_target_zone_id(self.zone_number)
+        self.device_id = self.get_target_zone_id(self.zone_name)
         self.serial_number = None  # will be populated when unit is queried.
 
     def get_target_zone_id(self, zone=0):
@@ -200,7 +200,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         self.thermostat_type = kumolocal_config.ALIAS
         self.device_id = Thermostat_obj.device_id
         self.Thermostat = Thermostat_obj
-        self.zone_number = Thermostat_obj.zone_number
+        self.zone_name = Thermostat_obj.zone_name
         self.zone_name = self.get_zone_name()
 
     def get_zone_name(self):
@@ -518,7 +518,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
             self.last_fetch_time = now_time
             # refresh device object
             self.device_id = \
-                self.Thermostat.get_target_zone_id(self.zone_number)
+                self.Thermostat.get_target_zone_id(self.zone_name)
 
     def report_heating_parameters(self, switch_position=None):
         """

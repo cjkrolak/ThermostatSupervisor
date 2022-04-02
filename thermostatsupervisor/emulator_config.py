@@ -2,6 +2,7 @@
 emulator thermostat config file.
 """
 ALIAS = "emulator"
+ZONE_NAME = "emulator_0"  # needs to match section name in ini files
 MAX_HEAT_SETPOINT = 66.0  # float
 MIN_COOL_SETPOINT = 78.0  # float
 STARTING_MODE = "OFF_MODE"  # thermostat set mode when emulator starts

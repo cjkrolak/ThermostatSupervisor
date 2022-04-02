@@ -23,7 +23,7 @@ class ThermostatCommon():
 
     def __init__(self, *_, **__):
         self.thermostat_type = "unknown"  # placeholder
-        self.zone_number = util.BOGUS_INT  # placeholder
+        self.zone_name = util.BOGUS_INT  # placeholder
         self.device_id = util.BOGUS_INT  # placeholder
         self.ip_address = None  # placeholder
 
@@ -101,7 +101,7 @@ class ThermostatCommonZone():
 
     def __init__(self, *_, **__):
         self.thermostat_type = "unknown"  # placeholder
-        self.zone_number = util.BOGUS_INT  # placeholder
+        self.zone_name = util.BOGUS_INT  # placeholder
         self.zone_name = None  # placeholder
         self.device_id = util.BOGUS_INT  # placeholder
         self.poll_time_sec = util.BOGUS_INT  # placeholder
@@ -316,7 +316,7 @@ class ThermostatCommonZone():
         date_str = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         full_status_msg = (
             f"{date_str}: "
-            f"(tstat:{self.thermostat_type}, zone:{self.zone_number}, "
+            f"(tstat:{self.thermostat_type}, zone:{self.zone_name}, "
             f"session:{session_count}, poll:{poll_count}) "
             f"{self.current_mode.upper()} {status_msg}")
         if print_status:
@@ -395,7 +395,7 @@ class ThermostatCommonZone():
         else:
             level = "below min"
         if oper(setpoint, limit_value):
-            msg = f"{self.thermostat_type} zone {self.zone_number}: "
+            msg = f"{self.thermostat_type} zone {self.zone_name}: "
             f"scheduled {label.upper()} set point "
             f"({util.temp_value_with_units(setpoint)}) is {level} limit "
             f"({util.temp_value_with_units(limit_value)})"
@@ -641,7 +641,7 @@ class ThermostatCommonZone():
         # "thermostat_type is not overwritten
         user_input_to_class_mapping = {
             api.input_flds.thermostat_type: "thermostat_type",
-            api.input_flds.zone: "zone_number",
+            api.input_flds.zone: "zone_name",
             api.input_flds.poll_time: "poll_time_sec",
             api.input_flds.connection_time: "connection_time_sec",
             api.input_flds.tolerance: "tolerance_degrees",
@@ -653,7 +653,7 @@ class ThermostatCommonZone():
         util.log_msg("supervisor runtime parameters:",
                      mode=util.BOTH_LOG, func_name=1)
         for inp, cls_method in user_input_to_class_mapping.items():
-            user_input = api.uip.get_user_inputs(inp)
+            user_input = api.uip.get_user_inputs(api.uip.zone_name, inp)
             if user_input is not None:
                 setattr(self, cls_method, user_input)
                 util.log_msg(f"{inp}={user_input}",
@@ -908,11 +908,11 @@ class ThermostatCommonZone():
 
         eml.send_email_alert(
             subject=f"{self.thermostat_type} {self.current_mode.upper()} "
-            f"deviation alert on zone {self.zone_number}",
+            f"deviation alert on zone {self.zone_name}",
             body=msg)
         util.log_msg(
             f"\n*** {self.thermostat_type} {self.current_mode.upper()} "
-            f"deviation detected on zone {self.zone_number}, "
+            f"deviation detected on zone {self.zone_name}, "
             f"reverting thermostat to heat schedule ***\n",
             mode=util.BOTH_LOG)
         self.revert_setpoint_func(setpoint)
@@ -962,10 +962,10 @@ class ThermostatCommonZone():
         """
         # set log file name
         util.log_msg.file_name = (self.thermostat_type + "_" +
-                                  str(self.zone_number) + ".txt")
+                                  str(self.zone_name) + ".txt")
 
         util.log_msg(
-            f"{self.thermostat_type} thermostat zone {self.zone_number} "
+            f"{self.thermostat_type} thermostat zone {self.zone_name} "
             f"monitoring service\n",
             mode=util.BOTH_LOG)
 
@@ -1015,10 +1015,12 @@ class ThermostatCommonZone():
 
             # revert thermostat mode if not matching target
             if not self.verify_current_mode(api.uip.get_user_inputs(
-                    api.input_flds.target_mode)):
-                api.uip.set_user_inputs(api.input_flds.target_mode,
+                    api.uip.zone_name, api.input_flds.target_mode)):
+                api.uip.set_user_inputs(api.uip.zone_name,
+                                        api.input_flds.target_mode,
                                         self.revert_thermostat_mode(
                                             api.uip.get_user_inputs(
+                                                api.uip.zone_name,
                                                 api.input_flds.target_mode)
                                             ))
 
@@ -1080,9 +1082,11 @@ def create_thermostat_instance(thermostat_type, zone,
     Zone = ThermostatZone(Thermostat)
 
     # update runtime overrides
-    api.uip.set_user_inputs(api.input_flds.thermostat_type,
+    # thermostat_type
+    api.uip.set_user_inputs(Zone.zone_name, api.input_flds.thermostat_type,
                             thermostat_type)
-    api.uip.set_user_inputs(api.input_flds.zone, zone)
+    # zone
+    api.uip.set_user_inputs(Zone.zone_name, api.input_flds.zone, zone)
     Zone.update_runtime_parameters()
 
     return Thermostat, Zone

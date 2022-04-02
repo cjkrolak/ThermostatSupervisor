@@ -32,7 +32,7 @@ ENABLE_SHT31_TESTS = True  # sht31 can fail on occasion
 unit_test_emulator = [
     "supervise.py",  # module
     "emulator",  # thermostat
-    emulator_config.supported_configs["zones"][0],  # zone
+    str(emulator_config.supported_configs["zones"][0]),  # zone
     "19",  # poll time in sec
     "359",  # reconnect time in sec
     "3",  # tolerance
@@ -115,8 +115,10 @@ class UnitTest(unittest.TestCase, metaclass=PatchMeta):
         if self.Thermostat is None and self.Zone is None:
             util.log_msg.debug = True  # debug mode set
             thermostat_type = api.uip.get_user_inputs(
+                util.default_parent_key,
                 api.input_flds.thermostat_type)
-            zone = api.uip.get_user_inputs(api.input_flds.zone)
+            zone = api.uip.get_user_inputs(util.default_parent_key,
+                                           api.input_flds.zone)
 
             # create class instances
             self.Thermostat, self.Zone = tc.create_thermostat_instance(
@@ -232,8 +234,10 @@ class IntegrationTest(UnitTest):
         if self.Thermostat is None and self.Zone is None:
             util.log_msg.debug = True  # debug mode set
             thermostat_type = api.uip.get_user_inputs(
+                util.default_parent_key,
                 api.input_flds.thermostat_type)
-            zone = api.uip.get_user_inputs(api.input_flds.zone)
+            zone = api.uip.get_user_inputs(util.default_parent_key,
+                                           api.input_flds.zone)
 
             # create class instances
             self.Thermostat, self.Zone = tc.create_thermostat_instance(
@@ -266,8 +270,10 @@ class FunctionalIntegrationTest(IntegrationTest):
 
         IntegrationTest.Thermostat, IntegrationTest.Zone = \
             tc.thermostat_basic_checkout(
-                api.uip.get_user_inputs(api.input_flds.thermostat_type),
-                api.uip.get_user_inputs(api.input_flds.zone),
+                api.uip.get_user_inputs(util.default_parent_key,
+                                        api.input_flds.thermostat_type),
+                api.uip.get_user_inputs(util.default_parent_key,
+                                        api.input_flds.zone),
                 self.mod.ThermostatClass, self.mod.ThermostatZone
             )
 
@@ -297,7 +303,7 @@ class FunctionalIntegrationTest(IntegrationTest):
 
         expected_return_type = dict
         metadata = self.Thermostat.get_all_metadata(
-            zone=self.Thermostat.zone_number)
+            zone=self.Thermostat.zone_name)
         self.assertTrue(
             isinstance(
                 metadata,
@@ -316,7 +322,7 @@ class FunctionalIntegrationTest(IntegrationTest):
         parameter = None
         expected_return_type = dict
         metadata = self.Thermostat.get_metadata(
-            zone=self.Thermostat.zone_number,
+            zone=self.Thermostat.zone_name,
             parameter=parameter)
         self.assertTrue(
             isinstance(
@@ -329,7 +335,7 @@ class FunctionalIntegrationTest(IntegrationTest):
         parameter = self.metadata_field
         expected_return_type = self.metadata_type
         metadata = self.Thermostat.get_metadata(
-            zone=self.Thermostat.zone_number,
+            zone=self.Thermostat.zone_name,
             parameter=parameter)
         self.assertTrue(
             isinstance(
@@ -372,7 +378,7 @@ class PerformanceIntegrationTest(IntegrationTest):
         # measure thermostat response time
         measurements = self.timing_measurements
         print(f"{self.Zone.thermostat_type} Thermostat zone "
-              f"{self.Zone.zone_number} response times for {measurements} "
+              f"{self.Zone.zone_name} response times for {measurements} "
               f"measurements...")
         meas_data = \
             self.Zone.measure_thermostat_response_time(measurements)
@@ -402,7 +408,7 @@ class PerformanceIntegrationTest(IntegrationTest):
         # measure thermostat temp repeatability
         measurements = self.temp_repeatability_measurements
         print(f"{self.Zone.thermostat_type} Thermostat zone "
-              f"{self.Zone.zone_number} temperature repeatability for "
+              f"{self.Zone.zone_name} temperature repeatability for "
               f"{measurements} measurements with {self.poll_interval_sec} "
               f"sec delay between each measurement...")
         meas_data = self.Zone.measure_thermostat_repeatability(
@@ -433,7 +439,7 @@ class PerformanceIntegrationTest(IntegrationTest):
         # measure thermostat humidity repeatability
         measurements = self.temp_repeatability_measurements
         print(f"{self.Zone.thermostat_type} Thermostat zone "
-              f"{self.Zone.zone_number} humidity repeatability for "
+              f"{self.Zone.zone_name} humidity repeatability for "
               f"{measurements} measurements with {self.poll_interval_sec} "
               f"sec delay betweeen each measurement...")
         meas_data = self.Zone.measure_thermostat_repeatability(
@@ -458,13 +464,14 @@ class RuntimeParameterTest(UnitTest):
     mod = None
     test_fields = None  # placeholder, will be populated by child classes
     test_fields_with_file = None  # placeholder, will be populated by child
+    parent_key = util.default_parent_key  # will be updated during inheritance.
 
     def get_test_list(self, test_fields):
         """
-        Return the test list with string elemeents.
+        Return the test list with string elements.
 
         inputs:
-            test_fields(dict): dictionary of test fields.
+            test_fields(list of tuples): test field mapping.
         returns:
             (list): list of test fields."""
         test_list = []
@@ -472,12 +479,19 @@ class RuntimeParameterTest(UnitTest):
             test_list.append(k)
         return test_list
 
-    def get_expected_vals_dict(self):
-        """Return the expected values dictionary."""
+    def get_expected_vals_dict(self, parent_key):
+        """
+        Return the expected values dictionary.
+
+        inputs:
+            parent_key(str, int): parent key for dict.
+        """
         expected_values = {}
+        expected_values[parent_key] = {}
         # element 0 (script) is omitted from expected_values dict.
         for x in range(1, len(self.test_fields)):
-            expected_values[self.test_fields[x][1]] = self.test_fields[x][0]
+            expected_values[parent_key][
+                self.test_fields[x][1]] = self.test_fields[x][0]
         return expected_values
 
     def get_named_list(self, test_fields, flag):
@@ -485,7 +499,7 @@ class RuntimeParameterTest(UnitTest):
         Return the named parameter list.
 
         inputs:
-            test_fields(dict): test fields dict
+            test_fields(list of tuples): test field mapping.
             flag(str): flag.
         returns:
             (list): named parameter list
@@ -497,19 +511,26 @@ class RuntimeParameterTest(UnitTest):
         # element 0 (script) is omitted from expected_values dict.
         for field in range(1, len(test_fields)):
             test_list_named_flag.append(self.uip.get_user_inputs(
+                list(self.uip.user_inputs.keys())[0],
                 test_fields[field][1], flag) + "=" +
                 str(test_fields[field][0]))
         return test_list_named_flag
 
-    def parse_user_inputs_dict(self):
+    def parse_user_inputs_dict(self, key):
         """
         Parse the user_inputs_dict into list matching
         order of test_list.
+
+        inputs:
+            key(str): key within user_inputs to parse.
+        returns:
+            (list) of actual values.
         """
         actual_values = []
         for x in range(0, len(self.test_fields)):
             actual_values.append(self.uip.get_user_inputs(
-                self.test_fields[x][1]))
+                list(self.uip.user_inputs.keys())[0],
+                key, self.test_fields[x][1]))
         return actual_values
 
     def setUp(self):
@@ -520,24 +541,28 @@ class RuntimeParameterTest(UnitTest):
     def tearDown(self):
         self.print_test_result()
 
-    def verify_parsed_values(self):
+    def verify_parsed_values(self, parent_key=None):
         """
         Verify values were parsed correctly by comparing to expected values.
+
+        inputs:
+            parent_key(str, int): parent_key for dict.
         """
         if self.uip.using_input_file:
-            # use first key from user inputs file, this will need to be updated
-            # when we add support for site supervise.
-            expected_values = self.uip.user_inputs_file[
-                list(self.uip.user_inputs_file.keys())[0]]
+            expected_values = self.uip.user_inputs_file
         else:
-            expected_values = self.get_expected_vals_dict()
-        for k in expected_values:
-            self.assertEqual(expected_values[k],
-                             self.uip.get_user_inputs(k),
-                             f"expected({type(expected_values[k])}) "
-                             f"{expected_values[k]} != "
-                             f"actual({type(self.uip.get_user_inputs(k))}) "
-                             f"{self.uip.get_user_inputs(k)}")
+            expected_values = self.get_expected_vals_dict(parent_key)
+
+        print("DEBUG: expected_values=%s" % expected_values)
+        for parent_key, child_dict in expected_values.items():
+            for child_key, child_dict in child_dict.items():
+                self.assertEqual(
+                    expected_values[parent_key][child_key],
+                    self.uip.get_user_inputs(parent_key, child_key),
+                    f"expected({type(expected_values[parent_key][child_key])}) "
+                    f"{expected_values[parent_key][child_key]} != "
+                    f"actual({type(self.uip.get_user_inputs(parent_key, child_key))}) "
+                    f"{self.uip.get_user_inputs(parent_key, child_key)}")
 
     def initialize_user_inputs(self):
         """
@@ -548,8 +573,10 @@ class RuntimeParameterTest(UnitTest):
         self.uip = self.mod.UserInputs(suppress_warnings=True)
         print(f"{util.get_function_name()}:user_inputs have been initialized.")
         self.uip.suppress_warnings = False  # reset back to default
-        for k in self.uip.user_inputs:
-            self.uip.set_user_inputs(k, None)
+        print("DEBUG: user_inputs=%s" % self.uip.user_inputs)
+        for parent_key in self.uip.user_inputs:
+            for child_key in self.uip.user_inputs[parent_key]:
+                self.uip.set_user_inputs(parent_key, child_key, None)
 
     def test_parse_argv_list(self):
         """
@@ -560,7 +587,7 @@ class RuntimeParameterTest(UnitTest):
         print(f"test_list={test_list}")
         self.uip = self.mod.UserInputs(test_list, "unit test parser")
         print(f"user_inputs={self.uip.user_inputs}")
-        self.verify_parsed_values()
+        self.verify_parsed_values(util.default_parent_key)
 
     def test_parser(self):
         """
@@ -579,7 +606,7 @@ class RuntimeParameterTest(UnitTest):
         """
         Generic test for argparser with input file.
         """
-        input_file = "data/thermostat_api_input.ini"
+        input_file = "data\\thermostat_api_input.ini"
         parser = argparse.ArgumentParser()
         parser.add_argument('-f',
                             type=argparse.FileType('r',
@@ -619,10 +646,11 @@ class RuntimeParameterTest(UnitTest):
         self.initialize_user_inputs()
 
         # parse named sflag list
+        # override parent key since list input is provided.
         print("parsing named argument list")
         self.uip = self.mod.UserInputs(
             named_sflag_list, "unittest parsing named sflag arguments")
-        self.verify_parsed_values()
+        self.verify_parsed_values(util.default_parent_key)
 
     def test_parse_named_arguments_lflag(self):
         """
@@ -640,9 +668,10 @@ class RuntimeParameterTest(UnitTest):
         self.initialize_user_inputs()
 
         # parse named sflag list
+        # override parent key since list input is provided.
         self.uip = self.mod.UserInputs(
             named_lflag_list, "unittest parsing named sflag arguments")
-        self.verify_parsed_values()
+        self.verify_parsed_values(util.default_parent_key)
 
     def parse_named_arguments(self, test_list, label_str):
         """
@@ -656,7 +685,7 @@ class RuntimeParameterTest(UnitTest):
         print(f"testing named arg list='{test_list}")
         self.uip = self.mod.UserInputs(test_list, label_str)
         print(f"user_inputs={self.uip.user_inputs}")
-        self.verify_parsed_values()
+        self.verify_parsed_values(util.default_parent_key)
 
     def test_parse_runtime_parameters(self):
         """
@@ -679,7 +708,7 @@ class RuntimeParameterTest(UnitTest):
         Test the upper level function for parsing.
 
         inputs:
-            test_fields(list): input list to use for testing.
+            test_fields(list of tuples): test field mapping.
         """
         print("test 1, user_inputs=None, will raise error")
         self.uip = self.mod.UserInputs()
@@ -689,6 +718,7 @@ class RuntimeParameterTest(UnitTest):
                 self.uip.parse_runtime_parameters(argv_list=None)
         finally:
             self.uip = self.mod.UserInputs()
+        print("passed test 1")
 
         # initialize parser so that lower level functions can be tested.
         self.uip = self.mod.UserInputs(help_description="unit test parsing")
@@ -699,25 +729,25 @@ class RuntimeParameterTest(UnitTest):
         print(f"test2 test_list={test_list}")
         self.uip.parse_runtime_parameters(
             argv_list=test_list)
-        self.verify_parsed_values()
+        self.verify_parsed_values(util.default_parent_key)
 
         print("test 3, input named parameter list, will parse list")
         self.initialize_user_inputs()
         self.uip.parse_runtime_parameters(
             argv_list=self.get_named_list(test_fields, "sflag"))
-        self.verify_parsed_values()
+        self.verify_parsed_values(util.default_parent_key)
 
         print("test 4, input dict, will parse sys.argv argument list")
         self.initialize_user_inputs()
         with patch.object(sys, 'argv', self.get_test_list(test_fields)):  # noqa e501, pylint:disable=undefined-variable
             self.uip.parse_runtime_parameters(argv_list=None)
-        self.verify_parsed_values()
+        self.verify_parsed_values(util.default_parent_key)
 
         print("test 5, input dict, will parse sys.argv named args")
         self.initialize_user_inputs()
         with patch.object(sys, 'argv', self.get_named_list(test_fields, "sflag")):  # noqa e501, pylint:disable=undefined-variable
             self.uip.parse_runtime_parameters()
-        self.verify_parsed_values()
+        self.verify_parsed_values(util.default_parent_key)
 
     def test_validate_argv_inputs(self):
         """
@@ -774,16 +804,19 @@ class RuntimeParameterTest(UnitTest):
                 },
             }
 
-        key = "test_case"
+        child_key = "test_case"
         for test_case, test_dict in test_cases.items():
             print(f"test case='{test_case}'")
-            result_dict = self.uip.validate_argv_inputs({key: test_dict})
-            actual_value = result_dict[key]["value"]
+            result_dict = self.uip.validate_argv_inputs({self.parent_key: {
+                child_key: test_dict}})
+            actual_value = result_dict[self.parent_key][child_key]["value"]
 
             if "fail_" in test_case:
-                expected_value = result_dict[key]["default"]
+                expected_value = result_dict[self.parent_key][child_key][
+                    "default"]
             else:
-                expected_value = result_dict[key]["expected_value"]
+                expected_value = (result_dict[self.parent_key][child_key]
+                                  ["expected_value"])
 
             self.assertEqual(expected_value, actual_value,
                              f"test case ({test_case}), "
@@ -818,6 +851,7 @@ class UserInputs(util.UserInputs):
         self.argv_list = argv_list
         self.help_description = help_description
         self.suppress_warnings = suppress_warnings
+        self.user_inputs_parent = util.default_parent_key
 
         # initialize parent class
         super().__init__(argv_list, help_description, suppress_warnings)
@@ -827,7 +861,7 @@ class UserInputs(util.UserInputs):
         Populate user_inputs dict.
         """
         # define the user_inputs dict.
-        self.user_inputs = {
+        self.user_inputs = {self.user_inputs_parent: {
             BOOL_FLD: {
                 "order": 1,  # index in the argv list
                 "value": None,
@@ -895,9 +929,9 @@ class UserInputs(util.UserInputs):
                 "help": "input file parameter",
                 "required": False,
                 },
-        }
-        self.valid_sflags = [self.user_inputs[k]["sflag"]
-                             for k in self.user_inputs]
+        }}
+        self.valid_sflags = [self.user_inputs[self.user_inputs_parent][k][
+            "sflag"] for k in self.user_inputs[self.user_inputs_parent]]
 
 
 def run_all_tests():

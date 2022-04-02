@@ -44,15 +44,15 @@ class ThermostatClass(tc.ThermostatCommon):
         self.thermostat_type = mmm_config.ALIAS
 
         # configure zone info
-        self.zone_number = int(zone)
+        self.zone_name = int(zone)
         # use hard-coded IP address if provided, otherwise
         # use host dns lookup
         self.host_name = mmm_config.mmm_metadata[
-            self.zone_number]["host_name"]
+            self.zone_name]["host_name"]
         if "ip_address" in mmm_config.mmm_metadata[
-                self.zone_number]:
+                self.zone_name]:
             self.ip_address = mmm_config.mmm_metadata[
-                self.zone_number]["ip_address"]
+                self.zone_name]["ip_address"]
         else:
             ip_status, self.ip_address = util.is_host_on_local_net(
                 self.host_name)
@@ -222,7 +222,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         # zone info
         self.thermostat_type = mmm_config.ALIAS
         self.device_id = Thermostat_obj.device_id
-        self.zone_number = Thermostat_obj.zone_number
+        self.zone_name = Thermostat_obj.zone_name
         self.zone_name = self.get_zone_name()
 
         # runtime parameter defaults

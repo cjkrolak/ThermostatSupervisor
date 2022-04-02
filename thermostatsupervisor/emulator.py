@@ -24,9 +24,9 @@ class ThermostatClass(tc.ThermostatCommon):
         self.thermostat_type = emulator_config.ALIAS
 
         # configure zone info
-        self.zone_number = int(zone)
+        self.zone_name = int(zone)
         self.zone_name = None  # initialize
-        self.device_id = self.get_target_zone_id(self.zone_number)
+        self.device_id = self.get_target_zone_id(self.zone_name)
         self.serial_number = None  # will be populated when unit is queried.
         self.meta_data_dict = {}
         self.initialize_meta_data_dict()
@@ -133,9 +133,9 @@ class ThermostatZone(tc.ThermostatCommonZone):
         self.thermostat_type = emulator_config.ALIAS
         self.device_id = Thermostat_obj.device_id
         self.Thermostat = Thermostat_obj
-        self.zone_number = Thermostat_obj.zone_number
+        self.zone_name = Thermostat_obj.zone_name
         self.zone_info = Thermostat_obj.get_all_metadata(
-            Thermostat_obj.zone_number)
+            Thermostat_obj.zone_name)
         self.zone_name = self.get_zone_name()
         self.initialize_meta_data_dict()
 
@@ -193,7 +193,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
             (str) zone name
         """
         self.refresh_zone_info()
-        return "zone " + str(self.zone_number)
+        return "zone " + str(self.zone_name)
 
     def get_display_temp(self) -> float:  # used
         """
