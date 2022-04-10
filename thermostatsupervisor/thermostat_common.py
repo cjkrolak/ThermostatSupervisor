@@ -23,7 +23,7 @@ class ThermostatCommon():
 
     def __init__(self, *_, **__):
         self.thermostat_type = "unknown"  # placeholder
-        self.zone_name = util.BOGUS_INT  # placeholder
+        self.zone_number = util.BOGUS_INT  # placeholder
         self.device_id = util.BOGUS_INT  # placeholder
         self.ip_address = None  # placeholder
 
@@ -101,7 +101,7 @@ class ThermostatCommonZone():
 
     def __init__(self, *_, **__):
         self.thermostat_type = "unknown"  # placeholder
-        self.zone_name = util.BOGUS_INT  # placeholder
+        self.zone_number = util.BOGUS_INT  # placeholder
         self.zone_name = None  # placeholder
         self.device_id = util.BOGUS_INT  # placeholder
         self.poll_time_sec = util.BOGUS_INT  # placeholder
@@ -1083,10 +1083,10 @@ def create_thermostat_instance(thermostat_type, zone,
 
     # update runtime overrides
     # thermostat_type
-    api.uip.set_user_inputs(Zone.zone_name, api.input_flds.thermostat_type,
-                            thermostat_type)
+    #api.uip.set_user_inputs(Zone.zone_name, api.input_flds.thermostat_type,
+    #                        thermostat_type)
     # zone
-    api.uip.set_user_inputs(Zone.zone_name, api.input_flds.zone, zone)
+    #api.uip.set_user_inputs(Zone.zone_name, api.input_flds.zone, zone)
     Zone.update_runtime_parameters()
 
     return Thermostat, Zone

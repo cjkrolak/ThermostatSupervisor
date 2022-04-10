@@ -193,7 +193,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
             (str) zone name
         """
         self.refresh_zone_info()
-        return "zone " + str(self.zone_name)
+        return "emulator_" + str(self.zone_name)
 
     def get_display_temp(self) -> float:  # used
         """
