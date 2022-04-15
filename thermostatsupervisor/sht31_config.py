@@ -65,10 +65,10 @@ required_env_variables = {
 # supported thermostat configs
 supported_configs = {"module": "sht31",
                      "type": 3,
-                     "zones": [0, 1, UNIT_TEST_ZONE],
+                     "zones": [LOFT_SHT31, LOFT_SHT31_REMOTE, UNIT_TEST_ZONE],
                      "modes": ["OFF_MODE", "UNKNOWN_MODE"]}
 
-sht31_metadata = {
+metadata = {
     LOFT_SHT31: {"zone_name": "Loft (local)",
                  "host_name": "raspberrypi0.lan",
                  },

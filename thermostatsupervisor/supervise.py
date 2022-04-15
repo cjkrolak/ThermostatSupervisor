@@ -107,8 +107,11 @@ def exec_supervise(debug=True, argv_list=None):
     api.uip = api.UserInputs(argv_list)
 
     # main supervise function
-    supervisor(api.uip.get_user_inputs(api.input_flds.thermostat_type),
-               api.uip.get_user_inputs(api.input_flds.zone))
+    supervisor(api.uip.get_user_inputs(api.uip.default_parent_key,
+                                       api.input_flds.thermostat_type),
+               api.uip.get_user_inputs(api.uip.default_parent_key,
+                                       api.input_flds.zone)
+               )
 
     return True
 

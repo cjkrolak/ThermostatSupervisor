@@ -45,7 +45,7 @@ class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
         self.thermostat_type = kumocloud_config.ALIAS
 
         # configure zone info
-        self.zone_name = int(zone)
+        self.zone_number = int(zone)
         self.zone_name = None  # initialize
         self.device_id = self.get_target_zone_id(self.zone_name)
         self.serial_number = None  # will be populated when unit is queried.
@@ -100,14 +100,21 @@ class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
                              mode=util.DEBUG_LOG +
                              util.CONSOLE_LOG,
                              func_name=1)
+        # raw_json list:
+        # [0]: token, username, device fields
+        # [1]: lastupdate date
+        # [2]: zone meta data
+        # [3]: device token
         if zone is None:
             # returned cached raw data for all zones
-            raw_json = self.get_raw_json()  # does not fetch results,
+            raw_json = self.get_raw_json()[2]  # does not fetch results,
         else:
-            # return cached raw data for specified zone
+            # return cached raw data for specified zone, will be a dict
+            print("DEBUG(%s): units=%s, zone=%s" %(util.get_function_name(), units, zone))
             self.serial_number = units[zone]
             raw_json = self.get_raw_json()[2]['children'][0][
                 'zoneTable'][units[zone]]
+
         if parameter is None:
             return raw_json
         else:
@@ -171,8 +178,9 @@ class ThermostatZone(tc.ThermostatCommonZone):
         self.Thermostat = Thermostat_obj
         self.zone_name = Thermostat_obj.zone_name
         self.zone_info = Thermostat_obj.get_all_metadata(
-            Thermostat_obj.zone_name)
+            Thermostat_obj.zone_number)
         self.zone_name = self.get_zone_name()
+        self.zone_number = Thermostat_obj.zone_number
 
     def get_parameter(self, key, parent_key=None, grandparent_key=None,
                       default_val=None):
@@ -197,8 +205,9 @@ class ThermostatZone(tc.ThermostatCommonZone):
                     # if no default val, then display detailed key error
                     util.log_msg(traceback.format_exc(),
                                  mode=util.BOTH_LOG, func_name=1)
-                    util.log_msg(f"raw parent dict={parent_dict}",
+                    util.log_msg(f"raw zone_info dict={self.zone_info}",
                                  mode=util.BOTH_LOG, func_name=1)
+                raise
         elif parent_key is not None:
             try:
                 parent_dict = self.zone_info[parent_key]
@@ -208,18 +217,21 @@ class ThermostatZone(tc.ThermostatCommonZone):
                     # if no default val, then display detailed key error
                     util.log_msg(traceback.format_exc(),
                                  mode=util.BOTH_LOG, func_name=1)
-                    util.log_msg(f"raw parent dict={parent_dict}",
+                    util.log_msg(f"raw zone_info dict={self.zone_info}",
                                  mode=util.BOTH_LOG, func_name=1)
+                raise
         else:
             try:
                 return_val = self.zone_info[key]
-            except KeyError:
+            except (KeyError, TypeError):
                 if default_val is None:
                     # if no default val, then display detailed key error
                     util.log_msg(traceback.format_exc(),
                                  mode=util.BOTH_LOG, func_name=1)
-                    util.log_msg(f"raw zone_info dict={self.zone_info}",
+                    util.log_msg(f"target key={key}, "
+                                 f"raw zone_info dict={self.zone_info}",
                                  mode=util.BOTH_LOG, func_name=1)
+                raise
         return return_val
 
     def get_zone_name(self):
@@ -572,7 +584,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
             self.last_fetch_time = now_time
             # refresh device object
             self.zone_info = self.Thermostat.get_all_metadata(
-                self.zone_name)
+                self.zone_number)
 
     def report_heating_parameters(self, switch_position=None):
         """
@@ -637,10 +649,9 @@ if __name__ == "__main__":
     util.get_python_version()
 
     # get zone override
-    api.uip = api.UserInputs(argv_list=None,
-                             thermostat_type=kumocloud_config.ALIAS)
-    zone_number = api.uip.get_user_inputs(api.input_flds.zone)
+    zone_number = api.load_user_inputs(kumocloud_config)
 
+    print("DEBUG: zone_number=%s" % zone_number)
     tc.thermostat_basic_checkout(
         kumocloud_config.ALIAS,
         zone_number,

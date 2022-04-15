@@ -13,7 +13,7 @@ from thermostatsupervisor import utilities as util
 from tests import unit_test_common as utc
 
 thermostat_type = emulator_config.ALIAS
-zone_name = emulator_config.ZONE_NAME
+zone_name = emulator_config.default_zone_name
 
 
 class Test(utc.UnitTest):

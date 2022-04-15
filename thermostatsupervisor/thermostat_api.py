@@ -93,13 +93,16 @@ class UserInputs(util.UserInputs):
         super().__init__(argv_list, help_description, suppress_warnings,
                          thermostat_type, zone_name)
 
-    def initialize_user_inputs(self, parent_keys=[util.default_parent_key]):
+    def initialize_user_inputs(self, parent_keys=None):
         """
         Populate user_inputs dict.
 
         inputs:
             parent_keys(list): list of parent keys
         """
+        print("DEBUG: in %s" % util.get_function_name())
+        if parent_keys is None:
+            parent_keys = [self.default_parent_key]
         self.valid_sflags = []
         # define the user_inputs dict.
         for parent_key in parent_keys:
@@ -204,11 +207,12 @@ class UserInputs(util.UserInputs):
         This function expands each input parameter list to match
         the length of the thermostat parameter field.
         """
+        print("DEBUG: in %s" % util.get_function_name())
         # initializ section list to single item list of one thermostat
-        section_list = [self.zone_name]  # initialize
+        section_list = [util.default_parent_key]  # initialize
 
         # file input will override any type of individual inputs
-        input_file = self.get_user_inputs(self.zone_name,
+        input_file = self.get_user_inputs(util.default_parent_key,
                                           input_flds.input_file)
         if input_file is not None:
             self.using_input_file = True
@@ -249,6 +253,41 @@ class UserInputs(util.UserInputs):
                         self.user_inputs[section][fld]["value"] = \
                             ((self.user_inputs_file[section].get(input_flds[
                                 fld])))
+        # update user_inputs parent_key with zone_name
+        # if user_inputs has already been populated
+        elif (self.get_user_inputs(list(self.user_inputs.keys())[0],
+                                   input_flds.thermostat_type) is not None):
+            print("DEBUG: updating parent_key in user_inputs dict")
+            # argv inputs, only currenty supporting 1 zone
+            # verify only 1 parent key exists
+            current_keys = list(self.user_inputs.keys())
+            if len(current_keys) != 1:
+                raise KeyError("user_input keys=%s, expected only 1 key" %
+                               current_keys)
+
+            # update parent key to be zone_name
+            print("DEBUG(%s): user_inputs before parent_key update: %s" %
+                  (util.get_function_name(), self.user_inputs))
+            current_key = current_keys[0]
+            print("DEBUG current_key=%s" % current_key)
+            print("DEBUG: thermostat_type=%s" % self.get_user_inputs(
+                       current_key, input_flds.thermostat_type))
+            print("DEBUG: zone=%s" % self.get_user_inputs(
+                       current_key, input_flds.zone))
+            new_key = (self.get_user_inputs(
+                       current_key, input_flds.thermostat_type) + "_" +
+                       str(self.get_user_inputs(current_key, input_flds.zone)))
+            self.user_inputs[new_key] = self.user_inputs.pop(current_key)
+            print("DEBUG(%s): user_inputs after parent_key update: %s" %
+                  (util.get_function_name(), self.user_inputs))
+            self.zone_name = new_key  # set Zone name
+            section_list = [new_key]
+            self.default_parent_key = new_key
+        else:
+            print("DEBUG: empty else block, user_inputs=%s" % self.user_inputs)
+            print("%s" % self.get_user_inputs(list(self.user_inputs.keys())[0],
+                                   input_flds.thermostat_type))
+            print("DEBUG: (%s) empty else block" % util.get_function_name())
 
         # if thermostat is not set yet, default it based on module
         # TODO - code block needs update for multi-zone
@@ -326,3 +365,22 @@ def load_hardware_library(thermostat_type):
                 SUPPORTED_THERMOSTATS[thermostat_type]["module"])
     mod = util.dynamic_module_import(pkg_name)
     return mod
+
+
+def load_user_inputs(config_module):
+    """
+    Load the user inputs and return the zone number.
+
+    inputs:
+        config_module(obj): config module
+    returns:
+        zone_number(int): zone number
+    """
+    global uip
+    zone_name = config_module.default_zone_name
+    uip = UserInputs(argv_list=config_module.argv,
+                     thermostat_type=config_module.ALIAS,
+                     zone_name=zone_name)
+    zone_number = uip.get_user_inputs(zone_name,
+                                      input_flds.zone)
+    return zone_number

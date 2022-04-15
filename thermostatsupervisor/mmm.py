@@ -784,7 +784,8 @@ if __name__ == "__main__":
     # get zone override
     api.uip = api.UserInputs(argv_list=None,
                              thermostat_type=mmm_config.ALIAS)
-    zone_number = api.uip.get_user_inputs(api.input_flds.zone)
+    zone_number = api.uip.get_user_inputs(api.uip.default_parent_key,
+                                          api.input_flds.zone)
 
     _, Zone = tc.thermostat_basic_checkout(
         mmm_config.ALIAS,

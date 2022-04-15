@@ -12,6 +12,7 @@ from unittest.mock import patch
 
 # local imports
 from thermostatsupervisor import emulator_config
+from thermostatsupervisor import honeywell_config
 from thermostatsupervisor import supervise as sup
 from thermostatsupervisor import thermostat_api as api
 from thermostatsupervisor import thermostat_common as tc
@@ -29,16 +30,7 @@ ENABLE_SHT31_TESTS = True  # sht31 can fail on occasion
 
 
 # generic argv list for unit testing
-unit_test_emulator = [
-    "supervise.py",  # module
-    "emulator",  # thermostat
-    str(emulator_config.supported_configs["zones"][0]),  # zone
-    "19",  # poll time in sec
-    "359",  # reconnect time in sec
-    "3",  # tolerance
-    "OFF_MODE",  # thermostat mode
-    "2",  # number of measurements
-    ]
+unit_test_emulator = emulator_config.argv
 
 unit_test_sht31 = ["supervise.py",  # module
                    "sht31",  # thermostat
@@ -50,16 +42,7 @@ unit_test_sht31 = ["supervise.py",  # module
                    "2",  # number of measurements
                    ]
 
-unit_test_honeywell = [
-    "supervise.py",  # module
-    "honeywell",  # thermostat
-    "0",  # str(util.UNIT_TEST_ZONE),  # zone
-    "19",  # poll time in sec
-    "359",  # reconnect time in sec
-    "3",  # tolerance
-    "OFF_MODE",  # thermostat mode
-    "2",  # number of measurements
-]
+unit_test_honeywell = honeywell_config.argv
 
 unit_test_argv = unit_test_emulator
 
@@ -587,7 +570,7 @@ class RuntimeParameterTest(UnitTest):
         print(f"test_list={test_list}")
         self.uip = self.mod.UserInputs(test_list, "unit test parser")
         print(f"user_inputs={self.uip.user_inputs}")
-        self.verify_parsed_values(util.default_parent_key)
+        self.verify_parsed_values(self.uip.default_parent_key)
 
     def test_parser(self):
         """
@@ -650,7 +633,7 @@ class RuntimeParameterTest(UnitTest):
         print("parsing named argument list")
         self.uip = self.mod.UserInputs(
             named_sflag_list, "unittest parsing named sflag arguments")
-        self.verify_parsed_values(util.default_parent_key)
+        self.verify_parsed_values(self.uip.default_parent_key)
 
     def test_parse_named_arguments_lflag(self):
         """
@@ -729,25 +712,25 @@ class RuntimeParameterTest(UnitTest):
         print(f"test2 test_list={test_list}")
         self.uip.parse_runtime_parameters(
             argv_list=test_list)
-        self.verify_parsed_values(util.default_parent_key)
+        self.verify_parsed_values(self.uip.default_parent_key)
 
         print("test 3, input named parameter list, will parse list")
         self.initialize_user_inputs()
         self.uip.parse_runtime_parameters(
             argv_list=self.get_named_list(test_fields, "sflag"))
-        self.verify_parsed_values(util.default_parent_key)
+        self.verify_parsed_values(self.uip.default_parent_key)
 
         print("test 4, input dict, will parse sys.argv argument list")
         self.initialize_user_inputs()
         with patch.object(sys, 'argv', self.get_test_list(test_fields)):  # noqa e501, pylint:disable=undefined-variable
             self.uip.parse_runtime_parameters(argv_list=None)
-        self.verify_parsed_values(util.default_parent_key)
+        self.verify_parsed_values(self.uip.default_parent_key)
 
         print("test 5, input dict, will parse sys.argv named args")
         self.initialize_user_inputs()
         with patch.object(sys, 'argv', self.get_named_list(test_fields, "sflag")):  # noqa e501, pylint:disable=undefined-variable
             self.uip.parse_runtime_parameters()
-        self.verify_parsed_values(util.default_parent_key)
+        self.verify_parsed_values(self.uip.default_parent_key)
 
     def test_validate_argv_inputs(self):
         """
