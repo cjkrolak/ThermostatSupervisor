@@ -20,7 +20,7 @@ from thermostatsupervisor import utilities as util
 
 # enable modes
 ENABLE_FUNCTIONAL_INTEGRATION_TESTS = True  # enable func int tests
-ENABLE_PERFORMANCE_INTEGRATION_TESTS = False and \
+ENABLE_PERFORMANCE_INTEGRATION_TESTS = True and \
     not util.is_azure_environment()  # enable performance int tests
 ENABLE_SUPERVISE_INTEGRATION_TESTS = True  # enable supervise int tests
 ENABLE_FLASK_INTEGRATION_TESTS = True  # enable flask int tests
@@ -98,9 +98,9 @@ class UnitTest(unittest.TestCase, metaclass=PatchMeta):
         if self.Thermostat is None and self.Zone is None:
             util.log_msg.debug = True  # debug mode set
             thermostat_type = api.uip.get_user_inputs(
-                util.default_parent_key,
+                api.uip.zone_name,
                 api.input_flds.thermostat_type)
-            zone = api.uip.get_user_inputs(util.default_parent_key,
+            zone = api.uip.get_user_inputs(api.uip.zone_name,
                                            api.input_flds.zone)
 
             # create class instances
@@ -217,9 +217,9 @@ class IntegrationTest(UnitTest):
         if self.Thermostat is None and self.Zone is None:
             util.log_msg.debug = True  # debug mode set
             thermostat_type = api.uip.get_user_inputs(
-                util.default_parent_key,
+                api.uip.zone_name,
                 api.input_flds.thermostat_type)
-            zone = api.uip.get_user_inputs(util.default_parent_key,
+            zone = api.uip.get_user_inputs(api.uip.zone_name,
                                            api.input_flds.zone)
 
             # create class instances
@@ -253,9 +253,9 @@ class FunctionalIntegrationTest(IntegrationTest):
 
         IntegrationTest.Thermostat, IntegrationTest.Zone = \
             tc.thermostat_basic_checkout(
-                api.uip.get_user_inputs(util.default_parent_key,
+                api.uip.get_user_inputs(api.uip.zone_name,
                                         api.input_flds.thermostat_type),
-                api.uip.get_user_inputs(util.default_parent_key,
+                api.uip.get_user_inputs(api.uip.zone_name,
                                         api.input_flds.zone),
                 self.mod.ThermostatClass, self.mod.ThermostatZone
             )
@@ -536,16 +536,16 @@ class RuntimeParameterTest(UnitTest):
         else:
             expected_values = self.get_expected_vals_dict(parent_key)
 
-        print("DEBUG: expected_values=%s" % expected_values)
         for parent_key, child_dict in expected_values.items():
             for child_key, child_dict in child_dict.items():
                 self.assertEqual(
                     expected_values[parent_key][child_key],
                     self.uip.get_user_inputs(parent_key, child_key),
-                    f"expected({type(expected_values[parent_key][child_key])}) "
-                    f"{expected_values[parent_key][child_key]} != "
-                    f"actual({type(self.uip.get_user_inputs(parent_key, child_key))}) "
-                    f"{self.uip.get_user_inputs(parent_key, child_key)}")
+                    f"expected({type(expected_values[parent_key][child_key])})"
+                    f" {expected_values[parent_key][child_key]} != "
+                    f"actual("
+                    f"{type(self.uip.get_user_inputs(parent_key, child_key))})"
+                    f" {self.uip.get_user_inputs(parent_key, child_key)}")
 
     def initialize_user_inputs(self):
         """
@@ -556,7 +556,6 @@ class RuntimeParameterTest(UnitTest):
         self.uip = self.mod.UserInputs(suppress_warnings=True)
         print(f"{util.get_function_name()}:user_inputs have been initialized.")
         self.uip.suppress_warnings = False  # reset back to default
-        print("DEBUG: user_inputs=%s" % self.uip.user_inputs)
         for parent_key in self.uip.user_inputs:
             for child_key in self.uip.user_inputs[parent_key]:
                 self.uip.set_user_inputs(parent_key, child_key, None)
@@ -633,6 +632,7 @@ class RuntimeParameterTest(UnitTest):
         print("parsing named argument list")
         self.uip = self.mod.UserInputs(
             named_sflag_list, "unittest parsing named sflag arguments")
+        print("in test default parent key=%s" % self.uip.default_parent_key)
         self.verify_parsed_values(self.uip.default_parent_key)
 
     def test_parse_named_arguments_lflag(self):

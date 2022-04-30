@@ -58,7 +58,7 @@ class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
         returns:
             (obj): PyKumo object
         """
-        self.zone_name = kumolocal_config.kc_metadata[zone]["zone_name"]
+        self.zone_name = kumolocal_config.metadata[zone]["zone_name"]
         # populate the zone dictionary
         # establish local interface to kumos, must be on local net
         kumos = self.make_pykumos()
@@ -587,7 +587,7 @@ if __name__ == "__main__":
     # get zone override
     api.uip = api.UserInputs(argv_list=None,
                              thermostat_type=kumolocal_config.ALIAS)
-    zone_number = api.uip.get_user_inputs(api.uip.default_parent_key,
+    zone_number = api.uip.get_user_inputs(api.uip.zone_name,
                                           api.input_flds.zone)
 
     Thermostat, Zone = tc.thermostat_basic_checkout(

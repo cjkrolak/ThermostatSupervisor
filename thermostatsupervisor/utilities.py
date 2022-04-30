@@ -577,6 +577,7 @@ class UserInputs():
     """Manage runtime arguments."""
 
     def __init__(self, argv_list, help_description, suppress_warnings=False,
+                 parent_key=default_parent_key,
                  *_, **__):
         """
         Base Class UserInputs Constructor.
@@ -592,7 +593,7 @@ class UserInputs():
             parent_key(str, int): parent key
         """
         self.argv_list = argv_list
-        self.default_parent_key = default_parent_key
+        self.default_parent_key = parent_key
         self.help_description = help_description
         self.suppress_warnings = suppress_warnings
         self.parser = argparse.ArgumentParser(
@@ -611,11 +612,8 @@ class UserInputs():
     def get_sflag_list(self):
         """Return a list of all sflags."""
         valid_sflags = []
-        print("DEBUG: user_inputs=%s" % self.user_inputs)
         for parent_key, child_dict in self.user_inputs.items():
-            for child_key, child_val in child_dict.items():
-                print("DEBUG: child_key=%s, child_val=%s" % (child_key,
-                                                             child_val))
+            for child_key, _ in child_dict.items():
                 valid_sflags.append(self.user_inputs[parent_key][
                     child_key]["sflag"])
         return valid_sflags
@@ -632,7 +630,6 @@ class UserInputs():
         returns:
           argv_dict(dict)
         """
-        print("DEBUG: in %s" % get_function_name())
         sysargv_sflags = [str(elem)[:2] for elem in sys.argv[1:]]
         if self.user_inputs is None:
             raise ValueError("user_inputs cannot be None")
@@ -695,7 +692,6 @@ class UserInputs():
         returns:
             (dict) of all runtime parameters.
         """
-        print("DEBUG: in %s" % get_function_name())
         # set parent key
         if parent_key is None:
             parent_key = self.default_parent_key
@@ -742,7 +738,6 @@ class UserInputs():
         returns:
             (dict) of all runtime parameters.
         """
-        print("DEBUG: in %s" % get_function_name())
         # set parent key
         if parent_key is None:
             parent_key = self.default_parent_key
@@ -754,14 +749,8 @@ class UserInputs():
             argv_inputs = sys.argv
 
         # populate dict with values from list
-        print("DEBUG(%s): user_inputs=%s" % (get_function_name(),
-                                             self.user_inputs))
         for child_key, val in self.user_inputs[parent_key].items():
-            print("DEBUG: child_key=%s" % child_key)
-            print("DEBUG: val=%s" % val)
             if val["order"] <= len(argv_inputs) - 1:
-                print("DEBUG: parent_key=%s" % parent_key)
-                print("DEBUG: %s" % argv_inputs[val["order"]])
                 if (self.user_inputs[parent_key][child_key]["type"] in
                         [int, float, str]):
                     # cast data type when reading value
@@ -800,10 +789,7 @@ class UserInputs():
         returns:
             (dict) of all runtime parameters, only needed for testing.
         """
-        print("DEBUG: in %s" % get_function_name())
         for parent_key, child_dict in argv_dict.items():
-            print("DEBUG: parent_key=%s" % parent_key)
-            print("DEBUG: child_dict=%s" % child_dict)
             for child_key, attr in child_dict.items():
                 proposed_value = attr["value"]
                 default_value = attr["default"]
@@ -865,11 +851,16 @@ class UserInputs():
         else:
             try:
                 return self.user_inputs[parent_key][child_key][field]
-            except (TypeError, KeyError):
-                print("DEBUG: parent_key(%s)=%s, child_key(%s)=%s, "
+            except TypeError:
+                print("TypeError: parent_key(%s)=%s, child_key(%s)=%s, "
                       "field(%s)=%s)" %
                       (type(parent_key), parent_key, type(child_key),
                        child_key, type(field), field))
+                raise
+            except KeyError:
+                print("KeyError: target=['%s']['%s']['%s'], "
+                      "raw=%s" % (parent_key, child_key, field,
+                                  self.user_inputs))
                 raise
 
     def set_user_inputs(self, parent_key, child_key, input_val, field="value"):
@@ -889,9 +880,13 @@ class UserInputs():
         else:
             try:
                 self.user_inputs[parent_key][child_key][field] = input_val
-            except (TypeError, KeyError):
-                print("DEBUG: keys=%s (type=%s)" %
+            except TypeError:
+                print("TypeError: keys=%s (type=%s)" %
                       (self.user_inputs.keys(), type(self.user_inputs.keys())))
+                raise
+            except KeyError:
+                print("KeyError: target=['%s']['%s']['%s'],  keys=%s" %
+                      (parent_key, child_key, field, self.user_inputs.keys()))
                 raise
 
     def is_valid_file(self, arg):

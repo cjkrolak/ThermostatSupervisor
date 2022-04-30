@@ -496,8 +496,11 @@ if __name__ == "__main__":
     # get zone override
     api.uip = api.UserInputs(argv_list=None,
                              thermostat_type=sht31_config.ALIAS)
-    zone_number = api.uip.get_user_inputs(api.uip.default_parent_key,
+    zone_number = api.uip.get_user_inputs(api.uip.zone_name,
                                           api.input_flds.zone)
+
+    # TODO: override zone for now, need to update for local IP detect
+    zone_number = sht31_config.LOFT_SHT31_REMOTE
 
     tc.thermostat_basic_checkout(
         sht31_config.ALIAS,

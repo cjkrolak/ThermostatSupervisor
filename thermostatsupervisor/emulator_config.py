@@ -2,7 +2,8 @@
 emulator thermostat config file.
 """
 ALIAS = "emulator"
-# ZONE_NAME = "emulator_0"  # needs to match section name in ini files
+
+# constants
 MAX_HEAT_SETPOINT = 66.0  # float
 MIN_COOL_SETPOINT = 78.0  # float
 STARTING_MODE = "OFF_MODE"  # thermostat set mode when emulator starts
@@ -30,7 +31,7 @@ default_zone = supported_configs["zones"][0]
 default_zone_name = ALIAS + "_" + str(default_zone)
 
 argv = [
-    "emulator.py",  # module
+    "supervise.py",  # module
     ALIAS,  # thermostat
     str(default_zone),  # zone
     "19",  # poll time in sec

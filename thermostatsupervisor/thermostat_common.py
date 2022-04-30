@@ -1086,10 +1086,12 @@ def create_thermostat_instance(thermostat_type, zone,
     # thermostat_type
     print("DEBUG(%s): user_inputs=%s" % (util.get_function_name(),
                                          api.uip.user_inputs))
-    api.uip.set_user_inputs(api.uip.default_parent_key, api.input_flds.thermostat_type,
+    api.uip.set_user_inputs(api.uip.default_parent_key,
+                            api.input_flds.thermostat_type,
                             thermostat_type)
     # zone
-    api.uip.set_user_inputs(api.uip.default_parent_key, api.input_flds.zone, zone)
+    api.uip.set_user_inputs(api.uip.default_parent_key, api.input_flds.zone,
+                            zone)
     Zone.update_runtime_parameters()
 
     return Thermostat, Zone

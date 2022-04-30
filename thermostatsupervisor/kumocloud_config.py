@@ -2,10 +2,12 @@
 kumocloud config file.
 """
 ALIAS = "kumocloud"
+
 # thermostat zones
 MAIN_LEVEL = 0  # zone 0
 BASEMENT = 1  # zone 1
 
+# constants
 MAX_HEAT_SETPOINT = 68
 MIN_COOL_SETPOINT = 70
 
@@ -49,4 +51,4 @@ argv = [
     "2",  # tolerance
     "OFF_MODE",  # thermostat mode
     "2",  # number of measurements
-]
+    ]

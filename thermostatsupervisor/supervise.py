@@ -40,7 +40,8 @@ def supervisor(thermostat_type, zone_str):
     # outer loop: sessions
     while not api.uip.max_measurement_count_exceeded(measurement):
         # make connection to thermostat
-        zone_num = api.uip.get_user_inputs(api.input_flds.zone)
+        zone_num = api.uip.get_user_inputs(api.uip.zone_name,
+                                           api.input_flds.zone)
         util.log_msg(
             f"connecting to thermostat zone {zone_num} "
             f"(session:{session_count})...",
@@ -107,9 +108,9 @@ def exec_supervise(debug=True, argv_list=None):
     api.uip = api.UserInputs(argv_list)
 
     # main supervise function
-    supervisor(api.uip.get_user_inputs(api.uip.default_parent_key,
+    supervisor(api.uip.get_user_inputs(api.uip.zone_name,
                                        api.input_flds.thermostat_type),
-               api.uip.get_user_inputs(api.uip.default_parent_key,
+               api.uip.get_user_inputs(api.uip.zone_name,
                                        api.input_flds.zone)
                )
 

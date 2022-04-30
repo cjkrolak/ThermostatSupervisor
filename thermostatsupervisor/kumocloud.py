@@ -110,7 +110,8 @@ class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
             raw_json = self.get_raw_json()[2]  # does not fetch results,
         else:
             # return cached raw data for specified zone, will be a dict
-            print("DEBUG(%s): units=%s, zone=%s" %(util.get_function_name(), units, zone))
+            print("DEBUG(%s): units=%s, zone=%s" % (util.get_function_name(),
+                                                    units, zone))
             self.serial_number = units[zone]
             raw_json = self.get_raw_json()[2]['children'][0][
                 'zoneTable'][units[zone]]
@@ -179,8 +180,8 @@ class ThermostatZone(tc.ThermostatCommonZone):
         self.zone_name = Thermostat_obj.zone_name
         self.zone_info = Thermostat_obj.get_all_metadata(
             Thermostat_obj.zone_number)
-        self.zone_name = self.get_zone_name()
         self.zone_number = Thermostat_obj.zone_number
+        self.zone_name = self.get_zone_name()
 
     def get_parameter(self, key, parent_key=None, grandparent_key=None,
                       default_val=None):

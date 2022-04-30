@@ -15,7 +15,6 @@ from thermostatsupervisor import kumolocal_config
 from thermostatsupervisor import mmm_config
 from thermostatsupervisor import sht31_config
 from thermostatsupervisor import utilities as util
-from thermostatsupervisor.sht31_flask_server import input_flds
 
 # thermostat types
 DEFAULT_THERMOSTAT = emulator_config.ALIAS
@@ -87,11 +86,10 @@ class UserInputs(util.UserInputs):
         self.suppress_warnings = suppress_warnings
         self.thermostat_type = thermostat_type  # default if not provided
         self.zone_name = zone_name
-        self.default_parent_key = zone_name
 
         # initialize parent class
         super().__init__(argv_list, help_description, suppress_warnings,
-                         thermostat_type, zone_name)
+                         zone_name)
 
     def initialize_user_inputs(self, parent_keys=None):
         """
@@ -100,7 +98,6 @@ class UserInputs(util.UserInputs):
         inputs:
             parent_keys(list): list of parent keys
         """
-        print("DEBUG: in %s" % util.get_function_name())
         if parent_keys is None:
             parent_keys = [self.default_parent_key]
         self.valid_sflags = []
@@ -196,7 +193,8 @@ class UserInputs(util.UserInputs):
                     "help": "input file",
                     "required": False,
                     },
-                }}
+                },
+            }
             self.valid_sflags += [self.user_inputs[parent_key][k]["sflag"]
                                   for k in self.user_inputs[parent_key].keys()]
 
@@ -209,10 +207,10 @@ class UserInputs(util.UserInputs):
         """
         print("DEBUG: in %s" % util.get_function_name())
         # initializ section list to single item list of one thermostat
-        section_list = [util.default_parent_key]  # initialize
+        section_list = [self.default_parent_key]  # initialize
 
         # file input will override any type of individual inputs
-        input_file = self.get_user_inputs(util.default_parent_key,
+        input_file = self.get_user_inputs(self.default_parent_key,
                                           input_flds.input_file)
         if input_file is not None:
             self.using_input_file = True
@@ -225,7 +223,8 @@ class UserInputs(util.UserInputs):
             print("DEBUG: section list=%s" % section_list)
             # reinit user_inputs dict
             self.initialize_user_inputs(section_list)
-            print("DEBUG: user_inputs initialized for data file import: %s" % self.user_inputs)
+            print("DEBUG: user_inputs initialized for data file import: %s" %
+                  self.user_inputs)
             # populate user_inputs from user_inputs_file
             for section in section_list:
                 print("DEBUG: section=%s" % section)
@@ -233,19 +232,14 @@ class UserInputs(util.UserInputs):
                     if fld == input_flds.input_file:
                         # input file field will not be in the file
                         continue
-                    print("DEBUG: fld %s: type=%s" % (fld, self.user_inputs[section][fld]["type"]))
-                    print("DEBUG: checking types %s, %s, %s" % (int, float, str))
-                    if self.user_inputs[section][fld]["type"] in [int, float, str]:
+                    if (self.user_inputs[section][fld]["type"]
+                            in [int, float, str]):
                         # cast data type when reading value
                         self.user_inputs[section][fld]["value"] = (
                             self.user_inputs[section][fld]["type"](
                                 self.user_inputs_file[section].get(
                                     input_flds[fld])))
                         # cast original input value in user_inputs_file as well
-                        print("DEBUG: casting %s to %s(%s)" %
-                              (self.user_inputs_file[section][input_flds[fld]],
-                               self.user_inputs[section][fld]["value"],
-                               self.user_inputs[section][fld]["type"]))
                         self.user_inputs_file[section][input_flds[fld]] = \
                             self.user_inputs[section][fld]["value"]
                     else:
@@ -257,7 +251,6 @@ class UserInputs(util.UserInputs):
         # if user_inputs has already been populated
         elif (self.get_user_inputs(list(self.user_inputs.keys())[0],
                                    input_flds.thermostat_type) is not None):
-            print("DEBUG: updating parent_key in user_inputs dict")
             # argv inputs, only currenty supporting 1 zone
             # verify only 1 parent key exists
             current_keys = list(self.user_inputs.keys())
@@ -266,28 +259,17 @@ class UserInputs(util.UserInputs):
                                current_keys)
 
             # update parent key to be zone_name
-            print("DEBUG(%s): user_inputs before parent_key update: %s" %
-                  (util.get_function_name(), self.user_inputs))
             current_key = current_keys[0]
-            print("DEBUG current_key=%s" % current_key)
-            print("DEBUG: thermostat_type=%s" % self.get_user_inputs(
-                       current_key, input_flds.thermostat_type))
-            print("DEBUG: zone=%s" % self.get_user_inputs(
-                       current_key, input_flds.zone))
             new_key = (self.get_user_inputs(
                        current_key, input_flds.thermostat_type) + "_" +
                        str(self.get_user_inputs(current_key, input_flds.zone)))
             self.user_inputs[new_key] = self.user_inputs.pop(current_key)
-            print("DEBUG(%s): user_inputs after parent_key update: %s" %
-                  (util.get_function_name(), self.user_inputs))
             self.zone_name = new_key  # set Zone name
             section_list = [new_key]
             self.default_parent_key = new_key
         else:
-            print("DEBUG: empty else block, user_inputs=%s" % self.user_inputs)
             print("%s" % self.get_user_inputs(list(self.user_inputs.keys())[0],
-                                   input_flds.thermostat_type))
-            print("DEBUG: (%s) empty else block" % util.get_function_name())
+                                              input_flds.thermostat_type))
 
         # if thermostat is not set yet, default it based on module
         # TODO - code block needs update for multi-zone
