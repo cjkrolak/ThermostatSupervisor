@@ -594,6 +594,7 @@ class UserInputs():
         """
         self.argv_list = argv_list
         self.default_parent_key = parent_key
+        self.parent_keys = [parent_key]
         self.help_description = help_description
         self.suppress_warnings = suppress_warnings
         self.parser = argparse.ArgumentParser(

@@ -46,7 +46,7 @@ class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
 
         # configure zone info
         self.zone_number = int(zone)
-        self.zone_name = None  # initialize
+        self.zone_name = int(zone)  # initialize
         self.device_id = self.get_target_zone_id(self.zone_name)
         self.serial_number = None  # will be populated when unit is queried.
 
@@ -110,8 +110,6 @@ class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
             raw_json = self.get_raw_json()[2]  # does not fetch results,
         else:
             # return cached raw data for specified zone, will be a dict
-            print("DEBUG(%s): units=%s, zone=%s" % (util.get_function_name(),
-                                                    units, zone))
             self.serial_number = units[zone]
             raw_json = self.get_raw_json()[2]['children'][0][
                 'zoneTable'][units[zone]]
@@ -652,7 +650,6 @@ if __name__ == "__main__":
     # get zone override
     zone_number = api.load_user_inputs(kumocloud_config)
 
-    print("DEBUG: zone_number=%s" % zone_number)
     tc.thermostat_basic_checkout(
         kumocloud_config.ALIAS,
         zone_number,

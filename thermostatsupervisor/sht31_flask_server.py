@@ -652,6 +652,7 @@ class UserInputs(util.UserInputs):
         """
         if parent_keys is None:
             parent_keys = [self.default_parent_key]
+        self.valid_sflags = []
         # define the user_inputs dict.
         for parent_key in parent_keys:
             self.user_inputs = {parent_key: {
@@ -669,8 +670,8 @@ class UserInputs(util.UserInputs):
                     },
                 },
             }
-        self.valid_sflags += [self.user_inputs[parent_key][k]["sflag"]
-                              for k in self.user_inputs[parent_key].keys()]
+            self.valid_sflags += [self.user_inputs[parent_key][k]["sflag"]
+                                  for k in self.user_inputs[parent_key].keys()]
 
 
 if __name__ == "__main__":

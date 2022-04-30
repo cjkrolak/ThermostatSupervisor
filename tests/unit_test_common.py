@@ -20,7 +20,7 @@ from thermostatsupervisor import utilities as util
 
 # enable modes
 ENABLE_FUNCTIONAL_INTEGRATION_TESTS = True  # enable func int tests
-ENABLE_PERFORMANCE_INTEGRATION_TESTS = True and \
+ENABLE_PERFORMANCE_INTEGRATION_TESTS = False and \
     not util.is_azure_environment()  # enable performance int tests
 ENABLE_SUPERVISE_INTEGRATION_TESTS = True  # enable supervise int tests
 ENABLE_FLASK_INTEGRATION_TESTS = True  # enable flask int tests
@@ -210,7 +210,6 @@ class IntegrationTest(UnitTest):
         will use the existing instances.
         """
         # parse runtime arguments
-        print("DEBUG(%s): setting up user inputs" % util.get_function_name())
         api.uip = api.UserInputs(self.unit_test_argv)
 
         # create new Thermostat and Zone instances

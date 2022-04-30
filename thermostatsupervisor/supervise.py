@@ -108,9 +108,10 @@ def exec_supervise(debug=True, argv_list=None):
     api.uip = api.UserInputs(argv_list)
 
     # main supervise function
-    supervisor(api.uip.get_user_inputs(api.uip.zone_name,
+    # TODO - update for multi-zone application
+    supervisor(api.uip.get_user_inputs(api.uip.parent_keys[0],
                                        api.input_flds.thermostat_type),
-               api.uip.get_user_inputs(api.uip.zone_name,
+               api.uip.get_user_inputs(api.uip.parent_keys[0],
                                        api.input_flds.zone)
                )
 

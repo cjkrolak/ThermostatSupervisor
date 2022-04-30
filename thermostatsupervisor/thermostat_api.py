@@ -101,9 +101,10 @@ class UserInputs(util.UserInputs):
         if parent_keys is None:
             parent_keys = [self.default_parent_key]
         self.valid_sflags = []
+        self.user_inputs = {}  # init
         # define the user_inputs dict.
         for parent_key in parent_keys:
-            self.user_inputs = {parent_key: {
+            self.user_inputs[parent_key] = {
                 input_flds.thermostat_type: {
                     "order": 1,  # index in the argv list
                     "value": None,
@@ -193,7 +194,6 @@ class UserInputs(util.UserInputs):
                     "help": "input file",
                     "required": False,
                     },
-                },
             }
             self.valid_sflags += [self.user_inputs[parent_key][k]["sflag"]
                                   for k in self.user_inputs[parent_key].keys()]
@@ -205,9 +205,8 @@ class UserInputs(util.UserInputs):
         This function expands each input parameter list to match
         the length of the thermostat parameter field.
         """
-        print("DEBUG: in %s" % util.get_function_name())
         # initializ section list to single item list of one thermostat
-        section_list = [self.default_parent_key]  # initialize
+        self.parent_keys = [self.default_parent_key]  # initialize
 
         # file input will override any type of individual inputs
         input_file = self.get_user_inputs(self.default_parent_key,
@@ -219,14 +218,14 @@ class UserInputs(util.UserInputs):
             # scan all sections in INI file in reversed order so that
             # user_inputs contains the first key after casting.
             # section = list(self.user_inputs_file.keys())[0]  # use first key
-            section_list = list(self.user_inputs_file.keys())
-            print("DEBUG: section list=%s" % section_list)
-            # reinit user_inputs dict
-            self.initialize_user_inputs(section_list)
-            print("DEBUG: user_inputs initialized for data file import: %s" %
-                  self.user_inputs)
+            self.parent_keys = list(self.user_inputs_file.keys())
+            # reinit user_inputs dict based on INI file structure
+            self.initialize_user_inputs(self.parent_keys)
+            print("DEBUG: user_inputs keys=%s" %
+                  list(self.user_inputs.keys()))
             # populate user_inputs from user_inputs_file
-            for section in section_list:
+            print("DEBUG: parent_keys from file=%s" % self.parent_keys)
+            for section in self.parent_keys:
                 print("DEBUG: section=%s" % section)
                 for fld in input_flds:
                     if fld == input_flds.input_file:
@@ -247,6 +246,8 @@ class UserInputs(util.UserInputs):
                         self.user_inputs[section][fld]["value"] = \
                             ((self.user_inputs_file[section].get(input_flds[
                                 fld])))
+            # for now set zone name to first zone in file
+            self.zone_name = self.parent_keys[0]
         # update user_inputs parent_key with zone_name
         # if user_inputs has already been populated
         elif (self.get_user_inputs(list(self.user_inputs.keys())[0],
@@ -265,7 +266,6 @@ class UserInputs(util.UserInputs):
                        str(self.get_user_inputs(current_key, input_flds.zone)))
             self.user_inputs[new_key] = self.user_inputs.pop(current_key)
             self.zone_name = new_key  # set Zone name
-            section_list = [new_key]
             self.default_parent_key = new_key
         else:
             print("%s" % self.get_user_inputs(list(self.user_inputs.keys())[0],
@@ -273,14 +273,15 @@ class UserInputs(util.UserInputs):
 
         # if thermostat is not set yet, default it based on module
         # TODO - code block needs update for multi-zone
-        for section in section_list:
-            thermostat_type = self.get_user_inputs(section,
+        for zone_name in self.parent_keys:
+            thermostat_type = self.get_user_inputs(zone_name,
                                                    input_flds.thermostat_type)
             if thermostat_type is None:
                 thermostat_type = self.thermostat_type
-            self.user_inputs[section][input_flds.zone]["valid_range"] = \
+            self.user_inputs[zone_name][input_flds.zone]["valid_range"] = \
                 SUPPORTED_THERMOSTATS[thermostat_type]["zones"]
-            self.user_inputs[section][input_flds.target_mode]["valid_range"] = \
+            self.user_inputs[zone_name][input_flds.target_mode][
+                "valid_range"] = \
                 SUPPORTED_THERMOSTATS[thermostat_type]["modes"]
 
     def max_measurement_count_exceeded(self, measurement):
