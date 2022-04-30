@@ -569,20 +569,32 @@ def dynamic_module_import(name, path=None):
         return mod
 
 
+# default parent_key if user_inputs are not pulled from file
+default_parent_key = "argv"
+
+
 class UserInputs():
     """Manage runtime arguments."""
 
     def __init__(self, argv_list, help_description, suppress_warnings=False,
+                 parent_key=default_parent_key,
                  *_, **__):
         """
         Base Class UserInputs Constructor.
+
+        user_inputs is a dictionary of runtime parameters.
+        structure = {<parent_key> : {<child_key: {}}
+        dict can have multiple parent_keys and multiple child_keys
 
         inputs:
             argv_list(list): override runtime values.
             help_description(str): description field for help text.
             suppress_warnings(bool): True to suppress warning msgs.
+            parent_key(str, int): parent key
         """
         self.argv_list = argv_list
+        self.default_parent_key = parent_key
+        self.parent_keys = [parent_key]
         self.help_description = help_description
         self.suppress_warnings = suppress_warnings
         self.parser = argparse.ArgumentParser(
@@ -597,6 +609,15 @@ class UserInputs():
     def initialize_user_inputs(self):
         """Populate user_inputs dictionary."""
         pass  # placeholder, is instance-specific
+
+    def get_sflag_list(self):
+        """Return a list of all sflags."""
+        valid_sflags = []
+        for parent_key, child_dict in self.user_inputs.items():
+            for child_key, _ in child_dict.items():
+                valid_sflags.append(self.user_inputs[parent_key][
+                    child_key]["sflag"])
+        return valid_sflags
 
     def parse_runtime_parameters(self, argv_list=None):
         """
@@ -613,7 +634,8 @@ class UserInputs():
         sysargv_sflags = [str(elem)[:2] for elem in sys.argv[1:]]
         if self.user_inputs is None:
             raise ValueError("user_inputs cannot be None")
-        valid_sflags = [self.user_inputs[k]["sflag"] for k in self.user_inputs]
+        parent_key = list(self.user_inputs.keys())[0]
+        valid_sflags = self.get_sflag_list()
         valid_sflags += ["-h", "--"]  # add help and double dash
         if argv_list:
             # argument list input, support parsing list
@@ -625,8 +647,7 @@ class UserInputs():
                     mode=DEBUG_LOG +
                     CONSOLE_LOG,
                     func_name=1)
-                self.user_inputs = \
-                    self.parse_named_arguments(argv_list=argv_list)
+                self.parse_named_arguments(argv_list=argv_list)
             else:
                 log_msg(
                     f"parsing runtime parameters from user input list: "
@@ -634,7 +655,8 @@ class UserInputs():
                     mode=DEBUG_LOG +
                     CONSOLE_LOG,
                     func_name=1)
-                self.user_inputs = self.parse_argv_list(argv_list)
+                self.parse_argv_list(
+                    parent_key, argv_list)
         elif any([flag in sysargv_sflags for flag in valid_sflags]):
             # named arguments from sys.argv
             log_msg(
@@ -642,7 +664,7 @@ class UserInputs():
                 mode=DEBUG_LOG +
                 CONSOLE_LOG,
                 func_name=1)
-            self.user_inputs = self.parse_named_arguments()
+            self.parse_named_arguments()
         else:
             # sys.argv parsing
             log_msg(
@@ -650,26 +672,33 @@ class UserInputs():
                 mode=DEBUG_LOG +
                 CONSOLE_LOG,
                 func_name=1)
-            self.user_inputs = self.parse_argv_list(sys.argv)
-        # update validation range based on input data
+            self.parse_argv_list(parent_key, sys.argv)
+
+        # dynamically update valid range and defaults
+        # also can trigger input file parsing based on input flags
         self.dynamic_update_user_inputs()
 
         # validate inputs
-        self.user_inputs = self.validate_argv_inputs(self.user_inputs)
+        self.validate_argv_inputs(self.user_inputs)
 
         return self.user_inputs
 
-    def parse_named_arguments(self, argv_list=None):
+    def parse_named_arguments(self, parent_key=None, argv_list=None):
         """
         Parse all possible named arguments.
 
         inputs:
+            parent_key(str): parent key for dict.
             argv_list(list): override sys.argv (for testing)
         returns:
             (dict) of all runtime parameters.
         """
+        # set parent key
+        if parent_key is None:
+            parent_key = self.default_parent_key
+
         # load parser contents
-        for _, attr in self.user_inputs.items():
+        for _, attr in self.user_inputs[parent_key].items():
             self.parser.add_argument(attr["lflag"], attr["sflag"],
                                      default=attr["default"],
                                      type=attr["type"],
@@ -682,31 +711,38 @@ class UserInputs():
             args = self.parser.parse_args(argv_list[1:])
         else:
             args = self.parser.parse_args()
-        for key in self.user_inputs:
+        for key in self.user_inputs[parent_key]:
             if key == "script":
                 # add script name
-                self.user_inputs[key]["value"] = sys.argv[0]
+                self.user_inputs[parent_key][key]["value"] = sys.argv[0]
             else:
-                self.user_inputs[key]["value"] = getattr(args, key, None)
+                self.user_inputs[parent_key][key]["value"] = getattr(args,
+                                                                     key, None)
                 strip_types = (str)
-                if isinstance(self.user_inputs[key]["value"], strip_types):
+                if isinstance(self.user_inputs[parent_key][key]["value"],
+                              strip_types):
                     # str parsing has leading spaces for some reason
-                    self.user_inputs[key]["value"] = \
-                        self.user_inputs[key]["value"].strip()
+                    self.user_inputs[parent_key][key]["value"] = \
+                        self.user_inputs[parent_key][key]["value"].strip()
 
         return self.user_inputs
 
-    def parse_argv_list(self, argv_list=None):
+    def parse_argv_list(self, parent_key, argv_list=None):
         """
         Parse un-named arguments from list.
 
         inputs:
+            parent_key(str): parent key in the user_inputs dict.
             argv_list(list): list of runtime arguments in the order
                              argv_list[0] should be script name.
                              speci5fied in argv_dict "order" fields.
         returns:
             (dict) of all runtime parameters.
         """
+        # set parent key
+        if parent_key is None:
+            parent_key = self.default_parent_key
+
         # if argv list is set use that, else use sys.argv
         if argv_list:
             argv_inputs = argv_list
@@ -714,15 +750,18 @@ class UserInputs():
             argv_inputs = sys.argv
 
         # populate dict with values from list
-        for key, val in self.user_inputs.items():
+        for child_key, val in self.user_inputs[parent_key].items():
             if val["order"] <= len(argv_inputs) - 1:
-                if self.user_inputs[key]["type"] in [int, float, str]:
+                if (self.user_inputs[parent_key][child_key]["type"] in
+                        [int, float, str]):
                     # cast data type when reading value
-                    self.user_inputs[key]["value"] = (self.user_inputs[key][
-                        "type"](argv_inputs[val["order"]]))
+                    self.user_inputs[parent_key][child_key]["value"] = (
+                        self.user_inputs[parent_key][child_key][
+                            "type"](argv_inputs[val["order"]]))
                 else:
                     # no casting, just read raw from list
-                    self.user_inputs[key]["value"] = argv_inputs[val["order"]]
+                    self.user_inputs[parent_key][child_key]["value"] = \
+                        argv_inputs[val["order"]]
 
         return self.user_inputs
 
@@ -736,6 +775,7 @@ class UserInputs():
 
         inputs:
             argv_dict(dict): dictionary of runtime args with these elements:
+            <parent_key>: {
             <key>: {  # key = argument name
                 "order": 0,  # order in the argv list
                 "value": None,   # initialized to None
@@ -746,75 +786,109 @@ class UserInputs():
                 "help": "script name"},  # help text
                 "valid": None,  # valid choices
                 "required": True,  # is parameter required?
+            }}
         returns:
-            (dict) of all runtime parameters.
+            (dict) of all runtime parameters, only needed for testing.
         """
-        for key, attr in argv_dict.items():
-            proposed_value = attr["value"]
-            default_value = attr["default"]
-            proposed_type = type(proposed_value)
-            expected_type = attr["type"]
-            # missing value check
-            if proposed_value is None:
-                if not self.suppress_warnings:
-                    log_msg(
-                        f"key='{key}': argv parameter missing, using default "
-                        f"value '{default_value}'",
-                        mode=DEBUG_LOG +
-                        CONSOLE_LOG,
-                        func_name=1)
-                attr["value"] = attr["default"]
+        for parent_key, child_dict in argv_dict.items():
+            for child_key, attr in child_dict.items():
+                proposed_value = attr["value"]
+                default_value = attr["default"]
+                proposed_type = type(proposed_value)
+                expected_type = attr["type"]
+                # missing value check
+                if proposed_value is None:
+                    if not self.suppress_warnings:
+                        log_msg(
+                            f"parent_key={parent_key}, child_key='{child_key}'"
+                            f": argv parameter missing, using default "
+                            f"value '{default_value}'",
+                            mode=DEBUG_LOG +
+                            CONSOLE_LOG,
+                            func_name=1)
+                    attr["value"] = attr["default"]
 
-            # wrong datatype check
-            elif proposed_type != expected_type:
-                if not self.suppress_warnings:
-                    log_msg(
-                        f"key='{key}': datatype error, expected="
-                        f"{expected_type}, actual={proposed_type}, "
-                        "using default value "
-                        f"'{default_value}'",
-                        mode=DEBUG_LOG +
-                        CONSOLE_LOG,
-                        func_name=1)
-                attr["value"] = attr["default"]
+                # wrong datatype check
+                elif proposed_type != expected_type:
+                    if not self.suppress_warnings:
+                        log_msg(
+                            f"parent_key={parent_key}, child_key='{child_key}'"
+                            f": datatype error, expected="
+                            f"{expected_type}, actual={proposed_type}, "
+                            "using default value "
+                            f"'{default_value}'",
+                            mode=DEBUG_LOG +
+                            CONSOLE_LOG,
+                            func_name=1)
+                    attr["value"] = attr["default"]
 
-            # out of range check
-            elif (attr["valid_range"] is not None and
-                  proposed_value not in attr["valid_range"]):
-                if not self.suppress_warnings:
-                    log_msg(
-                        f"WARNING: '{proposed_value}' is not a valid choice "
-                        f"'for {key}', using default({default_value})",
-                        mode=BOTH_LOG,
-                        func_name=1)
-                attr["value"] = attr["default"]
+                # out of range check
+                elif (attr["valid_range"] is not None and
+                      proposed_value not in attr["valid_range"]):
+                    if not self.suppress_warnings:
+                        log_msg(
+                            f"WARNING: '{proposed_value}' is not a valid "
+                            f"choice parent_key={parent_key}, child_key="
+                            f"{child_key}', using default({default_value})",
+                            mode=BOTH_LOG,
+                            func_name=1)
+                    attr["value"] = attr["default"]
 
         return argv_dict
 
-    def get_user_inputs(self, key, field="value"):
+    def get_user_inputs(self, parent_key, child_key, field="value"):
         """
         Return the target key's value from user_inputs.
 
         inputs:
-            key(str): argument name
+            parent_key(str): top-level key
+            child_key(str): second-level key
             field(str): field name, default = "value"
         returns:
             None
         """
-        return self.user_inputs[key][field]
+        if child_key is None:
+            return self.user_inputs[parent_key][field]
+        else:
+            try:
+                return self.user_inputs[parent_key][child_key][field]
+            except TypeError:
+                print("TypeError: parent_key(%s)=%s, child_key(%s)=%s, "
+                      "field(%s)=%s)" %
+                      (type(parent_key), parent_key, type(child_key),
+                       child_key, type(field), field))
+                raise
+            except KeyError:
+                print("KeyError: target=['%s']['%s']['%s'], "
+                      "raw=%s" % (parent_key, child_key, field,
+                                  self.user_inputs))
+                raise
 
-    def set_user_inputs(self, key, input_val, field="value"):
+    def set_user_inputs(self, parent_key, child_key, input_val, field="value"):
         """
         Set the target key's value from user_inputs.
 
         inputs:
-            key(str): argument name
+            parent_key(str): top-level key
+            child_key(str): second-level key
             input_val(str, int, float, etc.):  value to set.
             field(str): field name, default = "value"
         returns:
             None, updates uip.user_inputs dict.
         """
-        self.user_inputs[key][field] = input_val
+        if child_key is None:
+            self.user_inputs[parent_key][field] = input_val
+        else:
+            try:
+                self.user_inputs[parent_key][child_key][field] = input_val
+            except TypeError:
+                print("TypeError: keys=%s (type=%s)" %
+                      (self.user_inputs.keys(), type(self.user_inputs.keys())))
+                raise
+            except KeyError:
+                print("KeyError: target=['%s']['%s']['%s'],  keys=%s" %
+                      (parent_key, child_key, field, self.user_inputs.keys()))
+                raise
 
     def is_valid_file(self, arg):
         """

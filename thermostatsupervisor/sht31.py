@@ -45,13 +45,13 @@ class ThermostatClass(tc.ThermostatCommon):
 
         # zone configuration
         self.thermostat_type = sht31_config.ALIAS
-        self.zone_number = int(zone)
-        self.ip_address = self.get_target_zone_id(self.zone_number)
+        self.zone_name = int(zone)
+        self.ip_address = self.get_target_zone_id(self.zone_name)
         self.path = path
 
         # URL and port configuration
         self.port = str(sht31_config.FLASK_PORT)  # Flask server port on host
-        if (self.zone_number == sht31_config.UNIT_TEST_ZONE and
+        if (self.zone_name == sht31_config.UNIT_TEST_ZONE and
                 self.path == sht31_config.flask_folder.production):
             self.path = sht31_config.flask_folder.unit_test
             self.unit_test_seed = "?seed=" + str(sht31_config.UNIT_TEST_SEED)
@@ -66,7 +66,7 @@ class ThermostatClass(tc.ThermostatCommon):
         self.retry_delay = 60  # delay before retrying a bad reading
 
         # if in unit test mode, spawn flask server with emulated data on client
-        if self.zone_number == sht31_config.UNIT_TEST_ZONE:
+        if self.zone_name == sht31_config.UNIT_TEST_ZONE:
             self.spawn_flask_server()
 
     def get_target_zone_id(self, zone=0):
@@ -223,8 +223,8 @@ class ThermostatZone(tc.ThermostatCommonZone):
         self.thermostat_type = sht31_config.ALIAS
         self.device_id = Thermostat_obj.device_id
         self.url = Thermostat_obj.device_id
-        self.zone_number = Thermostat_obj.zone_number
-        self.zone_name = self.get_zone_name(self.zone_number)
+        self.zone_name = Thermostat_obj.zone_name
+        self.zone_name = self.get_zone_name(self.zone_name)
 
         # runtime defaults
         self.poll_time_sec = 1 * 60  # default to 1 minute
@@ -243,7 +243,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         returns:
             (str): zone name
         """
-        return sht31_config.sht31_metadata[zone]["zone_name"]
+        return sht31_config.metadata[zone]["zone_name"]
 
     def get_metadata(self, parameter=None, retry=True):
         """
@@ -496,7 +496,11 @@ if __name__ == "__main__":
     # get zone override
     api.uip = api.UserInputs(argv_list=None,
                              thermostat_type=sht31_config.ALIAS)
-    zone_number = api.uip.get_user_inputs(api.input_flds.zone)
+    zone_number = api.uip.get_user_inputs(api.uip.zone_name,
+                                          api.input_flds.zone)
+
+    # TODO: override zone for now, need to update for local IP detect
+    zone_number = sht31_config.LOFT_SHT31_REMOTE
 
     tc.thermostat_basic_checkout(
         sht31_config.ALIAS,
