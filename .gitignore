@@ -7,4 +7,4 @@ supervisor-env.txt
 .coverage
 .project
 .pydevproject
-
+*.ini
