@@ -40,7 +40,7 @@ class IntegrationTest(utc.UnitTest):
 
         # loopback does not work so use local sht31 zone if testing
         # on the local net.  If not, use the DNS name.
-        local_host = sht31_config.sht31_metadata[
+        local_host = sht31_config.metadata[
             sht31_config.LOFT_SHT31]["host_name"]
         zone = str([sht31_config.LOFT_SHT31_REMOTE,
                     sht31_config.LOFT_SHT31][

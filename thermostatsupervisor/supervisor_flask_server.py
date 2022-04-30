@@ -83,9 +83,12 @@ def index():
         sup.argv = argv  # pass runtime overrides to supervise
         api.uip = api.UserInputs(argv)
         thermostat_type = api.uip.get_user_inputs(
+            api.uip.zone_name,
             api.input_flds.thermostat_type)
-        zone = api.uip.get_user_inputs(api.input_flds.zone)
+        zone = api.uip.get_user_inputs(api.uip.zone_name,
+                                       api.input_flds.zone)
         measurement_cnt = api.uip.get_user_inputs(
+            api.uip.zone_name,
             api.input_flds.measurements)
         title = (f"{thermostat_type} thermostat zone {zone}, "
                  f"{measurement_cnt} measurements")

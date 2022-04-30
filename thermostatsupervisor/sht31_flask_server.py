@@ -646,27 +646,32 @@ class UserInputs(util.UserInputs):
         # initialize parent class
         super().__init__(argv_list, help_description, suppress_warnings)
 
-    def initialize_user_inputs(self):
+    def initialize_user_inputs(self, parent_keys=None):
         """
         Populate user_inputs dict.
         """
+        if parent_keys is None:
+            parent_keys = [self.default_parent_key]
+        self.valid_sflags = []
         # define the user_inputs dict.
-        self.user_inputs = {
-            input_flds.debug_fld: {
-                "order": 1,    # index in the argv list
-                "value": None,
-                "type": lambda x: bool(distutils.util.strtobool(
-                    str(x).strip())),
-                "default": False,
-                "valid_range": [True, False, 1, 0],
-                "sflag": "-d",
-                "lflag": "--" + input_flds.debug_fld,
-                "help": "flask server debug mode",
-                "required": False,
+        for parent_key in parent_keys:
+            self.user_inputs = {parent_key: {
+                input_flds.debug_fld: {
+                    "order": 1,    # index in the argv list
+                    "value": None,
+                    "type": lambda x: bool(distutils.util.strtobool(
+                        str(x).strip())),
+                    "default": False,
+                    "valid_range": [True, False, 1, 0],
+                    "sflag": "-d",
+                    "lflag": "--" + input_flds.debug_fld,
+                    "help": "flask server debug mode",
+                    "required": False,
+                    },
                 },
-        }
-        self.valid_sflags = [self.user_inputs[k]["sflag"]
-                             for k in self.user_inputs]
+            }
+            self.valid_sflags += [self.user_inputs[parent_key][k]["sflag"]
+                                  for k in self.user_inputs[parent_key].keys()]
 
 
 if __name__ == "__main__":

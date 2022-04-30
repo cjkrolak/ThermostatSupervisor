@@ -25,7 +25,7 @@ class IntegrationTest(utc.IntegrationTest):
         self.print_test_name()
 
         # argv list must be valid settings
-        local_host = sht31_config.sht31_metadata[
+        local_host = sht31_config.metadata[
             sht31_config.LOFT_SHT31]["host_name"]
         self.unit_test_argv = [
             "supervise.py",  # module

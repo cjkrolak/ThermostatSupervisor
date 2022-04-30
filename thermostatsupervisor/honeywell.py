@@ -51,8 +51,8 @@ class ThermostatClass(pyhtcc.PyHTCC, tc.ThermostatCommon):
 
         # configure zone info
         self.thermostat_type = honeywell_config.ALIAS
-        self.zone_number = int(zone)
-        self.device_id = self.get_target_zone_id(self.zone_number)
+        self.zone_name = int(zone)
+        self.device_id = self.get_target_zone_id(self.zone_name)
 
     def __del__(self):
         """Clean-up session created in pyhtcc."""
@@ -291,7 +291,7 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
         # zone info
         self.thermostat_type = honeywell_config.ALIAS
         self.device_id = Thermostat_obj.device_id
-        self.zone_number = Thermostat_obj.zone_number
+        self.zone_name = Thermostat_obj.zone_name
         self.zone_name = self.get_zone_name()
 
         # runtime parameter defaults
@@ -800,9 +800,7 @@ if __name__ == "__main__":
     util.get_python_version()
 
     # get zone override
-    api.uip = api.UserInputs(argv_list=None,
-                             thermostat_type=honeywell_config.ALIAS)
-    zone_number = api.uip.get_user_inputs(api.input_flds.zone)
+    zone_number = api.load_user_inputs(honeywell_config)
 
     _, Zone = tc.thermostat_basic_checkout(
         honeywell_config.ALIAS,

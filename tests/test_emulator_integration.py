@@ -27,7 +27,7 @@ class IntegrationTest(utc.IntegrationTest):
         # emulator argv list must be valid settings
         self.unit_test_argv = [
             "supervise.py",  # module
-            "emulator",  # thermostat
+            "emulator",  # thermostat type
             "0",  # zone
             "5",  # poll time in sec, this value violates min
             # cycle time for TCC if reverting temperature deviation
