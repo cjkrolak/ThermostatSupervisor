@@ -13,6 +13,7 @@ import traceback
 
 # local imports
 from thermostatsupervisor import email_notification
+from thermostatsupervisor import environment as env
 from thermostatsupervisor import honeywell_config
 from thermostatsupervisor import thermostat_api as api
 from thermostatsupervisor import thermostat_common as tc
@@ -20,9 +21,9 @@ from thermostatsupervisor import utilities as util
 
 # honeywell import
 HONEYWELL_DEBUG = False  # debug uses local pyhtcc repo instead of pkg
-if HONEYWELL_DEBUG and not util.is_azure_environment():
-    pyhtcc = util.dynamic_module_import("pyhtcc",
-                                        "..\\..\\pyhtcc\\pyhtcc")
+if HONEYWELL_DEBUG and not env.is_azure_environment():
+    pyhtcc = env.dynamic_module_import("pyhtcc",
+                                       "..\\..\\pyhtcc\\pyhtcc")
 else:
     import pyhtcc  # noqa E402, from path / site packages
 
@@ -797,7 +798,7 @@ class TimeoutHTTPAdapter(HTTPAdapter):
 if __name__ == "__main__":
 
     # verify environment
-    util.get_python_version()
+    env.dynamic_module_import()
 
     # get zone override
     zone_number = api.load_user_inputs(honeywell_config)

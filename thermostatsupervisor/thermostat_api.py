@@ -14,6 +14,7 @@ from thermostatsupervisor import kumocloud_config
 from thermostatsupervisor import kumolocal_config
 from thermostatsupervisor import mmm_config
 from thermostatsupervisor import sht31_config
+from thermostatsupervisor import environment as env
 from thermostatsupervisor import utilities as util
 
 # thermostat types
@@ -320,8 +321,8 @@ def verify_required_env_variables(tstat, zone_str):
             # append zone info to key
             key = key + str(zone_str)
         print(f"checking required environment key: {key}...", end='')
-        util.env_variables[key] = util.get_env_variable(key)["value"]
-        if util.env_variables[key] is not None:
+        env.env_variables[key] = env.get_env_variable(key)["value"]
+        if env.env_variables[key] is not None:
             print("OK")
         else:
             util.log_msg(
@@ -345,7 +346,7 @@ def load_hardware_library(thermostat_type):
     """
     pkg_name = (util.PACKAGE_NAME + "." +
                 SUPPORTED_THERMOSTATS[thermostat_type]["module"])
-    mod = util.dynamic_module_import(pkg_name)
+    mod = env.dynamic_module_import(pkg_name)
     return mod
 
 

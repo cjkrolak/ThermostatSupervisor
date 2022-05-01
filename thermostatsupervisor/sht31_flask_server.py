@@ -30,6 +30,7 @@ from flask_restful import Resource, Api  # noqa F405
 from flask_wtf.csrf import CSRFProtect
 
 # local imports
+from thermostatsupervisor import environment as env
 from thermostatsupervisor import sht31_config
 from thermostatsupervisor import utilities as util
 
@@ -679,7 +680,7 @@ if __name__ == "__main__":
     print("SHT31 sensor Flask server")
 
     # verify environment
-    util.get_python_version()
+    env.dynamic_module_import()
 
     # parse runtime parameters
     uip = UserInputs()

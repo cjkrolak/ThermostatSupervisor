@@ -6,13 +6,14 @@ import time
 from thermostatsupervisor import kumolocal_config
 from thermostatsupervisor import thermostat_api as api
 from thermostatsupervisor import thermostat_common as tc
+from thermostatsupervisor import environment as env
 from thermostatsupervisor import utilities as util
 
 # pykumo
 PYKUMO_DEBUG = False  # debug uses local pykumo repo instead of pkg
-if PYKUMO_DEBUG and not util.is_azure_environment():
-    pykumo = util.dynamic_module_import("pykumo",
-                                        "..\\..\\pykumo\\pykumo")
+if PYKUMO_DEBUG and not env.is_azure_environment():
+    pykumo = env.dynamic_module_import("pykumo",
+                                       "..\\..\\pykumo\\pykumo")
 else:
     import pykumo  # noqa E402, from path / site packages
 
@@ -43,22 +44,32 @@ class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
         self.thermostat_type = kumolocal_config.ALIAS
 
         # configure zone info
-        self.zone_name = int(zone)
-        self.zone_name = None  # initialize
+        self.zone_number = int(zone)
+        self.zone_name = self.get_zone_name()
         self.device_id = None  # initialize
-        self.device_id = self.get_target_zone_id(self.zone_name)
+        self.device_id = self.get_target_zone_id(self.zone_number)
         self.serial_number = None  # will be populated when unit is queried.
+
+    def get_zone_name(self):
+        """
+        Return the name associated with the zone number from metadata dict.
+
+        inputs:
+            None
+        returns:
+            (str) zone name
+        """
+        return kumolocal_config.metadata[self.zone_number]["zone_name"]
 
     def get_target_zone_id(self, zone=0):
         """
         Return the target zone ID.
 
         inputs:
-            zone(int):  zone number.
+            zone(int): zone number.
         returns:
             (obj): PyKumo object
         """
-        self.zone_name = kumolocal_config.metadata[zone]["zone_name"]
         # populate the zone dictionary
         # establish local interface to kumos, must be on local net
         kumos = self.make_pykumos()
@@ -200,12 +211,13 @@ class ThermostatZone(tc.ThermostatCommonZone):
         self.thermostat_type = kumolocal_config.ALIAS
         self.device_id = Thermostat_obj.device_id
         self.Thermostat = Thermostat_obj
+        self.zone_number = Thermostat_obj.zone_number
         self.zone_name = Thermostat_obj.zone_name
         self.zone_name = self.get_zone_name()
 
     def get_zone_name(self):
         """
-        Return the name associated with the zone number.
+        Return the name associated with the zone number from device memory.
 
         inputs:
             None
@@ -213,7 +225,10 @@ class ThermostatZone(tc.ThermostatCommonZone):
             (str) zone name
         """
         self.refresh_zone_info()
-        return self.device_id.get_name()
+        zone_name = self.device_id.get_name()
+        # update metadata dict
+        kumolocal_config.metadata[self.zone_number]["zone_name"] = zone_name
+        return zone_name
 
     def get_display_temp(self) -> float:  # used
         """
@@ -582,7 +597,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
 if __name__ == "__main__":
 
     # verify environment
-    util.get_python_version()
+    env.dynamic_module_import()
 
     # get zone override
     zone_number = api.load_user_inputs(kumolocal_config)

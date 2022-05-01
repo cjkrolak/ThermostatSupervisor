@@ -1,7 +1,11 @@
 """
 SHT31 config file.
 """
+# built-in imports
 import bunch
+
+# local imports
+from thermostatsupervisor import utilities as util
 
 ALIAS = "sht31"
 
@@ -80,6 +84,10 @@ supported_configs = {"module": "sht31",
                      "zones": [LOFT_SHT31, LOFT_SHT31_REMOTE, UNIT_TEST_ZONE],
                      "modes": ["OFF_MODE", "UNKNOWN_MODE"]}
 
+# metadata dict:
+# 'zone_name' is returned by self.get_zone_name()
+# 'host_name' is used for DNS lookup to determine if device
+# is on the current network.
 metadata = {
     LOFT_SHT31: {"zone_name": "Loft (local)",
                  "host_name": "raspberrypi0.lan",
@@ -92,7 +100,27 @@ metadata = {
                      },
 }
 
-default_zone = supported_configs["zones"][1]
+
+def get_preferred_zone():
+    """
+    Return the preferred zone number.  For this thermostat the preferred zone
+    number is the local zone if present, otherwise will fail over the the
+    remote zone.
+
+    inputs:
+        None
+    returns:
+        (int): zone number.
+    """
+    # loopback does not work so use local sht31 zone if testing
+    # on the local net.  If not, use the DNS name.
+    local_host = metadata[LOFT_SHT31]["host_name"]
+    zone = str([LOFT_SHT31_REMOTE, LOFT_SHT31][
+        util.is_host_on_local_net(local_host)[0]])
+    return zone
+
+
+default_zone = get_preferred_zone()
 default_zone_name = ALIAS + "_" + str(default_zone)
 
 argv = [

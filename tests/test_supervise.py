@@ -6,6 +6,7 @@ import unittest
 
 # local imports
 from thermostatsupervisor import emulator_config
+from thermostatsupervisor import environment as env
 from thermostatsupervisor import supervise as sup
 from thermostatsupervisor import utilities as util
 from tests import unit_test_common as utc
@@ -22,7 +23,7 @@ class Test(utc.UnitTest):
         self.teardown_mock_thermostat_zone()
         super().tearDown()
 
-    @unittest.skipIf(util.is_azure_environment(),
+    @unittest.skipIf(env.is_azure_environment(),
                      "this test not supported on Azure Pipelines")
     def test_supervisor(self):
         """Verify main supervisor loop."""

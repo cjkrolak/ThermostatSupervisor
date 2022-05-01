@@ -22,7 +22,12 @@ supported_configs = {"module": "mmm",
 # user should configure these zones and IP addresses for their application.
 MAIN_3M50 = 0  # zone 0
 BASEMENT_3M50 = 1  # zone 1
-mmm_metadata = {
+
+# metadata dict
+# 'zone_name' is returned by self.get_zone_name
+# 'host_name' is used for dns lookup of IP address for each zone
+# 'ip_address' key (if present is used for hard-coding IP address
+metadata = {
     MAIN_3M50: {"zone_name": "Main Level",
                 "host_name": "thermostat-fd-b3-be.lan",
                 },

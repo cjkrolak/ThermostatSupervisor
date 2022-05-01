@@ -4,6 +4,7 @@ import time
 import traceback
 
 # local imports
+from thermostatsupervisor import environment as env
 from thermostatsupervisor import kumocloud_config
 from thermostatsupervisor import thermostat_api as api
 from thermostatsupervisor import thermostat_common as tc
@@ -11,9 +12,9 @@ from thermostatsupervisor import utilities as util
 
 # pykumo import
 PYKUMO_DEBUG = False  # debug uses local pykumo repo instead of pkg
-if PYKUMO_DEBUG and not util.is_azure_environment():
-    pykumo = util.dynamic_module_import("pykumo",
-                                        "..\\..\\pykumo\\pykumo")
+if PYKUMO_DEBUG and not env.is_azure_environment():
+    pykumo = env.dynamic_module_import("pykumo",
+                                       "..\\..\\pykumo\\pykumo")
 else:
     import pykumo  # noqa E402, from path / site packages
 
@@ -243,7 +244,10 @@ class ThermostatZone(tc.ThermostatCommonZone):
             (str) zone name
         """
         self.refresh_zone_info()
-        return self.get_parameter('label')
+        zone_name = self.get_parameter('label')
+        # update metadata dict.
+        kumocloud_config.metadata[self.zone_number]["zone_name"] = zone_name
+        return zone_name
 
     def get_display_temp(self) -> float:  # used
         """
@@ -645,7 +649,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
 if __name__ == "__main__":
 
     # verify environment
-    util.get_python_version()
+    env.dynamic_module_import()
 
     # get zone override
     zone_number = api.load_user_inputs(kumocloud_config)
