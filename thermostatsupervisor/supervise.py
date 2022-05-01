@@ -6,6 +6,7 @@ import sys
 import time
 
 # local imports
+from thermostatsupervisor import environment as env
 from thermostatsupervisor import thermostat_api as api
 from thermostatsupervisor import utilities as util
 
@@ -127,6 +128,6 @@ if __name__ == "__main__":
         argv_inputs = sys.argv
 
     # verify environment
-    util.get_python_version()
+    env.get_python_version()
 
     exec_supervise(debug=True, argv_list=argv_inputs)

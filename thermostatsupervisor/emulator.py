@@ -4,6 +4,7 @@ import traceback
 
 # local imports
 from thermostatsupervisor import emulator_config
+from thermostatsupervisor import environment as env
 from thermostatsupervisor import thermostat_api as api
 from thermostatsupervisor import thermostat_common as tc
 from thermostatsupervisor import utilities as util
@@ -570,7 +571,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
 if __name__ == "__main__":
 
     # verify environment
-    util.get_python_version()
+    env.get_python_version()
 
     # get zone override
     zone_number = api.load_user_inputs(emulator_config)

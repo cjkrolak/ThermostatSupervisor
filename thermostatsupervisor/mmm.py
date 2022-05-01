@@ -12,13 +12,14 @@ from dns.exception import DNSException
 from thermostatsupervisor import mmm_config
 from thermostatsupervisor import thermostat_api as api
 from thermostatsupervisor import thermostat_common as tc
+from thermostatsupervisor import environment as env
 from thermostatsupervisor import utilities as util
 
 # radiotherm import
 MMM_DEBUG = False  # debug uses local radiotherm repo instead of pkg
-if MMM_DEBUG and not util.is_azure_environment():
-    radiotherm = util.dynamic_module_import("radiotherm",
-                                            "..//..//radiotherm")
+if MMM_DEBUG and not env.is_azure_environment():
+    radiotherm = env.dynamic_module_import("radiotherm",
+                                           "..//..//radiotherm")
 else:
     import radiotherm  # noqa E402, from path / site packages
 
@@ -34,8 +35,8 @@ class ThermostatClass(tc.ThermostatCommon):
 
         inputs:
             zone(str):  zone of thermostat on local net.
-            mmm_metadata dict above must have correct local IP address for each
-            zone.
+            mmm_config.metadata dict must have correct local IP address for
+            each zone.
         """
         # construct the superclass
         # tc.ThermostatCommonZone.__init__(self)
@@ -47,13 +48,15 @@ class ThermostatClass(tc.ThermostatCommon):
         self.zone_name = int(zone)
         # use hard-coded IP address if provided, otherwise
         # use host dns lookup
-        self.host_name = mmm_config.mmm_metadata[
+        self.host_name = mmm_config.metadata[
             self.zone_name]["host_name"]
-        if "ip_address" in mmm_config.mmm_metadata[
+        # populate IP address from metadata dict.
+        if "ip_address" in mmm_config.metadata[
                 self.zone_name]:
-            self.ip_address = mmm_config.mmm_metadata[
+            self.ip_address = mmm_config.metadata[
                 self.zone_name]["ip_address"]
         else:
+            # get IP address from DNS lookup on local net.
             ip_status, self.ip_address = util.is_host_on_local_net(
                 self.host_name)
             if not ip_status:
@@ -243,7 +246,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
             return self.device_id.name['raw']
         else:
             # override from config file
-            return mmm_config.mmm_metadata[zone]["zone_name"]
+            return mmm_config.metadata[zone]["zone_name"]
 
     def get_display_temp(self) -> float:
         """
@@ -779,7 +782,7 @@ radiotherm.thermostat.Thermostat.__init__ = __init__
 if __name__ == "__main__":
 
     # verify environment
-    util.get_python_version()
+    env.get_python_version()
 
     # get zone override
     zone_number = api.load_user_inputs(mmm_config)

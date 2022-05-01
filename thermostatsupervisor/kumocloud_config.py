@@ -30,6 +30,9 @@ supported_configs = {"module": "kumocloud",
                      "modes": ["OFF_MODE", "HEAT_MODE", "COOL_MODE",
                                "DRY_MODE", "AUTO_MODE", "UNKNOWN_MODE"]}
 
+# metadata dict
+# 'zone_name' is updated by Zone.get_zone_name()
+# 'host_name' is just for reference
 metadata = {
     MAIN_LEVEL: {"zone_name": "main",
                  "host_name": "tbd",

@@ -30,6 +30,11 @@ supported_configs = {"module": "kumolocal",
                      "modes": ["OFF_MODE", "HEAT_MODE", "COOL_MODE",
                                "DRY_MODE", "AUTO_MODE", "UNKNOWN_MODE"]}
 
+# metadata dict
+# 'zone_name' is a placeholder, used at Thermostat class level.
+# 'zone_name' is updated by device memory via Zone.get_zone_name()
+# 'host_name' is used for DNS lookup to determine if device
+# 'ip_address' is just for reference.
 metadata = {
     MAIN_LEVEL: {"ip_address": "192.168.86.229",  # local IP, for ref only.
                  "zone_name": "Main Level",  # customize for your site.

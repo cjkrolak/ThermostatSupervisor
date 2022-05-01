@@ -21,6 +21,7 @@ import traceback
 import requests
 
 # local imports
+from thermostatsupervisor import environment as env
 from thermostatsupervisor import sht31_config
 from thermostatsupervisor import thermostat_api as api
 from thermostatsupervisor import thermostat_common as tc
@@ -103,7 +104,7 @@ class ThermostatClass(tc.ThermostatCommon):
         returns:
             (str):  IP address
         """
-        return util.get_env_variable(env_key)["value"]
+        return env.get_env_variable(env_key)["value"]
 
     def spawn_flask_server(self):
         """
@@ -491,7 +492,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
 if __name__ == "__main__":
 
     # verify environment
-    util.get_python_version()
+    env.get_python_version()
 
     # get zone override
     api.uip = api.UserInputs(argv_list=None,

@@ -13,6 +13,7 @@ from flask import Flask, Response, send_from_directory
 from flask_wtf.csrf import CSRFProtect
 
 # local imports
+from thermostatsupervisor import environment as env
 from thermostatsupervisor import supervise as sup
 from thermostatsupervisor import thermostat_api as api
 from thermostatsupervisor import utilities as util
@@ -24,13 +25,13 @@ if util.is_windows_environment():
     #     local IP works both itself and to remote Linux client.
     # win server from command line:
     #
-    flask_ip_address = util.get_local_ip()
+    flask_ip_address = env.get_local_ip()
 else:
     # Linux server from Thoney IDE: must update Thonny to run from root
     #   page opens on both loopback Linux and remote Win client, but
     #       no data loads.
     # flask_ip_address = '127.0.0.1'  # almost works from Linux client
-    flask_ip_address = util.get_local_ip()  # almost works from Linux client
+    flask_ip_address = env.get_local_ip()  # almost works from Linux client
     # on Linux both methds are returning correct page header, but no data
 FLASK_PORT = 5001  # note: ports below 1024 require root access on Linux
 FLASK_USE_HTTPS = False  # HTTPS requires a cert to be installed.

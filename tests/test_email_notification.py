@@ -9,6 +9,7 @@ from unittest import mock
 
 # local libraries
 from thermostatsupervisor import email_notification as eml
+from thermostatsupervisor import environment as env
 from thermostatsupervisor import utilities as util
 from tests import unit_test_common as utc
 
@@ -80,7 +81,7 @@ class Test(utc.UnitTest):
         """Test send_email_alerts() functionality without email address."""
 
         # cache valid to_address
-        to_address_valid = util.get_env_variable('GMAIL_USERNAME')
+        to_address_valid = env.get_env_variable('GMAIL_USERNAME')
 
         # send message with no inputs, UTIL.NO_ERROR expected
         for name_to_omit in ["GMAIL_USERNAME", "GMAIL_PASSWORD"]:

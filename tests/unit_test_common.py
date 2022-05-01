@@ -16,12 +16,13 @@ from thermostatsupervisor import honeywell_config
 from thermostatsupervisor import supervise as sup
 from thermostatsupervisor import thermostat_api as api
 from thermostatsupervisor import thermostat_common as tc
+from thermostatsupervisor import environment as env
 from thermostatsupervisor import utilities as util
 
 # enable modes
 ENABLE_FUNCTIONAL_INTEGRATION_TESTS = True  # enable func int tests
 ENABLE_PERFORMANCE_INTEGRATION_TESTS = False and \
-    not util.is_azure_environment()  # enable performance int tests
+    not env.is_azure_environment()  # enable performance int tests
 ENABLE_SUPERVISE_INTEGRATION_TESTS = True  # enable supervise int tests
 ENABLE_FLASK_INTEGRATION_TESTS = True  # enable flask int tests
 ENABLE_KUMOLOCAL_TESTS = False  # Kumolocal is local net only
@@ -34,7 +35,7 @@ unit_test_emulator = emulator_config.argv
 
 unit_test_sht31 = ["supervise.py",  # module
                    "sht31",  # thermostat
-                   ["99", "1"][util.is_azure_environment()],  # zone
+                   ["99", "1"][env.is_azure_environment()],  # zone
                    "19",  # poll time in sec
                    "359",  # reconnect time in sec
                    "3",  # tolerance
