@@ -221,12 +221,8 @@ class UserInputs(util.UserInputs):
             self.parent_keys = list(self.user_inputs_file.keys())
             # reinit user_inputs dict based on INI file structure
             self.initialize_user_inputs(self.parent_keys)
-            print("DEBUG: user_inputs keys=%s" %
-                  list(self.user_inputs.keys()))
             # populate user_inputs from user_inputs_file
-            print("DEBUG: parent_keys from file=%s" % self.parent_keys)
             for section in self.parent_keys:
-                print("DEBUG: section=%s" % section)
                 for fld in input_flds:
                     if fld == input_flds.input_file:
                         # input file field will not be in the file
@@ -265,8 +261,11 @@ class UserInputs(util.UserInputs):
                        current_key, input_flds.thermostat_type) + "_" +
                        str(self.get_user_inputs(current_key, input_flds.zone)))
             self.user_inputs[new_key] = self.user_inputs.pop(current_key)
+
+            # update paremeters for new parent keys
             self.zone_name = new_key  # set Zone name
             self.default_parent_key = new_key
+            self.parent_keys = list(self.user_inputs.keys())
         else:
             print("%s" % self.get_user_inputs(list(self.user_inputs.keys())[0],
                                               input_flds.thermostat_type))
