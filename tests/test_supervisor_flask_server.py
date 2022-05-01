@@ -40,7 +40,6 @@ class IntegrationTest(utc.UnitTest):
         if not util.is_azure_environment():
             # mock the argv list
             sfs.argv = utc.unit_test_argv
-            print(f"DEBUG: in setup supervise sfs.argv={sfs.argv}")
             print("starting supervise flask server thread...")
             self.flask_server = threading.Thread(
                 target=sfs.app.run, args=('0.0.0.0', sfs.FLASK_PORT, False),
