@@ -782,7 +782,7 @@ radiotherm.thermostat.Thermostat.__init__ = __init__
 if __name__ == "__main__":
 
     # verify environment
-    env.dynamic_module_import()
+    env.get_python_version()
 
     # get zone override
     zone_number = api.load_user_inputs(mmm_config)

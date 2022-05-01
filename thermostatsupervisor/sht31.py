@@ -492,7 +492,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
 if __name__ == "__main__":
 
     # verify environment
-    env.dynamic_module_import()
+    env.get_python_version()
 
     # get zone override
     api.uip = api.UserInputs(argv_list=None,

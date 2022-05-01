@@ -128,6 +128,6 @@ if __name__ == "__main__":
         argv_inputs = sys.argv
 
     # verify environment
-    env.dynamic_module_import()
+    env.get_python_version()
 
     exec_supervise(debug=True, argv_list=argv_inputs)

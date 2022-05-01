@@ -680,7 +680,7 @@ if __name__ == "__main__":
     print("SHT31 sensor Flask server")
 
     # verify environment
-    env.dynamic_module_import()
+    env.get_python_version()
 
     # parse runtime parameters
     uip = UserInputs()
