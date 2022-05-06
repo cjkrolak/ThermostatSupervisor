@@ -600,7 +600,10 @@ if __name__ == "__main__":
     env.get_python_version()
 
     # get zone override
-    zone_number = api.load_user_inputs(kumolocal_config)
+    api.uip = api.UserInputs(argv_list=None,
+                             thermostat_type=kumolocal_config.ALIAS)
+    zone_number = api.uip.get_user_inputs(api.uip.zone_name,
+                                          api.input_flds.zone)
 
     tc.thermostat_basic_checkout(
         kumolocal_config.ALIAS,
