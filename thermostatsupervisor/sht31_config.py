@@ -116,7 +116,7 @@ def get_preferred_zone():
     # on the local net.  If not, use the DNS name.
     local_host = metadata[LOFT_SHT31]["host_name"]
     zone = str([LOFT_SHT31_REMOTE, LOFT_SHT31][
-        util.is_host_on_local_net(local_host)[0]])
+        util.is_host_on_local_net(local_host, verbose=False)[0]])
     return zone
 
 

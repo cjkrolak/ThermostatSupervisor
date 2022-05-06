@@ -315,7 +315,7 @@ def f_to_c(tempf) -> float:
         raise TypeError(f"raw value '{tempf}' is not an int or float")
 
 
-def is_host_on_local_net(host_name, ip_address=None):
+def is_host_on_local_net(host_name, ip_address=None, verbose=False):
     """
     Return True if specified host is on local network.
     socket.gethostbyaddr() throws exception for some IP address
@@ -324,6 +324,7 @@ def is_host_on_local_net(host_name, ip_address=None):
     inputs:
         host_name(str): expected host name.
         ip_address(str): target IP address on local net.
+        verbose(bool): if True, print out status.
     returns:
         tuple(bool, str): True if confirmed on local net, else False.
                           ip_address if known
@@ -336,9 +337,12 @@ def is_host_on_local_net(host_name, ip_address=None):
         except socket.gaierror:
             return False, None
         if host_found:
-            print(f"host {host_name} found at {host_found}")
+            if verbose:
+                print(f"host {host_name} found at {host_found}")
             return True, host_found
         else:
+            if verbose:
+                print(f"host {host_name} is not detected on local net")
             return False, None
 
     else:

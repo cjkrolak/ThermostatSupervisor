@@ -213,6 +213,7 @@ class UserInputs(util.UserInputs):
         input_file = self.get_user_inputs(self.default_parent_key,
                                           input_flds.input_file)
         if input_file is not None:
+            # aise Exception("dynamic_update_user_inputs found")
             self.using_input_file = True
             print(f"DEBUG: reading runtime arguments from '{input_file}'...")
             self.parse_input_file(input_file)

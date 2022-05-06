@@ -58,7 +58,7 @@ class ThermostatClass(tc.ThermostatCommon):
         else:
             # get IP address from DNS lookup on local net.
             ip_status, self.ip_address = util.is_host_on_local_net(
-                self.host_name)
+                self.host_name, verbose=True)
             if not ip_status:
                 raise DNSException(
                     f"failed to resolve ip address for 3m thermostat "
