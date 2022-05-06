@@ -500,9 +500,6 @@ if __name__ == "__main__":
     zone_number = api.uip.get_user_inputs(api.uip.zone_name,
                                           api.input_flds.zone)
 
-    # TODO: override zone for now, need to update for local IP detect
-    zone_number = sht31_config.LOFT_SHT31_REMOTE
-
     tc.thermostat_basic_checkout(
         sht31_config.ALIAS,
         zone_number,
