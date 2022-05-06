@@ -800,7 +800,7 @@ if __name__ == "__main__":
     # verify environment
     env.get_python_version()
 
-    # get zone override
+    # get zone override, only 1 zone supported so use default.
     zone_number = api.load_user_inputs(honeywell_config)
 
     _, Zone = tc.thermostat_basic_checkout(
