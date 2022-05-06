@@ -79,7 +79,8 @@ class EnvironmentTests(utc.UnitTest):
             print(f"testing for '{test_case[0]}' at {test_case[1]}, expect "
                   f"{test_case[2]}")
             result, ip_address = util.is_host_on_local_net(test_case[0],
-                                                           test_case[1])
+                                                           test_case[1],
+                                                           True)
             # verify IP length returned
             if result:
                 ip_length_symbol = ">="
