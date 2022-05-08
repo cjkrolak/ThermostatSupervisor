@@ -618,8 +618,8 @@ class UserInputs():
                     if not self.suppress_warnings:
                         log_msg(
                             f"WARNING: '{proposed_value}' is not a valid "
-                            f"choice parent_key={parent_key}, child_key="
-                            f"{child_key}', using default({default_value})",
+                            f"choice parent_key='{parent_key}', child_key="
+                            f"'{child_key}', using default '{default_value}'",
                             mode=BOTH_LOG,
                             func_name=1)
                     attr["value"] = attr["default"]

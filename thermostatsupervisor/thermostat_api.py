@@ -353,7 +353,7 @@ def load_hardware_library(thermostat_type):
 
 def load_user_inputs(config_module):
     """
-    Load the user inputs and return the zone number.
+    Load the default user inputs and return the zone number.
 
     inputs:
         config_module(obj): config module
@@ -365,6 +365,6 @@ def load_user_inputs(config_module):
     uip = UserInputs(argv_list=config_module.argv,
                      thermostat_type=config_module.ALIAS,
                      zone_name=zone_name)
-    zone_number = uip.get_user_inputs(zone_name,
+    zone_number = uip.get_user_inputs(uip.zone_name,
                                       input_flds.zone)
     return zone_number

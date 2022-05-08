@@ -800,8 +800,11 @@ if __name__ == "__main__":
     # verify environment
     env.get_python_version()
 
-    # get zone override, only 1 zone supported so use default.
-    zone_number = api.load_user_inputs(honeywell_config)
+    # get zone override
+    api.uip = api.UserInputs(argv_list=None,
+                             thermostat_type=honeywell_config.ALIAS)
+    zone_number = api.uip.get_user_inputs(api.uip.zone_name,
+                                          api.input_flds.zone)
 
     _, Zone = tc.thermostat_basic_checkout(
         honeywell_config.ALIAS,
