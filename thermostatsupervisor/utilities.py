@@ -338,7 +338,7 @@ def is_host_on_local_net(host_name, ip_address=None, verbose=False):
             return False, None
         if host_found:
             if verbose:
-                print(f"host {host_name} found at {host_found}")
+                print(f"host {host_name} found at {host_found} on local net")
             return True, host_found
         else:
             if verbose:
