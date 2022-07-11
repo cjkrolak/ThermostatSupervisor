@@ -176,11 +176,11 @@ class ThermostatZone(tc.ThermostatCommonZone):
         self.thermostat_type = kumocloud_config.ALIAS
         self.device_id = Thermostat_obj.device_id
         self.Thermostat = Thermostat_obj
-        self.zone_name = Thermostat_obj.zone_name
+        self.zone_name = Thermostat_obj.zone_name  # init zone name
         self.zone_info = Thermostat_obj.get_all_metadata(
             Thermostat_obj.zone_number)
         self.zone_number = Thermostat_obj.zone_number
-        self.zone_name = self.get_zone_name()
+        self.zone_name = self.get_zone_name()  # get real zone name from device
 
     def get_parameter(self, key, parent_key=None, grandparent_key=None,
                       default_val=None):

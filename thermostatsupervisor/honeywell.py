@@ -708,13 +708,14 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
         Refresh the zone_info attribute.
 
         Method overridden from base class to add retry on connection errors.
+        Retry up to 24 hours for extended internet outages.
         inputs:
             force_refresh(bool): not used in this method
         returns:
             None, populates self.zone_info dict.
         """
         del force_refresh  # not used
-        number_of_retries = 3
+        number_of_retries = 11
         trial_number = 1
         retry_delay_sec = 60
         while trial_number < number_of_retries:
@@ -741,6 +742,7 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
                 if trial_number < number_of_retries:
                     time.sleep(retry_delay_sec)
                 trial_number += 1
+                retry_delay_sec *= 2  # double each time.
             else:
                 # log the mitigated failure
                 if trial_number > 1:

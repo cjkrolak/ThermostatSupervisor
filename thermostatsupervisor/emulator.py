@@ -25,7 +25,6 @@ class ThermostatClass(tc.ThermostatCommon):
         self.thermostat_type = emulator_config.ALIAS
 
         # configure zone info
-        self.zone_name = int(zone)
         self.zone_name = None  # initialize
         self.device_id = self.get_target_zone_id(self.zone_name)
         self.serial_number = None  # will be populated when unit is queried.
