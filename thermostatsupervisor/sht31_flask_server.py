@@ -684,7 +684,7 @@ if __name__ == "__main__":
 
     # parse runtime parameters
     uip = UserInputs()
-    debug = uip.get_user_inputs("debug")
+    debug = uip.get_user_inputs(uip.default_parent_key, "debug")
     if debug:
         print("Flask debug mode is enabled", file=sys.stderr)
 
