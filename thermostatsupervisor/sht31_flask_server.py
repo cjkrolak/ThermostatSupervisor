@@ -17,7 +17,6 @@ except ImportError as ex:
 # built-in imports
 import bunch
 import distutils.util
-import os
 import re
 import statistics
 import subprocess
@@ -25,7 +24,7 @@ import sys
 import time
 
 # third party imports
-from flask import Flask, request, send_from_directory
+from flask import Flask, request
 from flask_restful import Resource, Api  # noqa F405
 from flask_wtf.csrf import CSRFProtect
 
@@ -622,9 +621,7 @@ app.config.update(
 @app.route('/favicon.ico')
 def favicon():
     """Set favicon for browser tab."""
-    return send_from_directory(os.path.join(app.root_path, 'image'),
-                               'sht31.ico',
-                               mimetype='image/vnd.microsoft.icon')
+    return app.send_static_file('sht31.ico')
 
 
 class UserInputs(util.UserInputs):

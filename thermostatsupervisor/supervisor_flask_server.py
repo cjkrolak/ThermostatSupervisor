@@ -3,13 +3,12 @@ Flask server for displaying supervisor output on web page.
 """
 # built-in libraries
 import html
-import os
 from subprocess import Popen, PIPE, STDOUT, DEVNULL
 import sys
 import webbrowser
 
 # third party imports
-from flask import Flask, Response, send_from_directory
+from flask import Flask, Response
 from flask_wtf.csrf import CSRFProtect
 
 # local imports
@@ -72,9 +71,7 @@ app.config.update(
 @app.route('/favicon.ico')
 def favicon():
     """Faviocon displayed in browser tab."""
-    return send_from_directory(os.path.join(app.root_path, 'image'),
-                               'honeywell.ico',
-                               mimetype='image/vnd.microsoft.icon')
+    return app.send_static_file('honeywell.ico')
 
 
 @app.route('/')
