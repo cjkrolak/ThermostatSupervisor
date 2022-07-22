@@ -3,13 +3,12 @@ Flask server for displaying supervisor output on web page.
 """
 # built-in libraries
 import html
-import os
 from subprocess import Popen, PIPE, STDOUT, DEVNULL
 import sys
 import webbrowser
 
 # third party imports
-from flask import Flask, Response, send_from_directory
+from flask import Flask, Response
 from flask_wtf.csrf import CSRFProtect
 
 # local imports

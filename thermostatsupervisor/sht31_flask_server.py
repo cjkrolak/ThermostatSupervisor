@@ -17,7 +17,6 @@ except ImportError as ex:
 # built-in imports
 import bunch
 import distutils.util
-import os
 import re
 import statistics
 import subprocess
@@ -25,7 +24,7 @@ import sys
 import time
 
 # third party imports
-from flask import Flask, request, send_from_directory
+from flask import Flask, request
 from flask_restful import Resource, Api  # noqa F405
 from flask_wtf.csrf import CSRFProtect
 
