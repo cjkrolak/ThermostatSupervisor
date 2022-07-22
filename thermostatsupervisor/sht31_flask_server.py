@@ -622,9 +622,7 @@ app.config.update(
 @app.route('/favicon.ico')
 def favicon():
     """Set favicon for browser tab."""
-    return send_from_directory(os.path.join(app.root_path, 'image'),
-                               'sht31.ico',
-                               mimetype='image/vnd.microsoft.icon')
+    return app.send_static_file('sht31.ico')
 
 
 class UserInputs(util.UserInputs):

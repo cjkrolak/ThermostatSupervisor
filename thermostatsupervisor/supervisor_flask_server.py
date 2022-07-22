@@ -72,9 +72,7 @@ app.config.update(
 @app.route('/favicon.ico')
 def favicon():
     """Faviocon displayed in browser tab."""
-    return send_from_directory(os.path.join(app.root_path, 'image'),
-                               'honeywell.ico',
-                               mimetype='image/vnd.microsoft.icon')
+    return app.send_static_file('honeywell.ico')
 
 
 @app.route('/')
