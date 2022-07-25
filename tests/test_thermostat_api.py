@@ -12,10 +12,14 @@ from thermostatsupervisor import thermostat_api as api
 from thermostatsupervisor import utilities as util
 from tests import unit_test_common as utc
 
+thermostat_type = emulator_config.ALIAS
+zone_name = emulator_config.default_zone_name
+
 
 class Test(utc.UnitTest):
     """Test functions in thermostat_api.py."""
-    tstat = emulator_config.ALIAS
+    tstat = thermostat_type
+    zone_name = zone_name
 
     def setUp(self):
         super().setUp()
@@ -99,11 +103,16 @@ class Test(utc.UnitTest):
             "default": {"measurement": 13, "max_measurements": None,
                         "exp_result": False},
         }
-        api.uip = api.UserInputs(None, "unit test parser")
-        max_measurement_bkup = api.uip.get_user_inputs(api.MEASUREMENTS_FLD)
+        # backup max_measurements
+        api.uip = api.UserInputs(self.unit_test_argv, "unit test parser",
+                                 self.tstat,
+                                 self.zone_name)
+        max_measurement_bkup = api.uip.get_user_inputs(
+            api.uip.zone_name, api.input_flds.measurements)
         try:
             for test_case, parameters in test_cases.items():
-                api.uip.set_user_inputs(api.MEASUREMENTS_FLD,
+                api.uip.set_user_inputs(api.uip.zone_name,
+                                        api.input_flds.measurements,
                                         parameters["max_measurements"])
                 act_result = api.uip.max_measurement_count_exceeded(
                     parameters["measurement"])
@@ -112,7 +121,10 @@ class Test(utc.UnitTest):
                                  f"test case '{test_case}', "
                                  f"expected={exp_result}, actual={act_result}")
         finally:
-            api.uip.set_user_inputs(api.MEASUREMENTS_FLD, max_measurement_bkup)
+            # restore max masurements
+            api.uip.set_user_inputs(api.uip.zone_name,
+                                    api.input_flds.measurements,
+                                    max_measurement_bkup)
 
 
 class RuntimeParameterTest(utc.RuntimeParameterTest):
@@ -121,26 +133,40 @@ class RuntimeParameterTest(utc.RuntimeParameterTest):
     mod = api  # module to test
 
     script = os.path.realpath(__file__)
-    thermostat_type = emulator_config.ALIAS
+    thermostat_type = thermostat_type
+    # parent_key = zone_name  # aka zone_name in this context
     zone = 0
     poll_time_sec = 9
     connection_time_sec = 90
     tolerance = 3
     target_mode = "HEAT_MODE"
     measurements = 1
+    input_file = "data\\thermostat_api_input.ini"
 
     # fields for testing, mapped to class variables.
     # (value, field name)
     test_fields = [
         (script, os.path.realpath(__file__)),
-        (thermostat_type, api.THERMOSTAT_TYPE_FLD),
-        (zone, api.ZONE_FLD),
-        (poll_time_sec, api.POLL_TIME_FLD),
-        (connection_time_sec, api.CONNECT_TIME_FLD),
-        (tolerance, api.TOLERANCE_FLD),
-        (target_mode, api.TARGET_MODE_FLD),
-        (measurements, api.MEASUREMENTS_FLD),
+        (thermostat_type, api.input_flds.thermostat_type),
+        (zone, api.input_flds.zone),
+        (poll_time_sec, api.input_flds.poll_time),
+        (connection_time_sec, api.input_flds.connection_time),
+        (tolerance, api.input_flds.tolerance),
+        (target_mode, api.input_flds.target_mode),
+        (measurements, api.input_flds.measurements),
     ]
+    # test case with input file
+    test_fields_with_file = [
+        (script, os.path.realpath(__file__)),
+        (thermostat_type, api.input_flds.thermostat_type),
+        (zone, api.input_flds.zone),
+        (poll_time_sec, api.input_flds.poll_time),
+        (connection_time_sec, api.input_flds.connection_time),
+        (tolerance, api.input_flds.tolerance),
+        (target_mode, api.input_flds.target_mode),
+        (measurements, api.input_flds.measurements),
+        (input_file, api.input_flds.input_file),
+        ]
 
 
 if __name__ == "__main__":

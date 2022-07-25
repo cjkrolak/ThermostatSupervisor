@@ -15,8 +15,8 @@ except ImportError as ex:
     pi_library_exception = ex  # unsuccessful
 
 # built-in imports
+import bunch
 import distutils.util
-import os
 import re
 import statistics
 import subprocess
@@ -24,16 +24,19 @@ import sys
 import time
 
 # third party imports
-from flask import Flask, request, send_from_directory
+from flask import Flask, request
 from flask_restful import Resource, Api  # noqa F405
 from flask_wtf.csrf import CSRFProtect
 
 # local imports
+from thermostatsupervisor import environment as env
 from thermostatsupervisor import sht31_config
 from thermostatsupervisor import utilities as util
 
 # runtime override fields
-DEBUG_FLD = "debug"
+input_flds = bunch.Bunch()
+input_flds.debug_fld = "debug"
+
 uip = None  # user inputs object
 
 # SHT31D write commands (register, [data])
@@ -618,46 +621,55 @@ app.config.update(
 @app.route('/favicon.ico')
 def favicon():
     """Set favicon for browser tab."""
-    return send_from_directory(os.path.join(app.root_path, 'image'),
-                               'sht31.ico',
-                               mimetype='image/vnd.microsoft.icon')
+    return app.send_static_file('sht31.ico')
 
 
 class UserInputs(util.UserInputs):
     """Manage runtime arguments for sht31_flask_server."""
 
-    def __init__(self, argv_list=None, help_description=None):
+    def __init__(self, argv_list=None, help_description=None,
+                 suppress_warnings=False):
         """
         UserInputs constructor for sht31_flask_server.
 
         inputs:
-            argv_list(list): override runtime values
-            help_description(str): description field for help text
+            argv_list(list): override runtime values.
+            help_description(str): description field for help text.
+            suppress_warnings(bool): True to suppress warning msgs.
         """
         self.argv_list = argv_list
+        self.help_description = help_description
+        self.suppress_warnings = suppress_warnings
 
         # initialize parent class
-        super().__init__(argv_list, help_description)
+        super().__init__(argv_list, help_description, suppress_warnings)
 
-    def initialize_user_inputs(self):
+    def initialize_user_inputs(self, parent_keys=None):
         """
         Populate user_inputs dict.
         """
+        if parent_keys is None:
+            parent_keys = [self.default_parent_key]
+        self.valid_sflags = []
         # define the user_inputs dict.
-        self.user_inputs = {
-            DEBUG_FLD: {
-                "order": 1,    # index in the argv list
-                "value": None,
-                "type": lambda x: bool(distutils.util.strtobool(
-                    str(x).strip())),
-                "default": False,
-                "valid_range": [True, False, 1, 0],
-                "sflag": "-d",
-                "lflag": "--" + DEBUG_FLD,
-                "help": "flask server debug mode"},
-        }
-        self.valid_sflags = [self.user_inputs[k]["sflag"]
-                             for k in self.user_inputs]
+        for parent_key in parent_keys:
+            self.user_inputs = {parent_key: {
+                input_flds.debug_fld: {
+                    "order": 1,    # index in the argv list
+                    "value": None,
+                    "type": lambda x: bool(distutils.util.strtobool(
+                        str(x).strip())),
+                    "default": False,
+                    "valid_range": [True, False, 1, 0],
+                    "sflag": "-d",
+                    "lflag": "--" + input_flds.debug_fld,
+                    "help": "flask server debug mode",
+                    "required": False,
+                    },
+                },
+            }
+            self.valid_sflags += [self.user_inputs[parent_key][k]["sflag"]
+                                  for k in self.user_inputs[parent_key].keys()]
 
 
 if __name__ == "__main__":
@@ -665,11 +677,11 @@ if __name__ == "__main__":
     print("SHT31 sensor Flask server")
 
     # verify environment
-    util.get_python_version()
+    env.get_python_version()
 
     # parse runtime parameters
     uip = UserInputs()
-    debug = uip.get_user_inputs("debug")
+    debug = uip.get_user_inputs(uip.default_parent_key, "debug")
     if debug:
         print("Flask debug mode is enabled", file=sys.stderr)
 

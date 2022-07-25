@@ -13,6 +13,7 @@ import traceback
 
 # local imports
 from thermostatsupervisor import email_notification
+from thermostatsupervisor import environment as env
 from thermostatsupervisor import honeywell_config
 from thermostatsupervisor import thermostat_api as api
 from thermostatsupervisor import thermostat_common as tc
@@ -20,9 +21,9 @@ from thermostatsupervisor import utilities as util
 
 # honeywell import
 HONEYWELL_DEBUG = False  # debug uses local pyhtcc repo instead of pkg
-if HONEYWELL_DEBUG and not util.is_azure_environment():
-    pyhtcc = util.dynamic_module_import("pyhtcc",
-                                        "..\\..\\pyhtcc\\pyhtcc")
+if HONEYWELL_DEBUG and not env.is_azure_environment():
+    pyhtcc = env.dynamic_module_import("pyhtcc",
+                                       "..\\..\\pyhtcc\\pyhtcc")
 else:
     import pyhtcc  # noqa E402, from path / site packages
 
@@ -51,8 +52,8 @@ class ThermostatClass(pyhtcc.PyHTCC, tc.ThermostatCommon):
 
         # configure zone info
         self.thermostat_type = honeywell_config.ALIAS
-        self.zone_number = int(zone)
-        self.device_id = self.get_target_zone_id(self.zone_number)
+        self.zone_name = int(zone)
+        self.device_id = self.get_target_zone_id(self.zone_name)
 
     def __del__(self):
         """Clean-up session created in pyhtcc."""
@@ -291,7 +292,7 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
         # zone info
         self.thermostat_type = honeywell_config.ALIAS
         self.device_id = Thermostat_obj.device_id
-        self.zone_number = Thermostat_obj.zone_number
+        self.zone_name = Thermostat_obj.zone_name
         self.zone_name = self.get_zone_name()
 
         # runtime parameter defaults
@@ -707,13 +708,14 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
         Refresh the zone_info attribute.
 
         Method overridden from base class to add retry on connection errors.
+        Retry up to 24 hours for extended internet outages.
         inputs:
             force_refresh(bool): not used in this method
         returns:
             None, populates self.zone_info dict.
         """
         del force_refresh  # not used
-        number_of_retries = 3
+        number_of_retries = 11
         trial_number = 1
         retry_delay_sec = 60
         while trial_number < number_of_retries:
@@ -740,6 +742,7 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
                 if trial_number < number_of_retries:
                     time.sleep(retry_delay_sec)
                 trial_number += 1
+                retry_delay_sec *= 2  # double each time.
             else:
                 # log the mitigated failure
                 if trial_number > 1:
@@ -797,12 +800,13 @@ class TimeoutHTTPAdapter(HTTPAdapter):
 if __name__ == "__main__":
 
     # verify environment
-    util.get_python_version()
+    env.get_python_version()
 
     # get zone override
     api.uip = api.UserInputs(argv_list=None,
                              thermostat_type=honeywell_config.ALIAS)
-    zone_number = api.uip.get_user_inputs(api.ZONE_FLD)
+    zone_number = api.uip.get_user_inputs(api.uip.zone_name,
+                                          api.input_flds.zone)
 
     _, Zone = tc.thermostat_basic_checkout(
         honeywell_config.ALIAS,

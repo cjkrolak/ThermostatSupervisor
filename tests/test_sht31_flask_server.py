@@ -10,7 +10,7 @@ import unittest
 
 # local imports
 # thermostat_api is imported but not used to avoid a circular import
-
+from thermostatsupervisor import environment as env
 from thermostatsupervisor import thermostat_api as api  # noqa F401, pylint: disable=unused-import.
 from thermostatsupervisor import sht31
 from thermostatsupervisor import sht31_config
@@ -21,7 +21,7 @@ from tests import unit_test_common as utc
 
 @unittest.skipIf(not utc.ENABLE_SHT31_TESTS,
                  "sht31 tests are disabled")
-@unittest.skipIf(util.is_azure_environment(),
+@unittest.skipIf(env.is_azure_environment(),
                  "this test not supported on Azure Pipelines")
 @unittest.skipIf(not utc.ENABLE_FLASK_INTEGRATION_TESTS,
                  "flask integration tests are disabled")
@@ -40,11 +40,7 @@ class IntegrationTest(utc.UnitTest):
 
         # loopback does not work so use local sht31 zone if testing
         # on the local net.  If not, use the DNS name.
-        local_host = sht31_config.sht31_metadata[
-            sht31_config.LOFT_SHT31]["host_name"]
-        zone = str([sht31_config.LOFT_SHT31_REMOTE,
-                    sht31_config.LOFT_SHT31][
-                        util.is_host_on_local_net(local_host)[0]])
+        zone = sht31_config.get_preferred_zone()
 
         for test_case in sht31_config.flask_folder:
             if test_case in no_test_list:
@@ -160,7 +156,7 @@ class RuntimeParameterTest(utc.RuntimeParameterTest):
     # (value, field name)
     test_fields = [
         (script, os.path.realpath(__file__)),
-        (debug, sht31_fs.DEBUG_FLD),
+        (debug, sht31_fs.input_flds.debug_fld),
     ]
 
 

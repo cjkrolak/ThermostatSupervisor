@@ -13,6 +13,7 @@ import unittest
 import requests
 
 # local imports
+from thermostatsupervisor import environment as env
 # thermostat_api is imported but not used to avoid a circular import
 from thermostatsupervisor import thermostat_api as api  # noqa F401, pylint: disable=unused-import.
 from thermostatsupervisor import supervisor_flask_server as sfs
@@ -20,9 +21,9 @@ from thermostatsupervisor import utilities as util
 from tests import unit_test_common as utc
 
 
-@unittest.skipIf(util.is_azure_environment(),
+@unittest.skipIf(env.is_azure_environment(),
                  "this test not supported on Azure Pipelines")
-@unittest.skipIf(not util.is_interactive_environment(),
+@unittest.skipIf(not env.is_interactive_environment(),
                  "this test hangs when run from the command line")
 @unittest.skipIf(not utc.ENABLE_FLASK_INTEGRATION_TESTS,
                  "flask integration tests are disabled")
@@ -37,10 +38,9 @@ class IntegrationTest(utc.UnitTest):
         sfs.measurements = 10
         sfs.unit_test_mode = True
         util.log_msg.file_name = "unit_test.txt"
-        if not util.is_azure_environment():
+        if not env.is_azure_environment():
             # mock the argv list
             sfs.argv = utc.unit_test_argv
-            print(f"DEBUG: in setup supervise sfs.argv={sfs.argv}")
             print("starting supervise flask server thread...")
             self.flask_server = threading.Thread(
                 target=sfs.app.run, args=('0.0.0.0', sfs.FLASK_PORT, False),
@@ -54,7 +54,7 @@ class IntegrationTest(utc.UnitTest):
                   "Azure pipelines, doing nothing")
 
     def tearDown(self):
-        if not util.is_azure_environment():
+        if not env.is_azure_environment():
             print(f"thread alive status={self.flask_server.is_alive()}")
             if self.flask_server.daemon:
                 print("flask server is daemon thread, "
@@ -72,7 +72,7 @@ class IntegrationTest(utc.UnitTest):
         supervise routine on.
         """
         # grab supervise web page result and display
-        flask_url = (sfs.FLASK_URL_PREFIX + util.get_local_ip() + ':' +
+        flask_url = (sfs.FLASK_URL_PREFIX + env.get_local_ip() + ':' +
                      str(sfs.FLASK_PORT))
 
         # delay for page load and initial data posting

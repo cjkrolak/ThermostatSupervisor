@@ -3,16 +3,16 @@ Flask server for displaying supervisor output on web page.
 """
 # built-in libraries
 import html
-import os
 from subprocess import Popen, PIPE, STDOUT, DEVNULL
 import sys
 import webbrowser
 
 # third party imports
-from flask import Flask, Response, send_from_directory
+from flask import Flask, Response
 from flask_wtf.csrf import CSRFProtect
 
 # local imports
+from thermostatsupervisor import environment as env
 from thermostatsupervisor import supervise as sup
 from thermostatsupervisor import thermostat_api as api
 from thermostatsupervisor import utilities as util
@@ -24,13 +24,13 @@ if util.is_windows_environment():
     #     local IP works both itself and to remote Linux client.
     # win server from command line:
     #
-    flask_ip_address = util.get_local_ip()
+    flask_ip_address = env.get_local_ip()
 else:
     # Linux server from Thoney IDE: must update Thonny to run from root
     #   page opens on both loopback Linux and remote Win client, but
     #       no data loads.
     # flask_ip_address = '127.0.0.1'  # almost works from Linux client
-    flask_ip_address = util.get_local_ip()  # almost works from Linux client
+    flask_ip_address = env.get_local_ip()  # almost works from Linux client
     # on Linux both methds are returning correct page header, but no data
 FLASK_PORT = 5001  # note: ports below 1024 require root access on Linux
 FLASK_USE_HTTPS = False  # HTTPS requires a cert to be installed.
@@ -71,9 +71,7 @@ app.config.update(
 @app.route('/favicon.ico')
 def favicon():
     """Faviocon displayed in browser tab."""
-    return send_from_directory(os.path.join(app.root_path, 'image'),
-                               'honeywell.ico',
-                               mimetype='image/vnd.microsoft.icon')
+    return app.send_static_file('honeywell.ico')
 
 
 @app.route('/')
@@ -82,9 +80,14 @@ def index():
     def run_supervise():
         sup.argv = argv  # pass runtime overrides to supervise
         api.uip = api.UserInputs(argv)
-        thermostat_type = api.uip.get_user_inputs(api.THERMOSTAT_TYPE_FLD)
-        zone = api.uip.get_user_inputs(api.ZONE_FLD)
-        measurement_cnt = api.uip.get_user_inputs(api.MEASUREMENTS_FLD)
+        thermostat_type = api.uip.get_user_inputs(
+            api.uip.zone_name,
+            api.input_flds.thermostat_type)
+        zone = api.uip.get_user_inputs(api.uip.zone_name,
+                                       api.input_flds.zone)
+        measurement_cnt = api.uip.get_user_inputs(
+            api.uip.zone_name,
+            api.input_flds.measurements)
         title = (f"{thermostat_type} thermostat zone {zone}, "
                  f"{measurement_cnt} measurements")
         yield f"<!doctype html><title>{title}</title>"

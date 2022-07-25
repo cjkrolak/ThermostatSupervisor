@@ -14,6 +14,7 @@ import sys
 import traceback
 
 # local libraries
+from thermostatsupervisor import environment as env
 from thermostatsupervisor import utilities as util
 
 # tracing data
@@ -63,17 +64,17 @@ def send_email_alert(to_address=None,
 
     # default email addresses from env variables
     if not to_address:
-        buff = util.get_env_variable('GMAIL_USERNAME')
+        buff = env.get_env_variable('GMAIL_USERNAME')
         to_address = buff["value"]
         if buff["status"] != util.NO_ERROR:
             return (buff["status"], return_status_msg_dict[buff["status"]])
     if not from_address:
-        buff = util.get_env_variable('GMAIL_USERNAME')
+        buff = env.get_env_variable('GMAIL_USERNAME')
         from_address = buff["value"]
         if buff["status"] != util.NO_ERROR:
             return (buff["status"], return_status_msg_dict[buff["status"]])
     if not from_password:
-        buff = util.get_env_variable('GMAIL_PASSWORD')
+        buff = env.get_env_variable('GMAIL_PASSWORD')
         from_password = buff["value"]
         if buff["status"] != util.NO_ERROR:
             return (buff["status"], return_status_msg_dict[buff["status"]])

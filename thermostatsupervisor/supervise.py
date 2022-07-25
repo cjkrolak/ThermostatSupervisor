@@ -6,6 +6,7 @@ import sys
 import time
 
 # local imports
+from thermostatsupervisor import environment as env
 from thermostatsupervisor import thermostat_api as api
 from thermostatsupervisor import utilities as util
 
@@ -40,7 +41,8 @@ def supervisor(thermostat_type, zone_str):
     # outer loop: sessions
     while not api.uip.max_measurement_count_exceeded(measurement):
         # make connection to thermostat
-        zone_num = api.uip.get_user_inputs(api.ZONE_FLD)
+        zone_num = api.uip.get_user_inputs(api.uip.zone_name,
+                                           api.input_flds.zone)
         util.log_msg(
             f"connecting to thermostat zone {zone_num} "
             f"(session:{session_count})...",
@@ -107,8 +109,12 @@ def exec_supervise(debug=True, argv_list=None):
     api.uip = api.UserInputs(argv_list)
 
     # main supervise function
-    supervisor(api.uip.get_user_inputs(api.THERMOSTAT_TYPE_FLD),
-               api.uip.get_user_inputs(api.ZONE_FLD))
+    # TODO - update for multi-zone application
+    supervisor(api.uip.get_user_inputs(api.uip.parent_keys[0],
+                                       api.input_flds.thermostat_type),
+               api.uip.get_user_inputs(api.uip.parent_keys[0],
+                                       api.input_flds.zone)
+               )
 
     return True
 
@@ -122,6 +128,6 @@ if __name__ == "__main__":
         argv_inputs = sys.argv
 
     # verify environment
-    util.get_python_version()
+    env.get_python_version()
 
     exec_supervise(debug=True, argv_list=argv_inputs)
