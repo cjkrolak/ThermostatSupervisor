@@ -537,15 +537,15 @@ class RuntimeParameterTest(UnitTest):
             expected_values = self.get_expected_vals_dict(parent_key)
 
         for parent_key, child_dict in expected_values.items():
-            for child_key, child_dict in child_dict.items():
+            for c_key, _ in child_dict.items():
                 self.assertEqual(
-                    expected_values[parent_key][child_key],
-                    self.uip.get_user_inputs(parent_key, child_key),
-                    f"expected({type(expected_values[parent_key][child_key])})"
-                    f" {expected_values[parent_key][child_key]} != "
+                    expected_values[parent_key][c_key],
+                    self.uip.get_user_inputs(parent_key, c_key),
+                    f"expected({type(expected_values[parent_key][c_key])})"
+                    f" {expected_values[parent_key][c_key]} != "
                     f"actual("
-                    f"{type(self.uip.get_user_inputs(parent_key, child_key))})"
-                    f" {self.uip.get_user_inputs(parent_key, child_key)}")
+                    f"{type(self.uip.get_user_inputs(parent_key, c_key))})"
+                    f" {self.uip.get_user_inputs(parent_key, c_key)}")
 
     def initialize_user_inputs(self):
         """
@@ -612,7 +612,7 @@ class RuntimeParameterTest(UnitTest):
         if not os.path.exists(arg):
             parser.error("The file %s does not exist!" % os.path.abspath(arg))
         else:
-            return open(arg, 'r')  # return an open file handle
+            return open(arg, 'rt')  # return an open file handle
 
     def test_parse_named_arguments_sflag(self):
         """
@@ -839,7 +839,7 @@ class UserInputs(util.UserInputs):
         # initialize parent class
         super().__init__(argv_list, help_description, suppress_warnings)
 
-    def initialize_user_inputs(self):
+    def initialize_user_inputs(self, parent_keys=None):
         """
         Populate user_inputs dict.
         """

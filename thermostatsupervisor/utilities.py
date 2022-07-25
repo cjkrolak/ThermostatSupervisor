@@ -396,7 +396,7 @@ class UserInputs():
         # parse the runtime arguments from input list or sys.argv
         self.parse_runtime_parameters(argv_list)
 
-    def initialize_user_inputs(self):
+    def initialize_user_inputs(self, parent_keys=None):
         """Populate user_inputs dictionary."""
         pass  # placeholder, is instance-specific
 
