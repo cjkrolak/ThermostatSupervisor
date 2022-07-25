@@ -143,8 +143,8 @@ class UserInputs(util.UserInputs):
                     "order": 4,  # index in the argv list
                     "value": None,
                     "type": int,
-                    "default": 60 * 10 * 8,
-                    "valid_range": range(0, 24 * 60 * 60 * 60),
+                    "default": 24 * 60 * 60,  # 1 day
+                    "valid_range": range(0, 7 * 24 * 60 * 60),  # up to 1 wk
                     "sflag": "-c",
                     "lflag": "--" + input_flds.connection_time,
                     "help": "server connection time (sec)",
@@ -351,19 +351,19 @@ def load_hardware_library(thermostat_type):
     return mod
 
 
-def load_user_inputs(config_module):
+def load_user_inputs(config_mod):
     """
     Load the default user inputs and return the zone number.
 
     inputs:
-        config_module(obj): config module
+        config_mod(obj): config module
     returns:
         zone_number(int): zone number
     """
     global uip
-    zone_name = config_module.default_zone_name
-    uip = UserInputs(argv_list=config_module.argv,
-                     thermostat_type=config_module.ALIAS,
+    zone_name = config_mod.default_zone_name
+    uip = UserInputs(argv_list=config_mod.argv,
+                     thermostat_type=config_mod.ALIAS,
                      zone_name=zone_name)
     zone_number = uip.get_user_inputs(uip.zone_name,
                                       input_flds.zone)
