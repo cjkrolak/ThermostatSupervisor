@@ -1,0 +1,17 @@
+.git
+.github
+azure-pipelines.yml
+CONTRIBUTING.md
+data
+debug
+doc
+LICENSE
+setup.cfg
+supervisor-env.txt
+tests/data
+tests/htmlcov
+thermostatsupervisor/data
+.gitattributes
+.gitignore
+.project
+.pydevproject
