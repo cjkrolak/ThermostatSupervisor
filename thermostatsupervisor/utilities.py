@@ -172,6 +172,7 @@ def write_to_file(full_path, file_size_bytes, msg):
 
 def is_windows_environment():
     """Return True if running on Windows PC."""
+    print("DEBUG: platform=%s" % platform.system().upper())
     return 'WINDOWS' in platform.system().upper()
 
 

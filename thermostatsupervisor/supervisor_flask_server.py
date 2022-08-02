@@ -30,7 +30,7 @@ else:
     #   page opens on both loopback Linux and remote Win client, but
     #       no data loads.
     # flask_ip_address = '127.0.0.1'  # almost works from Linux client
-    flask_ip_address = env.get_local_ip()  # almost works from Linux client
+    flask_ip_address = '0.0.0.0'
     # on Linux both methds are returning correct page header, but no data
 FLASK_PORT = 5001  # note: ports below 1024 require root access on Linux
 FLASK_USE_HTTPS = False  # HTTPS requires a cert to be installed.
@@ -94,15 +94,17 @@ def index():
 
         # runtime variabless
         executable = "python"
-        dont_buffer = "-u"
-        script = "supervise.py"
+        dont_buffer = "-u"  # option to not buffer results
+        run_module = "-m"  # option to reference package
+        script = "thermostatsupervisor.supervise"
         if argv:
             # argv list override for unit testing
-            arg_list = [executable, dont_buffer, script] + argv[1:]
+            arg_list = [executable, dont_buffer, run_module, script] + argv[1:]
         elif len(sys.argv) > 1:
-            arg_list = [executable, dont_buffer, script] + sys.argv[1:]
+            arg_list = ([executable, dont_buffer, run_module, script] +
+                        sys.argv[1:])
         else:
-            arg_list = [executable, dont_buffer, script]
+            arg_list = [executable, dont_buffer, run_module, script]
         with Popen(arg_list, stdin=DEVNULL, stdout=PIPE, stderr=STDOUT,
                    bufsize=1, universal_newlines=True, shell=True) as p_out:
             for i, line in enumerate(p_out.stdout):
