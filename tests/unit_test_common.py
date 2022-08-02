@@ -581,7 +581,7 @@ class RuntimeParameterTest(UnitTest):
         # argv = ["-a 1", "--b 2"]  # double dash doesn't work yet.
         argv = ["-a=1"]
         args = parser.parse_args(argv)
-        assert(args.a == 1)
+        assert (args.a == 1)
         # assert(args.b == 2)
 
     def test_parser_input_file(self):
