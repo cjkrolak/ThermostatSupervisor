@@ -16,7 +16,6 @@ except ImportError as ex:
 
 # built-in imports
 import bunch
-import distutils.util
 import re
 import statistics
 import subprocess
@@ -27,6 +26,7 @@ import time
 from flask import Flask, request
 from flask_restful import Resource, Api  # noqa F405
 from flask_wtf.csrf import CSRFProtect
+from str2bool import str2bool
 
 # local imports
 from thermostatsupervisor import environment as env
@@ -657,7 +657,7 @@ class UserInputs(util.UserInputs):
                 input_flds.debug_fld: {
                     "order": 1,    # index in the argv list
                     "value": None,
-                    "type": lambda x: bool(distutils.util.strtobool(
+                    "type": lambda x: bool(str2bool(
                         str(x).strip())),
                     "default": False,
                     "valid_range": [True, False, 1, 0],
