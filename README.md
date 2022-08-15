@@ -31,12 +31,13 @@ coverage for code coverage analysis<br/>
 psutil for all thermostat types<br/>
 
 ## Run the Docker Image:
-docker run --rm -it --privileged --env-file 'envfile' 'username'/thermostatsupervisor 'runtime parameters'<br/>
+docker run --rm -it --privileged --env-file 'envfile' 'username'/thermostatsupervisor thermostatsupervisor.'module' 'runtime parameters'<br/>
 * '--rm' removes the docker container when done<br/>
 * '-it' runs in interactive mode so that output is displayed in the console<br/>
 * '--env-file' specifies your env variables from file 'envfile', see below for required env variables<br/>
 * '--privileged' runs in privileged mode, this may be required to avoid PermissionErrors with device objects<br/>
 * 'username' is your DockerHub username<br/>
+* 'module' is the module to run, (e.g. 'supervise', 'honeywell', 'kumocloud', etc.).<br/>
 * 'runtime parameters' are supervise runtime parameters as specified below.<br/>
 
 ## GitHub repository environment variables required for docker image build (settings / secrets):
