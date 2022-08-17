@@ -99,7 +99,8 @@ class IntegrationTest(utc.UnitTest):
             f"{utc.unit_test_argv[2]}, {utc.unit_test_argv[7]} "
             f"measurements</title>")
         self.assertTrue(exp_substr in results.content.decode("utf-8"),
-                        "did not find substring '%s' in web page response")
+                        f"did not find substring '{exp_substr}' in web page"
+                        " response")
 
 
 if __name__ == "__main__":

@@ -3,12 +3,14 @@ Common functions used in multiple unit tests.
 """
 # global imports
 import argparse
-import distutils.util
 import os
 import pprint
 import sys
 import unittest
 from unittest.mock import patch
+
+# third party imports
+from str2bool import str2bool
 
 # local imports
 from thermostatsupervisor import emulator_config
@@ -581,7 +583,7 @@ class RuntimeParameterTest(UnitTest):
         # argv = ["-a 1", "--b 2"]  # double dash doesn't work yet.
         argv = ["-a=1"]
         args = parser.parse_args(argv)
-        assert(args.a == 1)
+        assert (args.a == 1)
         # assert(args.b == 2)
 
     def test_parser_input_file(self):
@@ -848,7 +850,7 @@ class UserInputs(util.UserInputs):
             BOOL_FLD: {
                 "order": 1,  # index in the argv list
                 "value": None,
-                "type": lambda x: bool(distutils.util.strtobool(
+                "type": lambda x: bool(str2bool(
                     str(x).strip())),
                 "default": False,
                 "valid_range": [True, False, 1, 0],

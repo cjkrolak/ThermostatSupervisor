@@ -279,11 +279,23 @@ class UserInputs(util.UserInputs):
                                                    input_flds.thermostat_type)
             if thermostat_type is None:
                 thermostat_type = self.thermostat_type
-            self.user_inputs[zone_name][input_flds.zone]["valid_range"] = \
-                SUPPORTED_THERMOSTATS[thermostat_type]["zones"]
-            self.user_inputs[zone_name][input_flds.target_mode][
-                "valid_range"] = \
-                SUPPORTED_THERMOSTATS[thermostat_type]["modes"]
+            try:
+                self.user_inputs[zone_name][input_flds.zone]["valid_range"] = \
+                    SUPPORTED_THERMOSTATS[thermostat_type]["zones"]
+            except KeyError:
+                print("\nKeyError: one or more keys are invalid (zone_name=%s,"
+                      " zone_number=%s, thermostat_type=%s)\n" %
+                      (zone_name, input_flds.zone, thermostat_type))
+                raise
+            try:
+                self.user_inputs[zone_name][input_flds.target_mode][
+                    "valid_range"] = \
+                    SUPPORTED_THERMOSTATS[thermostat_type]["modes"]
+            except KeyError:
+                print("\nKeyError: one or more keys are invalid (zone_name=%s,"
+                      " target_mode=%s, thermostat_type=%s)\n" %
+                      (zone_name, input_flds.target_mode, thermostat_type))
+                raise
 
     def max_measurement_count_exceeded(self, measurement):
         """
