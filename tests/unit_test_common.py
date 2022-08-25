@@ -599,7 +599,8 @@ class RuntimeParameterTest(UnitTest):
                             )
         argv = ["-f" + input_file]  # space after sflag is appended onto str
         args = parser.parse_args(argv)
-        print("args returned: %s" % args)
+        print("args returned: %s" %
+              (' '.join(f'{k}={v}' for k, v in vars(args).items())))
         # assert(args.thermostat_type == "emulator")
 
     def is_valid_file(self, parser, arg):
