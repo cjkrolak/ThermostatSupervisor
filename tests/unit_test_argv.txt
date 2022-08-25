@@ -1,6 +1,6 @@
 [emulator]
 thermostat_type = emulator
-zone_name = 0
+zone_name = "zone0"
 poll_time_sec = 30
 connection_time_sec = 90
 tolerance_degrees = 3
