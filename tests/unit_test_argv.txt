@@ -1,0 +1,8 @@
+[emulator]
+thermostat_type = emulator
+zone_name = 0
+poll_time_sec = 30
+connection_time_sec = 90
+tolerance_degrees = 3
+target_mode = OFF_MODE
+measurements = 7
