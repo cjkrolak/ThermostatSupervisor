@@ -8,3 +8,4 @@ supervisor-env.txt
 .project
 .pydevproject
 *.ini
+.settings
