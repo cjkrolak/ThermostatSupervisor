@@ -48,7 +48,7 @@ unit_test_sht31 = ["supervise.py",  # module
 unit_test_honeywell = honeywell_config.argv
 
 unit_test_argv = unit_test_emulator
-unit_test_argv_file = ".\\tests\\unit_test_argv.txt"
+unit_test_argv_file = ".//tests//unit_test_argv.txt"
 
 
 class PatchMeta(type):
