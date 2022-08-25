@@ -48,6 +48,7 @@ unit_test_sht31 = ["supervise.py",  # module
 unit_test_honeywell = honeywell_config.argv
 
 unit_test_argv = unit_test_emulator
+unit_test_argv_file = ".\\tests\\unit_test_argv.txt"
 
 
 class PatchMeta(type):
@@ -590,7 +591,7 @@ class RuntimeParameterTest(UnitTest):
         """
         Generic test for argparser with input file.
         """
-        input_file = "data\\thermostat_api_input.ini"
+        input_file = unit_test_argv_file
         parser = argparse.ArgumentParser()
         parser.add_argument('-f',
                             type=argparse.FileType('r',
@@ -816,7 +817,6 @@ FLOAT_FLD = "float_field"
 STR_FLD = "str_field"
 REQUIRED_FLD = "required_field"
 INPUT_FILE_FLD = "input_file"
-INPUT_FILE = "data\\test_utilities_input.ini"
 uip = {}
 
 
@@ -905,7 +905,7 @@ class UserInputs(util.UserInputs):
                 },
             INPUT_FILE_FLD: {
                 "order": 6,  # index in the argv list
-                "value": INPUT_FILE,
+                "value": unit_test_argv_file,
                 "type": str,
                 "default": "this is an input file",
                 "valid_range": None,
@@ -937,6 +937,12 @@ def run_all_tests():
     for name, reason in result.skipped:
         print(name, reason)
     print("-" * 80)
+
+    # set exit code
+    if result.wasSuccessful():
+        exit(0)
+    else:
+        exit(1)
 
 
 def parse_unit_test_runtime_parameters():
