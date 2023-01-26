@@ -4,9 +4,12 @@ FROM python:3
 # set working directory
 WORKDIR /usr/src/app  
 
+# update pip to latest
+RUN pip install --upgrade pip
+
 # install dependencies
 COPY requirements.txt requirements.txt
-RUN pip3 install -r requirements.txt
+RUN pip install -r requirements.txt
 
 # copy source code
 COPY . .
