@@ -636,7 +636,7 @@ class RuntimeParameterTest(UnitTest):
         print("parsing named argument list")
         self.uip = self.mod.UserInputs(
             named_sflag_list, "unittest parsing named sflag arguments")
-        print("in test default parent key=%s" % self.uip.default_parent_key)
+        print(f"in test default parent key={self.uip.default_parent_key}")
         self.verify_parsed_values(self.uip.default_parent_key)
 
     def test_parse_named_arguments_lflag(self):

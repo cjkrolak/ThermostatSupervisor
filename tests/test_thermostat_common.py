@@ -674,7 +674,7 @@ class Test(utc.UnitTest):
 
             # mock the thermostat into heat mode
             # self.mock_set_mode(self.Zone.HEAT_MODE)
-            # print("current thermostat mode=%s" % self.Zone.current_mode)
+            # print(f"current thermostat mode={self.Zone.current_mode}")
 
             for new_setpoint in [13, 26, -4, 101]:
                 # get current setpoint

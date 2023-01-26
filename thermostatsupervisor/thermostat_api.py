@@ -274,8 +274,8 @@ class UserInputs(util.UserInputs):
             self.default_parent_key = new_key
             self.parent_keys = list(self.user_inputs.keys())
         else:
-            print("%s" % self.get_user_inputs(list(self.user_inputs.keys())[0],
-                                              input_flds.thermostat_type))
+            print(self.get_user_inputs(list(self.user_inputs.keys())[0],
+                                       input_flds.thermostat_type))
 
         # if thermostat is not set yet, default it based on module
         # TODO - code block needs update for multi-zone
