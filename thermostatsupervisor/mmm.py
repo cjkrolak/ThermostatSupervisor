@@ -5,6 +5,8 @@ connection to 3m50 thermoststat on local net.
 import datetime
 import pprint
 import socket
+import time
+import traceback
 import urllib
 from dns.exception import DNSException
 
@@ -290,7 +292,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         returns:
             (int): heat mode.
         """
-        return int(self.device_id.tmode['raw'] ==
+        return int(self._get_tmode() ==
                    self.system_switch_position[self.HEAT_MODE])
 
     def is_cool_mode(self) -> int:
@@ -302,7 +304,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         returns:
             (int): 1=cool mode enabled, 0=disabled.
         """
-        return int(self.device_id.tmode['raw'] ==
+        return int(self._get_tmode() ==
                    self.system_switch_position[self.COOL_MODE])
 
     def is_dry_mode(self) -> int:
@@ -314,7 +316,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         returns:
             (int): 1=dry mode enabled, 0=disabled.
         """
-        return int(self.device_id.tmode['raw'] ==
+        return int(self._get_tmode() ==
                    self.system_switch_position[self.DRY_MODE])
 
     def is_auto_mode(self) -> int:
@@ -326,8 +328,25 @@ class ThermostatZone(tc.ThermostatCommonZone):
         returns:
             (int): 1=auto mode enabled, 0=disabled.
         """
-        return int(self.device_id.tmode['raw'] ==
+        return int(self._get_tmode() ==
                    self.system_switch_position[self.AUTO_MODE])
+
+    def _get_tmode(self, retries=1):
+        """
+        Get tmode from device, retry on Attribute error.
+        """
+        try:
+            tmode = self.device_id.tmode['raw']
+        except AttributeError as ex:
+            if retries > 0:
+                print(traceback.format_exc())
+                print("WARNING: AttributeError while querying tstat.tmode, "
+                      "retrying after brief delay...")
+                time.sleep(10)
+                tmode = self._get_tmode(retries-1)
+            else:
+                raise ex
+        return tmode
 
     def is_fan_mode(self) -> int:
         """
@@ -343,14 +362,14 @@ class ThermostatZone(tc.ThermostatCommonZone):
 
     def is_off_mode(self) -> int:
         """
-        Refresh the cached zone information and return the off mode.
+        Return the off mode.
 
         inputs:
             None
         returns:
             (int): off mode, 1=enabled, 0=disabled.
         """
-        return int(self.device_id.tmode['raw'] ==
+        return int(self._get_tmode() ==
                    self.system_switch_position[self.OFF_MODE] and
                    not self.device_id.fmode['raw'] == 2)
 
@@ -679,7 +698,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
             (int): thermostat mode, refer to tc.system_swtich position
             for details.
         """
-        result = self.device_id.tmode['raw']
+        result = self._get_tmode()
         if not isinstance(result, int):
             raise Exception(
                 f"get_system_switch_position is type {type(result)}, "
