@@ -9,4 +9,5 @@ pyhtcc>=0.1.10  # Honeywell TCC library
 pykumo>=0.2.3  # kumocloud library
 radiotherm>=2.1.0  # 3m50 library
 requests>=2.28.1  # used by Honeywell and mmm at least
+setuptools>=65.5.1  # not in repo but azdo native version has vulnerability
 str2bool>=1.1  # input parameter parsing
