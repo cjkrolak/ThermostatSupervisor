@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: ceckout code
+    - name: checkout code
       uses: actions/checkout@v3
       # https://github.com/docker/setup-qemu-action
     - name: Set up QEMU
@@ -23,8 +23,7 @@ jobs:
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v2
       with:
-        buildx-version: latest
-        qemu-version: latest
+        version: latest
     - name: Log in to Docker Hub
       uses: docker/login-action@v2
       with:
