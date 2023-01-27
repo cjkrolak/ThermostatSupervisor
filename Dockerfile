@@ -1,5 +1,6 @@
 # set python image
-FROM python:3  
+# bunch 1.0.1 pkg is not compatible with py3.11 due to universal newline in build instructions.
+FROM python:3.10  
 
 # set working directory
 WORKDIR /usr/src/app  
