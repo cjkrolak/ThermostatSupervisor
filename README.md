@@ -29,6 +29,7 @@ flask and flask-wtf for supervisor flask server<br/>
 pykumo for kumocloud<br/>
 coverage for code coverage analysis<br/>
 psutil for all thermostat types<br/>
+refer to requirements.txt for full list of package dependencies.<br/>
 
 ## Run the Docker Image:
 docker run --rm -it --privileged --env-file 'envfile' 'username'/thermostatsupervisor:'tag' thermostatsupervisor.'module' 'runtime parameters'<br/>
