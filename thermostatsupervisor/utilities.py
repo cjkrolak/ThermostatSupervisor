@@ -172,7 +172,7 @@ def write_to_file(full_path, file_size_bytes, msg):
 
 def is_windows_environment():
     """Return True if running on Windows PC."""
-    print("DEBUG: platform=%s" % platform.system().upper())
+    print(f"DEBUG: platform={platform.system().upper()}")
     return 'WINDOWS' in platform.system().upper()
 
 
@@ -650,9 +650,8 @@ class UserInputs():
                        child_key, type(field), field))
                 raise
             except KeyError:
-                print("KeyError: target=['%s']['%s']['%s'], "
-                      "raw=%s" % (parent_key, child_key, field,
-                                  self.user_inputs))
+                print("KeyError: target=['%s']['%s']['%s'], raw="
+                      f"{(parent_key, child_key, field, self.user_inputs)}")
                 raise
 
     def set_user_inputs(self, parent_key, child_key, input_val, field="value"):

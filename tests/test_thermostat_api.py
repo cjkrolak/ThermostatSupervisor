@@ -141,7 +141,7 @@ class RuntimeParameterTest(utc.RuntimeParameterTest):
     tolerance = 3
     target_mode = "HEAT_MODE"
     measurements = 1
-    input_file = "data\\thermostat_api_input.ini"
+    input_file = utc.unit_test_argv_file
 
     # fields for testing, mapped to class variables.
     # (value, field name)

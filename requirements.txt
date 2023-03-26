@@ -1,12 +1,13 @@
 bunch>=1.0.1  # bunch classes
 dnspython>=2.2.1  # DNS exception type
-coverage>=6.4.2  # unit test coverage
-flask>=2.1.3  # flask servers
+coverage>=6.5.0  # unit test coverage
+flask>=2.2.2  # flask servers
 flask_restful>=0.3.9  # flask servers
 flask_wtf>=1.0.1  # CSRF protection on flask servers
-psutil>=5.9.1  # process id utility
-pyhtcc>=0.1.9  # Honeywell TCC library
+psutil>=5.9.2  # process id utility
+pyhtcc>=0.1.10  # Honeywell TCC library
 pykumo>=0.2.3  # kumocloud library
 radiotherm>=2.1.0  # 3m50 library
 requests>=2.28.1  # used by Honeywell and mmm at least
+setuptools>=65.5.1  # not in repo but azdo native version has vulnerability
 str2bool>=1.1  # input parameter parsing

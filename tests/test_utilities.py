@@ -407,7 +407,7 @@ class RuntimeParameterTest(utc.RuntimeParameterTest):
     float_val = 8.8
     str_val = "test str"
     required_val = "required"
-    input_file = "data\\test_utilities_input.ini"
+    input_file = utc.unit_test_argv_file
 
     # fields for testing, mapped to class variables.
     # (value, field name)

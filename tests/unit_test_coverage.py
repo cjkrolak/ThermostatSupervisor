@@ -31,13 +31,14 @@ def code_coverage_all_tests():
     # coverage metric.
     # pylint: disable=import-outside-toplevel
     from tests import unit_test_common as utc  # noqa E402
-    utc.parse_unit_test_runtime_parameters()
-    utc.run_all_tests()
-
-    # stop the coverage service and generate reports
-    cov.stop()
-    cov.report()
-    cov.html_report(directory="htmlcov")
+    try:
+        utc.parse_unit_test_runtime_parameters()
+        utc.run_all_tests()
+    finally:
+        # stop the coverage service and generate reports
+        cov.stop()
+        cov.report()
+        cov.html_report(directory="htmlcov")
 
 
 if __name__ == "__main__":

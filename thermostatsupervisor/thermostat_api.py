@@ -232,10 +232,15 @@ class UserInputs(util.UserInputs):
                     if (self.user_inputs[section][fld]["type"]
                             in [int, float, str]):
                         # cast data type when reading value
-                        self.user_inputs[section][fld]["value"] = (
-                            self.user_inputs[section][fld]["type"](
-                                self.user_inputs_file[section].get(
-                                    input_flds[fld])))
+                        try:
+                            self.user_inputs[section][fld]["value"] = (
+                                self.user_inputs[section][fld]["type"](
+                                    self.user_inputs_file[section].get(
+                                        input_flds[fld])))
+                        except Exception:
+                            print("exception in section=%s, fld=%s" %
+                                  (section, fld))
+                            raise
                         # cast original input value in user_inputs_file as well
                         self.user_inputs_file[section][input_flds[fld]] = \
                             self.user_inputs[section][fld]["value"]
@@ -269,8 +274,8 @@ class UserInputs(util.UserInputs):
             self.default_parent_key = new_key
             self.parent_keys = list(self.user_inputs.keys())
         else:
-            print("%s" % self.get_user_inputs(list(self.user_inputs.keys())[0],
-                                              input_flds.thermostat_type))
+            print(self.get_user_inputs(list(self.user_inputs.keys())[0],
+                                       input_flds.thermostat_type))
 
         # if thermostat is not set yet, default it based on module
         # TODO - code block needs update for multi-zone

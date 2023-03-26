@@ -1,12 +1,25 @@
 # set python image
-FROM python:3  
+# bunch 1.0.1 pkg is not compatible with py3.11 due to universal newline in build instructions.
+FROM python:3.10  
+
+# display python version
+RUN python --version
 
 # set working directory
 WORKDIR /usr/src/app  
 
+# update pip to latest
+RUN pip install --upgrade pip
+
+# list python packages before install
+RUN pip list
+
 # install dependencies
 COPY requirements.txt requirements.txt
-RUN pip3 install -r requirements.txt
+RUN pip install -r requirements.txt
+
+# list python packages after install
+RUN pip list
 
 # copy source code
 COPY . .

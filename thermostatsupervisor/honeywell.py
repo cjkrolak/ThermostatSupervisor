@@ -747,9 +747,10 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
                 # log the mitigated failure
                 if trial_number > 1:
                     email_notification.send_email_alert(
-                        subject=(
-                            "intermittent JSON decode error "
-                            "during refresh zone"),
+                        subject=(f"{self.thermostat_type} zone "
+                                 f"{self.zone_name}: "
+                                 "intermittent JSON decode error "
+                                 "during refresh zone"),
                         body=f"{util.get_function_name()}: trial "
                         f"{trial_number} of {number_of_retries} at {time_now}")
                 for zone_data in all_zones_info:
@@ -762,7 +763,8 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
 
         # log fatal failure
         email_notification.send_email_alert(
-            subject=("fatal JSON decode error during refresh zone"),
+            subject=(f"{self.thermostat_type} zone {self.zone_name}: "
+                     "fatal JSON decode error during refresh zone"),
             body=(f"{util.get_function_name()}: trial {trial_number} of "
                   f"{number_of_retries} at {time_now}"))
         raise pyhtcc.ZoneNotFoundError(f"Missing device: {self.device_id}")
