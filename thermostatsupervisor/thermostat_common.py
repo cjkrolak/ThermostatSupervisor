@@ -281,8 +281,8 @@ class ThermostatCommonZone():
                                           self.current_mode)
 
         if self.is_temp_deviated_from_schedule() and self.is_controlled_mode():
-            status_msg = f"[{self.current_mode.upper()} deviation] act temp="
-            f"{util.temp_value_with_units(self.display_temp)}"
+            status_msg = (f"[{self.current_mode.upper()} deviation] act temp="
+                          f"{util.temp_value_with_units(self.display_temp)}")
         else:
             status_msg = (f"[following schedule] act temp="
                           f"{util.temp_value_with_units(self.display_temp)}")
@@ -395,10 +395,10 @@ class ThermostatCommonZone():
         else:
             level = "below min"
         if oper(setpoint, limit_value):
-            msg = f"{self.thermostat_type} zone {self.zone_name}: "
-            f"scheduled {label.upper()} set point "
-            f"({util.temp_value_with_units(setpoint)}) is {level} limit "
-            f"({util.temp_value_with_units(limit_value)})"
+            msg = (f"{self.thermostat_type} zone {self.zone_name}: "
+                   f"scheduled {label.upper()} set point "
+                   f"({util.temp_value_with_units(setpoint)}) is {level} "
+                   f"limit ({util.temp_value_with_units(limit_value)})")
             util.log_msg(f"WARNING: {msg}", mode=util.BOTH_LOG)
             eml.send_email_alert(
                 subject=msg,
