@@ -10,10 +10,12 @@ import time
 import unittest
 
 # third party imports
+from flask_wtf.csrf import CSRFProtect
 import requests
 
 # local imports
 from thermostatsupervisor import environment as env
+from thermostatsupervisor import flask_generic as flg
 # thermostat_api is imported but not used to avoid a circular import
 from thermostatsupervisor import thermostat_api as api  # noqa F401, pylint: disable=unused-import.
 from thermostatsupervisor import supervisor_flask_server as sfs
@@ -31,6 +33,10 @@ class IntegrationTest(utc.UnitTest):
     """Test functions in supervisor_flask_server.py."""
 
     app = sfs.create_app()
+    csrf = CSRFProtect(app)  # enable CSRF protection
+    ip_ban = flg.initialize_ipban(app)  # hacker blacklisting agent
+    flg.set_flask_cookie_config(app)
+    flg.print_flask_config(app)
 
     def setUp(self):
         super().setUp()
@@ -86,7 +92,7 @@ class IntegrationTest(utc.UnitTest):
 
         # grab web page and check response code
         print(f"grabbing web page results from: {flask_url}")
-        results = requests.get(flask_url)
+        results = requests.get(flask_url, timeout=util.HTTP_TIMEOUT)
         print(f"web page response code={results.status_code}")
         self.assertEqual(results.status_code, 200,
                          f"web page response was {results.status_code}, "
