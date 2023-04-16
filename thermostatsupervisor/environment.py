@@ -7,6 +7,9 @@ import socket
 import sys
 import traceback
 
+# third party libraries
+import psutil
+
 # local imports
 from thermostatsupervisor import utilities as util
 
@@ -16,9 +19,6 @@ from thermostatsupervisor import kumocloud_config
 from thermostatsupervisor import kumolocal_config
 from thermostatsupervisor import mmm_config
 from thermostatsupervisor import sht31_config
-
-# third party libraries
-import psutil
 
 MIN_PYTHON_MAJOR_VERSION = 3  # minimum python major version required
 MIN_PYTHON_MINOR_VERSION = 7  # minimum python minor version required

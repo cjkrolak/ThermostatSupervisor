@@ -173,7 +173,7 @@ class ThermostatClass(tc.ThermostatCommon):
             (dict) empty dict.
         """
         try:
-            response = requests.get(self.url)
+            response = requests.get(self.url, timeout=util.HTTP_TIMEOUT)
         except requests.exceptions.ConnectionError as ex:
             util.log_msg(
                 f"FATAL ERROR: unable to connect to sht31 thermometer at url "
@@ -258,7 +258,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
           str if parameter != None
         """
         try:
-            response = requests.get(self.url)
+            response = requests.get(self.url, timeout=util.HTTP_TIMEOUT)
         except requests.exceptions.ConnectionError as ex:
             util.log_msg(
                 f"FATAL ERROR: unable to connect to sht31 thermometer at url "

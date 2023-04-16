@@ -13,6 +13,7 @@ from flask_wtf.csrf import CSRFProtect
 
 # local imports
 from thermostatsupervisor import environment as env
+from thermostatsupervisor import flask_generic as flg
 from thermostatsupervisor import supervise as sup
 from thermostatsupervisor import thermostat_api as api
 from thermostatsupervisor import utilities as util
@@ -59,13 +60,9 @@ def create_app():
 # create the flask app
 app = create_app()
 csrf = CSRFProtect(app)  # enable CSRF protection
-
-# protect against cookie attack vectors in our Flask configuration
-app.config.update(
-    SESSION_COOKIE_SECURE=True,
-    SESSION_COOKIE_HTTPONLY=True,
-    SESSION_COOKIE_SAMESITE='Lax',
-)
+ip_ban = flg.initialize_ipban(app)  # hacker blacklisting agent
+flg.set_flask_cookie_config(app)
+flg.print_flask_config(app)
 
 
 @app.route('/favicon.ico')
@@ -117,6 +114,7 @@ def index():
 if __name__ == '__main__':
     # show the page in browser
     webbrowser.open(flask_url, new=2)
+    flg.schedule_ipban_block_list_report(ip_ban, debug_mode=False)
     app.run(host=flask_ip_address,
             port=FLASK_PORT,
             debug=False,  # True causes 2 tabs to open, enables auto-reload
