@@ -30,6 +30,7 @@ from str2bool import str2bool
 
 # local imports
 from thermostatsupervisor import environment as env
+from thermostatsupervisor import flask_generic as flg
 from thermostatsupervisor import sht31_config
 from thermostatsupervisor import utilities as util
 
@@ -609,13 +610,9 @@ def create_app():
 # create the flask app
 app = create_app()
 csrf = CSRFProtect(app)  # enable CSRF protection
-
-# protect against cookie attack vectors in our Flask configuration
-app.config.update(
-    SESSION_COOKIE_SECURE=True,
-    SESSION_COOKIE_HTTPONLY=True,
-    SESSION_COOKIE_SAMESITE='Lax',
-)
+ip_ban = flg.initialize_ipban(app)  # hacker blacklisting agent
+flg.set_flask_cookie_config(app)
+flg.print_flask_config(app)
 
 
 @app.route('/favicon.ico')
@@ -686,6 +683,7 @@ if __name__ == "__main__":
         print("Flask debug mode is enabled", file=sys.stderr)
 
     # launch the Flask API on development server
+    flg.schedule_ipban_block_list_report(ip_ban, debug_mode=debug)
     app.run(host='0.0.0.0',
             port=sht31_config.FLASK_PORT,
             debug=debug,

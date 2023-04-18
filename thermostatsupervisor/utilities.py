@@ -1,4 +1,4 @@
-"""Common utilitity functions and globals."""
+"""Common utility functions and globals."""
 
 # built-in libraries
 import argparse
@@ -36,6 +36,7 @@ DEBUG_LOG = 0x100  # print only if debug mode is on
 
 FILE_PATH = ".//data"
 MAX_LOG_SIZE_BYTES = 2**20  # logs rotate at this max size
+HTTP_TIMEOUT = 60  # timeout in seconds
 
 # set unit test IP address, same as client
 unit_test_mode = False  # in unit test mode
@@ -694,7 +695,7 @@ class UserInputs():
             self.parser.error("The file %s does not exist!" %
                               os.path.abspath(arg))
         else:
-            return open(arg, 'r')  # return an open file handle
+            return open(arg, 'r', encoding="utf8")  # return a file handle
 
     def parse_input_file(self, input_file):
         """
