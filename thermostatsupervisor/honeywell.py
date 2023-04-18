@@ -84,9 +84,9 @@ class ThermostatClass(pyhtcc.PyHTCC, tc.ThermostatCommon):
         """
         try:
             zone_id = self._get_zone_device_ids()[zone]
-        except IndexError:
+        except IndexError as ex:
             raise ValueError(f"zone '{zone}' is not a valid choice for this "
-                             "Honeywell thermostat")
+                             "Honeywell thermostat") from ex
         return zone_id
 
     def print_all_thermostat_metadata(self, zone, debug=False):
@@ -719,9 +719,9 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
         trial_number = 1
         retry_delay_sec = 60
         while trial_number < number_of_retries:
+            time_now = (datetime.datetime.now().
+                        strftime("%Y-%m-%d %H:%M:%S"))
             try:
-                time_now = (datetime.datetime.now().
-                            strftime("%Y-%m-%d %H:%M:%S"))
                 all_zones_info = self.pyhtcc.get_zones_info()
             except Exception:  # noqa w0703 too general exception
                 # catching simplejson.errors.JSONDecodeError
