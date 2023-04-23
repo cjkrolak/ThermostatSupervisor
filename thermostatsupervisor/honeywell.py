@@ -194,71 +194,6 @@ class ThermostatClass(pyhtcc.PyHTCC, tc.ThermostatCommon):
                      func_name=1)
         return parameter_data
 
-    def get_zones_info(self) -> list:
-        """
-        Return a list of dicts corresponding with each one corresponding to a
-        particular zone.
-
-        Method overridden from base class to add additional debug info.
-        inputs:
-            None
-        returns:
-            list of zone info.
-        """
-        zones = []
-        for page_num in range(1, 6):
-            pyhtcc.logger.debug("Attempting to get zones for location id, "
-                                f"page: {self._locationId}, {page_num}")
-            result = self._post_zone_list_data(page_num)
-            pyhtcc.logger.debug("finished get zones for location id, "
-                                f"page: {self._locationId}, {page_num}")
-            try:
-                data = result.json()
-            except Exception:  # noqa w0703 too general exception
-                # we can get a 200 with non-json data if pages aren't needed.
-                # Though the 1st page shouldn't give non-json.
-                if page_num == 1:
-                    pyhtcc.logger.exception("Unable to decode json data "
-                                            "returned by GetZoneList. Data "
-                                            f"was:\n {result.text}")
-                    raise
-                else:
-                    # custom debug code here
-                    pyhtcc.logger.debug("Unable to decode json data returned "
-                                        "by GetZoneList on page {page_num}. "
-                                        f"Data was:\n {result.text}")
-                    data = {}
-
-            # once we go to an empty page, we're done.
-            # Luckily it returns empty json instead of erroring
-            if not data:
-                pyhtcc.logger.debug(f"page {page_num} is empty")
-                break
-
-            zones.extend(data)
-
-        # add name (and additional info) to zone info
-        for idx, zone in enumerate(zones):
-            device_id = zone['DeviceID']
-            name = self._get_name_for_device_id(device_id)
-            zone['Name'] = name
-
-            device_id = zone['DeviceID']
-            result = self._get_check_data_session(device_id)
-
-            try:
-                more_data = result.json()
-            except Exception:
-                pyhtcc.logger.exception("Unable to decode json data returned "
-                                        "by CheckDataSession. Data was:\n "
-                                        f"{result.text}")
-                raise
-
-            zones[idx] = {**zone, **more_data,
-                          **self._get_outdoor_weather_info_for_zone(device_id)}
-
-        return zones
-
 
 class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
     """Extend the Zone class with additional methods to get and set
@@ -723,9 +658,7 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
                         strftime("%Y-%m-%d %H:%M:%S"))
             try:
                 all_zones_info = self.pyhtcc.get_zones_info()
-            except Exception:  # noqa w0703 too general exception
-                # catching simplejson.errors.JSONDecodeError
-                # using Exception since simplejson is not imported
+            except pyhtcc.requests.exceptions.ConnectionError:
                 util.log_msg(traceback.format_exc(),
                              mode=util.BOTH_LOG,
                              func_name=1)
@@ -749,10 +682,11 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
                     email_notification.send_email_alert(
                         subject=(f"{self.thermostat_type} zone "
                                  f"{self.zone_name}: "
-                                 "intermittent JSON decode error "
+                                 "intermittent connection error "
                                  "during refresh zone"),
                         body=f"{util.get_function_name()}: trial "
-                        f"{trial_number} of {number_of_retries} at {time_now}")
+                        f"{trial_number} of {number_of_retries} at "
+                        f"{time_now}")
                 for zone_data in all_zones_info:
                     if zone_data['DeviceID'] == self.device_id:
                         pyhtcc.logger.debug(f"Refreshed zone info for \
@@ -764,7 +698,7 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
         # log fatal failure
         email_notification.send_email_alert(
             subject=(f"{self.thermostat_type} zone {self.zone_name}: "
-                     "fatal JSON decode error during refresh zone"),
+                     "fatal connection error during refresh zone"),
             body=(f"{util.get_function_name()}: trial {trial_number} of "
                   f"{number_of_retries} at {time_now}"))
         raise pyhtcc.ZoneNotFoundError(f"Missing device: {self.device_id}")
