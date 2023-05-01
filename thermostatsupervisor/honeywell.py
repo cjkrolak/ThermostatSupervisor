@@ -215,14 +215,15 @@ class ThermostatClass(pyhtcc.PyHTCC, tc.ThermostatCommon):
                 data = self._post_zone_list_data(page_num)
             except pyhtcc.requests.exceptions.ConnectionError:
                 # connection error, force re-authenticating
-                self.connection_ok = False
+                tc.connection_ok = False
                 print(traceback.format_exc())
                 print("connection error detected, forcing re-authentication...")
 
             pyhtcc.logger.debug("finished get zones for location id, "
                                 f"page: {self._locationId}, {page_num}")
             if page_num == 1 and not data:
-                raise pyhtcc.NoZonesFoundError("No zones were found from GetZoneListData")
+                raise pyhtcc.NoZonesFoundError("No zones were found from "
+                                               "GetZoneListData")
             elif not data:
                 # first empty page means we're done
                 pyhtcc.logger.debug(f"page {page_num} is empty")
@@ -763,7 +764,7 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
         # raise pyhtcc.ZoneNotFoundError(f"Missing device: {self.device_id}")
 
         # trigger a forced reconnection
-        Thermostat_obj.connection_ok = False
+        tc.connection_ok = False
 
 
 # add default requests session default timeout to prevent TimeoutExceptions
