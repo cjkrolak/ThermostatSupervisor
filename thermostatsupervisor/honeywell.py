@@ -194,6 +194,65 @@ class ThermostatClass(pyhtcc.PyHTCC, tc.ThermostatCommon):
                      func_name=1)
         return parameter_data
 
+    def get_zones_info(self) -> list:
+        """
+        Return a list of dicts corresponding with each one corresponding to a
+        particular zone.
+
+        Method overridden from base class to add additional debug info.
+        inputs:
+            None
+        returns:
+            list of zone info.
+        """
+        zones = []
+        for page_num in range(1, 6):
+            pyhtcc.logger.debug(
+                "Attempting to get zones for location id, page: "
+                f"{self._locationId}, {page_num}"
+            )
+            try:
+                data = self._post_zone_list_data(page_num)
+            except pyhtcc.requests.exceptions.ConnectionError:
+                # connection error, force re-authenticating
+                self.connection_ok = False
+                print(traceback.format_exc())
+                print("connection error detected, forcing re-authentication...")
+
+            pyhtcc.logger.debug("finished get zones for location id, "
+                                f"page: {self._locationId}, {page_num}")
+            if page_num == 1 and not data:
+                raise pyhtcc.NoZonesFoundError("No zones were found from GetZoneListData")
+            elif not data:
+                # first empty page means we're done
+                pyhtcc.logger.debug(f"page {page_num} is empty")
+                break
+
+            # once we go to an empty page, we're done. Luckily it returns
+            # empty json instead of erroring
+            if not data:
+                pyhtcc.logger.debug(f"page {page_num} is empty")
+                break
+
+            zones.extend(data)
+
+        # add name (and additional info) to zone info
+        for idx, zone in enumerate(zones):
+            device_id = zone["DeviceID"]
+            name = self._get_name_for_device_id(device_id)
+            zone["Name"] = name
+
+            device_id = zone["DeviceID"]
+            more_data = self._get_check_data_session(device_id)
+
+            zones[idx] = {
+                **zone,
+                **more_data,
+                **self._get_outdoor_weather_info_for_zone(device_id),
+            }
+
+        return zones
+
 
 class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
     """Extend the Zone class with additional methods to get and set
@@ -701,7 +760,10 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
                      "fatal connection error during refresh zone"),
             body=(f"{util.get_function_name()}: trial {trial_number} of "
                   f"{number_of_retries} at {time_now}"))
-        raise pyhtcc.ZoneNotFoundError(f"Missing device: {self.device_id}")
+        # raise pyhtcc.ZoneNotFoundError(f"Missing device: {self.device_id}")
+
+        # trigger a forced reconnection
+        Thermostat_obj.connection_ok = False
 
 
 # add default requests session default timeout to prevent TimeoutExceptions

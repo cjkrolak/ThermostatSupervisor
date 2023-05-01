@@ -26,6 +26,7 @@ class ThermostatCommon():
         self.zone_number = util.BOGUS_INT  # placeholder
         self.device_id = util.BOGUS_INT  # placeholder
         self.ip_address = None  # placeholder
+        self.connection_ok = True  # flag to keep track of connection status
 
     def print_all_thermostat_metadata(self, zone, debug=False):  # noqa R0201
         """
@@ -1038,11 +1039,12 @@ class ThermostatCommonZone():
             time.sleep(self.poll_time_sec)
 
             # refresh zone info
+            Thermostat_obj.connection_ok = True  # reset status
             self.refresh_zone_info()
 
             # reconnect
             if ((time.time() - self.session_start_time_sec)
-                    > self.connection_time_sec):
+                    > self.connection_time_sec) or not Thermostat_obj.connection_ok:
                 util.log_msg("forcing re-connection to thermostat...",
                              mode=util.BOTH_LOG)
                 del Thermostat
