@@ -8,6 +8,7 @@ https://pypi.org/project/pyhtcc/
 import datetime
 import os
 import pprint
+import re
 import time
 import traceback
 
@@ -23,7 +24,7 @@ from thermostatsupervisor import utilities as util
 HONEYWELL_DEBUG = False  # debug uses local pyhtcc repo instead of pkg
 if HONEYWELL_DEBUG and not env.is_azure_environment():
     pyhtcc = env.dynamic_module_import("pyhtcc",
-                                       "..\\..\\pyhtcc\\pyhtcc")
+                                       "..\\pyhtcc\\pyhtcc")
 else:
     import pyhtcc  # noqa E402, from path / site packages
 
@@ -194,65 +195,66 @@ class ThermostatClass(pyhtcc.PyHTCC, tc.ThermostatCommon):
                      func_name=1)
         return parameter_data
 
-    # def get_zones_info(self) -> list:
-    #     """
-    #     Return a list of dicts corresponding with each one corresponding to a
-    #     particular zone.
-    #
-    #     Method overridden from base class to add additional debug info.
-    #     inputs:
-    #         None
-    #     returns:
-    #         list of zone info.
-    #     """
-    #     zones = []
-    #     for page_num in range(1, 6):
-    #         pyhtcc.logger.debug(
-    #             "Attempting to get zones for location id, page: "
-    #             f"{self._locationId}, {page_num}"
-    #         )
-    #         try:
-    #             data = self._post_zone_list_data(page_num)
-    #         except pyhtcc.requests.exceptions.ConnectionError:
-    #             # connection error, force re-authenticating
-    #             tc.connection_ok = False
-    #             print(traceback.format_exc())
-    #             print("connection error detected, forcing re-authentication...")
-    #
-    #         pyhtcc.logger.debug("finished get zones for location id, "
-    #                             f"page: {self._locationId}, {page_num}")
-    #         if page_num == 1 and not data:
-    #             raise pyhtcc.NoZonesFoundError("No zones were found from "
-    #                                            "GetZoneListData")
-    #         elif not data:
-    #             # first empty page means we're done
-    #             pyhtcc.logger.debug(f"page {page_num} is empty")
-    #             break
-    #
-    #         # once we go to an empty page, we're done. Luckily it returns
-    #         # empty json instead of erroring
-    #         if not data:
-    #             pyhtcc.logger.debug(f"page {page_num} is empty")
-    #             break
-    #
-    #         zones.extend(data)
-    #
-    #     # add name (and additional info) to zone info
-    #     for idx, zone in enumerate(zones):
-    #         device_id = zone["DeviceID"]
-    #         name = self._get_name_for_device_id(device_id)
-    #         zone["Name"] = name
-    #
-    #         device_id = zone["DeviceID"]
-    #         more_data = self._get_check_data_session(device_id)
-    #
-    #         zones[idx] = {
-    #             **zone,
-    #             **more_data,
-    #             **self._get_outdoor_weather_info_for_zone(device_id),
-    #         }
-    #
-    #     return zones
+    def get_zones_info(self) -> list:
+        """
+        Return a list of dicts corresponding with each one corresponding to a
+        particular zone.
+
+        Method overridden from base class to add additional debug info.
+        inputs:
+            None
+        returns:
+            list of zone info.
+        """
+        zones = []
+        for page_num in range(1, 6):
+            pyhtcc.logger.debug(
+                "Attempting to get zones for location id, page: "
+                f"{self._locationId}, {page_num}"
+            )
+            try:
+                data = self._post_zone_list_data(page_num)
+            except pyhtcc.requests.exceptions.ConnectionError:
+                # connection error, force re-authenticating
+                tc.connection_ok = False
+                print(traceback.format_exc())
+                print("connection error detected, forcing re-authentication...")
+                return []
+
+            pyhtcc.logger.debug("finished get zones for location id, "
+                                f"page: {self._locationId}, {page_num}")
+            if page_num == 1 and not data:
+                raise pyhtcc.NoZonesFoundError("No zones were found from "
+                                               "GetZoneListData")
+            elif not data:
+                # first empty page means we're done
+                pyhtcc.logger.debug(f"page {page_num} is empty")
+                break
+
+            # once we go to an empty page, we're done. Luckily it returns
+            # empty json instead of erroring
+            if not data:
+                pyhtcc.logger.debug(f"page {page_num} is empty")
+                break
+
+            zones.extend(data)
+
+        # add name (and additional info) to zone info
+        for idx, zone in enumerate(zones):
+            device_id = zone["DeviceID"]
+            name = self._get_name_for_device_id(device_id)
+            zone["Name"] = name
+
+            device_id = zone["DeviceID"]
+            more_data = self._get_check_data_session(device_id)
+
+            zones[idx] = {
+                **zone,
+                **more_data,
+                **self._get_outdoor_weather_info_for_zone(device_id),
+            }
+
+        return zones
 
 
 class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
@@ -765,6 +767,25 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
 
         # trigger a forced reconnection
         tc.connection_ok = False
+
+    def _set_location_id_from_result(self, result):
+        """
+        Attempts to find the location id first from the url then if that fails,
+        in the result's text content.
+
+        Method overridden to mitigate bug in 0.1.45
+        ref #623
+        """
+        try:
+            self._locationId = int(result.url.split("portal/")[1].split("/")[0])
+        except ValueError:
+            pyhtcc.logger.debug(
+                "Unable to grab location id via url... checking content instead"
+            )
+            self._locationId = int(re.findall(r"locationId=(\d+)",
+                                              result.text)[0])
+
+        pyhtcc.logger.debug(f"location id is {self._locationId}")
 
 
 # add default requests session default timeout to prevent TimeoutExceptions
