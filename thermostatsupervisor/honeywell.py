@@ -8,7 +8,6 @@ https://pypi.org/project/pyhtcc/
 import datetime
 import os
 import pprint
-import re
 import time
 import traceback
 
