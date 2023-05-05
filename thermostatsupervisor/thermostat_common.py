@@ -17,6 +17,8 @@ from thermostatsupervisor import utilities as util
 
 DEGREE_SIGN = "\N{DEGREE SIGN}"
 
+connection_ok = True  # global flag for connection OK.
+
 
 class ThermostatCommon():
     """Class methods common to all thermostat objects."""
@@ -26,6 +28,8 @@ class ThermostatCommon():
         self.zone_number = util.BOGUS_INT  # placeholder
         self.device_id = util.BOGUS_INT  # placeholder
         self.ip_address = None  # placeholder
+        global connection_ok  # noqa W603
+        connection_ok = True
 
     def print_all_thermostat_metadata(self, zone, debug=False):  # noqa R0201
         """
@@ -994,6 +998,8 @@ class ThermostatCommonZone():
         returns:
             measurement(int): current measurement count
         """
+        global connection_ok  # noqa W603
+
         # initialize poll counter
         poll_count = 1
         previous_mode_dict = {}
@@ -1038,11 +1044,12 @@ class ThermostatCommonZone():
             time.sleep(self.poll_time_sec)
 
             # refresh zone info
+            connection_ok = True
             self.refresh_zone_info()
 
             # reconnect
             if ((time.time() - self.session_start_time_sec)
-                    > self.connection_time_sec):
+                    > self.connection_time_sec) or not connection_ok:
                 util.log_msg("forcing re-connection to thermostat...",
                              mode=util.BOTH_LOG)
                 del Thermostat
