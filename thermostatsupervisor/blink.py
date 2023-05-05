@@ -9,16 +9,17 @@ from thermostatsupervisor import thermostat_common as tc
 from thermostatsupervisor import environment as env
 from thermostatsupervisor import utilities as util
 
-# pykumo
+# Blink library
 BLINK_DEBUG = False  # debug uses local blink repo instead of pkg
 if BLINK_DEBUG and not env.is_azure_environment():
-    blinkpy.blinkpy = env.dynamic_module_import("blinkpy.blinkpy",
-                                                "..\\..\\pykumo\\pykumo")
+    blinkpy = env.dynamic_module_import("blinkpy",
+                                        "..\\..\\pykumo\\pykumo")
 else:
-    import blinkpy.blinkpy  # noqa E402, from path / site packages
+    from blinkpy import auth  # noqa E402, from path / site packages
+    from blinkpy import blinkpy  # noqa E402, from path / site packages
 
 
-class ThermostatClass(blinkpy.blinkpy.Blink, tc.ThermostatCommon):
+class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):
     """Blink Camera thermostat functions."""
 
     def __init__(self, zone):
@@ -28,23 +29,40 @@ class ThermostatClass(blinkpy.blinkpy.Blink, tc.ThermostatCommon):
         inputs:
             zone(str):  zone of thermostat.
         """
-        # Kumocloud server auth credentials from env vars
-        self.KC_UNAME_KEY = 'KUMO_USERNAME'
-        self.KC_PASSWORD_KEY = 'KUMO_PASSWORD'
-        self.kc_uname = (os.environ.get(self.KC_UNAME_KEY, "<" +
-                         self.KC_UNAME_KEY + "_KEY_MISSING>"))
-        self.kc_pwd = (os.environ.get(
-            self.KC_PASSWORD_KEY, "<" +
-            self.KC_PASSWORD_KEY + "_KEY_MISSING>"))
+        # Blink server auth credentials from env vars
+        self.BL_UNAME_KEY = 'BLINK_USERNAME'
+        self.BL_PASSWORD_KEY = 'BLINK_PASSWORD'
+        self.bl_uname = (os.environ.get(self.BL_UNAME_KEY, "<" +
+                         self.BL_UNAME_KEY + "_KEY_MISSING>"))
+        self.bl_pwd = (os.environ.get(
+            self.BL_PASSWORD_KEY, "<" +
+            self.BL_PASSWORD_KEY + "_KEY_MISSING>"))
+        self.auth_dict = {"username": self.bl_uname, "password": self.bl_pwd}
+        self.BL_2FA_KEY = "BLINK_2FA"
+        self.bl_2fa = (os.environ.get(
+            self.BL_2FA_KEY, "<" +
+            self.BL_2FA_KEY + "_KEY_MISSING>"))
 
         # call both parent class __init__
-        self.args = [self.kc_uname, self.kc_pwd]
-        blinkpy.blinkpy.Blink.__init__(self, *self.args)
+        self.args = [self.bl_uname, self.bl_pwd]
+        blinkpy.Blink.__init__(self, *self.args)
         tc.ThermostatCommon.__init__(self)
         self.thermostat_type = blink_config.ALIAS
 
+        # establish connection
+        self.blink = blinkpy.Blink()
+        auth_ = auth.Auth(self.auth_dict, no_prompt=True)
+        self.blink.auth = auth_
+        self.blink.start()
+        self.blink.auth.send_auth_key(self.blink, self.bl_2fa)
+        self.blink.setup_post_verify()
+
+        # get cameras
+        self.camera_metadata = {}
+        self.get_cameras()
+
         # configure zone info
-        self.zone_number = int(zone)
+        self.zone_number = zone
         self.zone_name = self.get_zone_name()
         self.device_id = None  # initialize
         self.device_id = self.get_target_zone_id(self.zone_number)
@@ -68,61 +86,19 @@ class ThermostatClass(blinkpy.blinkpy.Blink, tc.ThermostatCommon):
         inputs:
             zone(int): zone number.
         returns:
-            (obj): PyKumo object
+            (obj): Blink object
         """
-        # populate the zone dictionary
-        # establish local interface to kumos, must be on local net
-        kumos = self.make_pykumos()
-        device_id = kumos[self.zone_name]
-        # print zone name the first time it is known
-        if self.device_id is None:
-            util.log_msg(
-                f"zone {zone} name = '{self.zone_name}', "
-                f"device_id={device_id}",
-                mode=util.DEBUG_LOG +
-                util.CONSOLE_LOG,
-                func_name=1)
-        self.device_id = device_id
-
         # return the target zone object
-        return self.device_id
+        return zone
 
-    def get_kumocloud_thermostat_metadata(self, zone=None, debug=False):
-        """Get all thermostat meta data for zone from kumocloud.
-
-        inputs:
-            zone(): specified zone, if None will print all zones.
-            debug(bool): debug flag.
-        returns:
-            (dict): JSON dict
+    def get_cameras(self):
         """
-        del debug  # unused
-        try:
-            units = list(self.get_indoor_units())  # will also query unit
-        except UnboundLocalError:  # patch for issue #205
-            util.log_msg("WARNING: Kumocloud refresh failed due to "
-                         "timeout", mode=util.BOTH_LOG, func_name=1)
-            time.sleep(10)
-            units = list(self.get_indoor_units())  # retry
-        util.log_msg(f"indoor unit serial numbers: {str(units)}",
-                     mode=util.DEBUG_LOG + util.CONSOLE_LOG, func_name=1)
-        for serial_number in units:
-            util.log_msg(
-                f"Unit {self.get_name(serial_number)}: address: "
-                f"{self.get_address(serial_number)} credentials: "
-                f"{self.get_credentials(serial_number)}",
-                mode=util.DEBUG_LOG +
-                util.CONSOLE_LOG,
-                func_name=1)
-        if zone is None:
-            # returned cached raw data for all zones
-            raw_json = self.get_raw_json()  # does not fetch results,
-        else:
-            # return cached raw data for specified zone
-            self.serial_number = units[zone]
-            raw_json = self.get_raw_json()[2]['children'][0][
-                'zoneTable'][units[zone]]
-        return raw_json
+        Get the blink cameras
+        """
+        for name, camera in self.blink.cameras.items():
+            print(name)
+            print(camera.attributes)
+            self.camera_metadata[name] = camera.attributes
 
     def get_all_metadata(self, zone=None, debug=False):
         """Get all thermostat meta data for device_id from local API.
@@ -145,21 +121,16 @@ class ThermostatClass(blinkpy.blinkpy.Blink, tc.ThermostatCommon):
         returns:
             (dict): dictionary of meta data.
         """
-        del debug  # unused
-        del zone  # unused
-
-        # refresh device status
-        self.device_id.update_status()
-        meta_data = {}
-        meta_data['status'] = self.device_id.get_status()
-        # pylint: disable=protected-access
-        meta_data['sensors'] = self.device_id._sensors
-        # pylint: disable=protected-access
-        meta_data['profile'] = self.device_id._profile
-        if parameter is None:
-            return meta_data
-        else:
-            return meta_data[parameter]
+        zone_name = blink_config.metadata[self.zone_number]["zone_name"]
+        for name, camera in self.blink.cameras.items():
+            if name == zone_name:
+                if debug:
+                    print(f"found camera {name}: {camera.attributes}")
+                if parameter is None:
+                    return camera.attributes
+                else:
+                    return camera.attributes[parameter]
+        raise ValueError(f"Camera zone {zone}({zone_name}) was not found")
 
     def print_all_thermostat_metadata(self, zone, debug=False):
         """Print all metadata for zone to the screen.
@@ -215,21 +186,6 @@ class ThermostatZone(tc.ThermostatCommonZone):
         self.zone_name = Thermostat_obj.zone_name
         self.zone_name = self.get_zone_name()
 
-    def get_zone_name(self):
-        """
-        Return the name associated with the zone number from device memory.
-
-        inputs:
-            None
-        returns:
-            (str) zone name
-        """
-        self.refresh_zone_info()
-        zone_name = self.device_id.get_name()
-        # update metadata dict
-        blink_config.metadata[self.zone_number]["zone_name"] = zone_name
-        return zone_name
-
     def get_display_temp(self) -> float:  # used
         """
         Refresh the cached zone information and return Indoor Temp in Deg F.
@@ -241,6 +197,17 @@ class ThermostatZone(tc.ThermostatCommonZone):
         """
         self.refresh_zone_info()
         return util.c_to_f(self.device_id.get_current_temperature())
+
+    def get_zone_name(self):
+        """
+        Return the name associated with the zone number from metadata dict.
+
+        inputs:
+            None
+        returns:
+            (str) zone name
+        """
+        return blink_config.metadata[self.zone_number]["zone_name"]
 
     def get_display_humidity(self) -> (float, None):
         """
@@ -517,23 +484,24 @@ class ThermostatZone(tc.ThermostatCommonZone):
         returns:
             None, device_id object is refreshed.
         """
-        now_time = time.time()
-        # refresh if past expiration date or force_refresh option
-        if (force_refresh or (now_time >=
-                              (self.last_fetch_time +
-                               self.fetch_interval_sec))):
-            self.Thermostat._need_fetch = True \
-                # pylint: disable=protected-access
-            try:
-                self.Thermostat._fetch_if_needed() \
-                    # pylint: disable=protected-access
-            except UnboundLocalError:  # patch for issue #205
-                util.log_msg("WARNING: Kumocloud refresh failed due to "
-                             "timeout", mode=util.BOTH_LOG, func_name=1)
-            self.last_fetch_time = now_time
-            # refresh device object
-            self.device_id = \
-                self.Thermostat.get_target_zone_id(self.zone_name)
+        return
+        # now_time = time.time()
+        # # refresh if past expiration date or force_refresh option
+        # if (force_refresh or (now_time >=
+        #                       (self.last_fetch_time +
+        #                        self.fetch_interval_sec))):
+        #     self.Thermostat._need_fetch = True \
+        #         # pylint: disable=protected-access
+        #     try:
+        #         self.Thermostat._fetch_if_needed() \
+        #             # pylint: disable=protected-access
+        #     except UnboundLocalError:  # patch for issue #205
+        #         util.log_msg("WARNING: Kumocloud refresh failed due to "
+        #                      "timeout", mode=util.BOTH_LOG, func_name=1)
+        #     self.last_fetch_time = now_time
+        #     # refresh device object
+        #     self.device_id = \
+        #         self.Thermostat.get_target_zone_id(self.zone_name)
 
     def report_heating_parameters(self, switch_position=None):
         """

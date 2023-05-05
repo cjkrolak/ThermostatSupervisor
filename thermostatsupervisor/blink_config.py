@@ -3,9 +3,12 @@ blink config file.
 """
 ALIAS = "blink"
 
-# thermostat zones
-MAIN_LEVEL = 0  # zone 0
-BASEMENT = 1  # zone 1
+# camera zones
+CABIN_DOORBELL = "cabin doorbell"
+DRIVEWAY = "driveway"
+BEACH = "beach"
+FRONT_YARD = "front yard"
+BACK_YARD = "back yard"
 
 # constants
 MAX_HEAT_SETPOINT = 68
@@ -15,35 +18,32 @@ MIN_COOL_SETPOINT = 70
 env_variables = {
     "BLINK_USERNAME": None,
     "BLINK_PASSWORD": None,
+    "BLINK_2FA": None,
 }
 
 # min required env variables on all runs
 required_env_variables = {
     'BLINK_USERNAME': None,
     'BLINK_PASSWORD': None,
+    "BLINK_2FA": None,
 }
 
 # supported thermostat configs
 supported_configs = {"module": "blink",
                      "type": 5,
-                     "zones": [MAIN_LEVEL, BASEMENT],
+                     "zones": [CABIN_DOORBELL, DRIVEWAY, BEACH, FRONT_YARD,
+                               BACK_YARD],
                      "modes": ["OFF_MODE", "HEAT_MODE", "COOL_MODE",
                                "DRY_MODE", "AUTO_MODE", "UNKNOWN_MODE"]}
 
 # metadata dict
 # 'zone_name' is a placeholder, used at Thermostat class level.
-# 'zone_name' is updated by device memory via Zone.get_zone_name()
-# 'host_name' is used for DNS lookup to determine if device
-# 'ip_address' is just for reference.
 metadata = {
-    MAIN_LEVEL: {"ip_address": "192.168.86.229",  # local IP, for ref only.
-                 "zone_name": "Main Level",  # customize for your site.
-                 "host_name": "tbd",  # used for DNS lookup
-                 },
-    BASEMENT: {"ip_address": "192.168.86.236",  # local IP, for ref only.
-               "zone_name": "Basement",  # customize for your site.
-               "host_name": "tbd",  # used for DNS lookup
-               },
+    0: {"zone_name": DRIVEWAY},
+    1: {"zone_name": BEACH},
+    2: {"zone_name": FRONT_YARD},
+    3: {"zone_name": BACK_YARD},
+    4: {"zone_name": CABIN_DOORBELL},
 }
 
 default_zone = supported_configs["zones"][0]
