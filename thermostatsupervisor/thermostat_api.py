@@ -8,6 +8,7 @@ any changes to thermostat configs.
 import bunch
 
 # local imports
+from thermostatsupervisor import blink_config
 from thermostatsupervisor import emulator_config
 from thermostatsupervisor import honeywell_config
 from thermostatsupervisor import kumocloud_config
@@ -22,7 +23,8 @@ DEFAULT_THERMOSTAT = emulator_config.ALIAS
 DEFAULT_ZONE_NAME = util.default_parent_key
 
 # list of thermostat config modules supported
-config_modules = [emulator_config,
+config_modules = [blink_config,
+                  emulator_config,
                   honeywell_config,
                   kumocloud_config,
                   kumolocal_config,
