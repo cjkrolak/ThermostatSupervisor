@@ -768,25 +768,6 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
         # trigger a forced reconnection
         tc.connection_ok = False
 
-    def _set_location_id_from_result(self, result):
-        """
-        Attempts to find the location id first from the url then if that fails,
-        in the result's text content.
-
-        Method overridden to mitigate bug in 0.1.45
-        ref #623
-        """
-        try:
-            self._locationId = int(result.url.split("portal/")[1].split("/")[0])
-        except ValueError:
-            pyhtcc.logger.debug(
-                "Unable to grab location id via url... checking content instead"
-            )
-            self._locationId = int(re.findall(r"locationId=(\d+)",
-                                              result.text)[0])
-
-        pyhtcc.logger.debug(f"location id is {self._locationId}")
-
 
 # add default requests session default timeout to prevent TimeoutExceptions
 # see ticket #93 for details
