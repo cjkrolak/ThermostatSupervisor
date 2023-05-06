@@ -1,6 +1,7 @@
 """Blink Camera."""
 import os
 import time
+import traceback
 
 # local imports
 from thermostatsupervisor import blink_config
@@ -51,6 +52,9 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):
 
         # establish connection
         self.blink = blinkpy.Blink()
+        if self.blink is None:
+            print(traceback.format_exc())
+            raise RuntimeError("Blink object failed to instantiate")
         auth_ = auth.Auth(self.auth_dict, no_prompt=True)
         self.blink.auth = auth_
         self.blink.start()

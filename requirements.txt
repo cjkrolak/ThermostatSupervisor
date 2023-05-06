@@ -1,3 +1,4 @@
+blinkpy>=0.20.0  # blink cameras
 bunch>=1.0.1  # bunch classes
 dnspython>=2.2.1  # DNS exception type
 coverage>=6.5.0  # unit test coverage
