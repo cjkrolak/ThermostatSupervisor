@@ -183,8 +183,8 @@ class ThermostatZone(tc.ThermostatCommonZone):
         self.device_id = Thermostat_obj.device_id
         self.Thermostat = Thermostat_obj
         self.zone_number = Thermostat_obj.zone_number
-        self.zone_name = Thermostat_obj.zone_name
-        self.zone_name = self.get_zone_name()
+        self.zone_name = self.get_zone_name
+        self.zone_metadata = Thermostat_obj.get_metadata(zone=self.zone_number)
 
     def get_display_temp(self) -> float:  # used
         """
@@ -195,8 +195,10 @@ class ThermostatZone(tc.ThermostatCommonZone):
         returns:
             (float): indoor temp in deg F.
         """
-        self.refresh_zone_info()
-        return util.c_to_f(self.device_id.get_current_temperature())
+        raw_temp = self.zone_metadata.get("temperature_calibrated")
+        if isinstance(raw_temp, (str, float, int)):
+            raw_temp = float(raw_temp)
+        return raw_temp
 
     def get_zone_name(self):
         """
@@ -218,290 +220,81 @@ class ThermostatZone(tc.ThermostatCommonZone):
         returns:
             (float, None): indoor humidity in %RH, None if not supported.
         """
-        self.refresh_zone_info()
-        return self.device_id.get_current_humidity()
+        return None  # not available
 
-    def get_is_humidity_supported(self) -> bool:  # used
-        """
-        Refresh the cached zone information and return the
-          True if humidity sensor data is trustworthy.
-
-        inputs:
-            None
-        returns:
-            (booL): True if is in humidity sensor is available and not faulted.
-        """
+    def get_is_humidity_supported(self) -> bool:
+        """Return humidity sensor status."""
         return self.get_display_humidity() is not None
 
     def is_heat_mode(self) -> int:
-        """
-        Refresh the cached zone information and return the heat mode.
-
-        inputs:
-            None
-        returns:
-            (int) heat mode, 1=enabled, 0=disabled.
-        """
-        self.refresh_zone_info()
-        return int(self.device_id.get_mode() ==
-                   self.system_switch_position[
-                       tc.ThermostatCommonZone.HEAT_MODE])
+        """Return the heat mode."""
+        return 0  # not applicable
 
     def is_cool_mode(self) -> int:
-        """
-        Refresh the cached zone information and return the cool mode.
-
-        inputs:
-            None
-        returns:
-            (int): cool mode, 1=enabled, 0=disabled.
-        """
-        self.refresh_zone_info()
-        return int(self.device_id.get_mode() ==
-                   self.system_switch_position[
-                       tc.ThermostatCommonZone.COOL_MODE])
+        """Return the cool mode."""
+        return 0  # not applicable
 
     def is_dry_mode(self) -> int:
-        """
-        Refresh the cached zone information and return the dry mode.
-
-        inputs:
-            None
-        returns:
-            (int): dry mode, 1=enabled, 0=disabled.
-        """
-        self.refresh_zone_info()
-        return int(self.device_id.get_mode() ==
-                   self.system_switch_position[
-                       tc.ThermostatCommonZone.DRY_MODE])
-
-    def is_fan_mode(self) -> int:
-        """
-        Refresh the cached zone information and return the fan mode.
-
-        inputs:
-            None
-        returns:
-            (int): fan mode, 1=enabled, 0=disabled.
-        """
-        return int(self.get_system_switch_position() ==
-                   self.system_switch_position[
-                       tc.ThermostatCommonZone.FAN_MODE])
+        """Return the dry mode."""
+        return 0  # not applicable
 
     def is_auto_mode(self) -> int:
-        """
-        Refresh the cached zone information and return the auto mode.
+        """Return the auto mode."""
+        return 0  # not applicable
 
-        inputs:
-            None
-        returns:
-            (int): auto mode, 1=enabled, 0=disabled.
-        """
-        self.refresh_zone_info()
-        return int(self.device_id.get_mode() ==
-                   self.system_switch_position[
-                       tc.ThermostatCommonZone.AUTO_MODE])
+    def is_fan_mode(self) -> int:
+        """Return the fan mode."""
+        return 0  # not applicable
 
     def is_off_mode(self) -> int:
-        """
-        Refresh the cached zone information and return the off mode.
+        """Return the off mode."""
+        return 1  # always off
 
-        inputs:
-            None
-        returns:
-            (int): off mode, 1=enabled, 0=disabled.
-        """
-        return int(self.get_system_switch_position() ==
-                   self.system_switch_position[
-                       tc.ThermostatCommonZone.OFF_MODE])
+    def is_heating(self) -> int:
+        """Return 1 if actively heating, else 0."""
+        return 0  # not applicable
 
-    def is_heating(self):
-        """Return 1 if heating relay is active, else 0."""
-        return int(self.is_heat_mode() and self.is_power_on() and
-                   self.get_heat_setpoint_raw() > self.get_display_temp())
-
-    def is_cooling(self):
-        """Return 1 if cooling relay is active, else 0."""
-        return int(self.is_cool_mode() and self.is_power_on() and
-                   self.get_cool_setpoint_raw() < self.get_display_temp())
+    def is_cooling(self) -> int:
+        """Return 1 if actively cooling, else 0."""
+        return 0  # not applicable
 
     def is_drying(self):
         """Return 1 if drying relay is active, else 0."""
-        return int(self.is_dry_mode() and self.is_power_on() and
-                   self.get_cool_setpoint_raw() < self.get_display_temp())
+        return 0  # not applicable
 
     def is_auto(self):
         """Return 1 if auto relay is active, else 0."""
-        return int(self.is_auto_mode() and self.is_power_on() and
-                   (self.get_cool_setpoint_raw() < self.get_display_temp() or
-                    self.get_heat_setpoint_raw() > self.get_display_temp()))
+        return 0  # not applicable
 
     def is_fanning(self):
         """Return 1 if fan relay is active, else 0."""
-        return int(self.is_fan_on() and self.is_power_on())
+        return 0  # not applicable
 
     def is_power_on(self):
         """Return 1 if power relay is active, else 0."""
-        self.refresh_zone_info()
-        return int(self.device_id.get_mode() != 'off')
+        return 1  # always on
 
     def is_fan_on(self):
         """Return 1 if fan relay is active, else 0."""
-        self.refresh_zone_info()
-        return int(self.device_id.get_fan_speed() != 'off')
+        return 0  # not applicable
 
     def is_defrosting(self):
         """Return 1 if defrosting is active, else 0."""
-        self.refresh_zone_info()
-        return int(self.device_id.get_status('defrost') == "True")
+        return 0  # not applicable
 
     def is_standby(self):
         """Return 1 if standby is active, else 0."""
-        self.refresh_zone_info()
-        return int(self.device_id.get_standby())
+        return 0  # not applicable
 
-    def get_heat_setpoint_raw(self) -> int:  # used
-        """
-        Refresh the cached zone information and return the heat setpoint.
+    def get_system_switch_position(self) -> int:
+        """ Return the thermostat mode.
 
         inputs:
             None
         returns:
-            (int): heating set point in degrees F.
+            (int): thermostat mode, see tc.system_switch_position for details.
         """
-        self.refresh_zone_info()
-        return util.c_to_f(self.device_id.get_heat_setpoint())
-
-    def get_heat_setpoint(self) -> str:
-        """Return heat setpoint with units as a string."""
-        return util.temp_value_with_units(self.get_heat_setpoint_raw())
-
-    def get_schedule_heat_sp(self) -> int:  # used
-        """
-        Return the schedule heat setpoint.
-
-        inputs:
-            None
-        returns:
-            (int): scheduled heating set point in degrees.
-        """
-        return blink_config.MAX_HEAT_SETPOINT  # max heat set point allowed
-
-    def get_schedule_cool_sp(self) -> int:
-        """
-        Return the schedule cool setpoint.
-
-        inputs:
-            None
-        returns:
-            (int): scheduled cooling set point in degrees F.
-        """
-        return blink_config.MIN_COOL_SETPOINT  # min cool set point allowed
-
-    def get_cool_setpoint_raw(self) -> int:
-        """
-        Return the cool setpoint.
-
-        inputs:
-            None
-        returns:
-            (int): cooling set point in degrees F.
-        """
-        self.refresh_zone_info()
-        return util.c_to_f(self.device_id.get_cool_setpoint())
-
-    def get_cool_setpoint(self) -> str:
-        """Return cool setpoint with units as a string."""
-        return util.temp_value_with_units(self.get_cool_setpoint_raw())
-
-    def get_is_invacation_hold_mode(self) -> bool:  # used
-        """
-        Return the
-          'IsInVacationHoldMode' setting.
-
-        inputs:
-            None
-        returns:
-            (booL): True if is in vacation hold mode.
-        """
-        return False  # no schedule, hold not implemented
-
-    def get_vacation_hold(self) -> bool:
-        """
-        Return the
-        VacationHold setting.
-
-        inputs:
-            None
-        returns:
-            (bool): True if vacation hold is set.
-        """
-        return False  # no schedule, hold not implemented
-
-    def get_system_switch_position(self) -> int:  # used
-        """
-        Return the system switch position, same as mode.
-
-        inputs:
-            None
-        returns:
-            (int) current mode for unit, should match value
-                  in self.system_switch_position
-        """
-        self.refresh_zone_info()
-        return self.device_id.get_mode()
-
-    def set_heat_setpoint(self, temp: int) -> None:
-        """
-        Set a new heat setpoint.
-
-        This will also attempt to turn the thermostat to 'Heat'
-        inputs:
-            temp(int): desired temperature in F
-        returns:
-            None
-        """
-        self.device_id.set_heat_setpoint(util.f_to_c(temp))
-
-    def set_cool_setpoint(self, temp: int) -> None:
-        """
-        Set a new cool setpoint.
-
-        This will also attempt to turn the thermostat to 'Cool'
-        inputs:
-            temp(int): desired temperature in deg F.
-        returns:
-            None
-        """
-        self.device_id.set_cool_setpoint(util.f_to_c(temp))
-
-    def refresh_zone_info(self, force_refresh=False):
-        """
-        Refresh zone info from KumoCloud.
-
-        inputs:
-            force_refresh(bool): if True, ignore expiration timer.
-        returns:
-            None, device_id object is refreshed.
-        """
-        return
-        # now_time = time.time()
-        # # refresh if past expiration date or force_refresh option
-        # if (force_refresh or (now_time >=
-        #                       (self.last_fetch_time +
-        #                        self.fetch_interval_sec))):
-        #     self.Thermostat._need_fetch = True \
-        #         # pylint: disable=protected-access
-        #     try:
-        #         self.Thermostat._fetch_if_needed() \
-        #             # pylint: disable=protected-access
-        #     except UnboundLocalError:  # patch for issue #205
-        #         util.log_msg("WARNING: Kumocloud refresh failed due to "
-        #                      "timeout", mode=util.BOTH_LOG, func_name=1)
-        #     self.last_fetch_time = now_time
-        #     # refresh device object
-        #     self.device_id = \
-        #         self.Thermostat.get_target_zone_id(self.zone_name)
+        return self.system_switch_position[self.OFF_MODE]
 
     def report_heating_parameters(self, switch_position=None):
         """
@@ -573,7 +366,8 @@ if __name__ == "__main__":
     zone_number = api.uip.get_user_inputs(api.uip.zone_name,
                                           api.input_flds.zone)
 
-    tc.thermostat_basic_checkout(
-        blink_config.ALIAS,
-        zone_number,
-        ThermostatClass, ThermostatZone)
+    for zone_number in blink_config.metadata:
+        tc.thermostat_basic_checkout(
+            blink_config.ALIAS,
+            zone_number,
+            ThermostatClass, ThermostatZone)
