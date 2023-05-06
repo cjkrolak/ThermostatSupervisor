@@ -183,7 +183,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         self.device_id = Thermostat_obj.device_id
         self.Thermostat = Thermostat_obj
         self.zone_number = Thermostat_obj.zone_number
-        self.zone_name = self.get_zone_name
+        self.zone_name = self.get_zone_name()
         self.zone_metadata = Thermostat_obj.get_metadata(zone=self.zone_number)
 
     def get_display_temp(self) -> float:  # used
@@ -195,7 +195,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         returns:
             (float): indoor temp in deg F.
         """
-        raw_temp = self.zone_metadata.get("temperature_calibrated")
+        raw_temp = self.zone_metadata.get(blink_config.API_TEMPF_MEAN)
         if isinstance(raw_temp, (str, float, int)):
             raw_temp = float(raw_temp)
         return raw_temp

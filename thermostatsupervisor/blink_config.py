@@ -3,7 +3,7 @@ blink config file.
 """
 ALIAS = "blink"
 
-# camera zones
+# camera zone names
 CABIN_DOORBELL = "cabin doorbell"
 DRIVEWAY = "driveway"
 BEACH = "beach"
@@ -13,6 +13,9 @@ BACK_YARD = "back yard"
 # constants
 MAX_HEAT_SETPOINT = 68
 MIN_COOL_SETPOINT = 70
+
+MEASUREMENTS = 1  # number of MEASUREMENTS to average
+API_TEMPF_MEAN = "temperature_calibrated"
 
 # all environment variables specific to this thermostat type
 env_variables = {
@@ -30,11 +33,9 @@ required_env_variables = {
 
 # supported thermostat configs
 supported_configs = {"module": "blink",
-                     "type": 5,
-                     "zones": [CABIN_DOORBELL, DRIVEWAY, BEACH, FRONT_YARD,
-                               BACK_YARD],
-                     "modes": ["OFF_MODE", "HEAT_MODE", "COOL_MODE",
-                               "DRY_MODE", "AUTO_MODE", "UNKNOWN_MODE"]}
+                     "type": 6,
+                     "zones": [0, 1, 2, 3, 4],
+                     "modes": ["OFF_MODE"]}
 
 # metadata dict
 # 'zone_name' is a placeholder, used at Thermostat class level.
