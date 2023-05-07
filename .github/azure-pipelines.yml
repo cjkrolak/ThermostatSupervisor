@@ -65,4 +65,7 @@ steps:
     # SHT31_REMOTE_IP_ADDRESS_99: '$(SHT31_REMOTE_IP_ADDRESS_99)'
     KUMO_USERNAME: '$(KUMO_USERNAME)' # used for kumocloud int test
     KUMO_PASSWORD: '$(KUMO_PASSWORD)' # used for kumocloud int test
+    BLINK_USERNAME: '$(BLINK_USERNAME)' # used for blink int test
+    BLINK_PASSWORD: '$(BLINK_PASSWORD)' # used for blink int test
+    BLINK_2FA: '$(BLINK_2FA)' # used for blink int test
  
