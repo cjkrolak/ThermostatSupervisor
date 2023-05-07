@@ -76,6 +76,7 @@ class Test(utc.UnitTest):
         self.assertTrue(isinstance(pkg, object),
                         f"dynamic_module_import() returned type({type(pkg)}), "
                         f"expected an object")
+        print(f"package name={pkg.__name__}")
         del sys.modules[pkg.__name__]
         del pkg
 
