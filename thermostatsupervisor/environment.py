@@ -210,7 +210,9 @@ def dynamic_module_import(name, path=None):
             if spec is None:
                 raise ModuleNotFoundError(f"module '{name}' could "
                                           "not be found")
-            mod = spec.loader.load_module()
+            mod = importlib.util.module_from_spec(spec)
+            sys.modules[name] = mod
+            spec.loader.exec_module(mod)
     except Exception as ex:
         util.log_msg(traceback.format_exc(),
                      mode=util.BOTH_LOG, func_name=1)
