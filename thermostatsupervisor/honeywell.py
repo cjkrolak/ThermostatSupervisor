@@ -226,6 +226,12 @@ class ThermostatClass(pyhtcc.PyHTCC, tc.ThermostatCommon):
             print(traceback.format_exc())
             print(f"{util.get_function_name()}: WARNING: NoZonesFoundError "
                   "error detected")
+        except pyhtcc.pyhtcc.UnauthorizedError:
+            # UnauthorizedError error, probably JSON decoding, force re-auth
+            tc.connection_ok = False
+            print(traceback.format_exc())
+            print(f"{util.get_function_name()}: WARNING: UnauthorizedError "
+                  "error detected")
         return return_val
 
 
