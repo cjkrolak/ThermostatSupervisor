@@ -18,6 +18,8 @@ from thermostatsupervisor import utilities as util
 DEGREE_SIGN = "\N{DEGREE SIGN}"
 
 connection_ok = True  # global flag for connection OK.
+connection_fail_cnt = 0  # count number of connection failures
+max_connection_fail_cnt = 9  # max number of connection failures
 
 
 class ThermostatCommon():

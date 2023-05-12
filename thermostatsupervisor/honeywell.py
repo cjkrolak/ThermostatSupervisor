@@ -211,27 +211,34 @@ class ThermostatClass(pyhtcc.PyHTCC, tc.ThermostatCommon):
         except pyhtcc.requests.exceptions.ConnectionError:
             # connection error, force re-authenticating
             tc.connection_ok = False
+            tc.connection_fail_cnt += 1
             print(traceback.format_exc())
             print(f"{util.get_function_name()}: WARNING: connection error "
                   "detected")
         except pyhtcc.pyhtcc.UnexpectedError:
             # Unknown error, probably JSON decoding, force re-authenticating
             tc.connection_ok = False
+            tc.connection_fail_cnt += 1
             print(traceback.format_exc())
             print(f"{util.get_function_name()}: WARNING: unknown error "
                   "detected")
         except pyhtcc.pyhtcc.NoZonesFoundError:
             # NoZonesFoundError error, probably JSON decoding, force re-auth
             tc.connection_ok = False
+            tc.connection_fail_cnt += 1
             print(traceback.format_exc())
             print(f"{util.get_function_name()}: WARNING: NoZonesFoundError "
                   "error detected")
         except pyhtcc.pyhtcc.UnauthorizedError:
             # UnauthorizedError error, probably JSON decoding, force re-auth
             tc.connection_ok = False
+            tc.connection_fail_cnt += 1
             print(traceback.format_exc())
             print(f"{util.get_function_name()}: WARNING: UnauthorizedError "
                   "error detected")
+        # out of retries
+        if tc.connection_fail_cnt > tc.max_connection_fail_cnt:
+            raise
         return return_val
 
 
