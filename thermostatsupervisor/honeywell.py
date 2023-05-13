@@ -208,37 +208,25 @@ class ThermostatClass(pyhtcc.PyHTCC, tc.ThermostatCommon):
         return_val = []
         try:
             return_val = super().get_zones_info()
-        except pyhtcc.requests.exceptions.ConnectionError:
-            # connection error, force re-authenticating
+        except (pyhtcc.requests.exceptions.ConnectionError,
+                pyhtcc.pyhtcc.UnexpectedError,
+                pyhtcc.pyhtcc.NoZonesFoundError,
+                pyhtcc.pyhtcc.UnauthorizedError,
+                ) as ex:
+            # force re-authenticating
             tc.connection_ok = False
             tc.connection_fail_cnt += 1
             print(traceback.format_exc())
-            print(f"{util.get_function_name()}: WARNING: connection error "
-                  "detected")
-        except pyhtcc.pyhtcc.UnexpectedError:
-            # Unknown error, probably JSON decoding, force re-authenticating
-            tc.connection_ok = False
-            tc.connection_fail_cnt += 1
-            print(traceback.format_exc())
-            print(f"{util.get_function_name()}: WARNING: unknown error "
-                  "detected")
-        except pyhtcc.pyhtcc.NoZonesFoundError:
-            # NoZonesFoundError error, probably JSON decoding, force re-auth
-            tc.connection_ok = False
-            tc.connection_fail_cnt += 1
-            print(traceback.format_exc())
-            print(f"{util.get_function_name()}: WARNING: NoZonesFoundError "
-                  "error detected")
-        except pyhtcc.pyhtcc.UnauthorizedError:
-            # UnauthorizedError error, probably JSON decoding, force re-auth
-            tc.connection_ok = False
-            tc.connection_fail_cnt += 1
-            print(traceback.format_exc())
-            print(f"{util.get_function_name()}: WARNING: UnauthorizedError "
-                  "error detected")
-        # out of retries
-        if tc.connection_fail_cnt > tc.max_connection_fail_cnt:
-            raise
+            print(f"{util.get_function_name()}: WARNING: {ex}")
+
+            # exhausted retries, raise exception
+            if tc.connection_fail_cnt > tc.max_connection_fail_cnt:
+                raise ex
+        else:
+            # good response
+            tc.connection_ok = True
+            tc.connection_fail_cnt = 0  # reset
+
         return return_val
 
 
