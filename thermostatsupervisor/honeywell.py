@@ -227,10 +227,11 @@ class ThermostatClass(pyhtcc.PyHTCC, tc.ThermostatCommon):
                          f"{self.zone_name}: "
                          "intermittent error "
                          "during get_zones_info()"),
-                        body=f"{util.get_function_name()}: trial "
-                        f"{tc.connection_fail_cnt} of "
-                        f"{tc.max_connection_fail_cnt} at "
-                        f"{time_now}")
+                body=(f"{util.get_function_name()}: trial "
+                      f"{tc.connection_fail_cnt} of "
+                      f"{tc.max_connection_fail_cnt} at "
+                      f"{time_now}")
+                )
 
             # exhausted retries, raise exception
             if tc.connection_fail_cnt > tc.max_connection_fail_cnt:
@@ -732,9 +733,10 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
                                  f"{self.zone_name}: "
                                  "intermittent connection error "
                                  "during refresh zone"),
-                        body=f"{util.get_function_name()}: trial "
-                        f"{trial_number} of {number_of_retries} at "
-                        f"{time_now}")
+                        body=(f"{util.get_function_name()}: trial "
+                              f"{trial_number} of {number_of_retries} at "
+                              f"{time_now}")
+                        )
                 for zone_data in all_zones_info:
                     if zone_data['DeviceID'] == self.device_id:
                         pyhtcc.logger.debug(f"Refreshed zone info for \
