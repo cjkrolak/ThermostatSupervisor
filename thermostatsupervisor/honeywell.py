@@ -219,6 +219,19 @@ class ThermostatClass(pyhtcc.PyHTCC, tc.ThermostatCommon):
             print(traceback.format_exc())
             print(f"{util.get_function_name()}: WARNING: {ex}")
 
+            # warning email
+            time_now = (datetime.datetime.now().
+                        strftime("%Y-%m-%d %H:%M:%S"))
+            email_notification.send_email_alert(
+                subject=(f"{self.thermostat_type} zone "
+                         f"{self.zone_name}: "
+                         "intermittent error "
+                         "during get_zones_info()"),
+                        body=f"{util.get_function_name()}: trial "
+                        f"{tc.connection_fail_cnt} of "
+                        f"{tc.max_connection_fail_cnt} at "
+                        f"{time_now}")
+
             # exhausted retries, raise exception
             if tc.connection_fail_cnt > tc.max_connection_fail_cnt:
                 raise ex
