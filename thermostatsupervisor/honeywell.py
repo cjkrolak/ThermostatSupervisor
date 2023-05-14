@@ -230,7 +230,7 @@ class ThermostatClass(pyhtcc.PyHTCC, tc.ThermostatCommon):
                 body=(f"{util.get_function_name()}: trial "
                       f"{tc.connection_fail_cnt} of "
                       f"{tc.max_connection_fail_cnt} at "
-                      f"{time_now}")
+                      f"{time_now}\n{traceback.format_exc()}")
                 )
 
             # exhausted retries, raise exception
