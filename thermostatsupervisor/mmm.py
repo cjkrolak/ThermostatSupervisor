@@ -20,8 +20,11 @@ from thermostatsupervisor import utilities as util
 # radiotherm import
 MMM_DEBUG = False  # debug uses local radiotherm repo instead of pkg
 if MMM_DEBUG and not env.is_azure_environment():
+    mod_path = "..//radiotherm"
+    if env.is_interactive_environment():
+        mod_path = "..\\" + mod_path
     radiotherm = env.dynamic_module_import("radiotherm",
-                                           "..//..//radiotherm")
+                                           mod_path)
 else:
     import radiotherm  # noqa E402, from path / site packages
 
