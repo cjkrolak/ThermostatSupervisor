@@ -22,8 +22,11 @@ from thermostatsupervisor import utilities as util
 # honeywell import
 HONEYWELL_DEBUG = False  # debug uses local pyhtcc repo instead of pkg
 if HONEYWELL_DEBUG and not env.is_azure_environment():
+    mod_path = "..\\pyhtcc\\pyhtcc"
+    if env.is_interactive_environment():
+        mod_path = "..\\" + mod_path
     pyhtcc = env.dynamic_module_import("pyhtcc",
-                                       "..\\pyhtcc\\pyhtcc")
+                                       mod_path)
 else:
     import pyhtcc  # noqa E402, from path / site packages
 

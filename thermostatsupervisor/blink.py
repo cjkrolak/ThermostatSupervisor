@@ -11,10 +11,13 @@ from thermostatsupervisor import environment as env
 from thermostatsupervisor import utilities as util
 
 # Blink library
-BLINK_DEBUG = False  # debug uses local blink repo instead of pkg
+BLINK_DEBUG = True  # debug uses local blink repo instead of pkg
 if BLINK_DEBUG and not env.is_azure_environment():
+    mod_path = "..\\blinkpy\\blinkpy"
+    if env.is_interactive_environment():
+        mod_path = "..\\" + mod_path
     blinkpy = env.dynamic_module_import("blinkpy",
-                                        "..\\..\\pykumo\\pykumo")
+                                        mod_path)
 else:
     from blinkpy import auth  # noqa E402, from path / site packages
     from blinkpy import blinkpy  # noqa E402, from path / site packages
@@ -126,7 +129,11 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):
             (dict): dictionary of meta data.
         """
         zone_name = blink_config.metadata[self.zone_number]["zone_name"]
+        if self.blink.cameras == {}:
+            raise ValueError("camera list is empty when searching for camera"
+                             f" {zone_name}")
         for name, camera in self.blink.cameras.items():
+            # print(f"DEBUG: camera {name}: {camera.attributes}")
             if name == zone_name:
                 if debug:
                     print(f"found camera {name}: {camera.attributes}")
