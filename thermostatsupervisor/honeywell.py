@@ -199,61 +199,49 @@ class ThermostatClass(pyhtcc.PyHTCC, tc.ThermostatCommon):
         Return a list of dicts corresponding with each one corresponding to a
         particular zone.
 
-        Method overridden from base class to add additional debug info.
+        Method overridden from base class to add exception handling.
         inputs:
             None
         returns:
             list of zone info.
         """
-        zones = []
-        for page_num in range(1, 6):
-            pyhtcc.logger.debug(
-                "Attempting to get zones for location id, page: "
-                f"{self._locationId}, {page_num}"
-            )
-            try:
-                data = self._post_zone_list_data(page_num)
-            except pyhtcc.requests.exceptions.ConnectionError:
-                # connection error, force re-authenticating
-                tc.connection_ok = False
-                print(traceback.format_exc())
-                print("connection error detected, forcing re-authentication...")
-                return []
+        return_val = []
+        try:
+            return_val = super().get_zones_info()
+        except (pyhtcc.requests.exceptions.ConnectionError,
+                pyhtcc.pyhtcc.UnexpectedError,
+                pyhtcc.pyhtcc.NoZonesFoundError,
+                pyhtcc.pyhtcc.UnauthorizedError,
+                ) as ex:
+            # force re-authenticating
+            tc.connection_ok = False
+            tc.connection_fail_cnt += 1
+            print(traceback.format_exc())
+            print(f"{util.get_function_name()}: WARNING: {ex}")
 
-            pyhtcc.logger.debug("finished get zones for location id, "
-                                f"page: {self._locationId}, {page_num}")
-            if page_num == 1 and not data:
-                raise pyhtcc.NoZonesFoundError("No zones were found from "
-                                               "GetZoneListData")
-            elif not data:
-                # first empty page means we're done
-                pyhtcc.logger.debug(f"page {page_num} is empty")
-                break
+            # warning email
+            time_now = (datetime.datetime.now().
+                        strftime("%Y-%m-%d %H:%M:%S"))
+            email_notification.send_email_alert(
+                subject=(f"{self.thermostat_type} zone "
+                         f"{self.zone_name}: "
+                         "intermittent error "
+                         "during get_zones_info()"),
+                body=(f"{util.get_function_name()}: trial "
+                      f"{tc.connection_fail_cnt} of "
+                      f"{tc.max_connection_fail_cnt} at "
+                      f"{time_now}\n{traceback.format_exc()}")
+                )
 
-            # once we go to an empty page, we're done. Luckily it returns
-            # empty json instead of erroring
-            if not data:
-                pyhtcc.logger.debug(f"page {page_num} is empty")
-                break
+            # exhausted retries, raise exception
+            if tc.connection_fail_cnt > tc.max_connection_fail_cnt:
+                raise ex
+        else:
+            # good response
+            tc.connection_ok = True
+            tc.connection_fail_cnt = 0  # reset
 
-            zones.extend(data)
-
-        # add name (and additional info) to zone info
-        for idx, zone in enumerate(zones):
-            device_id = zone["DeviceID"]
-            name = self._get_name_for_device_id(device_id)
-            zone["Name"] = name
-
-            device_id = zone["DeviceID"]
-            more_data = self._get_check_data_session(device_id)
-
-            zones[idx] = {
-                **zone,
-                **more_data,
-                **self._get_outdoor_weather_info_for_zone(device_id),
-            }
-
-        return zones
+        return return_val
 
 
 class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
@@ -745,9 +733,10 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
                                  f"{self.zone_name}: "
                                  "intermittent connection error "
                                  "during refresh zone"),
-                        body=f"{util.get_function_name()}: trial "
-                        f"{trial_number} of {number_of_retries} at "
-                        f"{time_now}")
+                        body=(f"{util.get_function_name()}: trial "
+                              f"{trial_number} of {number_of_retries} at "
+                              f"{time_now}")
+                        )
                 for zone_data in all_zones_info:
                     if zone_data['DeviceID'] == self.device_id:
                         pyhtcc.logger.debug(f"Refreshed zone info for \
