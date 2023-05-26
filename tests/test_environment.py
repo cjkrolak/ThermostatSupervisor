@@ -2,6 +2,7 @@
 Unit test module for environment.py.
 """
 # built-in imports
+import os
 import sys
 import unittest
 
@@ -159,6 +160,14 @@ class EnvironmentTests(utc.UnitTest):
             pkg = env.dynamic_module_import(util.PACKAGE_NAME + "." + "bogus")
             print(f"'bogus' module returned package type {type(pkg)}")
         print("test passed")
+
+    def test_get_parent_path(self):
+        """
+        Verify get_parent_path().
+        """
+        return_val = env.get_parent_path(os.getcwd())
+        self.assertTrue(isinstance(return_val, str),
+                        "get_parent_path() returned '%s' which is not a string")
 
 
 if __name__ == "__main__":

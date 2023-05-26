@@ -178,11 +178,11 @@ def get_python_version(min_major_version=MIN_PYTHON_MAJOR_VERSION,
     return (major_version, minor_version)
 
 
-def dynamic_module_import(name, path=None):
+def dynamic_module_import(name, path=None, pkg=None):
     """
     Find and load python module.
 
-    TODO: this module results in a resourcewarning within unittest:
+    TODO: this module results in a resource warning within unittest:
     sys:1: ResourceWarning: unclosed <socket.socket fd=628,
     family=AddressFamily.AF_INET, type=SocketKind.SOCK_DGRAM, proto=0,
     laddr=('0.0.0.0', 64963)>
@@ -191,13 +191,21 @@ def dynamic_module_import(name, path=None):
         name(str): module name
         path(str): file path (either relative or abs path),
                    if path is None then will import from installed packages
+        pkg(str): package to add to path
     returns:
         mod(module): module object
     """
+    # add package to path
+    if pkg is not None:
+        pkg_path = get_parent_path(os.getcwd()) + "//" + pkg
+        print(f"adding package '{pkg_path}' to path...")
+        sys.path.insert(1, pkg_path)
+
     try:
         if path:
             # local file import from relative or abs path
-            print(f"DEBUG attempting local import from {os.getcwd()}...")
+            print(f"DEBUG attempting local import of {name} from "
+                  f"working directory {os.getcwd()}...")
             print(f"target dir contents={os.listdir(path)}")
             sys.path.insert(1, path)
             mod = importlib.import_module(name)
@@ -221,3 +229,20 @@ def dynamic_module_import(name, path=None):
         raise ex
     else:
         return mod
+
+
+def get_parent_path(source_path, verbose=False):
+    """
+    Return the absolute path to the parent folder.
+
+    inputs:
+        source_path(str): source path
+        verbose(bool): prints debug data.
+    returns:
+        (str): abs path to parent folder.
+    """
+    parent_path = os.path.abspath(os.path.join(
+        source_path, os.pardir)).replace("\\", "/")
+    if verbose:
+        print(f"parent path={parent_path}")
+    return parent_path
