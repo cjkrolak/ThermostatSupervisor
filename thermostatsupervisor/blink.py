@@ -11,13 +11,16 @@ from thermostatsupervisor import environment as env
 from thermostatsupervisor import utilities as util
 
 # Blink library
-BLINK_DEBUG = True  # debug uses local blink repo instead of pkg
+BLINK_DEBUG = False  # debug uses local blink repo instead of pkg
 if BLINK_DEBUG and not env.is_azure_environment():
-    mod_path = "..\\blinkpy\\blinkpy"
+    pkg = "blinkpy.blinkpy"
+    mod_path = "..\\blinkpy"
     if env.is_interactive_environment():
         mod_path = "..\\" + mod_path
-    blinkpy = env.dynamic_module_import("blinkpy",
-                                        mod_path)
+    blinkpy = env.dynamic_module_import("blinkpy.blinkpy",
+                                        mod_path, pkg)
+    auth = env.dynamic_module_import("blinkpy.auth",
+                                     mod_path, pkg)
 else:
     from blinkpy import auth  # noqa E402, from path / site packages
     from blinkpy import blinkpy  # noqa E402, from path / site packages

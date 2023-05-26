@@ -55,6 +55,8 @@ class Test(utc.UnitTest):
         """
         Verify store_current_mode() runs without error.
         """
+        backup_func = None
+
         def dummy_true():
             """Return 1."""
             return 1

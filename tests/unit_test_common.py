@@ -30,7 +30,8 @@ ENABLE_FLASK_INTEGRATION_TESTS = True  # enable flask int tests
 ENABLE_KUMOLOCAL_TESTS = False  # Kumolocal is local net only
 ENABLE_MMM_TESTS = False  # mmm50 is local net only
 ENABLE_SHT31_TESTS = True  # sht31 can fail on occasion
-ENABLE_BLINK_TESTS = True  # Blink cameras
+ENABLE_BLINK_TESTS = True and \
+    not env.is_azure_environment()  # Blink cameras, TODO #638
 
 
 # generic argv list for unit testing
@@ -449,7 +450,7 @@ class RuntimeParameterTest(UnitTest):
 
     uip = None
     mod = None
-    test_fields = None  # placeholder, will be populated by child classes
+    test_fields = []  # placeholder, will be populated by child classes
     test_fields_with_file = None  # placeholder, will be populated by child
     parent_key = util.default_parent_key  # will be updated during inheritance.
 
@@ -617,7 +618,7 @@ class RuntimeParameterTest(UnitTest):
         if not os.path.exists(arg):
             parser.error("The file %s does not exist!" % os.path.abspath(arg))
         else:
-            return open(arg, 'rt')  # return an open file handle
+            return open(arg, 'rt', encoding="utf8")  # return a file handle
 
     def test_parse_named_arguments_sflag(self):
         """

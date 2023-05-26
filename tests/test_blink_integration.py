@@ -15,7 +15,7 @@ from tests import unit_test_common as utc
                  "Blink camera tests are disabled")
 class IntegrationTest(utc.IntegrationTest):
     """
-    Test functions in sht31.py.
+    Test functions in blink.py.
     """
 
     def setUpIntTest(self):
@@ -26,8 +26,6 @@ class IntegrationTest(utc.IntegrationTest):
         self.unit_test_argv = [
             "supervise.py",  # module
             "blink",  # thermostat
-            # loopback does not work so use local sht31 zone if testing
-            # on the local net.  If not, use the DNS name.
             str(blink_config.default_zone),
             "5",  # poll time in sec
             "12",  # reconnect time in sec
@@ -44,7 +42,7 @@ class IntegrationTest(utc.IntegrationTest):
 class FunctionalIntegrationTest(IntegrationTest,
                                 utc.FunctionalIntegrationTest):
     """
-    Test functional performance of sht31.py.
+    Test functional performance of blink.py.
     """
 
     def setUp(self):
@@ -54,20 +52,20 @@ class FunctionalIntegrationTest(IntegrationTest,
         self.metadata_type = int  # type of raw value in metadata dict.
 
 
-@unittest.skipIf(not utc.ENABLE_SHT31_TESTS,
-                 "sht31 tests are disabled")
+@unittest.skipIf(not utc.ENABLE_BLINK_TESTS,
+                 "blink tests are disabled")
 class SuperviseIntegrationTest(IntegrationTest,
                                utc.SuperviseIntegrationTest):
     """
-    Test supervise functionality of sht31.py.
+    Test supervise functionality of blink.py.
     """
     def setUp(self):
         super().setUp()
         self.setUpIntTest()
 
 
-@unittest.skipIf(not utc.ENABLE_SHT31_TESTS,
-                 "sht31 tests are disabled")
+@unittest.skipIf(not utc.ENABLE_BLINK_TESTS,
+                 "blink tests are disabled")
 class PerformanceIntegrationTest(IntegrationTest,
                                  utc.PerformanceIntegrationTest):
     """
@@ -83,7 +81,6 @@ class PerformanceIntegrationTest(IntegrationTest,
 
         # temperature and humidity repeatability measurements
         # settings below are tuned short term repeatability assessment
-        # assuming sht31_config.measurements = 10
         self.temp_stdev_limit = 0.5  # 1 sigma temp repeatability limit in F
         self.temp_repeatability_measurements = 30  # number of temp msmts.
         self.humidity_stdev_limit = 0.5  # 1 sigma humid repeat. limit %RH
