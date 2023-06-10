@@ -15,7 +15,7 @@ except ImportError as ex:
     pi_library_exception = ex  # unsuccessful
 
 # built-in imports
-import bunch
+import munch
 import re
 import statistics
 import subprocess
@@ -35,7 +35,7 @@ from thermostatsupervisor import sht31_config
 from thermostatsupervisor import utilities as util
 
 # runtime override fields
-input_flds = bunch.Bunch()
+input_flds = munch.Munch()
 input_flds.debug_fld = "debug"
 
 uip = None  # user inputs object
