@@ -2,7 +2,7 @@
 SHT31 config file.
 """
 # built-in imports
-import bunch
+import munch
 
 # local imports
 from thermostatsupervisor import utilities as util
@@ -30,7 +30,7 @@ else:
     FLASK_URL_PREFIX = "http://"
 
 # diagnostic parameters
-flask_folder = bunch.Bunch()
+flask_folder = munch.Munch()
 flask_folder.production = ""
 flask_folder.unit_test = "/unit"
 flask_folder.diag = "/diag"

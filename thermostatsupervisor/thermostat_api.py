@@ -5,7 +5,7 @@ This file should be updated for any new thermostats supported and
 any changes to thermostat configs.
 """
 # built ins
-import bunch
+import munch
 
 # local imports
 from thermostatsupervisor import blink_config
@@ -55,7 +55,7 @@ for config_module in config_modules:
 # note script name is omitted, starting with first parameter
 # index 0 (script name) is not included in this dict because it is
 # not a runtime argument
-input_flds = bunch.Bunch()
+input_flds = munch.Munch()
 input_flds.thermostat_type = "thermostat_type"
 input_flds.zone = "zone"
 input_flds.poll_time = "poll_time"
