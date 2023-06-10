@@ -94,9 +94,7 @@ def load_all_env_variables():
 def is_interactive_environment():
     """Return True if script is run through IDE."""
     parent = psutil.Process(os.getpid()).parent().name()
-    if parent == "cmd.exe":
-        return False
-    elif parent == "bash":
+    if parent in ["cmd.exe", "py.exe", "bash"]:
         return False
     elif parent == "eclipse.exe":
         return True
