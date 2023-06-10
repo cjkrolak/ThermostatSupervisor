@@ -145,10 +145,13 @@ class UnitTest(unittest.TestCase, metaclass=PatchMeta):
 
     def print_test_result(self):
         """Print unit test result to console."""
-        if hasattr(self, '_outcome'):  # Python 3.4+
+        if hasattr(self._outcome, 'errors'):  # Python 3.4 - 3.10
             # These two methods have no side effects
             result = self.defaultTestResult()
             self._feedErrorsToResult(result, self._outcome.errors)
+        elif hasattr(self._outcome, 'result'):  # python 3.11
+            # These two methods have no side effects
+            result = self._outcome.result
         else:  # Python 3.2 - 3.3 or 3.0 - 3.1 and 2.7
             raise OSError(
                 "this code is designed to work on Python 3.4+")
