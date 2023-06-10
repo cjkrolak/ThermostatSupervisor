@@ -60,11 +60,16 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):
         self.blink = blinkpy.Blink()
         if self.blink is None:
             print(traceback.format_exc())
-            raise RuntimeError("Blink object failed to instantiate")
+            raise RuntimeError("ERROR: Blink object failed to instantiate "
+                               f"for zone {zone}")
         auth_ = auth.Auth(self.auth_dict, no_prompt=True)
         self.blink.auth = auth_
         self.blink.start()
-        self.blink.auth.send_auth_key(self.blink, self.bl_2fa)
+        try:
+            self.blink.auth.send_auth_key(self.blink, self.bl_2fa)
+        except AttributeError as ex:
+            print(f"ERROR: Blink authentication failed for zone {zone}")
+            raise ex
         self.blink.setup_post_verify()
 
         # get cameras
@@ -385,3 +390,8 @@ if __name__ == "__main__":
             blink_config.ALIAS,
             zone_number,
             ThermostatClass, ThermostatZone)
+
+    # tc.thermostat_get_all_zone_temps(blink_config.ALIAS,
+    #                                  blink_config.supported_configs["zones"],
+    #                                  ThermostatClass,
+    #                                  ThermostatZone)

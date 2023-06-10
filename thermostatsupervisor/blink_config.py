@@ -9,6 +9,10 @@ DRIVEWAY = "driveway"
 BEACH = "beach"
 FRONT_YARD = "front yard"
 BACK_YARD = "back yard"
+WEST = "west"
+NORTH = "north"
+SOUTH = "south"
+NW_SE = "nw-se"
 
 # constants
 MAX_HEAT_SETPOINT = 68
@@ -31,12 +35,6 @@ required_env_variables = {
     "BLINK_2FA": None,
 }
 
-# supported thermostat configs
-supported_configs = {"module": "blink",
-                     "type": 6,
-                     "zones": [0, 1, 2, 3, 4],
-                     "modes": ["OFF_MODE"]}
-
 # metadata dict
 # 'zone_name' is a placeholder, used at Thermostat class level.
 metadata = {
@@ -45,7 +43,17 @@ metadata = {
     2: {"zone_name": FRONT_YARD},
     3: {"zone_name": BACK_YARD},
     4: {"zone_name": CABIN_DOORBELL},
+    5: {"zone_name": WEST},
+    6: {"zone_name": NORTH},
+    7: {"zone_name": SOUTH},
+    8: {"zone_name": NW_SE},
 }
+
+# supported thermostat configs
+supported_configs = {"module": "blink",
+                     "type": 6,
+                     "zones": list(metadata.keys()),
+                     "modes": ["OFF_MODE"]}
 
 default_zone = supported_configs["zones"][0]
 default_zone_name = ALIAS + "_" + str(default_zone)

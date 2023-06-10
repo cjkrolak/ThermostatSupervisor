@@ -178,7 +178,7 @@ def get_python_version(min_major_version=MIN_PYTHON_MAJOR_VERSION,
     return (major_version, minor_version)
 
 
-def dynamic_module_import(name, path=None, pkg=None):
+def dynamic_module_import(name, path=None, pkg=None, verbose=False):
     """
     Find and load python module.
 
@@ -192,6 +192,7 @@ def dynamic_module_import(name, path=None, pkg=None):
         path(str): file path (either relative or abs path),
                    if path is None then will import from installed packages
         pkg(str): package to add to path
+        verbose(bool): debug flag
     returns:
         mod(module): module object
     """
@@ -204,9 +205,10 @@ def dynamic_module_import(name, path=None, pkg=None):
     try:
         if path:
             # local file import from relative or abs path
-            print(f"DEBUG attempting local import of {name} from "
+            print(f"WARNING: attempting local import of {name} from "
                   f"working directory {os.getcwd()}...")
-            print(f"target dir contents={os.listdir(path)}")
+            if verbose:
+                print(f"target dir contents={os.listdir(path)}")
             sys.path.insert(1, path)
             mod = importlib.import_module(name)
             if mod is None:
