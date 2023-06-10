@@ -1125,7 +1125,34 @@ def thermostat_basic_checkout(thermostat_type, zone,
                                                   ThermostatClass,
                                                   ThermostatZone)
 
-    # print("thermostat meta data=%s\n" % Thermostat.get_all_metadata())
     Zone.display_basic_thermostat_summary()
+
+    return Thermostat, Zone
+
+
+def thermostat_get_all_zone_temps(thermostat_type, zone_lst,
+                                  ThermostatClass, ThermostatZone):
+    """
+    Perform basic Thermostat checkout.
+
+    inputs:
+        tstat(int):  thermostat_type
+        zone_lst(list): list of zones
+        ThermostatClass(cls): Thermostat class
+        ThermostatZone(cls): ThermostatZone class
+    returns:
+        Thermostat(obj): Thermostat object
+        Zone(obj):  Zone object
+    """
+    util.log_msg.debug = False  # debug mode unset
+
+    for zone in zone_lst:
+        # create class instances
+        Thermostat, Zone = create_thermostat_instance(thermostat_type, zone,
+                                                      ThermostatClass,
+                                                      ThermostatZone)
+
+        display_temp = Zone.get_display_temp()
+        print(f"zone: {zone}, temp: {display_temp}")
 
     return Thermostat, Zone
