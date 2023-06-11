@@ -22,8 +22,11 @@ from thermostatsupervisor import utilities as util
 # honeywell import
 HONEYWELL_DEBUG = False  # debug uses local pyhtcc repo instead of pkg
 if HONEYWELL_DEBUG and not env.is_azure_environment():
+    mod_path = "..\\pyhtcc\\pyhtcc"
+    if env.is_interactive_environment():
+        mod_path = "..\\" + mod_path
     pyhtcc = env.dynamic_module_import("pyhtcc",
-                                       "..\\..\\pyhtcc\\pyhtcc")
+                                       mod_path)
 else:
     import pyhtcc  # noqa E402, from path / site packages
 
@@ -84,9 +87,9 @@ class ThermostatClass(pyhtcc.PyHTCC, tc.ThermostatCommon):
         """
         try:
             zone_id = self._get_zone_device_ids()[zone]
-        except IndexError:
+        except IndexError as ex:
             raise ValueError(f"zone '{zone}' is not a valid choice for this "
-                             "Honeywell thermostat")
+                             "Honeywell thermostat") from ex
         return zone_id
 
     def print_all_thermostat_metadata(self, zone, debug=False):
@@ -199,65 +202,49 @@ class ThermostatClass(pyhtcc.PyHTCC, tc.ThermostatCommon):
         Return a list of dicts corresponding with each one corresponding to a
         particular zone.
 
-        Method overridden from base class to add additional debug info.
+        Method overridden from base class to add exception handling.
         inputs:
             None
         returns:
             list of zone info.
         """
-        zones = []
-        for page_num in range(1, 6):
-            pyhtcc.logger.debug("Attempting to get zones for location id, "
-                                f"page: {self._locationId}, {page_num}")
-            result = self._post_zone_list_data(page_num)
-            pyhtcc.logger.debug("finished get zones for location id, "
-                                f"page: {self._locationId}, {page_num}")
-            try:
-                data = result.json()
-            except Exception:  # noqa w0703 too general exception
-                # we can get a 200 with non-json data if pages aren't needed.
-                # Though the 1st page shouldn't give non-json.
-                if page_num == 1:
-                    pyhtcc.logger.exception("Unable to decode json data "
-                                            "returned by GetZoneList. Data "
-                                            f"was:\n {result.text}")
-                    raise
-                else:
-                    # custom debug code here
-                    pyhtcc.logger.debug("Unable to decode json data returned "
-                                        "by GetZoneList on page {page_num}. "
-                                        f"Data was:\n {result.text}")
-                    data = {}
+        return_val = []
+        try:
+            return_val = super().get_zones_info()
+        except (pyhtcc.requests.exceptions.ConnectionError,
+                pyhtcc.pyhtcc.UnexpectedError,
+                pyhtcc.pyhtcc.NoZonesFoundError,
+                pyhtcc.pyhtcc.UnauthorizedError,
+                ) as ex:
+            # force re-authenticating
+            tc.connection_ok = False
+            tc.connection_fail_cnt += 1
+            print(traceback.format_exc())
+            print(f"{util.get_function_name()}: WARNING: {ex}")
 
-            # once we go to an empty page, we're done.
-            # Luckily it returns empty json instead of erroring
-            if not data:
-                pyhtcc.logger.debug(f"page {page_num} is empty")
-                break
+            # warning email
+            time_now = (datetime.datetime.now().
+                        strftime("%Y-%m-%d %H:%M:%S"))
+            email_notification.send_email_alert(
+                subject=(f"{self.thermostat_type} zone "
+                         f"{self.zone_name}: "
+                         "intermittent error "
+                         "during get_zones_info()"),
+                body=(f"{util.get_function_name()}: trial "
+                      f"{tc.connection_fail_cnt} of "
+                      f"{tc.max_connection_fail_cnt} at "
+                      f"{time_now}\n{traceback.format_exc()}")
+                )
 
-            zones.extend(data)
+            # exhausted retries, raise exception
+            if tc.connection_fail_cnt > tc.max_connection_fail_cnt:
+                raise ex
+        else:
+            # good response
+            tc.connection_ok = True
+            tc.connection_fail_cnt = 0  # reset
 
-        # add name (and additional info) to zone info
-        for idx, zone in enumerate(zones):
-            device_id = zone['DeviceID']
-            name = self._get_name_for_device_id(device_id)
-            zone['Name'] = name
-
-            device_id = zone['DeviceID']
-            result = self._get_check_data_session(device_id)
-
-            try:
-                more_data = result.json()
-            except Exception:
-                pyhtcc.logger.exception("Unable to decode json data returned "
-                                        "by CheckDataSession. Data was:\n "
-                                        f"{result.text}")
-                raise
-
-            zones[idx] = {**zone, **more_data,
-                          **self._get_outdoor_weather_info_for_zone(device_id)}
-
-        return zones
+        return return_val
 
 
 class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
@@ -719,13 +706,11 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
         trial_number = 1
         retry_delay_sec = 60
         while trial_number < number_of_retries:
+            time_now = (datetime.datetime.now().
+                        strftime("%Y-%m-%d %H:%M:%S"))
             try:
-                time_now = (datetime.datetime.now().
-                            strftime("%Y-%m-%d %H:%M:%S"))
                 all_zones_info = self.pyhtcc.get_zones_info()
-            except Exception:  # noqa w0703 too general exception
-                # catching simplejson.errors.JSONDecodeError
-                # using Exception since simplejson is not imported
+            except pyhtcc.requests.exceptions.ConnectionError:
                 util.log_msg(traceback.format_exc(),
                              mode=util.BOTH_LOG,
                              func_name=1)
@@ -749,10 +734,12 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
                     email_notification.send_email_alert(
                         subject=(f"{self.thermostat_type} zone "
                                  f"{self.zone_name}: "
-                                 "intermittent JSON decode error "
+                                 "intermittent connection error "
                                  "during refresh zone"),
-                        body=f"{util.get_function_name()}: trial "
-                        f"{trial_number} of {number_of_retries} at {time_now}")
+                        body=(f"{util.get_function_name()}: trial "
+                              f"{trial_number} of {number_of_retries} at "
+                              f"{time_now}")
+                        )
                 for zone_data in all_zones_info:
                     if zone_data['DeviceID'] == self.device_id:
                         pyhtcc.logger.debug(f"Refreshed zone info for \
@@ -764,10 +751,13 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
         # log fatal failure
         email_notification.send_email_alert(
             subject=(f"{self.thermostat_type} zone {self.zone_name}: "
-                     "fatal JSON decode error during refresh zone"),
+                     "fatal connection error during refresh zone"),
             body=(f"{util.get_function_name()}: trial {trial_number} of "
                   f"{number_of_retries} at {time_now}"))
-        raise pyhtcc.ZoneNotFoundError(f"Missing device: {self.device_id}")
+        # raise pyhtcc.ZoneNotFoundError(f"Missing device: {self.device_id}")
+
+        # trigger a forced reconnection
+        tc.connection_ok = False
 
 
 # add default requests session default timeout to prevent TimeoutExceptions

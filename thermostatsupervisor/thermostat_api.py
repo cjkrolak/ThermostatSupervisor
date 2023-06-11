@@ -5,9 +5,10 @@ This file should be updated for any new thermostats supported and
 any changes to thermostat configs.
 """
 # built ins
-import bunch
+import munch
 
 # local imports
+from thermostatsupervisor import blink_config
 from thermostatsupervisor import emulator_config
 from thermostatsupervisor import honeywell_config
 from thermostatsupervisor import kumocloud_config
@@ -22,7 +23,8 @@ DEFAULT_THERMOSTAT = emulator_config.ALIAS
 DEFAULT_ZONE_NAME = util.default_parent_key
 
 # list of thermostat config modules supported
-config_modules = [emulator_config,
+config_modules = [blink_config,
+                  emulator_config,
                   honeywell_config,
                   kumocloud_config,
                   kumolocal_config,
@@ -53,7 +55,7 @@ for config_module in config_modules:
 # note script name is omitted, starting with first parameter
 # index 0 (script name) is not included in this dict because it is
 # not a runtime argument
-input_flds = bunch.Bunch()
+input_flds = munch.Munch()
 input_flds.thermostat_type = "thermostat_type"
 input_flds.zone = "zone"
 input_flds.poll_time = "poll_time"
@@ -87,6 +89,8 @@ class UserInputs(util.UserInputs):
         self.suppress_warnings = suppress_warnings
         self.thermostat_type = thermostat_type  # default if not provided
         self.zone_name = zone_name
+        print(f"DEBUG ({util.get_function_name()}: "
+              f"self.zone_name={self.zone_name}")
 
         # initialize parent class
         super().__init__(argv_list, help_description, suppress_warnings,
@@ -251,6 +255,8 @@ class UserInputs(util.UserInputs):
                                 fld])))
             # for now set zone name to first zone in file
             self.zone_name = self.parent_keys[0]
+            print(f"DEBUG ({util.get_function_name()}: "
+                  f"self.zone_name={self.zone_name}")
         # update user_inputs parent_key with zone_name
         # if user_inputs has already been populated
         elif (self.get_user_inputs(list(self.user_inputs.keys())[0],
@@ -271,11 +277,14 @@ class UserInputs(util.UserInputs):
 
             # update paremeters for new parent keys
             self.zone_name = new_key  # set Zone name
+            print(f"DEBUG ({util.get_function_name()}: "
+                  f"self.zone_name={self.zone_name}")
             self.default_parent_key = new_key
             self.parent_keys = list(self.user_inputs.keys())
         else:
-            print(self.get_user_inputs(list(self.user_inputs.keys())[0],
-                                       input_flds.thermostat_type))
+            runtime_args = (self.get_user_inputs(list(
+                self.user_inputs.keys())[0], input_flds.thermostat_type))
+            print(f"runtime args: {runtime_args}")
 
         # if thermostat is not set yet, default it based on module
         # TODO - code block needs update for multi-zone
@@ -379,6 +388,7 @@ def load_user_inputs(config_mod):
     """
     global uip
     zone_name = config_mod.default_zone_name
+    print(f"DEBUG in load user inputs, zone_name={zone_name}")
     uip = UserInputs(argv_list=config_mod.argv,
                      thermostat_type=config_mod.ALIAS,
                      zone_name=zone_name)

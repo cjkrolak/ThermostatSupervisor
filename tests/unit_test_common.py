@@ -30,6 +30,8 @@ ENABLE_FLASK_INTEGRATION_TESTS = True  # enable flask int tests
 ENABLE_KUMOLOCAL_TESTS = False  # Kumolocal is local net only
 ENABLE_MMM_TESTS = False  # mmm50 is local net only
 ENABLE_SHT31_TESTS = True  # sht31 can fail on occasion
+ENABLE_BLINK_TESTS = True and \
+    not env.is_azure_environment()  # Blink cameras, TODO #638
 
 
 # generic argv list for unit testing
@@ -143,10 +145,13 @@ class UnitTest(unittest.TestCase, metaclass=PatchMeta):
 
     def print_test_result(self):
         """Print unit test result to console."""
-        if hasattr(self, '_outcome'):  # Python 3.4+
+        if hasattr(self._outcome, 'errors'):  # Python 3.4 - 3.10
             # These two methods have no side effects
             result = self.defaultTestResult()
             self._feedErrorsToResult(result, self._outcome.errors)
+        elif hasattr(self._outcome, 'result'):  # python 3.11
+            # These two methods have no side effects
+            result = self._outcome.result
         else:  # Python 3.2 - 3.3 or 3.0 - 3.1 and 2.7
             raise OSError(
                 "this code is designed to work on Python 3.4+")
@@ -448,7 +453,7 @@ class RuntimeParameterTest(UnitTest):
 
     uip = None
     mod = None
-    test_fields = None  # placeholder, will be populated by child classes
+    test_fields = []  # placeholder, will be populated by child classes
     test_fields_with_file = None  # placeholder, will be populated by child
     parent_key = util.default_parent_key  # will be updated during inheritance.
 
@@ -616,7 +621,7 @@ class RuntimeParameterTest(UnitTest):
         if not os.path.exists(arg):
             parser.error("The file %s does not exist!" % os.path.abspath(arg))
         else:
-            return open(arg, 'rt')  # return an open file handle
+            return open(arg, 'rt', encoding="utf8")  # return a file handle
 
     def test_parse_named_arguments_sflag(self):
         """

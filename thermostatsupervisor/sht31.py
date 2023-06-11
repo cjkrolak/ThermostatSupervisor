@@ -199,8 +199,8 @@ class ThermostatClass(tc.ThermostatCommon):
                 time.sleep(self.retry_delay)
                 self.get_metadata(zone, parameter, retry=False)
             else:
-                raise Exception("FATAL ERROR: SHT31 server "
-                                "is not responding") from ex
+                raise RuntimeError("FATAL ERROR: SHT31 server "
+                                   "is not responding") from ex
 
 
 class ThermostatZone(tc.ThermostatCommonZone):
@@ -282,8 +282,8 @@ class ThermostatZone(tc.ThermostatCommonZone):
                     time.sleep(self.retry_delay)
                     self.get_metadata(parameter=None, retry=False)
                 else:
-                    raise Exception("FATAL ERROR: SHT31 server "
-                                    "is not responding") from ex
+                    raise RuntimeError("FATAL ERROR: SHT31 server "
+                                       "is not responding") from ex
         else:
             try:
                 return response.json()[parameter]
@@ -300,8 +300,8 @@ class ThermostatZone(tc.ThermostatCommonZone):
                     time.sleep(self.retry_delay)
                     self.get_metadata(parameter, retry=False)
                 else:
-                    raise Exception("FATAL ERROR: SHT31 server "
-                                    "is not responding") from ex
+                    raise RuntimeError("FATAL ERROR: SHT31 server "
+                                       "is not responding") from ex
             except KeyError as ex:
                 util.log_msg(traceback.format_exc(),
                              mode=util.BOTH_LOG,
@@ -321,7 +321,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
                     time.sleep(self.retry_delay)
                     self.get_metadata(parameter, retry=False)
                 else:
-                    raise Exception(
+                    raise KeyError(
                         f"FATAL ERROR: SHT31 server response did not contain "
                         f"key '{parameter}', raw response={response.json()}"
                         ) from ex

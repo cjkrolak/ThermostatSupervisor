@@ -20,8 +20,11 @@ from thermostatsupervisor import utilities as util
 # radiotherm import
 MMM_DEBUG = False  # debug uses local radiotherm repo instead of pkg
 if MMM_DEBUG and not env.is_azure_environment():
+    mod_path = "..//radiotherm"
+    if env.is_interactive_environment():
+        mod_path = "..\\" + mod_path
     radiotherm = env.dynamic_module_import("radiotherm",
-                                           "..//..//radiotherm")
+                                           mod_path)
 else:
     import radiotherm  # noqa E402, from path / site packages
 
@@ -81,7 +84,7 @@ class ThermostatClass(tc.ThermostatCommon):
         try:
             self.device_id = radiotherm.get_thermostat(self.ip_address)
         except urllib.error.URLError as ex:
-            raise Exception(
+            raise RuntimeError(
                 f"FATAL ERROR: 3m thermostat not found at ip address: "
                 f"{self.ip_address}") from ex
         return self.device_id
@@ -424,7 +427,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         """
         sp_lst = sp_dict['raw'][str(day)]
         if len(sp_lst) != 8:
-            raise Exception(f"setpoint list is not 8 elements long: {sp_lst}")
+            raise ValueError(f"setpoint list is not 8 elements long: {sp_lst}")
         return sp_dict['raw'][str(day)]
 
     def get_previous_days_setpoint(self, sp_dict) -> int:
@@ -480,7 +483,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         """
         result = self.device_id.t_heat['raw']
         if not isinstance(result, float):
-            raise Exception(f"heat set point is type {type(result)}, "
+            raise TypeError(f"heat set point is type {type(result)}, "
                             f"should be float")
         return result
 
@@ -496,7 +499,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         """
         result = self.get_heat_setpoint()
         if not isinstance(result, float):
-            raise Exception(
+            raise TypeError(
                 f"heat set point raw is type {type(result)}, should be float")
         return result
 
@@ -512,7 +515,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         """
         result = self.device_id.t_cool['raw']
         if not isinstance(result, (int, float)):
-            raise Exception(
+            raise TypeError(
                 f"cool set point is type {type(result)}, should be "
                 f"(int, float)")
         return result
@@ -529,7 +532,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         """
         result = self.get_cool_setpoint()
         if not isinstance(result, (int, float)):
-            raise Exception(
+            raise TypeError(
                 f"cool setpoint raw is type {type(result)}, should be "
                 f"(int, float)")
         return result
@@ -545,7 +548,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         """
         result = self.device_id.program_heat['raw']
         if not isinstance(result, dict):
-            raise Exception(
+            raise TypeError(
                 f"heat program schedule set point is type {type(result)},"
                 f" should be dict")
         return result
@@ -561,7 +564,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         """
         result = self.get_schedule_setpoint(self.device_id.program_heat)
         if not isinstance(result, int):
-            raise Exception(
+            raise TypeError(
                 f"schedule heat set point is type {type(result)}, "
                 f"should be int")
         return result
@@ -577,7 +580,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         """
         result = self.device_id.program_cool['raw']
         if not isinstance(result, dict):
-            raise Exception(
+            raise TypeError(
                 f"schedule program cool set point is type {type(result)},"
                 f" should be dict")
         return result
@@ -593,7 +596,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         """
         result = self.get_schedule_setpoint(self.device_id.program_cool)
         if not isinstance(result, int):
-            raise Exception(
+            raise TypeError(
                 f"schedule cool set point is type {type(result)}, "
                 f"should be int")
         return result
@@ -609,7 +612,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         """
         result = bool(self.device_id.hold['raw'])
         if not isinstance(result, bool):
-            raise Exception(
+            raise TypeError(
                 f"is_invacation_hold_mode is type {type(result)}, "
                 f"should be bool")
         return result
@@ -625,7 +628,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         """
         result = bool(self.device_id.override['raw'])
         if not isinstance(result, bool):
-            raise Exception(
+            raise TypeError(
                 f"get_vacation_hold_mode is type {type(result)}, "
                 f"should be bool")
         return result
@@ -659,7 +662,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
             sp_dict = {'raw': {'0': [0] * 8, '1': [0] * 8, '2': [0] * 8,
                                '3': [0] * 8, '4': [0] * 8, '5': [0] * 8,
                                '6': [0] * 8}}
-            # raise Exception("unknown heat/cool mode")
+            # raise ValueError("unknown heat/cool mode")
         now = datetime.datetime.now()
         minutes_since_midnight = (
             now - now.replace(hour=0, minute=0, second=0,
@@ -700,7 +703,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         """
         result = self._get_tmode()
         if not isinstance(result, int):
-            raise Exception(
+            raise TypeError(
                 f"get_system_switch_position is type {type(result)}, "
                 f"should be int")
         return result
