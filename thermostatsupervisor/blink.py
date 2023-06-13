@@ -67,9 +67,15 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):
         self.blink.start()
         try:
             self.blink.auth.send_auth_key(self.blink, self.bl_2fa)
-        except AttributeError as ex:
-            print(f"ERROR: Blink authentication failed for zone {zone}")
-            raise ex
+        except AttributeError:
+            error_msg = ("ERROR: Blink authentication failed for zone "
+                         f"{zone}, this may be due to spamming the blink "
+                         "server, please try again later.")
+            banner = "*" * len(error_msg)
+            print(banner)
+            print(error_msg)
+            print(banner)
+            exit(1)
         self.blink.setup_post_verify()
 
         # get cameras
@@ -385,13 +391,12 @@ if __name__ == "__main__":
     zone_number = api.uip.get_user_inputs(api.uip.zone_name,
                                           api.input_flds.zone)
 
-    for zone_number in blink_config.metadata:
-        tc.thermostat_basic_checkout(
-            blink_config.ALIAS,
-            zone_number,
-            ThermostatClass, ThermostatZone)
+    tc.thermostat_basic_checkout(
+        blink_config.ALIAS,
+        zone_number,
+        ThermostatClass, ThermostatZone)
 
-    # tc.thermostat_get_all_zone_temps(blink_config.ALIAS,
-    #                                  blink_config.supported_configs["zones"],
-    #                                  ThermostatClass,
-    #                                  ThermostatZone)
+    tc.thermostat_get_all_zone_temps(blink_config.ALIAS,
+                                     blink_config.supported_configs["zones"],
+                                     ThermostatClass,
+                                     ThermostatZone)

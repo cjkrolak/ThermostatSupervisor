@@ -1062,7 +1062,8 @@ class ThermostatCommonZone():
 
 
 def create_thermostat_instance(thermostat_type, zone,
-                               ThermostatClass, ThermostatZone):
+                               ThermostatClass, ThermostatZone,
+                               verbose=True):
     """
     Create Thermostat and Zone instances.
 
@@ -1072,11 +1073,12 @@ def create_thermostat_instance(thermostat_type, zone,
         zone_name(str): name of zone
         ThermostatClass(cls): Thermostat class
         ThermostatZone(cls): ThermostatZone class
+        verbose(bool): debug flag
     returns:
         Thermostat(obj): Thermostat object
         Zone(obj):  Zone object
     """
-    util.log_msg.debug = True  # debug mode set
+    util.log_msg.debug = verbose  # debug mode set
 
     # verify required env vars
     api.verify_required_env_variables(thermostat_type, str(zone))
@@ -1150,7 +1152,8 @@ def thermostat_get_all_zone_temps(thermostat_type, zone_lst,
         # create class instances
         Thermostat, Zone = create_thermostat_instance(thermostat_type, zone,
                                                       ThermostatClass,
-                                                      ThermostatZone)
+                                                      ThermostatZone,
+                                                      verbose=False)
 
         display_temp = Zone.get_display_temp()
         print(f"zone: {zone}, temp: {display_temp}")
