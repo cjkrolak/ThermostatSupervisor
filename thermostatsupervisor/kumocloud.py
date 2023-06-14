@@ -25,12 +25,13 @@ else:
 class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
     """KumoCloud thermostat functions."""
 
-    def __init__(self, zone):
+    def __init__(self, zone, verbose=True):
         """
         Constructor, connect to thermostat.
 
         inputs:
             zone(str):  zone of thermostat.
+            verbose(bool): debug flag.
         """
         # Kumocloud server auth credentials from env vars
         self.KC_UNAME_KEY = 'KUMO_USERNAME'
@@ -41,12 +42,16 @@ class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
             self.KC_PASSWORD_KEY, "<" +
             self.KC_PASSWORD_KEY + "_KEY_MISSING>"))
 
+        # construct the superclass
         # call both parent class __init__
         self._need_fetch = True  # force data fetch
         self.args = [self.kc_uname, self.kc_pwd]
         pykumo.KumoCloudAccount.__init__(self, *self.args)
         tc.ThermostatCommon.__init__(self)
+
+        # set tstat type and debug flag
         self.thermostat_type = kumocloud_config.ALIAS
+        self.verbose = verbose
 
         # configure zone info
         self.zone_number = int(zone)
@@ -143,12 +148,13 @@ class ThermostatZone(tc.ThermostatCommonZone):
     Class needs to be updated for multi-zone support.
     """
 
-    def __init__(self, Thermostat_obj):
+    def __init__(self, Thermostat_obj, verbose=True):
         """
         Zone constructor.
 
         inputs:
             Thermostat(obj): Thermostat class instance.
+            verbose(bool): debug flag.
         """
         # construct the superclass, requires auth setup first
         super().__init__()
@@ -176,6 +182,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
             tc.ThermostatCommonZone.AUTO_MODE] = 33  # auto   0 0101
 
         # zone info
+        self.verbose = verbose
         self.thermostat_type = kumocloud_config.ALIAS
         self.device_id = Thermostat_obj.device_id
         self.Thermostat = Thermostat_obj
@@ -664,3 +671,9 @@ if __name__ == "__main__":
         kumocloud_config.ALIAS,
         zone_number,
         ThermostatClass, ThermostatZone)
+
+    tc.thermostat_get_all_zone_temps(
+        kumocloud_config.ALIAS,
+        kumocloud_config.supported_configs["zones"],
+        ThermostatClass,
+        ThermostatZone)

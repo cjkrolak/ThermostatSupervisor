@@ -329,7 +329,7 @@ class UserInputs(util.UserInputs):
             return False
 
 
-def verify_required_env_variables(tstat, zone_str):
+def verify_required_env_variables(tstat, zone_str, verbose=True):
     """
     Verify all required env variables are present for thermostat
     configuration in use.
@@ -337,20 +337,24 @@ def verify_required_env_variables(tstat, zone_str):
     inputs:
         tstat(int) thermostat type mapping to thermostat_api
         zone_str(str): zone input as a string
+        verbose(bool): debug flag.
     returns:
         (bool): True if all keys are present, else False
     """
-    print("\nchecking required environment variables:")
+    if verbose:
+        print("\nchecking required environment variables:")
     key_status = True  # default, all keys present
     for key in thermostats[tstat]["required_env_variables"]:
         # any env key ending in '_' should have zone number appended to it.
         if key[-1] == '_':
             # append zone info to key
             key = key + str(zone_str)
-        print(f"checking required environment key: {key}...", end='')
+        if verbose:
+            print(f"checking required environment key: {key}...", end='')
         env.env_variables[key] = env.get_env_variable(key)["value"]
         if env.env_variables[key] is not None:
-            print("OK")
+            if verbose:
+                print("OK")
         else:
             util.log_msg(
                 f"{tstat}: zone {zone_str}: FATAL error: one or more required"
@@ -358,7 +362,8 @@ def verify_required_env_variables(tstat, zone_str):
                 mode=util.BOTH_LOG)
             key_status = False
             raise KeyError
-    print("\n")
+    if verbose:
+        print("\n")
     return key_status
 
 

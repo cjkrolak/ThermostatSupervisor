@@ -34,20 +34,24 @@ SOCKET_TIMEOUT = 45  # http socket timeout override
 class ThermostatClass(tc.ThermostatCommon):
     """3m50 thermostat zone functions."""
 
-    def __init__(self, zone):
+    def __init__(self, zone, verbose=True):
         """
         Constructor, connect to thermostat.
 
         inputs:
             zone(str):  zone of thermostat on local net.
-            mmm_config.metadata dict must have correct local IP address for
-            each zone.
+                        mmm_config.metadata dict must have correct local IP
+                        address for each zone.
+            verbose(bool): debug flag.
         """
         # construct the superclass
         # tc.ThermostatCommonZone.__init__(self)
         # tc.ThermostatCommon.__init__(self)
         super().__init__()
+
+        # set tstat type and debug flag
         self.thermostat_type = mmm_config.ALIAS
+        self.verbose = verbose
 
         # configure zone info
         self.zone_name = int(zone)
@@ -202,7 +206,7 @@ class ThermostatClass(tc.ThermostatCommon):
 class ThermostatZone(tc.ThermostatCommonZone):
     """3m50 thermostat zone functions."""
 
-    def __init__(self, Thermostat_obj):
+    def __init__(self, Thermostat_obj, verbose=True):
         """
         Constructor, connect to thermostat.
 
@@ -211,6 +215,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
 
         inputs:
             Thermostat_obj(obj):  Thermostat class instance.
+            verbose(bool): debug flag.
         """
         # construct the superclass
         super().__init__()
@@ -228,6 +233,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
             tc.ThermostatCommonZone.FAN_MODE] = util.BOGUS_INT
 
         # zone info
+        self.verbose = verbose
         self.thermostat_type = mmm_config.ALIAS
         self.device_id = Thermostat_obj.device_id
         self.zone_name = Thermostat_obj.zone_name

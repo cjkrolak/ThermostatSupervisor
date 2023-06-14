@@ -34,10 +34,11 @@ else:
 class ThermostatClass(pyhtcc.PyHTCC, tc.ThermostatCommon):
     """Extend the PyHTCC class with additional methods."""
 
-    def __init__(self, zone):
+    def __init__(self, zone, verbose=True):
         """
         inputs:
-            zone(str):  zone number
+            zone(str):  zone number.
+            verbose(bool): debug flag.
         """
         # TCC server auth credentials from env vars
         self.TCC_UNAME_KEY = 'TCC_USERNAME'
@@ -48,13 +49,17 @@ class ThermostatClass(pyhtcc.PyHTCC, tc.ThermostatCommon):
             self.TCC_PASSWORD_KEY, "<" +
             self.TCC_PASSWORD_KEY + "_KEY_MISSING>"))
 
+        # construct the superclass
         # call both parent class __init__
         self.args = [self.tcc_uname, self.tcc_pwd]
         pyhtcc.PyHTCC.__init__(self, *self.args)
         tc.ThermostatCommon.__init__(self)
 
-        # configure zone info
+        # set tstat type and debug flag
         self.thermostat_type = honeywell_config.ALIAS
+        self.verbose = verbose
+
+        # configure zone info
         self.zone_name = int(zone)
         self.device_id = self.get_target_zone_id(self.zone_name)
 
@@ -251,12 +256,13 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
     """Extend the Zone class with additional methods to get and set
        uiData parameters."""
 
-    def __init__(self, Thermostat_obj):
+    def __init__(self, Thermostat_obj, verbose=True):
         """
         Zone constructor.
 
         inputs:
             Thermostat_obj(obj): Thermostat class object instance.
+            verbose(bool): debug flag.
         returns:
             None
         """
@@ -277,6 +283,7 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
         # TODO: what mode is 0 on Honeywell?
 
         # zone info
+        self.verbose = verbose
         self.thermostat_type = honeywell_config.ALIAS
         self.device_id = Thermostat_obj.device_id
         self.zone_name = Thermostat_obj.zone_name
