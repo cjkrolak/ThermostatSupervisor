@@ -31,21 +31,26 @@ from thermostatsupervisor import utilities as util
 class ThermostatClass(tc.ThermostatCommon):
     """SHT31 thermometer functions."""
 
-    def __init__(self, zone, path=sht31_config.flask_folder.production):
+    def __init__(self, zone, path=sht31_config.flask_folder.production,
+                 verbose=True):
         """
         Constructor, connect to thermostat.
 
         inputs:
             zone(str):  zone of thermostat.
             path(str):  path on flask server, default = production
-            sht31_ip dict above must have correct IP address for each
-            zone.
+                        sht31_ip dict above must have correct IP address for
+                        each zone.
+            verbose(bool): debug flag.
         """
         # construct the superclass
         super().__init__()
 
-        # zone configuration
+        # set tstat type and debug flag
         self.thermostat_type = sht31_config.ALIAS
+        self.verbose = verbose
+
+        # zone configuration
         self.zone_name = int(zone)
         self.ip_address = self.get_target_zone_id(self.zone_name)
         self.path = path
@@ -206,12 +211,13 @@ class ThermostatClass(tc.ThermostatCommon):
 class ThermostatZone(tc.ThermostatCommonZone):
     """SHT31 thermometer zone functions."""
 
-    def __init__(self, Thermostat_obj):
+    def __init__(self, Thermostat_obj, verbose=True):
         """
         Constructor, connect to thermostat.
 
         inputs:
             Thermostat_obj(obj): associated Thermostat_obj
+            verbose(bool): debug flag.
         """
         # construct the superclass
         super().__init__()
@@ -221,6 +227,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         self.system_switch_position[tc.ThermostatCommonZone.OFF_MODE] = 0
 
         # zone configuration
+        self.verbose = verbose
         self.thermostat_type = sht31_config.ALIAS
         self.device_id = Thermostat_obj.device_id
         self.url = Thermostat_obj.device_id
@@ -504,3 +511,9 @@ if __name__ == "__main__":
         sht31_config.ALIAS,
         zone_number,
         ThermostatClass, ThermostatZone)
+
+    # tc.thermostat_get_all_zone_temps(
+    #     sht31_config.ALIAS,
+    #     sht31_config.supported_configs["zones"],
+    #     ThermostatClass,
+    #     ThermostatZone)

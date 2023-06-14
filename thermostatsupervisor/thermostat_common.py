@@ -26,6 +26,7 @@ class ThermostatCommon():
     """Class methods common to all thermostat objects."""
 
     def __init__(self, *_, **__):
+        self.verbose = True
         self.thermostat_type = "unknown"  # placeholder
         self.zone_number = util.BOGUS_INT  # placeholder
         self.device_id = util.BOGUS_INT  # placeholder
@@ -106,6 +107,7 @@ class ThermostatCommonZone():
     tolerance_degrees_default = 2  # allowed override vs. the scheduled value.
 
     def __init__(self, *_, **__):
+        self.verbose = True
         self.thermostat_type = "unknown"  # placeholder
         self.zone_number = util.BOGUS_INT  # placeholder
         self.zone_name = None  # placeholder
@@ -655,15 +657,17 @@ class ThermostatCommonZone():
             api.input_flds.measurements: "measurements",
         }
 
-        print("\n")
-        util.log_msg("supervisor runtime parameters:",
-                     mode=util.BOTH_LOG, func_name=1)
+        if self.verbose:
+            print("\n")
+            util.log_msg("supervisor runtime parameters:",
+                         mode=util.BOTH_LOG, func_name=1)
         for inp, cls_method in user_input_to_class_mapping.items():
             user_input = api.uip.get_user_inputs(api.uip.zone_name, inp)
             if user_input is not None:
                 setattr(self, cls_method, user_input)
-                util.log_msg(f"{inp}={user_input}",
-                             mode=util.BOTH_LOG, func_name=1)
+                if self.verbose:
+                    util.log_msg(f"{inp}={user_input}",
+                                 mode=util.BOTH_LOG, func_name=1)
 
     def verify_current_mode(self, target_mode):
         """
@@ -1081,17 +1085,19 @@ def create_thermostat_instance(thermostat_type, zone,
     util.log_msg.debug = verbose  # debug mode set
 
     # verify required env vars
-    api.verify_required_env_variables(thermostat_type, str(zone))
+    api.verify_required_env_variables(thermostat_type, str(zone),
+                                      verbose=verbose)
 
     # import hardware module
     api.load_hardware_library(thermostat_type)
 
     # create Thermostat object
-    Thermostat = ThermostatClass(zone)
-    Thermostat.print_all_thermostat_metadata(zone)
+    Thermostat = ThermostatClass(zone, verbose=verbose)
+    if verbose:
+        Thermostat.print_all_thermostat_metadata(zone)
 
     # create Zone object
-    Zone = ThermostatZone(Thermostat)
+    Zone = ThermostatZone(Thermostat, verbose=verbose)
 
     # update runtime overrides
     # thermostat_type
@@ -1147,6 +1153,7 @@ def thermostat_get_all_zone_temps(thermostat_type, zone_lst,
         Zone(obj):  Zone object
     """
     util.log_msg.debug = False  # debug mode unset
+    print("\nquerying all zone temps:")
 
     for zone in zone_lst:
         # create class instances
