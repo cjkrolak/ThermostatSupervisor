@@ -589,3 +589,9 @@ if __name__ == "__main__":
         emulator_config.ALIAS,
         zone_number,
         ThermostatClass, ThermostatZone)
+
+    tc.thermostat_get_all_zone_temps(
+        emulator_config.ALIAS,
+        emulator_config.supported_configs["zones"],
+        ThermostatClass,
+        ThermostatZone)

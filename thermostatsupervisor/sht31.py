@@ -511,3 +511,9 @@ if __name__ == "__main__":
         sht31_config.ALIAS,
         zone_number,
         ThermostatClass, ThermostatZone)
+
+    # tc.thermostat_get_all_zone_temps(
+    #     sht31_config.ALIAS,
+    #     sht31_config.supported_configs["zones"],
+    #     ThermostatClass,
+    #     ThermostatZone)

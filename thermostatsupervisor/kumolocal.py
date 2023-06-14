@@ -619,3 +619,9 @@ if __name__ == "__main__":
         kumolocal_config.ALIAS,
         zone_number,
         ThermostatClass, ThermostatZone)
+
+    tc.thermostat_get_all_zone_temps(
+        kumolocal_config.ALIAS,
+        kumolocal_config.supported_configs["zones"],
+        ThermostatClass,
+        ThermostatZone)

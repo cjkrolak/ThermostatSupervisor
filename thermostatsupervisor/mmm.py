@@ -823,6 +823,12 @@ if __name__ == "__main__":
         zone_number,
         ThermostatClass, ThermostatZone)
 
+    tc.thermostat_get_all_zone_temps(
+        mmm_config.ALIAS,
+        mmm_config.supported_configs["zones"],
+        ThermostatClass,
+        ThermostatZone)
+
     # measure thermostat response time
     MEASUREMENTS = 60  # running higher than normal count here because
     # intermittent failures have been observed.
