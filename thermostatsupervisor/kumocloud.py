@@ -55,9 +55,11 @@ class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
 
         # configure zone info
         self.zone_number = int(zone)
-        self.zone_name = int(zone)  # initialize
+        self.zone_name = kumocloud_config.metadata[self.zone_number][
+            "zone_name"]
         self.device_id = self.get_target_zone_id(self.zone_name)
         self.serial_number = None  # will be populated when unit is queried.
+        self.zone_info = None
 
     def get_target_zone_id(self, zone=0):
         """
@@ -186,7 +188,6 @@ class ThermostatZone(tc.ThermostatCommonZone):
         self.thermostat_type = kumocloud_config.ALIAS
         self.device_id = Thermostat_obj.device_id
         self.Thermostat = Thermostat_obj
-        self.zone_name = Thermostat_obj.zone_name  # init zone name
         self.zone_info = Thermostat_obj.get_all_metadata(
             Thermostat_obj.zone_number)
         self.zone_number = Thermostat_obj.zone_number
@@ -217,7 +218,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
                                  mode=util.BOTH_LOG, func_name=1)
                     util.log_msg(f"raw zone_info dict={self.zone_info}",
                                  mode=util.BOTH_LOG, func_name=1)
-                raise
+                    raise
         elif parent_key is not None:
             try:
                 parent_dict = self.zone_info[parent_key]
@@ -229,7 +230,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
                                  mode=util.BOTH_LOG, func_name=1)
                     util.log_msg(f"raw zone_info dict={self.zone_info}",
                                  mode=util.BOTH_LOG, func_name=1)
-                raise
+                    raise
         else:
             try:
                 return_val = self.zone_info[key]
@@ -241,7 +242,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
                     util.log_msg(f"target key={key}, "
                                  f"raw zone_info dict={self.zone_info}",
                                  mode=util.BOTH_LOG, func_name=1)
-                raise
+                    raise
         return return_val
 
     def get_zone_name(self):
@@ -448,8 +449,10 @@ class ThermostatZone(tc.ThermostatCommonZone):
             (int): heating set point in degrees F.
         """
         self.refresh_zone_info()
+        # if power is off then sp_heat may be missing
         return util.c_to_f(self.get_parameter('sp_heat',
-                                              'reportedCondition'))
+                                              'reportedCondition',
+                                              default_val=-1))
 
     def get_heat_setpoint(self) -> str:
         """Return heat setpoint with units as a string."""
@@ -487,8 +490,10 @@ class ThermostatZone(tc.ThermostatCommonZone):
             (int): cooling set point in degrees F.
         """
         self.refresh_zone_info()
+        # if power is off then sp_heat may be missing
         return util.c_to_f(self.get_parameter('sp_cool',
-                                              'reportedCondition'))
+                                              'reportedCondition',
+                                              default_val=-1))
 
     def get_cool_setpoint(self) -> str:
         """Return cool setpoint with units as a string."""

@@ -43,7 +43,7 @@ metadata = {
 }
 
 default_zone = supported_configs["zones"][0]
-default_zone_name = ALIAS + "_" + str(default_zone)
+default_zone_name = metadata[default_zone]["zone_name"]
 
 argv = [
     "supervise.py",  # module
