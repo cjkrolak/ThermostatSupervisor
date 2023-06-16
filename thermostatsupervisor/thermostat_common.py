@@ -1163,6 +1163,7 @@ def thermostat_get_all_zone_temps(thermostat_type, zone_lst,
                                                       verbose=False)
 
         display_temp = Zone.get_display_temp()
-        print(f"zone: {zone}, temp: {display_temp}")
+        zone_name = Zone.zone_name
+        print(f"zone: {zone}, name: {zone_name}, temp: {display_temp}")
 
     return Thermostat, Zone
