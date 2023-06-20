@@ -256,8 +256,8 @@ class ThermostatZone(tc.ThermostatCommonZone):
         returns:
             True if successful, else False
         """
-        print(f"DEBUG({util.get_function_name(2)}): setting mode to "
-              f"{target_mode}")
+        if self.verbose:
+            print(f"setting mode to {target_mode}")
         self.set_parameter('switch_position',
                            self.system_switch_position[
                                getattr(tc.ThermostatCommonZone, target_mode)])

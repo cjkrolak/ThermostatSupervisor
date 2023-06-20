@@ -147,7 +147,7 @@ class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
         """Get thermostat meta data for device_id from local API.
 
         inputs:
-            zone(): specified zone
+            zone(str or int): (unused) specified zone
             parameter(str): target parameter, if None will return all.
             debug(bool): debug flag.
         returns:

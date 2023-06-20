@@ -55,9 +55,11 @@ class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
 
         # configure zone info
         self.zone_number = int(zone)
-        self.zone_name = int(zone)  # initialize
+        self.zone_name = kumocloud_config.metadata[self.zone_number][
+            "zone_name"]
         self.device_id = self.get_target_zone_id(self.zone_name)
         self.serial_number = None  # will be populated when unit is queried.
+        self.zone_info = None
 
     def get_target_zone_id(self, zone=0):
         """
@@ -69,6 +71,28 @@ class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
             (int): device_id
         """
         return zone
+
+    def get_zone_index_from_name(self):
+        """
+        Return zone index for specified zone_name.
+
+        inputs:
+            None
+        returns:
+            (int): zone index.
+        """
+        if self.verbose:
+            print(f"getting index for zone_name={self.zone_name}...")
+            print(f"metadata dict={kumocloud_config.metadata}")
+        try:
+            zone_index = [i for i in kumocloud_config.metadata if
+                          kumocloud_config.metadata[i][
+                              "zone_name"] == self.zone_name][0]
+        except IndexError:
+            print(f"ERROR: zone_name={self.zone_name} not present in meta data"
+                  f" dict, valid values are {kumocloud_config.metadata.keys()}")
+            raise
+        return zone_index
 
     def get_all_metadata(self, zone=None, debug=False):
         """Get all thermostat meta data for zone from kumocloud.
@@ -92,16 +116,16 @@ class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
             (int, float, str, dict): depends on parameter
         """
         try:
-            units = list(self.get_indoor_units())  # will also query unit
+            serial_num_lst = list(self.get_indoor_units())  # will query unit
         except UnboundLocalError:  # patch for issue #205
             util.log_msg("WARNING: Kumocloud refresh failed due to "
                          "timeout", mode=util.BOTH_LOG, func_name=1)
             time.sleep(30)
-            units = list(self.get_indoor_units())  # retry
+            serial_num_lst = list(self.get_indoor_units())  # retry
         if debug:
-            util.log_msg(f"indoor unit serial numbers: {str(units)}",
+            util.log_msg(f"indoor unit serial numbers: {str(serial_num_lst)}",
                          mode=util.DEBUG_LOG + util.CONSOLE_LOG, func_name=1)
-        for serial_number in units:
+        for idx, serial_number in enumerate(serial_num_lst):
             if debug:
                 util.log_msg(f"Unit {self.get_name(serial_number)}: address: "
                              f"{self.get_address(serial_number)} credentials: "
@@ -109,6 +133,11 @@ class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
                              mode=util.DEBUG_LOG +
                              util.CONSOLE_LOG,
                              func_name=1)
+            # populate meta data dict
+            if debug:
+                print(f"zone index={idx}, serial_number={serial_number}")
+            kumocloud_config.metadata[idx]["serial_number"] = serial_number
+
         # raw_json list:
         # [0]: token, username, device fields
         # [1]: lastupdate date
@@ -118,10 +147,13 @@ class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
             # returned cached raw data for all zones
             raw_json = self.get_raw_json()[2]  # does not fetch results,
         else:
+            # if zone name input, find zone index
+            if not isinstance(zone, int):
+                zone = self.get_zone_index_from_name()
             # return cached raw data for specified zone, will be a dict
-            self.serial_number = units[zone]
+            self.serial_number = serial_num_lst[zone]
             raw_json = self.get_raw_json()[2]['children'][0][
-                'zoneTable'][units[zone]]
+                'zoneTable'][serial_num_lst[zone]]
 
         if parameter is None:
             return raw_json
@@ -186,7 +218,6 @@ class ThermostatZone(tc.ThermostatCommonZone):
         self.thermostat_type = kumocloud_config.ALIAS
         self.device_id = Thermostat_obj.device_id
         self.Thermostat = Thermostat_obj
-        self.zone_name = Thermostat_obj.zone_name  # init zone name
         self.zone_info = Thermostat_obj.get_all_metadata(
             Thermostat_obj.zone_number)
         self.zone_number = Thermostat_obj.zone_number
@@ -217,7 +248,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
                                  mode=util.BOTH_LOG, func_name=1)
                     util.log_msg(f"raw zone_info dict={self.zone_info}",
                                  mode=util.BOTH_LOG, func_name=1)
-                raise
+                    raise
         elif parent_key is not None:
             try:
                 parent_dict = self.zone_info[parent_key]
@@ -229,7 +260,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
                                  mode=util.BOTH_LOG, func_name=1)
                     util.log_msg(f"raw zone_info dict={self.zone_info}",
                                  mode=util.BOTH_LOG, func_name=1)
-                raise
+                    raise
         else:
             try:
                 return_val = self.zone_info[key]
@@ -241,7 +272,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
                     util.log_msg(f"target key={key}, "
                                  f"raw zone_info dict={self.zone_info}",
                                  mode=util.BOTH_LOG, func_name=1)
-                raise
+                    raise
         return return_val
 
     def get_zone_name(self):
@@ -448,8 +479,10 @@ class ThermostatZone(tc.ThermostatCommonZone):
             (int): heating set point in degrees F.
         """
         self.refresh_zone_info()
+        # if power is off then sp_heat may be missing
         return util.c_to_f(self.get_parameter('sp_heat',
-                                              'reportedCondition'))
+                                              'reportedCondition',
+                                              default_val=-1))
 
     def get_heat_setpoint(self) -> str:
         """Return heat setpoint with units as a string."""
@@ -487,8 +520,10 @@ class ThermostatZone(tc.ThermostatCommonZone):
             (int): cooling set point in degrees F.
         """
         self.refresh_zone_info()
+        # if power is off then sp_heat may be missing
         return util.c_to_f(self.get_parameter('sp_cool',
-                                              'reportedCondition'))
+                                              'reportedCondition',
+                                              default_val=-1))
 
     def get_cool_setpoint(self) -> str:
         """Return cool setpoint with units as a string."""

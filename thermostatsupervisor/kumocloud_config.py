@@ -34,16 +34,18 @@ supported_configs = {"module": "kumocloud",
 # 'zone_name' is updated by Zone.get_zone_name()
 # 'host_name' is just for reference
 metadata = {
-    MAIN_LEVEL: {"zone_name": "main",
+    MAIN_LEVEL: {"zone_name": "Main Level",
                  "host_name": "tbd",
+                 "serial_number": None,
                  },
     BASEMENT: {"zone_name": "basement",
                "host_name": "tbd",
+               "serial_number": None,
                },
 }
 
 default_zone = supported_configs["zones"][0]
-default_zone_name = ALIAS + "_" + str(default_zone)
+default_zone_name = metadata[default_zone]["zone_name"]
 
 argv = [
     "supervise.py",  # module

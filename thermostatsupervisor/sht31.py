@@ -171,7 +171,7 @@ class ThermostatClass(tc.ThermostatCommon):
         Get current thermostat metadata.
 
         inputs:
-            zone(int): target zone
+            zone(str or int): (unused) target zone
             parameter(str): target parameter, if None will fetch all.
             retry(bool): if True will retry once.
         returns:
