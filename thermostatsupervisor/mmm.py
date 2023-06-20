@@ -152,6 +152,7 @@ class ThermostatClass(tc.ThermostatCommon):
         Get the current thermostat metadata settings.
 
         inputs:
+          zone(str or int): zone name
           parameter(str): target parameter, None = all settings
         returns:
           dict if parameter=None

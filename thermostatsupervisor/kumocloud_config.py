@@ -34,11 +34,13 @@ supported_configs = {"module": "kumocloud",
 # 'zone_name' is updated by Zone.get_zone_name()
 # 'host_name' is just for reference
 metadata = {
-    MAIN_LEVEL: {"zone_name": "main",
+    MAIN_LEVEL: {"zone_name": "Main Level",
                  "host_name": "tbd",
+                 "serial_number": None,
                  },
     BASEMENT: {"zone_name": "basement",
                "host_name": "tbd",
+               "serial_number": None,
                },
 }
 
