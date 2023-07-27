@@ -13,16 +13,21 @@ from thermostatsupervisor import utilities as util
 class ThermostatClass(tc.ThermostatCommon):
     """Emulator thermostat functions."""
 
-    def __init__(self, zone):
+    def __init__(self, zone, verbose=True):
         """
         Constructor, connect to thermostat.
 
         inputs:
             zone(str):  zone of thermostat.
+            verbose(bool): debug flag.
         """
+        # construct the superclass
         # call both parent class __init__
         tc.ThermostatCommon.__init__(self)
+
+        # set tstat type and debug flag
         self.thermostat_type = emulator_config.ALIAS
+        self.verbose = verbose
 
         # configure zone info
         self.zone_name = int(zone)
@@ -101,12 +106,13 @@ class ThermostatZone(tc.ThermostatCommonZone):
     Class needs to be updated for multi-zone support.
     """
 
-    def __init__(self, Thermostat_obj):
+    def __init__(self, Thermostat_obj, verbose=True):
         """
         Zone constructor.
 
         inputs:
             Thermostat(obj): Thermostat class instance.
+            verbose(bool): debug flag.
         """
         # construct the superclass, requires auth setup first
         super().__init__()
@@ -130,6 +136,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
             tc.ThermostatCommonZone.FAN_MODE] = 5
 
         # zone info
+        self.verbose = verbose
         self.thermostat_type = emulator_config.ALIAS
         self.device_id = Thermostat_obj.device_id
         self.Thermostat = Thermostat_obj
@@ -249,8 +256,8 @@ class ThermostatZone(tc.ThermostatCommonZone):
         returns:
             True if successful, else False
         """
-        print(f"DEBUG({util.get_function_name(2)}): setting mode to "
-              f"{target_mode}")
+        if self.verbose:
+            print(f"setting mode to {target_mode}")
         self.set_parameter('switch_position',
                            self.system_switch_position[
                                getattr(tc.ThermostatCommonZone, target_mode)])
@@ -582,3 +589,9 @@ if __name__ == "__main__":
         emulator_config.ALIAS,
         zone_number,
         ThermostatClass, ThermostatZone)
+
+    tc.thermostat_get_all_zone_temps(
+        emulator_config.ALIAS,
+        emulator_config.supported_configs["zones"],
+        ThermostatClass,
+        ThermostatZone)

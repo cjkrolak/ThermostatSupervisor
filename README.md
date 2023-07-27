@@ -13,6 +13,7 @@ supervisor to detect and correct thermostat deviations<br/>
 2. 3M50 thermostat on local net (user must provide local IP address of each 3m50 thermostat zone).
 3. SHT31 temperature sensor either locally or remote (user must provide local/remote IP address in environment variables and setup firewall port routing if remote).
 4. Mitsubishi ductless thermostat through Kumocloud on remote network (monitoring) or local network (monitoring and control).
+5. Blink camera temperature sensors.
 
 # errata:
 1. Honeywell thermostat support through TCC web site requires 3 minute poll time (or longer).  Default for this thermostat is set to 10 minutes.
@@ -27,6 +28,7 @@ radiotherm for 3m50 thermostats (mhrivnak/radiotherm or pip3 install radiotherm)
 flask, flask-resful, and fask-wtf for sht31 flask server<br/>
 flask and flask-wtf for supervisor flask server<br/>
 pykumo for kumocloud<br/>
+blinkpy for blink camera temp sensor support<br/>
 coverage for code coverage analysis<br/>
 psutil for all thermostat types<br/>
 refer to requirements.txt for full list of package dependencies.<br/>
@@ -64,6 +66,10 @@ Environment variables required depend on the thermostat being used.<br/>
 * Mitsubishi ductless requires the 'KUMOCLOUD' env vars:
   * 'KUMO_USERNAME': username for Kumocloud account
   * 'KUMO_PASSWORD': password for Kumocloud account
+* Blink camera temp sensor requires the 'BLINK' env vars:
+  * 'BLINK_USERNAME': username for Blink account
+  * 'BLINK_PASSWORD': password for Blink account
+  * 'BLINK_2FA': 2 factor auth string for Blink account
 
 ## updating environment variables:<br/>
 * Linux: update file ~/.profile and then "source ~/.profile" to load the file<br/>
@@ -75,12 +81,13 @@ Environment variables required depend on the thermostat being used.<br/>
 This is the main entry point script.<br/>
 runtime parameters can be specified to override defaults either via single dash named parameters or values in order:<br/>
 * '-h'= help screen
-* argv[1] or '-t'= Thermostat type, currently support "honeywell", "mmm50", "sht31", "kumocloud", and "kumolocal".  Default is "honeywell".
+* argv[1] or '-t'= Thermostat type, currently support "honeywell", "mmm50", "sht31", "kumocloud", "kumolocal" and "blink".  Default is "honeywell".
 * argv[2] or '-z'= zone, currently support:
   * honeywell = zone 0 only
   * 3m50 = zones [0,1] on local net
   * sht31: 0 = local net, 1 = remote URL
   * kumocloud, kumolocal: [0,1]
+  * blink = [0,1,2,3,4,5,6,7,8]
   * emulator = zone 0 only
 * argv[3] or '-p'= poll time in seconds (default is thermostat-specific)
 * argv[4] or '-c'= re-connect time in seconds (default is thermostat-specific)
@@ -149,6 +156,12 @@ Script will connect to Mitsubishi ductless thermostat through kumocloud account 
 Default poll time is currently set to 10 minutes.<br/>
 Zone number refers to the thermostat order in kumocloud, 0=first thermostat data returned, 1=second thermostat, etc.<br/><br/>
 command line usage:  "*python -m thermostatsupervisor.kumolocal \<thermostat type\> \<zone\>*"
+
+## blink.py:
+Script will connect to Blink camera through Blink account.<br/>
+Default poll time is currently set to 10 minutes.<br/>
+Zone number refers to the thermostat order in Blink server, 0=first thermostat data returned, 1=second thermostat, etc.<br/><br/>
+command line usage:  "*python -m thermostatsupervisor.blink \<thermostat type\> \<zone\>*"
 
 ## Supervisor API required methods:<br/>
 **Thermostat class:**<br/>

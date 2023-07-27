@@ -29,12 +29,13 @@ else:
 class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):
     """Blink Camera thermostat functions."""
 
-    def __init__(self, zone):
+    def __init__(self, zone, verbose=True):
         """
         Constructor, connect to thermostat.
 
         inputs:
             zone(str):  zone of thermostat.
+            verbose(bool): debug flag.
         """
         # Blink server auth credentials from env vars
         self.BL_UNAME_KEY = 'BLINK_USERNAME'
@@ -50,11 +51,15 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):
             self.BL_2FA_KEY, "<" +
             self.BL_2FA_KEY + "_KEY_MISSING>"))
 
+        # construct the superclass
         # call both parent class __init__
         self.args = [self.bl_uname, self.bl_pwd]
         blinkpy.Blink.__init__(self, *self.args)
         tc.ThermostatCommon.__init__(self)
+
+        # set tstat type and debug flag
         self.thermostat_type = blink_config.ALIAS
+        self.verbose = verbose
 
         # establish connection
         self.blink = blinkpy.Blink()
@@ -67,9 +72,15 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):
         self.blink.start()
         try:
             self.blink.auth.send_auth_key(self.blink, self.bl_2fa)
-        except AttributeError as ex:
-            print(f"ERROR: Blink authentication failed for zone {zone}")
-            raise ex
+        except AttributeError:
+            error_msg = ("ERROR: Blink authentication failed for zone "
+                         f"{zone}, this may be due to spamming the blink "
+                         "server, please try again later.")
+            banner = "*" * len(error_msg)
+            print(banner)
+            print(error_msg)
+            print(banner)
+            exit(1)
         self.blink.setup_post_verify()
 
         # get cameras
@@ -111,8 +122,9 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):
         Get the blink cameras
         """
         for name, camera in self.blink.cameras.items():
-            print(name)
-            print(camera.attributes)
+            if self.verbose:
+                print(name)
+                print(camera.attributes)
             self.camera_metadata[name] = camera.attributes
 
     def get_all_metadata(self, zone=None, debug=False):
@@ -171,12 +183,13 @@ class ThermostatZone(tc.ThermostatCommonZone):
     Class needs to be updated for multi-zone support.
     """
 
-    def __init__(self, Thermostat_obj):
+    def __init__(self, Thermostat_obj, verbose=True):
         """
         Zone constructor.
 
         inputs:
             Thermostat(obj): Thermostat class instance.
+            verbose(bool): debug flag.
         """
         # construct the superclass, requires auth setup first
         super().__init__()
@@ -198,6 +211,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         self.system_switch_position[tc.ThermostatCommonZone.FAN_MODE] = "vent"
 
         # zone info
+        self.verbose = verbose
         self.thermostat_type = blink_config.ALIAS
         self.device_id = Thermostat_obj.device_id
         self.Thermostat = Thermostat_obj
@@ -385,13 +399,12 @@ if __name__ == "__main__":
     zone_number = api.uip.get_user_inputs(api.uip.zone_name,
                                           api.input_flds.zone)
 
-    for zone_number in blink_config.metadata:
-        tc.thermostat_basic_checkout(
-            blink_config.ALIAS,
-            zone_number,
-            ThermostatClass, ThermostatZone)
+    tc.thermostat_basic_checkout(
+        blink_config.ALIAS,
+        zone_number,
+        ThermostatClass, ThermostatZone)
 
-    # tc.thermostat_get_all_zone_temps(blink_config.ALIAS,
-    #                                  blink_config.supported_configs["zones"],
-    #                                  ThermostatClass,
-    #                                  ThermostatZone)
+    tc.thermostat_get_all_zone_temps(blink_config.ALIAS,
+                                     blink_config.supported_configs["zones"],
+                                     ThermostatClass,
+                                     ThermostatZone)
