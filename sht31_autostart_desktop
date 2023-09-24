@@ -1,0 +1,11 @@
+# SHT31 flask server autostart script
+# copy this code to ~/.config/autostart/lxterm-autostart.desktop
+# to enable autostart upon reboot.
+
+[Desktop Entry]
+Encoding=UTF-8
+Name=SHT31 server autostart
+Comment=Start a terminal and launch sht31 server
+Exec=/usr/bin/lxterm -hold -e 'cd /home/pi/github/ThermostatSupervisor && python -m thermostatsupervisor.sht31_flask_server'
+Terminal=true
+X-KeepTerminal=true
