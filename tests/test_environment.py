@@ -7,6 +7,7 @@ import sys
 import unittest
 
 # local imports
+import thermostatsupervisor
 from thermostatsupervisor import emulator_config
 from thermostatsupervisor import environment as env
 from thermostatsupervisor import utilities as util
@@ -173,7 +174,7 @@ class EnvironmentTests(utc.UnitTest):
         """
         Verify get_package_version().
         """
-        pkg = fish_recognition
+        pkg = thermostatsupervisor
         return_type = tuple
         return_val = env.get_package_version(pkg)
         self.assertTrue(isinstance(return_val, return_type),
