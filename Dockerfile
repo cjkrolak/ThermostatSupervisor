@@ -1,6 +1,5 @@
 # set python image
-# bunch 1.0.1 pkg is not compatible with py3.11 due to universal newline in build instructions.
-FROM python:3.11  
+FROM python:3.12  
 
 # display python version
 RUN python --version

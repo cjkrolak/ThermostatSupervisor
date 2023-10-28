@@ -1,6 +1,7 @@
 """Blink Camera."""
 import asyncio
 import os
+import sys
 import time
 import traceback
 
@@ -105,7 +106,7 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):
             print(banner)
             print(error_msg)
             print(banner)
-            exit(1)
+            sys.exit(1)
         self.blink.setup_post_verify()
 
     async def async_auth_start(self):
@@ -140,7 +141,7 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):
             print(banner)
             print(error_msg)
             print(banner)
-            exit(1)
+            sys.exit(1)
         await self.blink.setup_post_verify()
 
     def get_zone_name(self):
