@@ -7,6 +7,7 @@ import sys
 import unittest
 
 # local imports
+import thermostatsupervisor
 from thermostatsupervisor import emulator_config
 from thermostatsupervisor import environment as env
 from thermostatsupervisor import utilities as util
@@ -168,6 +169,31 @@ class EnvironmentTests(utc.UnitTest):
         return_val = env.get_parent_path(os.getcwd())
         self.assertTrue(isinstance(return_val, str),
                         "get_parent_path() returned '%s' which is not a string")
+
+    def test_get_package_version(self):
+        """
+        Verify get_package_version().
+        """
+        pkg = thermostatsupervisor
+        return_type = tuple
+        return_val = env.get_package_version(pkg)
+        self.assertTrue(isinstance(return_val, return_type),
+                        f"return_val = {return_val}, expected type "
+                        f"{return_type}, actual_type {type(return_val)}")
+
+        # check individual elements
+        elements = [
+            "major",
+            "minor",
+            "patch",
+            ]
+        return_type = int
+        for element in elements:
+            return_val = env.get_package_version(pkg, element)
+            self.assertTrue(isinstance(return_val, return_type),
+                            f"element='{element}', return_val = {return_val},"
+                            " expected type "
+                            f"{return_type}, actual_type {type(return_val)}")
 
 
 if __name__ == "__main__":
