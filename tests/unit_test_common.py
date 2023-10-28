@@ -946,9 +946,9 @@ def run_all_tests():
 
     # set exit code
     if result.wasSuccessful():
-        exit(0)
+        sys.exit(0)
     else:
-        exit(1)
+        sys.exit(1)
 
 
 def parse_unit_test_runtime_parameters():
