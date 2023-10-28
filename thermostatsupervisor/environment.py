@@ -246,3 +246,38 @@ def get_parent_path(source_path, verbose=False):
     if verbose:
         print(f"parent path={parent_path}")
     return parent_path
+
+
+def get_package_version(module, element=None, verbose=False):
+    """
+    Get the package version for an installed package.
+
+    inputs:
+        module(obj): imported module
+        element(str): element, if None will return the entire package
+        verbose(bool): debug flag
+    returns:
+        (tuple) of ints if element is None, else returns int.
+    """
+    # cast lowercase if string
+    if isinstance(element, str):
+        element = element.lower()
+
+    ver_tuple = tuple(map(int, module.__version__.split(".")))
+    if verbose:
+        print(f"{module} element {element} package version={ver_tuple}")
+    if element is None:
+        return_val = ver_tuple
+    elif element in ["major", 0]:
+        return_val = ver_tuple[0]
+    elif element in ["minor", 1]:
+        return_val = ver_tuple[1]
+    elif element in ["patch", 2]:
+        try:
+            return_val = ver_tuple[2]
+        except IndexError:
+            return_val = 0
+    else:
+        raise AttributeError(f"{element} is not a valid choice "
+                             "for element input")
+    return return_val

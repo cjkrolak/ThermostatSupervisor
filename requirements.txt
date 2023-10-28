@@ -1,3 +1,5 @@
+
+aiohttp>=3.9.0b0; python_version>='3.12'  # blinkpy py3.12 dependency
 blinkpy>=0.20.0  # blink cameras
 dnspython>=2.3.0  # DNS exception type
 coverage>=7.2.5  # unit test coverage
