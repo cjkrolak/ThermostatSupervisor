@@ -57,7 +57,7 @@ setup(
     license="MIT",
     packages=find_packages(),
     python_requires='>=3',
-    install_requires=["munch", "psutil"],
+    install_requires=["dnspython", "munch", "psutil"],
     keywords=["thermostat", "automation", "supervise"],
     classifiers=[
         "Development Status :: 5 - Production/Stable",

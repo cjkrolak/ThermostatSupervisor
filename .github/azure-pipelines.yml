@@ -44,8 +44,7 @@ steps:
 - script: |
     python -m pip install safety
     safety check
-  displayName: 'check for security vulnerabilities
- '
+  displayName: 'check for security vulnerabilities'
 #  workingDirectory: 
 #- script: |
 #    pip install pytest pytest-azurepipelines

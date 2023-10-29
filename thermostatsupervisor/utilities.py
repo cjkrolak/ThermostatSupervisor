@@ -228,7 +228,7 @@ def temp_value_with_units(raw, disp_unit='F', precision=1) -> str:
     if raw is None:
         formatted = f"{raw}"
     elif precision == 0:
-        formatted = f"{raw:d}"
+        formatted = f"{raw:.0f}"
     else:
         formatted = f"{raw:.{precision}f}"
     return f'{formatted}°{disp_unit}'
@@ -261,7 +261,7 @@ def humidity_value_with_units(raw, disp_unit=' RH', precision=0) -> str:
     if raw is None:
         formatted = f"{raw}"
     elif precision == 0:
-        formatted = f"{raw:d}"
+        formatted = f"{raw:.0f}"
     else:
         formatted = f"{raw:.{precision}f}"
     return f'{formatted}%{disp_unit}'
