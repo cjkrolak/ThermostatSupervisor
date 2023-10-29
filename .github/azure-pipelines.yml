@@ -22,7 +22,7 @@ strategy:
       python.version: '3.10'
     Python311:
       python.version: '3.11'
-    Python311:
+    Python312:
       python.version: '3.12'
 
 steps:

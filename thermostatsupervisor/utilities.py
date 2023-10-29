@@ -228,9 +228,9 @@ def temp_value_with_units(raw, disp_unit='F', precision=1) -> str:
     if raw is None:
         formatted = f"{raw}"
     elif precision == 0:
-        formatted = "%d" % (raw)
+        formatted = f"{raw:d}"
     else:
-        formatted = "%.*f" % (precision, raw)
+        formatted = f"{raw:.{precision}f}"
     return f'{formatted}°{disp_unit}'
 
 
@@ -261,9 +261,9 @@ def humidity_value_with_units(raw, disp_unit=' RH', precision=0) -> str:
     if raw is None:
         formatted = f"{raw}"
     elif precision == 0:
-        formatted = "%d" % (raw)
+        formatted = f"{raw:d}"
     else:
-        formatted = "%.*f" % (precision, raw)
+        formatted = f"{raw:.{precision}f}"
     return f'{formatted}%{disp_unit}'
 
 
@@ -510,7 +510,7 @@ class UserInputs():
             else:
                 self.user_inputs[parent_key][key]["value"] = getattr(args,
                                                                      key, None)
-                strip_types = (str)
+                strip_types = str
                 if isinstance(self.user_inputs[parent_key][key]["value"],
                               strip_types):
                     # str parsing has leading spaces for some reason
@@ -645,14 +645,13 @@ class UserInputs():
             try:
                 return self.user_inputs[parent_key][child_key][field]
             except TypeError:
-                print("TypeError: parent_key(%s)=%s, child_key(%s)=%s, "
-                      "field(%s)=%s)" %
-                      (type(parent_key), parent_key, type(child_key),
-                       child_key, type(field), field))
+                print(f"TypeError: parent_key({type(parent_key)})={parent_key}"
+                      f", child_key({type(child_key)})={child_key}, "
+                      f"field({type(field)})={field})")
                 raise
             except KeyError:
-                print("KeyError: target=['%s']['%s']['%s'], raw="
-                      f"{(parent_key, child_key, field, self.user_inputs)}")
+                print(f"KeyError: target=[{parent_key}][{child_key}][{field}],"
+                      f" raw={self.user_inputs.keys()}")
                 raise
 
     def set_user_inputs(self, parent_key, child_key, input_val, field="value"):
@@ -673,12 +672,12 @@ class UserInputs():
             try:
                 self.user_inputs[parent_key][child_key][field] = input_val
             except TypeError:
-                print("TypeError: keys=%s (type=%s)" %
-                      (self.user_inputs.keys(), type(self.user_inputs.keys())))
+                print(f"TypeError: keys={self.user_inputs.keys()} "
+                      f"(type={type(self.user_inputs.keys())})")
                 raise
             except KeyError:
-                print("KeyError: target=['%s']['%s']['%s'],  keys=%s" %
-                      (parent_key, child_key, field, self.user_inputs.keys()))
+                print(f"KeyError: target=[{parent_key}][{child_key}][{field}],"
+                      f" raw={self.user_inputs.keys()}")
                 raise
 
     def is_valid_file(self, arg):
@@ -692,8 +691,8 @@ class UserInputs():
         """
         arg = arg.strip()  # remove any leading spaces
         if not os.path.exists(arg):
-            self.parser.error("The file %s does not exist!" %
-                              os.path.abspath(arg))
+            self.parser.error(f"The file {os.path.abspath(arg)} "
+                              "does not exist!")
         else:
             return open(arg, 'r', encoding="utf8")  # return a file handle
 

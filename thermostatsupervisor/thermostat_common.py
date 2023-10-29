@@ -304,7 +304,7 @@ class ThermostatCommonZone():
         # add hold information
         if self.is_temp_deviated_from_schedule() and self.is_controlled_mode():
             self.hold_mode = True  # True = not following schedule
-            self.hold_temporary = (self.get_temporary_hold_until_time() > 0)
+            self.hold_temporary = self.get_temporary_hold_until_time() > 0
             status_msg += (
                 f" ({['persistent', 'temporary'][self.hold_temporary]})")
         else:
