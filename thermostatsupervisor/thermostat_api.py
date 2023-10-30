@@ -242,8 +242,7 @@ class UserInputs(util.UserInputs):
                                     self.user_inputs_file[section].get(
                                         input_flds[fld])))
                         except Exception:
-                            print("exception in section=%s, fld=%s" %
-                                  (section, fld))
+                            print(f"exception in section={section}, fld={fld}")
                             raise
                         # cast original input value in user_inputs_file as well
                         self.user_inputs_file[section][input_flds[fld]] = \
@@ -265,8 +264,8 @@ class UserInputs(util.UserInputs):
             # verify only 1 parent key exists
             current_keys = list(self.user_inputs.keys())
             if len(current_keys) != 1:
-                raise KeyError("user_input keys=%s, expected only 1 key" %
-                               current_keys)
+                raise KeyError(f"user_input keys={current_keys}, expected only"
+                               " 1 key")
 
             # update parent key to be zone_name
             current_key = current_keys[0]
@@ -297,18 +296,18 @@ class UserInputs(util.UserInputs):
                 self.user_inputs[zone_name][input_flds.zone]["valid_range"] = \
                     SUPPORTED_THERMOSTATS[thermostat_type]["zones"]
             except KeyError:
-                print("\nKeyError: one or more keys are invalid (zone_name=%s,"
-                      " zone_number=%s, thermostat_type=%s)\n" %
-                      (zone_name, input_flds.zone, thermostat_type))
+                print(f"\nKeyError: one or more keys are invalid (zone_name="
+                      f"{zone_name}, zone_number={input_flds.zone}, "
+                      f"thermostat_type={thermostat_type})\n")
                 raise
             try:
                 self.user_inputs[zone_name][input_flds.target_mode][
                     "valid_range"] = \
                     SUPPORTED_THERMOSTATS[thermostat_type]["modes"]
             except KeyError:
-                print("\nKeyError: one or more keys are invalid (zone_name=%s,"
-                      " target_mode=%s, thermostat_type=%s)\n" %
-                      (zone_name, input_flds.target_mode, thermostat_type))
+                print(f"\nKeyError: one or more keys are invalid (zone_name="
+                      f"{zone_name}, target_mode={input_flds.target_mode}, "
+                      f"thermostat_type={thermostat_type})\n")
                 raise
 
     def max_measurement_count_exceeded(self, measurement):

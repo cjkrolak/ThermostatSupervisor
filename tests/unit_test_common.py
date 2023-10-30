@@ -619,7 +619,7 @@ class RuntimeParameterTest(UnitTest):
         """
         arg = arg.strip()  # remove any leading spaces
         if not os.path.exists(arg):
-            parser.error("The file %s does not exist!" % os.path.abspath(arg))
+            parser.error(f"The file {os.path.abspath(arg)} does not exist!")
         else:
             return open(arg, 'rt', encoding="utf8")  # return a file handle
 
