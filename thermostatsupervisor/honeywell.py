@@ -250,7 +250,7 @@ class ThermostatClass(pyhtcc.PyHTCC, tc.ThermostatCommon):
                 raise ex
         except Exception as ex:
             util.log_msg(traceback.format_exc(),
-                mode=util.BOTH_LOG, func_name=1)
+                         mode=util.BOTH_LOG, func_name=1)
             print(f"ERROR: unhandled exception {ex} in get_zones_info()")
             raise ex
         else:
@@ -746,7 +746,7 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
                 retry_delay_sec *= 2  # double each time.
             except Exception as ex:
                 util.log_msg(traceback.format_exc(),
-                    mode=util.BOTH_LOG, func_name=1)
+                             mode=util.BOTH_LOG, func_name=1)
                 print(f"ERROR: unhandled exception {ex} in "
                       "refresh_zone_info()")
                 raise ex
