@@ -25,6 +25,10 @@ def read(rel_path):
     returns:
         (file pointer): pointer to open file.
     """
+    print(f"base path={here}")
+    print(f"relative path={rel_path}")
+    dir_list = os.listdir(here)
+    print(f"files in base path: {dir_list}")
     with codecs.open(os.path.join(here, rel_path), 'r') as fp:
         return fp.read()
 
@@ -47,7 +51,7 @@ def get_version(rel_path):
 
 setup(
     name="Thermostatsupervisor",
-    version=get_version("Thermostatsupervisor/thermostatsupervisor/__init__.py"),
+    version=get_version("thermostatsupervisor/__init__.py"),
     author="Christopher Krolak",
     author_email="cjkrolak@mail.com",
     description="supervisor to detect and correct thermostat deviations",
