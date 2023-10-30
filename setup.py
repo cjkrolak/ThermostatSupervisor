@@ -46,12 +46,12 @@ def get_version(rel_path):
 
 
 setup(
-    name="thermostatsupervisor",
-    version=get_version("thermostatsupervisor/__init__.py"),
+    name="Thermostatsupervisor",
+    version=get_version("Thermostatsupervisor/thermostatsupervisor/__init__.py"),
     author="Christopher Krolak",
     author_email="cjkrolak@mail.com",
     description="supervisor to detect and correct thermostat deviations",
-    url="https://github.com/cjkrolak/thermostatsupervisor",
+    url="https://github.com/cjkrolak/Thermostatsupervisor",
     long_description_content_type="text/markdown",
     long_description=long_description,
     license="MIT",
