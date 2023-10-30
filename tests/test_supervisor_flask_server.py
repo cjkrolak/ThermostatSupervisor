@@ -85,7 +85,7 @@ class IntegrationTest(utc.UnitTest):
         wait_delay_sec = 10
         polling_interval_sec = 4
         while wait_delay_sec > 0:
-            print(f"waiting {wait_delay_sec:d} seconds for initial supervisor "
+            print(f"waiting {wait_delay_sec:.0f} seconds for initial supervisor "
                   "page to be populated...")
             wait_delay_sec -= polling_interval_sec
             time.sleep(polling_interval_sec)  # polling interval

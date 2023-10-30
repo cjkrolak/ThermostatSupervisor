@@ -93,8 +93,10 @@ class ThermostatClass(pyhtcc.PyHTCC, tc.ThermostatCommon):
         try:
             zone_id = self._get_zone_device_ids()[zone]
         except IndexError as ex:
-            raise ValueError(f"zone '{zone}' is not a valid choice for this "
-                             "Honeywell thermostat") from ex
+            raise ValueError(f"zone '{zone}' type{type(zone)} is not a valid "
+                             "choice for this Honeywell thermostat, valid "
+                             "choices are: "
+                             f"{self._get_zone_device_ids()}") from ex
         return zone_id
 
     def print_all_thermostat_metadata(self, zone, debug=False):
@@ -243,7 +245,14 @@ class ThermostatClass(pyhtcc.PyHTCC, tc.ThermostatCommon):
 
             # exhausted retries, raise exception
             if tc.connection_fail_cnt > tc.max_connection_fail_cnt:
+                print(f"ERRROR: exhausted {tc.max_connection_fail_cnt} retries"
+                      " for get_zones_info()")
                 raise ex
+        except Exception as ex:
+            util.log_msg(traceback.format_exc(),
+                mode=util.BOTH_LOG, func_name=1)
+            print(f"ERROR: unhandled exception {ex} in get_zones_info()")
+            raise ex
         else:
             # good response
             tc.connection_ok = True
@@ -735,6 +744,12 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
                     time.sleep(retry_delay_sec)
                 trial_number += 1
                 retry_delay_sec *= 2  # double each time.
+            except Exception as ex:
+                util.log_msg(traceback.format_exc(),
+                    mode=util.BOTH_LOG, func_name=1)
+                print(f"ERROR: unhandled exception {ex} in "
+                      "refresh_zone_info()")
+                raise ex
             else:
                 # log the mitigated failure
                 if trial_number > 1:
