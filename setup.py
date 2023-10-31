@@ -59,7 +59,7 @@ setup(
     long_description_content_type="text/markdown",
     long_description=long_description,
     license="MIT",
-    packages=find_packages(),
+    packages=["thermostatsupervisor"],
     python_requires='>=3',
     install_requires=["dnspython", "munch", "psutil"],
     keywords=["thermostat", "automation", "supervise"],
