@@ -7,8 +7,9 @@ import codecs
 import os
 
 # third party libraries
-from setuptools import setup, find_packages
+from setuptools import setup
 
+# local imports
 
 here = os.path.abspath(os.path.dirname(__file__))
 
@@ -50,32 +51,5 @@ def get_version(rel_path):
 
 
 setup(
-    name="Thermostatsupervisor",
     version=get_version("thermostatsupervisor/__init__.py"),
-    author="Christopher Krolak",
-    author_email="cjkrolak@mail.com",
-    description="supervisor to detect and correct thermostat deviations",
-    url="https://github.com/cjkrolak/Thermostatsupervisor",
-    long_description_content_type="text/markdown",
-    long_description=long_description,
-    license="MIT",
-    packages=["thermostatsupervisor"],
-    python_requires='>=3',
-    install_requires=["dnspython", "munch", "psutil"],
-    keywords=["thermostat", "automation", "supervise"],
-    classifiers=[
-        "Development Status :: 5 - Production/Stable",
-        "Intended Audience :: Developers",
-        "Intended Audience :: End Users/Desktop",
-        "Environment :: Console",
-        "Framework :: Flask",
-        "Framework :: IDLE",
-        "Natural Language :: English",
-        "Programming Language :: Python :: 3.9",
-        "Programming Language :: Python :: 3.10",
-        "Programming Language :: Python :: 3.11",
-        "Programming Language :: Python :: 3.12",
-        "Operating System :: OS Independent",
-        "Topic :: Home Automation",
-    ]
 )
