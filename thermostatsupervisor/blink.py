@@ -1,9 +1,12 @@
 """Blink Camera."""
+# built-in imports
 import asyncio
 import os
 import sys
 import time
 import traceback
+
+# third party imports
 
 # local imports
 from thermostatsupervisor import blink_config

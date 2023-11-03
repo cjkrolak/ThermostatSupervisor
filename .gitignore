@@ -10,3 +10,5 @@ supervisor-env.txt
 *.ini
 *.json
 .settings
+dist/
+**.egg-info/
