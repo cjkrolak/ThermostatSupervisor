@@ -56,7 +56,7 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):
             self.BL_2FA_KEY, "<" +
             self.BL_2FA_KEY + "_KEY_MISSING>"))
         self.verbose = verbose
-        self.zone_number = zone
+        self.zone_number = int(zone)
 
         # connect to Blink server and authenticate
         self.args = None
@@ -85,7 +85,6 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):
         # call both parent class __init__
         self.args = [self.bl_uname, self.bl_pwd]
         blinkpy.Blink.__init__(self, *self.args)
-        tc.ThermostatCommon.__init__(self)
 
         # set tstat type and debug flag
         self.thermostat_type = blink_config.ALIAS
@@ -120,7 +119,6 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):
         # call both parent class __init__
         self.args = [self.bl_uname, self.bl_pwd]
         blinkpy.Blink.__init__(self, *self.args)
-        tc.ThermostatCommon.__init__(self)
 
         # set tstat type and debug flag
         self.thermostat_type = blink_config.ALIAS
