@@ -283,7 +283,11 @@ def get_package_version(module, element=None, verbose=False):
     if isinstance(element, str):
         element = element.lower()
 
-    ver_tuple = tuple(map(int, module.__version__.split(".")))
+    # trim off any dev suffixes from module version
+    module_version = ".".join(module.__version__.split(".")[:3])
+
+    # parse the version string into a tuple of ints
+    ver_tuple = tuple(map(int, module_version.split(".")))
     if verbose:
         print(f"{module} element {element} package version={ver_tuple}")
     if element is None:
