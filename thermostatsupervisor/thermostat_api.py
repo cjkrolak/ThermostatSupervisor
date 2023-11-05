@@ -89,7 +89,7 @@ class UserInputs(util.UserInputs):
         self.suppress_warnings = suppress_warnings
         self.thermostat_type = thermostat_type  # default if not provided
         self.zone_name = zone_name
-        print(f"DEBUG ({util.get_function_name()}: "
+        print(f"DEBUG ({util.get_function_name()}): "
               f"self.zone_name={self.zone_name}")
 
         # initialize parent class
@@ -254,7 +254,7 @@ class UserInputs(util.UserInputs):
                                 fld])))
             # for now set zone name to first zone in file
             self.zone_name = self.parent_keys[0]
-            print(f"DEBUG ({util.get_function_name()}: "
+            print(f"DEBUG ({util.get_function_name()}): "
                   f"self.zone_name={self.zone_name}")
         # update user_inputs parent_key with zone_name
         # if user_inputs has already been populated
@@ -267,7 +267,7 @@ class UserInputs(util.UserInputs):
                 raise KeyError(f"user_input keys={current_keys}, expected only"
                                " 1 key")
 
-            # update parent key to be zone_name
+            # update parent key to be <zone_name>_<zone_number>
             current_key = current_keys[0]
             new_key = (self.get_user_inputs(
                        current_key, input_flds.thermostat_type) + "_" +
@@ -276,7 +276,7 @@ class UserInputs(util.UserInputs):
 
             # update paremeters for new parent keys
             self.zone_name = new_key  # set Zone name
-            print(f"DEBUG ({util.get_function_name()}: "
+            print(f"DEBUG ({util.get_function_name()}): "
                   f"self.zone_name={self.zone_name}")
             self.default_parent_key = new_key
             self.parent_keys = list(self.user_inputs.keys())
