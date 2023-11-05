@@ -16,7 +16,7 @@ from thermostatsupervisor import environment as env
 from thermostatsupervisor import utilities as util
 
 # Blink library
-BLINK_DEBUG = False  # debug uses local blink repo instead of pkg
+BLINK_DEBUG = True  # debug uses local blink repo instead of pkg
 if BLINK_DEBUG and not env.is_azure_environment():
     pkg = "blinkpy.blinkpy"
     mod_path = "..\\blinkpy"
