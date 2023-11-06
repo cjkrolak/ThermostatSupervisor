@@ -144,12 +144,22 @@ class ThermostatClass(pyhtcc.PyHTCC, tc.ThermostatCommon):
         """
         zone_info_list = self.get_zones_info()
         if parameter is None:
-            return_data = zone_info_list[zone]
+            try:
+                return_data = zone_info_list[zone]
+            except IndexError:
+                print(f"ERROR: zone {zone} does not exist in zone_info_list: "
+                      f"{zone_info_list}")
+                raise
             util.log_msg(f"zone{zone} info: {return_data}",
                          mode=util.DEBUG_LOG + util.CONSOLE_LOG, func_name=1)
             return return_data
         else:
-            return_data = zone_info_list[zone].get(parameter)
+            try:
+                return_data = zone_info_list[zone].get(parameter)
+            except IndexError:
+                print(f"ERROR: zone {zone} does not exist in zone_info_list: "
+                      f"{zone_info_list}")
+                raise
             util.log_msg(f"zone{zone} parameter '{parameter}': {return_data}",
                          mode=util.DEBUG_LOG + util.CONSOLE_LOG, func_name=1)
             return return_data

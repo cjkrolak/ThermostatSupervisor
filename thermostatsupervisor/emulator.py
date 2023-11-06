@@ -84,7 +84,12 @@ class ThermostatClass(tc.ThermostatCommon):
         if parameter is None:
             return meta_data_dict
         else:
-            return meta_data_dict[parameter]
+            try:
+                return meta_data_dict[parameter]
+            except KeyError:
+                print(f"ERROR: parameter {parameter} does not exist in "
+                      f"meta_data_dict: {meta_data_dict}")
+                raise
 
     def print_all_thermostat_metadata(self, zone, debug=False):
         """Print all metadata for zone to the screen.
