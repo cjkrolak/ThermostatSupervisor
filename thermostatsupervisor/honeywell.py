@@ -226,47 +226,49 @@ class ThermostatClass(pyhtcc.PyHTCC, tc.ThermostatCommon):
             list of zone info.
         """
         return_val = []
-        try:
-            return_val = super().get_zones_info()
-        except (pyhtcc.requests.exceptions.ConnectionError,
-                pyhtcc.pyhtcc.UnexpectedError,
-                pyhtcc.pyhtcc.NoZonesFoundError,
-                pyhtcc.pyhtcc.UnauthorizedError,
-                ) as ex:
-            # force re-authenticating
-            tc.connection_ok = False
-            tc.connection_fail_cnt += 1
-            print(traceback.format_exc())
-            print(f"{util.get_function_name()}: WARNING: {ex}")
+        while True:  # connection retries
+            try:
+                return_val = super().get_zones_info()
+            except (pyhtcc.requests.exceptions.ConnectionError,
+                    pyhtcc.pyhtcc.UnexpectedError,
+                    pyhtcc.pyhtcc.NoZonesFoundError,
+                    pyhtcc.pyhtcc.UnauthorizedError,
+                    ) as ex:
+                # force re-authenticating
+                tc.connection_ok = False
+                tc.connection_fail_cnt += 1
+                print(traceback.format_exc())
+                print(f"{util.get_function_name()}: WARNING: {ex}")
 
-            # warning email
-            time_now = (datetime.datetime.now().
-                        strftime("%Y-%m-%d %H:%M:%S"))
-            email_notification.send_email_alert(
-                subject=(f"{self.thermostat_type} zone "
-                         f"{self.zone_name}: "
-                         "intermittent error "
-                         "during get_zones_info()"),
-                body=(f"{util.get_function_name()}: trial "
-                      f"{tc.connection_fail_cnt} of "
-                      f"{tc.max_connection_fail_cnt} at "
-                      f"{time_now}\n{traceback.format_exc()}")
-                )
+                # warning email
+                time_now = (datetime.datetime.now().
+                            strftime("%Y-%m-%d %H:%M:%S"))
+                email_notification.send_email_alert(
+                    subject=(f"{self.thermostat_type} zone "
+                             f"{self.zone_name}: "
+                             "intermittent error "
+                             "during get_zones_info()"),
+                    body=(f"{util.get_function_name()}: trial "
+                          f"{tc.connection_fail_cnt} of "
+                          f"{tc.max_connection_fail_cnt} at "
+                          f"{time_now}\n{traceback.format_exc()}")
+                    )
 
-            # exhausted retries, raise exception
-            if tc.connection_fail_cnt > tc.max_connection_fail_cnt:
-                print(f"ERRROR: exhausted {tc.max_connection_fail_cnt} retries"
-                      " for get_zones_info()")
+                # exhausted retries, raise exception
+                if tc.connection_fail_cnt > tc.max_connection_fail_cnt:
+                    print(f"ERRROR: exhausted {tc.max_connection_fail_cnt} "
+                          "retries for get_zones_info()")
+                    raise ex
+            except Exception as ex:
+                util.log_msg(traceback.format_exc(),
+                             mode=util.BOTH_LOG, func_name=1)
+                print(f"ERROR: unhandled exception {ex} in get_zones_info()")
                 raise ex
-        except Exception as ex:
-            util.log_msg(traceback.format_exc(),
-                         mode=util.BOTH_LOG, func_name=1)
-            print(f"ERROR: unhandled exception {ex} in get_zones_info()")
-            raise ex
-        else:
-            # good response
-            tc.connection_ok = True
-            tc.connection_fail_cnt = 0  # reset
+            else:
+                # good response
+                tc.connection_ok = True
+                tc.connection_fail_cnt = 0  # reset
+                break
 
         return return_val
 
