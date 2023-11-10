@@ -463,7 +463,9 @@ if __name__ == "__main__":
         zone_number,
         ThermostatClass, ThermostatZone)
 
-    tc.thermostat_get_all_zone_temps(blink_config.ALIAS,
-                                     blink_config.supported_configs["zones"],
-                                     ThermostatClass,
-                                     ThermostatZone)
+    # check all zone temps
+    # un-rem this code for testing all zones.
+    # tc.thermostat_get_all_zone_temps(blink_config.ALIAS,
+    #                                  blink_config.supported_configs["zones"],
+    #                                  ThermostatClass,
+    #                                  ThermostatZone)
