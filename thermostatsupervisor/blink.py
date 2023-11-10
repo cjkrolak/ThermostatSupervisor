@@ -1,6 +1,7 @@
 """Blink Camera."""
 # built-in imports
 import asyncio
+from aiohttp import ClientSession
 import os
 import sys
 import time
@@ -84,7 +85,6 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):
         # construct the superclass
         # call both parent class __init__
         self.args = [self.bl_uname, self.bl_pwd]
-        blinkpy.Blink.__init__(self, *self.args)
 
         # set tstat type and debug flag
         self.thermostat_type = blink_config.ALIAS
@@ -113,37 +113,39 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):
 
     async def async_auth_start(self):
         """
-        blinkpy 0.22.0-compatible async start
+        blinkpy 0.22.0 introducted async start, this is the compatible
+        auth_start function.
         """
-        # construct the superclass
-        # call both parent class __init__
-        self.args = [self.bl_uname, self.bl_pwd]
-        blinkpy.Blink.__init__(self, *self.args)
+        async with ClientSession() as session:
+            # construct the superclass
+            # call both parent class __init__
+            self.args = [self.bl_uname, self.bl_pwd]
+            # blinkpy.Blink.__init__(self, *self.args)
 
-        # set tstat type and debug flag
-        self.thermostat_type = blink_config.ALIAS
+            # set tstat type and debug flag
+            self.thermostat_type = blink_config.ALIAS
 
-        # establish connection
-        self.blink = blinkpy.Blink()
-        if self.blink is None:
-            print(traceback.format_exc())
-            raise RuntimeError("ERROR: Blink object failed to instantiate "
-                               f"for zone {self.zone_number}")
-
-        self.blink.auth = auth.Auth(self.auth_dict, no_prompt=True)
-        await self.blink.start()
-        try:
-            await self.blink.auth.send_auth_key(self.blink, self.bl_2fa)
-        except AttributeError:
-            error_msg = ("ERROR: Blink authentication failed for zone "
-                         f"{self.zone_number}, this may be due to spamming the "
-                         "blink server, please try again later.")
-            banner = "*" * len(error_msg)
-            print(banner)
-            print(error_msg)
-            print(banner)
-            sys.exit(1)
-        await self.blink.setup_post_verify()
+            # establish connection
+            self.blink = blinkpy.Blink(session=session)
+            if self.blink is None:
+                print(traceback.format_exc())
+                raise RuntimeError("ERROR: Blink object failed to instantiate "
+                                   f"for zone {self.zone_number}")
+            self.blink.auth = auth.Auth(self.auth_dict, no_prompt=True,
+                                        session=session)
+            await self.blink.start()
+            try:
+                await self.blink.auth.send_auth_key(self.blink, self.bl_2fa)
+            except AttributeError:
+                error_msg = ("ERROR: Blink authentication failed for zone "
+                             f"{self.zone_number}, this may be due to spamming"
+                             " the blink server, please try again later.")
+                banner = "*" * len(error_msg)
+                print(banner)
+                print(error_msg)
+                print(banner)
+                sys.exit(1)
+            await self.blink.setup_post_verify()
 
     def get_zone_name(self):
         """
@@ -461,7 +463,7 @@ if __name__ == "__main__":
         zone_number,
         ThermostatClass, ThermostatZone)
 
-    tc.thermostat_get_all_zone_temps(blink_config.ALIAS,
-                                     blink_config.supported_configs["zones"],
-                                     ThermostatClass,
-                                     ThermostatZone)
+    # tc.thermostat_get_all_zone_temps(blink_config.ALIAS,
+    #                                  blink_config.supported_configs["zones"],
+    #                                  ThermostatClass,
+    #                                  ThermostatZone)
