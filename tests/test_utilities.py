@@ -217,9 +217,9 @@ class MetricsTests(utc.UnitTest):
                         formatted = "None"
                     else:
                         if isinstance(test_case, str):
-                            formatted = "%.*f" % (precision, float(test_case))
+                            formatted = f"{float(test_case):.{precision}f}"
                         else:
-                            formatted = "%.*f" % (precision, test_case)
+                            formatted = f"{test_case:.{precision}f}"
                     expected_val = f'{formatted}°{disp_unit}'
                     actual_val = util.temp_value_with_units(test_case,
                                                             disp_unit,
@@ -245,9 +245,9 @@ class MetricsTests(utc.UnitTest):
                         formatted = "None"
                     else:
                         if isinstance(test_case, str):
-                            formatted = "%.*f" % (precision, float(test_case))
+                            formatted = f"{float(test_case):.{precision}f}"
                         else:
-                            formatted = "%.*f" % (precision, test_case)
+                            formatted = f"{test_case:.{precision}f}"
                     expected_val = f'{formatted}%{disp_unit}'
                     actual_val = util.humidity_value_with_units(test_case,
                                                                 disp_unit,

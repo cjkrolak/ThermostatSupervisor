@@ -3,17 +3,6 @@ blink config file.
 """
 ALIAS = "blink"
 
-# camera zone names
-CABIN_DOORBELL = "cabin doorbell"
-DRIVEWAY = "driveway"
-BEACH = "beach"
-FRONT_YARD = "front yard"
-BACK_YARD = "back yard"
-WEST = "west"
-NORTH = "north"
-SOUTH = "south"
-NW_SE = "nw-se"
-
 # constants
 MAX_HEAT_SETPOINT = 68
 MIN_COOL_SETPOINT = 70
@@ -37,16 +26,27 @@ required_env_variables = {
 
 # metadata dict
 # 'zone_name' is a placeholder, used at Thermostat class level.
+# update this list to match your zones as named in the blink app
+# zone number assignments are arbitrary.
 metadata = {
-    0: {"zone_name": DRIVEWAY},
-    1: {"zone_name": BEACH},
-    2: {"zone_name": FRONT_YARD},
-    3: {"zone_name": BACK_YARD},
-    4: {"zone_name": CABIN_DOORBELL},
-    5: {"zone_name": WEST},
-    6: {"zone_name": NORTH},
-    7: {"zone_name": SOUTH},
-    8: {"zone_name": NW_SE},
+    # cabin zones
+    0: {"zone_name": "cabin doorbell"},
+    1: {"zone_name": "cabin driveway"},
+    2: {"zone_name": "beach"},
+    3: {"zone_name": "front yard"},
+    4: {"zone_name": "back yard"},
+    5: {"zone_name": "front dogs"},
+    6: {"zone_name": "road"},
+    7: {"zone_name": "cabin garage"},
+    8: {"zone_name": "loft"},
+    # home zones
+    9: {"zone_name": "home doorbell"},
+    10: {"zone_name": "home driveway"},
+    11: {"zone_name": "west"},
+    12: {"zone_name": "north"},
+    13: {"zone_name": "south"},
+    14: {"zone_name": "nw-se"},
+    15: {"zone_name": "cat camera"},
 }
 
 # supported thermostat configs
@@ -56,7 +56,7 @@ supported_configs = {"module": "blink",
                      "modes": ["OFF_MODE"]}
 
 default_zone = supported_configs["zones"][0]
-default_zone_name = ALIAS + "_" + str(default_zone)
+default_zone_name = metadata[default_zone]
 
 argv = [
     "supervise.py",  # module

@@ -18,10 +18,12 @@ pool:
 
 strategy:
   matrix:
-    # Python37:
-    #  python.version: '3.7'
+    Python310:
+      python.version: '3.10'
     Python311:
       python.version: '3.11'
+    Python312:
+      python.version: '3.12'
 
 steps:
 - task: UsePythonVersion@0
@@ -42,8 +44,7 @@ steps:
 - script: |
     python -m pip install safety
     safety check
-  displayName: 'check for security vulnerabilities
- '
+  displayName: 'check for security vulnerabilities'
 #  workingDirectory: 
 #- script: |
 #    pip install pytest pytest-azurepipelines

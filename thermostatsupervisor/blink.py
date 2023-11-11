@@ -1,7 +1,13 @@
 """Blink Camera."""
+# built-in imports
+import asyncio
+from aiohttp import ClientSession
 import os
+import sys
 import time
 import traceback
+
+# third party imports
 
 # local imports
 from thermostatsupervisor import blink_config
@@ -11,7 +17,7 @@ from thermostatsupervisor import environment as env
 from thermostatsupervisor import utilities as util
 
 # Blink library
-BLINK_DEBUG = False  # debug uses local blink repo instead of pkg
+BLINK_DEBUG = True  # debug uses local blink repo instead of pkg
 if BLINK_DEBUG and not env.is_azure_environment():
     pkg = "blinkpy.blinkpy"
     mod_path = "..\\blinkpy"
@@ -50,49 +56,96 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):
         self.bl_2fa = (os.environ.get(
             self.BL_2FA_KEY, "<" +
             self.BL_2FA_KEY + "_KEY_MISSING>"))
-
-        # construct the superclass
-        # call both parent class __init__
-        self.args = [self.bl_uname, self.bl_pwd]
-        blinkpy.Blink.__init__(self, *self.args)
-        tc.ThermostatCommon.__init__(self)
-
-        # set tstat type and debug flag
-        self.thermostat_type = blink_config.ALIAS
         self.verbose = verbose
+        self.zone_number = int(zone)
 
-        # establish connection
-        self.blink = blinkpy.Blink()
-        if self.blink is None:
-            print(traceback.format_exc())
-            raise RuntimeError("ERROR: Blink object failed to instantiate "
-                               f"for zone {zone}")
-        auth_ = auth.Auth(self.auth_dict, no_prompt=True)
-        self.blink.auth = auth_
-        self.blink.start()
-        try:
-            self.blink.auth.send_auth_key(self.blink, self.bl_2fa)
-        except AttributeError:
-            error_msg = ("ERROR: Blink authentication failed for zone "
-                         f"{zone}, this may be due to spamming the blink "
-                         "server, please try again later.")
-            banner = "*" * len(error_msg)
-            print(banner)
-            print(error_msg)
-            print(banner)
-            exit(1)
-        self.blink.setup_post_verify()
+        # connect to Blink server and authenticate
+        self.args = None
+        self.thermostat_type = None
+        self.blink = None
+        if env.get_package_version(blinkpy) >= (0, 22, 0):
+            asyncio.run(self.async_auth_start())
+        else:
+            self.auth_start()
 
         # get cameras
         self.camera_metadata = {}
         self.get_cameras()
 
         # configure zone info
-        self.zone_number = zone
         self.zone_name = self.get_zone_name()
         self.device_id = None  # initialize
         self.device_id = self.get_target_zone_id(self.zone_number)
         self.serial_number = None  # will be populated when unit is queried.
+
+    def auth_start(self):
+        """
+        blinkpy < 0.22.0-compatible start
+        """
+        # construct the superclass
+        # call both parent class __init__
+        self.args = [self.bl_uname, self.bl_pwd]
+
+        # set tstat type and debug flag
+        self.thermostat_type = blink_config.ALIAS
+
+        # establish connection
+        self.blink = blinkpy.Blink()
+        if self.blink is None:
+            print(traceback.format_exc())
+            raise RuntimeError("ERROR: Blink object failed to instantiate "
+                               f"for zone {self.zone_number}")
+
+        self.blink.auth = auth.Auth(self.auth_dict, no_prompt=True)
+        self.blink.start()
+        try:
+            self.blink.auth.send_auth_key(self.blink, self.bl_2fa)
+        except AttributeError:
+            error_msg = ("ERROR: Blink authentication failed for zone "
+                         f"{self.zone_number}, this may be due to spamming the "
+                         "blink server, please try again later.")
+            banner = "*" * len(error_msg)
+            print(banner)
+            print(error_msg)
+            print(banner)
+            sys.exit(1)
+        self.blink.setup_post_verify()
+
+    async def async_auth_start(self):
+        """
+        blinkpy 0.22.0 introducted async start, this is the compatible
+        auth_start function.
+        """
+        async with ClientSession() as session:
+            # construct the superclass
+            # call both parent class __init__
+            self.args = [self.bl_uname, self.bl_pwd]
+            # blinkpy.Blink.__init__(self, *self.args)
+
+            # set tstat type and debug flag
+            self.thermostat_type = blink_config.ALIAS
+
+            # establish connection
+            self.blink = blinkpy.Blink(session=session)
+            if self.blink is None:
+                print(traceback.format_exc())
+                raise RuntimeError("ERROR: Blink object failed to instantiate "
+                                   f"for zone {self.zone_number}")
+            self.blink.auth = auth.Auth(self.auth_dict, no_prompt=True,
+                                        session=session)
+            await self.blink.start()
+            try:
+                await self.blink.auth.send_auth_key(self.blink, self.bl_2fa)
+            except AttributeError:
+                error_msg = ("ERROR: Blink authentication failed for zone "
+                             f"{self.zone_number}, this may be due to spamming"
+                             " the blink server, please try again later.")
+                banner = "*" * len(error_msg)
+                print(banner)
+                print(error_msg)
+                print(banner)
+                sys.exit(1)
+            await self.blink.setup_post_verify()
 
     def get_zone_name(self):
         """
@@ -121,11 +174,17 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):
         """
         Get the blink cameras
         """
+        table_length = 20
+        if self.verbose:
+            print("blink camera inventory:")
+            print("-" * table_length)
         for name, camera in self.blink.cameras.items():
             if self.verbose:
                 print(name)
                 print(camera.attributes)
             self.camera_metadata[name] = camera.attributes
+        if self.verbose:
+            print("-" * table_length)
 
     def get_all_metadata(self, zone=None, debug=False):
         """Get all thermostat meta data for device_id from local API.
@@ -404,7 +463,9 @@ if __name__ == "__main__":
         zone_number,
         ThermostatClass, ThermostatZone)
 
-    tc.thermostat_get_all_zone_temps(blink_config.ALIAS,
-                                     blink_config.supported_configs["zones"],
-                                     ThermostatClass,
-                                     ThermostatZone)
+    # check all zone temps
+    # un-rem this code for testing all zones.
+    # tc.thermostat_get_all_zone_temps(blink_config.ALIAS,
+    #                                  blink_config.supported_configs["zones"],
+    #                                  ThermostatClass,
+    #                                  ThermostatZone)

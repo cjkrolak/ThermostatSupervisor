@@ -1,4 +1,7 @@
 """Package identifier file"""
 
+# local imports
+
 # package name
-name = 'thermostatsupervisor'
+name = 'Thermostatsupervisor'
+__version__ = "1.0.7"
