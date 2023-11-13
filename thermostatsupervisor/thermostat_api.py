@@ -31,7 +31,7 @@ config_modules = [blink_config,
                   kumolocal_config,
                   mmm_config,
                   nest_config,
-                  sht31_config,                  
+                  sht31_config,
                   ]
 
 SUPPORTED_THERMOSTATS = {

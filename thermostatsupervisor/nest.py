@@ -1,13 +1,10 @@
 """Nest integration."""
 # built-in libraries
-import importlib
 import json
-import os
 import time
 
 # thrid party libaries
-from google.cloud import storage
-# gapc = importlib.import_module("google-api-python-client")
+import nest  # python-google-nest
 
 # local imports
 from thermostatsupervisor import nest_config
@@ -28,28 +25,6 @@ class ThermostatClass(tc.ThermostatCommon):
             zone(str):  zone of thermostat.
             verbose(bool): debug flag.
         """
-        # GCloud project ID from env vars
-        # env_var_dict is populated during __init__
-        self.gcloud_project_id_key = "GCLOUD_PROJECT_ID"
-        self.project_name = env.get_env_variable(self.gcloud_project_id_key)["value"]
-        if self.project_name is None:
-            raise EnvironmentError("environment variable "
-                                   f"'{self.gcloud_project_id_key}' "
-                                   "is missing")
-        print(f"project_name={self.project_name}, type({type(self.project_name)})")
-
-        # get credentials from file
-        self.google_app_credential_env = "GOOGLE_APPLICATION_CREDENTIALS"
-        self.google_app_credential_file = ".//unique-yew-357112-e9b199b466f7.json"
-        env.set_env_variable(self.google_app_credential_env,
-                             self.google_app_credential_file)
-        
-        self.authenticate_implicit_with_adc(
-            project_id=self.project_name)
-
-        # get and display auth token from local hdd
-        self.get_auth_token()
-
         # construct the superclass
         # call both parent class __init__
         tc.ThermostatCommon.__init__(self)
@@ -58,6 +33,27 @@ class ThermostatClass(tc.ThermostatCommon):
         self.thermostat_type = nest_config.ALIAS
         self.verbose = verbose
 
+        # get credentials from file
+        self.google_app_credential_file = ".//credentials.json"
+        self.access_token_cache_file = ".//token_cache.json"
+        self.cache_period = 60
+        with open(self.google_app_credential_file,
+                  encoding="utf8") as json_file:
+            data = json.load(json_file)
+            print(f"DEBUG: credential file contents = {data}")
+            self.client_id = data["web"]["client_id"]
+            self.client_secret = data["web"]["client_secret"]
+            self.project_id = data["web"]["project_id"]
+
+        # establish thermostat object
+        self.thermostat_obj = nest.Nest(
+            client_id=self.client_id,
+            client_secret=self.client_secret,
+            project_id=self.project_id,
+            access_token_cache_file=self.access_token_cache_file,
+            reautherize_callback=self.reautherize_callback,
+            cache_period=self.cache_period)
+
         # configure zone info
         self.zone_number = int(zone)
         self.zone_name = self.get_zone_name()
@@ -65,65 +61,32 @@ class ThermostatClass(tc.ThermostatCommon):
         self.device_id = self.get_target_zone_id(self.zone_number)
         self.serial_number = None  # will be populated when unit is queried.
 
-    def authenticate_implicit_with_adc(self, project_id="your-google-cloud-project-id"):
-        """
-        When interacting with Google Cloud Client libraries, the library can auto-detect the
-        credentials to use.
-
-        // TODO(Developer):
-        //  1. Before running this sample,
-        //  set up ADC as described in https://cloud.google.com/docs/authentication/external/set-up-adc
-        //  2. Replace the project variable.
-        //  3. Make sure that the user account or service account that you are using
-        //  has the required permissions. For this sample, you must have "storage.buckets.list".
-        Args:
-            project_id: The project id of your Google Cloud project.
-        """
-
-        # This snippet demonstrates how to list buckets.
-        # *NOTE*: Replace the client created below with the client required for your application.
-        # Note that the credentials are not specified when constructing the client.
-        # Hence, the client library will look for credentials using ADC.
-        storage_client = storage.Client(project=project_id)
-        buckets = storage_client.list_buckets()
-        print("Buckets:")
-        for bucket in buckets:
-            print(bucket.name)
-        print("Listed all storage buckets.")
-
-    def get(self, nest_type="structures"):
-        '''
-            get method to fetch structures or devices
-        '''
-        url = base_nest_url + f"enterprises/{self.creds.project_id}/{nest_type}"
-        headers = {
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {self.access_token}",
-        }
-        rval = requests.get(url, headers=headers)
-        import pdb; pdb.set_trace()
-        return rval.json()
-
-    def get_auth_token(self):
-        """
-        """
-        with open(self.google_app_credential_file) as json_file:
-            data = json.load(json_file)
-            access_token = data['access_token']
-            # refresh_token = data['refresh_token']
-            print('access token:', access_token)
-            # print('refresh token:', refresh_token)
-
     def get_zone_name(self):
         """
-        Return the name associated with the zone number from metadata dict.
+        get zone name for specified zone number.
+        """
+        # Will trigger initial auth and fetch of data
+        devices = self.thermostat_obj.get_devices()
+        print(f"DEBUG: devices = {devices}")
+        self.zone_data = devices[self.zone]
+        return self.zone_data["name"]
+
+    def reautherize_callback(self, authorization_url):
+        """
+        re-authorization callback.
+
+        reautherize_callback should be set to a function with the signature
+        Callable[[str], str]] it will be called if the user needs to reautherize
+        the OAuth tokens. It will be passed the URL to go to, and need to have
+        the resulting URL after authentication returned.
 
         inputs:
-            None
+            authorization_url(str): authorization URL.
         returns:
-            (str) zone name
+
         """
-        return nest_config.metadata[self.zone_number]["zone_name"]
+        print(f"Please go to {authorization_url} and authorize access")
+        return input('Enter the full callback URL: ')
 
     def get_target_zone_id(self, zone=0):
         """
@@ -135,43 +98,6 @@ class ThermostatClass(tc.ThermostatCommon):
             (obj): PyKumo object
         """
         return 0
-
-    def get_kumocloud_thermostat_metadata(self, zone=None, debug=False):
-        """Get all thermostat meta data for zone from kumocloud.
-
-        inputs:
-            zone(): specified zone, if None will print all zones.
-            debug(bool): debug flag.
-        returns:
-            (dict): JSON dict
-        """
-        del debug  # unused
-        try:
-            units = list(self.get_indoor_units())  # will also query unit
-        except UnboundLocalError:  # patch for issue #205
-            util.log_msg("WARNING: Kumocloud refresh failed due to "
-                         "timeout", mode=util.BOTH_LOG, func_name=1)
-            time.sleep(10)
-            units = list(self.get_indoor_units())  # retry
-        util.log_msg(f"indoor unit serial numbers: {str(units)}",
-                     mode=util.DEBUG_LOG + util.CONSOLE_LOG, func_name=1)
-        for serial_number in units:
-            util.log_msg(
-                f"Unit {self.get_name(serial_number)}: address: "
-                f"{self.get_address(serial_number)} credentials: "
-                f"{self.get_credentials(serial_number)}",
-                mode=util.DEBUG_LOG +
-                util.CONSOLE_LOG,
-                func_name=1)
-        if zone is None:
-            # returned cached raw data for all zones
-            raw_json = self.get_raw_json()  # does not fetch results,
-        else:
-            # return cached raw data for specified zone
-            self.serial_number = units[zone]
-            raw_json = self.get_raw_json()[2]['children'][0][
-                'zoneTable'][units[zone]]
-        return raw_json
 
     def get_all_metadata(self, zone=None, debug=False):
         """Get all thermostat meta data for device_id from local API.
@@ -197,14 +123,10 @@ class ThermostatClass(tc.ThermostatCommon):
         del debug  # unused
         del zone  # unused
 
-        # refresh device status
-        self.device_id.update_status()
-        meta_data = {}
-        meta_data['status'] = self.device_id.get_status()
-        # pylint: disable=protected-access
-        meta_data['sensors'] = self.device_id._sensors
-        # pylint: disable=protected-access
-        meta_data['profile'] = self.device_id._profile
+        # Will trigger initial auth and fetch of data
+        devices = self.thermostat_obj.get_devices()
+        print(f"DEBUG: devices = {devices}")
+        meta_data = devices[self.zone]
         if parameter is None:
             return meta_data
         else:
@@ -250,12 +172,12 @@ class ThermostatZone(tc.ThermostatCommonZone):
         self.last_fetch_time = time.time() - 2 * self.fetch_interval_sec
 
         # switch config for this thermostat
-        self.system_switch_position[tc.ThermostatCommonZone.COOL_MODE] = "cool"
-        self.system_switch_position[tc.ThermostatCommonZone.HEAT_MODE] = "heat"
-        self.system_switch_position[tc.ThermostatCommonZone.OFF_MODE] = "off"
+        self.system_switch_position[tc.ThermostatCommonZone.COOL_MODE] = "COOL"
+        self.system_switch_position[tc.ThermostatCommonZone.HEAT_MODE] = "HEAT"
+        self.system_switch_position[tc.ThermostatCommonZone.OFF_MODE] = "OFF"
         self.system_switch_position[tc.ThermostatCommonZone.DRY_MODE] = "dry"
-        self.system_switch_position[tc.ThermostatCommonZone.AUTO_MODE] = "auto"
-        self.system_switch_position[tc.ThermostatCommonZone.FAN_MODE] = "vent"
+        self.system_switch_position[
+            tc.ThermostatCommonZone.AUTO_MODE] = "HEATCOOL"
 
         # zone info
         self.verbose = verbose
@@ -265,6 +187,46 @@ class ThermostatZone(tc.ThermostatCommonZone):
         self.zone_number = Thermostat_obj.zone_number
         self.zone_name = Thermostat_obj.zone_name
         self.zone_name = self.get_zone_name()
+
+    def get_trait(self, trait_name):
+        """
+        get thermostat trait.
+
+        inputs:
+            trait_name(str): trait name
+            ref: https://developers.google.com/nest/device-access/traits
+        returns:
+            (str) trait value
+        """
+        # will reuse the cached result unless cache_period has elapsed
+        print(f"DEBUG: querying trait {trait_name}")
+        devices = nest.Device.filter_for_trait(self.devices, trait_name)
+        # will reuse the cached result unless cache_period has elapsed
+        trait_value = devices[self.zone_number].traits[trait_name]
+        print(f"trait '{trait_name}'= {trait_value}")
+        return trait_value
+
+    def set_trait(self, trait_name, trait_value):
+        """
+        set thermostat trait.
+
+        inputs:
+            trait_name(str): trait name
+            trait_value(str): trait value
+            ref: https://developers.google.com/nest/device-access/traits
+        returns:
+            (str) trait value
+        """
+        # will reuse the cached result unless cache_period has elapsed
+        print(f"setting trait '{trait_name}'= {trait_value}...")
+        devices = nest.Device.filter_for_trait(self.devices, trait_name)
+        # will trigger a request to POST the cmd
+        devices[self.zone_number].send_cmd(
+                trait_name, json.loads(trait_value))
+        # verify trait was set
+        trait_value = devices[self.zone_number].traits[trait_name]
+        print(f"verifying trait '{trait_name}'= {trait_value}...")
+        return trait_value
 
     def get_zone_name(self):
         """
@@ -276,7 +238,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
             (str) zone name
         """
         self.refresh_zone_info()
-        zone_name = self.device_id.get_name()
+        zone_name = self.get_trait("Info")
         # update metadata dict
         nest_config.metadata[self.zone_number]["zone_name"] = zone_name
         return zone_name
@@ -291,7 +253,8 @@ class ThermostatZone(tc.ThermostatCommonZone):
             (float): indoor temp in deg F.
         """
         self.refresh_zone_info()
-        return util.c_to_f(self.device_id.get_current_temperature())
+        return util.c_to_f(
+            self.get_trait("Temperature")["ambientTemperatureCelsius"])
 
     def get_display_humidity(self) -> (float, None):
         """
@@ -303,7 +266,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
             (float, None): indoor humidity in %RH, None if not supported.
         """
         self.refresh_zone_info()
-        return self.device_id.get_current_humidity()
+        return self.get_trait("Humidity")["ambientHumidityPercent"]
 
     def get_is_humidity_supported(self) -> bool:  # used
         """
@@ -327,7 +290,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
             (int) heat mode, 1=enabled, 0=disabled.
         """
         self.refresh_zone_info()
-        return int(self.device_id.get_mode() ==
+        return int(self.get_trait("ThermostatMode")["mode"] ==
                    self.system_switch_position[
                        tc.ThermostatCommonZone.HEAT_MODE])
 
@@ -341,7 +304,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
             (int): cool mode, 1=enabled, 0=disabled.
         """
         self.refresh_zone_info()
-        return int(self.device_id.get_mode() ==
+        return int(self.get_trait("ThermostatMode")["mode"] ==
                    self.system_switch_position[
                        tc.ThermostatCommonZone.COOL_MODE])
 
@@ -355,7 +318,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
             (int): dry mode, 1=enabled, 0=disabled.
         """
         self.refresh_zone_info()
-        return int(self.device_id.get_mode() ==
+        return int(self.get_trait("ThermostatMode")["mode"] ==
                    self.system_switch_position[
                        tc.ThermostatCommonZone.DRY_MODE])
 
@@ -368,7 +331,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         returns:
             (int): fan mode, 1=enabled, 0=disabled.
         """
-        return int(self.get_system_switch_position() ==
+        return int(self.get_trait("ThermostatMode")["mode"] ==
                    self.system_switch_position[
                        tc.ThermostatCommonZone.FAN_MODE])
 
@@ -382,7 +345,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
             (int): auto mode, 1=enabled, 0=disabled.
         """
         self.refresh_zone_info()
-        return int(self.device_id.get_mode() ==
+        return int(self.get_trait("ThermostatMode")["mode"] ==
                    self.system_switch_position[
                        tc.ThermostatCommonZone.AUTO_MODE])
 
@@ -395,54 +358,35 @@ class ThermostatZone(tc.ThermostatCommonZone):
         returns:
             (int): off mode, 1=enabled, 0=disabled.
         """
-        return int(self.get_system_switch_position() ==
+        return int(self.get_trait("ThermostatMode")["mode"] ==
                    self.system_switch_position[
                        tc.ThermostatCommonZone.OFF_MODE])
 
     def is_heating(self):
         """Return 1 if heating relay is active, else 0."""
-        return int(self.is_heat_mode() and self.is_power_on() and
-                   self.get_heat_setpoint_raw() > self.get_display_temp())
+        return int(self.get_trait("ThermostatHvac")["status"] == "HEATING")
 
     def is_cooling(self):
         """Return 1 if cooling relay is active, else 0."""
-        return int(self.is_cool_mode() and self.is_power_on() and
-                   self.get_cool_setpoint_raw() < self.get_display_temp())
-
-    def is_drying(self):
-        """Return 1 if drying relay is active, else 0."""
-        return int(self.is_dry_mode() and self.is_power_on() and
-                   self.get_cool_setpoint_raw() < self.get_display_temp())
+        return int(self.get_trait("ThermostatHvac")["status"] == "COOLING")
 
     def is_auto(self):
         """Return 1 if auto relay is active, else 0."""
-        return int(self.is_auto_mode() and self.is_power_on() and
-                   (self.get_cool_setpoint_raw() < self.get_display_temp() or
-                    self.get_heat_setpoint_raw() > self.get_display_temp()))
+        return int(self.get_trait("ThermostatMode")["mode"] == "HEATCOOL")
 
     def is_fanning(self):
         """Return 1 if fan relay is active, else 0."""
-        return int(self.is_fan_on() and self.is_power_on())
+        return int(self.get_trait("Fan")["timerMode"] == "ON")
 
     def is_power_on(self):
         """Return 1 if power relay is active, else 0."""
         self.refresh_zone_info()
-        return int(self.device_id.get_mode() != 'off')
+        return int(self.get_trait("Connectivity")["status"] == "ONLINE")
 
     def is_fan_on(self):
         """Return 1 if fan relay is active, else 0."""
         self.refresh_zone_info()
-        return int(self.device_id.get_fan_speed() != 'off')
-
-    def is_defrosting(self):
-        """Return 1 if defrosting is active, else 0."""
-        self.refresh_zone_info()
-        return int(self.device_id.get_status('defrost') == "True")
-
-    def is_standby(self):
-        """Return 1 if standby is active, else 0."""
-        self.refresh_zone_info()
-        return int(self.device_id.get_standby())
+        return int(self.get_trait("Fan")["timerMode"] == "ON")
 
     def get_heat_setpoint_raw(self) -> int:  # used
         """
@@ -454,7 +398,8 @@ class ThermostatZone(tc.ThermostatCommonZone):
             (int): heating set point in degrees F.
         """
         self.refresh_zone_info()
-        return util.c_to_f(self.device_id.get_heat_setpoint())
+        return util.c_to_f(
+            self.get_trait("ThermostatTemperatureSetpoint")["heatCelsius"])
 
     def get_heat_setpoint(self) -> str:
         """Return heat setpoint with units as a string."""
@@ -492,7 +437,8 @@ class ThermostatZone(tc.ThermostatCommonZone):
             (int): cooling set point in degrees F.
         """
         self.refresh_zone_info()
-        return util.c_to_f(self.device_id.get_cool_setpoint())
+        return util.c_to_f(
+            self.get_trait("ThermostatTemperatureSetpoint")["coolCelsius"])
 
     def get_cool_setpoint(self) -> str:
         """Return cool setpoint with units as a string."""
