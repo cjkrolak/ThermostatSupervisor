@@ -221,56 +221,109 @@ class ThermostatClass(pyhtcc.PyHTCC, tc.ThermostatCommon):
 
         Method overridden from base class to add exception handling.
         inputs:
-            None
+            None.
         returns:
             list of zone info.
         """
-        return_val = []
-        while True:  # connection retries
-            try:
-                return_val = super().get_zones_info()
-            except (pyhtcc.requests.exceptions.ConnectionError,
-                    pyhtcc.pyhtcc.UnexpectedError,
-                    pyhtcc.pyhtcc.NoZonesFoundError,
-                    pyhtcc.pyhtcc.UnauthorizedError,
-                    ) as ex:
-                # force re-authenticating
-                tc.connection_ok = False
-                tc.connection_fail_cnt += 1
-                print(traceback.format_exc())
-                print(f"{util.get_function_name()}: WARNING: {ex}")
+        return get_zones_info_with_retries(super().get_zones_info,
+                                           self.thermostat_type,
+                                           self.zone_name)
 
-                # warning email
-                time_now = (datetime.datetime.now().
-                            strftime("%Y-%m-%d %H:%M:%S"))
+
+def get_zones_info_with_retries(func, thermostat_type, zone_name) -> list:
+    """
+    Return a list of dicts corresponding with each one corresponding to a
+    particular zone.
+
+    Method overridden from base class to add exception handling.
+    inputs:
+        func(callable): function to override.
+        thermostat_type(str): thermostat_type
+        zone_name(str): zone name
+    returns:
+        list of zone info.
+    """
+    number_of_retries = 11
+    trial_number = 1
+    retry_delay_sec = 60
+    return_val = []
+    while trial_number < number_of_retries:
+        time_now = (datetime.datetime.now().
+                    strftime("%Y-%m-%d %H:%M:%S"))
+        try:
+            return_val = func()
+        except (pyhtcc.requests.exceptions.ConnectionError,
+                pyhtcc.pyhtcc.UnexpectedError,
+                pyhtcc.pyhtcc.NoZonesFoundError,
+                pyhtcc.pyhtcc.UnauthorizedError,
+                ) as ex:
+            # force re-authenticating
+            tc.connection_ok = False
+            tc.connection_fail_cnt += 1
+
+            util.log_msg(traceback.format_exc(),
+                         mode=util.BOTH_LOG,
+                         func_name=1)
+            msg_suffix = (
+                ["",
+                    " waiting {retry_delay_sec} seconds and then " +
+                    "retrying..."][trial_number < number_of_retries])
+            util.log_msg(f"{time_now}: exception during get_zones"
+                         f"_info, on trial {trial_number} of "
+                         f"{number_of_retries}, probably a"
+                         f" connection issue"
+                         f"{msg_suffix}",
+                         mode=util.BOTH_LOG, func_name=1)
+
+            # warning email
+            email_notification.send_email_alert(
+                subject=(f"{thermostat_type} zone "
+                         f"{zone_name}: "
+                         "intermittent error "
+                         "during get_zones_info()"),
+                body=(f"{util.get_function_name()}: trial "
+                      f"{tc.connection_fail_cnt} of "
+                      f"{tc.max_connection_fail_cnt} at "
+                      f"{time_now}\n{traceback.format_exc()}")
+                )
+
+            # exhausted retries, raise exception
+            if tc.connection_fail_cnt > tc.max_connection_fail_cnt:
+                print(f"ERRROR: exhausted {tc.max_connection_fail_cnt} "
+                      "retries for get_zones_info()")
+                raise ex
+
+            # delay in between retries
+            if trial_number < number_of_retries:
+                time.sleep(retry_delay_sec)
+            trial_number += 1
+            retry_delay_sec *= 2  # double each time.
+
+        except Exception as ex:
+            util.log_msg(traceback.format_exc(),
+                         mode=util.BOTH_LOG, func_name=1)
+            print(f"ERROR: unhandled exception {ex} in get_zones_info()")
+            raise ex
+        else:
+            # good response
+            tc.connection_ok = True
+            tc.connection_fail_cnt = 0  # reset
+
+            # log the mitigated failure
+            if trial_number > 1:
                 email_notification.send_email_alert(
-                    subject=(f"{self.thermostat_type} zone "
-                             f"{self.zone_name}: "
-                             "intermittent error "
-                             "during get_zones_info()"),
+                    subject=(f"{thermostat_type} zone "
+                             f"{zone_name}: "
+                             "intermittent connection error "
+                             "during get_zones_info"),
                     body=(f"{util.get_function_name()}: trial "
-                          f"{tc.connection_fail_cnt} of "
-                          f"{tc.max_connection_fail_cnt} at "
-                          f"{time_now}\n{traceback.format_exc()}")
+                          f"{trial_number} of {number_of_retries} at "
+                          f"{time_now}")
                     )
 
-                # exhausted retries, raise exception
-                if tc.connection_fail_cnt > tc.max_connection_fail_cnt:
-                    print(f"ERRROR: exhausted {tc.max_connection_fail_cnt} "
-                          "retries for get_zones_info()")
-                    raise ex
-            except Exception as ex:
-                util.log_msg(traceback.format_exc(),
-                             mode=util.BOTH_LOG, func_name=1)
-                print(f"ERROR: unhandled exception {ex} in get_zones_info()")
-                raise ex
-            else:
-                # good response
-                tc.connection_ok = True
-                tc.connection_fail_cnt = 0  # reset
-                break
+            break
 
-        return return_val
+    return return_val
 
 
 class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
@@ -292,6 +345,10 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
                 f"device_id is type {type(Thermostat_obj.device_id)}, "
                 f"expected type 'int'")
 
+        # thermostat type, needs to be defined prior to pyhtcc.Zone.__init__
+        self.verbose = verbose
+        self.thermostat_type = honeywell_config.ALIAS
+
         # call both parent class __init__
         self.args = [Thermostat_obj.device_id, Thermostat_obj]
         pyhtcc.Zone.__init__(self, *self.args)
@@ -304,8 +361,6 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
         # TODO: what mode is 0 on Honeywell?
 
         # zone info
-        self.verbose = verbose
-        self.thermostat_type = honeywell_config.ALIAS
         self.device_id = Thermostat_obj.device_id
         self.zone_name = Thermostat_obj.zone_name
         self.zone_name = self.get_zone_name()
@@ -699,8 +754,9 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
             util.log_msg(
                 f"cool setpoint={self.get_cool_setpoint()}",
                 mode=util.BOTH_LOG)
-            # util.log_msg("cool setpoint raw=%s" %
-            #              zone.get_cool_setpoint_raw(), mode=util.BOTH_LOG)
+            # util.log_msg("cool setpoint raw="
+            #              f"{zone.get_cool_setpoint_raw()}",
+            #              mode=util.BOTH_LOG)
             util.log_msg(
                 f"schedule cool sp={self.get_schedule_cool_sp()}",
                 mode=util.BOTH_LOG)
@@ -730,68 +786,17 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
             None, populates self.zone_info dict.
         """
         del force_refresh  # not used
-        number_of_retries = 11
-        trial_number = 1
-        retry_delay_sec = 60
-        while trial_number < number_of_retries:
-            time_now = (datetime.datetime.now().
-                        strftime("%Y-%m-%d %H:%M:%S"))
-            try:
-                all_zones_info = self.pyhtcc.get_zones_info()
-            except pyhtcc.requests.exceptions.ConnectionError:
-                util.log_msg(traceback.format_exc(),
-                             mode=util.BOTH_LOG,
-                             func_name=1)
-                msg_suffix = (
-                    ["",
-                     " waiting {retry_delay_sec} seconds and then " +
-                     "retrying..."][trial_number < number_of_retries])
-                util.log_msg(f"{time_now}: exception during refresh_zone"
-                             f"_info, on trial {trial_number} of "
-                             f"{number_of_retries}, probably a"
-                             f" connection issue"
-                             f"{msg_suffix}",
-                             mode=util.BOTH_LOG, func_name=1)
-                if trial_number < number_of_retries:
-                    time.sleep(retry_delay_sec)
-                trial_number += 1
-                retry_delay_sec *= 2  # double each time.
-            except Exception as ex:
-                util.log_msg(traceback.format_exc(),
-                             mode=util.BOTH_LOG, func_name=1)
-                print(f"ERROR: unhandled exception {ex} in "
-                      "refresh_zone_info()")
-                raise ex
-            else:
-                # log the mitigated failure
-                if trial_number > 1:
-                    email_notification.send_email_alert(
-                        subject=(f"{self.thermostat_type} zone "
-                                 f"{self.zone_name}: "
-                                 "intermittent connection error "
-                                 "during refresh zone"),
-                        body=(f"{util.get_function_name()}: trial "
-                              f"{trial_number} of {number_of_retries} at "
-                              f"{time_now}")
-                        )
-                for zone_data in all_zones_info:
-                    if zone_data['DeviceID'] == self.device_id:
-                        pyhtcc.logger.debug(f"Refreshed zone info for \
-                                           {self.device_id}")
-                        self.zone_info = zone_data
-                        self.last_fetch_time = time.time()
-                        return
-
-        # log fatal failure
-        email_notification.send_email_alert(
-            subject=(f"{self.thermostat_type} zone {self.zone_name}: "
-                     "fatal connection error during refresh zone"),
-            body=(f"{util.get_function_name()}: trial {trial_number} of "
-                  f"{number_of_retries} at {time_now}"))
-        # raise pyhtcc.ZoneNotFoundError(f"Missing device: {self.device_id}")
-
-        # trigger a forced reconnection
-        tc.connection_ok = False
+        all_zones_info = get_zones_info_with_retries(
+            self.pyhtcc.get_zones_info, self.thermostat_type,
+            self.zone_name)
+        # all_zones_info = self.pyhtcc.get_zones_info()
+        for zone_data in all_zones_info:
+            if zone_data['DeviceID'] == self.device_id:
+                pyhtcc.logger.debug(f"Refreshed zone info for \
+                                    {self.device_id}")
+                self.zone_info = zone_data
+                self.last_fetch_time = time.time()
+                return
 
 
 # add default requests session default timeout to prevent TimeoutExceptions
