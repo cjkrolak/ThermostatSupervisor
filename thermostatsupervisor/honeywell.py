@@ -349,6 +349,9 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
         self.verbose = verbose
         self.thermostat_type = honeywell_config.ALIAS
 
+        # preset zone_name for pyhtcc constructor
+        self.zone_name = Thermostat_obj.zone_name
+
         # call both parent class __init__
         self.args = [Thermostat_obj.device_id, Thermostat_obj]
         pyhtcc.Zone.__init__(self, *self.args)
@@ -362,7 +365,6 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
 
         # zone info
         self.device_id = Thermostat_obj.device_id
-        self.zone_name = Thermostat_obj.zone_name
         self.zone_name = self.get_zone_name()
 
         # runtime parameter defaults
