@@ -76,6 +76,26 @@ def get_env_variable(env_key):
     return return_buffer
 
 
+def set_env_variable(key, val):
+    """
+    Set environment variable.
+
+    inputs:
+        key(str): env var name
+        val(str, int, bool): env value
+    returns:
+        None
+    """
+    if val is None:
+        raise AttributeError("environment value cannot be none")
+    if key is None:
+        raise AttributeError("environment key cannot be none")
+    elif not isinstance(key, str):
+        raise AttributeError(f"environment key '{key}' must be a string, "
+                             f"is type {type(key)}")
+    os.environ[key] = str(val)
+
+
 def load_all_env_variables():
     """
     Load all environment variables into a dictionary.

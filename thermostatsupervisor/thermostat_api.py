@@ -14,6 +14,7 @@ from thermostatsupervisor import honeywell_config
 from thermostatsupervisor import kumocloud_config
 from thermostatsupervisor import kumolocal_config
 from thermostatsupervisor import mmm_config
+from thermostatsupervisor import nest_config
 from thermostatsupervisor import sht31_config
 from thermostatsupervisor import environment as env
 from thermostatsupervisor import utilities as util
@@ -29,7 +30,8 @@ config_modules = [blink_config,
                   kumocloud_config,
                   kumolocal_config,
                   mmm_config,
-                  sht31_config
+                  nest_config,
+                  sht31_config,
                   ]
 
 SUPPORTED_THERMOSTATS = {
