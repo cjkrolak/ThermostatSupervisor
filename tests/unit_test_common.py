@@ -32,7 +32,7 @@ ENABLE_MMM_TESTS = False  # mmm50 is local net only
 ENABLE_SHT31_TESTS = True  # sht31 can fail on occasion
 ENABLE_BLINK_TESTS = True and \
     not env.is_azure_environment()  # Blink cameras, TODO #638
-
+ENABLE_NEST_TESTS = False  # nest not yet fully supported
 
 # generic argv list for unit testing
 unit_test_emulator = emulator_config.argv

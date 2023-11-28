@@ -114,7 +114,7 @@ class SuperviseIntegrationTest(IntegrationTest,
 class PerformanceIntegrationTest(IntegrationTest,
                                  utc.PerformanceIntegrationTest):
     """
-    Test performance of in mmm.py.
+    Test performance of mmm.py.
     """
 
     def setUp(self):
