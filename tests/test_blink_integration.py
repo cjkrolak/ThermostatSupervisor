@@ -69,7 +69,7 @@ class SuperviseIntegrationTest(IntegrationTest,
 class PerformanceIntegrationTest(IntegrationTest,
                                  utc.PerformanceIntegrationTest):
     """
-    Test performance of in honeywell.py.
+    Test performance of blink.py.
     """
     def setUp(self):
         super().setUp()

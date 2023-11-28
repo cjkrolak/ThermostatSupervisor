@@ -72,7 +72,7 @@ class SuperviseIntegrationTest(IntegrationTest,
 class PerformanceIntegrationTest(IntegrationTest,
                                  utc.PerformanceIntegrationTest):
     """
-    Test performance of in kumolocal.py.
+    Test performance of kumolocal.py.
     """
 
     def setUp(self):
