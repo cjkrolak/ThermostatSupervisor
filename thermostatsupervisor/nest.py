@@ -4,6 +4,8 @@ import json
 import time
 
 # thrid party libaries
+# note this code uses python-google-nest package.
+# Installing python-nest package will corrupt the python-google-nest install
 import nest  # python-google-nest
 
 # local imports
@@ -68,7 +70,7 @@ class ThermostatClass(tc.ThermostatCommon):
         # Will trigger initial auth and fetch of data
         devices = self.thermostat_obj.get_devices()
         print(f"DEBUG: devices = {devices}")
-        self.zone_data = devices[self.zone]
+        self.zone_data = devices[self.zone_number]
         return self.zone_data["name"]
 
     def reautherize_callback(self, authorization_url):
