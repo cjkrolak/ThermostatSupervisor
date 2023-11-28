@@ -66,7 +66,7 @@ class SuperviseIntegrationTest(IntegrationTest,
 class PerformanceIntegrationTest(IntegrationTest,
                                  utc.PerformanceIntegrationTest):
     """
-    Test performance of in kumocloud.py.
+    Test performance of kumocloud.py.
     """
 
     def setUp(self):

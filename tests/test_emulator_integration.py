@@ -68,7 +68,7 @@ class SuperviseIntegrationTest(IntegrationTest,
 class PerformanceIntegrationTest(IntegrationTest,
                                  utc.PerformanceIntegrationTest):
     """
-    Test performance of in emulator.py.
+    Test performance of emulator.py.
     """
 
     def setUp(self):
