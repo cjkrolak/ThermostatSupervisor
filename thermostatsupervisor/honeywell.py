@@ -243,8 +243,9 @@ def get_zones_info_with_retries(func, thermostat_type, zone_name) -> list:
     returns:
         list of zone info.
     """
-    number_of_retries = 11
-    trial_number = 1
+    initial_trial_number = 1
+    trial_number = initial_trial_number
+    number_of_retries = 10
     retry_delay_sec = 60
     return_val = []
     while trial_number < number_of_retries:
@@ -260,7 +261,7 @@ def get_zones_info_with_retries(func, thermostat_type, zone_name) -> list:
                 ) as ex:
             # force re-authenticating
             tc.connection_ok = False
-            tc.connection_fail_cnt += 1
+            trial_number += 1
 
             util.log_msg(f"WARNING: exception on trial {trial_number}",
                          mode=util.BOTH_LOG,
@@ -284,21 +285,25 @@ def get_zones_info_with_retries(func, thermostat_type, zone_name) -> list:
             email_notification.send_email_alert(
                 subject=(f"{thermostat_type} zone "
                          f"{zone_name}: "
-                         f"intermittent error {util.get_function_name()}"),
+                         "intermittent error during "
+                         f"{util.get_function_name()}"),
                 body=(f"{util.get_function_name()}: trial "
-                      f"{tc.connection_fail_cnt} of "
-                      f"{tc.max_connection_fail_cnt} at "
+                      f"{trial_number} of "
+                      f"{number_of_retries} at "
                       f"{time_now}\n{traceback.format_exc()}")
                 )
 
             # exhausted retries, raise exception
-            if tc.connection_fail_cnt > tc.max_connection_fail_cnt:
-                print(f"ERRROR: exhausted {tc.max_connection_fail_cnt} "
-                      f"retries for {util.get_function_name()}")
+            if trial_number > number_of_retries:
+                util.log_msg(f"ERRROR: exhausted {number_of_retries} "
+                             f"retries for {util.get_function_name()}",
+                             mode=util.BOTH_LOG, func_name=1)
                 raise ex
 
             # delay in between retries
             if trial_number < number_of_retries:
+                util.log_msg(f"Delaying {retry_delay_sec} prior to retry...",
+                             mode=util.BOTH_LOG, func_name=1)
                 time.sleep(retry_delay_sec)
             trial_number += 1
             retry_delay_sec *= 2  # double each time.
@@ -306,20 +311,21 @@ def get_zones_info_with_retries(func, thermostat_type, zone_name) -> list:
         except Exception as ex:
             util.log_msg(traceback.format_exc(),
                          mode=util.BOTH_LOG, func_name=1)
-            print(f"ERROR: unhandled exception {ex} in "
-                  f"{util.get_function_name()}")
+            util.log_msg(f"ERROR: unhandled exception {ex} in "
+                         f"{util.get_function_name()}",
+                         mode=util.BOTH_LOG, func_name=1)
             raise ex
         else:
             # good response
             tc.connection_ok = True
-            tc.connection_fail_cnt = 0  # reset
+            trial_number = initial_trial_number  # reset
 
             # log the mitigated failure
-            if trial_number > 1:
+            if trial_number > initial_trial_number:
                 email_notification.send_email_alert(
                     subject=(f"{thermostat_type} zone "
                              f"{zone_name}: "
-                             "intermittent connection error "
+                             "(mitigated) intermittent connection error "
                              f"during {util.get_function_name()}"),
                     body=(f"{util.get_function_name()}: trial "
                           f"{trial_number} of {number_of_retries} at "
