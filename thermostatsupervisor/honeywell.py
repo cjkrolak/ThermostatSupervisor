@@ -235,7 +235,6 @@ def get_zones_info_with_retries(func, thermostat_type, zone_name) -> list:
     Return a list of dicts corresponding with each one corresponding to a
     particular zone.
 
-    Method overridden from base class to add exception handling.
     inputs:
         func(callable): function to override.
         thermostat_type(str): thermostat_type
@@ -245,7 +244,7 @@ def get_zones_info_with_retries(func, thermostat_type, zone_name) -> list:
     """
     initial_trial_number = 1
     trial_number = initial_trial_number
-    number_of_retries = 10
+    number_of_retries = 5
     retry_delay_sec = 60
     return_val = []
     while trial_number < number_of_retries:
@@ -259,9 +258,9 @@ def get_zones_info_with_retries(func, thermostat_type, zone_name) -> list:
                 pyhtcc.pyhtcc.UnauthorizedError,
                 pyhtcc.requests.exceptions.HTTPError,
                 ) as ex:
-            # force re-authenticating
+
+            # set flag to force re-authentication
             tc.connection_ok = False
-            trial_number += 1
 
             util.log_msg(f"WARNING: exception on trial {trial_number}",
                          mode=util.BOTH_LOG,
@@ -296,29 +295,28 @@ def get_zones_info_with_retries(func, thermostat_type, zone_name) -> list:
             # exhausted retries, raise exception
             if trial_number > number_of_retries:
                 util.log_msg(f"ERRROR: exhausted {number_of_retries} "
-                             f"retries for {util.get_function_name()}",
+                             f"retries during {util.get_function_name()}",
                              mode=util.BOTH_LOG, func_name=1)
                 raise ex
 
             # delay in between retries
-            if trial_number < number_of_retries:
+            if trial_number <= number_of_retries:
                 util.log_msg(f"Delaying {retry_delay_sec} prior to retry...",
                              mode=util.BOTH_LOG, func_name=1)
                 time.sleep(retry_delay_sec)
+
+            # increment retry parameters
             trial_number += 1
             retry_delay_sec *= 2  # double each time.
 
         except Exception as ex:
             util.log_msg(traceback.format_exc(),
                          mode=util.BOTH_LOG, func_name=1)
-            util.log_msg(f"ERROR: unhandled exception {ex} in "
+            util.log_msg(f"ERROR: unhandled exception {ex} during "
                          f"{util.get_function_name()}",
                          mode=util.BOTH_LOG, func_name=1)
             raise ex
-        else:
-            # good response
-            tc.connection_ok = True
-            trial_number = initial_trial_number  # reset
+        else:  # good response
 
             # log the mitigated failure
             if trial_number > initial_trial_number:
@@ -332,7 +330,10 @@ def get_zones_info_with_retries(func, thermostat_type, zone_name) -> list:
                           f"{time_now}")
                     )
 
-            break
+            # reset retry parameters
+            tc.connection_ok = True
+
+            break  # exit while loop
 
     return return_val
 
