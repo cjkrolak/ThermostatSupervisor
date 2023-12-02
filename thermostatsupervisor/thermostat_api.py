@@ -164,7 +164,7 @@ class UserInputs(util.UserInputs):
                     "valid_range": range(0, 10),
                     "sflag": "-d",
                     "lflag": "--" + input_flds.tolerance,
-                    "help": "tolerance (deg F)",
+                    "help": "tolerance (°F)",
                     "required": False,
                     },
                 input_flds.target_mode: {

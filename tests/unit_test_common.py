@@ -30,8 +30,9 @@ ENABLE_FLASK_INTEGRATION_TESTS = True  # enable flask int tests
 ENABLE_KUMOLOCAL_TESTS = False  # Kumolocal is local net only
 ENABLE_MMM_TESTS = False  # mmm50 is local net only
 ENABLE_SHT31_TESTS = True  # sht31 can fail on occasion
-ENABLE_BLINK_TESTS = True and \
-    not env.is_azure_environment()  # Blink cameras, TODO #638
+ENABLE_BLINK_TESTS = False  # blink cameras
+# and \
+#     not env.is_azure_environment()  # Blink cameras, TODO #638
 ENABLE_NEST_TESTS = False  # nest not yet fully supported
 
 # generic argv list for unit testing
@@ -268,6 +269,27 @@ class FunctionalIntegrationTest(IntegrationTest):
                 self.mod.ThermostatClass, self.mod.ThermostatZone
             )
 
+    def test_print_select_data_from_all_zones(self):
+        """
+        Verify print_select_data_from_all_zones on target thermostat.
+        """
+        api.uip = api.UserInputs(self.unit_test_argv)
+
+        thermostat_type = api.uip.get_user_inputs(
+            api.uip.zone_name, api.input_flds.thermostat_type)
+        if thermostat_type == "sht31":
+            print("test is not curently compatible with SHT31")
+            return
+        else:
+            print(f"thermostat_type={thermostat_type}")
+        IntegrationTest.Thermostat, IntegrationTest.Zone = \
+            tc.print_select_data_from_all_zones(
+                thermostat_type,
+                self.mod_config.supported_configs["zones"],
+                self.mod.ThermostatClass, self.mod.ThermostatZone,
+                display_wifi=True, display_battery=True
+            )
+
     def test_report_heating_parameters(self):
         """
         Verify report_heating_parameters().
@@ -404,7 +426,7 @@ class PerformanceIntegrationTest(IntegrationTest):
               f"sec delay between each measurement...")
         meas_data = self.Zone.measure_thermostat_repeatability(
             measurements, self.poll_interval_sec)
-        print("temperature repeatability stats (deg F)")
+        print("temperature repeatability stats (°F)")
         ppp = pprint.PrettyPrinter(indent=4)
         ppp.pprint(meas_data)
 

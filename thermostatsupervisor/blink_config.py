@@ -8,7 +8,13 @@ MAX_HEAT_SETPOINT = 68
 MIN_COOL_SETPOINT = 70
 
 MEASUREMENTS = 1  # number of MEASUREMENTS to average
+
+# API field names
 API_TEMPF_MEAN = "temperature_calibrated"
+API_WIFI_STRENGTH = "wifi_strength"
+API_BATTERY_VOLTAGE = "battery_voltage"
+API_BATTERY_STATUS = "battery"
+
 
 # all environment variables specific to this thermostat type
 env_variables = {

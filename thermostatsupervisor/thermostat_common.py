@@ -118,7 +118,7 @@ class ThermostatCommonZone():
         self.revert_deviations = True  # Revert deviation
         self.revert_all_deviations = False  # Revert only energy-wasting events
         self.temperature_is_deviated = False  # temp deviated from schedule
-        self.display_temp = None  # current temperature in deg F
+        self.display_temp = None  # current temperature in °F
         self.display_humidity = None  # current humidity in %RH
         self.humidity_is_available = False  # humidity supported flag
         self.hold_mode = False  # True = not following schedule
@@ -473,7 +473,7 @@ class ThermostatCommonZone():
 
         This will also attempt to turn the thermostat to 'Cool'
         inputs:
-            temp(int): desired temperature in deg F.
+            temp(int): desired temperature in °F.
         returns:
             None
         """
@@ -490,7 +490,7 @@ class ThermostatCommonZone():
 
         This will also attempt to turn the thermostat to 'Cool'
         inputs:
-            temp(int): desired temperature in deg F.
+            temp(int): desired temperature in °F.
         returns:
             None
         """
@@ -599,6 +599,22 @@ class ThermostatCommonZone():
     def get_temporary_hold_until_time(self) -> int:  # noqa R0201
         """Return the 'TemporaryHoldUntilTime' """
         return util.BOGUS_INT  # placeholder
+
+    def get_wifi_strength(self) -> float:  # noqa R0201
+        """Return the wifi signal strength in dBm."""
+        return float(util.BOGUS_INT)  # placeholder
+
+    def get_wifi_status(self) -> bool:  # noqa R0201
+        """Return the wifi connection status."""
+        return util.BOGUS_BOOL  # placeholder
+
+    def get_battery_voltage(self) -> float:  # noqa R0201
+        """Return the battery voltage in volts."""
+        return float(util.BOGUS_INT)  # placeholder
+
+    def get_battery_status(self) -> bool:  # noqa R0201
+        """Return the battery status."""
+        return util.BOGUS_BOOL  # placeholder
 
     def refresh_zone_info(self, force_refresh=False) -> None:
         """
@@ -906,7 +922,7 @@ class ThermostatCommonZone():
         Revert the temperature deviation.
 
         inputs:
-            setpoint(int or float): setpoint in deg F
+            setpoint(int or float): setpoint in °F
             msg(str): status message to display.
         returns:
             None
@@ -1136,22 +1152,26 @@ def thermostat_basic_checkout(thermostat_type, zone,
     return Thermostat, Zone
 
 
-def thermostat_get_all_zone_temps(thermostat_type, zone_lst,
-                                  ThermostatClass, ThermostatZone):
+def print_select_data_from_all_zones(thermostat_type, zone_lst,
+                                     ThermostatClass, ThermostatZone,
+                                     display_wifi=True,
+                                     display_battery=True):
     """
-    Perform basic Thermostat checkout.
+    Cycle through all zones and print out select data.
 
     inputs:
         tstat(int):  thermostat_type
         zone_lst(list): list of zones
         ThermostatClass(cls): Thermostat class
         ThermostatZone(cls): ThermostatZone class
+        display_wifi(bool): display wifi status
+        display_battery(bool): display battery status
     returns:
         Thermostat(obj): Thermostat object
         Zone(obj):  Zone object
     """
     util.log_msg.debug = False  # debug mode unset
-    print("\nquerying all zone temps:")
+    print("\nquerying select data for all zones:")
 
     for zone in zone_lst:
         # create class instances
@@ -1159,9 +1179,33 @@ def thermostat_get_all_zone_temps(thermostat_type, zone_lst,
                                                       ThermostatClass,
                                                       ThermostatZone,
                                                       verbose=False)
-
+        # zone temperature
         display_temp = Zone.get_display_temp()
-        zone_name = Zone.zone_name
-        print(f"zone: {zone}, name: {zone_name}, temp: {display_temp}")
+        msg = f"zone: {zone}, name: {Zone.zone_name}, temp: {display_temp}"
+
+        # zone wifi strength
+        if display_wifi:
+            wifi_strength = Zone.get_wifi_strength()
+            wifi_status_display = {
+                False: "weak",
+                True: "ok",
+                util.BOGUS_BOOL: "N/A",
+            }
+            wifi_status = wifi_status_display[Zone.get_wifi_status()]
+            msg += f", wifi strength: {wifi_strength} dBm ({wifi_status})"
+
+        # zone battery stats
+        if display_battery:
+            battery_voltage = Zone.get_battery_voltage()
+            battery_status_display = {
+                False: "bad",
+                True: "ok",
+                util.BOGUS_BOOL: "N/A",
+            }
+            battery_status = battery_status_display[Zone.get_battery_status()]
+            msg += (f", battery voltage: {battery_voltage:.2f} volts "
+                    f"({battery_status})")
+
+        print(msg)
 
     return Thermostat, Zone
