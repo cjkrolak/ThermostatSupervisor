@@ -512,8 +512,10 @@ if __name__ == "__main__":
         zone_number,
         ThermostatClass, ThermostatZone)
 
-    # tc.thermostat_get_all_zone_temps(
-    #     sht31_config.ALIAS,
-    #     sht31_config.supported_configs["zones"],
-    #     ThermostatClass,
-    #     ThermostatZone)
+    tc.print_select_data_from_all_zones(
+        sht31_config.ALIAS,
+        sht31_config.supported_configs["zones"],
+        ThermostatClass,
+        ThermostatZone,
+        display_wifi=False,
+        display_battery=False)

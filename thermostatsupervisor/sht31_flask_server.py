@@ -95,8 +95,8 @@ class Sensors:
             data(class 'list'): raw data structure
         returns:
             temp(int): raw temp data in bits.
-            temp_c(float): temp on deg C
-            temp_f(float): temp in deg F
+            temp_c(float): temp on °C
+            temp_f(float): temp in °F
             humidity(float): humidity in %RH
         """
         # convert the data

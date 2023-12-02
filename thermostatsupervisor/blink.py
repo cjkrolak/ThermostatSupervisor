@@ -17,7 +17,7 @@ from thermostatsupervisor import environment as env
 from thermostatsupervisor import utilities as util
 
 # Blink library
-BLINK_DEBUG = True  # debug uses local blink repo instead of pkg
+BLINK_DEBUG = False  # debug uses local blink repo instead of pkg
 if BLINK_DEBUG and not env.is_azure_environment():
     pkg = "blinkpy.blinkpy"
     mod_path = "..\\blinkpy"
@@ -280,19 +280,21 @@ class ThermostatZone(tc.ThermostatCommonZone):
 
     def get_display_temp(self) -> float:  # used
         """
-        Refresh the cached zone information and return Indoor Temp in Deg F.
+        Refresh the cached zone information and return Indoor Temp in °F.
 
         inputs:
             None
         returns:
-            (float): indoor temp in deg F.
+            (float): indoor temp in °F.
         """
         raw_temp = self.zone_metadata.get(blink_config.API_TEMPF_MEAN)
         if isinstance(raw_temp, (str, float, int)):
             raw_temp = float(raw_temp)
+        elif isinstance(raw_temp, type(None)):
+            raw_temp = float(util.BOGUS_INT)
         return raw_temp
 
-    def get_zone_name(self):
+    def get_zone_name(self) -> str:
         """
         Return the name associated with the zone number from metadata dict.
 
@@ -350,31 +352,31 @@ class ThermostatZone(tc.ThermostatCommonZone):
         """Return 1 if actively cooling, else 0."""
         return 0  # not applicable
 
-    def is_drying(self):
+    def is_drying(self) -> int:
         """Return 1 if drying relay is active, else 0."""
         return 0  # not applicable
 
-    def is_auto(self):
+    def is_auto(self) -> int:
         """Return 1 if auto relay is active, else 0."""
         return 0  # not applicable
 
-    def is_fanning(self):
+    def is_fanning(self) -> int:
         """Return 1 if fan relay is active, else 0."""
         return 0  # not applicable
 
-    def is_power_on(self):
+    def is_power_on(self) -> int:
         """Return 1 if power relay is active, else 0."""
         return 1  # always on
 
-    def is_fan_on(self):
+    def is_fan_on(self) -> int:
         """Return 1 if fan relay is active, else 0."""
         return 0  # not applicable
 
-    def is_defrosting(self):
+    def is_defrosting(self) -> int:
         """Return 1 if defrosting is active, else 0."""
         return 0  # not applicable
 
-    def is_standby(self):
+    def is_standby(self) -> int:
         """Return 1 if standby is active, else 0."""
         return 0  # not applicable
 
@@ -387,6 +389,37 @@ class ThermostatZone(tc.ThermostatCommonZone):
             (int): thermostat mode, see tc.system_switch_position for details.
         """
         return self.system_switch_position[self.OFF_MODE]
+
+    def get_wifi_strength(self) -> float:  # noqa R0201
+        """Return the wifi signal strength in dBm."""
+        raw_wifi = self.zone_metadata.get(blink_config.API_WIFI_STRENGTH)
+        if isinstance(raw_wifi, (str, float, int)):
+            return float(raw_wifi)
+        else:
+            return float(util.BOGUS_INT)
+
+    def get_wifi_status(self) -> bool:  # noqa R0201
+        """Return the wifi connection status."""
+        raw_wifi = self.get_wifi_strength()
+        if isinstance(raw_wifi, (float, int)):
+            return raw_wifi >= util.MIN_WIFI_DBM
+        else:
+            return False
+
+    def get_battery_voltage(self) -> float:  # noqa R0201
+        """Return the battery voltage in volts."""
+        raw_voltage = self.zone_metadata.get(blink_config.API_BATTERY_VOLTAGE)
+        if isinstance(raw_voltage, (str, float, int)):
+            return float(raw_voltage) / 100.0
+        else:
+            return float(util.BOGUS_INT)
+
+    def get_battery_status(self) -> bool:  # noqa R0201
+        """Return the battery status."""
+        raw_status = self.zone_metadata.get(blink_config.API_BATTERY_STATUS)
+        if isinstance(raw_status, str):
+            raw_status = raw_status == "ok"
+        return raw_status
 
     def report_heating_parameters(self, switch_position=None):
         """
@@ -463,9 +496,10 @@ if __name__ == "__main__":
         zone_number,
         ThermostatClass, ThermostatZone)
 
-    # check all zone temps
-    # un-rem this code for testing all zones.
-    # tc.thermostat_get_all_zone_temps(blink_config.ALIAS,
-    #                                  blink_config.supported_configs["zones"],
-    #                                  ThermostatClass,
-    #                                  ThermostatZone)
+    tc.print_select_data_from_all_zones(
+        blink_config.ALIAS,
+        blink_config.supported_configs["zones"],
+        ThermostatClass,
+        ThermostatZone,
+        display_wifi=True,
+        display_battery=True)
