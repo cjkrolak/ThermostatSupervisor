@@ -37,6 +37,7 @@ DEBUG_LOG = 0x100  # print only if debug mode is on
 FILE_PATH = ".//data"
 MAX_LOG_SIZE_BYTES = 2**20  # logs rotate at this max size
 HTTP_TIMEOUT = 60  # timeout in seconds
+MIN_WIFI_DBM = -70.0  # min viable WIFI signal strength
 
 # set unit test IP address, same as client
 unit_test_mode = False  # in unit test mode
@@ -288,9 +289,9 @@ def c_to_f(tempc) -> float:
     Convert from Celsius to Fahrenheit.
 
     inputs:
-        tempc(int, float): temp in deg c.
+        tempc(int, float): temp in °C.
     returns:
-        (float): temp in deg f.
+        (float): temp in °F.
     """
     if isinstance(tempc, type(None)):
         return tempc  # pass thru
@@ -305,9 +306,9 @@ def f_to_c(tempf) -> float:
     Convert from Fahrenheit to Celsius.
 
     inputs:
-        tempc(int, float): temp in deg f.
+        tempc(int, float): temp in °F.
     returns:
-        (float): temp in deg c.
+        (float): temp in °C.
     """
     if isinstance(tempf, type(None)):
         return tempf  # pass thru

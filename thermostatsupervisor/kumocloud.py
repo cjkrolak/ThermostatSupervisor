@@ -292,12 +292,12 @@ class ThermostatZone(tc.ThermostatCommonZone):
 
     def get_display_temp(self) -> float:  # used
         """
-        Refresh the cached zone information and return Indoor Temp in Deg F.
+        Refresh the cached zone information and return Indoor Temp in °F.
 
         inputs:
             None
         returns:
-            (float): indoor temp in deg F.
+            (float): indoor temp in °F.
         """
         self.refresh_zone_info()
         return util.c_to_f(self.get_parameter('room_temp',
@@ -596,7 +596,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
 
         This will also attempt to turn the thermostat to 'Cool'
         inputs:
-            temp(int): desired temperature in deg F.
+            temp(int): desired temperature in °F.
         returns:
             None
         """
@@ -707,8 +707,10 @@ if __name__ == "__main__":
         zone_number,
         ThermostatClass, ThermostatZone)
 
-    tc.thermostat_get_all_zone_temps(
+    tc.print_select_data_from_all_zones(
         kumocloud_config.ALIAS,
         kumocloud_config.supported_configs["zones"],
         ThermostatClass,
-        ThermostatZone)
+        ThermostatZone,
+        display_wifi=True,
+        display_battery=True)
