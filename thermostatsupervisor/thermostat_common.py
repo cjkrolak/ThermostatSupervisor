@@ -1181,7 +1181,8 @@ def print_select_data_from_all_zones(thermostat_type, zone_lst,
                                                       verbose=False)
         # zone temperature
         display_temp = Zone.get_display_temp()
-        msg = f"zone: {zone}, name: {Zone.zone_name}, temp: {display_temp}"
+        msg = (f"zone: {zone}, name: {Zone.zone_name}, temp: "
+               f"{display_temp:.1f} °F")
 
         # zone wifi strength
         if display_wifi:

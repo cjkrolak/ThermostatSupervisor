@@ -622,7 +622,7 @@ if __name__ == "__main__":
 
     tc.print_select_data_from_all_zones(
         kumolocal_config.ALIAS,
-        kumolocal_config.supported_configs["zones"],
+        kumolocal_config.get_available_zones(),
         ThermostatClass,
         ThermostatZone,
         display_wifi=False,

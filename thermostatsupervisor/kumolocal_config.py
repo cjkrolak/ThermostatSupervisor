@@ -46,6 +46,21 @@ metadata = {
                },
 }
 
+
+def get_available_zones():
+    """
+    Return list of available zones.
+
+    for this thermostat type, available zones is all zones.
+
+    inputs:
+        None.
+    returns:
+        (list) available zones.
+    """
+    return supported_configs["zones"]
+
+
 default_zone = supported_configs["zones"][0]
 default_zone_name = metadata[default_zone]["zone_name"]
 

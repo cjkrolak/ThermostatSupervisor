@@ -826,7 +826,7 @@ if __name__ == "__main__":
 
     tc.print_select_data_from_all_zones(
         mmm_config.ALIAS,
-        mmm_config.supported_configs["zones"],
+        mmm_config.get_available_zones(),
         ThermostatClass,
         ThermostatZone,
         display_wifi=False,
