@@ -275,17 +275,11 @@ class FunctionalIntegrationTest(IntegrationTest):
         """
         api.uip = api.UserInputs(self.unit_test_argv)
 
-        thermostat_type = api.uip.get_user_inputs(
-            api.uip.zone_name, api.input_flds.thermostat_type)
-        if thermostat_type == "sht31":
-            print("test is not curently compatible with SHT31")
-            return
-        else:
-            print(f"thermostat_type={thermostat_type}")
         IntegrationTest.Thermostat, IntegrationTest.Zone = \
             tc.print_select_data_from_all_zones(
-                thermostat_type,
-                self.mod_config.supported_configs["zones"],
+                api.uip.get_user_inputs(
+                    api.uip.zone_name, api.input_flds.thermostat_type),
+                self.mod_config.get_available_zones(),
                 self.mod.ThermostatClass, self.mod.ThermostatZone,
                 display_wifi=True, display_battery=True
             )

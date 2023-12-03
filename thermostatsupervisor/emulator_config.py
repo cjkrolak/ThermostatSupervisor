@@ -27,6 +27,21 @@ supported_configs = {"module": "emulator",
                      "modes": ["OFF_MODE", "HEAT_MODE", "COOL_MODE",
                                "DRY_MODE", "AUTO_MODE", "UNKNOWN_MODE"]}
 
+
+def get_available_zones():
+    """
+    Return list of available zones.
+
+    for this thermostat type, available zones is all zones.
+
+    inputs:
+        None.
+    returns:
+        (list) available zones.
+    """
+    return supported_configs["zones"]
+
+
 default_zone = supported_configs["zones"][0]
 default_zone_name = ALIAS + "_" + str(default_zone)
 

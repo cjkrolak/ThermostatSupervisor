@@ -101,6 +101,20 @@ metadata = {
 }
 
 
+def get_available_zones():
+    """
+    Return list of available zones.
+
+    for this thermostat type, available zone is the current zone only.
+
+    inputs:
+        None.
+    returns:
+        (list) available zones.
+    """
+    return [get_preferred_zone()]
+
+
 def get_preferred_zone():
     """
     Return the preferred zone number.  For this thermostat the preferred zone

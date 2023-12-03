@@ -597,7 +597,7 @@ if __name__ == "__main__":
 
     tc.print_select_data_from_all_zones(
         emulator_config.ALIAS,
-        emulator_config.supported_configs["zones"],
+        emulator_config.get_available_zones(),
         ThermostatClass,
         ThermostatZone,
         display_wifi=True,

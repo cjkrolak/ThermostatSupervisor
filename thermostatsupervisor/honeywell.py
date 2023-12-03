@@ -270,13 +270,13 @@ def get_zones_info_with_retries(func, thermostat_type, zone_name) -> list:
                          func_name=1)
             msg_suffix = (
                 ["",
-                    " waiting {retry_delay_sec} seconds and then " +
+                    f" waiting {retry_delay_sec} seconds and then " +
                     "retrying..."][trial_number < number_of_retries])
             util.log_msg(f"{time_now}: exception during "
                          f"{util.get_function_name()}"
                          f", on trial {trial_number} of "
                          f"{number_of_retries}, probably a"
-                         f" connection issue"
+                         " connection issue"
                          f"{msg_suffix}",
                          mode=util.BOTH_LOG, func_name=1)
 
@@ -860,7 +860,7 @@ if __name__ == "__main__":
 
     tc.print_select_data_from_all_zones(
         honeywell_config.ALIAS,
-        honeywell_config.supported_configs["zones"],
+        honeywell_config.get_available_zones(),
         ThermostatClass,
         ThermostatZone,
         display_wifi=True,

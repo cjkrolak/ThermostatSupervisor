@@ -393,6 +393,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
     def get_wifi_strength(self) -> float:  # noqa R0201
         """Return the wifi signal strength in dBm."""
         raw_wifi = self.zone_metadata.get(blink_config.API_WIFI_STRENGTH)
+        print(f"raw_wifi_strength={raw_wifi}, type({type(raw_wifi)})")
         if isinstance(raw_wifi, (str, float, int)):
             return float(raw_wifi)
         else:
@@ -401,6 +402,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
     def get_wifi_status(self) -> bool:  # noqa R0201
         """Return the wifi connection status."""
         raw_wifi = self.get_wifi_strength()
+        print(f"raw_wifi_status={raw_wifi}, type({type(raw_wifi)})")
         if isinstance(raw_wifi, (float, int)):
             return raw_wifi >= util.MIN_WIFI_DBM
         else:
@@ -498,7 +500,7 @@ if __name__ == "__main__":
 
     tc.print_select_data_from_all_zones(
         blink_config.ALIAS,
-        blink_config.supported_configs["zones"],
+        blink_config.get_available_zones(),
         ThermostatClass,
         ThermostatZone,
         display_wifi=True,
