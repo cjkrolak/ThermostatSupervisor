@@ -469,6 +469,35 @@ class ThermostatZone(tc.ThermostatCommonZone):
         return int(self.get_parameter('standby', 'status_display',
                                       'reportedCondition'))
 
+    def get_wifi_strength(self) -> float:  # noqa R0201
+        """Return the wifi signal strength in dBm."""
+        self.refresh_zone_info()
+        return float(self.get_parameter('rssi',
+                                        'reportedCondition'))
+
+    def get_wifi_status(self) -> bool:  # noqa R0201
+        """Return the wifi connection status."""
+        raw_wifi = self.get_wifi_strength()
+        if isinstance(raw_wifi, (float, int)):
+            return raw_wifi >= util.MIN_WIFI_DBM
+        else:
+            return False
+
+    def get_battery_voltage(self) -> float:  # noqa R0201
+        """Return the battery voltage in volts.
+
+        This tstat is on line power so any valid response
+        from tstat returns line power value.
+        """
+        return [0.0, 120.0][self.get_wifi_status()]
+
+    def get_battery_status(self) -> bool:  # noqa R0201
+        """Return the battery status.
+
+        For this tstat any positive number returns True.
+        """
+        return self.get_battery_voltage() > 0.0
+
     def get_heat_setpoint_raw(self) -> int:  # used
         """
         Refresh the cached zone information and return the heat setpoint.
