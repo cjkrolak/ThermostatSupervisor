@@ -1181,7 +1181,8 @@ def print_select_data_from_all_zones(thermostat_type, zone_lst,
                                                       verbose=False)
         # zone temperature
         display_temp = Zone.get_display_temp()
-        msg = f"zone: {zone}, name: {Zone.zone_name}, temp: {display_temp}"
+        msg = (f"zone: {zone}, name: {Zone.zone_name}, temp: "
+               f"{display_temp:.1f} °F")
 
         # zone wifi strength
         if display_wifi:
@@ -1190,6 +1191,7 @@ def print_select_data_from_all_zones(thermostat_type, zone_lst,
                 False: "weak",
                 True: "ok",
                 util.BOGUS_BOOL: "N/A",
+                None: "N/A",
             }
             wifi_status = wifi_status_display[Zone.get_wifi_status()]
             msg += f", wifi strength: {wifi_strength} dBm ({wifi_status})"
@@ -1201,6 +1203,7 @@ def print_select_data_from_all_zones(thermostat_type, zone_lst,
                 False: "bad",
                 True: "ok",
                 util.BOGUS_BOOL: "N/A",
+                None: "N/A",
             }
             battery_status = battery_status_display[Zone.get_battery_status()]
             msg += (f", battery voltage: {battery_voltage:.2f} volts "

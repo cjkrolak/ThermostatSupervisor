@@ -611,7 +611,7 @@ if __name__ == "__main__":
 
     tc.print_select_data_from_all_zones(
         nest_config.ALIAS,
-        nest_config.supported_configs["zones"],
+        nest_config.get_available_zones(),
         ThermostatClass,
         ThermostatZone,
         display_wifi=True,

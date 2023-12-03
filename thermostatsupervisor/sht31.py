@@ -514,7 +514,7 @@ if __name__ == "__main__":
 
     tc.print_select_data_from_all_zones(
         sht31_config.ALIAS,
-        sht31_config.supported_configs["zones"],
+        sht31_config.get_available_zones(),
         ThermostatClass,
         ThermostatZone,
         display_wifi=False,
