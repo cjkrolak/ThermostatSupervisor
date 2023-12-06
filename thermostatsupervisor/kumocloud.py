@@ -489,7 +489,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         This tstat is on line power so any valid response
         from tstat returns line power value.
         """
-        return [0.0, 120.0][self.get_wifi_status()]
+        return 120.0 if self.get_wifi_status() else 0.0
 
     def get_battery_status(self) -> bool:  # noqa R0201
         """Return the battery status.
