@@ -767,6 +767,11 @@ class Test(utc.UnitTest):
                       f"revert all={self.Zone.revert_all_deviations}")
                 self.Zone.display_session_settings()
 
+    def test_update_runtime_parameters(self):
+        """Verify update_runtime_parameters()."""
+        # TODDO - set and verify runtime parameter overrides
+        self.Zone.update_runtime_parameters()
+
 
 if __name__ == "__main__":
     util.log_msg.debug = True
