@@ -150,7 +150,7 @@ class ThermostatClass(pyhtcc.PyHTCC, tc.ThermostatCommon):
                 print(f"ERROR: zone {zone} does not exist in zone_info_list: "
                       f"{zone_info_list}")
                 raise
-            util.log_msg(f"zone{zone} info: {return_data}",
+            util.log_msg(f"zone {zone} info: {return_data}",
                          mode=util.DEBUG_LOG + util.CONSOLE_LOG, func_name=1)
             return return_data
         else:
@@ -160,7 +160,7 @@ class ThermostatClass(pyhtcc.PyHTCC, tc.ThermostatCommon):
                 print(f"ERROR: zone {zone} does not exist in zone_info_list: "
                       f"{zone_info_list}")
                 raise
-            util.log_msg(f"zone{zone} parameter '{parameter}': {return_data}",
+            util.log_msg(f"zone {zone} parameter '{parameter}': {return_data}",
                          mode=util.DEBUG_LOG + util.CONSOLE_LOG, func_name=1)
             return return_data
 
@@ -578,6 +578,30 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
         """Return 1 if fan relay is active, else 0."""
         self.refresh_zone_info()
         return int(self.zone_info['latestData']['fanData']['fanIsRunning'])
+
+    def get_wifi_strength(self) -> float:  # noqa R0201
+        """Return the wifi signal strength in dBm."""
+        self.refresh_zone_info()
+        return float(util.BOGUS_INT)
+
+    def get_wifi_status(self) -> bool:  # noqa R0201
+        """Return the wifi connection status."""
+        return not self.zone_info['communicationLost']
+
+    def get_battery_voltage(self) -> float:  # noqa R0201
+        """Return the battery voltage in volts.
+
+        This tstat is on line power so any valid response
+        from tstat returns line power value.
+        """
+        return 120.0 if self.zone_info['deviceLive'] else 0.0
+
+    def get_battery_status(self) -> bool:  # noqa R0201
+        """Return the battery status.
+
+        For this tstat any positive number returns True.
+        """
+        return self.get_battery_voltage() > 0.0
 
     def get_schedule_heat_sp(self) -> int:  # used
         """
