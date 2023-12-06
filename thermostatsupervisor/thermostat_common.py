@@ -663,7 +663,7 @@ class ThermostatCommonZone():
         # "thermostat_type is not overwritten
         user_input_to_class_mapping = {
             api.input_flds.thermostat_type: "thermostat_type",
-            api.input_flds.zone: "zone_name",
+            api.input_flds.zone: "zone_number",
             api.input_flds.poll_time: "poll_time_sec",
             api.input_flds.connection_time: "connection_time_sec",
             api.input_flds.tolerance: "tolerance_degrees",
