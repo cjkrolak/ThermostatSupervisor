@@ -1212,3 +1212,9 @@ def print_select_data_from_all_zones(thermostat_type, zone_lst,
         print(msg)
 
     return Thermostat, Zone
+
+
+class AuthenticationError(ValueError):
+    """denoted if we are completely unable to authenticate."""
+
+    pass
