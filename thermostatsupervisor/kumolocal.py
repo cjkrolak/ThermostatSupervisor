@@ -44,6 +44,7 @@ class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
         # construct the superclass
         # call both parent class __init__
         self.args = [self.kc_uname, self.kc_pwd]
+        # kumocloud account init sets the self._url
         pykumo.KumoCloudAccount.__init__(self, *self.args)
         tc.ThermostatCommon.__init__(self)
 
@@ -106,15 +107,22 @@ class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
         """
         del debug  # unused
         try:
-            units = list(self.get_indoor_units())  # will also query unit
+            serial_num_lst = list(self.get_indoor_units())  # will query unit
         except UnboundLocalError:  # patch for issue #205
             util.log_msg("WARNING: Kumocloud refresh failed due to "
                          "timeout", mode=util.BOTH_LOG, func_name=1)
             time.sleep(10)
-            units = list(self.get_indoor_units())  # retry
-        util.log_msg(f"indoor unit serial numbers: {str(units)}",
+            serial_num_lst = list(self.get_indoor_units())  # retry
+        util.log_msg(f"indoor unit serial numbers: {str(serial_num_lst)}",
                      mode=util.DEBUG_LOG + util.CONSOLE_LOG, func_name=1)
-        for serial_number in units:
+
+        # validate serial number list
+        if not serial_num_lst:
+            raise tc.AuthenticationError("pykumo meta data is blank, probably"
+                                         " due to an Authentication Error,"
+                                         " check your credentials.")
+
+        for serial_number in serial_num_lst:
             util.log_msg(
                 f"Unit {self.get_name(serial_number)}: address: "
                 f"{self.get_address(serial_number)} credentials: "
@@ -127,9 +135,14 @@ class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
             raw_json = self.get_raw_json()  # does not fetch results,
         else:
             # return cached raw data for specified zone
-            self.serial_number = units[zone]
+            try:
+                self.serial_number = serial_num_lst[zone]
+            except IndexError as exc:
+                raise IndexError(f"ERROR: Invalid Zone, index ({zone}) does "
+                                 "not exist in serial number list "
+                                 f"({serial_num_lst})") from exc
             raw_json = self.get_raw_json()[2]['children'][0][
-                'zoneTable'][units[zone]]
+                'zoneTable'][serial_num_lst[zone]]
         return raw_json
 
     def get_all_metadata(self, zone=None, debug=False):
