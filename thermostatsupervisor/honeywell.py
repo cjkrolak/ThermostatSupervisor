@@ -357,12 +357,11 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
                 f"device_id is type {type(Thermostat_obj.device_id)}, "
                 f"expected type 'int'")
 
-        # thermostat type, needs to be defined prior to pyhtcc.Zone.__init__
-        self.verbose = verbose
-        self.thermostat_type = honeywell_config.ALIAS
-
-        # preset zone_name for pyhtcc constructor
+        # preset zone_name for pyhtcc.Zone constructor
         self.zone_name = Thermostat_obj.zone_name
+
+        # thermostat type, needs to be defined prior to pyhtcc.Zone.__init__
+        self.thermostat_type = honeywell_config.ALIAS
 
         # call both parent class __init__
         self.args = [Thermostat_obj.device_id, Thermostat_obj]
@@ -376,6 +375,7 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
         # TODO: what mode is 0 on Honeywell?
 
         # zone info
+        self.verbose = verbose
         self.device_id = Thermostat_obj.device_id
         self.zone_name = self.get_zone_name()
 
@@ -892,7 +892,7 @@ if __name__ == "__main__":
 
     # measure thermostat response time
     MEASUREMENTS = 30
-    print(f"Thermostat response times for {MEASUREMENTS} measurements...")
+    print(f"\nThermostat response times for {MEASUREMENTS} measurements...")
     meas_data = Zone.measure_thermostat_response_time(
         MEASUREMENTS, func=Zone.pyhtcc.get_zones_info)
     ppp = pprint.PrettyPrinter(indent=4)
