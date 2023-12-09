@@ -1175,7 +1175,8 @@ def print_select_data_from_all_zones(thermostat_type, zone_lst,
 
     for zone in zone_lst:
         # create class instances
-        Thermostat, Zone = create_thermostat_instance(thermostat_type, zone,
+        Thermostat, Zone = create_thermostat_instance(thermostat_type,
+                                                      zone,
                                                       ThermostatClass,
                                                       ThermostatZone,
                                                       verbose=False)
