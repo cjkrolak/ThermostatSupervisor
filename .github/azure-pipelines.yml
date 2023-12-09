@@ -18,6 +18,8 @@ pool:
 
 strategy:
   matrix:
+    Python309:
+      python.version: '3.9'  # py0 and py4
     Python310:
       python.version: '3.10'
     Python311:
@@ -34,16 +36,22 @@ steps:
 - script: |
     python -m pip install --upgrade pip
     pip install -r requirements.txt
+    pip list
   displayName: 'Install dependencies'
 
 - script: |
-    python -m pip install flake8
+    python -m pip install flake8 --upgrade
     flake8 .
   displayName: 'Run lint tests'
 
+# safety check
+# ignore 62044, pip <23.3 error
 - script: |
-    python -m pip install safety
-    safety check
+    python -m pip install safety --upgrade
+    pip list
+    echo "python version=$(python.version)"
+    safety check -r requirements.txt
+    safety check -i 62044
   displayName: 'check for security vulnerabilities'
 #  workingDirectory: 
 #- script: |

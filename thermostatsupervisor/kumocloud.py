@@ -46,6 +46,7 @@ class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
         # call both parent class __init__
         self._need_fetch = True  # force data fetch
         self.args = [self.kc_uname, self.kc_pwd]
+        # kumocloud account init sets the self._url
         pykumo.KumoCloudAccount.__init__(self, *self.args)
         tc.ThermostatCommon.__init__(self)
 
@@ -125,6 +126,13 @@ class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
         if debug:
             util.log_msg(f"indoor unit serial numbers: {str(serial_num_lst)}",
                          mode=util.DEBUG_LOG + util.CONSOLE_LOG, func_name=1)
+
+        # validate serial number list
+        if not serial_num_lst:
+            raise tc.AuthenticationError("pykumo meta data is blank, probably"
+                                         " due to an Authentication Error,"
+                                         " check your credentials.")
+
         for idx, serial_number in enumerate(serial_num_lst):
             if debug:
                 util.log_msg(f"Unit {self.get_name(serial_number)}: address: "
@@ -151,7 +159,12 @@ class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
             if not isinstance(zone, int):
                 zone = self.get_zone_index_from_name()
             # return cached raw data for specified zone, will be a dict
-            self.serial_number = serial_num_lst[zone]
+            try:
+                self.serial_number = serial_num_lst[zone]
+            except IndexError as exc:
+                raise IndexError(f"ERROR: Invalid Zone, index ({zone}) does "
+                                 "not exist in serial number list "
+                                 f"({serial_num_lst})") from exc
             raw_json = self.get_raw_json()[2]['children'][0][
                 'zoneTable'][serial_num_lst[zone]]
 
