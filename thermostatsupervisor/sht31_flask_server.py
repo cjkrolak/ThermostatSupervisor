@@ -3,17 +3,6 @@ flask API for raspberry pi
 example from http://www.pibits.net/code/raspberry-pi-sht31-sensor-example.php
 """
 
-# raspberry pi libraries
-try:
-    from RPi import GPIO  # noqa F405 raspberry pi GPIO library
-    import smbus  # noqa F405
-    pi_library_exception = None  # successful
-except ImportError as ex:
-    # hardware-related library, not needed in unittest mode
-    print("WARNING: RPi or smbus library import error, "
-          "this is expected in unittest mode")
-    pi_library_exception = ex  # unsuccessful
-
 # built-in imports
 import munch
 import re
@@ -21,6 +10,19 @@ import statistics
 import subprocess
 import sys
 import time
+import traceback
+
+# raspberry pi libraries
+try:
+    from RPi import GPIO  # noqa F405 raspberry pi GPIO library
+    import smbus2  # noqa F405
+    pi_library_exception = None  # successful
+except ImportError as ex:
+    # hardware-related library, not needed in unittest mode
+    print(traceback.format_exc())
+    print("WARNING: RPi or smbus library import error, "
+          "this is expected in unittest mode")
+    pi_library_exception = ex  # unsuccessful
 
 # third party imports
 from flask import Flask, request
@@ -289,7 +291,7 @@ class Sensors:
                                sht31_config.ALERT_PIN)
 
         # activate smbus
-        bus = smbus.SMBus(sht31_config.I2C_BUS)
+        bus = smbus2.SMBus(sht31_config.I2C_BUS)
         time.sleep(0.5)
 
         # data structure
@@ -338,7 +340,7 @@ class Sensors:
                                sht31_config.ALERT_PIN)
 
         # activate smbus
-        bus = smbus.SMBus(sht31_config.I2C_BUS)
+        bus = smbus2.SMBus(sht31_config.I2C_BUS)
         time.sleep(0.5)
 
         try:
