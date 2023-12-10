@@ -57,6 +57,26 @@ class EnvironmentTests(utc.UnitTest):
                         "get_local_ip() returned '%s' which is not "
                         "between 7 and 15 chars")
 
+    def test_is_azure_environment(self):
+        """
+        Test is_azure_environment.
+        """
+        result = env.is_azure_environment()
+        print(f"env.is_azure_environment()={result}")
+        self.assertTrue(isinstance(result, bool),
+                        "env.is_azure_environment() returned type "
+                        f"{type(result)} expected bool")
+
+    def test_is_raspberrypi_environment(self):
+        """
+        Test is_raspberrypi_environment.
+        """
+        result = env.is_raspberrypi_environment()
+        print(f"env.is_raspberrypi_environment()={result}")
+        self.assertTrue(isinstance(result, bool),
+                        "env.is_raspberrypi_environment() returned type "
+                        f"{type(result)} expected bool")
+
     def test_is_host_on_local_net(self):
         """
         Verify is_host_on_local_net() runs as expected.
@@ -118,7 +138,7 @@ class EnvironmentTests(utc.UnitTest):
                         f"python minor version ({minor_version}) is not gte "
                         f"min required value ({min_minor})")
 
-        # error checking invalid input parmeter
+        # error checking invalid input parameter
         with self.assertRaises(TypeError):
             print("attempting to invalid input parameter type, "
                   "expect exception...")

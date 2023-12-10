@@ -2,6 +2,7 @@
 
 # built-in libraries
 import importlib.util
+import io
 import os
 import socket
 import sys
@@ -147,6 +148,29 @@ def is_azure_environment():
     everything else is Azure.
     """
     return '192.' not in get_local_ip()
+
+
+def is_raspberrypi_environment(verbose=False):
+    """
+    Return True if running on Raspberry pi.
+
+    inputs:
+        verbose(bool): debug flag.
+    returns:
+        (bool)
+    """
+    try:
+        with io.open("/sys/firmware/devicetree/base/model", "r",
+                     encoding="utf8") as m:
+            if 'raspberry pi' in m.read().lower():
+                if verbose:
+                    print("raspberry pi environment is detected")
+                return True
+    except Exception:  # noqa W703
+        pass
+    if verbose:
+        print("raspberry pi environment is not detected")
+    return False
 
 
 def get_python_version(min_major_version=MIN_PYTHON_MAJOR_VERSION,
