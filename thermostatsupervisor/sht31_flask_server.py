@@ -675,6 +675,9 @@ if __name__ == "__main__":
 
     # verify environment
     env.get_python_version()
+    if not env.is_raspberrypi_environment(True):
+        raise EnvironmentError("ERROR: SHT31 Flask server only supported on "
+                               "Raspberry PI environment")
 
     # parse runtime parameters
     uip = UserInputs()
