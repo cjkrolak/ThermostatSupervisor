@@ -1,0 +1,5 @@
+# Additional requirements for SHT31 server
+# for SHT31 installs run both:
+#     pip install -r requirements.txt -r requirements_sht31.txt
+RPi.GPIO>=0.7.1  # GPIO libray for raspberry pi
+smbus2>=0.4.3  # python-smbus library

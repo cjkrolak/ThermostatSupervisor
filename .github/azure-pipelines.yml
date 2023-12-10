@@ -19,11 +19,12 @@ pool:
 strategy:
   matrix:
     Python309:
-      python.version: '3.9'  # py0 and py4
-    Python310:
-      python.version: '3.10'
-    Python311:
-      python.version: '3.11'
+      python.version: '3.9'
+    # rem out 3.10 and 3.12 to save CI time
+    # Python310:
+    #   python.version: '3.10'
+    # Python311:
+    #  python.version: '3.11'
     Python312:
       python.version: '3.12'
 

@@ -1,4 +1,6 @@
 
+# requirements for ThermostatSupervisor
+# to run: pip install -r requirements.txt
 aiohttp>=3.9.0b0; python_version>='3.12'  # blinkpy py3.12 dependency
 blinkpy>=0.20.0  # blink cameras
 build>=1.0.0  # python package builds
