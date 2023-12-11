@@ -4,7 +4,6 @@ example from http://www.pibits.net/code/raspberry-pi-sht31-sensor-example.php
 """
 
 # built-in imports
-import munch
 import re
 import statistics
 import subprocess
@@ -28,6 +27,7 @@ except ImportError as ex:
 from flask import Flask, request
 from flask_restful import Resource, Api  # noqa F405
 from flask_wtf.csrf import CSRFProtect
+import munch
 from str2bool import str2bool
 
 # local imports
@@ -87,7 +87,8 @@ class Sensors:
     """Sensor data."""
 
     def __init__(self):
-        pass
+        # set debug flag
+        self.verbose = app.debug
 
     def convert_data(self, data):
         """
@@ -108,14 +109,16 @@ class Sensors:
         humidity = 100 * (data[3] * 256 + data[4]) / 65535.0
         return temp, temp_c, temp_f, humidity
 
-    def pack_data_structure(self, temp_f_lst, temp_c_lst, humidity_lst):
+    def pack_data_structure(self, temp_f_lst, temp_c_lst, humidity_lst,
+                            rssi_lst):
         """
         Calculate statistics and pack data structure.
 
         inputs:
             temp_f_lst(list): list of fehrenheit measurements
             temp_c_lst(list): list of celcius measurements
-            humidity_lst(list): list of humidity measurements.
+            humidity_lst(list): list of humidity measurements
+            rssi_lst(list): list of wifi rssi measurements
         returns:
             (dict): data structure.
         """
@@ -126,6 +129,8 @@ class Sensors:
                 sht31_config.API_TEMPF_STD: statistics.pstdev(temp_f_lst),
                 sht31_config.API_HUMIDITY_MEAN: statistics.mean(humidity_lst),
                 sht31_config.API_HUMIDITY_STD: statistics.pstdev(humidity_lst),
+                sht31_config.API_RSSI_MEAN: statistics.mean(rssi_lst),
+                sht31_config.API_RSSI_STD: statistics.pstdev(rssi_lst),
                 }
 
     def set_sht31_address(self, i2c_addr, addr_pin, alert_pin):
@@ -256,6 +261,7 @@ class Sensors:
         temp_f_lst = []
         temp_c_lst = []
         humidity_lst = []
+        rssi_lst = []
 
         # loop for n measurements
         for measurement in range(measurements):
@@ -265,14 +271,17 @@ class Sensors:
 
             # convert the data
             _, temp_c, temp_f, humidity = self.convert_data(data)
+            rssi = self.get_wifi_strength()
 
             # add data to structure
             temp_f_lst.append(temp_f)
             temp_c_lst.append(temp_c)
             humidity_lst.append(humidity)
+            rssi_lst.append(rssi)
 
         # return data on API
-        return self.pack_data_structure(temp_f_lst, temp_c_lst, humidity_lst)
+        return self.pack_data_structure(temp_f_lst, temp_c_lst, humidity_lst,
+                                        rssi_lst)
 
     def get(self):
         """
@@ -298,6 +307,7 @@ class Sensors:
         temp_f_lst = []
         temp_c_lst = []
         humidity_lst = []
+        rssi_lst = []
 
         try:
             # loop for n measurements
@@ -312,15 +322,17 @@ class Sensors:
 
                 # convert the data
                 _, temp_c, temp_f, humidity = self.convert_data(data)
+                rssi = self.get_wifi_strength()
 
                 # add data to structure
                 temp_f_lst.append(temp_f)
                 temp_c_lst.append(temp_c)
                 humidity_lst.append(humidity)
+                rssi_lst.append(rssi)
 
             # return data on API
             return self.pack_data_structure(temp_f_lst, temp_c_lst,
-                                            humidity_lst)
+                                            humidity_lst, rssi_lst)
         finally:
             # close the smbus connection
             bus.close()
@@ -412,36 +424,115 @@ class Sensors:
             (dict): parsed device dictionary.
         """
         # send command
-        p = subprocess.Popen(['sudo', 'i2cdetect', '-y',
+        with subprocess.Popen(['sudo', 'i2cdetect', '-y',
                               str(bus)],
-                             stdout=subprocess.PIPE,)
-        # cmdout = str(p.communicate())
+                              stdout=subprocess.PIPE,) as p:
+            # cmdout = str(p.communicate())
 
-        # read in raw data
-        parsed_device_dict = {"i2c_detect": {}}
-        bus_dict = {}
-        for _ in range(0, 9):
-            line = str(p.stdout.readline())
-            addr_base = line[2:4]
-            addr_payload = line[5:]
+            # read in raw data
+            parsed_device_dict = {"i2c_detect": {}}
+            bus_dict = {}
+            for _ in range(0, 9):
+                line = str(p.stdout.readline())
+                addr_base = line[2:4]
+                addr_payload = line[5:]
 
-            # catch error condition
-            if "Error" in line:
-                bus_dict["i2c_detect"]["error"] = line
-            else:
-                # find devices on bus
-                device = 0
-                device_dict = {}
-                for match in re.finditer("[0-9][0-9]", addr_payload):
-                    if match:
-                        device_addr = match.group(0)
-                        print(match.group(0))
-                        device_dict["dev_" + str(device) + "_addr"] = \
-                            str(device_addr)
-                        bus_dict["addr_base_" + str(addr_base)] = device_dict
-                        device += 1
+                # catch error condition
+                if "Error" in line:
+                    bus_dict["i2c_detect"]["error"] = line
+                else:
+                    # find devices on bus
+                    device = 0
+                    device_dict = {}
+                    for match in re.finditer("[0-9][0-9]", addr_payload):
+                        if match:
+                            device_addr = match.group(0)
+                            print(match.group(0))
+                            device_dict["dev_" + str(device) + "_addr"] = \
+                                str(device_addr)
+                            bus_dict[
+                                "addr_base_" + str(addr_base)] = device_dict
+                            device += 1
+
         parsed_device_dict["i2c_detect"]["bus_" + str(bus)] = bus_dict
         return parsed_device_dict
+
+    def get_wifi_strength(self) -> float:  # noqa R0201
+        """Return the Raspberry pi wifi signal strength in dBm.
+
+        Code from iancoleman/python-iwlist used.
+        """
+        cell_number_re = re.compile(r"^Cell\s+(?P<cellnumber>.+)\s+-\s+Address:"
+                                    r"\s(?P<mac>.+)$")
+        regexps = [
+            re.compile(r"^ESSID:\"(?P<essid>.*)\"$"),
+            re.compile(r"^Protocol:(?P<protocol>.+)$"),
+            re.compile(r"^Mode:(?P<mode>.+)$"),
+            re.compile(r"^Frequency:(?P<frequency>[\d.]+) "
+                       r"(?P<frequency_units>.+) \(Channel "
+                       r"(?P<channel>\d+)\)$"),
+            re.compile(r"^Encryption key:(?P<encryption>.+)$"),
+            re.compile(r"^Quality=(?P<signal_quality>\d+)/(?P<signal_total>\d+)"
+                       r"\s+Signal level=(?P<signal_level_dBm>.+) d.+$"),
+            re.compile(r"^Signal level=(?P<signal_quality>\d+)/"
+                       r"(?P<signal_total>\d+).*$"),
+        ]
+
+        # Detect encryption type
+        wpa_re = re.compile(r"IE:\ WPA\ Version\ 1$")
+        wpa2_re = re.compile(r"IE:\ IEEE\ 802\.11i/WPA2\ Version\ 1$")
+
+        # Runs the comnmand to scan the list of networks.
+        # Must run as super user.
+        # Does not specify a particular device, so will scan all
+        # network devices.
+        def scan(interface='wlan0'):
+            cmd = ["iwlist", interface, "scan"]
+            proc = subprocess.Popen(cmd, stdout=subprocess.PIPE,
+                                    stderr=subprocess.PIPE)
+            points = proc.stdout.read().decode('utf-8')
+            return points
+
+        # Parses the response from the command "iwlist scan"
+        def parse(content):
+            cells = []
+            lines = content.split('\n')
+            for line in lines:
+                line = line.strip()
+                cellNumber = cell_number_re.search(line)
+                if cellNumber is not None:
+                    cells.append(cellNumber.groupdict())
+                    continue
+                wpa = wpa_re.search(line)
+                if wpa is not None:
+                    cells[-1].update({'encryption': 'wpa'})
+                wpa2 = wpa2_re.search(line)
+                if wpa2 is not None:
+                    cells[-1].update({'encryption': 'wpa2'})
+                for expression in regexps:
+                    result = expression.search(line)
+                    if result is not None:
+                        if 'encryption' in result.groupdict():
+                            if result.groupdict()['encryption'] == 'on':
+                                cells[-1].update({'encryption': 'wep'})
+                            else:
+                                cells[-1].update({'encryption': 'off'})
+                        else:
+                            cells[-1].update(result.groupdict())
+                        continue
+            return cells
+
+        # call iwlist terminal command
+        scan_result = scan(interface='wlan0')
+        if self.verbose:
+            print(f"iwlist scan results: {scan_result}")
+
+        # parse out the RSSI result
+        parse_result = parse(scan_result)
+        if self.verbose:
+            print(f"iwlist parse results: {parse_result}")
+
+        return float(parse_result[0]["db"])
 
 
 class Controller(Resource):

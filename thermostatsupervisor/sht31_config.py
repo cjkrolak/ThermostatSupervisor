@@ -52,6 +52,8 @@ API_TEMPF_MEAN = 'Temp(F) mean'
 API_TEMPF_STD = 'Temp(F) std'
 API_HUMIDITY_MEAN = 'Humidity(%RH) mean'
 API_HUMIDITY_STD = 'Humidity(%RH) std'
+API_RSSI_MEAN = 'rssi(dBm) mean'
+API_RSSI_STD = 'rssi(dBm) std'
 
 # SHT31D config
 I2C_BUS = 1  # 0 = /dev/i2c-0 (port I2C0), 1 = /dev/i2c-1 (port I2C1)
