@@ -499,9 +499,9 @@ class Sensors:
             lines = content.split('\n')
             for line in lines:
                 line = line.strip()
-                cellNumber = cell_number_re.search(line)
-                if cellNumber is not None:
-                    cells.append(cellNumber.groupdict())
+                cell_number = cell_number_re.search(line)
+                if cell_number is not None:
+                    cells.append(cell_number.groupdict())
                     continue
                 wpa = wpa_re.search(line)
                 if wpa is not None:
@@ -740,6 +740,7 @@ class UserInputs(util.UserInputs):
         """
         if parent_keys is None:
             parent_keys = [self.default_parent_key]
+        print(f"DEBUG: parent_keys = {parent_keys}")
         self.valid_sflags = []
         # define the user_inputs dict.
         for parent_key in parent_keys:
