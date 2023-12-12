@@ -488,9 +488,9 @@ class Sensors:
         # network devices.
         def scan(interface='wlan0'):
             cmd = ["iwlist", interface, "scan"]
-            proc = subprocess.Popen(cmd, stdout=subprocess.PIPE,
-                                    stderr=subprocess.PIPE)
-            points = proc.stdout.read().decode('utf-8')
+            with subprocess.Popen(cmd, stdout=subprocess.PIPE,
+                                  stderr=subprocess.PIPE) as proc:
+                points = proc.stdout.read().decode('utf-8')
             return points
 
         # Parses the response from the command "iwlist scan"
