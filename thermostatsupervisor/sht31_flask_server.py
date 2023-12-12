@@ -761,6 +761,7 @@ class UserInputs(util.UserInputs):
             }
             self.valid_sflags += [self.user_inputs[parent_key][k]["sflag"]
                                   for k in self.user_inputs[parent_key].keys()]
+            print(f"DEBUG: valid_sflags={self.valid_sflags}")
 
 
 if __name__ == "__main__":
@@ -776,13 +777,12 @@ if __name__ == "__main__":
     # parse runtime parameters
     uip = UserInputs()
     debug = uip.get_user_inputs(uip.default_parent_key, "debug")
-    if debug:
-        print("Flask debug mode is enabled", file=sys.stderr)
+    print(f"Flask debug mode={debug}", file=sys.stderr)
 
     # launch the Flask API on development server
     flg.schedule_ipban_block_list_report(ip_ban, debug_mode=debug)
     app.run(host='0.0.0.0',
             port=sht31_config.FLASK_PORT,
-            debug=debug,
+            debug=True,
             threaded=True,  # threaded=True may speed up rendering on web page
             ssl_context=sht31_config.FLASK_SSL_CERT)
