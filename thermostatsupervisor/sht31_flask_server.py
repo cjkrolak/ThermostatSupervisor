@@ -532,7 +532,7 @@ class Sensors:
         if self.verbose:
             print(f"iwlist parse results: {parse_result}")
 
-        return float(parse_result[0]["db"])
+        return float(parse_result[0]["signal_level_dBm"])
 
 
 class Controller(Resource):
