@@ -240,6 +240,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
 
         self.tempfield = sht31_config.API_TEMPF_MEAN  # must match flask API
         self.humidityfield = sht31_config.API_HUMIDITY_MEAN  # must match API
+        self.rssifield = sht31_config.API_RSSI_MEAN  # must match API
         self.retry_delay = Thermostat_obj.retry_delay
 
     def get_zone_name(self, zone) -> str:  # used
@@ -423,6 +424,26 @@ class ThermostatZone(tc.ThermostatCommonZone):
         """Return 1 if standby is active, else 0."""
         return 0  # not applicable
 
+    def get_wifi_strength(self) -> float:  # noqa R0201
+        """Return the wifi signal strength in dBm."""
+        # try block for older API not yet supporting rssi.
+        try:
+            raw_rssi = self.get_metadata(self.rssifield)
+        except KeyError:
+            raw_rssi = float(util.BOGUS_INT)
+        if raw_rssi is not None:
+            return float(raw_rssi)
+        else:
+            return float(util.BOGUS_INT)
+
+    def get_wifi_status(self) -> bool:  # noqa R0201
+        """Return the wifi connection status."""
+        raw_wifi = self.get_wifi_strength()
+        if isinstance(raw_wifi, (float, int)):
+            return raw_wifi >= util.MIN_WIFI_DBM
+        else:
+            return False
+
     def get_system_switch_position(self) -> int:
         """ Return the thermostat mode.
 
@@ -517,5 +538,5 @@ if __name__ == "__main__":
         sht31_config.get_available_zones(),
         ThermostatClass,
         ThermostatZone,
-        display_wifi=False,
+        display_wifi=True,
         display_battery=False)
