@@ -640,6 +640,7 @@ class UserInputs():
         returns:
             None
         """
+        print(f"DEBUG: self.user_inputs={self.user_inputs}")
         if child_key is None:
             return self.user_inputs[parent_key][field]
         else:
