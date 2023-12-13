@@ -271,7 +271,7 @@ class Sensors:
 
             # convert the data
             _, temp_c, temp_f, humidity = self.convert_data(data)
-            rssi = self.get_wifi_strength()
+            rssi = self.get_iwconfig_wifi_strength()
 
             # add data to structure
             temp_f_lst.append(temp_f)
@@ -322,7 +322,7 @@ class Sensors:
 
                 # convert the data
                 _, temp_c, temp_f, humidity = self.convert_data(data)
-                rssi = self.get_wifi_strength()
+                rssi = self.get_iwconfig_wifi_strength()
 
                 # add data to structure
                 temp_f_lst.append(temp_f)
@@ -457,10 +457,16 @@ class Sensors:
         parsed_device_dict["i2c_detect"]["bus_" + str(bus)] = bus_dict
         return parsed_device_dict
 
-    def get_wifi_strength(self) -> float:  # noqa R0201
-        """Return the Raspberry pi wifi signal strength in dBm.
+    def get_iwlist_wifi_strength(self, cell=0) -> float:  # noqa R0201
+        """
+        Return the Raspberry pi wifi signal strength in dBm from iwlist.
 
         Code from iancoleman/python-iwlist used.
+
+        inputs:
+            cell(int): cell number to return.
+        returns:
+            (float): wifi signal strength in dBm.
         """
         cell_number_re = re.compile(r"^Cell\s+(?P<cellnumber>.+)\s+-\s+Address:"
                                     r"\s(?P<mac>.+)$")
@@ -481,17 +487,6 @@ class Sensors:
         # Detect encryption type
         wpa_re = re.compile(r"IE:\ WPA\ Version\ 1$")
         wpa2_re = re.compile(r"IE:\ IEEE\ 802\.11i/WPA2\ Version\ 1$")
-
-        # Runs the comnmand to scan the list of networks.
-        # Must run as super user.
-        # Does not specify a particular device, so will scan all
-        # network devices.
-        def scan(interface='wlan0'):
-            cmd = ["iwlist", interface, "scan"]
-            with subprocess.Popen(cmd, stdout=subprocess.PIPE,
-                                  stderr=subprocess.PIPE) as proc:
-                points = proc.stdout.read().decode('utf-8')
-            return points
 
         # Parses the response from the command "iwlist scan"
         def parse(content):
@@ -523,7 +518,11 @@ class Sensors:
             return cells
 
         # call iwlist terminal command
-        scan_result = scan(interface='wlan0')
+        # Runs the comnmand to scan the list of networks.
+        # Must run as super user.
+        # Does not specify a particular device, so will scan all
+        # network devices.
+        scan_result = self.linux_cmd(["iwlist", "wlan0", "scan"])
         if self.verbose:
             print(f"iwlist scan results: {scan_result}")
 
@@ -532,7 +531,64 @@ class Sensors:
         if self.verbose:
             print(f"iwlist parse results: {parse_result}")
 
+        return float(parse_result[cell]["signal_level_dBm"])
+
+    def get_iwconfig_wifi_strength(self) -> float:  # noqa R0201
+        """
+        Return the Raspberry pi wifi signal strength in dBm from iwconfig.
+
+        inputs:
+            None.
+        returns:
+            (float): wifi signal strength in dBm.
+        """
+        regexps = [
+            re.compile(r"^ESSID:\"(?P<essid>.*)\"$"),
+            re.compile(r"^Frequency:(?P<frequency>[\d.]+) "
+                       r"(?P<frequency_units>.+)\s+ "
+                       r"Access Point:\"(?P<mac_addr>.*)\"$"),
+            re.compile(r"^Link Quality=(?P<signal_quality>\d+)/"
+                       r"(?P<signal_total>\d+)"
+                       r"\s+Signal level=(?P<signal_level_dBm>.+) d.+$"),
+        ]
+
+        # Parses the response from the command "iwlist scan"
+        def parse(content):
+            cells = []
+            lines = content.split('\n')
+            for line in lines:
+                line = line.strip()
+                for expression in regexps:
+                    result = expression.search(line)
+                    if result is not None:
+                        cells[-1].update(result.groupdict())
+            return cells
+
+        # call iwconfig terminal command
+        scan_result = self.linux_cmd(["iwconfig"])
+        if self.verbose:
+            print(f"iwconfig scan results: {scan_result}")
+
+        # parse out the RSSI result
+        parse_result = parse(scan_result)
+        if self.verbose:
+            print(f"iwconfig parse results: {parse_result}")
+
         return float(parse_result[0]["signal_level_dBm"])
+
+    def linux_cmd(self, cmd_lst):
+        """
+        Send a linux command to the terminal and return results.
+
+        inputs:
+            cmd_lst(list):  list of one or more commands / parameters.
+        returns:
+            (str): result.
+        """
+        with subprocess.Popen(cmd_lst, stdout=subprocess.PIPE,
+                              stderr=subprocess.PIPE) as proc:
+            result = proc.stdout.read().decode('utf-8')
+        return result
 
 
 class Controller(Resource):
