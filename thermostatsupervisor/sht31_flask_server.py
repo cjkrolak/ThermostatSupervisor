@@ -839,6 +839,6 @@ if __name__ == "__main__":
     flg.schedule_ipban_block_list_report(ip_ban, debug_mode=debug)
     app.run(host='0.0.0.0',
             port=sht31_config.FLASK_PORT,
-            debug=debug,
+            debug=True,
             threaded=True,  # threaded=True may speed up rendering on web page
             ssl_context=sht31_config.FLASK_SSL_CERT)
