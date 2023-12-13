@@ -552,17 +552,17 @@ class Sensors:
                        r"\s+Signal level=(?P<signal_level_dBm>.+) d.+$"),
         ]
 
-        # Parses the response from the command "iwlist scan"
+        # Parses the response from the command "iwconfig"
         def parse(content):
-            cells = []
+            parse_result = {}
             lines = content.split('\n')
             for line in lines:
                 line = line.strip()
                 for expression in regexps:
                     result = expression.search(line)
                     if result is not None:
-                        cells[-1].update(result.groupdict())
-            return cells
+                        parse_result.update(result.groupdict())
+            return parse_result
 
         # call iwconfig terminal command
         scan_result = self.linux_cmd(["iwconfig"])
@@ -574,7 +574,7 @@ class Sensors:
         if self.verbose:
             print(f"iwconfig parse results: {parse_result}")
 
-        return float(parse_result[0]["signal_level_dBm"])
+        return float(parse_result["signal_level_dBm"])
 
     def linux_cmd(self, cmd_lst):
         """
