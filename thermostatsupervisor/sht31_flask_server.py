@@ -796,7 +796,6 @@ class UserInputs(util.UserInputs):
         """
         if parent_keys is None:
             parent_keys = [self.default_parent_key]
-        print(f"DEBUG: parent_keys = {parent_keys}")
         self.valid_sflags = []
         # define the user_inputs dict.
         for parent_key in parent_keys:
@@ -839,6 +838,6 @@ if __name__ == "__main__":
     flg.schedule_ipban_block_list_report(ip_ban, debug_mode=debug)
     app.run(host='0.0.0.0',
             port=sht31_config.FLASK_PORT,
-            debug=True,
+            debug=debug,
             threaded=True,  # threaded=True may speed up rendering on web page
             ssl_context=sht31_config.FLASK_SSL_CERT)
