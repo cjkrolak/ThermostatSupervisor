@@ -512,7 +512,7 @@ class UserInputs():
                 # add script name
                 self.user_inputs[parent_key][key]["value"] = sys.argv[0]
             else:
-                 self.user_inputs[parent_key][key]["value"] = getattr(args,
+                self.user_inputs[parent_key][key]["value"] = getattr(args,
                                                                      key, None)
                 strip_types = str
                 if isinstance(self.user_inputs[parent_key][key]["value"],
@@ -520,7 +520,7 @@ class UserInputs():
                     # str parsing has leading spaces for some reason
                     self.user_inputs[parent_key][key]["value"] = \
                         self.user_inputs[parent_key][key]["value"].strip()
-         return self.user_inputs
+        return self.user_inputs
 
     def parse_argv_list(self, parent_key, argv_list=None):
         """
