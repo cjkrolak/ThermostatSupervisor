@@ -778,6 +778,14 @@ class RuntimeParameterTest(UnitTest):
                 "expected_value": 2,
                 "required": False,
                 },
+            "TypeError_bool": {
+                "value": True,
+                "type": bool,
+                "default": False,
+                "valid_range": [0, 1, False, True],
+                "expected_value": True,
+                "required": False,
+                },
             "fail_out_of_range_int": {
                 "value": 6,
                 "type": int,
@@ -815,21 +823,27 @@ class RuntimeParameterTest(UnitTest):
         child_key = "test_case"
         for test_case, test_dict in test_cases.items():
             print(f"test case='{test_case}'")
-            result_dict = self.uip.validate_argv_inputs({self.parent_key: {
-                child_key: test_dict}})
-            actual_value = result_dict[self.parent_key][child_key]["value"]
-
-            if "fail_" in test_case:
-                expected_value = result_dict[self.parent_key][child_key][
-                    "default"]
+            if "TypeError" in test_case:
+                with self.assertRaises(TypeError):
+                    result_dict = self.uip.validate_argv_inputs(
+                        {self.parent_key: {
+                         child_key: test_dict}})
             else:
-                expected_value = (result_dict[self.parent_key][child_key]
-                                  ["expected_value"])
+                result_dict = self.uip.validate_argv_inputs({self.parent_key: {
+                    child_key: test_dict}})
+                actual_value = result_dict[self.parent_key][child_key]["value"]
 
-            self.assertEqual(expected_value, actual_value,
-                             f"test case ({test_case}), "
-                             f"expected={expected_value}, "
-                             f"actual={actual_value}")
+                if "fail_" in test_case:
+                    expected_value = result_dict[self.parent_key][child_key][
+                        "default"]
+                else:
+                    expected_value = (result_dict[self.parent_key][child_key]
+                                      ["expected_value"])
+
+                self.assertEqual(expected_value, actual_value,
+                                 f"test case ({test_case}), "
+                                 f"expected={expected_value}, "
+                                 f"actual={actual_value}")
 
 
 # user input fields

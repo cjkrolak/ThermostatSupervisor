@@ -588,7 +588,16 @@ class UserInputs():
                 proposed_value = attr["value"]
                 default_value = attr["default"]
                 proposed_type = type(proposed_value)
-                expected_type = attr["type"]
+                # expected type lambda cast to bool
+                # should never get bool for attr["type"]
+                if attr["type"] == bool:
+                    raise TypeError("CODING ERROR: UserInput bool "
+                                    "typedefs don't work, use a lambda "
+                                    "function")
+                elif "lambda" in str(attr["type"]):
+                    expected_type = bool
+                else:
+                    expected_type = attr["type"]
                 # missing value check
                 if proposed_value is None:
                     if not self.suppress_warnings:

@@ -796,7 +796,6 @@ class UserInputs(util.UserInputs):
         """
         if parent_keys is None:
             parent_keys = [self.default_parent_key]
-        print(f"DEBUG: parent_keys = {parent_keys}")
         self.valid_sflags = []
         # define the user_inputs dict.
         for parent_key in parent_keys:
@@ -817,7 +816,6 @@ class UserInputs(util.UserInputs):
             }
             self.valid_sflags += [self.user_inputs[parent_key][k]["sflag"]
                                   for k in self.user_inputs[parent_key].keys()]
-            print(f"DEBUG: valid_sflags={self.valid_sflags}")
 
 
 if __name__ == "__main__":

@@ -219,7 +219,6 @@ class UserInputs(util.UserInputs):
         if input_file is not None:
             # aise Exception("dynamic_update_user_inputs found")
             self.using_input_file = True
-            print(f"DEBUG: reading runtime arguments from '{input_file}'...")
             self.parse_input_file(input_file)
             # scan all sections in INI file in reversed order so that
             # user_inputs contains the first key after casting.
