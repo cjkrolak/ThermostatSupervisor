@@ -504,7 +504,6 @@ class UserInputs():
             args = self.parser.parse_args(argv_list[1:])
         else:
             args = self.parser.parse_args()
-
         for key in self.user_inputs[parent_key]:
             if key == "script":
                 # add script name
