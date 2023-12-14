@@ -640,7 +640,7 @@ class UserInputs():
         returns:
             None
         """
-        print(f"DEBUG: self.user_inputs={self.user_inputs}")
+        print(f"DEBUG get_user_inputs: self.user_inputs={self.user_inputs}")
         if child_key is None:
             return self.user_inputs[parent_key][field]
         else:
@@ -668,6 +668,7 @@ class UserInputs():
         returns:
             None, updates uip.user_inputs dict.
         """
+        print(f"DEBUG set_user_inputs start: self.user_inputs={self.user_inputs}")
         if child_key is None:
             self.user_inputs[parent_key][field] = input_val
         else:
@@ -681,6 +682,7 @@ class UserInputs():
                 print(f"KeyError: target=[{parent_key}][{child_key}][{field}],"
                       f" raw={self.user_inputs.keys()}")
                 raise
+        print(f"DEBUG set_user_inputs end: self.user_inputs={self.user_inputs}")
 
     def is_valid_file(self, arg):
         """

@@ -817,7 +817,7 @@ class UserInputs(util.UserInputs):
             }
             self.valid_sflags += [self.user_inputs[parent_key][k]["sflag"]
                                   for k in self.user_inputs[parent_key].keys()]
-            print(f"DEBUG: self.user_inputs={self.user_inputs}")
+            print(f"DEBUG initialize_user_inputs: self.user_inputs={self.user_inputs}")
 
 
 if __name__ == "__main__":
