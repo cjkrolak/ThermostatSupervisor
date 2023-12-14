@@ -453,7 +453,7 @@ class UserInputs():
                 self.parse_argv_list(
                     parent_key, argv_list)
         elif any([flag in sysargv_sflags for flag in valid_sflags]):
-            print(f"DEBUG: elseif any s={sysargv_sflags} v={valid_sflags}")
+            print(f"DEBUG: elseif any s={sysargv_sflags} v={valid_sflags} sys.argv={sys.argv}")
             # named arguments from sys.argv
             log_msg(
                 f"parsing named runtime parameters from sys.argv: {sys.argv}",
