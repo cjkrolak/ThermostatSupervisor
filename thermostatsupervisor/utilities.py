@@ -399,6 +399,7 @@ class UserInputs():
         # parse the runtime arguments from input list or sys.argv
         print(f"DEBUG util.UserInputs pre-parse list: {argv_list}")
         self.parse_runtime_parameters(argv_list)
+        print(f"DEBUG util post-parse {self.user_inputs}")
 
     def initialize_user_inputs(self, parent_keys=None):
         """Populate user_inputs dictionary."""
@@ -476,7 +477,9 @@ class UserInputs():
         self.dynamic_update_user_inputs()
 
         # validate inputs
+        print(f"DEBUG pre-validate {self.user_inputs}")
         self.validate_argv_inputs(self.user_inputs)
+        print(f"DEBUG post-validate {self.user_inputs}")
 
         return self.user_inputs
 
