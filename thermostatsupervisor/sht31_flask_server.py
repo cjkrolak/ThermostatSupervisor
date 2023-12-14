@@ -804,8 +804,9 @@ class UserInputs(util.UserInputs):
                 input_flds.debug_fld: {
                     "order": 1,    # index in the argv list
                     "value": None,
-                    "type": lambda x: bool(str2bool(
-                        str(x).strip())),
+                    # "type": lambda x: bool(str2bool(
+                    #     str(x).strip())),
+                    "type": bool,
                     "default": False,
                     "valid_range": [True, False, 1, 0],
                     "sflag": "-d",
