@@ -397,9 +397,7 @@ class UserInputs():
         self.using_input_file = False
         self.initialize_user_inputs()
         # parse the runtime arguments from input list or sys.argv
-        print(f"DEBUG util.UserInputs pre-parse list: {argv_list}")
         self.parse_runtime_parameters(argv_list)
-        print(f"DEBUG util post-parse {self.user_inputs}")
 
     def initialize_user_inputs(self, parent_keys=None):
         """Populate user_inputs dictionary."""
@@ -433,7 +431,6 @@ class UserInputs():
         valid_sflags = self.get_sflag_list()
         valid_sflags += ["-h", "--"]  # add help and double dash
         if argv_list:
-            print(f"DEBUG if argv_list {argv_list}")
             # argument list input, support parsing list
             argvlist_sflags = [str(elem)[:2] for elem in argv_list]
             if any([flag in argvlist_sflags for flag in valid_sflags]):
@@ -454,7 +451,6 @@ class UserInputs():
                 self.parse_argv_list(
                     parent_key, argv_list)
         elif any([flag in sysargv_sflags for flag in valid_sflags]):
-            print(f"DEBUG: elseif any s={sysargv_sflags} v={valid_sflags} sys.argv={sys.argv}")
             # named arguments from sys.argv
             log_msg(
                 f"parsing named runtime parameters from sys.argv: {sys.argv}",
@@ -463,7 +459,6 @@ class UserInputs():
                 func_name=1)
             self.parse_named_arguments()
         else:
-            print(f"DEBUG: else {sys.argv}")
             # sys.argv parsing
             log_msg(
                 f"parsing runtime parameters from sys.argv: {sys.argv}",
@@ -511,24 +506,21 @@ class UserInputs():
             args = self.parser.parse_args(argv_list[1:])
         else:
             args = self.parser.parse_args()
-        print(f"DEBUG: args={args}")
+
         for key in self.user_inputs[parent_key]:
             if key == "script":
                 # add script name
                 self.user_inputs[parent_key][key]["value"] = sys.argv[0]
             else:
-                print(f"DEBUG: parent_key={parent_key}, key={key}, args={args}")
-                self.user_inputs[parent_key][key]["value"] = getattr(args,
+                 self.user_inputs[parent_key][key]["value"] = getattr(args,
                                                                      key, None)
-                print(f"DEBUG value parsed={self.user_inputs[parent_key][key]["value"]}")
                 strip_types = str
                 if isinstance(self.user_inputs[parent_key][key]["value"],
                               strip_types):
                     # str parsing has leading spaces for some reason
                     self.user_inputs[parent_key][key]["value"] = \
                         self.user_inputs[parent_key][key]["value"].strip()
-                print(f"DEBUG value stripped={self.user_inputs[parent_key][key]["value"]}")
-        return self.user_inputs
+         return self.user_inputs
 
     def parse_argv_list(self, parent_key, argv_list=None):
         """
@@ -598,7 +590,11 @@ class UserInputs():
                 proposed_value = attr["value"]
                 default_value = attr["default"]
                 proposed_type = type(proposed_value)
-                expected_type = attr["type"]
+                # expected type lambda cast to bool
+                if "lambda" in attr["type"]:
+                    expected_type = bool
+                else:
+                    expected_type = attr["type"]
                 print(f"DEBUG: pk={parent_key}, ck={child_key}, pv={proposed_value}, dv={default_value}, pt={proposed_type}, et={expected_type}")
                 # missing value check
                 if proposed_value is None:
@@ -630,7 +626,6 @@ class UserInputs():
                 # out of range check
                 elif (attr["valid_range"] is not None and
                       proposed_value not in attr["valid_range"]):
-                    print("DEBUG: out of range")
                     if not self.suppress_warnings:
                         log_msg(
                             f"WARNING: '{proposed_value}' is not a valid "
@@ -653,7 +648,6 @@ class UserInputs():
         returns:
             None
         """
-        print(f"DEBUG get_user_inputs: self.user_inputs={self.user_inputs}")
         if child_key is None:
             return self.user_inputs[parent_key][field]
         else:
@@ -681,7 +675,6 @@ class UserInputs():
         returns:
             None, updates uip.user_inputs dict.
         """
-        print(f"DEBUG set_user_inputs start: self.user_inputs={self.user_inputs}")
         if child_key is None:
             self.user_inputs[parent_key][field] = input_val
         else:
@@ -695,7 +688,6 @@ class UserInputs():
                 print(f"KeyError: target=[{parent_key}][{child_key}][{field}],"
                       f" raw={self.user_inputs.keys()}")
                 raise
-        print(f"DEBUG set_user_inputs end: self.user_inputs={self.user_inputs}")
 
     def is_valid_file(self, arg):
         """
