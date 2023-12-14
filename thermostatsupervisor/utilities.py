@@ -599,6 +599,7 @@ class UserInputs():
                 default_value = attr["default"]
                 proposed_type = type(proposed_value)
                 expected_type = attr["type"]
+                print(f"DEBUG: pk={parent_key}, ck={child_key}, pv={proposed_value}, dv={default_value}, pt={proposed_type}, et={expected_type}")
                 # missing value check
                 if proposed_value is None:
                     if not self.suppress_warnings:
@@ -613,6 +614,7 @@ class UserInputs():
 
                 # wrong datatype check
                 elif proposed_type != expected_type:
+                    print(f"DEBUG: pt={proposed_type}, et={expected_type}")
                     if not self.suppress_warnings:
                         log_msg(
                             f"parent_key={parent_key}, child_key='{child_key}'"
@@ -628,6 +630,7 @@ class UserInputs():
                 # out of range check
                 elif (attr["valid_range"] is not None and
                       proposed_value not in attr["valid_range"]):
+                    print("DEBUG: out of range")
                     if not self.suppress_warnings:
                         log_msg(
                             f"WARNING: '{proposed_value}' is not a valid "
