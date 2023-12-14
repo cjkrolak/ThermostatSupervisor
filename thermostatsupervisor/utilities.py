@@ -517,6 +517,7 @@ class UserInputs():
                     # str parsing has leading spaces for some reason
                     self.user_inputs[parent_key][key]["value"] = \
                         self.user_inputs[parent_key][key]["value"].strip()
+
         return self.user_inputs
 
     def parse_argv_list(self, parent_key, argv_list=None):
