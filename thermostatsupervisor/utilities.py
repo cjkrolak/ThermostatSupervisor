@@ -472,9 +472,7 @@ class UserInputs():
         self.dynamic_update_user_inputs()
 
         # validate inputs
-        print(f"DEBUG pre-validate {self.user_inputs}")
         self.validate_argv_inputs(self.user_inputs)
-        print(f"DEBUG post-validate {self.user_inputs}")
 
         return self.user_inputs
 
@@ -491,7 +489,7 @@ class UserInputs():
         # set parent key
         if parent_key is None:
             parent_key = self.default_parent_key
-        print(f"DEBUG parent_key={parent_key}")
+
         # load parser contents
         for _, attr in self.user_inputs[parent_key].items():
             self.parser.add_argument(attr["lflag"], attr["sflag"],
@@ -595,7 +593,6 @@ class UserInputs():
                     expected_type = bool
                 else:
                     expected_type = attr["type"]
-                print(f"DEBUG: pk={parent_key}, ck={child_key}, pv={proposed_value}, dv={default_value}, pt={proposed_type}, et={expected_type}")
                 # missing value check
                 if proposed_value is None:
                     if not self.suppress_warnings:
@@ -610,7 +607,6 @@ class UserInputs():
 
                 # wrong datatype check
                 elif proposed_type != expected_type:
-                    print(f"DEBUG: pt={proposed_type}, et={expected_type}")
                     if not self.suppress_warnings:
                         log_msg(
                             f"parent_key={parent_key}, child_key='{child_key}'"
