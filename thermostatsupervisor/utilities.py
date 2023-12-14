@@ -591,7 +591,7 @@ class UserInputs():
                 default_value = attr["default"]
                 proposed_type = type(proposed_value)
                 # expected type lambda cast to bool
-                if "lambda" in attr["type"]:
+                if "lambda" in str(attr["type"]):
                     expected_type = bool
                 else:
                     expected_type = attr["type"]
