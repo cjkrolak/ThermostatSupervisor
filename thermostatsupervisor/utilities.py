@@ -397,6 +397,7 @@ class UserInputs():
         self.using_input_file = False
         self.initialize_user_inputs()
         # parse the runtime arguments from input list or sys.argv
+        print(f"DEBUG util.UserInputs pre-parse list: {argv_list}")
         self.parse_runtime_parameters(argv_list)
 
     def initialize_user_inputs(self, parent_keys=None):
@@ -431,6 +432,7 @@ class UserInputs():
         valid_sflags = self.get_sflag_list()
         valid_sflags += ["-h", "--"]  # add help and double dash
         if argv_list:
+            print(f"DEBUG if argv_list {argv_list}")
             # argument list input, support parsing list
             argvlist_sflags = [str(elem)[:2] for elem in argv_list]
             if any([flag in argvlist_sflags for flag in valid_sflags]):
@@ -451,6 +453,7 @@ class UserInputs():
                 self.parse_argv_list(
                     parent_key, argv_list)
         elif any([flag in sysargv_sflags for flag in valid_sflags]):
+            print(f"DEBUG: elseif any s={sysargv_sflags} v={valid_sflags}")
             # named arguments from sys.argv
             log_msg(
                 f"parsing named runtime parameters from sys.argv: {sys.argv}",
@@ -459,6 +462,7 @@ class UserInputs():
                 func_name=1)
             self.parse_named_arguments()
         else:
+            print(f"DEBUG: else {sys.argv}")
             # sys.argv parsing
             log_msg(
                 f"parsing runtime parameters from sys.argv: {sys.argv}",
