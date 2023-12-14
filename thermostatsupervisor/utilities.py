@@ -493,7 +493,7 @@ class UserInputs():
         # set parent key
         if parent_key is None:
             parent_key = self.default_parent_key
-
+        print(f"DEBUG parent_key={parent_key}")
         # load parser contents
         for _, attr in self.user_inputs[parent_key].items():
             self.parser.add_argument(attr["lflag"], attr["sflag"],
@@ -508,20 +508,23 @@ class UserInputs():
             args = self.parser.parse_args(argv_list[1:])
         else:
             args = self.parser.parse_args()
+        print(f"DEBUG: args={args}")
         for key in self.user_inputs[parent_key]:
             if key == "script":
                 # add script name
                 self.user_inputs[parent_key][key]["value"] = sys.argv[0]
             else:
+                print(f"DEBUG: parent_key={parent_key}, key={key}, args={args}")
                 self.user_inputs[parent_key][key]["value"] = getattr(args,
                                                                      key, None)
+                print(f"DEBUG value parsed={self.user_inputs[parent_key][key]["value"]}")
                 strip_types = str
                 if isinstance(self.user_inputs[parent_key][key]["value"],
                               strip_types):
                     # str parsing has leading spaces for some reason
                     self.user_inputs[parent_key][key]["value"] = \
                         self.user_inputs[parent_key][key]["value"].strip()
-
+                print(f"DEBUG value stripped={self.user_inputs[parent_key][key]["value"]}")
         return self.user_inputs
 
     def parse_argv_list(self, parent_key, argv_list=None):
