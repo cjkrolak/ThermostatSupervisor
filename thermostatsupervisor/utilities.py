@@ -29,10 +29,11 @@ BOGUS_STR = "<missing value>"
 bogus_dict = {}
 
 # logging options
-CONSOLE_LOG = 0x001  # print to console
-DATA_LOG = 0x010  # print to data log
-BOTH_LOG = 0x011  # log to both console and data logs
-DEBUG_LOG = 0x100  # print only if debug mode is on
+STDOUT_LOG = 0x0001  # print to console
+DATA_LOG = 0x0010  # print to data log
+BOTH_LOG = 0x0011  # log to both console and data logs
+DEBUG_LOG = 0x0100  # print only if debug mode is on
+STDERR_LOG = 0x1000  # print to stderr
 
 FILE_PATH = ".//data"
 MAX_LOG_SIZE_BYTES = 2**20  # logs rotate at this max size
@@ -103,8 +104,12 @@ def log_msg(msg, mode, func_name=-1, file_name=None):
         write_to_file(full_path, file_size_bytes, msg)
 
     # print to console
-    if (mode & CONSOLE_LOG) and not filter_debug_msg:
+    if (mode & STDOUT_LOG) and not filter_debug_msg:
         print(msg)
+
+    # print to error stream
+    if (mode & STDERR_LOG) and not filter_debug_msg:
+        print(msg, file=sys.stderr)
 
     return return_buffer
 
@@ -438,7 +443,7 @@ class UserInputs():
                     f"parsing named runtime parameters from user input list: "
                     f"{argv_list}",
                     mode=DEBUG_LOG +
-                    CONSOLE_LOG,
+                    STDOUT_LOG,
                     func_name=1)
                 self.parse_named_arguments(argv_list=argv_list)
             else:
@@ -446,7 +451,7 @@ class UserInputs():
                     f"parsing runtime parameters from user input list: "
                     f"{argv_list}",
                     mode=DEBUG_LOG +
-                    CONSOLE_LOG,
+                    STDOUT_LOG,
                     func_name=1)
                 self.parse_argv_list(
                     parent_key, argv_list)
@@ -455,7 +460,7 @@ class UserInputs():
             log_msg(
                 f"parsing named runtime parameters from sys.argv: {sys.argv}",
                 mode=DEBUG_LOG +
-                CONSOLE_LOG,
+                STDOUT_LOG,
                 func_name=1)
             self.parse_named_arguments()
         else:
@@ -463,7 +468,7 @@ class UserInputs():
             log_msg(
                 f"parsing runtime parameters from sys.argv: {sys.argv}",
                 mode=DEBUG_LOG +
-                CONSOLE_LOG,
+                STDOUT_LOG,
                 func_name=1)
             self.parse_argv_list(parent_key, sys.argv)
 
@@ -606,7 +611,7 @@ class UserInputs():
                             f": argv parameter missing, using default "
                             f"value '{default_value}'",
                             mode=DEBUG_LOG +
-                            CONSOLE_LOG,
+                            STDOUT_LOG,
                             func_name=1)
                     attr["value"] = attr["default"]
 
@@ -620,7 +625,7 @@ class UserInputs():
                             "using default value "
                             f"'{default_value}'",
                             mode=DEBUG_LOG +
-                            CONSOLE_LOG,
+                            STDOUT_LOG,
                             func_name=1)
                     attr["value"] = attr["default"]
 

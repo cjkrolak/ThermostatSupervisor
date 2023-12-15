@@ -127,7 +127,7 @@ class ThermostatClass(pyhtcc.PyHTCC, tc.ThermostatCommon):
         """
         return_data = self.get_metadata(zone, parameter=None)
         util.log_msg(f"all meta data: {return_data}",
-                     mode=util.DEBUG_LOG + util.CONSOLE_LOG, func_name=1)
+                     mode=util.DEBUG_LOG + util.STDOUT_LOG, func_name=1)
         return return_data
 
     def get_metadata(self, zone=honeywell_config.default_zone,
@@ -151,7 +151,7 @@ class ThermostatClass(pyhtcc.PyHTCC, tc.ThermostatCommon):
                       f"{zone_info_list}")
                 raise
             util.log_msg(f"zone {zone} info: {return_data}",
-                         mode=util.DEBUG_LOG + util.CONSOLE_LOG, func_name=1)
+                         mode=util.DEBUG_LOG + util.STDOUT_LOG, func_name=1)
             return return_data
         else:
             try:
@@ -161,7 +161,7 @@ class ThermostatClass(pyhtcc.PyHTCC, tc.ThermostatCommon):
                       f"{zone_info_list}")
                 raise
             util.log_msg(f"zone {zone} parameter '{parameter}': {return_data}",
-                         mode=util.DEBUG_LOG + util.CONSOLE_LOG, func_name=1)
+                         mode=util.DEBUG_LOG + util.STDOUT_LOG, func_name=1)
             return return_data
 
     def get_latestdata(self, zone=honeywell_config.default_zone,
@@ -192,7 +192,7 @@ class ThermostatClass(pyhtcc.PyHTCC, tc.ThermostatCommon):
         """
         ui_data_dict = self.get_latestdata(zone).get('uiData')
         util.log_msg(f"zone{zone} latestData: {ui_data_dict}",
-                     mode=util.DEBUG_LOG + util.CONSOLE_LOG, func_name=1)
+                     mode=util.DEBUG_LOG + util.STDOUT_LOG, func_name=1)
         return ui_data_dict
 
     def get_ui_data_param(self, zone=honeywell_config.default_zone,
@@ -210,7 +210,7 @@ class ThermostatClass(pyhtcc.PyHTCC, tc.ThermostatCommon):
             zone=honeywell_config.default_zone).get(parameter)
         util.log_msg(f"zone{zone} uiData parameter {parameter}: "
                      f"{parameter_data}",
-                     mode=util.DEBUG_LOG + util.CONSOLE_LOG,
+                     mode=util.DEBUG_LOG + util.STDOUT_LOG,
                      func_name=1)
         return parameter_data
 
