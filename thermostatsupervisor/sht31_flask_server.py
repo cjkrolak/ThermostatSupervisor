@@ -836,12 +836,6 @@ if __name__ == "__main__":
     debug = uip.get_user_inputs(uip.default_parent_key, "debug")
     print(f"Flask debug mode={debug}", file=sys.stderr)
 
-    util.log_msg("printing to stdout", util.STDOUT_LOG)
-    util.log_msg("printing to stderr", util.STDERR_LOG)
-    util.log_msg("printing to stdout and stderr",
-                 util.STDOUT_LOG + util.STDERR_LOG)
-    util.log_msg("printing to stdout and stderr",
-                 util.STDOUT_LOG + util.STDERR_LOG)
     # launch the Flask API on development server
     flg.schedule_ipban_block_list_report(ip_ban, debug_mode=debug)
     app.run(host='0.0.0.0',
