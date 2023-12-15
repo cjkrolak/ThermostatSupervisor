@@ -822,6 +822,9 @@ if __name__ == "__main__":
 
     print("SHT31 sensor Flask server")
 
+    # enable logging to STDERR for Flask
+    util.log_stdout_to_stderr = True
+
     # verify environment
     env.get_python_version()
     if not env.is_raspberrypi_environment(True):

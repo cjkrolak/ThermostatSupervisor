@@ -42,6 +42,7 @@ MIN_WIFI_DBM = -70.0  # min viable WIFI signal strength
 
 # set unit test IP address, same as client
 unit_test_mode = False  # in unit test mode
+log_stdout_to_stderr = False  # in flask server mode
 
 
 def get_function_name(stack_value=1):
@@ -76,6 +77,11 @@ def log_msg(msg, mode, func_name=-1, file_name=None):
     debug_enabled = getattr(log_msg, "debug", False)
     debug_msg = mode & DEBUG_LOG
     filter_debug_msg = debug_msg and not debug_enabled
+
+    # cast STDOUT_LOG to STDERR_LOG in flask server mode
+    if (log_stdout_to_stderr and (mode & STDOUT_LOG) and
+            not (mode & STDERR_LOG)):
+        mode = mode + STDERR_LOG - STDOUT_LOG
 
     # define filename
     if file_name is not None:
