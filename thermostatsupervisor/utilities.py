@@ -29,11 +29,19 @@ BOGUS_STR = "<missing value>"
 bogus_dict = {}
 
 # logging options
-STDOUT_LOG = 0x0001  # print to console
-DATA_LOG = 0x0010  # print to data log
-BOTH_LOG = 0x0011  # log to both console and data logs
-DEBUG_LOG = 0x0100  # print only if debug mode is on
-STDERR_LOG = 0x1000  # print to stderr
+STDOUT_LOG = 0b0001  # print to console
+DATA_LOG = 0b0010  # print to data log
+BOTH_LOG = 0b0011  # log to both console and data logs
+DEBUG_LOG = 0b0100  # print only if debug mode is on
+STDERR_LOG = 0b1000  # print to stderr
+
+# unique log modes (excluding combinations)
+log_modes = {
+    STDOUT_LOG: "stdout log",
+    DATA_LOG: "data log",
+    DEBUG_LOG: "print only if debug mode enabled",
+    STDERR_LOG: "stderr log"
+}
 
 FILE_PATH = ".//data"
 MAX_LOG_SIZE_BYTES = 2**20  # logs rotate at this max size

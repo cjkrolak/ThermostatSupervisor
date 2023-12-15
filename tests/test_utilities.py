@@ -86,6 +86,21 @@ class FileAndLoggingTests(utc.UnitTest):
         #                 test_msg1_length + test_msg2_length)
         self.assertGreater(file_size_bytes, 60)
 
+    def test_log_msg_modes(self):
+        """
+        Confirm log_msg modes work correctly.
+        """
+        print(f"keys={util.log_modes.keys()}")
+        print(f"max range={range(max(util.log_modes.keys()))}")
+        for mode in range(max(util.log_modes.keys()) * 2):
+            print(f"testing log mode: '{mode}': {mode:04b}")
+            mode_msg = util.log_modes.get(
+                mode, "undefined combination")
+            log_msg = f"to log mode '{mode}': {mode_msg}"
+            print(f"printing '{log_msg}' to console")
+            util.log_msg(
+                f"logging '{log_msg}'", mode, func_name=1)
+
     def test_get_file_size_bytes(self):
         """
         Confirm get_file_size_bytes() works as expected.
