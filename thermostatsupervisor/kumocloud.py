@@ -125,7 +125,7 @@ class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
             serial_num_lst = list(self.get_indoor_units())  # retry
         if debug:
             util.log_msg(f"indoor unit serial numbers: {str(serial_num_lst)}",
-                         mode=util.DEBUG_LOG + util.CONSOLE_LOG, func_name=1)
+                         mode=util.DEBUG_LOG + util.STDOUT_LOG, func_name=1)
 
         # validate serial number list
         if not serial_num_lst:
@@ -139,7 +139,7 @@ class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
                              f"{self.get_address(serial_number)} credentials: "
                              f"{self.get_credentials(serial_number)}",
                              mode=util.DEBUG_LOG +
-                             util.CONSOLE_LOG,
+                             util.STDOUT_LOG,
                              func_name=1)
             # populate meta data dict
             if debug:

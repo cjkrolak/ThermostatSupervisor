@@ -91,12 +91,12 @@ def send_email_alert(to_address=None,
     msg['To'] = to_address
 
     util.log_msg(f"message text={msg.as_string()}",
-                 mode=util.DEBUG_LOG + util.CONSOLE_LOG, func_name=1)
+                 mode=util.DEBUG_LOG + util.STDOUT_LOG, func_name=1)
 
     try:
         server = smtplib.SMTP_SSL(server_url, server_port)
         util.log_msg("smtp connection successful",
-                     mode=util.DEBUG_LOG + util.CONSOLE_LOG, func_name=1)
+                     mode=util.DEBUG_LOG + util.STDOUT_LOG, func_name=1)
     except (ValueError,  # not sure if this exception will be raised here
             TimeoutError,  # observed on Windows for bad port
             OSError  # on AzDO with bad port
@@ -109,7 +109,7 @@ def send_email_alert(to_address=None,
         server.login(from_address, from_password)
         util.log_msg(f"email account authorization for account {from_address}"
                      f" successful",
-                     mode=util.DEBUG_LOG + util.CONSOLE_LOG, func_name=1)
+                     mode=util.DEBUG_LOG + util.STDOUT_LOG, func_name=1)
     except (smtplib.SMTPHeloError, smtplib.SMTPAuthenticationError,
             smtplib.SMTPNotSupportedError, smtplib.SMTPException):
         util.log_msg(traceback.format_exc(),
@@ -122,7 +122,7 @@ def send_email_alert(to_address=None,
     try:
         server.sendmail(from_address, to_address, msg.as_string())
         util.log_msg("mail send was successful",
-                     mode=util.DEBUG_LOG + util.CONSOLE_LOG, func_name=1)
+                     mode=util.DEBUG_LOG + util.STDOUT_LOG, func_name=1)
     except (smtplib.SMTPHeloError, smtplib.SMTPRecipientsRefused,
             smtplib.SMTPSenderRefused, smtplib.SMTPDataError,
             smtplib.SMTPNotSupportedError):
@@ -132,7 +132,7 @@ def send_email_alert(to_address=None,
         return (util.EMAIL_SEND_ERROR, return_status_msg_dict[status])
     server.close()
     util.log_msg("Email sent!",
-                 mode=util.DEBUG_LOG + util.CONSOLE_LOG, func_name=1)
+                 mode=util.DEBUG_LOG + util.STDOUT_LOG, func_name=1)
 
     return (status, return_status_msg_dict[status])
 

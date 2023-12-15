@@ -72,7 +72,7 @@ def get_env_variable(env_key):
                      mode=util.DEBUG_LOG)
     except KeyError:
         util.log_msg(f"FATAL ERROR: required environment variable '{env_key}'"
-                     " is missing.", mode=util.CONSOLE_LOG + util.DATA_LOG)
+                     " is missing.", mode=util.STDOUT_LOG + util.DATA_LOG)
         return_buffer["status"] = util.ENVIRONMENT_ERROR
     return return_buffer
 

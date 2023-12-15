@@ -827,7 +827,7 @@ class ThermostatCommonZone():
                                        stats["mean"]), 2)
         return stats
 
-    def display_basic_thermostat_summary(self, mode=util.CONSOLE_LOG):
+    def display_basic_thermostat_summary(self, mode=util.STDOUT_LOG):
         """
         Display basic thermostat summary.
 
