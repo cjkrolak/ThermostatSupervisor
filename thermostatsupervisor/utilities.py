@@ -578,6 +578,8 @@ class UserInputs():
                     self.user_inputs[parent_key][child_key]["value"] = \
                         argv_inputs[val["order"]]
 
+        print(f"DEBUG saved value = {self.user_inputs[parent_key][child_key]["value"]}")
+        print(f"DEBUG user_inputs={self.user_inputs}")
         return self.user_inputs
 
     def dynamic_update_user_inputs(self):
