@@ -1,7 +1,11 @@
 """KumoCloud integration"""
+# built-in imports
 import os
+import pprint
 import time
 import traceback
+
+# third party imports
 
 # local imports
 from thermostatsupervisor import environment as env
@@ -259,7 +263,9 @@ class ThermostatZone(tc.ThermostatCommonZone):
                     # if no default val, then display detailed key error
                     util.log_msg(traceback.format_exc(),
                                  mode=util.BOTH_LOG, func_name=1)
-                    util.log_msg(f"raw zone_info dict={self.zone_info}",
+                    util.log_msg("raw zone_info dict:",
+                                 mode=util.BOTH_LOG, func_name=1)
+                    util.log_msg(pprint.pprint(self.zone_info),
                                  mode=util.BOTH_LOG, func_name=1)
                     raise
         elif parent_key is not None:
@@ -271,7 +277,9 @@ class ThermostatZone(tc.ThermostatCommonZone):
                     # if no default val, then display detailed key error
                     util.log_msg(traceback.format_exc(),
                                  mode=util.BOTH_LOG, func_name=1)
-                    util.log_msg(f"raw zone_info dict={self.zone_info}",
+                    util.log_msg("raw zone_info dict:",
+                                 mode=util.BOTH_LOG, func_name=1)
+                    util.log_msg(pprint.pprint(self.zone_info),
                                  mode=util.BOTH_LOG, func_name=1)
                     raise
         else:
@@ -282,8 +290,9 @@ class ThermostatZone(tc.ThermostatCommonZone):
                     # if no default val, then display detailed key error
                     util.log_msg(traceback.format_exc(),
                                  mode=util.BOTH_LOG, func_name=1)
-                    util.log_msg(f"target key={key}, "
-                                 f"raw zone_info dict={self.zone_info}",
+                    util.log_msg(f"target key={key}, raw zone_info dict:",
+                                 mode=util.BOTH_LOG, func_name=1)
+                    util.log_msg(pprint.pprint(self.zone_info),
                                  mode=util.BOTH_LOG, func_name=1)
                     raise
         return return_val
@@ -483,10 +492,14 @@ class ThermostatZone(tc.ThermostatCommonZone):
                                       'reportedCondition'))
 
     def get_wifi_strength(self) -> float:  # noqa R0201
-        """Return the wifi signal strength in dBm."""
+        """Return the wifi signal strength in dBm.
+
+        rssi is sometimes reported in the reportedCondition dict,
+        rssi is always reported in the rssi dict.
+        """
         self.refresh_zone_info()
         return float(self.get_parameter('rssi',
-                                        'reportedCondition'))
+                                        'rssi'))
 
     def get_wifi_status(self) -> bool:  # noqa R0201
         """Return the wifi connection status."""
