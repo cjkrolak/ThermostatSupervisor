@@ -1,6 +1,9 @@
 """KumoCloud integration using local API for data."""
+# built-in imports
 import os
 import time
+
+# third party imports
 
 # local imports
 from thermostatsupervisor import kumolocal_config
