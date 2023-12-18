@@ -29,10 +29,19 @@ BOGUS_STR = "<missing value>"
 bogus_dict = {}
 
 # logging options
-CONSOLE_LOG = 0x001  # print to console
-DATA_LOG = 0x010  # print to data log
-BOTH_LOG = 0x011  # log to both console and data logs
-DEBUG_LOG = 0x100  # print only if debug mode is on
+STDOUT_LOG = 0b0001  # print to console
+DATA_LOG = 0b0010  # print to data log
+BOTH_LOG = 0b0011  # log to both console and data logs
+DEBUG_LOG = 0b0100  # print only if debug mode is on
+STDERR_LOG = 0b1000  # print to stderr
+
+# unique log modes (excluding combinations)
+log_modes = {
+    STDOUT_LOG: "stdout log",
+    DATA_LOG: "data log",
+    DEBUG_LOG: "print only if debug mode enabled",
+    STDERR_LOG: "stderr log"
+}
 
 FILE_PATH = ".//data"
 MAX_LOG_SIZE_BYTES = 2**20  # logs rotate at this max size
@@ -41,6 +50,7 @@ MIN_WIFI_DBM = -70.0  # min viable WIFI signal strength
 
 # set unit test IP address, same as client
 unit_test_mode = False  # in unit test mode
+log_stdout_to_stderr = False  # in flask server mode
 
 
 def get_function_name(stack_value=1):
@@ -76,6 +86,11 @@ def log_msg(msg, mode, func_name=-1, file_name=None):
     debug_msg = mode & DEBUG_LOG
     filter_debug_msg = debug_msg and not debug_enabled
 
+    # cast STDOUT_LOG to STDERR_LOG in flask server mode
+    if (log_stdout_to_stderr and (mode & STDOUT_LOG) and
+            not (mode & STDERR_LOG)):
+        mode = mode + STDERR_LOG - STDOUT_LOG
+
     # define filename
     if file_name is not None:
         log_msg.file_name = file_name
@@ -103,8 +118,12 @@ def log_msg(msg, mode, func_name=-1, file_name=None):
         write_to_file(full_path, file_size_bytes, msg)
 
     # print to console
-    if (mode & CONSOLE_LOG) and not filter_debug_msg:
+    if (mode & STDOUT_LOG) and not filter_debug_msg:
         print(msg)
+
+    # print to error stream
+    if (mode & STDERR_LOG) and not filter_debug_msg:
+        print(msg, file=sys.stderr)
 
     return return_buffer
 
@@ -438,7 +457,7 @@ class UserInputs():
                     f"parsing named runtime parameters from user input list: "
                     f"{argv_list}",
                     mode=DEBUG_LOG +
-                    CONSOLE_LOG,
+                    STDOUT_LOG,
                     func_name=1)
                 self.parse_named_arguments(argv_list=argv_list)
             else:
@@ -446,7 +465,7 @@ class UserInputs():
                     f"parsing runtime parameters from user input list: "
                     f"{argv_list}",
                     mode=DEBUG_LOG +
-                    CONSOLE_LOG,
+                    STDOUT_LOG,
                     func_name=1)
                 self.parse_argv_list(
                     parent_key, argv_list)
@@ -455,7 +474,7 @@ class UserInputs():
             log_msg(
                 f"parsing named runtime parameters from sys.argv: {sys.argv}",
                 mode=DEBUG_LOG +
-                CONSOLE_LOG,
+                STDOUT_LOG,
                 func_name=1)
             self.parse_named_arguments()
         else:
@@ -463,7 +482,7 @@ class UserInputs():
             log_msg(
                 f"parsing runtime parameters from sys.argv: {sys.argv}",
                 mode=DEBUG_LOG +
-                CONSOLE_LOG,
+                STDOUT_LOG,
                 func_name=1)
             self.parse_argv_list(parent_key, sys.argv)
 
@@ -606,7 +625,7 @@ class UserInputs():
                             f": argv parameter missing, using default "
                             f"value '{default_value}'",
                             mode=DEBUG_LOG +
-                            CONSOLE_LOG,
+                            STDOUT_LOG,
                             func_name=1)
                     attr["value"] = attr["default"]
 
@@ -620,7 +639,7 @@ class UserInputs():
                             "using default value "
                             f"'{default_value}'",
                             mode=DEBUG_LOG +
-                            CONSOLE_LOG,
+                            STDOUT_LOG,
                             func_name=1)
                     attr["value"] = attr["default"]
 

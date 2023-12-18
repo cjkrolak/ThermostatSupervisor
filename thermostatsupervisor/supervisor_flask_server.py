@@ -112,6 +112,9 @@ def index():
 
 
 if __name__ == '__main__':
+    # enable logging to STDERR for Flask
+    util.log_stdout_to_stderr = True
+
     # show the page in browser
     webbrowser.open(flask_url, new=2)
     flg.schedule_ipban_block_list_report(ip_ban, debug_mode=False)

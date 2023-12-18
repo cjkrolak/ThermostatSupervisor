@@ -89,7 +89,7 @@ class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
                 f"zone {zone} name = '{self.zone_name}', "
                 f"device_id={device_id}",
                 mode=util.DEBUG_LOG +
-                util.CONSOLE_LOG,
+                util.STDOUT_LOG,
                 func_name=1)
         self.device_id = device_id
 
@@ -114,7 +114,7 @@ class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
             time.sleep(10)
             serial_num_lst = list(self.get_indoor_units())  # retry
         util.log_msg(f"indoor unit serial numbers: {str(serial_num_lst)}",
-                     mode=util.DEBUG_LOG + util.CONSOLE_LOG, func_name=1)
+                     mode=util.DEBUG_LOG + util.STDOUT_LOG, func_name=1)
 
         # validate serial number list
         if not serial_num_lst:
@@ -128,7 +128,7 @@ class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
                 f"{self.get_address(serial_number)} credentials: "
                 f"{self.get_credentials(serial_number)}",
                 mode=util.DEBUG_LOG +
-                util.CONSOLE_LOG,
+                util.STDOUT_LOG,
                 func_name=1)
         if zone is None:
             # returned cached raw data for all zones
