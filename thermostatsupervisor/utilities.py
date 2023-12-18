@@ -568,13 +568,14 @@ class UserInputs():
             print(f"DEBUG: val[order]= {val["order"]}")
             if val["order"] <= len(argv_inputs) - 1:
                 if (self.user_inputs[parent_key][child_key]["type"] in
-                        [int, float, str]) or True:
+                        [int, float, str]):
                     # cast data type when reading value
                     self.user_inputs[parent_key][child_key]["value"] = (
                         self.user_inputs[parent_key][child_key][
                             "type"](argv_inputs[val["order"]]))
                 else:
                     print(f"DEBUG no casting, child_key={child_key}")
+                    print(f"DEBUG: type={self.user_inputs[parent_key][child_key]["type"]}")
                     # no casting, just read raw from list
                     self.user_inputs[parent_key][child_key]["value"] = \
                         argv_inputs[val["order"]]
