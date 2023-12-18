@@ -562,6 +562,8 @@ class UserInputs():
             argv_inputs = sys.argv
 
         # populate dict with values from list
+        print(f"DEBUG in parse argv list, parent_key={parent_key}")
+        print(f"DEBUG argv_inputs={argv_inputs}")
         for child_key, val in self.user_inputs[parent_key].items():
             if val["order"] <= len(argv_inputs) - 1:
                 if (self.user_inputs[parent_key][child_key]["type"] in
@@ -571,6 +573,7 @@ class UserInputs():
                         self.user_inputs[parent_key][child_key][
                             "type"](argv_inputs[val["order"]]))
                 else:
+                    print(f"DEBUG no casting, child_key={child_key}")
                     # no casting, just read raw from list
                     self.user_inputs[parent_key][child_key]["value"] = \
                         argv_inputs[val["order"]]
