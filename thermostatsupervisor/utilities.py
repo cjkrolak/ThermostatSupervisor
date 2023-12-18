@@ -568,7 +568,7 @@ class UserInputs():
             print(f"DEBUG: val[order]= {val["order"]}")
             if val["order"] <= len(argv_inputs) - 1:
                 if (self.user_inputs[parent_key][child_key]["type"] in
-                        [int, float, str]):
+                        [int, float, str]) or True:
                     # cast data type when reading value
                     self.user_inputs[parent_key][child_key]["value"] = (
                         self.user_inputs[parent_key][child_key][
@@ -579,7 +579,8 @@ class UserInputs():
                     self.user_inputs[parent_key][child_key]["value"] = \
                         argv_inputs[val["order"]]
 
-        print(f"DEBUG saved value = {self.user_inputs[parent_key][child_key]["value"]}")
+        saved_val = self.user_inputs[parent_key][child_key]["value"]
+        print(f"DEBUG saved value = {saved_val}, {type(saved_val)}")
         print(f"DEBUG user_inputs={self.user_inputs}")
         return self.user_inputs
 
