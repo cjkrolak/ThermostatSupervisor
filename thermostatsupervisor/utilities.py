@@ -191,9 +191,17 @@ def write_to_file(full_path, file_size_bytes, msg):
     return utf8len(msg_to_write)
 
 
-def is_windows_environment():
-    """Return True if running on Windows PC."""
-    print(f"DEBUG: platform={platform.system().upper()}")
+def is_windows_environment(verbose=False):
+    """
+    Return True if running on Windows PC.
+
+    inputs:
+        verbose(bool): if True print platform.
+    returns:
+        (bool): True if on Windows.
+    """
+    if verbose:
+        print(f"platform={platform.system().upper()}")
     return 'WINDOWS' in platform.system().upper()
 
 
