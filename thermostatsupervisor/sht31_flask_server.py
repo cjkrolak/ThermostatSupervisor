@@ -468,6 +468,10 @@ class Sensors:
         returns:
             (float): wifi signal strength in dBm.
         """
+        if env.is_windows_environment():
+            raise EnvironmentError(f"ERROR: {util.get_function_name()} is "
+                                   "only supported on Linux")
+
         cell_number_re = re.compile(r"^Cell\s+(?P<cellnumber>.+)\s+-\s+Address:"
                                     r"\s(?P<mac>.+)$")
         regexps = [
@@ -522,7 +526,7 @@ class Sensors:
         # Must run as super user.
         # Does not specify a particular device, so will scan all
         # network devices.
-        scan_result = self.linux_cmd(["iwlist", "wlan0", "scan"])
+        scan_result = self.shell_cmd(["iwlist", "wlan0", "scan"])
         if self.verbose:
             print(f"iwlist scan results: {scan_result}")
 
@@ -542,7 +546,7 @@ class Sensors:
         returns:
             (float): wifi signal strength in dBm.
         """
-        regexps = [
+        regexps_iwconfig = [
             re.compile(r"^ESSID:\"(?P<essid>.*)\"$"),
             re.compile(r"^Frequency:(?P<frequency>[\d.]+) "
                        r"(?P<frequency_units>.+)\s+ "
@@ -552,8 +556,15 @@ class Sensors:
                        r"\s+Signal level=(?P<signal_level_dBm>.+) d.+$"),
         ]
 
+        regexps_netsh = [
+            re.compile(r"^\s*SSID\s*:\s(?P<essid>.*)\s*"),
+            re.compile(r"^\s*Channel\s*:(?P<frequency>[\d.])\s*"),
+            re.compile(r"^\s*BSSID\s*:\s(?P<mac_addr>.*)\s*"),
+            re.compile(r"^\s*Signal\s*:\s(?P<signal_quality>.*)%\s*"),
+        ]
+
         # Parses the response from the command "iwconfig"
-        def parse(content):
+        def parse(content, regexps):
             parse_result = {}
             lines = content.split('\n')
             for line in lines:
@@ -565,20 +576,33 @@ class Sensors:
             return parse_result
 
         # call iwconfig terminal command
-        scan_result = self.linux_cmd(["iwconfig"])
+        if env.is_windows_environment():
+            scan_cmd = "netsh"
+            scan_result = self.shell_cmd([scan_cmd, "wlan", "show",
+                                          "interfaces"])
+        else:  # assume Linux
+            scan_cmd = "iwconfig"
+            scan_result = self.shell_cmd([scan_cmd])
         if self.verbose:
-            print(f"iwconfig scan results: {scan_result}")
+            print(f"{scan_cmd} scan results: {scan_result}")
 
         # parse out the RSSI result
-        parse_result = parse(scan_result)
+        if env.is_windows_environment():
+            parse_result = parse(scan_result, regexps_netsh)
+            # add calculation for dBm = quality / 2 - 100
+            parse_result.update(
+                {"signal_level_dBm": int(parse_result[
+                    "signal_quality"]) / 2 - 100})
+        else:  # assume Linux
+            parse_result = parse(scan_result, regexps_iwconfig)
         if self.verbose:
-            print(f"iwconfig parse results: {parse_result}")
+            print(f"{scan_cmd} parse results: {parse_result}")
 
         return float(parse_result["signal_level_dBm"])
 
-    def linux_cmd(self, cmd_lst):
+    def shell_cmd(self, cmd_lst):
         """
-        Send a linux command to the terminal and return results.
+        Send a shell command to the terminal and return results.
 
         inputs:
             cmd_lst(list):  list of one or more commands / parameters.

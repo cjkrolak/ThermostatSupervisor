@@ -4,6 +4,7 @@
 import importlib.util
 import io
 import os
+import platform
 import socket
 import sys
 import traceback
@@ -148,6 +149,20 @@ def is_azure_environment():
     everything else is Azure.
     """
     return '192.' not in get_local_ip()
+
+
+def is_windows_environment(verbose=True):
+    """
+    Return True if running on Windows PC.
+
+    inputs:
+        verbose(bool): debug flag.
+    returns:
+        (bool)
+    """
+    if verbose:
+        print(f"platform={platform.system().upper()}")
+    return 'WINDOWS' in platform.system().upper()
 
 
 def is_raspberrypi_environment(verbose=False):

@@ -67,6 +67,13 @@ class EnvironmentTests(utc.UnitTest):
                         "env.is_azure_environment() returned type "
                         f"{type(result)} expected bool")
 
+    def test_is_windows_environment(self):
+        """
+        Verify is_windows_environment() returns a bool.
+        """
+        return_val = env.is_windows_environment()
+        self.assertTrue(isinstance(return_val, bool))
+
     def test_is_raspberrypi_environment(self):
         """
         Test is_raspberrypi_environment.
