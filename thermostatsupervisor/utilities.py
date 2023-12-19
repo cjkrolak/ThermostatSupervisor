@@ -562,28 +562,37 @@ class UserInputs():
             argv_inputs = sys.argv
 
         # populate dict with values from list
-        print(f"DEBUG in parse argv list, parent_key={parent_key}")
-        print(f"DEBUG argv_inputs={argv_inputs}")
         for child_key, val in self.user_inputs[parent_key].items():
-            print(f"DEBUG: val[order]= {val["order"]}")
             if val["order"] <= len(argv_inputs) - 1:
                 if (self.user_inputs[parent_key][child_key]["type"] in
-                        [int, float, str]):
+                        [int, float, str]) or self.is_lambda_bool(
+                            self.user_inputs[parent_key][child_key]["type"]):
                     # cast data type when reading value
                     self.user_inputs[parent_key][child_key]["value"] = (
                         self.user_inputs[parent_key][child_key][
                             "type"](argv_inputs[val["order"]]))
                 else:
-                    print(f"DEBUG no casting, child_key={child_key}")
-                    print(f"DEBUG: type={self.user_inputs[parent_key][child_key]["type"]}")
                     # no casting, just read raw from list
                     self.user_inputs[parent_key][child_key]["value"] = \
                         argv_inputs[val["order"]]
 
-        saved_val = self.user_inputs[parent_key][child_key]["value"]
-        print(f"DEBUG saved value = {saved_val}, {type(saved_val)}")
-        print(f"DEBUG user_inputs={self.user_inputs}")
         return self.user_inputs
+
+    def is_lambda_bool(self, input_type):
+        """
+        Return True if type is a lambda function.
+
+        inputs:
+            input_type(type): input type
+        returns:
+            (bool): True for lambda type
+        """
+        # cast to string if necessary
+        if not isinstance(input_type, str):
+            input_type = str(input_type)
+
+        # eval
+        return True if "lambda" in input_type else False
 
     def dynamic_update_user_inputs(self):
         """Update user_inputs dict dynamically based on runtime parameters."""
@@ -621,7 +630,7 @@ class UserInputs():
                     raise TypeError("CODING ERROR: UserInput bool "
                                     "typedefs don't work, use a lambda "
                                     "function")
-                elif "lambda" in str(attr["type"]):
+                elif self.is_lambda_bool(attr["type"]):
                     expected_type = bool
                 else:
                     expected_type = attr["type"]
