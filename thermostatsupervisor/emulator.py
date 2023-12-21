@@ -250,7 +250,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
             (booL): True if is in humidity sensor is available and not faulted.
         """
         self.refresh_zone_info()
-        return self.get_parameter('humidity_support')
+        return bool(self.get_parameter('humidity_support'))
 
     def set_mode(self, target_mode):
         """
@@ -454,7 +454,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         returns:
             (booL): True if is in vacation hold mode.
         """
-        return self.get_parameter('vacation_hold')
+        return bool(self.get_parameter('vacation_hold'))
 
     def get_vacation_hold(self) -> bool:
         """
