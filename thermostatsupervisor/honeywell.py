@@ -435,10 +435,10 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
             (booL): True if is in humidity sensor is available and not faulted.
         """
         self.refresh_zone_info()
-        available = (self.zone_info['latestData']['uiData']
-                     ['IndoorHumiditySensorAvailable'])
-        not_fault = (self.zone_info['latestData']['uiData']
-                     ['IndoorHumiditySensorNotFault'])
+        available = bool(self.zone_info['latestData']['uiData']
+                         ['IndoorHumiditySensorAvailable'])
+        not_fault = bool(self.zone_info['latestData']['uiData']
+                         ['IndoorHumiditySensorNotFault'])
         return available and not_fault
 
     def is_heat_mode(self) -> int:
@@ -640,8 +640,8 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
             (booL): True if is in vacation hold mode.
         """
         self.refresh_zone_info()
-        return int(self.zone_info['latestData']['uiData']
-                   ['IsInVacationHoldMode'])
+        return bool(int(self.zone_info['latestData']['uiData']
+                    ['IsInVacationHoldMode']))
 
     def get_vacation_hold(self) -> bool:
         """
