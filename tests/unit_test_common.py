@@ -284,6 +284,42 @@ class FunctionalIntegrationTest(IntegrationTest):
                 display_wifi=True, display_battery=True
             )
 
+    def test_get_wifi_status_display(self):
+        """
+        Verify get_wifi_status_display on target thermostat.
+        """
+        test_cases = [(True, "ok"),
+                      (False, "weak"),
+                      (None, "unknown"),
+                      (util.BOGUS_BOOL, "weak"),  # same as False
+                      ("bad string", "unknown"),
+                      ]
+
+        for test_case in test_cases:
+            print(f"test case={test_case}")
+            result = tc.get_wifi_status_display(test_case[0])
+            self.assertEqual(result, test_case[1],
+                             f"test case={test_case[0]}, "
+                             f"expected={test_case[1]}, actual={result}")
+
+    def test_get_battery_status_display(self):
+        """
+        Verify get_battery_status_display on target thermostat.
+        """
+        test_cases = [(True, "ok"),
+                      (False, "bad"),
+                      (None, "unknown"),
+                      (util.BOGUS_BOOL, "bad"),  # same as False
+                      ("bad string", "unknown"),
+                      ]
+
+        for test_case in test_cases:
+            print(f"test case={test_case}")
+            result = tc.get_battery_status_display(test_case[0])
+            self.assertEqual(result, test_case[1],
+                             f"test case={test_case[0]}, "
+                             f"expected={test_case[1]}, actual={result}")
+
     def test_report_heating_parameters(self):
         """
         Verify report_heating_parameters().

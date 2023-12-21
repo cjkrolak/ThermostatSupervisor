@@ -355,8 +355,8 @@ class ThermostatZone(tc.ThermostatCommonZone):
             (booL): True if is in humidity sensor is available and not faulted.
         """
         self.refresh_zone_info()
-        return self.get_parameter('humidistat', 'inputs',
-                                  'acoilSettings')
+        return bool(self.get_parameter('humidistat', 'inputs',
+                                       'acoilSettings'))
 
     def is_heat_mode(self) -> int:
         """

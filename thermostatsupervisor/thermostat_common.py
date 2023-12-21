@@ -1152,6 +1152,44 @@ def thermostat_basic_checkout(thermostat_type, zone,
     return Thermostat, Zone
 
 
+def get_wifi_status_display(wifi_status):
+    """
+    Return string to display based on wifi status.
+
+    inputs:
+        wifi_status(bool, float, None): wifi status.
+    returns:
+        (str): wifi status
+    """
+    wifi_status_display_dict = {
+        False: "weak",
+        True: "ok",
+    }
+    try:
+        return wifi_status_display_dict[wifi_status]
+    except KeyError:
+        return "unknown"
+
+
+def get_battery_status_display(battery_status):
+    """
+    Return string to display based on battery status.
+
+    inputs:
+        wifi_status(bool, float, None): wifi status.
+    returns:
+        (str): wifi status
+    """
+    battery_status_display_dict = {
+        False: "bad",
+        True: "ok",
+    }
+    try:
+        return battery_status_display_dict[battery_status]
+    except KeyError:
+        return "unknown"
+
+
 def print_select_data_from_all_zones(thermostat_type, zone_lst,
                                      ThermostatClass, ThermostatZone,
                                      display_wifi=True,
@@ -1188,27 +1226,18 @@ def print_select_data_from_all_zones(thermostat_type, zone_lst,
         # zone wifi strength
         if display_wifi:
             wifi_strength = Zone.get_wifi_strength()
-            wifi_status_display = {
-                False: "weak",
-                True: "ok",
-                util.BOGUS_BOOL: "N/A",
-                None: "N/A",
-            }
-            wifi_status = wifi_status_display[Zone.get_wifi_status()]
-            msg += f", wifi strength: {wifi_strength} dBm ({wifi_status})"
+            wifi_status = Zone.get_wifi_status()
+            wifi_status_display = get_wifi_status_display(wifi_status)
+            msg += (f", wifi strength: {wifi_strength} dBm "
+                    f"({wifi_status_display})")
 
         # zone battery stats
         if display_battery:
             battery_voltage = Zone.get_battery_voltage()
-            battery_status_display = {
-                False: "bad",
-                True: "ok",
-                util.BOGUS_BOOL: "N/A",
-                None: "N/A",
-            }
-            battery_status = battery_status_display[Zone.get_battery_status()]
+            battery_status = Zone.get_battery_status()
+            battery_status_display = get_battery_status_display(battery_status)
             msg += (f", battery voltage: {battery_voltage:.2f} volts "
-                    f"({battery_status})")
+                    f"({battery_status_display})")
 
         print(msg)
 
