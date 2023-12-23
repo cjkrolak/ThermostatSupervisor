@@ -140,18 +140,17 @@ class ThermostatClass(tc.ThermostatCommon):
         util.log_msg("Flask server setup is complete",
                      mode=util.BOTH_LOG, func_name=1)
 
-    def print_all_thermostat_metadata(self, zone, debug=False):
+    def print_all_thermostat_metadata(self, zone):
         """
         Print initial meta data queried from thermostat.
 
         inputs:
             zone(int): target zone
-            debug(bool): debug flag
         returns:
             (dict): return data
         """
         return_data = self.exec_print_all_thermostat_metadata(
-            self.get_all_metadata, [zone, debug])
+            self.get_all_metadata, [zone])
         return return_data
 
     def get_all_metadata(self, zone, retry=True):
@@ -164,19 +163,22 @@ class ThermostatClass(tc.ThermostatCommon):
         returns:
             (dict) results dict.
         """
-        return self.get_metadata(zone, None, retry)
+        return self.get_metadata(zone, retry=retry)
 
-    def get_metadata(self, zone, parameter=None, retry=True):
+    def get_metadata(self, zone, trait=None, parameter=None, retry=True):
         """
         Get current thermostat metadata.
 
         inputs:
             zone(str or int): (unused) target zone
+            trait(str): trait or parent key, if None will assume a non-nested
+                        dict
             parameter(str): target parameter, if None will fetch all.
             retry(bool): if True will retry once.
         returns:
             (dict) empty dict.
         """
+        del trait  # not needed for sht31
         try:
             response = requests.get(self.url, timeout=util.HTTP_TIMEOUT)
         except requests.exceptions.ConnectionError as ex:
@@ -202,7 +204,7 @@ class ThermostatClass(tc.ThermostatCommon):
                     mode=util.BOTH_LOG,
                     func_name=1)
                 time.sleep(self.retry_delay)
-                self.get_metadata(zone, parameter, retry=False)
+                self.get_metadata(zone, parameter=parameter, retry=False)
             else:
                 raise RuntimeError("FATAL ERROR: SHT31 server "
                                    "is not responding") from ex
@@ -254,12 +256,14 @@ class ThermostatZone(tc.ThermostatCommonZone):
         """
         return sht31_config.metadata[zone]["zone_name"]
 
-    def get_metadata(self, parameter=None, retry=True):
+    def get_metadata(self, trait=None, parameter=None, retry=True):
         """
         Get the current thermostat metadata settings.
 
         inputs:
           parameter(str): target parameter, None = all settings
+          trait(str): trait or parent key, if None will assume a non-nested
+                      dict
           retry(bool): if True, will retry on Exception
         returns:
           dict if parameter=None
@@ -306,7 +310,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
                         mode=util.BOTH_LOG,
                         func_name=1)
                     time.sleep(self.retry_delay)
-                    self.get_metadata(parameter, retry=False)
+                    self.get_metadata(parameter=parameter, retry=False)
                 else:
                     raise RuntimeError("FATAL ERROR: SHT31 server "
                                        "is not responding") from ex
@@ -327,7 +331,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
                         mode=util.BOTH_LOG,
                         func_name=1)
                     time.sleep(self.retry_delay)
-                    self.get_metadata(parameter, retry=False)
+                    self.get_metadata(parameter=parameter, retry=False)
                 else:
                     raise KeyError(
                         f"FATAL ERROR: SHT31 server response did not contain "
@@ -343,7 +347,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         returns:
             (float): temperature in degrees.
         """
-        return float(self.get_metadata(self.tempfield))
+        return float(self.get_metadata(parameter=self.tempfield))
 
     def get_display_humidity(self) -> (float, None):
         """
@@ -354,7 +358,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         returns:
             (float, None): humidity in %RH, None if not supported.
         """
-        raw_humidity = self.get_metadata(self.humidityfield)
+        raw_humidity = self.get_metadata(parameter=self.humidityfield)
         if raw_humidity is not None:
             return float(raw_humidity)
         else:
@@ -428,7 +432,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         """Return the wifi signal strength in dBm."""
         # try block for older API not yet supporting rssi.
         try:
-            raw_rssi = self.get_metadata(self.rssifield)
+            raw_rssi = self.get_metadata(parameter=self.rssifield)
         except KeyError:
             raw_rssi = float(util.BOGUS_INT)
         if raw_rssi is not None:

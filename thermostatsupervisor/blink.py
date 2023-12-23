@@ -186,27 +186,28 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):
         if self.verbose:
             print("-" * table_length)
 
-    def get_all_metadata(self, zone=None, debug=False):
+    def get_all_metadata(self, zone=None):
         """Get all thermostat meta data for device_id from local API.
 
         inputs:
             zone(): specified zone
-            debug(bool): debug flag.
         returns:
             (dict): dictionary of meta data.
         """
-        return self.get_metadata(zone, None, debug)
+        return self.get_metadata(zone)
 
-    def get_metadata(self, zone=None, parameter=None, debug=False):
+    def get_metadata(self, zone=None, trait=None, parameter=None):
         """Get thermostat meta data for device_id from local API.
 
         inputs:
             zone(): specified zone
+            trait(str): trait or parent key, if None will assume a non-nested
+            dict
             parameter(str): target parameter, if None will return all.
-            debug(bool): debug flag.
         returns:
             (dict): dictionary of meta data.
         """
+        del trait  # unused on blink
         zone_name = blink_config.metadata[self.zone_number]["zone_name"]
         if self.blink.cameras == {}:
             raise ValueError("camera list is empty when searching for camera"
@@ -214,7 +215,7 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):
         for name, camera in self.blink.cameras.items():
             # print(f"DEBUG: camera {name}: {camera.attributes}")
             if name == zone_name:
-                if debug:
+                if self.verbose:
                     print(f"found camera {name}: {camera.attributes}")
                 if parameter is None:
                     return camera.attributes
@@ -222,17 +223,16 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):
                     return camera.attributes[parameter]
         raise ValueError(f"Camera zone {zone}({zone_name}) was not found")
 
-    def print_all_thermostat_metadata(self, zone, debug=False):
+    def print_all_thermostat_metadata(self, zone):
         """Print all metadata for zone to the screen.
 
         inputs:
             zone(int): specified zone, if None will print all zones.
-            debug(bool): debug flag
         returns:
             None, prints result to screen
         """
         self.exec_print_all_thermostat_metadata(
-            self.get_all_metadata, [zone, debug])
+            self.get_all_metadata, [zone])
 
 
 class ThermostatZone(tc.ThermostatCommonZone):

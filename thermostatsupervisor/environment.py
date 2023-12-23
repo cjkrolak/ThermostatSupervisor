@@ -151,7 +151,7 @@ def is_azure_environment():
     return '192.' not in get_local_ip()
 
 
-def is_windows_environment(verbose=True):
+def is_windows_environment(verbose=False):
     """
     Return True if running on Windows PC.
 

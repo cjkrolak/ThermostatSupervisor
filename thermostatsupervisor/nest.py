@@ -91,9 +91,8 @@ class ThermostatClass(tc.ThermostatCommon):
             (str) zone name
         """
         self.zone_name = self.get_metadata(self.zone_number,
-                                           parameter="customName",
-                                           debug=self.verbose,
-                                           trait="Info")
+                                           trait="Info",
+                                           parameter="customName")
         return self.zone_name
 
     def reautherize_callback(self, authorization_url):
@@ -124,30 +123,27 @@ class ThermostatClass(tc.ThermostatCommon):
         """
         return self.devices[zone]
 
-    def get_all_metadata(self, zone=nest_config.default_zone,
-                         debug=False):
+    def get_all_metadata(self, zone=nest_config.default_zone):
         """Get all thermostat meta data for select zone.
 
         inputs:
             zone(): specified zone
-            debug(bool): debug flag.
         returns:
             (dict): dictionary of meta data.
         """
-        return self.get_metadata(zone, None, debug)
+        return self.get_metadata(zone)
 
-    def get_metadata(self, zone=None, parameter=None, debug=False, trait=None):
+    def get_metadata(self, zone=None, trait=None, parameter=None):
         """Get thermostat meta data for zone.
 
         inputs:
             zone(str or int): specified zone
+            trait(str): trait or parent key, if None will assume a non-nested
+                        dict.
             parameter(str): target parameter, if None will return all.
-            debug(bool): debug flag.
-            trait(str): trait is the parent key in the dict.
         returns:
             (dict): dictionary of meta data.
         """
-        del debug  # unused
         # if zone input is str assume it is zone name, convert to zone_num.
         if isinstance(zone, str):
             zone_num = util.get_key_from_value(nest_config.metadata, zone)
@@ -165,24 +161,23 @@ class ThermostatClass(tc.ThermostatCommon):
 
         # trait must be specified if parameter is specified.
         if trait is None:
-            raise NotImplementedError("nest get_metadata() does not "
-                                      f"support parameter='{parameter}' but "
-                                      "trait is None")
+            raise NotImplementedError("nest get_metadata() requires a trait "
+                                      f"parameter along when querying "
+                                      f"parameter='{parameter}'")
         else:
             # return parameter
             return meta_data[trait][parameter]
 
-    def print_all_thermostat_metadata(self, zone, debug=False):
+    def print_all_thermostat_metadata(self, zone):
         """Print all metadata for zone to the screen.
 
         inputs:
             zone(int): specified zone, if None will print all zones.
-            debug(bool): debug flag
         returns:
             None, prints result to screen
         """
         self.exec_print_all_thermostat_metadata(
-            self.get_all_metadata, [zone, debug])
+            self.get_all_metadata, [zone])
 
 
 class ThermostatZone(tc.ThermostatCommonZone):

@@ -48,6 +48,7 @@ class FunctionalIntegrationTest(IntegrationTest,
     def setUp(self):
         self.setUpIntTest()
         # test_GetMetaData input parameters
+        self.trait_field = None
         self.metadata_field = blink_config.API_TEMPF_MEAN
         self.metadata_type = int  # type of raw value in metadata dict.
 

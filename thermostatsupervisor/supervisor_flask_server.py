@@ -19,7 +19,7 @@ from thermostatsupervisor import thermostat_api as api
 from thermostatsupervisor import utilities as util
 
 # flask server
-if util.is_windows_environment():
+if env.is_windows_environment():
     # win server from Eclipse IDE:
     #     loopback will work to itself but not remote clients
     #     local IP works both itself and to remote Linux client.

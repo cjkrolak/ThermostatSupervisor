@@ -93,13 +93,12 @@ class ThermostatClass(tc.ThermostatCommon):
                 f"{self.ip_address}") from ex
         return self.device_id
 
-    def print_all_thermostat_metadata(self, zone, debug=False):
+    def print_all_thermostat_metadata(self, zone):
         """
         Return initial meta data queried from thermostat.
 
         inputs:
             zone(int) zone number
-            debug(bool): debug flag
         returns:
             None
         """
@@ -108,7 +107,7 @@ class ThermostatClass(tc.ThermostatCommon):
 
         # dump uiData in a readable format
         self.exec_print_all_thermostat_metadata(
-            self.get_latestdata, [zone, debug])
+            self.get_latestdata, [zone])
 
     def get_meta_data_dict(self, zone) -> dict:
         """Build meta data dictionary from list of object attributes.
@@ -147,17 +146,20 @@ class ThermostatClass(tc.ThermostatCommon):
         """
         return self.get_meta_data_dict(zone)
 
-    def get_metadata(self, zone, parameter=None) -> (dict, str):
+    def get_metadata(self, zone, trait=None, parameter=None) -> (dict, str):
         """
         Get the current thermostat metadata settings.
 
         inputs:
           zone(str or int): zone name
+          trait(str): trait or parent key, if None will assume a non-nested
+                      dict
           parameter(str): target parameter, None = all settings
         returns:
           dict if parameter=None
           str if parameter != None
         """
+        del trait  # not used on mmm
         if parameter is None:
             return self.get_meta_data_dict(zone)
         else:
