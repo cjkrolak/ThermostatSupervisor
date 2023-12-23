@@ -302,7 +302,7 @@ def get_key_from_value(input_dict, val):
     Matching criteria depends upon the type of the value contained
     within the input dictionary:
         (str, int, float): exact value match required
-        (dict): exact match of one of the child keys required
+        (dict): exact match of one of the child keys or values required
         (list): exact match of one of the list elements provided
         (other type): TypeError raised
 
@@ -319,7 +319,7 @@ def get_key_from_value(input_dict, val):
                 return key
         elif isinstance(value, dict):
             # match key of child dict
-            if val in value.keys():
+            if val in value.keys() or val in value.values():
                 return key
         elif isinstance(value, list):
             # match key to any value in child list
