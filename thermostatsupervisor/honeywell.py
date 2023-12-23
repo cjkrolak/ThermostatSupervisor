@@ -99,13 +99,12 @@ class ThermostatClass(pyhtcc.PyHTCC, tc.ThermostatCommon):
                              f"{self._get_zone_device_ids()}") from ex
         return zone_id
 
-    def print_all_thermostat_metadata(self, zone, debug=False):
+    def print_all_thermostat_metadata(self, zone):
         """
         Return initial meta data queried from thermostat.
 
         inputs:
             zone(int): zone number
-            debug(bool): debug flag
         returns:
             None, prints data to the stdout.
         """
@@ -114,7 +113,7 @@ class ThermostatClass(pyhtcc.PyHTCC, tc.ThermostatCommon):
 
         # dump uiData in a readable format
         self.exec_print_all_thermostat_metadata(
-            self.get_latestdata, [zone, debug])
+            self.get_latestdata, [zone])
 
     def get_all_metadata(self, zone=honeywell_config.default_zone) -> dict:
         """
@@ -125,23 +124,26 @@ class ThermostatClass(pyhtcc.PyHTCC, tc.ThermostatCommon):
         returns:
           (dict) thermostat meta data.
         """
-        return_data = self.get_metadata(zone, parameter=None)
+        return_data = self.get_metadata(zone)
         util.log_msg(f"all meta data: {return_data}",
                      mode=util.DEBUG_LOG + util.STDOUT_LOG, func_name=1)
         return return_data
 
     def get_metadata(self, zone=honeywell_config.default_zone,
-                     parameter=None) -> (dict, str):
+                     trait=None, parameter=None) -> (dict, str):
         """
         Return the current thermostat metadata settings.
 
         inputs:
           zone(int): zone number, default=honeywell_config.default_zone
+          trait(str): trait or parent key, if None will assume a non-nested
+                      dict
           parameter(str): target parameter, None = all settings
         returns:
           dict if parameter=None
           str if parameter != None
         """
+        del trait  # not used on Honeywell
         zone_info_list = self.get_zones_info()
         if parameter is None:
             try:

@@ -50,6 +50,7 @@ class FunctionalIntegrationTest(IntegrationTest,
         super().setUp()
         self.setUpIntTest()
         # test_GetMetaData input parameters
+        self.trait_field = None
         self.metadata_field = "display_temp"
         self.metadata_type = float
 

@@ -7,6 +7,7 @@ import shutil
 import unittest
 
 # local imports
+from thermostatsupervisor import environment as env
 from thermostatsupervisor import utilities as util
 from tests import unit_test_common as utc
 
@@ -159,7 +160,7 @@ class FileAndLoggingTests(utc.UnitTest):
 
         # write to non-existing file, bytes written + EOF == bytes read
         bytes_written = util.write_to_file(full_path, 0, msg)
-        bytes_expected = bytes_written + [0, 1][util.is_windows_environment()]
+        bytes_expected = bytes_written + [0, 1][env.is_windows_environment()]
         bytes_present = util.get_file_size_bytes(full_path)
         self.assertEqual(bytes_expected, bytes_present,
                          f"writing to non-existent file, bytes written="
@@ -167,7 +168,7 @@ class FileAndLoggingTests(utc.UnitTest):
 
         # write to existing file with reset, bytes written == bytes read
         bytes_written = util.write_to_file(full_path, 0, msg)
-        bytes_expected = bytes_written + [0, 1][util.is_windows_environment()]
+        bytes_expected = bytes_written + [0, 1][env.is_windows_environment()]
         bytes_present = util.get_file_size_bytes(full_path)
         self.assertEqual(bytes_expected, bytes_present,
                          f"writing to existing file with override option, "
@@ -178,7 +179,7 @@ class FileAndLoggingTests(utc.UnitTest):
         file_size_bytes = util.get_file_size_bytes(full_path)
         bytes_written = util.write_to_file(full_path, file_size_bytes, msg)
         bytes_expected = (bytes_written + file_size_bytes +
-                          [0, 1][util.is_windows_environment()])
+                          [0, 1][env.is_windows_environment()])
         bytes_present = util.get_file_size_bytes(full_path)
         self.assertEqual(bytes_expected, bytes_present,
                          f"writing to existent file, bytes "

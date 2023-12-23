@@ -362,10 +362,12 @@ class FunctionalIntegrationTest(IntegrationTest):
         self.Thermostat, self.Zone = self.setup_thermostat_zone()
 
         # test None case
+        trait = None
         parameter = None
         expected_return_type = dict
         metadata = self.Thermostat.get_metadata(
             zone=self.Thermostat.zone_name,
+            trait=trait,
             parameter=parameter)
         self.assertTrue(
             isinstance(
@@ -375,10 +377,12 @@ class FunctionalIntegrationTest(IntegrationTest):
             f"expected type '{expected_return_type}'")
 
         # test parameter case
+        trait = self.trait_field
         parameter = self.metadata_field
         expected_return_type = self.metadata_type
         metadata = self.Thermostat.get_metadata(
             zone=self.Thermostat.zone_name,
+            trait=trait,
             parameter=parameter)
         self.assertTrue(
             isinstance(

@@ -53,28 +53,29 @@ class ThermostatClass(tc.ThermostatCommon):
         """
         return zone
 
-    def get_all_metadata(self, zone=None, debug=False):
+    def get_all_metadata(self, zone=None):
         """Get all thermostat meta data for zone from kumocloud.
 
         inputs:
             zone(int): specified zone, if None will print all zones.
-            debug(bool): if True will print unit details.
         returns:
             (dict): JSON dict
         """
-        return self.get_metadata(zone, None, debug)
+        return self.get_metadata(zone)
 
-    def get_metadata(self, zone=None, parameter=None, debug=False):
+    def get_metadata(self, zone=None, trait=None, parameter=None):
         """Get all thermostat meta data for zone from emulator.
 
         inputs:
             zone(int): specified zone, if None will print all zones.
+            trait(str): trait or parent key, if None will assume a non-nested
+            dict
             parameter(str): target parameter, if None will return all.
             debug(bool): if True will print unit details.
         returns:
             (int, float, str, dict): depends on parameter
         """
-        del debug  # unused
+        del trait  # unused on emulator
         if zone is None:
             # returned cached raw data for all zones
             meta_data_dict = self.meta_data_dict
@@ -91,17 +92,16 @@ class ThermostatClass(tc.ThermostatCommon):
                       f"meta_data_dict: {meta_data_dict}")
                 raise
 
-    def print_all_thermostat_metadata(self, zone, debug=False):
+    def print_all_thermostat_metadata(self, zone):
         """Print all metadata for zone to the screen.
 
         inputs:
             zone(int): specified zone, if None will print all zones.
-            debug(bool): debug flag
         returns:
             None, prints result to screen
         """
         self.exec_print_all_thermostat_metadata(
-            self.get_all_metadata, [zone, debug])
+            self.get_all_metadata, [zone])
 
 
 class ThermostatZone(tc.ThermostatCommonZone):
