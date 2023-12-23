@@ -99,14 +99,16 @@ class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
             raise
         return zone_index
 
-    def get_all_metadata(self, zone=None):
+    def get_all_metadata(self, zone=None, retry=False):
         """Get all thermostat meta data for zone from kumocloud.
 
         inputs:
             zone(int): specified zone, if None will print all zones.
+            retry(bool): if True will retry once.
         returns:
             (dict): JSON dict
         """
+        del retry  # not used
         return self.get_metadata(zone)
 
     def get_metadata(self, zone=None, trait=None, parameter=None):
