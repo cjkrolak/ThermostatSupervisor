@@ -411,8 +411,16 @@ class MiscTests(utc.UnitTest):
                         f"test case: {test_case}, expected_val={expected_val},"
                         f" actual_val={actual_val}")
 
-        # test keys with dictionary as value
+        # test keys with dictionary as value, search key
         test_case = "G"
+        expected_val = ['D']
+        actual_val = util.get_key_from_value(test_dict, test_case)
+        self.assertTrue(actual_val in expected_val,
+                        f"test case: {test_case}, expected_val={expected_val},"
+                        f" actual_val={actual_val}")
+
+        # test keys with dictionary as value, search value
+        test_case = 6
         expected_val = ['D']
         actual_val = util.get_key_from_value(test_dict, test_case)
         self.assertTrue(actual_val in expected_val,
