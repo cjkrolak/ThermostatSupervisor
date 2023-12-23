@@ -387,7 +387,13 @@ class MiscTests(utc.UnitTest):
 
     def test_get_key_from_value(self):
         """Verify get_key_from_value()."""
-        test_dict = {'A': 1, 'B': 2, 'C': 1}
+        base_test_dict = {'A': 1, 'B': 2, 'C': 1}
+        dict_test_dict = {'E': 4, 'F': 5, 'G': 6}
+        test_dict = {}
+        test_dict = base_test_dict  # add simple elements
+        test_dict.update({'D': dict_test_dict})  # add dict element
+        test_dict.update({'L': [7, 8, 9, 10]})  # list element
+        print(f"test_dict={test_dict}")
 
         # test keys with distinctvalue, determinant case
         test_case = 2
@@ -405,11 +411,41 @@ class MiscTests(utc.UnitTest):
                         f"test case: {test_case}, expected_val={expected_val},"
                         f" actual_val={actual_val}")
 
+        # test keys with dictionary as value, search key
+        test_case = "G"
+        expected_val = ['D']
+        actual_val = util.get_key_from_value(test_dict, test_case)
+        self.assertTrue(actual_val in expected_val,
+                        f"test case: {test_case}, expected_val={expected_val},"
+                        f" actual_val={actual_val}")
+
+        # test keys with dictionary as value, search value
+        test_case = 6
+        expected_val = ['D']
+        actual_val = util.get_key_from_value(test_dict, test_case)
+        self.assertTrue(actual_val in expected_val,
+                        f"test case: {test_case}, expected_val={expected_val},"
+                        f" actual_val={actual_val}")
+
+        # test keys with list as value
+        test_case = 10
+        expected_val = ['L']
+        actual_val = util.get_key_from_value(test_dict, test_case)
+        self.assertTrue(actual_val in expected_val,
+                        f"test case: {test_case}, expected_val={expected_val},"
+                        f" actual_val={actual_val}")
+
         # test key not found
         with self.assertRaises(KeyError):
             print("attempting to input bad dictionary key, "
                   "expect exception...")
             actual_val = util.get_key_from_value(test_dict, "bogus_value")
+
+        # unsupported datatype
+        with self.assertRaises(KeyError):
+            print("attempting to input unsupported datatype, "
+                  "expect TypeError exception...")
+            actual_val = util.get_key_from_value(test_dict, None)
 
 
 class RuntimeParameterTest(utc.RuntimeParameterTest):

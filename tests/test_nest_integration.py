@@ -50,8 +50,8 @@ class FunctionalIntegrationTest(IntegrationTest,
         super().setUp()
         self.setUpIntTest()
         # test_GetMetaData input parameters
-        self.metadata_field = "address"
-        self.metadata_type = str
+        self.metadata_field = "Info"
+        self.metadata_type = dict
 
 
 @unittest.skipIf(not utc.ENABLE_NEST_TESTS,

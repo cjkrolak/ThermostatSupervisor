@@ -299,15 +299,37 @@ def get_key_from_value(input_dict, val):
     """
     Return first key found in dict from value provided.
 
+    Matching criteria depends upon the type of the value contained
+    within the input dictionary:
+        (str, int, float): exact value match required
+        (dict): exact match of one of the child keys or values required
+        (list): exact match of one of the list elements provided
+        (other type): TypeError raised
+
     inputs:
         input_dict(dict): target dictionary
-        val(str or int):  value
+        val(str, int, float, dict, list):  value
     returns:
         (str or int): dictionary key
     """
     for key, value in input_dict.items():
-        if val == value:
-            return key
+        if isinstance(value, (str, int, float)):
+            # match value
+            if val == value:
+                return key
+        elif isinstance(value, dict):
+            # match key of child dict
+            if val in value.keys() or val in value.values():
+                return key
+        elif isinstance(value, list):
+            # match key to any value in child list
+            if val in value:
+                return key
+        else:
+            raise TypeError(f"type {type(value)} not yet supported in "
+                            "get_key_from_value")
+
+    # key not found
     raise KeyError(f"key not found in dict '{input_dict}' with value='{val}'")
 
 
