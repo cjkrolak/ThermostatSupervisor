@@ -123,14 +123,17 @@ class ThermostatClass(tc.ThermostatCommon):
         """
         return self.devices[zone]
 
-    def get_all_metadata(self, zone=nest_config.default_zone):
+    def get_all_metadata(self, zone=nest_config.default_zone,
+                         retry=False):
         """Get all thermostat meta data for select zone.
 
         inputs:
             zone(): specified zone
+            retry(bool): retry flag
         returns:
             (dict): dictionary of meta data.
         """
+        del retry  # not used
         return self.get_metadata(zone)
 
     def get_metadata(self, zone=None, trait=None, parameter=None):

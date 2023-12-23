@@ -148,14 +148,16 @@ class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
                 'zoneTable'][serial_num_lst[zone]]
         return raw_json
 
-    def get_all_metadata(self, zone=None):
+    def get_all_metadata(self, zone=None, retry=False):
         """Get all thermostat meta data for device_id from local API.
 
         inputs:
             zone(): specified zone
+            retry(bool): if True will retry once.
         returns:
             (dict): dictionary of meta data.
         """
+        del retry  # not used
         return self.get_metadata(zone)
 
     def get_metadata(self, zone=None, trait=None, parameter=None):
