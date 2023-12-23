@@ -35,11 +35,11 @@ supported_configs = {"module": "nest",
 # 'ip_address' is just for reference.
 metadata = {
     MAIN_LEVEL: {"ip_address": "192.168.86.229",  # local IP, for ref only.
-                 "zone_name": "Main Level",  # customize for your site.
+                 "zone_name": "Main Level Thermostat",  # customize your site.
                  "host_name": "tbd",  # used for DNS lookup
                  },
     BASEMENT: {"ip_address": "192.168.86.236",  # local IP, for ref only.
-               "zone_name": "Basement",  # customize for your site.
+               "zone_name": "Basement Thermostat",  # customize for your site.
                "host_name": "tbd",  # used for DNS lookup
                },
 }

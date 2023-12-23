@@ -124,8 +124,9 @@ class ThermostatClass(tc.ThermostatCommon):
         """
         return self.devices[zone]
 
-    def get_all_metadata(self, zone=None, debug=False):
-        """Get all thermostat meta data for zone(s).
+    def get_all_metadata(self, zone=nest_config.default_zone,
+                         debug=False):
+        """Get all thermostat meta data for select zone.
 
         inputs:
             zone(): specified zone
@@ -133,16 +134,7 @@ class ThermostatClass(tc.ThermostatCommon):
         returns:
             (dict): dictionary of meta data.
         """
-        # if zone is None, query all zones
-        if zone is None:
-            zone_lst = nest_config.supported_configs["zones"]
-        else:
-            # single zone list
-            zone_lst = [zone]
-        meta_data = {}
-        for zone in zone_lst:
-            meta_data[zone] = self.get_metadata(zone, None, debug)
-        return meta_data
+        return self.get_metadata(zone, None, debug)
 
     def get_metadata(self, zone=None, parameter=None, debug=False, trait=None):
         """Get thermostat meta data for zone.
@@ -156,7 +148,17 @@ class ThermostatClass(tc.ThermostatCommon):
             (dict): dictionary of meta data.
         """
         del debug  # unused
-        meta_data = self.devices[zone].traits
+        # if zone input is str assume it is zone name, convert to zone_num.
+        if isinstance(zone, str):
+            zone_num = util.get_key_from_value(nest_config.metadata, zone)
+        elif isinstance(zone, int):
+            zone_num = zone
+        else:
+            raise TypeError(f"type {type(zone)} not supported for zone input"
+                            "parmaeter in get_metadata function")
+        print(f"DEBUG: zone={zone}, zone_number={zone_num}")
+
+        meta_data = self.devices[zone_num].traits
         # return all meta data for zone
         if parameter is None:
             return meta_data
@@ -164,7 +166,7 @@ class ThermostatClass(tc.ThermostatCommon):
         # trait must be specified if parameter is specified.
         if trait is None:
             raise NotImplementedError("nest get_metadata() does not "
-                                      f"support parameter={parameter} but "
+                                      f"support parameter='{parameter}' but "
                                       "trait is None")
         else:
             # return parameter
@@ -554,7 +556,10 @@ class ThermostatZone(tc.ThermostatCommonZone):
         returns:
             None
         """
-        self.device_id.set_heat_setpoint(util.f_to_c(temp))
+        device = nest.Device.filter_for_cmd(
+            self.devices,
+            "sdm.devices.commands.ThermostatTemperatureSetpoint.SetHeat")
+        device.set_trait("ThermostatTemperatureSetpoint", util.f_to_c(temp))
 
     def set_cool_setpoint(self, temp: int) -> None:
         """
@@ -566,7 +571,10 @@ class ThermostatZone(tc.ThermostatCommonZone):
         returns:
             None
         """
-        self.device_id.set_cool_setpoint(util.f_to_c(temp))
+        device = nest.Device.filter_for_cmd(
+            self.devices,
+            "sdm.devices.commands.ThermostatTemperatureSetpoint.SetCool")
+        device.set_trait("ThermostatTemperatureSetpoint", util.f_to_c(temp))
 
     def refresh_zone_info(self, force_refresh=False):
         """
