@@ -1,4 +1,9 @@
-"""Nest integration."""
+"""
+Nest integration.
+using python-google-nest package
+pypi ref: https://pypi.org/project/python-google-nest/
+github ref: https://github.com/axlan/python-nest/
+"""
 # built-in libraries
 import json
 import time
@@ -12,7 +17,7 @@ from thermostatsupervisor import thermostat_common as tc
 from thermostatsupervisor import environment as env
 from thermostatsupervisor import utilities as util
 
-# nest import
+# python-nest package import
 # note this code uses python-google-nest package.
 # Installing python-nest package will corrupt the python-google-nest install
 NEST_DEBUG = True  # debug uses local nest repo instead of pkg
@@ -65,15 +70,12 @@ class ThermostatClass(tc.ThermostatCommon):
             access_token=None,
             access_token_cache_file=self.access_token_cache_file,
             reautherize_callback=self.reautherize_callback,
-            # cache_period=self.cache_period
+            cache_period=self.cache_period,
             )
         self.devices = self.thermostat_obj.get_devices()
-        # print(f"DEBUG: self.devices = {self.devices}")
 
         # configure zone info
         self.zone_number = int(zone)
-        # print(f"DEBUG: zone_number={self.zone_number}")
-
         self.zone_name = self.get_zone_name()
         self.device_id = None  # initialize
         self.device_id = self.get_target_zone_id(self.zone_number)
@@ -82,11 +84,16 @@ class ThermostatClass(tc.ThermostatCommon):
     def get_zone_name(self):
         """
         get zone name for specified zone number.
+
+        inputs:
+            None
+        returns:
+            (str) zone name
         """
-        # TODO - this is returning a serial number,
-        # not the name we are looking for.
-        self.zone_name = self.devices[self.zone_number].name
-        # print(f"DEBUG: zone_name={self.zone_name}")
+        self.zone_name = self.get_metadata(self.zone_number,
+                                           parameter="customName",
+                                           debug=self.verbose,
+                                           trait="Info")
         return self.zone_name
 
     def reautherize_callback(self, authorization_url):
@@ -101,7 +108,7 @@ class ThermostatClass(tc.ThermostatCommon):
         inputs:
             authorization_url(str): authorization URL.
         returns:
-
+            callable[(str), (str)]: callback function.
         """
         print(f"Please go to {authorization_url} and authorize access")
         return input('Enter the full callback URL: ')
@@ -113,12 +120,12 @@ class ThermostatClass(tc.ThermostatCommon):
         inputs:
             zone(int): zone number.
         returns:
-            (obj): PyKumo object
+            (obj): nest Device object
         """
-        return 0
+        return self.devices[zone]
 
     def get_all_metadata(self, zone=None, debug=False):
-        """Get all thermostat meta data for device_id from local API.
+        """Get all thermostat meta data for zone(s).
 
         inputs:
             zone(): specified zone
@@ -126,26 +133,42 @@ class ThermostatClass(tc.ThermostatCommon):
         returns:
             (dict): dictionary of meta data.
         """
-        # print(f"DEBUG: get_all_meta zone={zone}")
-        return self.get_metadata(zone, None, debug)
+        # if zone is None, query all zones
+        if zone is None:
+            zone_lst = nest_config.supported_configs["zones"]
+        else:
+            # single zone list
+            zone_lst = [zone]
+        meta_data = {}
+        for zone in zone_lst:
+            meta_data[zone] = self.get_metadata(zone, None, debug)
+        return meta_data
 
-    def get_metadata(self, zone=None, parameter=None, debug=False):
-        """Get thermostat meta data for device_id from local API.
+    def get_metadata(self, zone=None, parameter=None, debug=False, trait=None):
+        """Get thermostat meta data for zone.
 
         inputs:
-            zone(str or int): (unused) specified zone
+            zone(str or int): specified zone
             parameter(str): target parameter, if None will return all.
             debug(bool): debug flag.
+            trait(str): trait is the parent key in the dict.
         returns:
             (dict): dictionary of meta data.
         """
         del debug  # unused
-        # print(f"DEBUG: get_metadata zone={zone}")
-        meta_data = self.devices[zone]
+        meta_data = self.devices[zone].traits
+        # return all meta data for zone
         if parameter is None:
             return meta_data
+
+        # trait must be specified if parameter is specified.
+        if trait is None:
+            raise NotImplementedError("nest get_metadata() does not "
+                                      f"support parameter={parameter} but "
+                                      "trait is None")
         else:
-            raise NotImplementedError("get_metadata is not yet implemented")
+            # return parameter
+            return meta_data[trait][parameter]
 
     def print_all_thermostat_metadata(self, zone, debug=False):
         """Print all metadata for zone to the screen.
@@ -158,24 +181,6 @@ class ThermostatClass(tc.ThermostatCommon):
         """
         self.exec_print_all_thermostat_metadata(
             self.get_all_metadata, [zone, debug])
-
-    def get_trait(self, trait_name):
-        """
-        get thermostat trait.
-
-        inputs:
-            trait_name(str): trait name
-            ref: https://developers.google.com/nest/device-access/traits
-        returns:
-            (str) trait value
-        """
-        # will reuse the cached result unless cache_period has elapsed
-        # print(f"DEBUG: querying trait {trait_name}")
-        devices = nest.Device.filter_for_trait(self.devices, trait_name)
-        # will reuse the cached result unless cache_period has elapsed
-        trait_value = devices[self.zone_number].traits[trait_name]
-        # print(f"DEBUG: trait '{trait_name}'= {trait_value}")
-        return trait_value
 
 
 class ThermostatZone(tc.ThermostatCommonZone):
@@ -404,6 +409,10 @@ class ThermostatZone(tc.ThermostatCommonZone):
         """Return 1 if cooling relay is active, else 0."""
         return int(self.get_trait("ThermostatMode")["mode"] == "COOL")
 
+    def is_drying(self):
+        """Return 1 if drying relay is active, else 0."""
+        return 0  # not applicable
+
     def is_auto(self):
         """Return 1 if auto relay is active, else 0."""
         return int(self.get_trait("ThermostatMode")["mode"] == "HEATCOOL")
@@ -437,7 +446,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
                 self.get_trait("ThermostatTemperatureSetpoint")["heatCelsius"])
         else:
             # set point value is only valid for current mode
-            return -99  # TODO, what should this value be?
+            return util.BOGUS_INT  # TODO, what should this value be?
 
     def get_heat_setpoint(self) -> str:
         """Return heat setpoint with units as a string."""
@@ -452,7 +461,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         returns:
             (int): scheduled heating set point in degrees.
         """
-        return nest_config.MAX_HEAT_SETPOINT  # max heat set point allowed
+        return util.BOGUS_INT
 
     def get_schedule_cool_sp(self) -> int:
         """
@@ -463,7 +472,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         returns:
             (int): scheduled cooling set point in degrees F.
         """
-        return nest_config.MIN_COOL_SETPOINT  # min cool set point allowed
+        return util.BOGUS_INT
 
     def get_cool_setpoint_raw(self) -> int:
         """
@@ -480,7 +489,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
                 self.get_trait("ThermostatTemperatureSetpoint")["coolCelsius"])
         else:
             # set point value is only valid for current mode
-            return -99  # TODO, what should this value be?
+            return util.BOGUS_INT  # TODO, what should this value be?
 
     def get_cool_setpoint(self) -> str:
         """Return cool setpoint with units as a string."""
@@ -640,7 +649,6 @@ if __name__ == "__main__":
     zone_number = api.uip.get_user_inputs(api.uip.zone_name,
                                           api.input_flds.zone)
 
-    print(f"DEBUG main zone_number={zone_number}")
     tc.thermostat_basic_checkout(
         nest_config.ALIAS,
         zone_number,
