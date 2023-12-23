@@ -135,15 +135,17 @@ class ThermostatClass(tc.ThermostatCommon):
                 attr_dict[key] = val
         return attr_dict
 
-    def get_all_metadata(self, zone) -> list:
+    def get_all_metadata(self, zone, retry=False) -> list:
         """
         Get all the current thermostat metadata.
 
         inputs:
             zone(int): zone number
+            retry(bool): if True will retry once.
         returns:
             (list) of thermostat attributes.
         """
+        del retry  # not used
         return self.get_meta_data_dict(zone)
 
     def get_metadata(self, zone, trait=None, parameter=None) -> (dict, str):

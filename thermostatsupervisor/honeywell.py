@@ -115,15 +115,18 @@ class ThermostatClass(pyhtcc.PyHTCC, tc.ThermostatCommon):
         self.exec_print_all_thermostat_metadata(
             self.get_latestdata, [zone])
 
-    def get_all_metadata(self, zone=honeywell_config.default_zone) -> dict:
+    def get_all_metadata(self, zone=honeywell_config.default_zone,
+                         retry=False) -> dict:
         """
         Return all the current thermostat metadata.
 
         inputs:
           zone(int): zone number, default=honeywell_config.default_zone
+          retry(bool): if True will retry once.
         returns:
           (dict) thermostat meta data.
         """
+        del retry  # not used
         return_data = self.get_metadata(zone)
         util.log_msg(f"all meta data: {return_data}",
                      mode=util.DEBUG_LOG + util.STDOUT_LOG, func_name=1)
