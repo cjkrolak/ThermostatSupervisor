@@ -49,6 +49,7 @@ class FunctionalIntegrationTest(IntegrationTest,
         super().setUp()
         self.setUpIntTest()
         # test_GetMetaData input parameters
+        self.trait_field = None
         self.metadata_field = "DeviceID"
         self.metadata_type = int
 

@@ -99,27 +99,28 @@ class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
             raise
         return zone_index
 
-    def get_all_metadata(self, zone=None, debug=False):
+    def get_all_metadata(self, zone=None):
         """Get all thermostat meta data for zone from kumocloud.
 
         inputs:
             zone(int): specified zone, if None will print all zones.
-            debug(bool): if True will print unit details.
         returns:
             (dict): JSON dict
         """
-        return self.get_metadata(zone, None, debug)
+        return self.get_metadata(zone)
 
-    def get_metadata(self, zone=None, parameter=None, debug=False):
+    def get_metadata(self, zone=None, trait=None, parameter=None):
         """Get all thermostat meta data for zone from kumocloud.
 
         inputs:
             zone(int): specified zone, if None will print all zones.
+            trait(str): trait or parent key, if None will assume a non-nested
+                        dict
             parameter(str): target parameter, if None will return all.
-            debug(bool): if True will print unit details.
         returns:
             (int, float, str, dict): depends on parameter
         """
+        del trait  # not neded on Kumocloud
         try:
             serial_num_lst = list(self.get_indoor_units())  # will query unit
         except UnboundLocalError:  # patch for issue #205
@@ -127,7 +128,7 @@ class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
                          "timeout", mode=util.BOTH_LOG, func_name=1)
             time.sleep(30)
             serial_num_lst = list(self.get_indoor_units())  # retry
-        if debug:
+        if self.verbose:
             util.log_msg(f"indoor unit serial numbers: {str(serial_num_lst)}",
                          mode=util.DEBUG_LOG + util.STDOUT_LOG, func_name=1)
 
@@ -138,7 +139,7 @@ class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
                                          " check your credentials.")
 
         for idx, serial_number in enumerate(serial_num_lst):
-            if debug:
+            if self.verbose:
                 util.log_msg(f"Unit {self.get_name(serial_number)}: address: "
                              f"{self.get_address(serial_number)} credentials: "
                              f"{self.get_credentials(serial_number)}",
@@ -146,7 +147,7 @@ class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
                              util.STDOUT_LOG,
                              func_name=1)
             # populate meta data dict
-            if debug:
+            if self.verbose:
                 print(f"zone index={idx}, serial_number={serial_number}")
             kumocloud_config.metadata[idx]["serial_number"] = serial_number
 
@@ -177,17 +178,16 @@ class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
         else:
             return raw_json[parameter]
 
-    def print_all_thermostat_metadata(self, zone, debug=False):
+    def print_all_thermostat_metadata(self, zone):
         """Print all metadata for zone to the screen.
 
         inputs:
             zone(int): specified zone, if None will print all zones.
-            debug(bool): debug flag
         returns:
             None, prints result to screen
         """
         self.exec_print_all_thermostat_metadata(
-            self.get_all_metadata, [zone, debug])
+            self.get_all_metadata, [zone])
 
 
 class ThermostatZone(tc.ThermostatCommonZone):

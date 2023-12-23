@@ -32,17 +32,42 @@ class ThermostatCommon():
         global connection_ok  # noqa W603
         connection_ok = True
 
-    def print_all_thermostat_metadata(self, zone, debug=False):  # noqa R0201
+    def get_all_metadata(self, zone, retry=True):
+        """
+        Get all the current thermostat metadata.
+
+        inputs:
+            zone(int): target zone
+            retry(bool): if True will retry once.
+        returns:
+            (dict) results dict.
+        """
+        raise NotImplementedError("get_all_metadata is not implemented "
+                                  "for this thermostat type")
+
+    def get_metadata(self, zone=None, trait=None, parameter=None):
+        """Get thermostat meta data for zone.
+
+        inputs:
+            zone(str or int): specified zone
+            trait(str): trait or parent key, if None will assume a non-nested
+                        dict.
+            parameter(str): target parameter, if None will return all.
+        returns:
+            (dict): dictionary of meta data.
+        """
+        raise NotImplementedError("get_metadata is not implemented for this"
+                                  "thermostat type")
+
+    def print_all_thermostat_metadata(self, zone):  # noqa R0201
         """
         Print initial meta data queried from thermostat for specified zone.
 
         inputs:
             zone(int): zone number
-            debug(bool): debug flag
         returns:
             None
         """
-        del debug  # placeholder function
         util.log_msg(
             f"WARNING: print_all_thermostat_metatdata({zone}) not yet "
             f"implemented for this thermostat type\n",

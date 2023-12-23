@@ -148,28 +148,29 @@ class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
                 'zoneTable'][serial_num_lst[zone]]
         return raw_json
 
-    def get_all_metadata(self, zone=None, debug=False):
+    def get_all_metadata(self, zone=None):
         """Get all thermostat meta data for device_id from local API.
 
         inputs:
             zone(): specified zone
-            debug(bool): debug flag.
         returns:
             (dict): dictionary of meta data.
         """
-        return self.get_metadata(zone, None, debug)
+        return self.get_metadata(zone)
 
-    def get_metadata(self, zone=None, parameter=None, debug=False):
+    def get_metadata(self, zone=None, trait=None, parameter=None):
         """Get thermostat meta data for device_id from local API.
 
         inputs:
             zone(str or int): (unused) specified zone
+            trait(str): trait or parent key, if None will assume a non-nested
+                        dict
             parameter(str): target parameter, if None will return all.
             debug(bool): debug flag.
         returns:
             (dict): dictionary of meta data.
         """
-        del debug  # unused
+        del trait  # not used on Kumolocal
         del zone  # unused
 
         # refresh device status
@@ -185,17 +186,16 @@ class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
         else:
             return meta_data[parameter]
 
-    def print_all_thermostat_metadata(self, zone, debug=False):
+    def print_all_thermostat_metadata(self, zone):
         """Print all metadata for zone to the screen.
 
         inputs:
             zone(int): specified zone, if None will print all zones.
-            debug(bool): debug flag
         returns:
             None, prints result to screen
         """
         self.exec_print_all_thermostat_metadata(
-            self.get_all_metadata, [zone, debug])
+            self.get_all_metadata, [zone])
 
 
 class ThermostatZone(tc.ThermostatCommonZone):

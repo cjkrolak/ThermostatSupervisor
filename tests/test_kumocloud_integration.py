@@ -48,6 +48,7 @@ class FunctionalIntegrationTest(IntegrationTest,
         super().setUp()
         self.setUpIntTest()
         # test_GetMetaData input parameters
+        self.trait_field = None
         self.metadata_field = "address"
         self.metadata_type = str
 

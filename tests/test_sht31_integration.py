@@ -52,6 +52,7 @@ class FunctionalIntegrationTest(IntegrationTest,
     def setUp(self):
         self.setUpIntTest()
         # test_GetMetaData input parameters
+        self.trait_field = None
         self.metadata_field = sht31_config.API_TEMPF_MEAN
         self.metadata_type = float
 
