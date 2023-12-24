@@ -47,7 +47,7 @@ class Test(utc.UnitTest):
         print("testing nominal condition, will pass if gmail keys are present")
         self.assertTrue(
             api.verify_required_env_variables(self.thermostat_type, "0"),
-            "test failed because one or more gmail keys " "are missing",
+            "test failed because one or more gmail keys are missing",
         )
 
         # missing key, should raise exception
@@ -87,7 +87,7 @@ class Test(utc.UnitTest):
 
         # test failing case
         with self.assertRaises(KeyError):
-            print("attempting to access 'bogus' dictionary key, " "expect exception...")
+            print("attempting to access 'bogus' dictionary key, expect exception...")
             pkg = api.load_hardware_library("bogus")
             print(
                 f"'bogus' returned package type {type(pkg)}, exception "

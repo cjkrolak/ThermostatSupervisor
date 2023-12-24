@@ -415,7 +415,7 @@ class Sensors:
                 f"toggles completed at "
                 f"{recovery_freq_hz} Hz"
             )
-            msg_dict["next_step"] = "please reboot pi and restart " "flask server."
+            msg_dict["next_step"] = "please reboot pi and restart flask server."
             return {"i2c_recovery": msg_dict}
         finally:
             GPIO.cleanup()  # clean up GPIO
@@ -477,7 +477,7 @@ class Sensors:
         """
         if env.is_windows_environment():
             raise EnvironmentError(
-                f"ERROR: {util.get_function_name()} is " "only supported on Linux"
+                f"ERROR: {util.get_function_name()} is only supported on Linux"
             )
 
         cell_number_re = re.compile(
@@ -871,7 +871,7 @@ if __name__ == "__main__":
     env.get_python_version()
     if not env.is_raspberrypi_environment(True):
         raise EnvironmentError(
-            "ERROR: SHT31 Flask server only supported on " "Raspberry PI environment"
+            "ERROR: SHT31 Flask server only supported on Raspberry PI environment"
         )
 
     # parse runtime parameters

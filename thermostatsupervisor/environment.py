@@ -284,7 +284,7 @@ def dynamic_module_import(name, path=None, pkg=None, verbose=False):
             # installed package import
             spec = importlib.util.find_spec(name, path)
             if spec is None:
-                raise ModuleNotFoundError(f"module '{name}' could " "not be found")
+                raise ModuleNotFoundError(f"module '{name}' could not be found")
             mod = importlib.util.module_from_spec(spec)
             sys.modules[name] = mod
             spec.loader.exec_module(mod)
@@ -348,5 +348,5 @@ def get_package_version(module, element=None, verbose=False):
         except IndexError:
             return_val = 0
     else:
-        raise AttributeError(f"{element} is not a valid choice " "for element input")
+        raise AttributeError(f"{element} is not a valid choice for element input")
     return return_val

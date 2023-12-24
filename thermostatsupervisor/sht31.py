@@ -220,7 +220,7 @@ class ThermostatClass(tc.ThermostatCommon):
                 self.get_metadata(zone, parameter=parameter, retry=False)
             else:
                 raise RuntimeError(
-                    "FATAL ERROR: SHT31 server " "is not responding"
+                    "FATAL ERROR: SHT31 server is not responding"
                 ) from ex
 
 
@@ -309,7 +309,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
                     self.get_metadata(parameter=None, retry=False)
                 else:
                     raise RuntimeError(
-                        "FATAL ERROR: SHT31 server " "is not responding"
+                        "FATAL ERROR: SHT31 server is not responding"
                     ) from ex
         else:
             try:
@@ -327,7 +327,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
                     self.get_metadata(parameter=parameter, retry=False)
                 else:
                     raise RuntimeError(
-                        "FATAL ERROR: SHT31 server " "is not responding"
+                        "FATAL ERROR: SHT31 server is not responding"
                     ) from ex
             except KeyError as ex:
                 util.log_msg(traceback.format_exc(), mode=util.BOTH_LOG, func_name=1)

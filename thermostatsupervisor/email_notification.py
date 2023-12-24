@@ -55,9 +55,9 @@ def send_email_alert(
     """
     return_status_msg_dict = {
         util.NO_ERROR: "no error",
-        util.CONNECTION_ERROR: ("connection error, verify SMTP address " " and port"),
+        util.CONNECTION_ERROR: ("connection error, verify SMTP address and port"),
         util.AUTHORIZATION_ERROR: (
-            "authorization error, verify username " "and password"
+            "authorization error, verify username and password"
         ),
         util.EMAIL_SEND_ERROR: (
             "email send error, verify SMTP protocol "
@@ -65,7 +65,7 @@ def send_email_alert(
             "receiving addresses"
         ),
         util.ENVIRONMENT_ERROR: (
-            "failed to retrieve email credentials " "from environment variable"
+            "failed to retrieve email credentials from environment variable"
         ),
     }
 

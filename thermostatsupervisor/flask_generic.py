@@ -84,7 +84,7 @@ def schedule_ipban_block_list_report(ip_ban, debug_mode=False):
     """
     # interval = 1 day std, 1 min in debug mode
     interval_sec = 60 * [60 * 24, 1][debug_mode]
-    print(f"ip_ban blacklist report scheduled every {interval_sec / 60.0} " "minutes")
+    print(f"ip_ban blacklist report scheduled every {interval_sec / 60.0} minutes")
     scheduler = APScheduler()
     kwargs = {"ip_ban": ip_ban}
     scheduler.add_job(

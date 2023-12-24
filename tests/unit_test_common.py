@@ -640,7 +640,7 @@ class RuntimeParameterTest(UnitTest):
         Re-initialize user_inputs dict.
         """
         print(
-            f"{util.get_function_name()}:initializing user_inputs with " "defaults..."
+            f"{util.get_function_name()}:initializing user_inputs with defaults..."
         )
         self.uip = self.mod.UserInputs(suppress_warnings=True)
         print(f"{util.get_function_name()}:user_inputs have been initialized.")
@@ -773,7 +773,7 @@ class RuntimeParameterTest(UnitTest):
         if self.test_fields_with_file is not None:
             self.parse_runtime_parameters(self.test_fields_with_file)
         else:
-            print("self.test_list_file has not been setup yet, " "skipping this test.")
+            print("self.test_list_file has not been setup yet, skipping this test.")
 
     def parse_runtime_parameters(self, test_fields):
         """

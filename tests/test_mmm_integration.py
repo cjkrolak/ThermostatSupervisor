@@ -62,7 +62,7 @@ class FunctionalIntegrationTest(IntegrationTest, utc.FunctionalIntegrationTest):
         print(f"Thermostat.get_ui_data returned {result}")
         self.assertTrue(
             isinstance(result, dict),
-            f"result returned is type ({type(result)}), " "expected a dictionary",
+            f"result returned is type ({type(result)}), expected a dictionary",
         )
 
     def test_thermostat_get_ui_data_param(self):
