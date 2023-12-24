@@ -10,7 +10,7 @@ import socket
 import sys
 
 
-PACKAGE_NAME = 'thermostatsupervisor'  # should match name in __init__.py
+PACKAGE_NAME = "thermostatsupervisor"  # should match name in __init__.py
 
 # error codes
 NO_ERROR = 0
@@ -39,7 +39,7 @@ log_modes = {
     STDOUT_LOG: "stdout log",
     DATA_LOG: "data log",
     DEBUG_LOG: "print only if debug mode enabled",
-    STDERR_LOG: "stderr log"
+    STDERR_LOG: "stderr log",
 }
 
 FILE_PATH = ".//data"
@@ -86,8 +86,7 @@ def log_msg(msg, mode, func_name=-1, file_name=None):
     filter_debug_msg = debug_msg and not debug_enabled
 
     # cast STDOUT_LOG to STDERR_LOG in flask server mode
-    if (log_stdout_to_stderr and (mode & STDOUT_LOG) and
-            not (mode & STDERR_LOG)):
+    if log_stdout_to_stderr and (mode & STDOUT_LOG) and not (mode & STDERR_LOG):
         mode = mode + STDERR_LOG - STDOUT_LOG
 
     # define filename
@@ -110,8 +109,9 @@ def log_msg(msg, mode, func_name=-1, file_name=None):
 
         # check file size and rotate if necessary
         file_size_bytes = get_file_size_bytes(full_path)
-        file_size_bytes = log_rotate_file(full_path, file_size_bytes,
-                                          MAX_LOG_SIZE_BYTES)
+        file_size_bytes = log_rotate_file(
+            full_path, file_size_bytes, MAX_LOG_SIZE_BYTES
+        )
 
         # write to file
         write_to_file(full_path, file_size_bytes, msg)
@@ -161,10 +161,8 @@ def log_rotate_file(full_path, file_size_bytes, max_size_bytes):
     """
     if file_size_bytes > max_size_bytes:
         # rotate log file
-        current_date = datetime.datetime.today().strftime(
-            '%d-%b-%Y-%H-%M-%S')
-        os.rename(full_path, full_path[:-4] + "-" +
-                  str(current_date) + '.txt')
+        current_date = datetime.datetime.today().strftime("%d-%b-%Y-%H-%M-%S")
+        os.rename(full_path, full_path[:-4] + "-" + str(current_date) + ".txt")
         file_size_bytes = 0
     return file_size_bytes
 
@@ -211,10 +209,10 @@ def utf8len(input_string):
     returns:
         (int): length of string in bytes.
     """
-    return len(input_string.encode('utf-8'))
+    return len(input_string.encode("utf-8"))
 
 
-def temp_value_with_units(raw, disp_unit='F', precision=1) -> str:
+def temp_value_with_units(raw, disp_unit="F", precision=1) -> str:
     """
     Return string representing temperature and units.
 
@@ -225,13 +223,14 @@ def temp_value_with_units(raw, disp_unit='F', precision=1) -> str:
     returns:
         (str): temperature and units.
     """
-    if disp_unit.upper() not in ['C', 'F', 'K']:
-        raise ValueError(f"{get_function_name()}: '{disp_unit}' is not a "
-                         "valid temperature unit")
+    if disp_unit.upper() not in ["C", "F", "K"]:
+        raise ValueError(
+            f"{get_function_name()}: '{disp_unit}' is not a " "valid temperature unit"
+        )
 
     # if string try to convert to float
     if isinstance(raw, str):
-        if '°' in raw:
+        if "°" in raw:
             return raw  # pass-thru
         try:
             raw = float(raw)
@@ -244,10 +243,10 @@ def temp_value_with_units(raw, disp_unit='F', precision=1) -> str:
         formatted = f"{raw:.0f}"
     else:
         formatted = f"{raw:.{precision}f}"
-    return f'{formatted}°{disp_unit}'
+    return f"{formatted}°{disp_unit}"
 
 
-def humidity_value_with_units(raw, disp_unit=' RH', precision=0) -> str:
+def humidity_value_with_units(raw, disp_unit=" RH", precision=0) -> str:
     """
     Return string representing humidity and units.
 
@@ -258,13 +257,14 @@ def humidity_value_with_units(raw, disp_unit=' RH', precision=0) -> str:
     returns:
         (str): temperature and units.
     """
-    if disp_unit.upper() not in ['RH', ' RH']:
-        raise ValueError(f"{get_function_name()}: '{disp_unit}' is not a "
-                         " valid humidity unit")
+    if disp_unit.upper() not in ["RH", " RH"]:
+        raise ValueError(
+            f"{get_function_name()}: '{disp_unit}' is not a " " valid humidity unit"
+        )
 
     # if string try to convert to float
     if isinstance(raw, str):
-        if '%' in raw:
+        if "%" in raw:
             return raw  # pass-thru
         try:
             raw = float(raw)
@@ -277,7 +277,7 @@ def humidity_value_with_units(raw, disp_unit=' RH', precision=0) -> str:
         formatted = f"{raw:.0f}"
     else:
         formatted = f"{raw:.{precision}f}"
-    return f'{formatted}%{disp_unit}'
+    return f"{formatted}%{disp_unit}"
 
 
 def get_key_from_value(input_dict, val):
@@ -311,8 +311,9 @@ def get_key_from_value(input_dict, val):
             if val in value:
                 return key
         else:
-            raise TypeError(f"type {type(value)} not yet supported in "
-                            "get_key_from_value")
+            raise TypeError(
+                f"type {type(value)} not yet supported in " "get_key_from_value"
+            )
 
     # key not found
     raise KeyError(f"key not found in dict '{input_dict}' with value='{val}'")
@@ -391,8 +392,7 @@ def is_host_on_local_net(host_name, ip_address=None, verbose=False):
         if host_name == host_found[0]:
             return True, ip_address
         else:
-            print(f"DEBUG: expected host={host_name}, "
-                  f"actual host={host_found}")
+            print(f"DEBUG: expected host={host_name}, " f"actual host={host_found}")
             return False, None
 
 
@@ -400,12 +400,18 @@ def is_host_on_local_net(host_name, ip_address=None, verbose=False):
 default_parent_key = "argv"
 
 
-class UserInputs():
+class UserInputs:
     """Manage runtime arguments."""
 
-    def __init__(self, argv_list, help_description, suppress_warnings=False,
-                 parent_key=default_parent_key,
-                 *_, **__):
+    def __init__(
+        self,
+        argv_list,
+        help_description,
+        suppress_warnings=False,
+        parent_key=default_parent_key,
+        *_,
+        **__,
+    ):
         """
         Base Class UserInputs Constructor.
 
@@ -424,8 +430,7 @@ class UserInputs():
         self.parent_keys = [parent_key]
         self.help_description = help_description
         self.suppress_warnings = suppress_warnings
-        self.parser = argparse.ArgumentParser(
-            description=self.help_description)
+        self.parser = argparse.ArgumentParser(description=self.help_description)
         self.user_inputs = {}
         self.user_inputs_file = {}
         self.using_input_file = False
@@ -442,8 +447,7 @@ class UserInputs():
         valid_sflags = []
         for parent_key, child_dict in self.user_inputs.items():
             for child_key, _ in child_dict.items():
-                valid_sflags.append(self.user_inputs[parent_key][
-                    child_key]["sflag"])
+                valid_sflags.append(self.user_inputs[parent_key][child_key]["sflag"])
         return valid_sflags
 
     def parse_runtime_parameters(self, argv_list=None):
@@ -471,34 +475,32 @@ class UserInputs():
                 log_msg(
                     f"parsing named runtime parameters from user input list: "
                     f"{argv_list}",
-                    mode=DEBUG_LOG +
-                    STDOUT_LOG,
-                    func_name=1)
+                    mode=DEBUG_LOG + STDOUT_LOG,
+                    func_name=1,
+                )
                 self.parse_named_arguments(argv_list=argv_list)
             else:
                 log_msg(
-                    f"parsing runtime parameters from user input list: "
-                    f"{argv_list}",
-                    mode=DEBUG_LOG +
-                    STDOUT_LOG,
-                    func_name=1)
-                self.parse_argv_list(
-                    parent_key, argv_list)
+                    f"parsing runtime parameters from user input list: " f"{argv_list}",
+                    mode=DEBUG_LOG + STDOUT_LOG,
+                    func_name=1,
+                )
+                self.parse_argv_list(parent_key, argv_list)
         elif any([flag in sysargv_sflags for flag in valid_sflags]):
             # named arguments from sys.argv
             log_msg(
                 f"parsing named runtime parameters from sys.argv: {sys.argv}",
-                mode=DEBUG_LOG +
-                STDOUT_LOG,
-                func_name=1)
+                mode=DEBUG_LOG + STDOUT_LOG,
+                func_name=1,
+            )
             self.parse_named_arguments()
         else:
             # sys.argv parsing
             log_msg(
                 f"parsing runtime parameters from sys.argv: {sys.argv}",
-                mode=DEBUG_LOG +
-                STDOUT_LOG,
-                func_name=1)
+                mode=DEBUG_LOG + STDOUT_LOG,
+                func_name=1,
+            )
             self.parse_argv_list(parent_key, sys.argv)
 
         # dynamically update valid range and defaults
@@ -526,12 +528,14 @@ class UserInputs():
 
         # load parser contents
         for _, attr in self.user_inputs[parent_key].items():
-            self.parser.add_argument(attr["lflag"], attr["sflag"],
-                                     default=attr["default"],
-                                     type=attr["type"],
-                                     required=attr["required"],
-                                     help=attr["help"]
-                                     )
+            self.parser.add_argument(
+                attr["lflag"],
+                attr["sflag"],
+                default=attr["default"],
+                type=attr["type"],
+                required=attr["required"],
+                help=attr["help"],
+            )
         # parse the argument list
         if argv_list is not None:
             # test mode, override sys.argv
@@ -543,14 +547,13 @@ class UserInputs():
                 # add script name
                 self.user_inputs[parent_key][key]["value"] = sys.argv[0]
             else:
-                self.user_inputs[parent_key][key]["value"] = getattr(args,
-                                                                     key, None)
+                self.user_inputs[parent_key][key]["value"] = getattr(args, key, None)
                 strip_types = str
-                if isinstance(self.user_inputs[parent_key][key]["value"],
-                              strip_types):
+                if isinstance(self.user_inputs[parent_key][key]["value"], strip_types):
                     # str parsing has leading spaces for some reason
-                    self.user_inputs[parent_key][key]["value"] = \
-                        self.user_inputs[parent_key][key]["value"].strip()
+                    self.user_inputs[parent_key][key]["value"] = self.user_inputs[
+                        parent_key
+                    ][key]["value"].strip()
 
         return self.user_inputs
 
@@ -579,17 +582,20 @@ class UserInputs():
         # populate dict with values from list
         for child_key, val in self.user_inputs[parent_key].items():
             if val["order"] <= len(argv_inputs) - 1:
-                if (self.user_inputs[parent_key][child_key]["type"] in
-                        [int, float, str]) or self.is_lambda_bool(
-                            self.user_inputs[parent_key][child_key]["type"]):
+                if (
+                    self.user_inputs[parent_key][child_key]["type"] in [int, float, str]
+                ) or self.is_lambda_bool(
+                    self.user_inputs[parent_key][child_key]["type"]
+                ):
                     # cast data type when reading value
-                    self.user_inputs[parent_key][child_key]["value"] = (
-                        self.user_inputs[parent_key][child_key][
-                            "type"](argv_inputs[val["order"]]))
+                    self.user_inputs[parent_key][child_key]["value"] = self.user_inputs[
+                        parent_key
+                    ][child_key]["type"](argv_inputs[val["order"]])
                 else:
                     # no casting, just read raw from list
-                    self.user_inputs[parent_key][child_key]["value"] = \
-                        argv_inputs[val["order"]]
+                    self.user_inputs[parent_key][child_key]["value"] = argv_inputs[
+                        val["order"]
+                    ]
 
         return self.user_inputs
 
@@ -642,9 +648,11 @@ class UserInputs():
                 # expected type lambda cast to bool
                 # should never get bool for attr["type"]
                 if attr["type"] == bool:
-                    raise TypeError("CODING ERROR: UserInput bool "
-                                    "typedefs don't work, use a lambda "
-                                    "function")
+                    raise TypeError(
+                        "CODING ERROR: UserInput bool "
+                        "typedefs don't work, use a lambda "
+                        "function"
+                    )
                 elif self.is_lambda_bool(attr["type"]):
                     expected_type = bool
                 else:
@@ -656,9 +664,9 @@ class UserInputs():
                             f"parent_key={parent_key}, child_key='{child_key}'"
                             f": argv parameter missing, using default "
                             f"value '{default_value}'",
-                            mode=DEBUG_LOG +
-                            STDOUT_LOG,
-                            func_name=1)
+                            mode=DEBUG_LOG + STDOUT_LOG,
+                            func_name=1,
+                        )
                     attr["value"] = attr["default"]
 
                 # wrong datatype check
@@ -670,21 +678,24 @@ class UserInputs():
                             f"{expected_type}, actual={proposed_type}, "
                             "using default value "
                             f"'{default_value}'",
-                            mode=DEBUG_LOG +
-                            STDOUT_LOG,
-                            func_name=1)
+                            mode=DEBUG_LOG + STDOUT_LOG,
+                            func_name=1,
+                        )
                     attr["value"] = attr["default"]
 
                 # out of range check
-                elif (attr["valid_range"] is not None and
-                      proposed_value not in attr["valid_range"]):
+                elif (
+                    attr["valid_range"] is not None
+                    and proposed_value not in attr["valid_range"]
+                ):
                     if not self.suppress_warnings:
                         log_msg(
                             f"WARNING: '{proposed_value}' is not a valid "
                             f"choice parent_key='{parent_key}', child_key="
                             f"'{child_key}', using default '{default_value}'",
                             mode=BOTH_LOG,
-                            func_name=1)
+                            func_name=1,
+                        )
                     attr["value"] = attr["default"]
 
         return argv_dict
@@ -706,13 +717,17 @@ class UserInputs():
             try:
                 return self.user_inputs[parent_key][child_key][field]
             except TypeError:
-                print(f"TypeError: parent_key({type(parent_key)})={parent_key}"
-                      f", child_key({type(child_key)})={child_key}, "
-                      f"field({type(field)})={field})")
+                print(
+                    f"TypeError: parent_key({type(parent_key)})={parent_key}"
+                    f", child_key({type(child_key)})={child_key}, "
+                    f"field({type(field)})={field})"
+                )
                 raise
             except KeyError:
-                print(f"KeyError: target=[{parent_key}][{child_key}][{field}],"
-                      f" raw={self.user_inputs.keys()}")
+                print(
+                    f"KeyError: target=[{parent_key}][{child_key}][{field}],"
+                    f" raw={self.user_inputs.keys()}"
+                )
                 raise
 
     def set_user_inputs(self, parent_key, child_key, input_val, field="value"):
@@ -733,12 +748,16 @@ class UserInputs():
             try:
                 self.user_inputs[parent_key][child_key][field] = input_val
             except TypeError:
-                print(f"TypeError: keys={self.user_inputs.keys()} "
-                      f"(type={type(self.user_inputs.keys())})")
+                print(
+                    f"TypeError: keys={self.user_inputs.keys()} "
+                    f"(type={type(self.user_inputs.keys())})"
+                )
                 raise
             except KeyError:
-                print(f"KeyError: target=[{parent_key}][{child_key}][{field}],"
-                      f" raw={self.user_inputs.keys()}")
+                print(
+                    f"KeyError: target=[{parent_key}][{child_key}][{field}],"
+                    f" raw={self.user_inputs.keys()}"
+                )
                 raise
 
     def is_valid_file(self, arg):
@@ -752,10 +771,9 @@ class UserInputs():
         """
         arg = arg.strip()  # remove any leading spaces
         if not os.path.exists(arg):
-            self.parser.error(f"The file {os.path.abspath(arg)} "
-                              "does not exist!")
+            self.parser.error(f"The file {os.path.abspath(arg)} " "does not exist!")
         else:
-            return open(arg, 'r', encoding="utf8")  # return a file handle
+            return open(arg, "r", encoding="utf8")  # return a file handle
 
     def parse_input_file(self, input_file):
         """

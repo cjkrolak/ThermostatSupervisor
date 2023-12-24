@@ -13,8 +13,7 @@ from thermostatsupervisor import utilities as util
 from tests import unit_test_common as utc
 
 
-@unittest.skipIf(not utc.ENABLE_SHT31_TESTS,
-                 "sht31 tests are disabled")
+@unittest.skipIf(not utc.ENABLE_SHT31_TESTS, "sht31 tests are disabled")
 class IntegrationTest(utc.IntegrationTest):
     """
     Test functions in sht31.py.
@@ -41,10 +40,8 @@ class IntegrationTest(utc.IntegrationTest):
         self.mod_config = sht31_config
 
 
-@unittest.skipIf(not utc.ENABLE_SHT31_TESTS,
-                 "sht31 tests are disabled")
-class FunctionalIntegrationTest(IntegrationTest,
-                                utc.FunctionalIntegrationTest):
+@unittest.skipIf(not utc.ENABLE_SHT31_TESTS, "sht31 tests are disabled")
+class FunctionalIntegrationTest(IntegrationTest, utc.FunctionalIntegrationTest):
     """
     Test functional performance of sht31.py.
     """
@@ -57,32 +54,29 @@ class FunctionalIntegrationTest(IntegrationTest,
         self.metadata_type = float
 
 
-@unittest.skipIf(not utc.ENABLE_SHT31_TESTS,
-                 "sht31 tests are disabled")
-class SuperviseIntegrationTest(IntegrationTest,
-                               utc.SuperviseIntegrationTest):
+@unittest.skipIf(not utc.ENABLE_SHT31_TESTS, "sht31 tests are disabled")
+class SuperviseIntegrationTest(IntegrationTest, utc.SuperviseIntegrationTest):
     """
     Test supervise functionality of sht31.py.
     """
+
     def setUp(self):
         super().setUp()
         self.setUpIntTest()
 
 
-@unittest.skipIf(not utc.ENABLE_SHT31_TESTS,
-                 "sht31 tests are disabled")
-class PerformanceIntegrationTest(IntegrationTest,
-                                 utc.PerformanceIntegrationTest):
+@unittest.skipIf(not utc.ENABLE_SHT31_TESTS, "sht31 tests are disabled")
+class PerformanceIntegrationTest(IntegrationTest, utc.PerformanceIntegrationTest):
     """
     Test performance of sht31.py.
     """
+
     def setUp(self):
         super().setUp()
         self.setUpIntTest()
         # network timing measurement
         # mean timing = 0.5 sec per measurement plus 0.75 sec overhead
-        self.timeout_limit = (6.0 * 0.1 +
-                              (sht31_config.MEASUREMENTS * 0.5 + 0.75))
+        self.timeout_limit = 6.0 * 0.1 + (sht31_config.MEASUREMENTS * 0.5 + 0.75)
 
         # temperature and humidity repeatability measurements
         # settings below are tuned short term repeatability assessment

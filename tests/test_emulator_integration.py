@@ -40,8 +40,7 @@ class IntegrationTest(utc.IntegrationTest):
         self.mod_config = emulator_config
 
 
-class FunctionalIntegrationTest(IntegrationTest,
-                                utc.FunctionalIntegrationTest):
+class FunctionalIntegrationTest(IntegrationTest, utc.FunctionalIntegrationTest):
     """
     Test functional performance of emulator.py.
     """
@@ -55,8 +54,7 @@ class FunctionalIntegrationTest(IntegrationTest,
         self.metadata_type = float
 
 
-class SuperviseIntegrationTest(IntegrationTest,
-                               utc.SuperviseIntegrationTest):
+class SuperviseIntegrationTest(IntegrationTest, utc.SuperviseIntegrationTest):
     """
     Test supervise functionality of emulator.py.
     """
@@ -66,8 +64,7 @@ class SuperviseIntegrationTest(IntegrationTest,
         self.setUpIntTest()
 
 
-class PerformanceIntegrationTest(IntegrationTest,
-                                 utc.PerformanceIntegrationTest):
+class PerformanceIntegrationTest(IntegrationTest, utc.PerformanceIntegrationTest):
     """
     Test performance of emulator.py.
     """
@@ -82,11 +79,13 @@ class PerformanceIntegrationTest(IntegrationTest,
         # temperature and humidity repeatability measurements
         # data is uniform distribution, 1 std= (range)/sqrt(12)
         # adding 0.1 buffer to prevent false failures due to rounding, etc.
-        self.temp_stdev_limit = \
+        self.temp_stdev_limit = (
             emulator_config.NORMAL_TEMP_VARIATION * 2 / math.sqrt(12) + 0.1
+        )
         self.temp_repeatability_measurements = 100  # number of temp msmts.
-        self.humidity_stdev_limit = \
+        self.humidity_stdev_limit = (
             emulator_config.NORMAL_HUMIDITY_VARIATION * 2 / math.sqrt(12) + 0.1
+        )
         self.humidity_repeatability_measurements = 100  # number of temp msmts.
         self.poll_interval_sec = 0.5  # delay between repeatability msmts
 

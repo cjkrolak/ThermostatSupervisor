@@ -41,24 +41,22 @@ def supervisor(thermostat_type, zone_str):
     # outer loop: sessions
     while not api.uip.max_measurement_count_exceeded(measurement):
         # make connection to thermostat
-        zone_num = api.uip.get_user_inputs(api.uip.zone_name,
-                                           api.input_flds.zone)
+        zone_num = api.uip.get_user_inputs(api.uip.zone_name, api.input_flds.zone)
         util.log_msg(
             f"connecting to thermostat zone {zone_num} "
             f"(session:{session_count})...",
-            mode=util.BOTH_LOG)
+            mode=util.BOTH_LOG,
+        )
         Thermostat = mod.ThermostatClass(zone_num)
 
         # dump all meta data
         if debug:
-            util.log_msg("thermostat meta data:", mode=util.BOTH_LOG,
-                         func_name=1)
+            util.log_msg("thermostat meta data:", mode=util.BOTH_LOG, func_name=1)
             Thermostat.print_all_thermostat_metadata(zone_num)
 
         # get Zone object based on deviceID
         Zone = mod.ThermostatZone(Thermostat)
-        util.log_msg(f"zone name={Zone.zone_name}", mode=util.BOTH_LOG,
-                     func_name=1)
+        util.log_msg(f"zone name={Zone.zone_name}", mode=util.BOTH_LOG, func_name=1)
 
         # display banner and session settings
         Zone.display_session_settings()
@@ -73,8 +71,9 @@ def supervisor(thermostat_type, zone_str):
         Zone.display_runtime_settings()
 
         # supervisor inner loop
-        measurement = Zone.supervisor_loop(Thermostat, session_count,
-                                           measurement, debug)
+        measurement = Zone.supervisor_loop(
+            Thermostat, session_count, measurement, debug
+        )
 
         # increment connection count
         session_count += 1
@@ -82,14 +81,15 @@ def supervisor(thermostat_type, zone_str):
     # clean-up and exit
     util.log_msg(
         f"\n{measurement - 1} measurements completed, exiting program\n",
-        mode=util.BOTH_LOG)
+        mode=util.BOTH_LOG,
+    )
 
     # delete packages if necessary
-    if 'Zone' in locals():
+    if "Zone" in locals():
         del Zone
-    if 'Thermostat' in locals():
+    if "Thermostat" in locals():
         del Thermostat
-    if 'mod' in locals():
+    if "mod" in locals():
         del mod
 
 
@@ -110,17 +110,15 @@ def exec_supervise(debug=True, argv_list=None):
 
     # main supervise function
     # TODO - update for multi-zone application
-    supervisor(api.uip.get_user_inputs(api.uip.parent_keys[0],
-                                       api.input_flds.thermostat_type),
-               api.uip.get_user_inputs(api.uip.parent_keys[0],
-                                       api.input_flds.zone)
-               )
+    supervisor(
+        api.uip.get_user_inputs(api.uip.parent_keys[0], api.input_flds.thermostat_type),
+        api.uip.get_user_inputs(api.uip.parent_keys[0], api.input_flds.zone),
+    )
 
     return True
 
 
 if __name__ == "__main__":
-
     # if argv list is set use that, else use sys.argv
     if argv:
         argv_inputs = argv

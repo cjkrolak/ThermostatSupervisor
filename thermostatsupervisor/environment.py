@@ -69,11 +69,12 @@ def get_env_variable(env_key):
         else:
             value_shown = return_buffer["value"]
 
-        util.log_msg(f"{env_key}={value_shown}",
-                     mode=util.DEBUG_LOG)
+        util.log_msg(f"{env_key}={value_shown}", mode=util.DEBUG_LOG)
     except KeyError:
-        util.log_msg(f"FATAL ERROR: required environment variable '{env_key}'"
-                     " is missing.", mode=util.STDOUT_LOG + util.DATA_LOG)
+        util.log_msg(
+            f"FATAL ERROR: required environment variable '{env_key}'" " is missing.",
+            mode=util.STDOUT_LOG + util.DATA_LOG,
+        )
         return_buffer["status"] = util.ENVIRONMENT_ERROR
     return return_buffer
 
@@ -93,8 +94,9 @@ def set_env_variable(key, val):
     if key is None:
         raise AttributeError("environment key cannot be none")
     elif not isinstance(key, str):
-        raise AttributeError(f"environment key '{key}' must be a string, "
-                             f"is type {type(key)}")
+        raise AttributeError(
+            f"environment key '{key}' must be a string, " f"is type {type(key)}"
+        )
     os.environ[key] = str(val)
 
 
@@ -108,8 +110,7 @@ def load_all_env_variables():
         None, populates env_variables dict.
     """
     for key in env_variables:
-        util.log_msg(f"checking key: {key}",
-                     mode=util.BOTH_LOG, func_name=1)
+        util.log_msg(f"checking key: {key}", mode=util.BOTH_LOG, func_name=1)
         env_variables[key] = get_env_variable(key)["value"]
 
 
@@ -130,12 +131,11 @@ def get_local_ip():
     socket_obj = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     try:
         # doesn't even have to be reachable
-        socket_obj.connect(('10.255.255.255', 1))
+        socket_obj.connect(("10.255.255.255", 1))
         ip_address = socket_obj.getsockname()[0]
     except Exception:
-        util.log_msg(traceback.format_exc(),
-                     mode=util.BOTH_LOG, func_name=1)
-        ip_address = '127.0.0.1'
+        util.log_msg(traceback.format_exc(), mode=util.BOTH_LOG, func_name=1)
+        ip_address = "127.0.0.1"
     finally:
         socket_obj.close()
     return ip_address
@@ -148,7 +148,7 @@ def is_azure_environment():
     Function assumes '192.' IP addresses are not Azure,
     everything else is Azure.
     """
-    return '192.' not in get_local_ip()
+    return "192." not in get_local_ip()
 
 
 def is_windows_environment(verbose=False):
@@ -162,7 +162,7 @@ def is_windows_environment(verbose=False):
     """
     if verbose:
         print(f"platform={platform.system().upper()}")
-    return 'WINDOWS' in platform.system().upper()
+    return "WINDOWS" in platform.system().upper()
 
 
 def is_raspberrypi_environment(verbose=False):
@@ -175,9 +175,8 @@ def is_raspberrypi_environment(verbose=False):
         (bool)
     """
     try:
-        with io.open("/sys/firmware/devicetree/base/model", "r",
-                     encoding="utf8") as m:
-            if 'raspberry pi' in m.read().lower():
+        with io.open("/sys/firmware/devicetree/base/model", "r", encoding="utf8") as m:
+            if "raspberry pi" in m.read().lower():
                 if verbose:
                     print("raspberry pi environment is detected")
                 return True
@@ -188,9 +187,11 @@ def is_raspberrypi_environment(verbose=False):
     return False
 
 
-def get_python_version(min_major_version=MIN_PYTHON_MAJOR_VERSION,
-                       min_minor_version=MIN_PYTHON_MINOR_VERSION,
-                       display_version=True):
+def get_python_version(
+    min_major_version=MIN_PYTHON_MAJOR_VERSION,
+    min_minor_version=MIN_PYTHON_MINOR_VERSION,
+    display_version=True,
+):
     """
     Print current Python version to the screen.
 
@@ -212,8 +213,10 @@ def get_python_version(min_major_version=MIN_PYTHON_MAJOR_VERSION,
     major_version_fail = False
     if min_major_version is not None:
         if not isinstance(min_major_version, (int, float)):
-            raise TypeError(f"input parameter 'min_major_version is type "
-                            f"({type(min_major_version)}), not int or float")
+            raise TypeError(
+                f"input parameter 'min_major_version is type "
+                f"({type(min_major_version)}), not int or float"
+            )
         if major_version < min_major_version:
             major_version_fail = True
 
@@ -221,8 +224,10 @@ def get_python_version(min_major_version=MIN_PYTHON_MAJOR_VERSION,
     minor_version_fail = False
     if min_minor_version is not None:
         if not isinstance(min_minor_version, (int, float)):
-            raise TypeError(f"input parameter 'min_minor_version is type "
-                            f"({type(min_minor_version)}), not int or float")
+            raise TypeError(
+                f"input parameter 'min_minor_version is type "
+                f"({type(min_minor_version)}), not int or float"
+            )
         if minor_version < min_minor_version:
             minor_version_fail = True
 
@@ -230,7 +235,8 @@ def get_python_version(min_major_version=MIN_PYTHON_MAJOR_VERSION,
         raise OSError(
             f"current python major version ({major_version}.{minor_version}) "
             f"is less than min python version required "
-            f"({min_major_version}.{min_minor_version})")
+            f"({min_major_version}.{min_minor_version})"
+        )
 
     return (major_version, minor_version)
 
@@ -262,29 +268,29 @@ def dynamic_module_import(name, path=None, pkg=None, verbose=False):
     try:
         if path:
             # local file import from relative or abs path
-            print(f"WARNING: attempting local import of {name} from "
-                  f"working directory {os.getcwd()}...")
+            print(
+                f"WARNING: attempting local import of {name} from "
+                f"working directory {os.getcwd()}..."
+            )
             if verbose:
                 print(f"target dir contents={os.listdir(path)}")
             sys.path.insert(1, path)
             mod = importlib.import_module(name)
             if mod is None:
-                raise ModuleNotFoundError(f"module '{name}' could not "
-                                          f"be found at {path}")
+                raise ModuleNotFoundError(
+                    f"module '{name}' could not " f"be found at {path}"
+                )
         else:
             # installed package import
             spec = importlib.util.find_spec(name, path)
             if spec is None:
-                raise ModuleNotFoundError(f"module '{name}' could "
-                                          "not be found")
+                raise ModuleNotFoundError(f"module '{name}' could " "not be found")
             mod = importlib.util.module_from_spec(spec)
             sys.modules[name] = mod
             spec.loader.exec_module(mod)
     except Exception as ex:
-        util.log_msg(traceback.format_exc(),
-                     mode=util.BOTH_LOG, func_name=1)
-        util.log_msg("module load failed: " + name,
-                     mode=util.BOTH_LOG, func_name=1)
+        util.log_msg(traceback.format_exc(), mode=util.BOTH_LOG, func_name=1)
+        util.log_msg("module load failed: " + name, mode=util.BOTH_LOG, func_name=1)
         raise ex
     else:
         return mod
@@ -300,8 +306,9 @@ def get_parent_path(source_path, verbose=False):
     returns:
         (str): abs path to parent folder.
     """
-    parent_path = os.path.abspath(os.path.join(
-        source_path, os.pardir)).replace("\\", "/")
+    parent_path = os.path.abspath(os.path.join(source_path, os.pardir)).replace(
+        "\\", "/"
+    )
     if verbose:
         print(f"parent path={parent_path}")
     return parent_path
@@ -341,6 +348,5 @@ def get_package_version(module, element=None, verbose=False):
         except IndexError:
             return_val = 0
     else:
-        raise AttributeError(f"{element} is not a valid choice "
-                             "for element input")
+        raise AttributeError(f"{element} is not a valid choice " "for element input")
     return return_val

@@ -31,6 +31,7 @@ def code_coverage_all_tests():
     # coverage metric.
     # pylint: disable=import-outside-toplevel
     from tests import unit_test_common as utc  # noqa E402
+
     try:
         utc.parse_unit_test_runtime_parameters()
         utc.run_all_tests()

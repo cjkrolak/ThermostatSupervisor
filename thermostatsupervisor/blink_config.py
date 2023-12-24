@@ -25,8 +25,8 @@ env_variables = {
 
 # min required env variables on all runs
 required_env_variables = {
-    'BLINK_USERNAME': None,
-    'BLINK_PASSWORD': None,
+    "BLINK_USERNAME": None,
+    "BLINK_PASSWORD": None,
     "BLINK_2FA": None,
 }
 
@@ -56,10 +56,12 @@ metadata = {
 }
 
 # supported thermostat configs
-supported_configs = {"module": "blink",
-                     "type": 6,
-                     "zones": list(metadata.keys()),
-                     "modes": ["OFF_MODE"]}
+supported_configs = {
+    "module": "blink",
+    "type": 6,
+    "zones": list(metadata.keys()),
+    "modes": ["OFF_MODE"],
+}
 
 
 def get_available_zones():
@@ -88,4 +90,4 @@ argv = [
     "4",  # tolerance
     "OFF_MODE",  # thermostat mode
     "2",  # number of measurements
-    ]
+]
