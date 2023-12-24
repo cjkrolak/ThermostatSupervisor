@@ -13,19 +13,25 @@ STARTING_HUMIDITY = 45.0  # starting humidity when emulator starts
 NORMAL_HUMIDITY_VARIATION = 3.0  # reported val variation +/- this val
 
 # all environment variables specific to this thermostat type
-env_variables = {
-}
+env_variables = {}
 
 # min required env variables on all runs
-required_env_variables = {
-}
+required_env_variables = {}
 
 # supported thermostat configs
-supported_configs = {"module": "emulator",
-                     "type": 0,
-                     "zones": [0, 1],
-                     "modes": ["OFF_MODE", "HEAT_MODE", "COOL_MODE",
-                               "DRY_MODE", "AUTO_MODE", "UNKNOWN_MODE"]}
+supported_configs = {
+    "module": "emulator",
+    "type": 0,
+    "zones": [0, 1],
+    "modes": [
+        "OFF_MODE",
+        "HEAT_MODE",
+        "COOL_MODE",
+        "DRY_MODE",
+        "AUTO_MODE",
+        "UNKNOWN_MODE",
+    ],
+}
 
 
 def get_available_zones():
@@ -54,4 +60,4 @@ argv = [
     "3",  # tolerance
     "OFF_MODE",  # thermostat mode
     "2",  # number of measurements
-    ]
+]

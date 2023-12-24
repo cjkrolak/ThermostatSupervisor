@@ -25,10 +25,12 @@ def initialize_ipban(app):
         (ip_ban object)
     """
     # setup ipban
-    ip_ban = IpBan(app=app,
-                   ban_count=ipban_ban_count,
-                   ban_seconds=ipban_ban_seconds,
-                   persist=ipban_persistent)
+    ip_ban = IpBan(
+        app=app,
+        ban_count=ipban_ban_count,
+        ban_seconds=ipban_ban_seconds,
+        persist=ipban_persistent,
+    )
     ip_ban.init_app(app)
     ip_ban.load_nuisances()
     print_ipban_block_list(ip_ban)
@@ -82,14 +84,16 @@ def schedule_ipban_block_list_report(ip_ban, debug_mode=False):
     """
     # interval = 1 day std, 1 min in debug mode
     interval_sec = 60 * [60 * 24, 1][debug_mode]
-    print(f"ip_ban blacklist report scheduled every {interval_sec / 60.0} "
-          "minutes")
+    print(f"ip_ban blacklist report scheduled every {interval_sec / 60.0} " "minutes")
     scheduler = APScheduler()
     kwargs = {"ip_ban": ip_ban}
-    scheduler.add_job(id='ip_ban blacklist report',
-                      func=print_ipban_block_list_with_timestamp,
-                      kwargs=kwargs,
-                      trigger="interval", seconds=interval_sec)
+    scheduler.add_job(
+        id="ip_ban blacklist report",
+        func=print_ipban_block_list_with_timestamp,
+        kwargs=kwargs,
+        trigger="interval",
+        seconds=interval_sec,
+    )
     scheduler.start()
 
 
@@ -106,12 +110,11 @@ def set_flask_cookie_config(app):
     app.config.update(
         SESSION_COOKIE_SECURE=True,
         SESSION_COOKIE_HTTPONLY=True,
-        SESSION_COOKIE_SAMESITE='Lax',
+        SESSION_COOKIE_SAMESITE="Lax",
     )
 
 
 def print_flask_config(app):
-    """
-    """
+    """ """
     print("flask config:")
     print(f"{app.config}")

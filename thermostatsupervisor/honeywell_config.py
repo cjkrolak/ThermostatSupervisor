@@ -18,11 +18,12 @@ required_env_variables = {
 }
 
 # supported thermostat configs
-supported_configs = {"module": "honeywell",
-                     "type": 1,
-                     "zones": [0],
-                     "modes": ["OFF_MODE", "HEAT_MODE", "COOL_MODE",
-                               "UNKNOWN_MODE"]}
+supported_configs = {
+    "module": "honeywell",
+    "type": 1,
+    "zones": [0],
+    "modes": ["OFF_MODE", "HEAT_MODE", "COOL_MODE", "UNKNOWN_MODE"],
+}
 
 
 def get_available_zones():
@@ -51,4 +52,4 @@ argv = [
     "3",  # tolerance
     "OFF_MODE",  # thermostat mode
     "2",  # number of measurements
-    ]
+]

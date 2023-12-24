@@ -11,7 +11,9 @@ import unittest
 # local imports
 # thermostat_api is imported but not used to avoid a circular import
 from thermostatsupervisor import environment as env
-from thermostatsupervisor import thermostat_api as api  # noqa F401, pylint: disable=unused-import.
+from thermostatsupervisor import (
+    thermostat_api as api,
+)  # noqa F401, pylint: disable=unused-import.
 from thermostatsupervisor import sht31
 from thermostatsupervisor import sht31_config
 from thermostatsupervisor import sht31_flask_server as sht31_fs
@@ -19,12 +21,13 @@ from thermostatsupervisor import utilities as util
 from tests import unit_test_common as utc
 
 
-@unittest.skipIf(not utc.ENABLE_SHT31_TESTS,
-                 "sht31 tests are disabled")
-@unittest.skipIf(env.is_azure_environment(),
-                 "this test not supported on Azure Pipelines")
-@unittest.skipIf(not utc.ENABLE_FLASK_INTEGRATION_TESTS,
-                 "flask integration tests are disabled")
+@unittest.skipIf(not utc.ENABLE_SHT31_TESTS, "sht31 tests are disabled")
+@unittest.skipIf(
+    env.is_azure_environment(), "this test not supported on Azure Pipelines"
+)
+@unittest.skipIf(
+    not utc.ENABLE_FLASK_INTEGRATION_TESTS, "flask integration tests are disabled"
+)
 class IntegrationTest(utc.UnitTest):
     """Test functions in sht31_flask_server.py."""
 
@@ -48,22 +51,27 @@ class IntegrationTest(utc.UnitTest):
                 continue
 
             print(f"test_case={test_case}")
-            Thermostat = \
-                sht31.ThermostatClass(
-                    zone, path=sht31_config.flask_folder[test_case])
+            Thermostat = sht31.ThermostatClass(
+                zone, path=sht31_config.flask_folder[test_case]
+            )
             print("printing thermostat meta data:")
-            return_data = Thermostat.print_all_thermostat_metadata(
-                zone)
+            return_data = Thermostat.print_all_thermostat_metadata(zone)
 
             # validate dictionary was returned
-            self.assertTrue(isinstance(return_data, dict),
-                            "return data is not a dictionary")
+            self.assertTrue(
+                isinstance(return_data, dict), "return data is not a dictionary"
+            )
 
             # validate key as proof of correct return page
             if test_case in ["production", "unit_test"]:
                 expected_key = "measurements"
-            elif test_case in ["diag", "clear_diag", "enable_heater",
-                               "disable_heater", "soft_reset"]:
+            elif test_case in [
+                "diag",
+                "clear_diag",
+                "enable_heater",
+                "disable_heater",
+                "soft_reset",
+            ]:
                 expected_key = "raw_binary"
             elif test_case in ["i2c_detect", "i2c_detect_0", "i2c_detect_1"]:
                 expected_key = "i2c_detect"
@@ -73,9 +81,11 @@ class IntegrationTest(utc.UnitTest):
                 expected_key = "message"
             else:
                 expected_key = "bogus"
-            self.assertTrue(expected_key in return_data,
-                            f"test_case '{test_case}': key '{expected_key}' "
-                            f"was not found in return data: {return_data}")
+            self.assertTrue(
+                expected_key in return_data,
+                f"test_case '{test_case}': key '{expected_key}' "
+                f"was not found in return data: {return_data}",
+            )
 
     def test_sht31_flask_server(self):
         """
@@ -84,10 +94,11 @@ class IntegrationTest(utc.UnitTest):
         measurements_bckup = sht31_config.MEASUREMENTS
         try:
             for sht31_config.measurements in [1, 10, 100, 1000]:
-                msg = ['measurement', 'measurements'][
-                    sht31_config.MEASUREMENTS > 1]
-                print(f"\ntesting SHT31 flask server with "
-                      f"{sht31_config.MEASUREMENTS} {msg}...")
+                msg = ["measurement", "measurements"][sht31_config.MEASUREMENTS > 1]
+                print(
+                    f"\ntesting SHT31 flask server with "
+                    f"{sht31_config.MEASUREMENTS} {msg}..."
+                )
                 self.validate_flask_server()
         finally:
             sht31_config.measurements = measurements_bckup
@@ -117,14 +128,18 @@ class IntegrationTest(utc.UnitTest):
         print(f"temporary hold minutes={Zone.get_temporary_hold_until_time()}")
         meta_data = Thermostat.get_all_metadata(sht31_config.UNIT_TEST_ZONE)
         print(f"thermostat meta data={meta_data}")
-        print(f"thermostat display temp="
-              f"{util.temp_value_with_units(Zone.get_display_temp())}")
+        print(
+            f"thermostat display temp="
+            f"{util.temp_value_with_units(Zone.get_display_temp())}"
+        )
 
         # verify measurements
-        self.assertEqual(meta_data["measurements"],
-                         sht31_config.MEASUREMENTS,
-                         f"measurements: actual={meta_data['measurements']}, "
-                         f"expected={sht31_config.MEASUREMENTS}")
+        self.assertEqual(
+            meta_data["measurements"],
+            sht31_config.MEASUREMENTS,
+            f"measurements: actual={meta_data['measurements']}, "
+            f"expected={sht31_config.MEASUREMENTS}",
+        )
 
         # verify metadata
         test_cases = {
@@ -137,9 +152,10 @@ class IntegrationTest(utc.UnitTest):
             print(f"'{param}'={return_val}")
             min_val = limits["min_val"]
             max_val = limits["max_val"]
-            self.assertTrue(min_val <= return_val <= max_val,
-                            f"'{param}'={return_val}, not between {min_val} "
-                            f"and {max_val}")
+            self.assertTrue(
+                min_val <= return_val <= max_val,
+                f"'{param}'={return_val}, not between {min_val} " f"and {max_val}",
+            )
         # cleanup
         del Zone
         del Thermostat

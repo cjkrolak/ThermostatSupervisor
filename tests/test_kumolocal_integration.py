@@ -38,10 +38,8 @@ class IntegrationTest(utc.IntegrationTest):
         self.mod_config = kumolocal_config
 
 
-@unittest.skipIf(not utc.ENABLE_KUMOLOCAL_TESTS,
-                 "kumolocal tests are disabled")
-class FunctionalIntegrationTest(IntegrationTest,
-                                utc.FunctionalIntegrationTest):
+@unittest.skipIf(not utc.ENABLE_KUMOLOCAL_TESTS, "kumolocal tests are disabled")
+class FunctionalIntegrationTest(IntegrationTest, utc.FunctionalIntegrationTest):
     """
     Test functional performance of kumolocal.py.
     """
@@ -55,10 +53,8 @@ class FunctionalIntegrationTest(IntegrationTest,
         self.metadata_type = dict
 
 
-@unittest.skipIf(not utc.ENABLE_KUMOLOCAL_TESTS,
-                 "kumolocal tests are disabled")
-class SuperviseIntegrationTest(IntegrationTest,
-                               utc.SuperviseIntegrationTest):
+@unittest.skipIf(not utc.ENABLE_KUMOLOCAL_TESTS, "kumolocal tests are disabled")
+class SuperviseIntegrationTest(IntegrationTest, utc.SuperviseIntegrationTest):
     """
     Test supervise functionality of kumolocal.py.
     """
@@ -68,10 +64,8 @@ class SuperviseIntegrationTest(IntegrationTest,
         self.setUpIntTest()
 
 
-@unittest.skipIf(not utc.ENABLE_KUMOLOCAL_TESTS,
-                 "kumolocal tests are disabled")
-class PerformanceIntegrationTest(IntegrationTest,
-                                 utc.PerformanceIntegrationTest):
+@unittest.skipIf(not utc.ENABLE_KUMOLOCAL_TESTS, "kumolocal tests are disabled")
+class PerformanceIntegrationTest(IntegrationTest, utc.PerformanceIntegrationTest):
     """
     Test performance of kumolocal.py.
     """
