@@ -145,7 +145,9 @@ class Test(utc.UnitTest):
         for exception, exception_args in sendmail_exceptions:
             print(f"testing mocked '{str(exception)} exception...")
             # mock the exception case
-            side_effect = lambda *_, **__: utc.mock_exception(exception, exception_args)  # noqa E731
+            side_effect = lambda *_, **__: utc.mock_exception(
+                exception, exception_args
+            )  # noqa E731
             with mock.patch.object(
                 smtplib.SMTP_SSL,
                 "sendmail",  # noqa e501, pylint:disable=undefined-variable

@@ -126,8 +126,9 @@ class ThermostatClass(tc.ThermostatCommon):
         returns:
         """
         # flask server used in unit test mode
-        from thermostatsupervisor import (
-            sht31_flask_server as sht31_fs,
+        # noqa E402, C0415
+        from thermostatsupervisor import (  # noqa E402, C0415
+            sht31_flask_server as sht31_fs,  # noqa E402, C0415
         )  # noqa E402, C0415
 
         # pylint: disable=import-outside-toplevel

@@ -639,9 +639,7 @@ class RuntimeParameterTest(UnitTest):
         """
         Re-initialize user_inputs dict.
         """
-        print(
-            f"{util.get_function_name()}:initializing user_inputs with defaults..."
-        )
+        print(f"{util.get_function_name()}:initializing user_inputs with defaults...")
         self.uip = self.mod.UserInputs(suppress_warnings=True)
         print(f"{util.get_function_name()}:user_inputs have been initialized.")
         self.uip.suppress_warnings = False  # reset back to default
