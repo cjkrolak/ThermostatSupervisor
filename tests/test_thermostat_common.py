@@ -321,9 +321,7 @@ class Test(utc.UnitTest):
                 )
             else:
                 with self.assertRaises(TypeError):
-                    print(
-                        "attempting to input bad parameter type, expect exception..."
-                    )
+                    print("attempting to input bad parameter type, expect exception...")
                     self.Zone.validate_numeric(test_case, "test_case")
 
     def test_warn_if_outside_global_limit(self):
