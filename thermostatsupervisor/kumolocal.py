@@ -112,7 +112,7 @@ class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
             serial_num_lst = list(self.get_indoor_units())  # will query unit
         except UnboundLocalError:  # patch for issue #205
             util.log_msg(
-                "WARNING: Kumocloud refresh failed due to " "timeout",
+                "WARNING: Kumocloud refresh failed due to timeout",
                 mode=util.BOTH_LOG,
                 func_name=1,
             )
@@ -584,7 +584,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
                 self.Thermostat._fetch_if_needed()  # pylint: disable=protected-access
             except UnboundLocalError:  # patch for issue #205
                 util.log_msg(
-                    "WARNING: Kumocloud refresh failed due to " "timeout",
+                    "WARNING: Kumocloud refresh failed due to timeout",
                     mode=util.BOTH_LOG,
                     func_name=1,
                 )

@@ -95,11 +95,11 @@ class Test(utc.UnitTest):
                 # confirm verify_current_mode()
                 none_act = self.Zone.verify_current_mode(None)
                 self.assertTrue(
-                    none_act, "verify_current_mode(None) failed " "to return True"
+                    none_act, "verify_current_mode(None) failed to return True"
                 )
                 curr_act = self.Zone.verify_current_mode(test_case[1])
                 self.assertTrue(
-                    curr_act, "verify_current_mode() doesn't match " "current test mode"
+                    curr_act, "verify_current_mode() doesn't match current test mode"
                 )
                 dummy_act = self.Zone.verify_current_mode("dummy_mode")
                 self.assertFalse(
@@ -322,7 +322,7 @@ class Test(utc.UnitTest):
             else:
                 with self.assertRaises(TypeError):
                     print(
-                        "attempting to input bad parameter type, " "expect exception..."
+                        "attempting to input bad parameter type, expect exception..."
                     )
                     self.Zone.validate_numeric(test_case, "test_case")
 

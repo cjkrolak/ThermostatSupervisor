@@ -490,7 +490,7 @@ class MiscTests(utc.UnitTest):
 
         # test key not found
         with self.assertRaises(KeyError):
-            print("attempting to input bad dictionary key, " "expect exception...")
+            print("attempting to input bad dictionary key, expect exception...")
             actual_val = util.get_key_from_value(test_dict, "bogus_value")
 
         # unsupported datatype

@@ -225,7 +225,7 @@ def temp_value_with_units(raw, disp_unit="F", precision=1) -> str:
     """
     if disp_unit.upper() not in ["C", "F", "K"]:
         raise ValueError(
-            f"{get_function_name()}: '{disp_unit}' is not a " "valid temperature unit"
+            f"{get_function_name()}: '{disp_unit}' is not a valid temperature unit"
         )
 
     # if string try to convert to float
@@ -259,7 +259,7 @@ def humidity_value_with_units(raw, disp_unit=" RH", precision=0) -> str:
     """
     if disp_unit.upper() not in ["RH", " RH"]:
         raise ValueError(
-            f"{get_function_name()}: '{disp_unit}' is not a " " valid humidity unit"
+            f"{get_function_name()}: '{disp_unit}' is not a valid humidity unit"
         )
 
     # if string try to convert to float
@@ -312,7 +312,7 @@ def get_key_from_value(input_dict, val):
                 return key
         else:
             raise TypeError(
-                f"type {type(value)} not yet supported in " "get_key_from_value"
+                f"type {type(value)} not yet supported in get_key_from_value"
             )
 
     # key not found
@@ -771,7 +771,7 @@ class UserInputs:
         """
         arg = arg.strip()  # remove any leading spaces
         if not os.path.exists(arg):
-            self.parser.error(f"The file {os.path.abspath(arg)} " "does not exist!")
+            self.parser.error(f"The file {os.path.abspath(arg)} does not exist!")
         else:
             return open(arg, "r", encoding="utf8")  # return a file handle
 

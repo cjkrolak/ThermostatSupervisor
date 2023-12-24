@@ -59,7 +59,7 @@ class EnvironmentTests(utc.UnitTest):
         )
         self.assertTrue(
             7 <= len(return_val) <= 15,
-            "get_local_ip() returned '%s' which is not " "between 7 and 15 chars",
+            "get_local_ip() returned '%s' which is not between 7 and 15 chars",
         )
 
     def test_is_azure_environment(self):
@@ -173,7 +173,7 @@ class EnvironmentTests(utc.UnitTest):
 
         # error checking invalid input parameter
         with self.assertRaises(TypeError):
-            print("attempting to invalid input parameter type, " "expect exception...")
+            print("attempting to invalid input parameter type, expect exception...")
             env.get_python_version("3", 7)
 
         # no decimal point
@@ -181,7 +181,7 @@ class EnvironmentTests(utc.UnitTest):
 
         # min value exception
         with self.assertRaises(EnvironmentError):
-            print("attempting to verify version gte 99.99, " "expect exception...")
+            print("attempting to verify version gte 99.99, expect exception...")
             env.get_python_version(99, 99)
 
         print("test passed all checks")

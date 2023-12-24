@@ -43,7 +43,7 @@ class ThermostatCommon:
             (dict) results dict.
         """
         raise NotImplementedError(
-            "get_all_metadata is not implemented " "for this thermostat type"
+            "get_all_metadata is not implemented for this thermostat type"
         )
 
     def get_metadata(self, zone=None, trait=None, parameter=None):
