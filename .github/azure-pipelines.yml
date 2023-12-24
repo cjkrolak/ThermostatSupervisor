@@ -43,7 +43,7 @@ steps:
 # line length and extend-ignore options added for compatibility with black
 - script: |
     python -m pip install flake8 --upgrade
-    flake8 --max-line-length 88 --extend-ignore=E203,E704 .
+    flake8 --config=setup.cfg .
   displayName: 'Run lint tests'
 
 # safety check
