@@ -18,9 +18,9 @@ from thermostatsupervisor import environment as env
 from thermostatsupervisor import flask_generic as flg
 
 # thermostat_api is imported but not used to avoid a circular import
-from thermostatsupervisor import (
+from thermostatsupervisor import (  # noqa F401, pylint: disable=unused-import.
     thermostat_api as api,
-)  # noqa F401, pylint: disable=unused-import.
+)
 from thermostatsupervisor import supervisor_flask_server as sfs
 from thermostatsupervisor import utilities as util
 from tests import unit_test_common as utc
