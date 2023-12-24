@@ -4,6 +4,7 @@
 [![Docker Image CI](https://github.com/cjkrolak/ThermostatSupervisor/actions/workflows/docker-image.yml/badge.svg)](https://github.com/cjkrolak/ThermostatSupervisor/actions/workflows/docker-image.yml)
 [![OSSAR](https://github.com/cjkrolak/ThermostatSupervisor/actions/workflows/ossar-analysis.yml/badge.svg)](https://github.com/cjkrolak/ThermostatSupervisor/actions/workflows/ossar-analysis.yml)
 [![Pylint](https://github.com/cjkrolak/ThermostatSupervisor/actions/workflows/pylint.yml/badge.svg)](https://github.com/cjkrolak/ThermostatSupervisor/actions/workflows/pylint.yml)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
 # ThermostatSupervisor:
 supervisor to detect and correct thermostat deviations<br/>
