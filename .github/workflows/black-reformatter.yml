@@ -5,15 +5,15 @@ jobs:
     name: runner / black
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4.1.1
+      - uses: actions/checkout@v4
       - name: Check files using the black formatter
-        uses: rickstaa/action-black@v1.3.3
+        uses: rickstaa/action-black@v1
         id: action_black
         with:
           black_args: "."
       - name: Create Pull Request
         if: steps.action_black.outputs.is_formatted == 'true'
-        uses: peter-evans/create-pull-request@v5.0.2
+        uses: peter-evans/create-pull-request@v5
         with:
           token: ${{ secrets.THERMOSTATSUPERVISOR_PR }}
           title: "Format Python code with psf/black push"
