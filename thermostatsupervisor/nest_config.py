@@ -13,12 +13,13 @@ MIN_COOL_SETPOINT = 70
 
 # all environment variables specific to this thermostat type
 env_variables = {
-    "GCLOUD_PROJECT_ID": None,
+    "GCLOUD_CLIENT_ID": None,
+    "GCLOUD_CLIENT_SECRET": None,
+    "DAC_PROJECT_ID": None,
 }
 
 # min required env variables on all runs
 required_env_variables = {
-    "GCLOUD_PROJECT_ID": None,
 }
 
 # supported thermostat configs
@@ -82,3 +83,6 @@ argv = [
     "OFF_MODE",  # thermostat mode
     "2",  # number of measurements
 ]
+
+# force use of credentials.json file for credentials
+use_credentials_file = False
