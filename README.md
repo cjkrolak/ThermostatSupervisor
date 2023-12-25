@@ -15,6 +15,7 @@ supervisor to detect and correct thermostat deviations<br/>
 3. SHT31 temperature sensor either locally or remote (user must provide local/remote IP address in environment variables and setup firewall port routing if remote).
 4. Mitsubishi ductless thermostat through Kumocloud on remote network (monitoring) or local network (monitoring and control).
 5. Blink camera temperature sensors.
+6. Nest thermostats.
 
 # errata:
 1. Honeywell thermostat support through TCC web site requires 3 minute poll time (or longer).  Default for this thermostat is set to 10 minutes.
@@ -30,6 +31,7 @@ flask, flask-resful, and fask-wtf for sht31 flask server<br/>
 flask and flask-wtf for supervisor flask server<br/>
 pykumo for kumocloud<br/>
 blinkpy for blink camera temp sensor support<br/>
+python-google-nest for nest temp sensor support<br/>
 coverage for code coverage analysis<br/>
 psutil for all thermostat types<br/>
 refer to requirements.txt for full list of package dependencies.<br/>
@@ -71,6 +73,10 @@ Environment variables required depend on the thermostat being used.<br/>
   * 'BLINK_USERNAME': username for Blink account
   * 'BLINK_PASSWORD': password for Blink account
   * 'BLINK_2FA': 2 factor auth string for Blink account
+* Nest thermostat requires the 'NEST' env vars or env vars supplied via a json file:
+  * 'GCLOUD_CLIENT_ID': client ID from Google Clout OAuth credentials
+  * 'GCLOUD_CLIENT_SECRET': client secret from Google Clout OAuth credentials
+  * 'DAC_PROJECT_ID': project ID from the Nest Device access console
 
 ## updating environment variables:<br/>
 * Linux: update file ~/.profile and then "source ~/.profile" to load the file<br/>
@@ -163,6 +169,13 @@ Script will connect to Blink camera through Blink account.<br/>
 Default poll time is currently set to 10 minutes.<br/>
 Zone number refers to the thermostat order in Blink server, 0=first thermostat data returned, 1=second thermostat, etc.<br/><br/>
 command line usage:  "*python -m thermostatsupervisor.blink \<thermostat type\> \<zone\>*"
+
+## nest.py:
+Script will connect to nest thermostats through Google Device Access console account.<br/>
+Follow instructions in this repo to setup Google Device Access registration and Google Cloud OAuth account: https://github.com/axlan/python-nest/.<br/>
+Default poll time is currently set to 10 minutes.<br/>
+Zone number refers to the thermostat order in nest server, 0=first thermostat data returned, 1=second thermostat, etc.<br/><br/>
+command line usage:  "*python -m thermostatsupervisor.nest \<thermostat type\> \<zone\>*"
 
 ## Supervisor API required methods:<br/>
 **Thermostat class:**<br/>
