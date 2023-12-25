@@ -158,8 +158,10 @@ class Test(utc.UnitTest):
                 side_effect=side_effect,
             ):
                 # send message with no inputs, UTIL.NO_ERROR expected
-                body = ("this is a test of the email notification alert for exception "
-                        f"type {str(exception)}.")
+                body = (
+                    "this is a test of the email notification alert for exception "
+                    f"type {str(exception)}."
+                )
                 return_status, return_status_msg = eml.send_email_alert(
                     subject=f"test email alert (mocked {str(exception)} exception)",
                     body=body,
