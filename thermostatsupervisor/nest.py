@@ -20,7 +20,7 @@ from thermostatsupervisor import utilities as util
 # python-nest package import
 # note this code uses python-google-nest package.
 # Installing python-nest package will corrupt the python-google-nest install
-NEST_DEBUG = True  # debug uses local nest repo instead of pkg
+NEST_DEBUG = False  # debug uses local nest repo instead of pkg
 if NEST_DEBUG and not env.is_azure_environment():
     mod_path = "..\\python-nest\\nest"
     if env.is_interactive_environment():
