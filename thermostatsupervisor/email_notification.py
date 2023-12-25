@@ -156,8 +156,9 @@ def send_email_alert(
         smtplib.SMTPDataError,
         smtplib.SMTPNotSupportedError,
     ) as ex:
-        util.log_msg(f"exception during mail send: {str(ex)}",
-                     mode=util.BOTH_LOG, func_name=1)
+        util.log_msg(
+            f"exception during mail send: {str(ex)}", mode=util.BOTH_LOG, func_name=1
+        )
         server.close()
         return (util.EMAIL_SEND_ERROR, return_status_msg_dict[status])
     server.close()
