@@ -19,29 +19,39 @@ env_variables = {
 
 # min required env variables on all runs
 required_env_variables = {
-    'KUMO_USERNAME': None,
-    'KUMO_PASSWORD': None,
+    "KUMO_USERNAME": None,
+    "KUMO_PASSWORD": None,
 }
 
 # supported thermostat configs
-supported_configs = {"module": "kumocloud",
-                     "type": 4,
-                     "zones": [MAIN_LEVEL, BASEMENT],
-                     "modes": ["OFF_MODE", "HEAT_MODE", "COOL_MODE",
-                               "DRY_MODE", "AUTO_MODE", "UNKNOWN_MODE"]}
+supported_configs = {
+    "module": "kumocloud",
+    "type": 4,
+    "zones": [MAIN_LEVEL, BASEMENT],
+    "modes": [
+        "OFF_MODE",
+        "HEAT_MODE",
+        "COOL_MODE",
+        "DRY_MODE",
+        "AUTO_MODE",
+        "UNKNOWN_MODE",
+    ],
+}
 
 # metadata dict
 # 'zone_name' is updated by Zone.get_zone_name()
 # 'host_name' is just for reference
 metadata = {
-    MAIN_LEVEL: {"zone_name": "Main Level",
-                 "host_name": "tbd",
-                 "serial_number": None,
-                 },
-    BASEMENT: {"zone_name": "basement",
-               "host_name": "tbd",
-               "serial_number": None,
-               },
+    MAIN_LEVEL: {
+        "zone_name": "Main Level",
+        "host_name": "tbd",
+        "serial_number": None,
+    },
+    BASEMENT: {
+        "zone_name": "basement",
+        "host_name": "tbd",
+        "serial_number": None,
+    },
 }
 
 
@@ -71,4 +81,4 @@ argv = [
     "2",  # tolerance
     "OFF_MODE",  # thermostat mode
     "2",  # number of measurements
-    ]
+]

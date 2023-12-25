@@ -31,8 +31,7 @@ from thermostatsupervisor import utilities as util
 class ThermostatClass(tc.ThermostatCommon):
     """SHT31 thermometer functions."""
 
-    def __init__(self, zone, path=sht31_config.flask_folder.production,
-                 verbose=True):
+    def __init__(self, zone, path=sht31_config.flask_folder.production, verbose=True):
         """
         Constructor, connect to thermostat.
 
@@ -57,17 +56,25 @@ class ThermostatClass(tc.ThermostatCommon):
 
         # URL and port configuration
         self.port = str(sht31_config.FLASK_PORT)  # Flask server port on host
-        if (self.zone_name == sht31_config.UNIT_TEST_ZONE and
-                self.path == sht31_config.flask_folder.production):
+        if (
+            self.zone_name == sht31_config.UNIT_TEST_ZONE
+            and self.path == sht31_config.flask_folder.production
+        ):
             self.path = sht31_config.flask_folder.unit_test
             self.unit_test_seed = "?seed=" + str(sht31_config.UNIT_TEST_SEED)
         else:
             # self.path = ""
             self.unit_test_seed = ""
         self.measurements = "?measurements=" + str(sht31_config.MEASUREMENTS)
-        self.url = (sht31_config.FLASK_URL_PREFIX + self.ip_address + ":" +
-                    self.port + self.path + self.measurements +
-                    self.unit_test_seed)
+        self.url = (
+            sht31_config.FLASK_URL_PREFIX
+            + self.ip_address
+            + ":"
+            + self.port
+            + self.path
+            + self.measurements
+            + self.unit_test_seed
+        )
         self.device_id = self.url
         self.retry_delay = 60  # delay before retrying a bad reading
 
@@ -98,7 +105,7 @@ class ThermostatClass(tc.ThermostatCommon):
         returns:
             (str): env var key
         """
-        return 'SHT31_REMOTE_IP_ADDRESS' + '_' + str(zone_str)
+        return "SHT31_REMOTE_IP_ADDRESS" + "_" + str(zone_str)
 
     def get_ip_address(self, env_key):
         """
@@ -119,26 +126,32 @@ class ThermostatClass(tc.ThermostatCommon):
         returns:
         """
         # flask server used in unit test mode
-        from thermostatsupervisor import sht31_flask_server as sht31_fs  # noqa E402, C0415
+        # noqa E402, C0415
+        from thermostatsupervisor import (  # noqa E402, C0415
+            sht31_flask_server as sht31_fs,  # noqa E402, C0415
+        )  # noqa E402, C0415
+
         # pylint: disable=import-outside-toplevel
 
         # setup flask runtime variables
         sht31_fs.uip = sht31_fs.UserInputs(
-            [os.path.realpath(__file__),
-             sht31_config.FLASK_DEBUG_MODE])
+            [os.path.realpath(__file__), sht31_config.FLASK_DEBUG_MODE]
+        )
 
         # start flask server thread
         self.flask_server = threading.Thread(
             target=sht31_fs.app.run,
-            args=('0.0.0.0', sht31_config.FLASK_PORT,
-                  sht31_config.FLASK_DEBUG_MODE),
-            kwargs=sht31_config.FLASK_KWARGS)
+            args=("0.0.0.0", sht31_config.FLASK_PORT, sht31_config.FLASK_DEBUG_MODE),
+            kwargs=sht31_config.FLASK_KWARGS,
+        )
         self.flask_server.daemon = True  # make thread daemonic
         self.flask_server.start()
-        util.log_msg(f"thread alive status={self.flask_server.is_alive()}",
-                     mode=util.BOTH_LOG, func_name=1)
-        util.log_msg("Flask server setup is complete",
-                     mode=util.BOTH_LOG, func_name=1)
+        util.log_msg(
+            f"thread alive status={self.flask_server.is_alive()}",
+            mode=util.BOTH_LOG,
+            func_name=1,
+        )
+        util.log_msg("Flask server setup is complete", mode=util.BOTH_LOG, func_name=1)
 
     def print_all_thermostat_metadata(self, zone):
         """
@@ -150,7 +163,8 @@ class ThermostatClass(tc.ThermostatCommon):
             (dict): return data
         """
         return_data = self.exec_print_all_thermostat_metadata(
-            self.get_all_metadata, [zone])
+            self.get_all_metadata, [zone]
+        )
         return return_data
 
     def get_all_metadata(self, zone, retry=True):
@@ -186,7 +200,8 @@ class ThermostatClass(tc.ThermostatCommon):
                 f"FATAL ERROR: unable to connect to sht31 thermometer at url "
                 f"'{self.url}'",
                 mode=util.BOTH_LOG,
-                func_name=1)
+                func_name=1,
+            )
             raise ex
         try:
             if parameter is None:
@@ -194,20 +209,20 @@ class ThermostatClass(tc.ThermostatCommon):
             else:
                 return response.json()[parameter]
         except json.decoder.JSONDecodeError as ex:
-            util.log_msg(traceback.format_exc(),
-                         mode=util.BOTH_LOG,
-                         func_name=1)
+            util.log_msg(traceback.format_exc(), mode=util.BOTH_LOG, func_name=1)
             if retry:
                 util.log_msg(
                     f"waiting {self.retry_delay} seconds and retrying SHT31 "
                     f"measurement one time...",
                     mode=util.BOTH_LOG,
-                    func_name=1)
+                    func_name=1,
+                )
                 time.sleep(self.retry_delay)
                 self.get_metadata(zone, parameter=parameter, retry=False)
             else:
-                raise RuntimeError("FATAL ERROR: SHT31 server "
-                                   "is not responding") from ex
+                raise RuntimeError(
+                    "FATAL ERROR: SHT31 server is not responding"
+                ) from ex
 
 
 class ThermostatZone(tc.ThermostatCommonZone):
@@ -276,67 +291,68 @@ class ThermostatZone(tc.ThermostatCommonZone):
                 f"FATAL ERROR: unable to connect to sht31 thermometer at url "
                 f"'{self.url}'",
                 mode=util.BOTH_LOG,
-                func_name=1)
+                func_name=1,
+            )
             raise ex
         if parameter is None:
             try:
                 return response.json()
             except json.decoder.JSONDecodeError as ex:
-                util.log_msg(traceback.format_exc(),
-                             mode=util.BOTH_LOG,
-                             func_name=1)
+                util.log_msg(traceback.format_exc(), mode=util.BOTH_LOG, func_name=1)
                 if retry:
                     util.log_msg(
                         f"waiting {self.retry_delay} seconds and retrying "
                         f"SHT31 measurement one time...",
                         mode=util.BOTH_LOG,
-                        func_name=1)
+                        func_name=1,
+                    )
                     time.sleep(self.retry_delay)
                     self.get_metadata(parameter=None, retry=False)
                 else:
-                    raise RuntimeError("FATAL ERROR: SHT31 server "
-                                       "is not responding") from ex
+                    raise RuntimeError(
+                        "FATAL ERROR: SHT31 server is not responding"
+                    ) from ex
         else:
             try:
                 return response.json()[parameter]
             except json.decoder.JSONDecodeError as ex:
-                util.log_msg(traceback.format_exc(),
-                             mode=util.BOTH_LOG,
-                             func_name=1)
+                util.log_msg(traceback.format_exc(), mode=util.BOTH_LOG, func_name=1)
                 if retry:
                     util.log_msg(
                         f"waiting {self.retry_delay} seconds and retrying "
                         f"SHT31 measurement one time...",
                         mode=util.BOTH_LOG,
-                        func_name=1)
+                        func_name=1,
+                    )
                     time.sleep(self.retry_delay)
                     self.get_metadata(parameter=parameter, retry=False)
                 else:
-                    raise RuntimeError("FATAL ERROR: SHT31 server "
-                                       "is not responding") from ex
+                    raise RuntimeError(
+                        "FATAL ERROR: SHT31 server is not responding"
+                    ) from ex
             except KeyError as ex:
-                util.log_msg(traceback.format_exc(),
-                             mode=util.BOTH_LOG,
-                             func_name=1)
+                util.log_msg(traceback.format_exc(), mode=util.BOTH_LOG, func_name=1)
                 if "message" in response.json():
                     util.log_msg(
                         f"WARNING in Flask response: "
                         f"'{response.json()['message']}'",
                         mode=util.BOTH_LOG,
-                        func_name=1)
+                        func_name=1,
+                    )
                 if retry:
                     util.log_msg(
                         f"waiting {self.retry_delay} seconds and retrying "
                         f"SHT31 measurement one time...",
                         mode=util.BOTH_LOG,
-                        func_name=1)
+                        func_name=1,
+                    )
                     time.sleep(self.retry_delay)
                     self.get_metadata(parameter=parameter, retry=False)
                 else:
                     raise KeyError(
                         f"FATAL ERROR: SHT31 server response did not contain "
                         f"key '{parameter}', raw response={response.json()}"
-                        ) from ex
+                    ) from ex
 
     def get_display_temp(self) -> float:
         """
@@ -449,7 +465,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
             return False
 
     def get_system_switch_position(self) -> int:
-        """ Return the thermostat mode.
+        """Return the thermostat mode.
 
         inputs:
             None
@@ -469,73 +485,66 @@ class ThermostatZone(tc.ThermostatCommonZone):
         """
         # current temp as measured by thermostat
         util.log_msg(
-            f"display temp="
-            f"{util.temp_value_with_units(self.get_display_temp())}",
+            f"display temp=" f"{util.temp_value_with_units(self.get_display_temp())}",
             mode=util.BOTH_LOG,
-            func_name=1)
+            func_name=1,
+        )
 
         # get switch position
         if switch_position is None:
             switch_position = self.get_system_switch_position()
 
         # heating status
-        if switch_position == \
-                self.system_switch_position[self.HEAT_MODE]:
-            util.log_msg(f"heat mode={self.is_heat_mode()}",
-                         mode=util.BOTH_LOG)
+        if switch_position == self.system_switch_position[self.HEAT_MODE]:
+            util.log_msg(f"heat mode={self.is_heat_mode()}", mode=util.BOTH_LOG)
             util.log_msg(
-                f"heat setpoint={self.get_heat_setpoint()}",
-                mode=util.BOTH_LOG)
+                f"heat setpoint={self.get_heat_setpoint()}", mode=util.BOTH_LOG
+            )
             # util.log_msg("heat setpoint raw=%s" %
             #              zone.get_heat_setpoint_raw())
             util.log_msg(
-                f"schedule heat sp={self.get_schedule_heat_sp()}",
-                mode=util.BOTH_LOG)
+                f"schedule heat sp={self.get_schedule_heat_sp()}", mode=util.BOTH_LOG
+            )
 
         # cooling status
-        if switch_position == \
-                self.system_switch_position[self.COOL_MODE]:
-            util.log_msg(f"cool mode={self.is_cool_mode()}",
-                         mode=util.BOTH_LOG)
+        if switch_position == self.system_switch_position[self.COOL_MODE]:
+            util.log_msg(f"cool mode={self.is_cool_mode()}", mode=util.BOTH_LOG)
             util.log_msg(
-                f"cool setpoint={self.get_cool_setpoint()}",
-                mode=util.BOTH_LOG)
+                f"cool setpoint={self.get_cool_setpoint()}", mode=util.BOTH_LOG
+            )
             # util.log_msg("cool setpoint raw=%s" %
             #              zone.get_cool_setpoint_raw(), mode=util.BOTH_LOG)
             util.log_msg(
-                f"schedule cool sp={self.get_schedule_cool_sp()}",
-                mode=util.BOTH_LOG)
+                f"schedule cool sp={self.get_schedule_cool_sp()}", mode=util.BOTH_LOG
+            )
 
         # hold settings
         util.log_msg(
             f"is in vacation hold mode={self.get_is_invacation_hold_mode()}",
-            mode=util.BOTH_LOG)
-        util.log_msg(f"vacation hold={self.get_vacation_hold()}",
-                     mode=util.BOTH_LOG)
+            mode=util.BOTH_LOG,
+        )
+        util.log_msg(f"vacation hold={self.get_vacation_hold()}", mode=util.BOTH_LOG)
         util.log_msg(
             f"vacation hold until time={self.get_vacation_hold_until_time()}",
-            mode=util.BOTH_LOG)
+            mode=util.BOTH_LOG,
+        )
         util.log_msg(
-            f"temporary hold until time="
-            f"{self.get_temporary_hold_until_time()}",
-            mode=util.BOTH_LOG)
+            f"temporary hold until time=" f"{self.get_temporary_hold_until_time()}",
+            mode=util.BOTH_LOG,
+        )
 
 
 if __name__ == "__main__":
-
     # verify environment
     env.get_python_version()
 
     # get zone override
-    api.uip = api.UserInputs(argv_list=None,
-                             thermostat_type=sht31_config.ALIAS)
-    zone_number = api.uip.get_user_inputs(api.uip.zone_name,
-                                          api.input_flds.zone)
+    api.uip = api.UserInputs(argv_list=None, thermostat_type=sht31_config.ALIAS)
+    zone_number = api.uip.get_user_inputs(api.uip.zone_name, api.input_flds.zone)
 
     tc.thermostat_basic_checkout(
-        sht31_config.ALIAS,
-        zone_number,
-        ThermostatClass, ThermostatZone)
+        sht31_config.ALIAS, zone_number, ThermostatClass, ThermostatZone
+    )
 
     tc.print_select_data_from_all_zones(
         sht31_config.ALIAS,
@@ -543,4 +552,5 @@ if __name__ == "__main__":
         ThermostatClass,
         ThermostatZone,
         display_wifi=True,
-        display_battery=False)
+        display_battery=False,
+    )

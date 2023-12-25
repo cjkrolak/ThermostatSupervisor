@@ -34,8 +34,10 @@ class EnvironmentTests(utc.UnitTest):
         """
         for env_key in ["GMAIL_USERNAME", "GMAIL_PASSWORD"]:
             buff = env.get_env_variable(env_key)
-            print(f"env${env_key}="
-                  f"{[buff['value'], '(hidden)']['PASSWORD' in env_key]}")
+            print(
+                f"env${env_key}="
+                f"{[buff['value'], '(hidden)']['PASSWORD' in env_key]}"
+            )
             self.assertEqual(buff["status"], util.NO_ERROR)
             self.assertGreater(len(buff["value"]), 0)
 
@@ -51,11 +53,14 @@ class EnvironmentTests(utc.UnitTest):
         Verify get_local_ip().
         """
         return_val = env.get_local_ip()
-        self.assertTrue(isinstance(return_val, str),
-                        "get_local_ip() returned '%s' which is not a string")
-        self.assertTrue(7 <= len(return_val) <= 15,
-                        "get_local_ip() returned '%s' which is not "
-                        "between 7 and 15 chars")
+        self.assertTrue(
+            isinstance(return_val, str),
+            "get_local_ip() returned '%s' which is not a string",
+        )
+        self.assertTrue(
+            7 <= len(return_val) <= 15,
+            "get_local_ip() returned '%s' which is not between 7 and 15 chars",
+        )
 
     def test_is_azure_environment(self):
         """
@@ -63,9 +68,10 @@ class EnvironmentTests(utc.UnitTest):
         """
         result = env.is_azure_environment()
         print(f"env.is_azure_environment()={result}")
-        self.assertTrue(isinstance(result, bool),
-                        "env.is_azure_environment() returned type "
-                        f"{type(result)} expected bool")
+        self.assertTrue(
+            isinstance(result, bool),
+            "env.is_azure_environment() returned type " f"{type(result)} expected bool",
+        )
 
     def test_is_windows_environment(self):
         """
@@ -80,9 +86,11 @@ class EnvironmentTests(utc.UnitTest):
         """
         result = env.is_raspberrypi_environment()
         print(f"env.is_raspberrypi_environment()={result}")
-        self.assertTrue(isinstance(result, bool),
-                        "env.is_raspberrypi_environment() returned type "
-                        f"{type(result)} expected bool")
+        self.assertTrue(
+            isinstance(result, bool),
+            "env.is_raspberrypi_environment() returned type "
+            f"{type(result)} expected bool",
+        )
 
     def test_is_host_on_local_net(self):
         """
@@ -97,36 +105,47 @@ class EnvironmentTests(utc.UnitTest):
         """
         test_cases = [
             # [host_name, ip_address, expected_result]
-            ['testwifi.here', None,
-             not env.is_azure_environment()],  # Google wifi router
-            ['bogus_host', '192.168.86.145', False],  # bogus host
-            ['bogus_host', None, False],  # bogus host without IP
-            ['dns.google', '8.8.8.8', True],  # should pass everywhere
+            [
+                "testwifi.here",
+                None,
+                not env.is_azure_environment(),
+            ],  # Google wifi router
+            ["bogus_host", "192.168.86.145", False],  # bogus host
+            ["bogus_host", None, False],  # bogus host without IP
+            ["dns.google", "8.8.8.8", True],  # should pass everywhere
         ]
 
         for test_case in test_cases:
-            print(f"testing for '{test_case[0]}' at {test_case[1]}, expect "
-                  f"{test_case[2]}")
-            result, ip_address = util.is_host_on_local_net(test_case[0],
-                                                           test_case[1],
-                                                           True)
+            print(
+                f"testing for '{test_case[0]}' at {test_case[1]}, expect "
+                f"{test_case[2]}"
+            )
+            result, ip_address = util.is_host_on_local_net(
+                test_case[0], test_case[1], True
+            )
             # verify IP length returned
             if result:
                 ip_length_symbol = ">="
                 ip_length_min = 7
-                self.assertTrue(len(ip_address) >= ip_length_min,
-                                f"ip_address returned ({ip_address}) did not "
-                                f"meet length expectations ("
-                                f"{ip_length_symbol + str(ip_length_min)})")
+                self.assertTrue(
+                    len(ip_address) >= ip_length_min,
+                    f"ip_address returned ({ip_address}) did not "
+                    f"meet length expectations ("
+                    f"{ip_length_symbol + str(ip_length_min)})",
+                )
             else:
-                self.assertTrue(ip_address is None,
-                                f"ip_address returned ({ip_address}) "
-                                f"is not None")
+                self.assertTrue(
+                    ip_address is None,
+                    f"ip_address returned ({ip_address}) " f"is not None",
+                )
 
             # verify expected result
-            self.assertEqual(result, test_case[2],
-                             f"test_case={test_case[0]}, expected="
-                             f"{test_case[2]}, actual={result}")
+            self.assertEqual(
+                result,
+                test_case[2],
+                f"test_case={test_case[0]}, expected="
+                f"{test_case[2]}, actual={result}",
+            )
 
     def test_get_python_version(self):
         """Verify get_python_version()."""
@@ -134,21 +153,27 @@ class EnvironmentTests(utc.UnitTest):
 
         # verify major version
         min_major = int(env.MIN_PYTHON_MAJOR_VERSION)
-        self.assertTrue(major_version >= min_major,
-                        f"python major version ({major_version}) is not gte "
-                        f"min required value ({min_major})")
+        self.assertTrue(
+            major_version >= min_major,
+            f"python major version ({major_version}) is not gte "
+            f"min required value ({min_major})",
+        )
 
         # verify minor version
-        min_minor = int(str(env.MIN_PYTHON_MAJOR_VERSION)[
-            str(env.MIN_PYTHON_MAJOR_VERSION).find(".") + 1:])
-        self.assertTrue(minor_version >= min_minor,
-                        f"python minor version ({minor_version}) is not gte "
-                        f"min required value ({min_minor})")
+        min_minor = int(
+            str(env.MIN_PYTHON_MAJOR_VERSION)[
+                str(env.MIN_PYTHON_MAJOR_VERSION).find(".") + 1 :
+            ]
+        )
+        self.assertTrue(
+            minor_version >= min_minor,
+            f"python minor version ({minor_version}) is not gte "
+            f"min required value ({min_minor})",
+        )
 
         # error checking invalid input parameter
         with self.assertRaises(TypeError):
-            print("attempting to invalid input parameter type, "
-                  "expect exception...")
+            print("attempting to invalid input parameter type, expect exception...")
             env.get_python_version("3", 7)
 
         # no decimal point
@@ -156,8 +181,7 @@ class EnvironmentTests(utc.UnitTest):
 
         # min value exception
         with self.assertRaises(EnvironmentError):
-            print("attempting to verify version gte 99.99, "
-                  "expect exception...")
+            print("attempting to verify version gte 99.99, expect exception...")
             env.get_python_version(99, 99)
 
         print("test passed all checks")
@@ -176,9 +200,11 @@ class EnvironmentTests(utc.UnitTest):
         package_name = util.PACKAGE_NAME + "." + emulator_config.ALIAS
         pkg = env.dynamic_module_import(package_name)
         print(f"default thermostat returned package type {type(pkg)}")
-        self.assertTrue(isinstance(pkg, object),
-                        f"dynamic_module_import() returned type({type(pkg)}),"
-                        f" expected an object")
+        self.assertTrue(
+            isinstance(pkg, object),
+            f"dynamic_module_import() returned type({type(pkg)}),"
+            f" expected an object",
+        )
         del sys.modules[package_name]
         del pkg
 
@@ -194,8 +220,10 @@ class EnvironmentTests(utc.UnitTest):
         Verify get_parent_path().
         """
         return_val = env.get_parent_path(os.getcwd())
-        self.assertTrue(isinstance(return_val, str),
-                        "get_parent_path() returned '%s' which is not a string")
+        self.assertTrue(
+            isinstance(return_val, str),
+            "get_parent_path() returned '%s' which is not a string",
+        )
 
     def test_get_package_version(self):
         """
@@ -204,23 +232,27 @@ class EnvironmentTests(utc.UnitTest):
         pkg = thermostatsupervisor
         return_type = tuple
         return_val = env.get_package_version(pkg)
-        self.assertTrue(isinstance(return_val, return_type),
-                        f"return_val = {return_val}, expected type "
-                        f"{return_type}, actual_type {type(return_val)}")
+        self.assertTrue(
+            isinstance(return_val, return_type),
+            f"return_val = {return_val}, expected type "
+            f"{return_type}, actual_type {type(return_val)}",
+        )
 
         # check individual elements
         elements = [
             "major",
             "minor",
             "patch",
-            ]
+        ]
         return_type = int
         for element in elements:
             return_val = env.get_package_version(pkg, element)
-            self.assertTrue(isinstance(return_val, return_type),
-                            f"element='{element}', return_val = {return_val},"
-                            " expected type "
-                            f"{return_type}, actual_type {type(return_val)}")
+            self.assertTrue(
+                isinstance(return_val, return_type),
+                f"element='{element}', return_val = {return_val},"
+                " expected type "
+                f"{return_type}, actual_type {type(return_val)}",
+            )
 
 
 if __name__ == "__main__":

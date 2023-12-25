@@ -23,12 +23,14 @@ class Test(utc.UnitTest):
         self.teardown_mock_thermostat_zone()
         super().tearDown()
 
-    @unittest.skipIf(env.is_azure_environment(),
-                     "this test not supported on Azure Pipelines")
+    @unittest.skipIf(
+        env.is_azure_environment(), "this test not supported on Azure Pipelines"
+    )
     def test_supervisor(self):
         """Verify main supervisor loop."""
-        sup.supervisor(emulator_config.ALIAS,
-                       emulator_config.supported_configs["zones"][0])
+        sup.supervisor(
+            emulator_config.ALIAS, emulator_config.supported_configs["zones"][0]
+        )
 
 
 if __name__ == "__main__":

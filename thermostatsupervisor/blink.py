@@ -23,10 +23,8 @@ if BLINK_DEBUG and not env.is_azure_environment():
     mod_path = "..\\blinkpy"
     if env.is_interactive_environment():
         mod_path = "..\\" + mod_path
-    blinkpy = env.dynamic_module_import("blinkpy.blinkpy",
-                                        mod_path, pkg)
-    auth = env.dynamic_module_import("blinkpy.auth",
-                                     mod_path, pkg)
+    blinkpy = env.dynamic_module_import("blinkpy.blinkpy", mod_path, pkg)
+    auth = env.dynamic_module_import("blinkpy.auth", mod_path, pkg)
 else:
     from blinkpy import auth  # noqa E402, from path / site packages
     from blinkpy import blinkpy  # noqa E402, from path / site packages
@@ -44,18 +42,19 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):
             verbose(bool): debug flag.
         """
         # Blink server auth credentials from env vars
-        self.BL_UNAME_KEY = 'BLINK_USERNAME'
-        self.BL_PASSWORD_KEY = 'BLINK_PASSWORD'
-        self.bl_uname = (os.environ.get(self.BL_UNAME_KEY, "<" +
-                         self.BL_UNAME_KEY + "_KEY_MISSING>"))
-        self.bl_pwd = (os.environ.get(
-            self.BL_PASSWORD_KEY, "<" +
-            self.BL_PASSWORD_KEY + "_KEY_MISSING>"))
+        self.BL_UNAME_KEY = "BLINK_USERNAME"
+        self.BL_PASSWORD_KEY = "BLINK_PASSWORD"
+        self.bl_uname = os.environ.get(
+            self.BL_UNAME_KEY, "<" + self.BL_UNAME_KEY + "_KEY_MISSING>"
+        )
+        self.bl_pwd = os.environ.get(
+            self.BL_PASSWORD_KEY, "<" + self.BL_PASSWORD_KEY + "_KEY_MISSING>"
+        )
         self.auth_dict = {"username": self.bl_uname, "password": self.bl_pwd}
         self.BL_2FA_KEY = "BLINK_2FA"
-        self.bl_2fa = (os.environ.get(
-            self.BL_2FA_KEY, "<" +
-            self.BL_2FA_KEY + "_KEY_MISSING>"))
+        self.bl_2fa = os.environ.get(
+            self.BL_2FA_KEY, "<" + self.BL_2FA_KEY + "_KEY_MISSING>"
+        )
         self.verbose = verbose
         self.zone_number = int(zone)
 
@@ -93,17 +92,21 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):
         self.blink = blinkpy.Blink()
         if self.blink is None:
             print(traceback.format_exc())
-            raise RuntimeError("ERROR: Blink object failed to instantiate "
-                               f"for zone {self.zone_number}")
+            raise RuntimeError(
+                "ERROR: Blink object failed to instantiate "
+                f"for zone {self.zone_number}"
+            )
 
         self.blink.auth = auth.Auth(self.auth_dict, no_prompt=True)
         self.blink.start()
         try:
             self.blink.auth.send_auth_key(self.blink, self.bl_2fa)
         except AttributeError:
-            error_msg = ("ERROR: Blink authentication failed for zone "
-                         f"{self.zone_number}, this may be due to spamming the "
-                         "blink server, please try again later.")
+            error_msg = (
+                "ERROR: Blink authentication failed for zone "
+                f"{self.zone_number}, this may be due to spamming the "
+                "blink server, please try again later."
+            )
             banner = "*" * len(error_msg)
             print(banner)
             print(error_msg)
@@ -129,17 +132,20 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):
             self.blink = blinkpy.Blink(session=session)
             if self.blink is None:
                 print(traceback.format_exc())
-                raise RuntimeError("ERROR: Blink object failed to instantiate "
-                                   f"for zone {self.zone_number}")
-            self.blink.auth = auth.Auth(self.auth_dict, no_prompt=True,
-                                        session=session)
+                raise RuntimeError(
+                    "ERROR: Blink object failed to instantiate "
+                    f"for zone {self.zone_number}"
+                )
+            self.blink.auth = auth.Auth(self.auth_dict, no_prompt=True, session=session)
             await self.blink.start()
             try:
                 await self.blink.auth.send_auth_key(self.blink, self.bl_2fa)
             except AttributeError:
-                error_msg = ("ERROR: Blink authentication failed for zone "
-                             f"{self.zone_number}, this may be due to spamming"
-                             " the blink server, please try again later.")
+                error_msg = (
+                    "ERROR: Blink authentication failed for zone "
+                    f"{self.zone_number}, this may be due to spamming"
+                    " the blink server, please try again later."
+                )
                 banner = "*" * len(error_msg)
                 print(banner)
                 print(error_msg)
@@ -210,8 +216,9 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):
         del trait  # unused on blink
         zone_name = blink_config.metadata[self.zone_number]["zone_name"]
         if self.blink.cameras == {}:
-            raise ValueError("camera list is empty when searching for camera"
-                             f" {zone_name}")
+            raise ValueError(
+                "camera list is empty when searching for camera" f" {zone_name}"
+            )
         for name, camera in self.blink.cameras.items():
             # print(f"DEBUG: camera {name}: {camera.attributes}")
             if name == zone_name:
@@ -231,8 +238,7 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):
         returns:
             None, prints result to screen
         """
-        self.exec_print_all_thermostat_metadata(
-            self.get_all_metadata, [zone])
+        self.exec_print_all_thermostat_metadata(self.get_all_metadata, [zone])
 
 
 class ThermostatZone(tc.ThermostatCommonZone):
@@ -381,7 +387,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         return 0  # not applicable
 
     def get_system_switch_position(self) -> int:
-        """ Return the thermostat mode.
+        """Return the thermostat mode.
 
         inputs:
             None
@@ -432,69 +438,62 @@ class ThermostatZone(tc.ThermostatCommonZone):
         """
         # current temp as measured by thermostat
         util.log_msg(
-            f"display temp="
-            f"{util.temp_value_with_units(self.get_display_temp())}",
+            f"display temp=" f"{util.temp_value_with_units(self.get_display_temp())}",
             mode=util.BOTH_LOG,
-            func_name=1)
+            func_name=1,
+        )
 
         # get switch position
         if switch_position is None:
             switch_position = self.get_system_switch_position()
 
         # heating status
-        if switch_position == \
-                self.system_switch_position[self.HEAT_MODE]:
-            util.log_msg(f"heat mode={self.is_heat_mode()}",
-                         mode=util.BOTH_LOG)
+        if switch_position == self.system_switch_position[self.HEAT_MODE]:
+            util.log_msg(f"heat mode={self.is_heat_mode()}", mode=util.BOTH_LOG)
             util.log_msg(
-                f"heat setpoint={self.get_heat_setpoint_raw()}",
-                mode=util.BOTH_LOG)
+                f"heat setpoint={self.get_heat_setpoint_raw()}", mode=util.BOTH_LOG
+            )
             util.log_msg(
-                f"schedule heat sp={self.get_schedule_heat_sp()}",
-                mode=util.BOTH_LOG)
+                f"schedule heat sp={self.get_schedule_heat_sp()}", mode=util.BOTH_LOG
+            )
 
         # cooling status
-        if switch_position == \
-                self.system_switch_position[self.COOL_MODE]:
-            util.log_msg(f"cool mode={self.is_cool_mode()}",
-                         mode=util.BOTH_LOG)
+        if switch_position == self.system_switch_position[self.COOL_MODE]:
+            util.log_msg(f"cool mode={self.is_cool_mode()}", mode=util.BOTH_LOG)
             util.log_msg(
-                f"cool setpoint={self.get_cool_setpoint_raw()}",
-                mode=util.BOTH_LOG)
+                f"cool setpoint={self.get_cool_setpoint_raw()}", mode=util.BOTH_LOG
+            )
             util.log_msg(
-                f"schedule cool sp={self.get_schedule_cool_sp()}",
-                mode=util.BOTH_LOG)
+                f"schedule cool sp={self.get_schedule_cool_sp()}", mode=util.BOTH_LOG
+            )
 
         # hold settings
         util.log_msg(
             f"is in vacation hold mode={self.get_is_invacation_hold_mode()}",
-            mode=util.BOTH_LOG)
-        util.log_msg(f"vacation hold={self.get_vacation_hold()}",
-                     mode=util.BOTH_LOG)
+            mode=util.BOTH_LOG,
+        )
+        util.log_msg(f"vacation hold={self.get_vacation_hold()}", mode=util.BOTH_LOG)
         util.log_msg(
             f"vacation hold until time={self.get_vacation_hold_until_time()}",
-            mode=util.BOTH_LOG)
+            mode=util.BOTH_LOG,
+        )
         util.log_msg(
-            f"temporary hold until time="
-            f"{self.get_temporary_hold_until_time()}",
-            mode=util.BOTH_LOG)
+            f"temporary hold until time=" f"{self.get_temporary_hold_until_time()}",
+            mode=util.BOTH_LOG,
+        )
 
 
 if __name__ == "__main__":
-
     # verify environment
     env.get_python_version()
 
     # get zone override
-    api.uip = api.UserInputs(argv_list=None,
-                             thermostat_type=blink_config.ALIAS)
-    zone_number = api.uip.get_user_inputs(api.uip.zone_name,
-                                          api.input_flds.zone)
+    api.uip = api.UserInputs(argv_list=None, thermostat_type=blink_config.ALIAS)
+    zone_number = api.uip.get_user_inputs(api.uip.zone_name, api.input_flds.zone)
 
     tc.thermostat_basic_checkout(
-        blink_config.ALIAS,
-        zone_number,
-        ThermostatClass, ThermostatZone)
+        blink_config.ALIAS, zone_number, ThermostatClass, ThermostatZone
+    )
 
     tc.print_select_data_from_all_zones(
         blink_config.ALIAS,
@@ -502,4 +501,5 @@ if __name__ == "__main__":
         ThermostatClass,
         ThermostatZone,
         display_wifi=True,
-        display_battery=True)
+        display_battery=True,
+    )

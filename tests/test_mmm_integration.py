@@ -38,10 +38,8 @@ class IntegrationTest(utc.IntegrationTest):
         self.mod_config = mmm_config
 
 
-@unittest.skipIf(not utc.ENABLE_MMM_TESTS,
-                 "mmm tests are disabled")
-class FunctionalIntegrationTest(IntegrationTest,
-                                utc.FunctionalIntegrationTest):
+@unittest.skipIf(not utc.ENABLE_MMM_TESTS, "mmm tests are disabled")
+class FunctionalIntegrationTest(IntegrationTest, utc.FunctionalIntegrationTest):
     """
     Test functional performance of mmm.py.
     """
@@ -62,9 +60,10 @@ class FunctionalIntegrationTest(IntegrationTest,
         # verify function return value
         result = self.Thermostat.get_ui_data(self.Thermostat.zone_name)
         print(f"Thermostat.get_ui_data returned {result}")
-        self.assertTrue(isinstance(result, dict),
-                        f"result returned is type ({type(result)}), "
-                        "expected a dictionary")
+        self.assertTrue(
+            isinstance(result, dict),
+            f"result returned is type ({type(result)}), expected a dictionary",
+        )
 
     def test_thermostat_get_ui_data_param(self):
         """Verify Thermostat.get_ui_data_param() function"""
@@ -74,13 +73,16 @@ class FunctionalIntegrationTest(IntegrationTest,
         # verify function return value
         param = "cloud"
         expected_data_type = dict
-        result = self.Thermostat.get_ui_data_param(self.Thermostat.zone_name,
-                                                   param)
-        print(f"Thermostat.get_ui_data_param({self.Thermostat.zone_name}, "
-              f" {param}) returned {result}")
-        self.assertTrue(isinstance(result, expected_data_type),
-                        f"result returned is type ({type(result)}), expected "
-                        f"a {expected_data_type}")
+        result = self.Thermostat.get_ui_data_param(self.Thermostat.zone_name, param)
+        print(
+            f"Thermostat.get_ui_data_param({self.Thermostat.zone_name}, "
+            f" {param}) returned {result}"
+        )
+        self.assertTrue(
+            isinstance(result, expected_data_type),
+            f"result returned is type ({type(result)}), expected "
+            f"a {expected_data_type}",
+        )
 
     def test_zone_get_zone_name(self):
         """Verify Zone.get_zone_name() function"""
@@ -93,14 +95,11 @@ class FunctionalIntegrationTest(IntegrationTest,
 
         # verify override option
         result = self.Zone.get_zone_name(self.Thermostat.zone_name)
-        print(f"Zone.get_zone_name({self.Thermostat.zone_name}) "
-              f"returned {result}")
+        print(f"Zone.get_zone_name({self.Thermostat.zone_name}) " f"returned {result}")
 
 
-@unittest.skipIf(not utc.ENABLE_MMM_TESTS,
-                 "mmm tests are disabled")
-class SuperviseIntegrationTest(IntegrationTest,
-                               utc.SuperviseIntegrationTest):
+@unittest.skipIf(not utc.ENABLE_MMM_TESTS, "mmm tests are disabled")
+class SuperviseIntegrationTest(IntegrationTest, utc.SuperviseIntegrationTest):
     """
     Test supervise functionality of mmm.py.
     """
@@ -110,10 +109,8 @@ class SuperviseIntegrationTest(IntegrationTest,
         self.setUpIntTest()
 
 
-@unittest.skipIf(not utc.ENABLE_MMM_TESTS,
-                 "mmm tests are disabled")
-class PerformanceIntegrationTest(IntegrationTest,
-                                 utc.PerformanceIntegrationTest):
+@unittest.skipIf(not utc.ENABLE_MMM_TESTS, "mmm tests are disabled")
+class PerformanceIntegrationTest(IntegrationTest, utc.PerformanceIntegrationTest):
     """
     Test performance of mmm.py.
     """

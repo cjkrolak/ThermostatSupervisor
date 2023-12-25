@@ -23,8 +23,7 @@ if MMM_DEBUG and not env.is_azure_environment():
     mod_path = "..//radiotherm"
     if env.is_interactive_environment():
         mod_path = "..\\" + mod_path
-    radiotherm = env.dynamic_module_import("radiotherm",
-                                           mod_path)
+    radiotherm = env.dynamic_module_import("radiotherm", mod_path)
 else:
     import radiotherm  # noqa E402, from path / site packages
 
@@ -57,21 +56,20 @@ class ThermostatClass(tc.ThermostatCommon):
         self.zone_name = int(zone)
         # use hard-coded IP address if provided, otherwise
         # use host dns lookup
-        self.host_name = mmm_config.metadata[
-            self.zone_name]["host_name"]
+        self.host_name = mmm_config.metadata[self.zone_name]["host_name"]
         # populate IP address from metadata dict.
-        if "ip_address" in mmm_config.metadata[
-                self.zone_name]:
-            self.ip_address = mmm_config.metadata[
-                self.zone_name]["ip_address"]
+        if "ip_address" in mmm_config.metadata[self.zone_name]:
+            self.ip_address = mmm_config.metadata[self.zone_name]["ip_address"]
         else:
             # get IP address from DNS lookup on local net.
             ip_status, self.ip_address = util.is_host_on_local_net(
-                self.host_name, verbose=True)
+                self.host_name, verbose=True
+            )
             if not ip_status:
                 raise DNSException(
                     f"failed to resolve ip address for 3m thermostat "
-                    f"'{self.host_name}'")
+                    f"'{self.host_name}'"
+                )
         self.device_id = self.get_target_zone_id()
 
     def get_target_zone_id(self) -> object:
@@ -90,7 +88,8 @@ class ThermostatClass(tc.ThermostatCommon):
         except urllib.error.URLError as ex:
             raise RuntimeError(
                 f"FATAL ERROR: 3m thermostat not found at ip address: "
-                f"{self.ip_address}") from ex
+                f"{self.ip_address}"
+            ) from ex
         return self.device_id
 
     def print_all_thermostat_metadata(self, zone):
@@ -106,8 +105,7 @@ class ThermostatClass(tc.ThermostatCommon):
         self.get_all_metadata(zone)
 
         # dump uiData in a readable format
-        self.exec_print_all_thermostat_metadata(
-            self.get_latestdata, [zone])
+        self.exec_print_all_thermostat_metadata(self.get_latestdata, [zone])
 
     def get_meta_data_dict(self, zone) -> dict:
         """Build meta data dictionary from list of object attributes.
@@ -117,10 +115,13 @@ class ThermostatClass(tc.ThermostatCommon):
         returns:
             (dict) of meta data
         """
-        util.log_msg(f"querying thermostat zone {zone} for meta data...",
-                     mode=util.BOTH_LOG, func_name=1)
+        util.log_msg(
+            f"querying thermostat zone {zone} for meta data...",
+            mode=util.BOTH_LOG,
+            func_name=1,
+        )
         attr_dict = {}
-        ignore_fields = ['get', 'post', 'reboot', 'set_day_program']
+        ignore_fields = ["get", "post", "reboot", "set_day_program"]
         for attr in dir(self.device_id):
             if attr[0] != "_" and attr not in ignore_fields:
                 key = attr
@@ -165,7 +166,7 @@ class ThermostatClass(tc.ThermostatCommon):
         if parameter is None:
             return self.get_meta_data_dict(zone)
         else:
-            return self.get_meta_data_dict(zone)[parameter]['raw']
+            return self.get_meta_data_dict(zone)[parameter]["raw"]
 
     def get_latestdata(self, zone, debug=False) -> (dict, str):
         """
@@ -180,8 +181,11 @@ class ThermostatClass(tc.ThermostatCommon):
         """
         latest_data_dict = self.get_meta_data_dict(zone)
         if debug:
-            util.log_msg(f"zone{zone} latestData: {latest_data_dict}",
-                         mode=util.BOTH_LOG, func_name=1)
+            util.log_msg(
+                f"zone{zone} latestData: {latest_data_dict}",
+                mode=util.BOTH_LOG,
+                func_name=1,
+            )
         return latest_data_dict
 
     def get_ui_data(self, zone) -> dict:
@@ -205,7 +209,7 @@ class ThermostatClass(tc.ThermostatCommon):
         returns:
           (various) value or data structure of interest
         """
-        return self.get_meta_data_dict(zone)[parameter]['raw']
+        return self.get_meta_data_dict(zone)[parameter]["raw"]
 
 
 class ThermostatZone(tc.ThermostatCommonZone):
@@ -232,10 +236,8 @@ class ThermostatZone(tc.ThermostatCommonZone):
         self.system_switch_position[tc.ThermostatCommonZone.AUTO_MODE] = 3
 
         # need verification
-        self.system_switch_position[
-            tc.ThermostatCommonZone.DRY_MODE] = util.BOGUS_INT
-        self.system_switch_position[
-            tc.ThermostatCommonZone.FAN_MODE] = util.BOGUS_INT
+        self.system_switch_position[tc.ThermostatCommonZone.DRY_MODE] = util.BOGUS_INT
+        self.system_switch_position[tc.ThermostatCommonZone.FAN_MODE] = util.BOGUS_INT
 
         # zone info
         self.verbose = verbose
@@ -259,7 +261,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         """
         if zone is None:
             # pull from thermostat
-            return self.device_id.name['raw']
+            return self.device_id.name["raw"]
         else:
             # override from config file
             return mmm_config.metadata[zone]["zone_name"]
@@ -273,7 +275,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         returns:
             (float): display temp in degrees.
         """
-        return float(self.device_id.temp['raw'])
+        return float(self.device_id.temp["raw"])
 
     def get_display_humidity(self) -> (float, None):
         """
@@ -306,8 +308,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         returns:
             (int): heat mode.
         """
-        return int(self._get_tmode() ==
-                   self.system_switch_position[self.HEAT_MODE])
+        return int(self._get_tmode() == self.system_switch_position[self.HEAT_MODE])
 
     def is_cool_mode(self) -> int:
         """
@@ -318,8 +319,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         returns:
             (int): 1=cool mode enabled, 0=disabled.
         """
-        return int(self._get_tmode() ==
-                   self.system_switch_position[self.COOL_MODE])
+        return int(self._get_tmode() == self.system_switch_position[self.COOL_MODE])
 
     def is_dry_mode(self) -> int:
         """
@@ -330,8 +330,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         returns:
             (int): 1=dry mode enabled, 0=disabled.
         """
-        return int(self._get_tmode() ==
-                   self.system_switch_position[self.DRY_MODE])
+        return int(self._get_tmode() == self.system_switch_position[self.DRY_MODE])
 
     def is_auto_mode(self) -> int:
         """
@@ -342,22 +341,23 @@ class ThermostatZone(tc.ThermostatCommonZone):
         returns:
             (int): 1=auto mode enabled, 0=disabled.
         """
-        return int(self._get_tmode() ==
-                   self.system_switch_position[self.AUTO_MODE])
+        return int(self._get_tmode() == self.system_switch_position[self.AUTO_MODE])
 
     def _get_tmode(self, retries=1):
         """
         Get tmode from device, retry on Attribute error.
         """
         try:
-            tmode = self.device_id.tmode['raw']
+            tmode = self.device_id.tmode["raw"]
         except AttributeError as ex:
             if retries > 0:
                 print(traceback.format_exc())
-                print("WARNING: AttributeError while querying tstat.tmode, "
-                      "retrying after brief delay...")
+                print(
+                    "WARNING: AttributeError while querying tstat.tmode, "
+                    "retrying after brief delay..."
+                )
                 time.sleep(10)
-                tmode = self._get_tmode(retries-1)
+                tmode = self._get_tmode(retries - 1)
             else:
                 raise ex
         return tmode
@@ -372,7 +372,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         returns:
             (int): 1=fan mode enabled, 0=disabled.
         """
-        return int(self.device_id.fmode['raw'] == 2 and self.is_off_mode())
+        return int(self.device_id.fmode["raw"] == 2 and self.is_off_mode())
 
     def is_off_mode(self) -> int:
         """
@@ -383,19 +383,26 @@ class ThermostatZone(tc.ThermostatCommonZone):
         returns:
             (int): off mode, 1=enabled, 0=disabled.
         """
-        return int(self._get_tmode() ==
-                   self.system_switch_position[self.OFF_MODE] and
-                   not self.device_id.fmode['raw'] == 2)
+        return int(
+            self._get_tmode() == self.system_switch_position[self.OFF_MODE]
+            and not self.device_id.fmode["raw"] == 2
+        )
 
     def is_heating(self):
         """Return 1 if heating relay is active, else 0."""
-        return int(self.is_heat_mode() and self.is_power_on() and
-                   self.get_heat_setpoint_raw() > self.get_display_temp())
+        return int(
+            self.is_heat_mode()
+            and self.is_power_on()
+            and self.get_heat_setpoint_raw() > self.get_display_temp()
+        )
 
     def is_cooling(self):
         """Return 1 if cooling relay is active, else 0."""
-        return int(self.is_cool_mode() and self.is_power_on() and
-                   self.get_cool_setpoint_raw() < self.get_display_temp())
+        return int(
+            self.is_cool_mode()
+            and self.is_power_on()
+            and self.get_cool_setpoint_raw() < self.get_display_temp()
+        )
 
     def is_drying(self):
         """Return 1 if drying relay is active, else 0."""
@@ -411,11 +418,11 @@ class ThermostatZone(tc.ThermostatCommonZone):
 
     def is_power_on(self):
         """Return 1 if power relay is active, else 0."""
-        return int(self.device_id.power['raw'] > 0)
+        return int(self.device_id.power["raw"] > 0)
 
     def is_fan_on(self):
         """Return 1 if fan relay is active, else 0."""
-        return self.device_id.fstate['raw']
+        return self.device_id.fstate["raw"]
 
     def is_defrosting(self):
         """Return 1 if defrosting is active, else 0."""
@@ -436,10 +443,10 @@ class ThermostatZone(tc.ThermostatCommonZone):
             list of 8 elements, representing 4 pairs of elapsed minutes
             and setpoint
         """
-        sp_lst = sp_dict['raw'][str(day)]
+        sp_lst = sp_dict["raw"][str(day)]
         if len(sp_lst) != 8:
             raise ValueError(f"setpoint list is not 8 elements long: {sp_lst}")
-        return sp_dict['raw'][str(day)]
+        return sp_dict["raw"][str(day)]
 
     def get_previous_days_setpoint(self, sp_dict) -> int:
         """
@@ -471,9 +478,9 @@ class ThermostatZone(tc.ThermostatCommonZone):
         minutes_since_midnight = (
             now - now.replace(hour=0, minute=0, second=0, microsecond=0)
         ).total_seconds() / 60
-        todays_setpoint_lst = self.get_setpoint_list(sp_dict,
-                                                     datetime.datetime.today(
-                                                     ).weekday())
+        todays_setpoint_lst = self.get_setpoint_list(
+            sp_dict, datetime.datetime.today().weekday()
+        )
         for idx in [0, 2, 4, 6]:
             if todays_setpoint_lst[idx] > minutes_since_midnight:
                 return current_sp
@@ -492,10 +499,11 @@ class ThermostatZone(tc.ThermostatCommonZone):
         returns:
             (float): current heat set point in degrees.
         """
-        result = self.device_id.t_heat['raw']
+        result = self.device_id.t_heat["raw"]
         if not isinstance(result, float):
-            raise TypeError(f"heat set point is type {type(result)}, "
-                            f"should be float")
+            raise TypeError(
+                f"heat set point is type {type(result)}, " f"should be float"
+            )
         return result
 
     def get_heat_setpoint_raw(self) -> float:
@@ -511,7 +519,8 @@ class ThermostatZone(tc.ThermostatCommonZone):
         result = self.get_heat_setpoint()
         if not isinstance(result, float):
             raise TypeError(
-                f"heat set point raw is type {type(result)}, should be float")
+                f"heat set point raw is type {type(result)}, should be float"
+            )
         return result
 
     def get_cool_setpoint(self) -> int:
@@ -524,11 +533,11 @@ class ThermostatZone(tc.ThermostatCommonZone):
         returns:
             (int): current cool set point in degrees.
         """
-        result = self.device_id.t_cool['raw']
+        result = self.device_id.t_cool["raw"]
         if not isinstance(result, (int, float)):
             raise TypeError(
-                f"cool set point is type {type(result)}, should be "
-                f"(int, float)")
+                f"cool set point is type {type(result)}, should be " f"(int, float)"
+            )
         return result
 
     def get_cool_setpoint_raw(self) -> int:
@@ -544,8 +553,8 @@ class ThermostatZone(tc.ThermostatCommonZone):
         result = self.get_cool_setpoint()
         if not isinstance(result, (int, float)):
             raise TypeError(
-                f"cool setpoint raw is type {type(result)}, should be "
-                f"(int, float)")
+                f"cool setpoint raw is type {type(result)}, should be " f"(int, float)"
+            )
         return result
 
     def get_schedule_program_heat(self) -> dict:
@@ -557,11 +566,12 @@ class ThermostatZone(tc.ThermostatCommonZone):
         returns:
             (dict): scheduled heat set points and times in degrees.
         """
-        result = self.device_id.program_heat['raw']
+        result = self.device_id.program_heat["raw"]
         if not isinstance(result, dict):
             raise TypeError(
                 f"heat program schedule set point is type {type(result)},"
-                f" should be dict")
+                f" should be dict"
+            )
         return result
 
     def get_schedule_heat_sp(self) -> int:
@@ -576,8 +586,8 @@ class ThermostatZone(tc.ThermostatCommonZone):
         result = self.get_schedule_setpoint(self.device_id.program_heat)
         if not isinstance(result, int):
             raise TypeError(
-                f"schedule heat set point is type {type(result)}, "
-                f"should be int")
+                f"schedule heat set point is type {type(result)}, " f"should be int"
+            )
         return result
 
     def get_schedule_program_cool(self) -> dict:
@@ -589,11 +599,12 @@ class ThermostatZone(tc.ThermostatCommonZone):
         returns:
             (dict): current scheduled cool set point in degrees.
         """
-        result = self.device_id.program_cool['raw']
+        result = self.device_id.program_cool["raw"]
         if not isinstance(result, dict):
             raise TypeError(
                 f"schedule program cool set point is type {type(result)},"
-                f" should be dict")
+                f" should be dict"
+            )
         return result
 
     def get_schedule_cool_sp(self) -> int:
@@ -608,8 +619,8 @@ class ThermostatZone(tc.ThermostatCommonZone):
         result = self.get_schedule_setpoint(self.device_id.program_cool)
         if not isinstance(result, int):
             raise TypeError(
-                f"schedule cool set point is type {type(result)}, "
-                f"should be int")
+                f"schedule cool set point is type {type(result)}, " f"should be int"
+            )
         return result
 
     def get_is_invacation_hold_mode(self) -> bool:
@@ -621,11 +632,11 @@ class ThermostatZone(tc.ThermostatCommonZone):
         returns:
             (int): 0=Disabled, 1=Enabled
         """
-        result = bool(self.device_id.hold['raw'])
+        result = bool(self.device_id.hold["raw"])
         if not isinstance(result, bool):
             raise TypeError(
-                f"is_invacation_hold_mode is type {type(result)}, "
-                f"should be bool")
+                f"is_invacation_hold_mode is type {type(result)}, " f"should be bool"
+            )
         return result
 
     def get_vacation_hold(self) -> bool:
@@ -637,11 +648,11 @@ class ThermostatZone(tc.ThermostatCommonZone):
         returns:
             (int): 0=Disabled, 1=Enabled
         """
-        result = bool(self.device_id.override['raw'])
+        result = bool(self.device_id.override["raw"])
         if not isinstance(result, bool):
             raise TypeError(
-                f"get_vacation_hold_mode is type {type(result)}, "
-                f"should be bool")
+                f"get_vacation_hold_mode is type {type(result)}, " f"should be bool"
+            )
         return result
 
     def get_vacation_hold_until_time(self) -> int:
@@ -652,7 +663,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
             None
         returns:
             (int): vacation hold time in minutes.
-         """
+        """
         return -1  # not implemented
 
     def get_temporary_hold_until_time(self) -> int:
@@ -663,28 +674,35 @@ class ThermostatZone(tc.ThermostatCommonZone):
             None
         returns:
             (int): temporary hold time in minutes.
-         """
+        """
         if self.is_heat_mode() == 1:
             sp_dict = self.device_id.program_heat
         elif self.is_cool_mode() == 1:
             sp_dict = self.device_id.program_cool
         else:
             # off mode, use dummy dict.
-            sp_dict = {'raw': {'0': [0] * 8, '1': [0] * 8, '2': [0] * 8,
-                               '3': [0] * 8, '4': [0] * 8, '5': [0] * 8,
-                               '6': [0] * 8}}
+            sp_dict = {
+                "raw": {
+                    "0": [0] * 8,
+                    "1": [0] * 8,
+                    "2": [0] * 8,
+                    "3": [0] * 8,
+                    "4": [0] * 8,
+                    "5": [0] * 8,
+                    "6": [0] * 8,
+                }
+            }
             # raise ValueError("unknown heat/cool mode")
         now = datetime.datetime.now()
         minutes_since_midnight = (
-            now - now.replace(hour=0, minute=0, second=0,
-                              microsecond=0)).total_seconds() / 60
-        todays_setpoint_lst = self.get_setpoint_list(sp_dict,
-                                                     datetime.datetime.today(
-                                                     ).weekday())
+            now - now.replace(hour=0, minute=0, second=0, microsecond=0)
+        ).total_seconds() / 60
+        todays_setpoint_lst = self.get_setpoint_list(
+            sp_dict, datetime.datetime.today().weekday()
+        )
         for idx in [0, 2, 4, 6]:
             if todays_setpoint_lst[idx] > minutes_since_midnight:
-                time_delta = (todays_setpoint_lst[idx] -
-                              minutes_since_midnight)
+                time_delta = todays_setpoint_lst[idx] - minutes_since_midnight
                 break  # found next timer
             else:
                 time_delta = 24 * 60 - minutes_since_midnight
@@ -704,7 +722,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         return False  # not implemented
 
     def get_system_switch_position(self) -> int:
-        """ Return the thermostat mode.
+        """Return the thermostat mode.
 
         inputs:
             None
@@ -715,8 +733,8 @@ class ThermostatZone(tc.ThermostatCommonZone):
         result = self._get_tmode()
         if not isinstance(result, int):
             raise TypeError(
-                f"get_system_switch_position is type {type(result)}, "
-                f"should be int")
+                f"get_system_switch_position is type {type(result)}, " f"should be int"
+            )
         return result
 
     def set_heat_setpoint(self, temp: int) -> None:
@@ -754,52 +772,49 @@ class ThermostatZone(tc.ThermostatCommonZone):
         """
         # current temp as measured by thermostat
         util.log_msg(
-            f"display temp="
-            f"{util.temp_value_with_units(self.get_display_temp())}",
+            f"display temp=" f"{util.temp_value_with_units(self.get_display_temp())}",
             mode=util.BOTH_LOG,
-            func_name=1)
+            func_name=1,
+        )
 
         # get switch position
         if switch_position is None:
             switch_position = self.get_system_switch_position()
 
         # heating status
-        if switch_position == \
-                self.system_switch_position[self.HEAT_MODE]:
-            util.log_msg(f"heat mode={self.is_heat_mode()}",
-                         mode=util.BOTH_LOG)
+        if switch_position == self.system_switch_position[self.HEAT_MODE]:
+            util.log_msg(f"heat mode={self.is_heat_mode()}", mode=util.BOTH_LOG)
             util.log_msg(
-                f"heat setpoint={self.get_heat_setpoint_raw()}",
-                mode=util.BOTH_LOG)
+                f"heat setpoint={self.get_heat_setpoint_raw()}", mode=util.BOTH_LOG
+            )
             util.log_msg(
-                f"schedule heat sp={self.get_schedule_heat_sp()}",
-                mode=util.BOTH_LOG)
+                f"schedule heat sp={self.get_schedule_heat_sp()}", mode=util.BOTH_LOG
+            )
 
         # cooling status
-        if switch_position == \
-                self.system_switch_position[self.COOL_MODE]:
-            util.log_msg(f"cool mode={self.is_cool_mode()}",
-                         mode=util.BOTH_LOG)
+        if switch_position == self.system_switch_position[self.COOL_MODE]:
+            util.log_msg(f"cool mode={self.is_cool_mode()}", mode=util.BOTH_LOG)
             util.log_msg(
-                f"cool setpoint={self.get_cool_setpoint_raw()}",
-                mode=util.BOTH_LOG)
+                f"cool setpoint={self.get_cool_setpoint_raw()}", mode=util.BOTH_LOG
+            )
             util.log_msg(
-                f"schedule cool sp={self.get_schedule_cool_sp()}",
-                mode=util.BOTH_LOG)
+                f"schedule cool sp={self.get_schedule_cool_sp()}", mode=util.BOTH_LOG
+            )
 
         # hold settings
         util.log_msg(
             f"is in vacation hold mode={self.get_is_invacation_hold_mode()}",
-            mode=util.BOTH_LOG)
-        util.log_msg(f"vacation hold={self.get_vacation_hold()}",
-                     mode=util.BOTH_LOG)
+            mode=util.BOTH_LOG,
+        )
+        util.log_msg(f"vacation hold={self.get_vacation_hold()}", mode=util.BOTH_LOG)
         util.log_msg(
             f"vacation hold until time={self.get_vacation_hold_until_time()}",
-            mode=util.BOTH_LOG)
+            mode=util.BOTH_LOG,
+        )
         util.log_msg(
-            f"temporary hold until time="
-            f"{self.get_temporary_hold_until_time()}",
-            mode=util.BOTH_LOG)
+            f"temporary hold until time=" f"{self.get_temporary_hold_until_time()}",
+            mode=util.BOTH_LOG,
+        )
 
 
 # monkeypatch radiotherm.thermostat.Thermostat __init__ method with longer
@@ -813,20 +828,16 @@ radiotherm.thermostat.Thermostat.__init__ = __init__
 # end of monkeypatch radiotherm.thermostat.Thermostst __init__
 
 if __name__ == "__main__":
-
     # verify environment
     env.get_python_version()
 
     # get zone override
-    api.uip = api.UserInputs(argv_list=None,
-                             thermostat_type=mmm_config.ALIAS)
-    zone_number = api.uip.get_user_inputs(api.uip.zone_name,
-                                          api.input_flds.zone)
+    api.uip = api.UserInputs(argv_list=None, thermostat_type=mmm_config.ALIAS)
+    zone_number = api.uip.get_user_inputs(api.uip.zone_name, api.input_flds.zone)
 
     _, Zone = tc.thermostat_basic_checkout(
-        mmm_config.ALIAS,
-        zone_number,
-        ThermostatClass, ThermostatZone)
+        mmm_config.ALIAS, zone_number, ThermostatClass, ThermostatZone
+    )
 
     tc.print_select_data_from_all_zones(
         mmm_config.ALIAS,
@@ -834,7 +845,8 @@ if __name__ == "__main__":
         ThermostatClass,
         ThermostatZone,
         display_wifi=False,
-        display_battery=False)
+        display_battery=False,
+    )
 
     # measure thermostat response time
     MEASUREMENTS = 60  # running higher than normal count here because

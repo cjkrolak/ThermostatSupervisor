@@ -38,10 +38,8 @@ class IntegrationTest(utc.IntegrationTest):
         self.mod_config = nest_config
 
 
-@unittest.skipIf(not utc.ENABLE_NEST_TESTS,
-                 "nest tests are disabled")
-class FunctionalIntegrationTest(IntegrationTest,
-                                utc.FunctionalIntegrationTest):
+@unittest.skipIf(not utc.ENABLE_NEST_TESTS, "nest tests are disabled")
+class FunctionalIntegrationTest(IntegrationTest, utc.FunctionalIntegrationTest):
     """
     Test functional performance of nest.py.
     """
@@ -55,10 +53,8 @@ class FunctionalIntegrationTest(IntegrationTest,
         self.metadata_type = str
 
 
-@unittest.skipIf(not utc.ENABLE_NEST_TESTS,
-                 "nest tests are disabled")
-class SuperviseIntegrationTest(IntegrationTest,
-                               utc.SuperviseIntegrationTest):
+@unittest.skipIf(not utc.ENABLE_NEST_TESTS, "nest tests are disabled")
+class SuperviseIntegrationTest(IntegrationTest, utc.SuperviseIntegrationTest):
     """
     Test supervise functionality of nest.py.
     """
@@ -68,10 +64,8 @@ class SuperviseIntegrationTest(IntegrationTest,
         self.setUpIntTest()
 
 
-@unittest.skipIf(not utc.ENABLE_NEST_TESTS,
-                 "nest tests are disabled")
-class PerformanceIntegrationTest(IntegrationTest,
-                                 utc.PerformanceIntegrationTest):
+@unittest.skipIf(not utc.ENABLE_NEST_TESTS, "nest tests are disabled")
+class PerformanceIntegrationTest(IntegrationTest, utc.PerformanceIntegrationTest):
     """
     Test performance of nest.py.
     """

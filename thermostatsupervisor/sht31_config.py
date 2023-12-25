@@ -21,8 +21,8 @@ FLASK_PORT = 5000  # note: ports below 1024 require root access on Linux
 FLASK_USE_HTTPS = False  # HTTPS requires a cert to be installed.
 FLASK_DEBUG_MODE = False  # True to enable flask debugging mode
 if FLASK_USE_HTTPS:
-    FLASK_SSL_CERT = 'adhoc'  # adhoc
-    FLASK_KWARGS = {'ssl_context': FLASK_SSL_CERT}
+    FLASK_SSL_CERT = "adhoc"  # adhoc
+    FLASK_KWARGS = {"ssl_context": FLASK_SSL_CERT}
     FLASK_URL_PREFIX = "https://"
 else:
     FLASK_SSL_CERT = None  # adhoc
@@ -45,15 +45,15 @@ flask_folder.i2c_detect_0 = "/i2c_detect/0"
 flask_folder.i2c_detect_1 = "/i2c_detect/1"
 
 # SHT31 API field names
-API_MEASUREMENT_CNT = 'measurements'
-API_TEMPC_MEAN = 'Temp(C) mean'
-API_TEMPC_STD = 'Temp(C) std'
-API_TEMPF_MEAN = 'Temp(F) mean'
-API_TEMPF_STD = 'Temp(F) std'
-API_HUMIDITY_MEAN = 'Humidity(%RH) mean'
-API_HUMIDITY_STD = 'Humidity(%RH) std'
-API_RSSI_MEAN = 'rssi(dBm) mean'
-API_RSSI_STD = 'rssi(dBm) std'
+API_MEASUREMENT_CNT = "measurements"
+API_TEMPC_MEAN = "Temp(C) mean"
+API_TEMPC_STD = "Temp(C) std"
+API_TEMPF_MEAN = "Temp(F) mean"
+API_TEMPF_STD = "Temp(F) std"
+API_HUMIDITY_MEAN = "Humidity(%RH) mean"
+API_HUMIDITY_STD = "Humidity(%RH) std"
+API_RSSI_MEAN = "rssi(dBm) mean"
+API_RSSI_STD = "rssi(dBm) std"
 
 # SHT31D config
 I2C_BUS = 1  # 0 = /dev/i2c-0 (port I2C0), 1 = /dev/i2c-1 (port I2C1)
@@ -81,25 +81,30 @@ required_env_variables = {
 }
 
 # supported thermostat configs
-supported_configs = {"module": "sht31",
-                     "type": 3,
-                     "zones": [LOFT_SHT31, LOFT_SHT31_REMOTE, UNIT_TEST_ZONE],
-                     "modes": ["OFF_MODE", "UNKNOWN_MODE"]}
+supported_configs = {
+    "module": "sht31",
+    "type": 3,
+    "zones": [LOFT_SHT31, LOFT_SHT31_REMOTE, UNIT_TEST_ZONE],
+    "modes": ["OFF_MODE", "UNKNOWN_MODE"],
+}
 
 # metadata dict:
 # 'zone_name' is returned by self.get_zone_name()
 # 'host_name' is used for DNS lookup to determine if device
 # is on the current network.
 metadata = {
-    LOFT_SHT31: {"zone_name": "Loft (local)",
-                 "host_name": "raspberrypi0.lan",
-                 },
-    LOFT_SHT31_REMOTE: {"zone_name": "loft (remote)",
-                        "host_name": "none",
-                        },
-    UNIT_TEST_ZONE: {"zone_name": "unittest",
-                     "host_name": "none",
-                     },
+    LOFT_SHT31: {
+        "zone_name": "Loft (local)",
+        "host_name": "raspberrypi0.lan",
+    },
+    LOFT_SHT31_REMOTE: {
+        "zone_name": "loft (remote)",
+        "host_name": "none",
+    },
+    UNIT_TEST_ZONE: {
+        "zone_name": "unittest",
+        "host_name": "none",
+    },
 }
 
 
@@ -131,8 +136,11 @@ def get_preferred_zone():
     # loopback does not work so use local sht31 zone if testing
     # on the local net.  If not, use the DNS name.
     local_host = metadata[LOFT_SHT31]["host_name"]
-    zone = str([LOFT_SHT31_REMOTE, LOFT_SHT31][
-        util.is_host_on_local_net(local_host, verbose=False)[0]])
+    zone = str(
+        [LOFT_SHT31_REMOTE, LOFT_SHT31][
+            util.is_host_on_local_net(local_host, verbose=False)[0]
+        ]
+    )
     return zone
 
 
@@ -148,4 +156,4 @@ argv = [
     "2",  # tolerance
     "OFF_MODE",  # thermostat mode
     "2",  # number of measurements
-    ]
+]

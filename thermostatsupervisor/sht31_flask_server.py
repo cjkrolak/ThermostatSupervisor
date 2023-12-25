@@ -15,12 +15,15 @@ import traceback
 try:
     from RPi import GPIO  # noqa F405 raspberry pi GPIO library
     import smbus2  # noqa F405
+
     pi_library_exception = None  # successful
 except ImportError as ex:
     # hardware-related library, not needed in unittest mode
     print(traceback.format_exc())
-    print("WARNING: RPi or smbus library import error, "
-          "this is expected in unittest mode")
+    print(
+        "WARNING: RPi or smbus library import error, "
+        "this is expected in unittest mode"
+    )
     pi_library_exception = ex  # unsuccessful
 
 # third party imports
@@ -47,40 +50,40 @@ uip = None  # user inputs object
 # 2857/Sensirion_Humidity_SHT3x_Datasheet_digital-767294.pdf
 
 # single shot mode: clock_stretching, repeatability
-cs_enabled_high = (0x2c, [0x06])
-cs_enabled_med = (0x2c, [0x0d])
-cs_enabled_low = (0x2c, [0x10])
+cs_enabled_high = (0x2C, [0x06])
+cs_enabled_med = (0x2C, [0x0D])
+cs_enabled_low = (0x2C, [0x10])
 cs_disabled_high = (0x24, [0x00])
-cs_disabled_med = (0x24, [0x0b])
+cs_disabled_med = (0x24, [0x0B])
 cs_disabled_low = (0x24, [0x16])
 
 # periodic data acquisition modes: mps, repeatability
 mps_0p5_high = (0x20, [0x32])
 mps_0p5_med = (0x20, [0x24])
-mps_0p5_low = (0x20, [0x2f])
+mps_0p5_low = (0x20, [0x2F])
 mps_1_high = (0x21, [0x30])
 mps_1_med = (0x21, [0x26])
-mps_1_low = (0x21, [0x2d])
+mps_1_low = (0x21, [0x2D])
 mps_2_high = (0x22, [0x36])
 mps_2_med = (0x22, [0x20])
-mps_2_low = (0x22, [0x2b])
+mps_2_low = (0x22, [0x2B])
 mps_4_high = (0x23, [0x34])
 mps_4_med = (0x23, [0x22])
 mps_4_low = (0x23, [0x29])
 mps_10_high = (0x27, [0x37])
 mps_10_med = (0x27, [0x21])
-mps_10_low = (0x27, [0x2a])
+mps_10_low = (0x27, [0x2A])
 
 # misc commands
-fetch_data = (0xe0, [0x00])
-period_meas_with_art = (0x2b, [0x32])
+fetch_data = (0xE0, [0x00])
+period_meas_with_art = (0x2B, [0x32])
 break_periodic_data = (0x30, [0x93])
-soft_reset = (0x30, [0xa2])
+soft_reset = (0x30, [0xA2])
 reset = (0x00, [0x06])
-enable_heater = (0x30, [0x6d])
+enable_heater = (0x30, [0x6D])
 disable_heater = (0x30, [0x66])
 clear_status_register = (0x30, [0x41])
-read_status_register = (0xf3, [0x2d])
+read_status_register = (0xF3, [0x2D])
 
 
 class Sensors:
@@ -109,8 +112,7 @@ class Sensors:
         humidity = 100 * (data[3] * 256 + data[4]) / 65535.0
         return temp, temp_c, temp_f, humidity
 
-    def pack_data_structure(self, temp_f_lst, temp_c_lst, humidity_lst,
-                            rssi_lst):
+    def pack_data_structure(self, temp_f_lst, temp_c_lst, humidity_lst, rssi_lst):
         """
         Calculate statistics and pack data structure.
 
@@ -122,16 +124,17 @@ class Sensors:
         returns:
             (dict): data structure.
         """
-        return {sht31_config.API_MEASUREMENT_CNT: len(temp_f_lst),
-                sht31_config.API_TEMPC_MEAN: statistics.mean(temp_c_lst),
-                sht31_config.API_TEMPC_STD: statistics.pstdev(temp_c_lst),
-                sht31_config.API_TEMPF_MEAN: statistics.mean(temp_f_lst),
-                sht31_config.API_TEMPF_STD: statistics.pstdev(temp_f_lst),
-                sht31_config.API_HUMIDITY_MEAN: statistics.mean(humidity_lst),
-                sht31_config.API_HUMIDITY_STD: statistics.pstdev(humidity_lst),
-                sht31_config.API_RSSI_MEAN: statistics.mean(rssi_lst),
-                sht31_config.API_RSSI_STD: statistics.pstdev(rssi_lst),
-                }
+        return {
+            sht31_config.API_MEASUREMENT_CNT: len(temp_f_lst),
+            sht31_config.API_TEMPC_MEAN: statistics.mean(temp_c_lst),
+            sht31_config.API_TEMPC_STD: statistics.pstdev(temp_c_lst),
+            sht31_config.API_TEMPF_MEAN: statistics.mean(temp_f_lst),
+            sht31_config.API_TEMPF_STD: statistics.pstdev(temp_f_lst),
+            sht31_config.API_HUMIDITY_MEAN: statistics.mean(humidity_lst),
+            sht31_config.API_HUMIDITY_STD: statistics.pstdev(humidity_lst),
+            sht31_config.API_RSSI_MEAN: statistics.mean(rssi_lst),
+            sht31_config.API_RSSI_STD: statistics.pstdev(rssi_lst),
+        }
 
     def set_sht31_address(self, i2c_addr, addr_pin, alert_pin):
         """
@@ -171,7 +174,8 @@ class Sensors:
         except OSError as exc:
             print(
                 f"FATAL ERROR({util.get_function_name()}): i2c device at "
-                f"address {hex(i2c_addr)} is not responding")
+                f"address {hex(i2c_addr)} is not responding"
+            )
             raise exc
         time.sleep(0.5)
 
@@ -192,13 +196,12 @@ class Sensors:
         # read_i2c_block_data(i2c_addr, register, length,
         #                     force=None)
         try:
-            response = bus.read_i2c_block_data(i2c_addr,
-                                               register,
-                                               length)
+            response = bus.read_i2c_block_data(i2c_addr, register, length)
         except OSError as exc:
             print(
                 f"FATAL ERROR({util.get_function_name()}): i2c device at "
-                f"address {hex(i2c_addr)} is not responding")
+                f"address {hex(i2c_addr)} is not responding"
+            )
             raise exc
         return response
 
@@ -215,30 +218,31 @@ class Sensors:
         try:
             date_val = data[0] * 256 + data[1]
             resp = {
-                'raw': data,
-                'raw_binary': format(date_val, '#018b')[2:],
-                'alert pending status(0=0,1=1+)': (date_val >> 15) & 1,
+                "raw": data,
+                "raw_binary": format(date_val, "#018b")[2:],
+                "alert pending status(0=0,1=1+)": (date_val >> 15) & 1,
                 # bit 15: 0=None, 1=at least 1 pending alert
-                'heater status(0=off,1=on)': (date_val >> 13) & 1,
+                "heater status(0=off,1=on)": (date_val >> 13) & 1,
                 # bit 13: 0=off, 1=on
-                'RH tracking alert(0=no,1=yes)': (date_val >> 11) & 1,
+                "RH tracking alert(0=no,1=yes)": (date_val >> 11) & 1,
                 # bit 11: 0=no, 1=yes
-                'T tracking alert(0=no,1=yes)': (date_val >> 10) & 1,
+                "T tracking alert(0=no,1=yes)": (date_val >> 10) & 1,
                 # bit 10: 0=no, 1=yes
-                'System reset detected(0=no,1=yes)': (date_val >> 4) & 1,
+                "System reset detected(0=no,1=yes)": (date_val >> 4) & 1,
                 # bit 4
                 # 0=no reset since last clear cmd, 1=hard, soft, or supply fail
-                'Command status(0=correct,1=failed)': (date_val >> 1) & 1,
+                "Command status(0=correct,1=failed)": (date_val >> 1) & 1,
                 # bit 1: 0=successful, 1=invalid or field checksum
-                'Write data checksum status(0=correct,1=failed)':
-                    (date_val >> 0) & 1,
+                "Write data checksum status(0=correct,1=failed)": (date_val >> 0) & 1,
                 # bit 0: 0=correct, 1=failed
             }
         except IndexError:
             # parsing error, just return raw data
-            print("WARNING: fault register parsing error, just returning "
-                  "raw fault register data")
-            resp = {'raw': data}
+            print(
+                "WARNING: fault register parsing error, just returning "
+                "raw fault register data"
+            )
+            resp = {"raw": data}
         return resp
 
     def get_unit_test(self):
@@ -252,10 +256,10 @@ class Sensors:
             (dict): fabricated unit test data.
         """
         # get runtime parameters
-        measurements = request.args.get('measurements',
-                                        sht31_config.MEASUREMENTS,
-                                        type=int)
-        seed = request.args.get('seed', sht31_config.UNIT_TEST_SEED, type=int)
+        measurements = request.args.get(
+            "measurements", sht31_config.MEASUREMENTS, type=int
+        )
+        seed = request.args.get("seed", sht31_config.UNIT_TEST_SEED, type=int)
 
         # data structure
         temp_f_lst = []
@@ -265,7 +269,6 @@ class Sensors:
 
         # loop for n measurements
         for measurement in range(measurements):
-
             # fabricated data for unit testing
             data = [seed + measurement % 2] * 5  # almost mid range
 
@@ -280,8 +283,7 @@ class Sensors:
             rssi_lst.append(rssi)
 
         # return data on API
-        return self.pack_data_structure(temp_f_lst, temp_c_lst, humidity_lst,
-                                        rssi_lst)
+        return self.pack_data_structure(temp_f_lst, temp_c_lst, humidity_lst, rssi_lst)
 
     def get(self):
         """
@@ -293,11 +295,12 @@ class Sensors:
             (dict): thermal data dictionary.
         """
         # get runtime parameters
-        measurements = request.args.get('measurements', 1, type=int)
+        measurements = request.args.get("measurements", 1, type=int)
 
         # set address pin on SHT31
-        self.set_sht31_address(sht31_config.I2C_ADDRESS, sht31_config.ADDR_PIN,
-                               sht31_config.ALERT_PIN)
+        self.set_sht31_address(
+            sht31_config.I2C_ADDRESS, sht31_config.ADDR_PIN, sht31_config.ALERT_PIN
+        )
 
         # activate smbus
         bus = smbus2.SMBus(sht31_config.I2C_BUS)
@@ -313,12 +316,12 @@ class Sensors:
             # loop for n measurements
             for _ in range(measurements):
                 # send single shot read command
-                self.send_i2c_cmd(bus, sht31_config.I2C_ADDRESS,
-                                  cs_enabled_high)
+                self.send_i2c_cmd(bus, sht31_config.I2C_ADDRESS, cs_enabled_high)
 
                 # read the measurement data
-                data = self.read_i2c_data(bus, sht31_config.I2C_ADDRESS,
-                                          register=0x00, length=0x06)
+                data = self.read_i2c_data(
+                    bus, sht31_config.I2C_ADDRESS, register=0x00, length=0x06
+                )
 
                 # convert the data
                 _, temp_c, temp_f, humidity = self.convert_data(data)
@@ -331,8 +334,9 @@ class Sensors:
                 rssi_lst.append(rssi)
 
             # return data on API
-            return self.pack_data_structure(temp_f_lst, temp_c_lst,
-                                            humidity_lst, rssi_lst)
+            return self.pack_data_structure(
+                temp_f_lst, temp_c_lst, humidity_lst, rssi_lst
+            )
         finally:
             # close the smbus connection
             bus.close()
@@ -348,8 +352,9 @@ class Sensors:
             (dict): parsed fault register data.
         """
         # set address pin on SHT31
-        self.set_sht31_address(sht31_config.I2C_ADDRESS, sht31_config.ADDR_PIN,
-                               sht31_config.ALERT_PIN)
+        self.set_sht31_address(
+            sht31_config.I2C_ADDRESS, sht31_config.ADDR_PIN, sht31_config.ALERT_PIN
+        )
 
         # activate smbus
         bus = smbus2.SMBus(sht31_config.I2C_BUS)
@@ -357,15 +362,15 @@ class Sensors:
 
         try:
             # send single shot command
-            self.send_i2c_cmd(bus, sht31_config.I2C_ADDRESS,
-                              i2c_command)
+            self.send_i2c_cmd(bus, sht31_config.I2C_ADDRESS, i2c_command)
 
             # small delay
             time.sleep(1.0)
 
             # read the measurement data, 2 bytes data, 1 byte checksum
-            data = self.read_i2c_data(bus, sht31_config.I2C_ADDRESS,
-                                      register=0x00, length=0x03)
+            data = self.read_i2c_data(
+                bus, sht31_config.I2C_ADDRESS, register=0x00, length=0x03
+            )
 
             # parse data into registers
             parsed_data = self.parse_fault_register_data(data)
@@ -405,11 +410,12 @@ class Sensors:
                 GPIO.output(addr_pin, GPIO.HIGH)
             # status message
             msg_dict = {}
-            msg_dict["action_complete"] = (f"{num_clock_cycles} SCL clock "
-                                           f"toggles completed at "
-                                           f"{recovery_freq_hz} Hz")
-            msg_dict["next_step"] = ("please reboot pi and restart "
-                                     "flask server.")
+            msg_dict["action_complete"] = (
+                f"{num_clock_cycles} SCL clock "
+                f"toggles completed at "
+                f"{recovery_freq_hz} Hz"
+            )
+            msg_dict["next_step"] = "please reboot pi and restart flask server."
             return {"i2c_recovery": msg_dict}
         finally:
             GPIO.cleanup()  # clean up GPIO
@@ -424,9 +430,10 @@ class Sensors:
             (dict): parsed device dictionary.
         """
         # send command
-        with subprocess.Popen(['sudo', 'i2cdetect', '-y',
-                              str(bus)],
-                              stdout=subprocess.PIPE,) as p:
+        with subprocess.Popen(
+            ["sudo", "i2cdetect", "-y", str(bus)],
+            stdout=subprocess.PIPE,
+        ) as p:
             # cmdout = str(p.communicate())
 
             # read in raw data
@@ -448,10 +455,10 @@ class Sensors:
                         if match:
                             device_addr = match.group(0)
                             print(match.group(0))
-                            device_dict["dev_" + str(device) + "_addr"] = \
-                                str(device_addr)
-                            bus_dict[
-                                "addr_base_" + str(addr_base)] = device_dict
+                            device_dict["dev_" + str(device) + "_addr"] = str(
+                                device_addr
+                            )
+                            bus_dict["addr_base_" + str(addr_base)] = device_dict
                             device += 1
 
         parsed_device_dict["i2c_detect"]["bus_" + str(bus)] = bus_dict
@@ -469,23 +476,30 @@ class Sensors:
             (float): wifi signal strength in dBm.
         """
         if env.is_windows_environment():
-            raise EnvironmentError(f"ERROR: {util.get_function_name()} is "
-                                   "only supported on Linux")
+            raise EnvironmentError(
+                f"ERROR: {util.get_function_name()} is only supported on Linux"
+            )
 
-        cell_number_re = re.compile(r"^Cell\s+(?P<cellnumber>.+)\s+-\s+Address:"
-                                    r"\s(?P<mac>.+)$")
+        cell_number_re = re.compile(
+            r"^Cell\s+(?P<cellnumber>.+)\s+-\s+Address:" r"\s(?P<mac>.+)$"
+        )
         regexps = [
             re.compile(r"^ESSID:\"(?P<essid>.*)\"$"),
             re.compile(r"^Protocol:(?P<protocol>.+)$"),
             re.compile(r"^Mode:(?P<mode>.+)$"),
-            re.compile(r"^Frequency:(?P<frequency>[\d.]+) "
-                       r"(?P<frequency_units>.+) \(Channel "
-                       r"(?P<channel>\d+)\)$"),
+            re.compile(
+                r"^Frequency:(?P<frequency>[\d.]+) "
+                r"(?P<frequency_units>.+) \(Channel "
+                r"(?P<channel>\d+)\)$"
+            ),
             re.compile(r"^Encryption key:(?P<encryption>.+)$"),
-            re.compile(r"^Quality=(?P<signal_quality>\d+)/(?P<signal_total>\d+)"
-                       r"\s+Signal level=(?P<signal_level_dBm>.+) d.+$"),
-            re.compile(r"^Signal level=(?P<signal_quality>\d+)/"
-                       r"(?P<signal_total>\d+).*$"),
+            re.compile(
+                r"^Quality=(?P<signal_quality>\d+)/(?P<signal_total>\d+)"
+                r"\s+Signal level=(?P<signal_level_dBm>.+) d.+$"
+            ),
+            re.compile(
+                r"^Signal level=(?P<signal_quality>\d+)/" r"(?P<signal_total>\d+).*$"
+            ),
         ]
 
         # Detect encryption type
@@ -495,7 +509,7 @@ class Sensors:
         # Parses the response from the command "iwlist scan"
         def parse(content):
             cells = []
-            lines = content.split('\n')
+            lines = content.split("\n")
             for line in lines:
                 line = line.strip()
                 cell_number = cell_number_re.search(line)
@@ -504,18 +518,18 @@ class Sensors:
                     continue
                 wpa = wpa_re.search(line)
                 if wpa is not None:
-                    cells[-1].update({'encryption': 'wpa'})
+                    cells[-1].update({"encryption": "wpa"})
                 wpa2 = wpa2_re.search(line)
                 if wpa2 is not None:
-                    cells[-1].update({'encryption': 'wpa2'})
+                    cells[-1].update({"encryption": "wpa2"})
                 for expression in regexps:
                     result = expression.search(line)
                     if result is not None:
-                        if 'encryption' in result.groupdict():
-                            if result.groupdict()['encryption'] == 'on':
-                                cells[-1].update({'encryption': 'wep'})
+                        if "encryption" in result.groupdict():
+                            if result.groupdict()["encryption"] == "on":
+                                cells[-1].update({"encryption": "wep"})
                             else:
-                                cells[-1].update({'encryption': 'off'})
+                                cells[-1].update({"encryption": "off"})
                         else:
                             cells[-1].update(result.groupdict())
                         continue
@@ -548,12 +562,16 @@ class Sensors:
         """
         regexps_iwconfig = [
             re.compile(r"^ESSID:\"(?P<essid>.*)\"$"),
-            re.compile(r"^Frequency:(?P<frequency>[\d.]+) "
-                       r"(?P<frequency_units>.+)\s+ "
-                       r"Access Point:\"(?P<mac_addr>.*)\"$"),
-            re.compile(r"^Link Quality=(?P<signal_quality>\d+)/"
-                       r"(?P<signal_total>\d+)"
-                       r"\s+Signal level=(?P<signal_level_dBm>.+) d.+$"),
+            re.compile(
+                r"^Frequency:(?P<frequency>[\d.]+) "
+                r"(?P<frequency_units>.+)\s+ "
+                r"Access Point:\"(?P<mac_addr>.*)\"$"
+            ),
+            re.compile(
+                r"^Link Quality=(?P<signal_quality>\d+)/"
+                r"(?P<signal_total>\d+)"
+                r"\s+Signal level=(?P<signal_level_dBm>.+) d.+$"
+            ),
         ]
 
         regexps_netsh = [
@@ -566,7 +584,7 @@ class Sensors:
         # Parses the response from the command "iwconfig"
         def parse(content, regexps):
             parse_result = {}
-            lines = content.split('\n')
+            lines = content.split("\n")
             for line in lines:
                 line = line.strip()
                 for expression in regexps:
@@ -578,8 +596,7 @@ class Sensors:
         # call iwconfig terminal command
         if env.is_windows_environment():
             scan_cmd = "netsh"
-            scan_result = self.shell_cmd([scan_cmd, "wlan", "show",
-                                          "interfaces"])
+            scan_result = self.shell_cmd([scan_cmd, "wlan", "show", "interfaces"])
         else:  # assume Linux
             scan_cmd = "iwconfig"
             scan_result = self.shell_cmd([scan_cmd])
@@ -591,8 +608,8 @@ class Sensors:
             parse_result = parse(scan_result, regexps_netsh)
             # add calculation for dBm = quality / 2 - 100
             parse_result.update(
-                {"signal_level_dBm": int(parse_result[
-                    "signal_quality"]) / 2 - 100})
+                {"signal_level_dBm": int(parse_result["signal_quality"]) / 2 - 100}
+            )
         else:  # assume Linux
             parse_result = parse(scan_result, regexps_iwconfig)
         if self.verbose:
@@ -609,9 +626,10 @@ class Sensors:
         returns:
             (str): result.
         """
-        with subprocess.Popen(cmd_lst, stdout=subprocess.PIPE,
-                              stderr=subprocess.PIPE) as proc:
-            result = proc.stdout.read().decode('utf-8')
+        with subprocess.Popen(
+            cmd_lst, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+        ) as proc:
+            result = proc.stdout.read().decode("utf-8")
         return result
 
 
@@ -788,17 +806,16 @@ flg.set_flask_cookie_config(app)
 flg.print_flask_config(app)
 
 
-@app.route('/favicon.ico')
+@app.route("/favicon.ico")
 def favicon():
     """Set favicon for browser tab."""
-    return app.send_static_file('sht31.ico')
+    return app.send_static_file("sht31.ico")
 
 
 class UserInputs(util.UserInputs):
     """Manage runtime arguments for sht31_flask_server."""
 
-    def __init__(self, argv_list=None, help_description=None,
-                 suppress_warnings=False):
+    def __init__(self, argv_list=None, help_description=None, suppress_warnings=False):
         """
         UserInputs constructor for sht31_flask_server.
 
@@ -823,27 +840,28 @@ class UserInputs(util.UserInputs):
         self.valid_sflags = []
         # define the user_inputs dict.
         for parent_key in parent_keys:
-            self.user_inputs = {parent_key: {
-                input_flds.debug_fld: {
-                    "order": 1,    # index in the argv list
-                    "value": None,
-                    "type": lambda x: bool(str2bool(
-                        str(x).strip())),
-                    "default": False,
-                    "valid_range": [True, False, 1, 0],
-                    "sflag": "-d",
-                    "lflag": "--" + input_flds.debug_fld,
-                    "help": "flask server debug mode",
-                    "required": False,
+            self.user_inputs = {
+                parent_key: {
+                    input_flds.debug_fld: {
+                        "order": 1,  # index in the argv list
+                        "value": None,
+                        "type": lambda x: bool(str2bool(str(x).strip())),
+                        "default": False,
+                        "valid_range": [True, False, 1, 0],
+                        "sflag": "-d",
+                        "lflag": "--" + input_flds.debug_fld,
+                        "help": "flask server debug mode",
+                        "required": False,
                     },
                 },
             }
-            self.valid_sflags += [self.user_inputs[parent_key][k]["sflag"]
-                                  for k in self.user_inputs[parent_key].keys()]
+            self.valid_sflags += [
+                self.user_inputs[parent_key][k]["sflag"]
+                for k in self.user_inputs[parent_key].keys()
+            ]
 
 
 if __name__ == "__main__":
-
     print("SHT31 sensor Flask server")
 
     # enable logging to STDERR for Flask
@@ -852,8 +870,9 @@ if __name__ == "__main__":
     # verify environment
     env.get_python_version()
     if not env.is_raspberrypi_environment(True):
-        raise EnvironmentError("ERROR: SHT31 Flask server only supported on "
-                               "Raspberry PI environment")
+        raise EnvironmentError(
+            "ERROR: SHT31 Flask server only supported on Raspberry PI environment"
+        )
 
     # parse runtime parameters
     uip = UserInputs()
@@ -862,8 +881,10 @@ if __name__ == "__main__":
 
     # launch the Flask API on development server
     flg.schedule_ipban_block_list_report(ip_ban, debug_mode=debug)
-    app.run(host='0.0.0.0',
-            port=sht31_config.FLASK_PORT,
-            debug=debug,
-            threaded=True,  # threaded=True may speed up rendering on web page
-            ssl_context=sht31_config.FLASK_SSL_CERT)
+    app.run(
+        host="0.0.0.0",
+        port=sht31_config.FLASK_PORT,
+        debug=debug,
+        threaded=True,  # threaded=True may speed up rendering on web page
+        ssl_context=sht31_config.FLASK_SSL_CERT,
+    )

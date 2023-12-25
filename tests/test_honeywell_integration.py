@@ -39,8 +39,7 @@ class IntegrationTest(utc.IntegrationTest):
         self.mod_config = honeywell_config
 
 
-class FunctionalIntegrationTest(IntegrationTest,
-                                utc.FunctionalIntegrationTest):
+class FunctionalIntegrationTest(IntegrationTest, utc.FunctionalIntegrationTest):
     """
     Test functional performance of honeywell.py.
     """
@@ -54,8 +53,7 @@ class FunctionalIntegrationTest(IntegrationTest,
         self.metadata_type = int
 
 
-class SuperviseIntegrationTest(IntegrationTest,
-                               utc.SuperviseIntegrationTest):
+class SuperviseIntegrationTest(IntegrationTest, utc.SuperviseIntegrationTest):
     """
     Test supervise functionality of honeywell.py.
     """
@@ -65,8 +63,7 @@ class SuperviseIntegrationTest(IntegrationTest,
         self.setUpIntTest()
 
 
-class PerformanceIntegrationTest(IntegrationTest,
-                                 utc.PerformanceIntegrationTest):
+class PerformanceIntegrationTest(IntegrationTest, utc.PerformanceIntegrationTest):
     """
     Test performance of honeywell.py.
     """

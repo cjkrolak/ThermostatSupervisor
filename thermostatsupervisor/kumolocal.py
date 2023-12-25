@@ -18,8 +18,7 @@ if PYKUMO_DEBUG and not env.is_azure_environment():
     mod_path = "..\\pykumo\\pykumo"
     if env.is_interactive_environment():
         mod_path = "..\\" + mod_path
-    pykumo = env.dynamic_module_import("pykumo",
-                                       mod_path)
+    pykumo = env.dynamic_module_import("pykumo", mod_path)
 else:
     import pykumo  # noqa E402, from path / site packages
 
@@ -36,13 +35,14 @@ class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
             verbose(bool): debug flag.
         """
         # Kumocloud server auth credentials from env vars
-        self.KC_UNAME_KEY = 'KUMO_USERNAME'
-        self.KC_PASSWORD_KEY = 'KUMO_PASSWORD'
-        self.kc_uname = (os.environ.get(self.KC_UNAME_KEY, "<" +
-                         self.KC_UNAME_KEY + "_KEY_MISSING>"))
-        self.kc_pwd = (os.environ.get(
-            self.KC_PASSWORD_KEY, "<" +
-            self.KC_PASSWORD_KEY + "_KEY_MISSING>"))
+        self.KC_UNAME_KEY = "KUMO_USERNAME"
+        self.KC_PASSWORD_KEY = "KUMO_PASSWORD"
+        self.kc_uname = os.environ.get(
+            self.KC_UNAME_KEY, "<" + self.KC_UNAME_KEY + "_KEY_MISSING>"
+        )
+        self.kc_pwd = os.environ.get(
+            self.KC_PASSWORD_KEY, "<" + self.KC_PASSWORD_KEY + "_KEY_MISSING>"
+        )
 
         # construct the superclass
         # call both parent class __init__
@@ -89,11 +89,10 @@ class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
         # print zone name the first time it is known
         if self.device_id is None:
             util.log_msg(
-                f"zone {zone} name = '{self.zone_name}', "
-                f"device_id={device_id}",
-                mode=util.DEBUG_LOG +
-                util.STDOUT_LOG,
-                func_name=1)
+                f"zone {zone} name = '{self.zone_name}', " f"device_id={device_id}",
+                mode=util.DEBUG_LOG + util.STDOUT_LOG,
+                func_name=1,
+            )
         self.device_id = device_id
 
         # return the target zone object
@@ -112,27 +111,35 @@ class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
         try:
             serial_num_lst = list(self.get_indoor_units())  # will query unit
         except UnboundLocalError:  # patch for issue #205
-            util.log_msg("WARNING: Kumocloud refresh failed due to "
-                         "timeout", mode=util.BOTH_LOG, func_name=1)
+            util.log_msg(
+                "WARNING: Kumocloud refresh failed due to timeout",
+                mode=util.BOTH_LOG,
+                func_name=1,
+            )
             time.sleep(10)
             serial_num_lst = list(self.get_indoor_units())  # retry
-        util.log_msg(f"indoor unit serial numbers: {str(serial_num_lst)}",
-                     mode=util.DEBUG_LOG + util.STDOUT_LOG, func_name=1)
+        util.log_msg(
+            f"indoor unit serial numbers: {str(serial_num_lst)}",
+            mode=util.DEBUG_LOG + util.STDOUT_LOG,
+            func_name=1,
+        )
 
         # validate serial number list
         if not serial_num_lst:
-            raise tc.AuthenticationError("pykumo meta data is blank, probably"
-                                         " due to an Authentication Error,"
-                                         " check your credentials.")
+            raise tc.AuthenticationError(
+                "pykumo meta data is blank, probably"
+                " due to an Authentication Error,"
+                " check your credentials."
+            )
 
         for serial_number in serial_num_lst:
             util.log_msg(
                 f"Unit {self.get_name(serial_number)}: address: "
                 f"{self.get_address(serial_number)} credentials: "
                 f"{self.get_credentials(serial_number)}",
-                mode=util.DEBUG_LOG +
-                util.STDOUT_LOG,
-                func_name=1)
+                mode=util.DEBUG_LOG + util.STDOUT_LOG,
+                func_name=1,
+            )
         if zone is None:
             # returned cached raw data for all zones
             raw_json = self.get_raw_json()  # does not fetch results,
@@ -141,11 +148,14 @@ class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
             try:
                 self.serial_number = serial_num_lst[zone]
             except IndexError as exc:
-                raise IndexError(f"ERROR: Invalid Zone, index ({zone}) does "
-                                 "not exist in serial number list "
-                                 f"({serial_num_lst})") from exc
-            raw_json = self.get_raw_json()[2]['children'][0][
-                'zoneTable'][serial_num_lst[zone]]
+                raise IndexError(
+                    f"ERROR: Invalid Zone, index ({zone}) does "
+                    "not exist in serial number list "
+                    f"({serial_num_lst})"
+                ) from exc
+            raw_json = self.get_raw_json()[2]["children"][0]["zoneTable"][
+                serial_num_lst[zone]
+            ]
         return raw_json
 
     def get_all_metadata(self, zone=None, retry=False):
@@ -178,11 +188,11 @@ class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
         # refresh device status
         self.device_id.update_status()
         meta_data = {}
-        meta_data['status'] = self.device_id.get_status()
+        meta_data["status"] = self.device_id.get_status()
         # pylint: disable=protected-access
-        meta_data['sensors'] = self.device_id._sensors
+        meta_data["sensors"] = self.device_id._sensors
         # pylint: disable=protected-access
-        meta_data['profile'] = self.device_id._profile
+        meta_data["profile"] = self.device_id._profile
         if parameter is None:
             return meta_data
         else:
@@ -196,8 +206,7 @@ class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
         returns:
             None, prints result to screen
         """
-        self.exec_print_all_thermostat_metadata(
-            self.get_all_metadata, [zone])
+        self.exec_print_all_thermostat_metadata(self.get_all_metadata, [zone])
 
 
 class ThermostatZone(tc.ThermostatCommonZone):
@@ -304,9 +313,10 @@ class ThermostatZone(tc.ThermostatCommonZone):
             (int) heat mode, 1=enabled, 0=disabled.
         """
         self.refresh_zone_info()
-        return int(self.device_id.get_mode() ==
-                   self.system_switch_position[
-                       tc.ThermostatCommonZone.HEAT_MODE])
+        return int(
+            self.device_id.get_mode()
+            == self.system_switch_position[tc.ThermostatCommonZone.HEAT_MODE]
+        )
 
     def is_cool_mode(self) -> int:
         """
@@ -318,9 +328,10 @@ class ThermostatZone(tc.ThermostatCommonZone):
             (int): cool mode, 1=enabled, 0=disabled.
         """
         self.refresh_zone_info()
-        return int(self.device_id.get_mode() ==
-                   self.system_switch_position[
-                       tc.ThermostatCommonZone.COOL_MODE])
+        return int(
+            self.device_id.get_mode()
+            == self.system_switch_position[tc.ThermostatCommonZone.COOL_MODE]
+        )
 
     def is_dry_mode(self) -> int:
         """
@@ -332,9 +343,10 @@ class ThermostatZone(tc.ThermostatCommonZone):
             (int): dry mode, 1=enabled, 0=disabled.
         """
         self.refresh_zone_info()
-        return int(self.device_id.get_mode() ==
-                   self.system_switch_position[
-                       tc.ThermostatCommonZone.DRY_MODE])
+        return int(
+            self.device_id.get_mode()
+            == self.system_switch_position[tc.ThermostatCommonZone.DRY_MODE]
+        )
 
     def is_fan_mode(self) -> int:
         """
@@ -345,9 +357,10 @@ class ThermostatZone(tc.ThermostatCommonZone):
         returns:
             (int): fan mode, 1=enabled, 0=disabled.
         """
-        return int(self.get_system_switch_position() ==
-                   self.system_switch_position[
-                       tc.ThermostatCommonZone.FAN_MODE])
+        return int(
+            self.get_system_switch_position()
+            == self.system_switch_position[tc.ThermostatCommonZone.FAN_MODE]
+        )
 
     def is_auto_mode(self) -> int:
         """
@@ -359,9 +372,10 @@ class ThermostatZone(tc.ThermostatCommonZone):
             (int): auto mode, 1=enabled, 0=disabled.
         """
         self.refresh_zone_info()
-        return int(self.device_id.get_mode() ==
-                   self.system_switch_position[
-                       tc.ThermostatCommonZone.AUTO_MODE])
+        return int(
+            self.device_id.get_mode()
+            == self.system_switch_position[tc.ThermostatCommonZone.AUTO_MODE]
+        )
 
     def is_off_mode(self) -> int:
         """
@@ -372,30 +386,45 @@ class ThermostatZone(tc.ThermostatCommonZone):
         returns:
             (int): off mode, 1=enabled, 0=disabled.
         """
-        return int(self.get_system_switch_position() ==
-                   self.system_switch_position[
-                       tc.ThermostatCommonZone.OFF_MODE])
+        return int(
+            self.get_system_switch_position()
+            == self.system_switch_position[tc.ThermostatCommonZone.OFF_MODE]
+        )
 
     def is_heating(self):
         """Return 1 if heating relay is active, else 0."""
-        return int(self.is_heat_mode() and self.is_power_on() and
-                   self.get_heat_setpoint_raw() > self.get_display_temp())
+        return int(
+            self.is_heat_mode()
+            and self.is_power_on()
+            and self.get_heat_setpoint_raw() > self.get_display_temp()
+        )
 
     def is_cooling(self):
         """Return 1 if cooling relay is active, else 0."""
-        return int(self.is_cool_mode() and self.is_power_on() and
-                   self.get_cool_setpoint_raw() < self.get_display_temp())
+        return int(
+            self.is_cool_mode()
+            and self.is_power_on()
+            and self.get_cool_setpoint_raw() < self.get_display_temp()
+        )
 
     def is_drying(self):
         """Return 1 if drying relay is active, else 0."""
-        return int(self.is_dry_mode() and self.is_power_on() and
-                   self.get_cool_setpoint_raw() < self.get_display_temp())
+        return int(
+            self.is_dry_mode()
+            and self.is_power_on()
+            and self.get_cool_setpoint_raw() < self.get_display_temp()
+        )
 
     def is_auto(self):
         """Return 1 if auto relay is active, else 0."""
-        return int(self.is_auto_mode() and self.is_power_on() and
-                   (self.get_cool_setpoint_raw() < self.get_display_temp() or
-                    self.get_heat_setpoint_raw() > self.get_display_temp()))
+        return int(
+            self.is_auto_mode()
+            and self.is_power_on()
+            and (
+                self.get_cool_setpoint_raw() < self.get_display_temp()
+                or self.get_heat_setpoint_raw() > self.get_display_temp()
+            )
+        )
 
     def is_fanning(self):
         """Return 1 if fan relay is active, else 0."""
@@ -404,17 +433,17 @@ class ThermostatZone(tc.ThermostatCommonZone):
     def is_power_on(self):
         """Return 1 if power relay is active, else 0."""
         self.refresh_zone_info()
-        return int(self.device_id.get_mode() != 'off')
+        return int(self.device_id.get_mode() != "off")
 
     def is_fan_on(self):
         """Return 1 if fan relay is active, else 0."""
         self.refresh_zone_info()
-        return int(self.device_id.get_fan_speed() != 'off')
+        return int(self.device_id.get_fan_speed() != "off")
 
     def is_defrosting(self):
         """Return 1 if defrosting is active, else 0."""
         self.refresh_zone_info()
-        return int(self.device_id.get_status('defrost') == "True")
+        return int(self.device_id.get_status("defrost") == "True")
 
     def is_standby(self):
         """Return 1 if standby is active, else 0."""
@@ -547,21 +576,21 @@ class ThermostatZone(tc.ThermostatCommonZone):
         """
         now_time = time.time()
         # refresh if past expiration date or force_refresh option
-        if (force_refresh or (now_time >=
-                              (self.last_fetch_time +
-                               self.fetch_interval_sec))):
-            self.Thermostat._need_fetch = True \
-                # pylint: disable=protected-access
+        if force_refresh or (
+            now_time >= (self.last_fetch_time + self.fetch_interval_sec)
+        ):
+            self.Thermostat._need_fetch = True  # pylint: disable=protected-access
             try:
-                self.Thermostat._fetch_if_needed() \
-                    # pylint: disable=protected-access
+                self.Thermostat._fetch_if_needed()  # pylint: disable=protected-access
             except UnboundLocalError:  # patch for issue #205
-                util.log_msg("WARNING: Kumocloud refresh failed due to "
-                             "timeout", mode=util.BOTH_LOG, func_name=1)
+                util.log_msg(
+                    "WARNING: Kumocloud refresh failed due to timeout",
+                    mode=util.BOTH_LOG,
+                    func_name=1,
+                )
             self.last_fetch_time = now_time
             # refresh device object
-            self.device_id = \
-                self.Thermostat.get_target_zone_id(self.zone_name)
+            self.device_id = self.Thermostat.get_target_zone_id(self.zone_name)
 
     def report_heating_parameters(self, switch_position=None):
         """
@@ -574,69 +603,62 @@ class ThermostatZone(tc.ThermostatCommonZone):
         """
         # current temp as measured by thermostat
         util.log_msg(
-            f"display temp="
-            f"{util.temp_value_with_units(self.get_display_temp())}",
+            f"display temp=" f"{util.temp_value_with_units(self.get_display_temp())}",
             mode=util.BOTH_LOG,
-            func_name=1)
+            func_name=1,
+        )
 
         # get switch position
         if switch_position is None:
             switch_position = self.get_system_switch_position()
 
         # heating status
-        if switch_position == \
-                self.system_switch_position[self.HEAT_MODE]:
-            util.log_msg(f"heat mode={self.is_heat_mode()}",
-                         mode=util.BOTH_LOG)
+        if switch_position == self.system_switch_position[self.HEAT_MODE]:
+            util.log_msg(f"heat mode={self.is_heat_mode()}", mode=util.BOTH_LOG)
             util.log_msg(
-                f"heat setpoint={self.get_heat_setpoint_raw()}",
-                mode=util.BOTH_LOG)
+                f"heat setpoint={self.get_heat_setpoint_raw()}", mode=util.BOTH_LOG
+            )
             util.log_msg(
-                f"schedule heat sp={self.get_schedule_heat_sp()}",
-                mode=util.BOTH_LOG)
+                f"schedule heat sp={self.get_schedule_heat_sp()}", mode=util.BOTH_LOG
+            )
 
         # cooling status
-        if switch_position == \
-                self.system_switch_position[self.COOL_MODE]:
-            util.log_msg(f"cool mode={self.is_cool_mode()}",
-                         mode=util.BOTH_LOG)
+        if switch_position == self.system_switch_position[self.COOL_MODE]:
+            util.log_msg(f"cool mode={self.is_cool_mode()}", mode=util.BOTH_LOG)
             util.log_msg(
-                f"cool setpoint={self.get_cool_setpoint_raw()}",
-                mode=util.BOTH_LOG)
+                f"cool setpoint={self.get_cool_setpoint_raw()}", mode=util.BOTH_LOG
+            )
             util.log_msg(
-                f"schedule cool sp={self.get_schedule_cool_sp()}",
-                mode=util.BOTH_LOG)
+                f"schedule cool sp={self.get_schedule_cool_sp()}", mode=util.BOTH_LOG
+            )
 
         # hold settings
         util.log_msg(
             f"is in vacation hold mode={self.get_is_invacation_hold_mode()}",
-            mode=util.BOTH_LOG)
-        util.log_msg(f"vacation hold={self.get_vacation_hold()}",
-                     mode=util.BOTH_LOG)
+            mode=util.BOTH_LOG,
+        )
+        util.log_msg(f"vacation hold={self.get_vacation_hold()}", mode=util.BOTH_LOG)
         util.log_msg(
             f"vacation hold until time={self.get_vacation_hold_until_time()}",
-            mode=util.BOTH_LOG)
+            mode=util.BOTH_LOG,
+        )
         util.log_msg(
-            f"temporary hold until time="
-            f"{self.get_temporary_hold_until_time()}",
-            mode=util.BOTH_LOG)
+            f"temporary hold until time=" f"{self.get_temporary_hold_until_time()}",
+            mode=util.BOTH_LOG,
+        )
 
 
 if __name__ == "__main__":
-
     # verify environment
     env.get_python_version()
 
     # get zone override
-    api.uip = api.UserInputs(argv_list=None,
-                             thermostat_type=kumolocal_config.ALIAS)
-    zone_number = api.uip.get_user_inputs(api.uip.zone_name,
-                                          api.input_flds.zone)
+    api.uip = api.UserInputs(argv_list=None, thermostat_type=kumolocal_config.ALIAS)
+    zone_number = api.uip.get_user_inputs(api.uip.zone_name, api.input_flds.zone)
 
     tc.thermostat_basic_checkout(
-        kumolocal_config.ALIAS,
-        zone_number,
-        ThermostatClass, ThermostatZone)
+        kumolocal_config.ALIAS, zone_number, ThermostatClass, ThermostatZone
+    )
 
     tc.print_select_data_from_all_zones(
         kumolocal_config.ALIAS,
@@ -644,4 +666,5 @@ if __name__ == "__main__":
         ThermostatClass,
         ThermostatZone,
         display_wifi=False,
-        display_battery=False)
+        display_battery=False,
+    )

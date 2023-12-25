@@ -23,30 +23,32 @@ from thermostatsupervisor import utilities as util
 
 # enable modes
 ENABLE_FUNCTIONAL_INTEGRATION_TESTS = True  # enable func int tests
-ENABLE_PERFORMANCE_INTEGRATION_TESTS = False and \
-    not env.is_azure_environment()  # enable performance int tests
+ENABLE_PERFORMANCE_INTEGRATION_TESTS = (
+    False and not env.is_azure_environment()
+)  # enable performance int tests
 ENABLE_SUPERVISE_INTEGRATION_TESTS = True  # enable supervise int tests
 ENABLE_FLASK_INTEGRATION_TESTS = True  # enable flask int tests
 ENABLE_KUMOLOCAL_TESTS = False  # Kumolocal is local net only
 ENABLE_MMM_TESTS = False  # mmm50 is local net only
 ENABLE_SHT31_TESTS = True  # sht31 can fail on occasion
-ENABLE_BLINK_TESTS = False and \
-     not env.is_azure_environment()  # Blink cameras, TODO #638
-ENABLE_NEST_TESTS = True and \
-    not env.is_azure_environment()  # nest thermostats
+ENABLE_BLINK_TESTS = (
+    False and not env.is_azure_environment()
+)  # Blink cameras, TODO #638
+ENABLE_NEST_TESTS = True and not env.is_azure_environment()  # nest thermostats
 
 # generic argv list for unit testing
 unit_test_emulator = emulator_config.argv
 
-unit_test_sht31 = ["supervise.py",  # module
-                   "sht31",  # thermostat
-                   ["99", "1"][env.is_azure_environment()],  # zone
-                   "19",  # poll time in sec
-                   "359",  # reconnect time in sec
-                   "3",  # tolerance
-                   "OFF_MODE",  # thermostat mode
-                   "2",  # number of measurements
-                   ]
+unit_test_sht31 = [
+    "supervise.py",  # module
+    "sht31",  # thermostat
+    ["99", "1"][env.is_azure_environment()],  # zone
+    "19",  # poll time in sec
+    "359",  # reconnect time in sec
+    "3",  # tolerance
+    "OFF_MODE",  # thermostat mode
+    "2",  # number of measurements
+]
 
 unit_test_honeywell = honeywell_config.argv
 
@@ -60,7 +62,9 @@ class PatchMeta(type):
     def __init__(cls, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # mock argv to prevent azure runtime args from polluting test.
-        patch.object(*cls.patch_args)(cls)  # noqa e501, pylint:disable=undefined-variable
+        patch.object(*cls.patch_args)(
+            cls
+        )  # noqa e501, pylint:disable=undefined-variable
 
 
 class UnitTest(unittest.TestCase, metaclass=PatchMeta):
@@ -69,7 +73,7 @@ class UnitTest(unittest.TestCase, metaclass=PatchMeta):
     # mock argv to prevent unit test runtime arguments from polluting tests
     # that use argv parameters.  Azure pipelines is susceptible to this issue.
     __metaclass__ = PatchMeta
-    patch_args = (sys, 'argv', [os.path.realpath(__file__)])
+    patch_args = (sys, "argv", [os.path.realpath(__file__)])
 
     mod = None  # imported module
     thermostat_type = None  # thermostat type
@@ -105,15 +109,14 @@ class UnitTest(unittest.TestCase, metaclass=PatchMeta):
         if self.Thermostat is None and self.Zone is None:
             util.log_msg.debug = True  # debug mode set
             thermostat_type = api.uip.get_user_inputs(
-                api.uip.zone_name,
-                api.input_flds.thermostat_type)
-            zone = api.uip.get_user_inputs(api.uip.zone_name,
-                                           api.input_flds.zone)
+                api.uip.zone_name, api.input_flds.thermostat_type
+            )
+            zone = api.uip.get_user_inputs(api.uip.zone_name, api.input_flds.zone)
 
             # create class instances
             self.Thermostat, self.Zone = tc.create_thermostat_instance(
-                thermostat_type, zone, self.mod.ThermostatClass,
-                self.mod.ThermostatZone)
+                thermostat_type, zone, self.mod.ThermostatClass, self.mod.ThermostatZone
+            )
 
         # return instances
         return self.Thermostat, self.Zone
@@ -146,16 +149,15 @@ class UnitTest(unittest.TestCase, metaclass=PatchMeta):
 
     def print_test_result(self):
         """Print unit test result to console."""
-        if hasattr(self._outcome, 'errors'):  # Python 3.4 - 3.10
+        if hasattr(self._outcome, "errors"):  # Python 3.4 - 3.10
             # These two methods have no side effects
             result = self.defaultTestResult()
             self._feedErrorsToResult(result, self._outcome.errors)
-        elif hasattr(self._outcome, 'result'):  # python 3.11
+        elif hasattr(self._outcome, "result"):  # python 3.11
             # These two methods have no side effects
             result = self._outcome.result
         else:  # Python 3.2 - 3.3 or 3.0 - 3.1 and 2.7
-            raise OSError(
-                "this code is designed to work on Python 3.4+")
+            raise OSError("this code is designed to work on Python 3.4+")
             # result = getattr(self, '_outcomeForDoCleanups',
             #                 self._resultForDoCleanups)
         error = self.list2reason(result.errors)
@@ -164,8 +166,8 @@ class UnitTest(unittest.TestCase, metaclass=PatchMeta):
 
         # Demo:   report short info immediately (not important)
         if not result_ok:
-            typ, text = ('ERROR', error) if error else ('FAIL', failure)
-            msg = [x for x in text.split('\n')[1:] if not x.startswith(' ')][0]
+            typ, text = ("ERROR", error) if error else ("FAIL", failure)
+            msg = [x for x in text.split("\n")[1:] if not x.startswith(" ")][0]
             print(f"\n{typ}: {self.id()}\n     {msg}")
 
     def list2reason(self, exc_list):
@@ -226,15 +228,14 @@ class IntegrationTest(UnitTest):
         if self.Thermostat is None and self.Zone is None:
             util.log_msg.debug = True  # debug mode set
             thermostat_type = api.uip.get_user_inputs(
-                api.uip.zone_name,
-                api.input_flds.thermostat_type)
-            zone = api.uip.get_user_inputs(api.uip.zone_name,
-                                           api.input_flds.zone)
+                api.uip.zone_name, api.input_flds.thermostat_type
+            )
+            zone = api.uip.get_user_inputs(api.uip.zone_name, api.input_flds.zone)
 
             # create class instances
             self.Thermostat, self.Zone = tc.create_thermostat_instance(
-                thermostat_type, zone, self.mod.ThermostatClass,
-                self.mod.ThermostatZone)
+                thermostat_type, zone, self.mod.ThermostatClass, self.mod.ThermostatZone
+            )
 
         # update runtime parameters
         self.Zone.update_runtime_parameters()
@@ -243,8 +244,9 @@ class IntegrationTest(UnitTest):
         return self.Thermostat, self.Zone
 
 
-@unittest.skipIf(not ENABLE_FUNCTIONAL_INTEGRATION_TESTS,
-                 "functional integration tests are disabled")
+@unittest.skipIf(
+    not ENABLE_FUNCTIONAL_INTEGRATION_TESTS, "functional integration tests are disabled"
+)
 class FunctionalIntegrationTest(IntegrationTest):
     """Functional integration tests."""
 
@@ -260,14 +262,12 @@ class FunctionalIntegrationTest(IntegrationTest):
         """
         api.uip = api.UserInputs(self.unit_test_argv)
 
-        IntegrationTest.Thermostat, IntegrationTest.Zone = \
-            tc.thermostat_basic_checkout(
-                api.uip.get_user_inputs(api.uip.zone_name,
-                                        api.input_flds.thermostat_type),
-                api.uip.get_user_inputs(api.uip.zone_name,
-                                        api.input_flds.zone),
-                self.mod.ThermostatClass, self.mod.ThermostatZone
-            )
+        IntegrationTest.Thermostat, IntegrationTest.Zone = tc.thermostat_basic_checkout(
+            api.uip.get_user_inputs(api.uip.zone_name, api.input_flds.thermostat_type),
+            api.uip.get_user_inputs(api.uip.zone_name, api.input_flds.zone),
+            self.mod.ThermostatClass,
+            self.mod.ThermostatZone,
+        )
 
     def test_print_select_data_from_all_zones(self):
         """
@@ -275,50 +275,61 @@ class FunctionalIntegrationTest(IntegrationTest):
         """
         api.uip = api.UserInputs(self.unit_test_argv)
 
-        IntegrationTest.Thermostat, IntegrationTest.Zone = \
-            tc.print_select_data_from_all_zones(
-                api.uip.get_user_inputs(
-                    api.uip.zone_name, api.input_flds.thermostat_type),
-                self.mod_config.get_available_zones(),
-                self.mod.ThermostatClass, self.mod.ThermostatZone,
-                display_wifi=True, display_battery=True
-            )
+        (
+            IntegrationTest.Thermostat,
+            IntegrationTest.Zone,
+        ) = tc.print_select_data_from_all_zones(
+            api.uip.get_user_inputs(api.uip.zone_name, api.input_flds.thermostat_type),
+            self.mod_config.get_available_zones(),
+            self.mod.ThermostatClass,
+            self.mod.ThermostatZone,
+            display_wifi=True,
+            display_battery=True,
+        )
 
     def test_get_wifi_status_display(self):
         """
         Verify get_wifi_status_display on target thermostat.
         """
-        test_cases = [(True, "ok"),
-                      (False, "weak"),
-                      (None, "unknown"),
-                      (util.BOGUS_BOOL, "weak"),  # same as False
-                      ("bad string", "unknown"),
-                      ]
+        test_cases = [
+            (True, "ok"),
+            (False, "weak"),
+            (None, "unknown"),
+            (util.BOGUS_BOOL, "weak"),  # same as False
+            ("bad string", "unknown"),
+        ]
 
         for test_case in test_cases:
             print(f"test case={test_case}")
             result = tc.get_wifi_status_display(test_case[0])
-            self.assertEqual(result, test_case[1],
-                             f"test case={test_case[0]}, "
-                             f"expected={test_case[1]}, actual={result}")
+            self.assertEqual(
+                result,
+                test_case[1],
+                f"test case={test_case[0]}, "
+                f"expected={test_case[1]}, actual={result}",
+            )
 
     def test_get_battery_status_display(self):
         """
         Verify get_battery_status_display on target thermostat.
         """
-        test_cases = [(True, "ok"),
-                      (False, "bad"),
-                      (None, "unknown"),
-                      (util.BOGUS_BOOL, "bad"),  # same as False
-                      ("bad string", "unknown"),
-                      ]
+        test_cases = [
+            (True, "ok"),
+            (False, "bad"),
+            (None, "unknown"),
+            (util.BOGUS_BOOL, "bad"),  # same as False
+            ("bad string", "unknown"),
+        ]
 
         for test_case in test_cases:
             print(f"test case={test_case}")
             result = tc.get_battery_status_display(test_case[0])
-            self.assertEqual(result, test_case[1],
-                             f"test case={test_case[0]}, "
-                             f"expected={test_case[1]}, actual={result}")
+            self.assertEqual(
+                result,
+                test_case[1],
+                f"test case={test_case[0]}, "
+                f"expected={test_case[1]}, actual={result}",
+            )
 
     def test_report_heating_parameters(self):
         """
@@ -330,11 +341,14 @@ class FunctionalIntegrationTest(IntegrationTest):
         for test_case in self.mod_config.supported_configs["modes"]:
             print("-" * 80)
             print(f"test_case='{test_case}'")
-            with patch.object(self.Zone, "get_system_switch_position",  # noqa e501, pylint:disable=undefined-variable
-                              return_value=self.Zone.system_switch_position[
-                                  test_case]):
+            with patch.object(
+                self.Zone,
+                "get_system_switch_position",  # noqa e501, pylint:disable=undefined-variable
+                return_value=self.Zone.system_switch_position[test_case],
+            ):
                 self.Zone.report_heating_parameters(
-                    self.Zone.system_switch_position[test_case])
+                    self.Zone.system_switch_position[test_case]
+                )
             print("-" * 80)
 
     def test_get_all_meta_data(self):
@@ -345,14 +359,12 @@ class FunctionalIntegrationTest(IntegrationTest):
         self.Thermostat, self.Zone = self.setup_thermostat_zone()
 
         expected_return_type = dict
-        metadata = self.Thermostat.get_all_metadata(
-            zone=self.Thermostat.zone_name)
+        metadata = self.Thermostat.get_all_metadata(zone=self.Thermostat.zone_name)
         self.assertTrue(
-            isinstance(
-                metadata,
-                expected_return_type),
+            isinstance(metadata, expected_return_type),
             f"metadata is type '{type(metadata)}', "
-            f"expected type '{expected_return_type}'")
+            f"expected type '{expected_return_type}'",
+        )
 
     def test_get_meta_data(self):
         """
@@ -366,34 +378,31 @@ class FunctionalIntegrationTest(IntegrationTest):
         parameter = None
         expected_return_type = dict
         metadata = self.Thermostat.get_metadata(
-            zone=self.Thermostat.zone_name,
-            trait=trait,
-            parameter=parameter)
+            zone=self.Thermostat.zone_name, trait=trait, parameter=parameter
+        )
         self.assertTrue(
-            isinstance(
-                metadata,
-                expected_return_type),
+            isinstance(metadata, expected_return_type),
             f"parameter='{parameter}', metadata is type '{type(metadata)}', "
-            f"expected type '{expected_return_type}'")
+            f"expected type '{expected_return_type}'",
+        )
 
         # test parameter case
         trait = self.trait_field
         parameter = self.metadata_field
         expected_return_type = self.metadata_type
         metadata = self.Thermostat.get_metadata(
-            zone=self.Thermostat.zone_name,
-            trait=trait,
-            parameter=parameter)
+            zone=self.Thermostat.zone_name, trait=trait, parameter=parameter
+        )
         self.assertTrue(
-            isinstance(
-                metadata,
-                expected_return_type),
+            isinstance(metadata, expected_return_type),
             f"parameter='{parameter}', value={metadata}, metadata is type "
-            f"'{type(metadata)}', expected type '{expected_return_type}'")
+            f"'{type(metadata)}', expected type '{expected_return_type}'",
+        )
 
 
-@unittest.skipIf(not ENABLE_SUPERVISE_INTEGRATION_TESTS,
-                 "supervise integration test is disabled")
+@unittest.skipIf(
+    not ENABLE_SUPERVISE_INTEGRATION_TESTS, "supervise integration test is disabled"
+)
 class SuperviseIntegrationTest(IntegrationTest):
     """Supervise integration tests common to all thermostat types."""
 
@@ -404,14 +413,14 @@ class SuperviseIntegrationTest(IntegrationTest):
         # setup class instances
         self.Thermostat, self.Zone = self.setup_thermostat_zone()
 
-        return_status = sup.exec_supervise(
-            debug=True, argv_list=self.unit_test_argv)
-        self.assertTrue(return_status,
-                        f"return status={return_status}, expected True")
+        return_status = sup.exec_supervise(debug=True, argv_list=self.unit_test_argv)
+        self.assertTrue(return_status, f"return status={return_status}, expected True")
 
 
-@unittest.skipIf(not ENABLE_PERFORMANCE_INTEGRATION_TESTS,
-                 "performance integration tests are disabled")
+@unittest.skipIf(
+    not ENABLE_PERFORMANCE_INTEGRATION_TESTS,
+    "performance integration tests are disabled",
+)
 class PerformanceIntegrationTest(IntegrationTest):
     """Performance integration tests common to all thermostat types."""
 
@@ -424,26 +433,29 @@ class PerformanceIntegrationTest(IntegrationTest):
 
         # measure thermostat response time
         measurements = self.timing_measurements
-        print(f"{self.Zone.thermostat_type} Thermostat zone "
-              f"{self.Zone.zone_name} response times for {measurements} "
-              f"measurements...")
-        meas_data = \
-            self.Zone.measure_thermostat_response_time(measurements)
+        print(
+            f"{self.Zone.thermostat_type} Thermostat zone "
+            f"{self.Zone.zone_name} response times for {measurements} "
+            f"measurements..."
+        )
+        meas_data = self.Zone.measure_thermostat_response_time(measurements)
         print("network timing stats (sec)")
         ppp = pprint.PrettyPrinter(indent=4)
         ppp.pprint(meas_data)
 
         # fail test if any measurement fails the limit.
         self.assertTrue(
-            meas_data['max'] <= self.timeout_limit,
+            meas_data["max"] <= self.timeout_limit,
             f"max value observed ({meas_data['max']}) is greater than timout"
-            f" setting ({self.timeout_limit})")
+            f" setting ({self.timeout_limit})",
+        )
 
         # fail test if thermostat timing margin is poor vs. 6 sigma value
         self.assertTrue(
-            meas_data['6sigma_upper'] <= self.timeout_limit,
+            meas_data["6sigma_upper"] <= self.timeout_limit,
             f"6 sigma timing margin ({meas_data['6sigma_upper']}) is greater "
-            f"than timout setting ({self.timeout_limit})")
+            f"than timout setting ({self.timeout_limit})",
+        )
 
     def test_temperature_repeatability(self):
         """
@@ -454,22 +466,26 @@ class PerformanceIntegrationTest(IntegrationTest):
 
         # measure thermostat temp repeatability
         measurements = self.temp_repeatability_measurements
-        print(f"{self.Zone.thermostat_type} Thermostat zone "
-              f"{self.Zone.zone_name} temperature repeatability for "
-              f"{measurements} measurements with {self.poll_interval_sec} "
-              f"sec delay between each measurement...")
+        print(
+            f"{self.Zone.thermostat_type} Thermostat zone "
+            f"{self.Zone.zone_name} temperature repeatability for "
+            f"{measurements} measurements with {self.poll_interval_sec} "
+            f"sec delay between each measurement..."
+        )
         meas_data = self.Zone.measure_thermostat_repeatability(
-            measurements, self.poll_interval_sec)
+            measurements, self.poll_interval_sec
+        )
         print("temperature repeatability stats (°F)")
         ppp = pprint.PrettyPrinter(indent=4)
         ppp.pprint(meas_data)
 
         # fail test if thermostat temp repeatability is poor
-        act_val = meas_data['stdev']
+        act_val = meas_data["stdev"]
         self.assertTrue(
             act_val <= self.temp_stdev_limit,
             f"temperature stdev ({act_val}) is greater than temp repeatability"
-            f" limit ({self.temp_stdev_limit})")
+            f" limit ({self.temp_stdev_limit})",
+        )
 
     def test_humidity_repeatability(self):
         """
@@ -485,23 +501,26 @@ class PerformanceIntegrationTest(IntegrationTest):
 
         # measure thermostat humidity repeatability
         measurements = self.temp_repeatability_measurements
-        print(f"{self.Zone.thermostat_type} Thermostat zone "
-              f"{self.Zone.zone_name} humidity repeatability for "
-              f"{measurements} measurements with {self.poll_interval_sec} "
-              f"sec delay betweeen each measurement...")
+        print(
+            f"{self.Zone.thermostat_type} Thermostat zone "
+            f"{self.Zone.zone_name} humidity repeatability for "
+            f"{measurements} measurements with {self.poll_interval_sec} "
+            f"sec delay betweeen each measurement..."
+        )
         meas_data = self.Zone.measure_thermostat_repeatability(
-            measurements, self.poll_interval_sec,
-            self.Zone.get_display_humidity)
+            measurements, self.poll_interval_sec, self.Zone.get_display_humidity
+        )
         print("humidity repeatability stats (%RH)")
         ppp = pprint.PrettyPrinter(indent=4)
         ppp.pprint(meas_data)
 
         # fail test if thermostat humidity repeatability is poor
-        act_val = meas_data['stdev']
+        act_val = meas_data["stdev"]
         self.assertTrue(
             act_val <= self.humidity_stdev_limit,
             f"humidity stdev ({act_val}) is greater than humidity "
-            f"repeatability limit ({self.humidity_stdev_limit})")
+            f"repeatability limit ({self.humidity_stdev_limit})",
+        )
 
 
 class RuntimeParameterTest(UnitTest):
@@ -537,8 +556,7 @@ class RuntimeParameterTest(UnitTest):
         expected_values[parent_key] = {}
         # element 0 (script) is omitted from expected_values dict.
         for x in range(1, len(self.test_fields)):
-            expected_values[parent_key][
-                self.test_fields[x][1]] = self.test_fields[x][0]
+            expected_values[parent_key][self.test_fields[x][1]] = self.test_fields[x][0]
         return expected_values
 
     def get_named_list(self, test_fields, flag):
@@ -557,10 +575,13 @@ class RuntimeParameterTest(UnitTest):
 
         # element 0 (script) is omitted from expected_values dict.
         for field in range(1, len(test_fields)):
-            test_list_named_flag.append(self.uip.get_user_inputs(
-                list(self.uip.user_inputs.keys())[0],
-                test_fields[field][1], flag) + "=" +
-                str(test_fields[field][0]))
+            test_list_named_flag.append(
+                self.uip.get_user_inputs(
+                    list(self.uip.user_inputs.keys())[0], test_fields[field][1], flag
+                )
+                + "="
+                + str(test_fields[field][0])
+            )
         return test_list_named_flag
 
     def parse_user_inputs_dict(self, key):
@@ -575,9 +596,11 @@ class RuntimeParameterTest(UnitTest):
         """
         actual_values = []
         for x in range(0, len(self.test_fields)):
-            actual_values.append(self.uip.get_user_inputs(
-                list(self.uip.user_inputs.keys())[0],
-                key, self.test_fields[x][1]))
+            actual_values.append(
+                self.uip.get_user_inputs(
+                    list(self.uip.user_inputs.keys())[0], key, self.test_fields[x][1]
+                )
+            )
         return actual_values
 
     def setUp(self):
@@ -609,14 +632,14 @@ class RuntimeParameterTest(UnitTest):
                     f" {expected_values[parent_key][c_key]} != "
                     f"actual("
                     f"{type(self.uip.get_user_inputs(parent_key, c_key))})"
-                    f" {self.uip.get_user_inputs(parent_key, c_key)}")
+                    f" {self.uip.get_user_inputs(parent_key, c_key)}",
+                )
 
     def initialize_user_inputs(self):
         """
         Re-initialize user_inputs dict.
         """
-        print(f"{util.get_function_name()}:initializing user_inputs with "
-              "defaults...")
+        print(f"{util.get_function_name()}:initializing user_inputs with defaults...")
         self.uip = self.mod.UserInputs(suppress_warnings=True)
         print(f"{util.get_function_name()}:user_inputs have been initialized.")
         self.uip.suppress_warnings = False  # reset back to default
@@ -640,12 +663,12 @@ class RuntimeParameterTest(UnitTest):
         Generic test for argparser.
         """
         parser = argparse.ArgumentParser()
-        parser.add_argument('-a', type=int)
+        parser.add_argument("-a", type=int)
         # argv = '-a 1'.split()  # or ['-a','1','foo']
         # argv = ["-a 1", "--b 2"]  # double dash doesn't work yet.
         argv = ["-a=1"]
         args = parser.parse_args(argv)
-        assert (args.a == 1)
+        assert args.a == 1
         # assert(args.b == 2)
 
     def test_parser_input_file(self):
@@ -654,14 +677,12 @@ class RuntimeParameterTest(UnitTest):
         """
         input_file = unit_test_argv_file
         parser = argparse.ArgumentParser()
-        parser.add_argument('-f',
-                            type=argparse.FileType('r',
-                                                   encoding='UTF-8')
-                            )
+        parser.add_argument("-f", type=argparse.FileType("r", encoding="UTF-8"))
         argv = ["-f" + input_file]  # space after sflag is appended onto str
         args = parser.parse_args(argv)
-        print("args returned: %s" %
-              (' '.join(f'{k}={v}' for k, v in vars(args).items())))
+        print(
+            "args returned: %s" % (" ".join(f"{k}={v}" for k, v in vars(args).items()))
+        )
         # assert(args.thermostat_type == "emulator")
 
     def is_valid_file(self, parser, arg):
@@ -677,7 +698,7 @@ class RuntimeParameterTest(UnitTest):
         if not os.path.exists(arg):
             parser.error(f"The file {os.path.abspath(arg)} does not exist!")
         else:
-            return open(arg, 'rt', encoding="utf8")  # return a file handle
+            return open(arg, "rt", encoding="utf8")  # return a file handle
 
     def test_parse_named_arguments_sflag(self):
         """
@@ -696,7 +717,8 @@ class RuntimeParameterTest(UnitTest):
         # override parent key since list input is provided.
         print("parsing named argument list")
         self.uip = self.mod.UserInputs(
-            named_sflag_list, "unittest parsing named sflag arguments")
+            named_sflag_list, "unittest parsing named sflag arguments"
+        )
         print(f"in test default parent key={self.uip.default_parent_key}")
         self.verify_parsed_values(self.uip.default_parent_key)
 
@@ -718,7 +740,8 @@ class RuntimeParameterTest(UnitTest):
         # parse named sflag list
         # override parent key since list input is provided.
         self.uip = self.mod.UserInputs(
-            named_lflag_list, "unittest parsing named sflag arguments")
+            named_lflag_list, "unittest parsing named sflag arguments"
+        )
         self.verify_parsed_values(util.default_parent_key)
 
     def parse_named_arguments(self, test_list, label_str):
@@ -748,8 +771,7 @@ class RuntimeParameterTest(UnitTest):
         if self.test_fields_with_file is not None:
             self.parse_runtime_parameters(self.test_fields_with_file)
         else:
-            print("self.test_list_file has not been setup yet, "
-                  "skipping this test.")
+            print("self.test_list_file has not been setup yet, skipping this test.")
 
     def parse_runtime_parameters(self, test_fields):
         """
@@ -775,25 +797,29 @@ class RuntimeParameterTest(UnitTest):
         self.initialize_user_inputs()
         test_list = self.get_test_list(test_fields)
         print(f"test2 test_list={test_list}")
-        self.uip.parse_runtime_parameters(
-            argv_list=test_list)
+        self.uip.parse_runtime_parameters(argv_list=test_list)
         self.verify_parsed_values(self.uip.default_parent_key)
 
         print("test 3, input named parameter list, will parse list")
         self.initialize_user_inputs()
         self.uip.parse_runtime_parameters(
-            argv_list=self.get_named_list(test_fields, "sflag"))
+            argv_list=self.get_named_list(test_fields, "sflag")
+        )
         self.verify_parsed_values(self.uip.default_parent_key)
 
         print("test 4, input dict, will parse sys.argv argument list")
         self.initialize_user_inputs()
-        with patch.object(sys, 'argv', self.get_test_list(test_fields)):  # noqa e501, pylint:disable=undefined-variable
+        with patch.object(
+            sys, "argv", self.get_test_list(test_fields)
+        ):  # noqa e501, pylint:disable=undefined-variable
             self.uip.parse_runtime_parameters(argv_list=None)
         self.verify_parsed_values(self.uip.default_parent_key)
 
         print("test 5, input dict, will parse sys.argv named args")
         self.initialize_user_inputs()
-        with patch.object(sys, 'argv', self.get_named_list(test_fields, "sflag")):  # noqa e501, pylint:disable=undefined-variable
+        with patch.object(
+            sys, "argv", self.get_named_list(test_fields, "sflag")
+        ):  # noqa e501, pylint:disable=undefined-variable
             self.uip.parse_runtime_parameters()
         self.verify_parsed_values(self.uip.default_parent_key)
 
@@ -809,7 +835,7 @@ class RuntimeParameterTest(UnitTest):
                 "valid_range": range(0, 4),
                 "expected_value": 1,
                 "required": False,
-                },
+            },
             "fail_datatype_error": {
                 "value": "5",
                 "type": int,
@@ -817,7 +843,7 @@ class RuntimeParameterTest(UnitTest):
                 "valid_range": range(0, 10),
                 "expected_value": 2,
                 "required": False,
-                },
+            },
             "TypeError_bool": {
                 "value": True,
                 "type": bool,
@@ -825,7 +851,7 @@ class RuntimeParameterTest(UnitTest):
                 "valid_range": [0, 1, False, True],
                 "expected_value": True,
                 "required": False,
-                },
+            },
             "fail_out_of_range_int": {
                 "value": 6,
                 "type": int,
@@ -833,7 +859,7 @@ class RuntimeParameterTest(UnitTest):
                 "valid_range": range(0, 3),
                 "expected_value": 3,
                 "required": False,
-                },
+            },
             "fail_out_of_range_str": {
                 "value": "6",
                 "type": str,
@@ -841,7 +867,7 @@ class RuntimeParameterTest(UnitTest):
                 "valid_range": ["a", "b"],
                 "expected_value": "4",
                 "required": False,
-                },
+            },
             "in_range_int": {
                 "value": 7,
                 "type": int,
@@ -849,7 +875,7 @@ class RuntimeParameterTest(UnitTest):
                 "valid_range": range(0, 10),
                 "expected_value": 7,
                 "required": False,
-                },
+            },
             "in_range_str": {
                 "value": "8",
                 "type": str,
@@ -857,8 +883,8 @@ class RuntimeParameterTest(UnitTest):
                 "valid_range": ["a", "8", "abc"],
                 "expected_value": "8",
                 "required": False,
-                },
-            }
+            },
+        }
 
         child_key = "test_case"
         for test_case, test_dict in test_cases.items():
@@ -866,24 +892,28 @@ class RuntimeParameterTest(UnitTest):
             if "TypeError" in test_case:
                 with self.assertRaises(TypeError):
                     result_dict = self.uip.validate_argv_inputs(
-                        {self.parent_key: {
-                         child_key: test_dict}})
+                        {self.parent_key: {child_key: test_dict}}
+                    )
             else:
-                result_dict = self.uip.validate_argv_inputs({self.parent_key: {
-                    child_key: test_dict}})
+                result_dict = self.uip.validate_argv_inputs(
+                    {self.parent_key: {child_key: test_dict}}
+                )
                 actual_value = result_dict[self.parent_key][child_key]["value"]
 
                 if "fail_" in test_case:
-                    expected_value = result_dict[self.parent_key][child_key][
-                        "default"]
+                    expected_value = result_dict[self.parent_key][child_key]["default"]
                 else:
-                    expected_value = (result_dict[self.parent_key][child_key]
-                                      ["expected_value"])
+                    expected_value = result_dict[self.parent_key][child_key][
+                        "expected_value"
+                    ]
 
-                self.assertEqual(expected_value, actual_value,
-                                 f"test case ({test_case}), "
-                                 f"expected={expected_value}, "
-                                 f"actual={actual_value}")
+                self.assertEqual(
+                    expected_value,
+                    actual_value,
+                    f"test case ({test_case}), "
+                    f"expected={expected_value}, "
+                    f"actual={actual_value}",
+                )
 
 
 # user input fields
@@ -899,8 +929,7 @@ uip = {}
 class UserInputs(util.UserInputs):
     """Manage runtime arguments for generic unit testing."""
 
-    def __init__(self, argv_list=None, help_description=None,
-                 suppress_warnings=False):
+    def __init__(self, argv_list=None, help_description=None, suppress_warnings=False):
         """
         UserInputs constructor for generic unit testing.
 
@@ -922,77 +951,80 @@ class UserInputs(util.UserInputs):
         Populate user_inputs dict.
         """
         # define the user_inputs dict.
-        self.user_inputs = {self.user_inputs_parent: {
-            BOOL_FLD: {
-                "order": 1,  # index in the argv list
-                "value": None,
-                "type": lambda x: bool(str2bool(
-                    str(x).strip())),
-                "default": False,
-                "valid_range": [True, False, 1, 0],
-                "sflag": "-b",
-                "lflag": "--" + BOOL_FLD,
-                "help": "bool input parameter",
-                "required": False,
+        self.user_inputs = {
+            self.user_inputs_parent: {
+                BOOL_FLD: {
+                    "order": 1,  # index in the argv list
+                    "value": None,
+                    "type": lambda x: bool(str2bool(str(x).strip())),
+                    "default": False,
+                    "valid_range": [True, False, 1, 0],
+                    "sflag": "-b",
+                    "lflag": "--" + BOOL_FLD,
+                    "help": "bool input parameter",
+                    "required": False,
                 },
-            INT_FLD: {
-                "order": 2,  # index in the argv list
-                "value": None,
-                "type": int,
-                "default": 49,
-                "valid_range": range(0, 99),
-                "sflag": "-i",
-                "lflag": "--" + INT_FLD,
-                "help": "int input parameter",
-                "required": False,
+                INT_FLD: {
+                    "order": 2,  # index in the argv list
+                    "value": None,
+                    "type": int,
+                    "default": 49,
+                    "valid_range": range(0, 99),
+                    "sflag": "-i",
+                    "lflag": "--" + INT_FLD,
+                    "help": "int input parameter",
+                    "required": False,
                 },
-            FLOAT_FLD: {
-                "order": 3,  # index in the argv list
-                "value": None,
-                "type": float,
-                "default": 59.0,
-                "valid_range": None,
-                "sflag": "-l",
-                "lflag": "--" + FLOAT_FLD,
-                "help": "float input parameter",
-                "required": False,
+                FLOAT_FLD: {
+                    "order": 3,  # index in the argv list
+                    "value": None,
+                    "type": float,
+                    "default": 59.0,
+                    "valid_range": None,
+                    "sflag": "-l",
+                    "lflag": "--" + FLOAT_FLD,
+                    "help": "float input parameter",
+                    "required": False,
                 },
-            STR_FLD: {
-                "order": 4,  # index in the argv list
-                "value": None,
-                "type": str,
-                "default": "this is a string",
-                "valid_range": None,
-                "sflag": "-s",
-                "lflag": "--" + STR_FLD,
-                "help": "str input parameter",
-                "required": False,
+                STR_FLD: {
+                    "order": 4,  # index in the argv list
+                    "value": None,
+                    "type": str,
+                    "default": "this is a string",
+                    "valid_range": None,
+                    "sflag": "-s",
+                    "lflag": "--" + STR_FLD,
+                    "help": "str input parameter",
+                    "required": False,
                 },
-            REQUIRED_FLD: {
-                "order": 5,  # index in the argv list
-                "value": "required",
-                "type": str,
-                "default": "this is a required string",
-                "valid_range": None,
-                "sflag": "-r",
-                "lflag": "--" + REQUIRED_FLD,
-                "help": "required input parameter",
-                "required": True,
+                REQUIRED_FLD: {
+                    "order": 5,  # index in the argv list
+                    "value": "required",
+                    "type": str,
+                    "default": "this is a required string",
+                    "valid_range": None,
+                    "sflag": "-r",
+                    "lflag": "--" + REQUIRED_FLD,
+                    "help": "required input parameter",
+                    "required": True,
                 },
-            INPUT_FILE_FLD: {
-                "order": 6,  # index in the argv list
-                "value": unit_test_argv_file,
-                "type": str,
-                "default": "this is an input file",
-                "valid_range": None,
-                "sflag": "-f",
-                "lflag": "--" + INPUT_FILE_FLD,
-                "help": "input file parameter",
-                "required": False,
+                INPUT_FILE_FLD: {
+                    "order": 6,  # index in the argv list
+                    "value": unit_test_argv_file,
+                    "type": str,
+                    "default": "this is an input file",
+                    "valid_range": None,
+                    "sflag": "-f",
+                    "lflag": "--" + INPUT_FILE_FLD,
+                    "help": "input file parameter",
+                    "required": False,
                 },
-        }}
-        self.valid_sflags = [self.user_inputs[self.user_inputs_parent][k][
-            "sflag"] for k in self.user_inputs[self.user_inputs_parent]]
+            }
+        }
+        self.valid_sflags = [
+            self.user_inputs[self.user_inputs_parent][k]["sflag"]
+            for k in self.user_inputs[self.user_inputs_parent]
+        ]
 
 
 def run_all_tests():
@@ -1001,7 +1033,7 @@ def run_all_tests():
     """
     # discover all unit test files in current directory
     print("discovering tests...")
-    suite = unittest.TestLoader().discover('.', pattern="test_*.py")
+    suite = unittest.TestLoader().discover(".", pattern="test_*.py")
 
     # run all unit tests
     result = unittest.TextTestRunner(verbosity=2).run(suite)
@@ -1044,8 +1076,7 @@ def parse_unit_test_runtime_parameters():
     return enable_flag
 
 
-def mock_exception(exception_type,
-                   exception_args):
+def mock_exception(exception_type, exception_args):
     """
     Mock an exception.
 
@@ -1067,9 +1098,7 @@ def omit_env_vars(target_list):
     returns;
         (dict): env var dict.
     """
-    modified_environ = {
-        k: v for k, v in os.environ.items() if k not in target_list
-    }
+    modified_environ = {k: v for k, v in os.environ.items() if k not in target_list}
     return modified_environ
 
 
@@ -1077,8 +1106,10 @@ if __name__ == "__main__":
     parse_unit_test_runtime_parameters()
     print(
         f"DEBUG: ENABLE_FUNCTIONAL_INTEGRATION_TESTS="
-        f"{ENABLE_FUNCTIONAL_INTEGRATION_TESTS}")
+        f"{ENABLE_FUNCTIONAL_INTEGRATION_TESTS}"
+    )
     print(
         f"DEBUG: ENABLE_PERFORMANCE_INTEGRATION_TESTS="
-        f"{ENABLE_PERFORMANCE_INTEGRATION_TESTS}")
+        f"{ENABLE_PERFORMANCE_INTEGRATION_TESTS}"
+    )
     run_all_tests()
