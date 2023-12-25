@@ -132,11 +132,11 @@ def send_email_alert(
         smtplib.SMTPAuthenticationError,
         smtplib.SMTPNotSupportedError,
         smtplib.SMTPException,
-    ):
+    ) as ex:
         util.log_msg(traceback.format_exc(), mode=util.BOTH_LOG, func_name=1)
         util.log_msg(
-            f"exception during email account authorization for "
-            f"account {from_address}",
+            "exception during email account authorization for "
+            f"account {from_address}: {str(ex)}",
             mode=util.BOTH_LOG,
             func_name=1,
         )
@@ -155,8 +155,9 @@ def send_email_alert(
         smtplib.SMTPSenderRefused,
         smtplib.SMTPDataError,
         smtplib.SMTPNotSupportedError,
-    ):
-        util.log_msg("exception during mail send", mode=util.BOTH_LOG, func_name=1)
+    ) as ex:
+        util.log_msg(f"exception during mail send: {str(ex)}",
+                     mode=util.BOTH_LOG, func_name=1)
         server.close()
         return (util.EMAIL_SEND_ERROR, return_status_msg_dict[status])
     server.close()

@@ -48,7 +48,7 @@ class Test(utc.UnitTest):
         # send message with no inputs, UTIL.NO_ERROR expected
         body = "this is a test of the email notification alert."
         return_status, return_status_msg = eml.send_email_alert(
-            subject="test email alert", body=body
+            subject="test email alert (no inputs)", body=body
         )
 
         fail_msg = (
@@ -129,7 +129,11 @@ class Test(utc.UnitTest):
                 self.assertEqual(return_status, util.ENVIRONMENT_ERROR, fail_msg)
 
     def test_send_email_alert_smtp_exceptions(self):
-        """Test send_email_alerts() functionality with mocked exceptions."""
+        """
+        Test send_email_alerts() functionality with mocked exceptions.
+
+        Mail will not be sent due to exception.  Code will continue.
+        """
         bogus_exception_code = 99
         bogus_sender = "bogus sender"
         sendmail_exceptions = [
@@ -145,18 +149,20 @@ class Test(utc.UnitTest):
         for exception, exception_args in sendmail_exceptions:
             print(f"testing mocked '{str(exception)} exception...")
             # mock the exception case
-            side_effect = lambda *_, **__: utc.mock_exception(
+            side_effect = lambda *_, **__: utc.mock_exception(  # noqa E731, C3001
                 exception, exception_args
-            )  # noqa E731
+            )  # noqa E731, C3001
             with mock.patch.object(
                 smtplib.SMTP_SSL,
                 "sendmail",  # noqa e501, pylint:disable=undefined-variable
                 side_effect=side_effect,
             ):
                 # send message with no inputs, UTIL.NO_ERROR expected
-                body = "this is a test of the email notification alert."
+                body = ("this is a test of the email notification alert for exception "
+                        f"type {str(exception)}.")
                 return_status, return_status_msg = eml.send_email_alert(
-                    subject="test email alert", body=body
+                    subject=f"test email alert (mocked {str(exception)} exception)",
+                    body=body,
                 )
 
             fail_msg = (
