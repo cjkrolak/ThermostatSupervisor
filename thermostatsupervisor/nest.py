@@ -6,6 +6,7 @@ github ref: https://github.com/axlan/python-nest/
 """
 # built-in libraries
 import json
+import os
 import time
 
 # thrid party libaries
@@ -49,16 +50,28 @@ class ThermostatClass(tc.ThermostatCommon):
         self.thermostat_type = nest_config.ALIAS
         self.verbose = verbose
 
-        # get credentials from file
-        self.google_app_credential_file = ".//credentials.json"
+        # gcloud token cache
         self.access_token_cache_file = ".//token_cache.json"
         self.cache_period = 60
-        with open(self.google_app_credential_file, encoding="utf8") as json_file:
-            data = json.load(json_file)
-            # print(f"DEBUG: credential file contents = {data}")
-            self.client_id = data["web"]["client_id"]
-            self.client_secret = data["web"]["client_secret"]
-            self.project_id = data["web"]["project_id"]
+
+        # get credentials from env vars
+        self.client_id = os.environ.get("GCLOUD_CLIENT_ID")
+        self.client_secret = os.environ.get("GCLOUD_CLIENT_SECRET")
+        self.project_id = os.environ.get("DAC_PROJECT_ID")
+        self.credentials_from_env = (self.client_id and self.client_secret
+                                     and self.project_id)
+
+        if nest_config.use_credentials_file or not self.credentials_from_env:
+            # get credentials from file
+            self.google_app_credential_file = ".//credentials.json"
+            print("retreiving Google Nest credientials from "
+                  f"{self.google_app_credential_file}...")
+            with open(self.google_app_credential_file, encoding="utf8") as json_file:
+                data = json.load(json_file)
+                self.client_id = data["web"]["client_id"]
+                self.client_secret = data["web"]["client_secret"]
+                # project_id is the project id UUID
+                self.project_id = data["web"]["dac_project_id"]
 
         # establish thermostat object
         self.thermostat_obj = nest.Nest(
@@ -154,7 +167,6 @@ class ThermostatClass(tc.ThermostatCommon):
                 f"type {type(zone)} not supported for zone input"
                 "parmaeter in get_metadata function"
             )
-        print(f"DEBUG: zone={zone}, zone_number={zone_num}")
 
         meta_data = self.devices[zone_num].traits
         # return all meta data for zone
