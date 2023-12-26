@@ -792,47 +792,6 @@ class ThermostatCommonZone:
 
         return target_mode
 
-    def measure_thermostat_response_time(self, measurements=30, func=None):
-        """
-        Measure Thermostat response time and report statistics.
-
-        inputs:
-            measurements(int): number of measurements
-            func(obj): target function to run during timing measurement.
-        returns:
-            (dict): measurement statistics.
-        """
-        delta_lst = []
-        stats = {}
-        # set default measurement method if not provided.
-        if func is None:
-            func = self.get_display_temp
-
-        # measurement loop
-        for measurement in range(measurements):
-            time0 = time.time()
-            func()  # target command
-            time1 = time.time()
-
-            # accumulate stats
-            tdelta = time1 - time0
-            delta_lst.append(tdelta)
-            util.log_msg(
-                f"measurement {measurement}={tdelta:.2f} seconds",
-                mode=util.BOTH_LOG,
-                func_name=1,
-            )
-
-        # calc stats
-        stats["measurements"] = measurements
-        stats["mean"] = round(statistics.mean(delta_lst), 2)
-        stats["stdev"] = round(statistics.stdev(delta_lst), 2)
-        stats["min"] = round(min(delta_lst), 2)
-        stats["max"] = round(max(delta_lst), 2)
-        stats["3sigma_upper"] = round((3.0 * stats["stdev"] + stats["mean"]), 2)
-        stats["6sigma_upper"] = round((6.0 * stats["stdev"] + stats["mean"]), 2)
-        return stats
-
     def measure_thermostat_repeatability(
         self, measurements=30, poll_interval_sec=0, func=None
     ):
@@ -851,6 +810,15 @@ class ThermostatCommonZone:
         # set default measurement method if not provided.
         if func is None:
             func = self.get_display_temp
+
+        # title message
+        if poll_interval_sec > 0.0:
+            delay_msg = f" with {poll_interval_sec} sec. delay between measurements"
+        else:
+            delay_msg = ""
+        print(
+            f"\nThermostat response times for {measurements} measurements{delay_msg}..."
+        )
 
         # measurement loop
         for measurement in range(measurements):

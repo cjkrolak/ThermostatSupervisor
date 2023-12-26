@@ -949,8 +949,7 @@ if __name__ == "__main__":
 
     # measure thermostat response time
     MEASUREMENTS = 30
-    print(f"\nThermostat response times for {MEASUREMENTS} measurements...")
-    meas_data = Zone.measure_thermostat_response_time(
+    meas_data = Zone.measure_thermostat_repeatability(
         MEASUREMENTS, func=Zone.pyhtcc.get_zones_info
     )
     ppp = pprint.PrettyPrinter(indent=4)

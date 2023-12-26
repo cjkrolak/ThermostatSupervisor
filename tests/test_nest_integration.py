@@ -76,6 +76,7 @@ class PerformanceIntegrationTest(IntegrationTest, utc.PerformanceIntegrationTest
         # network timing measurement
         self.timeout_limit = 30
         self.timing_measurements = 30
+        self.timing_func = self.Zone.refresh_zone_info
 
         # temperature and humidity repeatability measurements
         # temperature and humidity data are int values
@@ -84,7 +85,9 @@ class PerformanceIntegrationTest(IntegrationTest, utc.PerformanceIntegrationTest
         self.temp_repeatability_measurements = 48  # number of temp msmts.
         self.humidity_stdev_limit = 2.0  # 1 sigma humid repeat. limit %RH
         self.humidity_repeatability_measurements = 48  # number of temp msmts.
-        self.poll_interval_sec = 15  # delay between repeatability measurements
+        self.poll_interval_sec = (
+            nest_config.cache_period_sec + 0.5
+        )  # delay between repeatability measurements
 
 
 if __name__ == "__main__":

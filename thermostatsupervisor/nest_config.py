@@ -19,8 +19,7 @@ env_variables = {
 }
 
 # min required env variables on all runs
-required_env_variables = {
-}
+required_env_variables = {}
 
 # supported thermostat configs
 supported_configs = {
@@ -86,3 +85,9 @@ argv = [
 
 # force use of credentials.json file for credentials
 use_credentials_file = False
+credentials_file_location = ".//credentials.json"
+
+# data caching parameters
+# 20 sec. cache period needed to avoid spamming nest server.
+cache_period_sec = 20.0  # cache period for data, min 5 sec.
+cache_file_location = ".//token_cache.json"  # oauth credentials
