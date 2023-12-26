@@ -438,7 +438,9 @@ class PerformanceIntegrationTest(IntegrationTest):
             f"{self.Zone.zone_name} response times for {measurements} "
             f"measurements..."
         )
-        meas_data = self.Zone.measure_thermostat_response_time(measurements)
+        meas_data = self.Zone.measure_thermostat_repeatability(
+            measurements, func=self.timing_func
+        )
         print("network timing stats (sec)")
         ppp = pprint.PrettyPrinter(indent=4)
         ppp.pprint(meas_data)
