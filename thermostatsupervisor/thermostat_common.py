@@ -793,7 +793,11 @@ class ThermostatCommonZone:
         return target_mode
 
     def measure_thermostat_repeatability(
-        self, measurements=30, poll_interval_sec=0, func=None
+        self,
+        measurements=30,
+        poll_interval_sec=0,
+        func=None,
+        measure_response_time=False,
     ):
         """
         Measure Thermostat repeatability and report statistics.
@@ -802,6 +806,8 @@ class ThermostatCommonZone:
             measurements(int): number of measurements
             poll_interval_sec(int): delay between measurements
             func(obj): target function to run during repeatabilty measurement.
+            measure_response_time(bool): measure stats on response time instead
+                                         of function.
         returns:
             (dict): measurement statistics.
         """
@@ -828,15 +834,18 @@ class ThermostatCommonZone:
 
             # accumulate stats
             tdelta = t_end - t_start
-            data_lst.append(data)
+            if measure_response_time:
+                data_lst.append(tdelta)
+            else:
+                data_lst.append(data)
             util.log_msg(
-                f"measurement {measurement}={data} (deltaTime={tdelta:.2f} "
+                f"measurement {measurement}={data} (deltaTime={tdelta:.3f} "
                 f"sec, delay={poll_interval_sec} sec)",
                 mode=util.BOTH_LOG,
                 func_name=1,
             )
             time.sleep(poll_interval_sec)
-            self.refresh_zone_info()
+            # self.refresh_zone_info()
 
         # calc stats
         stats["measurements"] = measurements

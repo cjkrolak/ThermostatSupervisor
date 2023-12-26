@@ -697,13 +697,14 @@ if __name__ == "__main__":
         display_battery=True,
     )
 
-    if False:
+    if True:
         # measure thermostat response time
         MEASUREMENTS = 30
         meas_data = Zone.measure_thermostat_repeatability(
             MEASUREMENTS,
             poll_interval_sec=nest_config.cache_period_sec + 0.5,
             func=Zone.get_zone_name,
+            measure_response_time=True,
         )
         ppp = pprint.PrettyPrinter(indent=4)
         ppp.pprint(meas_data)

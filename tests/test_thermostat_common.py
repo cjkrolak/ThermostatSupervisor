@@ -397,14 +397,17 @@ class Test(utc.UnitTest):
             )
             self.Zone.current_mode = test_case
 
-    def test_measure_thermostat_repeatability(self):
+    def test_measure_thermostat_response_time(self):
         """
-        Test the measure_thermostat_repeatability() function.
+        Test the measure_thermostat_response_time() function.
         """
         # measure thermostat response time
         measurements = 3
         print(f"Thermostat response times for {measurements} measurements...")
-        meas_data = self.Zone.measure_thermostat_repeatability(measurements)
+        meas_data = self.Zone.measure_thermostat_repeatability(
+            measurements,
+            measure_response_time=True,
+        )
         ppp = pprint.PrettyPrinter(indent=4)
         ppp.pprint(meas_data)
         self.assertTrue(
