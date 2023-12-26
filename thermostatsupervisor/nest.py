@@ -58,14 +58,17 @@ class ThermostatClass(tc.ThermostatCommon):
         self.client_id = os.environ.get("GCLOUD_CLIENT_ID")
         self.client_secret = os.environ.get("GCLOUD_CLIENT_SECRET")
         self.project_id = os.environ.get("DAC_PROJECT_ID")
-        self.credentials_from_env = (self.client_id and self.client_secret
-                                     and self.project_id)
+        self.credentials_from_env = (
+            self.client_id and self.client_secret and self.project_id
+        )
 
         if nest_config.use_credentials_file or not self.credentials_from_env:
             # get credentials from file
             self.google_app_credential_file = ".//credentials.json"
-            print("retreiving Google Nest credientials from "
-                  f"{self.google_app_credential_file}...")
+            print(
+                "retreiving Google Nest credientials from "
+                f"{self.google_app_credential_file}..."
+            )
             with open(self.google_app_credential_file, encoding="utf8") as json_file:
                 data = json.load(json_file)
                 self.client_id = data["web"]["client_id"]

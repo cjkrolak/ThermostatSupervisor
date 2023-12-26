@@ -19,8 +19,7 @@ env_variables = {
 }
 
 # min required env variables on all runs
-required_env_variables = {
-}
+required_env_variables = {}
 
 # supported thermostat configs
 supported_configs = {
