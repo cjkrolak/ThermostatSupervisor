@@ -7,6 +7,7 @@ github ref: https://github.com/axlan/python-nest/
 # built-in libraries
 import json
 import os
+import pprint
 import time
 
 # thrid party libaries
@@ -51,21 +52,24 @@ class ThermostatClass(tc.ThermostatCommon):
         self.verbose = verbose
 
         # gcloud token cache
-        self.access_token_cache_file = ".//token_cache.json"
-        self.cache_period = 60
+        self.access_token_cache_file = nest_config.cache_file_location
+        self.cache_period = nest_config.cache_period_sec
 
         # get credentials from env vars
         self.client_id = os.environ.get("GCLOUD_CLIENT_ID")
         self.client_secret = os.environ.get("GCLOUD_CLIENT_SECRET")
         self.project_id = os.environ.get("DAC_PROJECT_ID")
-        self.credentials_from_env = (self.client_id and self.client_secret
-                                     and self.project_id)
+        self.credentials_from_env = (
+            self.client_id and self.client_secret and self.project_id
+        )
 
         if nest_config.use_credentials_file or not self.credentials_from_env:
             # get credentials from file
-            self.google_app_credential_file = ".//credentials.json"
-            print("retreiving Google Nest credientials from "
-                  f"{self.google_app_credential_file}...")
+            self.google_app_credential_file = nest_config.credentials_file_location
+            print(
+                "retreiving Google Nest credientials from "
+                f"{self.google_app_credential_file}..."
+            )
             with open(self.google_app_credential_file, encoding="utf8") as json_file:
                 data = json.load(json_file)
                 self.client_id = data["web"]["client_id"]
@@ -83,7 +87,8 @@ class ThermostatClass(tc.ThermostatCommon):
             reautherize_callback=self.reautherize_callback,
             cache_period=self.cache_period,
         )
-        self.devices = self.thermostat_obj.get_devices()
+        # get device data
+        self.devices = self.get_device_data()
 
         # configure zone info
         self.zone_number = int(zone)
@@ -91,6 +96,19 @@ class ThermostatClass(tc.ThermostatCommon):
         self.device_id = None  # initialize
         self.device_id = self.get_target_zone_id(self.zone_number)
         self.serial_number = None  # will be populated when unit is queried.
+
+    def get_device_data(self):
+        """
+        get device data from network.
+
+        inputs:
+            None
+        returns:
+            (list) list of device objects
+        """
+        self.devices = self.thermostat_obj.get_devices()
+        # TODO is there a chance that meta data changes?
+        return self.devices
 
     def get_zone_name(self):
         """
@@ -593,14 +611,14 @@ class ThermostatZone(tc.ThermostatCommonZone):
 
     def refresh_zone_info(self, force_refresh=False):
         """
-        Refresh zone info from KumoCloud.
+        Refresh zone info from Nest server.
 
         inputs:
             force_refresh(bool): if True, ignore expiration timer.
         returns:
-            None, device_id object is refreshed.
+            None, device object is refreshed.
         """
-        return  # not yet implemented
+        self.Thermostat.get_device_data()
 
     def report_heating_parameters(self, switch_position=None):
         """
@@ -666,7 +684,7 @@ if __name__ == "__main__":
     api.uip = api.UserInputs(argv_list=None, thermostat_type=nest_config.ALIAS)
     zone_number = api.uip.get_user_inputs(api.uip.zone_name, api.input_flds.zone)
 
-    tc.thermostat_basic_checkout(
+    _, Zone = tc.thermostat_basic_checkout(
         nest_config.ALIAS, zone_number, ThermostatClass, ThermostatZone
     )
 
@@ -678,3 +696,15 @@ if __name__ == "__main__":
         display_wifi=True,
         display_battery=True,
     )
+
+    if True:
+        # measure thermostat response time
+        MEASUREMENTS = 30
+        meas_data = Zone.measure_thermostat_repeatability(
+            MEASUREMENTS,
+            poll_interval_sec=nest_config.cache_period_sec + 0.5,
+            func=Zone.get_zone_name,
+            measure_response_time=True,
+        )
+        ppp = pprint.PrettyPrinter(indent=4)
+        ppp.pprint(meas_data)

@@ -404,7 +404,10 @@ class Test(utc.UnitTest):
         # measure thermostat response time
         measurements = 3
         print(f"Thermostat response times for {measurements} measurements...")
-        meas_data = self.Zone.measure_thermostat_response_time(measurements)
+        meas_data = self.Zone.measure_thermostat_repeatability(
+            measurements,
+            measure_response_time=True,
+        )
         ppp = pprint.PrettyPrinter(indent=4)
         ppp.pprint(meas_data)
         self.assertTrue(
