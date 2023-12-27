@@ -61,3 +61,6 @@ argv = [
     "OFF_MODE",  # thermostat mode
     "2",  # number of measurements
 ]
+
+# flag to check thermostat response time during basic checkout
+check_response_time = False

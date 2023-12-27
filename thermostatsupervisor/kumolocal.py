@@ -1,6 +1,7 @@
 """KumoCloud integration using local API for data."""
 # built-in imports
 import os
+import pprint
 import time
 
 # third party imports
@@ -656,7 +657,7 @@ if __name__ == "__main__":
     api.uip = api.UserInputs(argv_list=None, thermostat_type=kumolocal_config.ALIAS)
     zone_number = api.uip.get_user_inputs(api.uip.zone_name, api.input_flds.zone)
 
-    tc.thermostat_basic_checkout(
+    _, Zone = tc.thermostat_basic_checkout(
         kumolocal_config.ALIAS, zone_number, ThermostatClass, ThermostatZone
     )
 
@@ -668,3 +669,14 @@ if __name__ == "__main__":
         display_wifi=False,
         display_battery=False,
     )
+
+    # measure thermostat response time
+    if kumolocal_config.check_response_time:
+        MEASUREMENTS = 30
+        meas_data = Zone.measure_thermostat_repeatability(
+            MEASUREMENTS,
+            func=Zone.pyhtcc.get_zones_info,
+            measure_response_time=True,
+        )
+        ppp = pprint.PrettyPrinter(indent=4)
+        ppp.pprint(meas_data)

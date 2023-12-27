@@ -813,6 +813,7 @@ class ThermostatCommonZone:
         """
         data_lst = []
         stats = {}
+        valid_datatypes = (int, float)
         # set default measurement method if not provided.
         if func is None:
             func = self.get_display_temp
@@ -836,11 +837,21 @@ class ThermostatCommonZone:
             tdelta = t_end - t_start
             if measure_response_time:
                 data_lst.append(tdelta)
+                measurement_display = tdelta
             else:
+                # check for valid return type
+                if not isinstance(data, valid_datatypes):
+                    raise TypeError(
+                        f"metric value={data}, data type={type(data)}, the "
+                        "metric repeatability assessment requires a "
+                        "function that returns the metric of types "
+                        f"{valid_datatypes}"
+                    )
                 data_lst.append(data)
+                measurement_display = data
             util.log_msg(
-                f"measurement {measurement}={data} (deltaTime={tdelta:.3f} "
-                f"sec, delay={poll_interval_sec} sec)",
+                f"measurement {measurement}={measurement_display} "
+                f"(deltaTime={tdelta:.3f} sec, delay={poll_interval_sec} sec)",
                 mode=util.BOTH_LOG,
                 func_name=1,
             )
