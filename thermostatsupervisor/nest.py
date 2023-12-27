@@ -697,8 +697,8 @@ if __name__ == "__main__":
         display_battery=True,
     )
 
-    if True:
-        # measure thermostat response time
+    # measure thermostat response time
+    if nest_config.check_response_time:
         MEASUREMENTS = 30
         meas_data = Zone.measure_thermostat_repeatability(
             MEASUREMENTS,

@@ -1,11 +1,12 @@
 """Blink Camera."""
 # built-in imports
 import asyncio
-from aiohttp import ClientSession
 import os
+import pprint
 import sys
 import time
 import traceback
+from aiohttp import ClientSession
 
 # third party imports
 
@@ -491,7 +492,7 @@ if __name__ == "__main__":
     api.uip = api.UserInputs(argv_list=None, thermostat_type=blink_config.ALIAS)
     zone_number = api.uip.get_user_inputs(api.uip.zone_name, api.input_flds.zone)
 
-    tc.thermostat_basic_checkout(
+    _, Zone = tc.thermostat_basic_checkout(
         blink_config.ALIAS, zone_number, ThermostatClass, ThermostatZone
     )
 
@@ -503,3 +504,14 @@ if __name__ == "__main__":
         display_wifi=True,
         display_battery=True,
     )
+
+    # measure thermostat response time
+    if blink_config.check_response_time:
+        MEASUREMENTS = 30
+        meas_data = Zone.measure_thermostat_repeatability(
+            MEASUREMENTS,
+            func=Zone.pyhtcc.get_zones_info,
+            measure_response_time=True,
+        )
+        ppp = pprint.PrettyPrinter(indent=4)
+        ppp.pprint(meas_data)
