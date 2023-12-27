@@ -849,11 +849,12 @@ if __name__ == "__main__":
     )
 
     # measure thermostat response time
-    MEASUREMENTS = 60  # running higher than normal count here because
-    # intermittent failures have been observed.
-    meas_data = Zone.measure_thermostat_repeatability(
-        MEASUREMENTS,
-        measure_response_time=True,
-    )
-    ppp = pprint.PrettyPrinter(indent=4)
-    ppp.pprint(meas_data)
+    if mmm_config.check_response_time:
+        MEASUREMENTS = 60  # running higher than normal count here because
+        # intermittent failures have been observed.
+        meas_data = Zone.measure_thermostat_repeatability(
+            MEASUREMENTS,
+            measure_response_time=True,
+        )
+        ppp = pprint.PrettyPrinter(indent=4)
+        ppp.pprint(meas_data)

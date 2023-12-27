@@ -948,11 +948,12 @@ if __name__ == "__main__":
     )
 
     # measure thermostat response time
-    MEASUREMENTS = 30
-    meas_data = Zone.measure_thermostat_repeatability(
-        MEASUREMENTS,
-        func=Zone.pyhtcc.get_zones_info,
-        measure_response_time=True,
-    )
-    ppp = pprint.PrettyPrinter(indent=4)
-    ppp.pprint(meas_data)
+    if honeywell_config.check_response_time:
+        MEASUREMENTS = 30
+        meas_data = Zone.measure_thermostat_repeatability(
+            MEASUREMENTS,
+            func=Zone.pyhtcc.get_zones_info,
+            measure_response_time=True,
+        )
+        ppp = pprint.PrettyPrinter(indent=4)
+        ppp.pprint(meas_data)
