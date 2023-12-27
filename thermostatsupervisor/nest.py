@@ -379,6 +379,9 @@ class ThermostatZone(tc.ThermostatCommonZone):
         """
         Refresh the cached zone information and return the dry mode.
 
+        For nest there is no fan mode, just a fan timer, so this function
+        should always return 0.
+
         inputs:
             None
         returns:
@@ -394,11 +397,15 @@ class ThermostatZone(tc.ThermostatCommonZone):
         """
         Refresh the cached zone information and return the fan mode.
 
+        For nest there is no fan mode, just a fan timer, so this function
+        should always return 0.
+
         inputs:
             None
         returns:
             (int): fan mode, 1=enabled, 0=disabled.
         """
+        self.refresh_zone_info()
         return int(
             self.get_trait("ThermostatMode")["mode"]
             == self.system_switch_position[tc.ThermostatCommonZone.FAN_MODE]
@@ -428,6 +435,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         returns:
             (int): off mode, 1=enabled, 0=disabled.
         """
+        self.refresh_zone_info()
         return int(
             self.get_trait("ThermostatMode")["mode"]
             == self.system_switch_position[tc.ThermostatCommonZone.OFF_MODE]
@@ -435,22 +443,29 @@ class ThermostatZone(tc.ThermostatCommonZone):
 
     def is_heating(self):
         """Return 1 if heating relay is active, else 0."""
-        return int(self.get_trait("ThermostatMode")["mode"] == "HEAT")
+        self.refresh_zone_info()
+        return int(self.get_trait("ThermostatHvac")["status"] == "HEATTING")
 
     def is_cooling(self):
         """Return 1 if cooling relay is active, else 0."""
-        return int(self.get_trait("ThermostatMode")["mode"] == "COOL")
+        self.refresh_zone_info()
+        return int(self.get_trait("ThermostatHvac")["status"] == "COOLING")
 
     def is_drying(self):
         """Return 1 if drying relay is active, else 0."""
-        return 0  # not applicable
+        return 0  # not applicable for nest
 
     def is_auto(self):
         """Return 1 if auto relay is active, else 0."""
-        return int(self.get_trait("ThermostatMode")["mode"] == "HEATCOOL")
+        self.refresh_zone_info()
+        return int(
+            self.get_trait("ThermostatHvac")["status"] in ("HEATING", "COOLING")
+            and self.is_auto_mode()
+        )
 
     def is_fanning(self):
         """Return 1 if fan relay is active, else 0."""
+        self.refresh_zone_info()
         return int(self.get_trait("Fan")["timerMode"] == "ON")
 
     def is_power_on(self):
@@ -463,9 +478,35 @@ class ThermostatZone(tc.ThermostatCommonZone):
         self.refresh_zone_info()
         return int(self.get_trait("Fan")["timerMode"] == "ON")
 
+    def get_wifi_strength(self) -> float:  # noqa R0201
+        """Return the wifi signal strength in dBm."""
+        return float(util.BOGUS_INT)
+
+    def get_wifi_status(self) -> bool:  # noqa R0201
+        """Return the wifi connection status."""
+        self.refresh_zone_info()
+        return int(self.get_trait("Connectivity")["status"] == "ONLINE")
+
+    def get_battery_voltage(self) -> float:  # noqa R0201
+        """Return the battery voltage in volts.
+
+        This tstat is on HVAC line power so any valid response
+        from tstat returns line power value.
+        """
+        return 24.0 if self.get_wifi_status() else 0.0
+
+    def get_battery_status(self) -> bool:  # noqa R0201
+        """Return the battery status.
+
+        For this tstat any positive number returns True.
+        """
+        return self.get_battery_voltage() > 0.0
+
     def get_heat_setpoint_raw(self) -> int:  # used
         """
         Refresh the cached zone information and return the heat setpoint.
+
+        Nest heat setpoint is only populated in heat or auto modes.
 
         inputs:
             None
@@ -473,7 +514,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
             (int): heating set point in degrees F.
         """
         self.refresh_zone_info()
-        if self.is_cool_mode():
+        if self.is_heat_mode() or self.is_auto_mode():
             return util.c_to_f(
                 self.get_trait("ThermostatTemperatureSetpoint")["heatCelsius"]
             )
@@ -511,13 +552,15 @@ class ThermostatZone(tc.ThermostatCommonZone):
         """
         Return the cool setpoint.
 
+        Nest cool setpoint is only populated in cool or auto modes.
+
         inputs:
             None
         returns:
             (int): cooling set point in degrees F.
         """
         self.refresh_zone_info()
-        if self.is_cool_mode():
+        if self.is_cool_mode() or self.is_auto_mode():
             return util.c_to_f(
                 self.get_trait("ThermostatTemperatureSetpoint")["coolCelsius"]
             )
