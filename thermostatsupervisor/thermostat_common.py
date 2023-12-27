@@ -841,10 +841,12 @@ class ThermostatCommonZone:
             else:
                 # check for valid return type
                 if not isinstance(data, valid_datatypes):
-                    raise TypeError(f"metric value={data}, data type={type(data)}, the "
-                                    "metric repeatability assessment requires a "
-                                    "function that returns the metric of types "
-                                    f"{valid_datatypes}")
+                    raise TypeError(
+                        f"metric value={data}, data type={type(data)}, the "
+                        "metric repeatability assessment requires a "
+                        "function that returns the metric of types "
+                        f"{valid_datatypes}"
+                    )
                 data_lst.append(data)
                 measurement_display = data
             util.log_msg(
