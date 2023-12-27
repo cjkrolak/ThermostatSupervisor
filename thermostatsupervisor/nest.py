@@ -3,6 +3,7 @@ Nest integration.
 using python-google-nest package
 pypi ref: https://pypi.org/project/python-google-nest/
 github ref: https://github.com/axlan/python-nest/
+API ref: https://developers.google.com/nest/device-access/traits
 """
 # built-in libraries
 import json
@@ -266,33 +267,30 @@ class ThermostatZone(tc.ThermostatCommonZone):
             (str) trait value
         """
         # will reuse the cached result unless cache_period has elapsed
-        # print(f"DEBUG: querying trait {trait_name}")
         devices = nest.Device.filter_for_trait(self.devices, trait_name)
+
         # will reuse the cached result unless cache_period has elapsed
         trait_value = devices[self.zone_number].traits[trait_name]
-        # print(f"trait '{trait_name}'= {trait_value}")
         return trait_value
 
-    def set_trait(self, trait_name, trait_value):
+    def send_cmd(self, cmd_name, par_name, par_value):
         """
         set thermostat trait.
 
         inputs:
-            trait_name(str): trait name
-            trait_value(str): trait value
+            cmd_name(str): command name (a.k.a. trait)
+            par_name(str): parameter name
+            par_value(str): parameter value
             ref: https://developers.google.com/nest/device-access/traits
         returns:
-            (str) trait value
+            (dict) body of response
         """
         # will reuse the cached result unless cache_period has elapsed
-        print(f"setting trait '{trait_name}'= {trait_value}...")
-        devices = nest.Device.filter_for_trait(self.devices, trait_name)
+        devices = nest.Device.filter_for_cmd(self.devices, cmd_name)
+
         # will trigger a request to POST the cmd
-        devices[self.zone_number].send_cmd(trait_name, json.loads(trait_value))
-        # verify trait was set
-        trait_value = devices[self.zone_number].traits[trait_name]
-        print(f"verifying trait '{trait_name}'= {trait_value}...")
-        return trait_value
+        result = devices[self.zone_number].send_cmd(cmd_name, {par_name: par_value})
+        return result
 
     def get_zone_name(self):
         """
@@ -319,7 +317,9 @@ class ThermostatZone(tc.ThermostatCommonZone):
             (float): indoor temp in °F.
         """
         self.refresh_zone_info()
-        return util.c_to_f(self.get_trait("Temperature")["ambientTemperatureCelsius"])
+        display_temp_c = self.get_trait("Temperature")["ambientTemperatureCelsius"]
+        display_temp_f = util.c_to_f(display_temp_c)
+        return display_temp_f
 
     def get_display_humidity(self) -> (float, None):
         """
@@ -535,7 +535,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         returns:
             (int): scheduled heating set point in degrees.
         """
-        return util.BOGUS_INT
+        return nest_config.MAX_HEAT_SETPOINT
 
     def get_schedule_cool_sp(self) -> int:
         """
@@ -546,7 +546,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         returns:
             (int): scheduled cooling set point in degrees F.
         """
-        return util.BOGUS_INT
+        return nest_config.MIN_COOL_SETPOINT
 
     def get_cool_setpoint_raw(self) -> int:
         """
@@ -632,10 +632,9 @@ class ThermostatZone(tc.ThermostatCommonZone):
         returns:
             None
         """
-        device = nest.Device.filter_for_cmd(
-            self.devices, "sdm.devices.commands.ThermostatTemperatureSetpoint.SetHeat"
+        self.send_cmd(
+            "ThermostatTemperatureSetpoint.SetHeat", "heatCelsius", util.f_to_c(temp)
         )
-        device.set_trait("ThermostatTemperatureSetpoint", util.f_to_c(temp))
 
     def set_cool_setpoint(self, temp: int) -> None:
         """
@@ -647,10 +646,9 @@ class ThermostatZone(tc.ThermostatCommonZone):
         returns:
             None
         """
-        device = nest.Device.filter_for_cmd(
-            self.devices, "sdm.devices.commands.ThermostatTemperatureSetpoint.SetCool"
+        self.send_cmd(
+            "ThermostatTemperatureSetpoint.SetCool", "coolCelsius", util.f_to_c(temp)
         )
-        device.set_trait("ThermostatTemperatureSetpoint", util.f_to_c(temp))
 
     def refresh_zone_info(self, force_refresh=False):
         """
