@@ -77,6 +77,7 @@ class ThermostatClass(tc.ThermostatCommon):
         )
         self.device_id = self.url
         self.retry_delay = 60  # delay before retrying a bad reading
+        self.zone_info = {}
 
         # if in unit test mode, spawn flask server with emulated data on client
         if self.zone_name == sht31_config.UNIT_TEST_ZONE:
@@ -177,7 +178,8 @@ class ThermostatClass(tc.ThermostatCommon):
         returns:
             (dict) results dict.
         """
-        return self.get_metadata(zone, retry=retry)
+        self.zone_info = self.get_metadata(zone, retry=retry)
+        return self.zone_info
 
     def get_metadata(self, zone, trait=None, parameter=None, retry=True):
         """
@@ -250,10 +252,15 @@ class ThermostatZone(tc.ThermostatCommonZone):
         self.url = Thermostat_obj.device_id
         self.zone_name = Thermostat_obj.zone_name
         self.zone_name = self.get_zone_name(self.zone_name)
+        self.zone_info = {}
 
         # runtime defaults
         self.poll_time_sec = 1 * 60  # default to 1 minute
         self.connection_time_sec = 8 * 60 * 60  # default to 8 hours
+
+        # server data cache expiration parameters
+        self.fetch_interval_sec = 5  # age of server data before refresh
+        self.last_fetch_time = time.time() - 2 * self.fetch_interval_sec
 
         self.tempfield = sht31_config.API_TEMPF_MEAN  # must match flask API
         self.humidityfield = sht31_config.API_HUMIDITY_MEAN  # must match API
@@ -474,6 +481,23 @@ class ThermostatZone(tc.ThermostatCommonZone):
             (int): thermostat mode, see tc.system_switch_position for details.
         """
         return self.system_switch_position[self.OFF_MODE]
+
+    def refresh_zone_info(self, force_refresh=False) -> None:
+        """
+        Refresh zone info.
+
+        inputs:
+            force_refresh(bool): if True, ignore expiration timer.
+        returns:
+            None, cached data is refreshed.
+        """
+        now_time = time.time()
+        # refresh if past expiration date or force_refresh option
+        if force_refresh or (
+            now_time >= (self.last_fetch_time + self.fetch_interval_sec)
+        ):
+            self.zone_info = {}
+            self.last_fetch_time = now_time
 
     def report_heating_parameters(self, switch_position=None):
         """

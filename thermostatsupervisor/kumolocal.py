@@ -233,7 +233,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         self.connection_time_sec = 8 * 60 * 60  # default to 8 hours
 
         # server data cache expiration parameters
-        self.fetch_interval_sec = 10  # age of server data before refresh
+        self.fetch_interval_sec = 60  # age of server data before refresh
         self.last_fetch_time = time.time() - 2 * self.fetch_interval_sec
 
         # switch config for this thermostat

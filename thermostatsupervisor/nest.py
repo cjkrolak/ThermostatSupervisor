@@ -237,7 +237,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         self.connection_time_sec = 8 * 60 * 60  # default to 8 hours
 
         # server data cache expiration parameters
-        self.fetch_interval_sec = 10  # age of server data before refresh
+        self.fetch_interval_sec = 60  # age of server data before refresh
         self.last_fetch_time = time.time() - 2 * self.fetch_interval_sec
 
         # switch config for this thermostat
@@ -659,7 +659,13 @@ class ThermostatZone(tc.ThermostatCommonZone):
         returns:
             None, device object is refreshed.
         """
-        self.Thermostat.get_device_data()
+        now_time = time.time()
+        # refresh if past expiration date or force_refresh option
+        if force_refresh or (
+            now_time >= (self.last_fetch_time + self.fetch_interval_sec)
+        ):
+            self.Thermostat.get_device_data()
+            self.last_fetch_time = now_time
 
     def report_heating_parameters(self, switch_position=None):
         """

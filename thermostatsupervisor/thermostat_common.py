@@ -151,7 +151,10 @@ class ThermostatCommonZone:
         self.hold_mode = False  # True = not following schedule
         self.hold_temporary = False
         self.zone_info = {}  # dict containing zone data
-        self.last_fetch_time = None  # last fetch of zone_info
+
+        # server data cache expiration parameters
+        self.fetch_interval_sec = 10  # age of server data before refresh
+        self.last_fetch_time = time.time() - 2 * self.fetch_interval_sec
 
         # abstraction vars and funcs, defined in query_thermostat_zone
         self.current_mode = None  # str representing mode
@@ -678,9 +681,13 @@ class ThermostatCommonZone:
         returns:
             None, cached data is refreshed.
         """
-        del force_refresh  # not used in this template.
-        self.zone_info = {}
-        self.last_fetch_time = time.time()
+        now_time = time.time()
+        # refresh if past expiration date or force_refresh option
+        if force_refresh or (
+            now_time >= (self.last_fetch_time + self.fetch_interval_sec)
+        ):
+            self.zone_info = {}
+            self.last_fetch_time = now_time
 
     def report_heating_parameters(self, switch_position=None):  # noqa R0201
         """
@@ -857,7 +864,6 @@ class ThermostatCommonZone:
                 func_name=1,
             )
             time.sleep(poll_interval_sec)
-            # self.refresh_zone_info()
 
         # calc stats
         stats["measurements"] = measurements
