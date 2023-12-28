@@ -408,6 +408,11 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
         # thermostat type, needs to be defined prior to pyhtcc.Zone.__init__
         self.thermostat_type = honeywell_config.ALIAS
 
+        # server data cache expiration parameters
+        # needs to be defined before pyhtcc.Zone.__init__
+        self.fetch_interval_sec = 60  # age of server data before refresh
+        self.last_fetch_time = time.time() - 2 * self.fetch_interval_sec
+
         # call both parent class __init__
         self.args = [Thermostat_obj.device_id, Thermostat_obj]
         pyhtcc.Zone.__init__(self, *self.args)
@@ -430,10 +435,6 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
         # max value was 3, higher settings will cause HTTP errors, why?
         # not showing error on Pi at 10 minutes, so changed default to 10 min.
         self.connection_time_sec = 8 * 60 * 60  # default to 8 hours
-
-        # server data cache expiration parameters
-        self.fetch_interval_sec = 60  # age of server data before refresh
-        self.last_fetch_time = time.time() - 2 * self.fetch_interval_sec
 
     def get_zone_name(self) -> str:  # used
         """
