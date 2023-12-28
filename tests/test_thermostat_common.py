@@ -217,22 +217,22 @@ class Test(utc.UnitTest):
             "get_heat_setpoint_raw": {
                 "key": self.Zone.get_heat_setpoint_raw,
                 "args": None,
-                "return_type": int,
+                "return_type": float,
             },
             "get_schedule_heat_sp": {
                 "key": self.Zone.get_schedule_heat_sp,
                 "args": None,
-                "return_type": int,
+                "return_type": float,
             },
             "get_cool_setpoint_raw": {
                 "key": self.Zone.get_cool_setpoint_raw,
                 "args": None,
-                "return_type": int,
+                "return_type": float,
             },
             "get_schedule_cool_sp": {
                 "key": self.Zone.get_schedule_cool_sp,
                 "args": None,
-                "return_type": int,
+                "return_type": float,
             },
             "get_is_invacation_hold_mode": {
                 "key": self.Zone.get_is_invacation_hold_mode,

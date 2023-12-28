@@ -24,7 +24,7 @@ class ThermostatCommon:
     """Class methods common to all thermostat objects."""
 
     def __init__(self, *_, **__):
-        self.verbose = True
+        self.verbose = False
         self.thermostat_type = "unknown"  # placeholder
         self.zone_number = util.BOGUS_INT  # placeholder
         self.device_id = util.BOGUS_INT  # placeholder
@@ -132,7 +132,7 @@ class ThermostatCommonZone:
     tolerance_degrees_default = 2  # allowed override vs. the scheduled value.
 
     def __init__(self, *_, **__):
-        self.verbose = True
+        self.verbose = False
         self.thermostat_type = "unknown"  # placeholder
         self.zone_number = util.BOGUS_INT  # placeholder
         self.zone_name = None  # placeholder
@@ -155,8 +155,8 @@ class ThermostatCommonZone:
 
         # abstraction vars and funcs, defined in query_thermostat_zone
         self.current_mode = None  # str representing mode
-        self.current_setpoint = util.BOGUS_INT  # current setpoint
-        self.schedule_setpoint = util.BOGUS_INT  # current scheduled setpoint
+        self.current_setpoint = float(util.BOGUS_INT)  # current setpoint
+        self.schedule_setpoint = float(util.BOGUS_INT)  # current scheduled setpoint
         self.tolerance_sign = 1  # +1 for heat, -1 for cool
         self.operator = operator.ne  # operator for deviation check
         self.tolerance_degrees = self.tolerance_degrees_default
@@ -184,7 +184,7 @@ class ThermostatCommonZone:
         # mode-specific parameters
         if self.is_heat_mode():
             self.current_mode = self.HEAT_MODE
-            self.current_setpoint = int(self.get_heat_setpoint_raw())
+            self.current_setpoint = float(self.get_heat_setpoint_raw())
             self.schedule_setpoint = int(self.get_schedule_heat_sp())
             self.tolerance_sign = 1
             if self.flag_all_deviations:
@@ -198,8 +198,8 @@ class ThermostatCommonZone:
             self.get_setpoint_func = self.get_heat_setpoint_raw
         elif self.is_cool_mode():
             self.current_mode = self.COOL_MODE
-            self.current_setpoint = int(self.get_cool_setpoint_raw())
-            self.schedule_setpoint = int(self.get_schedule_cool_sp())
+            self.current_setpoint = float(self.get_cool_setpoint_raw())
+            self.schedule_setpoint = float(self.get_schedule_cool_sp())
             self.tolerance_sign = -1
             if self.flag_all_deviations:
                 self.operator = operator.ne
@@ -212,8 +212,8 @@ class ThermostatCommonZone:
             self.get_setpoint_func = self.get_cool_setpoint_raw
         elif self.is_dry_mode():
             self.current_mode = self.DRY_MODE
-            self.current_setpoint = int(self.get_cool_setpoint_raw())
-            self.schedule_setpoint = int(self.get_schedule_cool_sp())
+            self.current_setpoint = float(self.get_cool_setpoint_raw())
+            self.schedule_setpoint = float(self.get_schedule_cool_sp())
             self.tolerance_sign = -1
             if self.flag_all_deviations:
                 self.operator = operator.ne
@@ -350,7 +350,7 @@ class ThermostatCommonZone:
                 f", set point="
                 f"{util.temp_value_with_units(self.schedule_setpoint)}, "
                 f"tolerance="
-                f"{util.temp_value_with_units(self.tolerance_degrees)}, "
+                f"{util.temp_value_with_units(self.tolerance_degrees, precision=0)}, "
                 f"override="
                 f"{util.temp_value_with_units(self.current_setpoint)}"
             )
@@ -385,7 +385,8 @@ class ThermostatCommonZone:
         returns:
             True if successful, else False
         """
-        print(f"DEBUG in set_mode, target_mode={target_mode}, doing nothing")
+        if self.verbose:
+            print(f"DEBUG in set_mode, target_mode={target_mode}, doing nothing")
         return False
 
     def store_current_mode(self):
@@ -594,13 +595,13 @@ class ThermostatCommonZone:
         """
         return util.BOGUS_INT  # placeholder
 
-    def get_heat_setpoint_raw(self) -> int:  # noqa R0201
+    def get_heat_setpoint_raw(self) -> float:  # noqa R0201
         """Return raw heat set point(number only, no units)."""
-        return util.BOGUS_INT  # placeholder
+        return float(util.BOGUS_INT)  # placeholder
 
-    def get_heat_setpoint(self) -> int:  # noqa R0201
+    def get_heat_setpoint(self) -> str:  # noqa R0201
         """Return raw heat set point(number and units)."""
-        return util.BOGUS_INT  # placeholder
+        return util.BOGUS_STR  # placeholder
 
     def get_schedule_program_heat(self) -> dict:  # noqa R0201
         """
@@ -609,17 +610,17 @@ class ThermostatCommonZone:
         inputs:
             None
         returns:
-            (dict): scheduled heat set points and times in degrees.
+            (dict): scheduled heat set points and times in °F.
         """
         return util.bogus_dict  # placeholder
 
-    def get_schedule_heat_sp(self) -> int:
+    def get_schedule_heat_sp(self) -> float:
         """Return the heat setpoint."""
-        return util.BOGUS_INT  # placeholder
+        return float(util.BOGUS_INT)  # placeholder
 
-    def get_cool_setpoint_raw(self) -> int:  # noqa R0201
+    def get_cool_setpoint_raw(self) -> float:  # noqa R0201
         """Return raw cool set point (number only, no units)."""
-        return util.BOGUS_INT  # placeholder
+        return float(util.BOGUS_INT)  # placeholder
 
     def get_cool_setpoint(self) -> int:  # noqa R0201
         """Return raw cool set point (number and units)."""
@@ -632,13 +633,13 @@ class ThermostatCommonZone:
         inputs:
             None
         returns:
-            (dict): scheduled cool set points and times in degrees.
+            (dict): scheduled cool set points and times in °F.
         """
         return util.bogus_dict  # placeholder
 
-    def get_schedule_cool_sp(self) -> int:
+    def get_schedule_cool_sp(self) -> float:
         """Return the cool setpoint."""
-        return util.BOGUS_INT  # placeholder
+        return float(util.BOGUS_INT)  # placeholder
 
     def get_vacation_hold(self) -> bool:  # noqa R0201
         """Return True if thermostat is in vacation hold mode."""
@@ -782,7 +783,7 @@ class ThermostatCommonZone:
 
         # revert the mode to target
         # UNKNOWN mode is bypassed
-        if target_mode == self.UNKNOWN_MODE:
+        if target_mode == self.UNKNOWN_MODE and self.verbose:
             print(
                 f"{util.get_function_name()}: target_mode='{target_mode}', "
                 "doing nothing."
@@ -902,14 +903,12 @@ class ThermostatCommonZone:
             func_name=1,
         )
         util.log_msg(
-            f"heat set point="
-            f"{util.temp_value_with_units(self.get_heat_setpoint())}",
+            f"heat set point=" f"{self.get_heat_setpoint()}",
             mode=mode,
             func_name=1,
         )
         util.log_msg(
-            f"cool set point="
-            f"{util.temp_value_with_units(self.get_cool_setpoint())}",
+            f"cool set point=" f"{self.get_cool_setpoint()}",
             mode=mode,
             func_name=1,
         )
@@ -1030,7 +1029,7 @@ class ThermostatCommonZone:
         # tolerance to set point:
         util.log_msg(
             f"tolerance to set point is set to "
-            f"{util.temp_value_with_units(self.tolerance_degrees)}",
+            f"{util.temp_value_with_units(self.tolerance_degrees, precision=0)}",
             mode=util.BOTH_LOG,
         )
 
