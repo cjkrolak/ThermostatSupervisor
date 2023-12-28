@@ -450,7 +450,7 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
         inputs:
             None
         returns:
-            (float): display temperature in degrees F.
+            (float): display temperature in °F.
         """
         return float(self.get_indoor_temperature_raw())
 
@@ -664,7 +664,7 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
         """
         return self.get_battery_voltage() > 0.0
 
-    def get_schedule_heat_sp(self) -> int:  # used
+    def get_schedule_heat_sp(self) -> float:  # used
         """
         Refresh the cached zone information and return the
         schedule heat setpoint.
@@ -672,12 +672,12 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
         inputs:
             None
         returns:
-            (int): heating set point in degrees.
+            (float): heating set point in °F.
         """
         self.refresh_zone_info()
-        return int(self.zone_info["latestData"]["uiData"]["ScheduleHeatSp"])
+        return float(self.zone_info["latestData"]["uiData"]["ScheduleHeatSp"])
 
-    def get_schedule_cool_sp(self) -> int:
+    def get_schedule_cool_sp(self) -> float:
         """
         Refresh the cached zone information and return the
         schedule cool setpoint.
@@ -685,10 +685,10 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
         inputs:
             None
         returns:
-            (int): cooling set point in degrees.
+            (float): cooling set point in °F.
         """
         self.refresh_zone_info()
-        return int(self.zone_info["latestData"]["uiData"]["ScheduleCoolSp"])
+        return float(self.zone_info["latestData"]["uiData"]["ScheduleCoolSp"])
 
     def get_is_invacation_hold_mode(self) -> bool:  # used
         """
@@ -837,8 +837,6 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
             util.log_msg(
                 f"heat setpoint={self.get_heat_setpoint()}", mode=util.BOTH_LOG
             )
-            # util.log_msg("heat setpoint raw=%s" %
-            #              zone.get_heat_setpoint_raw())
             util.log_msg(
                 f"schedule heat sp={self.get_schedule_heat_sp()}", mode=util.BOTH_LOG
             )
@@ -849,9 +847,6 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
             util.log_msg(
                 f"cool setpoint={self.get_cool_setpoint()}", mode=util.BOTH_LOG
             )
-            # util.log_msg("cool setpoint raw="
-            #              f"{zone.get_cool_setpoint_raw()}",
-            #              mode=util.BOTH_LOG)
             util.log_msg(
                 f"schedule cool sp={self.get_schedule_cool_sp()}", mode=util.BOTH_LOG
             )

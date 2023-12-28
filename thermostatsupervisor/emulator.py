@@ -404,55 +404,55 @@ class ThermostatZone(tc.ThermostatCommonZone):
         self.refresh_zone_info()
         return int(self.get_parameter("standby"))
 
-    def get_heat_setpoint_raw(self) -> int:  # used
+    def get_heat_setpoint_raw(self) -> float:  # used
         """
         Refresh the cached zone information and return the heat setpoint.
 
         inputs:
             None
         returns:
-            (int): heating set point in degrees F.
+            (float): heating set point in °F.
         """
         self.refresh_zone_info()
-        return self.get_parameter("heat_setpoint")
+        return float(self.get_parameter("heat_setpoint"))
 
     def get_heat_setpoint(self) -> str:
         """Return heat setpoint with units as a string."""
         return util.temp_value_with_units(self.get_heat_setpoint_raw())
 
-    def get_schedule_heat_sp(self) -> int:  # used
+    def get_schedule_heat_sp(self) -> float:  # used
         """
         Return the schedule heat setpoint.
 
         inputs:
             None
         returns:
-            (int): scheduled heating set point in degrees.
+            (int): scheduled heating set point in °F.
         """
-        return emulator_config.MAX_HEAT_SETPOINT  # max heat set point allowed
+        return float(emulator_config.MAX_HEAT_SETPOINT)  # max heat set point allowed
 
-    def get_schedule_cool_sp(self) -> int:
+    def get_schedule_cool_sp(self) -> float:
         """
         Return the schedule cool setpoint.
 
         inputs:
             None
         returns:
-            (int): scheduled cooling set point in degrees F.
+            (float): scheduled cooling set point in °F.
         """
-        return emulator_config.MIN_COOL_SETPOINT  # min cool set point allowed
+        return float(emulator_config.MIN_COOL_SETPOINT)  # min cool set point allowed
 
-    def get_cool_setpoint_raw(self) -> int:
+    def get_cool_setpoint_raw(self) -> float:
         """
         Return the cool setpoint.
 
         inputs:
             None
         returns:
-            (int): cooling set point in degrees F.
+            (float): cooling set point in °F.
         """
         self.refresh_zone_info()
-        return self.get_parameter("cool_setpoint")
+        return float(self.get_parameter("cool_setpoint"))
 
     def get_cool_setpoint(self) -> str:
         """Return cool setpoint with units as a string."""

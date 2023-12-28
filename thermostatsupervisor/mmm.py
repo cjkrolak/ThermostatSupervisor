@@ -273,7 +273,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         inputs:
             None
         returns:
-            (float): display temp in degrees.
+            (float): display temp in °F.
         """
         return float(self.device_id.temp["raw"])
 
@@ -464,14 +464,14 @@ class ThermostatZone(tc.ThermostatCommonZone):
             yesterday = today - 1
         return self.get_setpoint_list(sp_dict, yesterday)[-1]
 
-    def get_schedule_setpoint(self, sp_dict) -> int:
+    def get_schedule_setpoint(self, sp_dict) -> float:
         """
         Return current setpoint.
 
         inputs:
             sp_dict(dict): setpoint dictionary
         returns:
-            (int) last temperature set the day before.
+            (float) last temperature set the day before.
         """
         current_sp = self.get_previous_days_setpoint(sp_dict)
         now = datetime.datetime.now()
@@ -487,24 +487,15 @@ class ThermostatZone(tc.ThermostatCommonZone):
             else:
                 # store setpoint corresponding to this time
                 current_sp = todays_setpoint_lst[idx + 1]
-        return current_sp
+        return float(current_sp)
 
-    def get_heat_setpoint(self) -> float:
+    def get_heat_setpoint(self) -> str:
         """
         Return the current heat setpoint.
 
         t_heat field is only present if in heat mode.
-        inputs:
-            None
-        returns:
-            (float): current heat set point in degrees.
         """
-        result = self.device_id.t_heat["raw"]
-        if not isinstance(result, float):
-            raise TypeError(
-                f"heat set point is type {type(result)}, " f"should be float"
-            )
-        return result
+        return util.temp_value_with_units(self.get_heat_setpoint_raw())
 
     def get_heat_setpoint_raw(self) -> float:
         """
@@ -514,7 +505,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         inputs:
             None
         returns:
-            (float): current raw heat set point in degrees.
+            (float): current raw heat set point in °F.
         """
         result = self.get_heat_setpoint()
         if not isinstance(result, float):
@@ -523,24 +514,13 @@ class ThermostatZone(tc.ThermostatCommonZone):
             )
         return result
 
-    def get_cool_setpoint(self) -> int:
+    def get_cool_setpoint(self) -> str:
         """
         Return the current cool setpoint.
-
-        t_cool field is only present if in cool mode.
-        inputs:
-            None
-        returns:
-            (int): current cool set point in degrees.
         """
-        result = self.device_id.t_cool["raw"]
-        if not isinstance(result, (int, float)):
-            raise TypeError(
-                f"cool set point is type {type(result)}, should be " f"(int, float)"
-            )
-        return result
+        return util.temp_value_with_units(self.get_cool_setpoint_raw())
 
-    def get_cool_setpoint_raw(self) -> int:
+    def get_cool_setpoint_raw(self) -> float:
         """
         Return the current raw cool setpoint.
 
@@ -548,9 +528,9 @@ class ThermostatZone(tc.ThermostatCommonZone):
         inputs:
             None
         returns:
-            (int): current raw cool set point in degrees.
+            (float): current raw cool set point in °F.
         """
-        result = self.get_cool_setpoint()
+        result = float(self.get_cool_setpoint())
         if not isinstance(result, (int, float)):
             raise TypeError(
                 f"cool setpoint raw is type {type(result)}, should be " f"(int, float)"
@@ -564,7 +544,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         inputs:
             None
         returns:
-            (dict): scheduled heat set points and times in degrees.
+            (dict): scheduled heat set points and times in °F.
         """
         result = self.device_id.program_heat["raw"]
         if not isinstance(result, dict):
@@ -574,19 +554,19 @@ class ThermostatZone(tc.ThermostatCommonZone):
             )
         return result
 
-    def get_schedule_heat_sp(self) -> int:
+    def get_schedule_heat_sp(self) -> float:
         """
         Return the scheduled heat setpoint.
 
         inputs:
             None
         returns:
-            (int): current scheduled heat set point in degrees.
+            (float): current scheduled heat set point in °F.
         """
-        result = self.get_schedule_setpoint(self.device_id.program_heat)
-        if not isinstance(result, int):
+        result = float(self.get_schedule_setpoint(self.device_id.program_heat))
+        if not isinstance(result, float):
             raise TypeError(
-                f"schedule heat set point is type {type(result)}, " f"should be int"
+                f"schedule heat set point is type {type(result)}, " f"should be float"
             )
         return result
 
@@ -597,7 +577,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         inputs:
             None
         returns:
-            (dict): current scheduled cool set point in degrees.
+            (dict): current scheduled cool set point in °F.
         """
         result = self.device_id.program_cool["raw"]
         if not isinstance(result, dict):
@@ -607,19 +587,19 @@ class ThermostatZone(tc.ThermostatCommonZone):
             )
         return result
 
-    def get_schedule_cool_sp(self) -> int:
+    def get_schedule_cool_sp(self) -> float:
         """
         Return the sechduled cool setpoint.
 
         inputs:
             None
         returns:
-            (int): current schedule cool set point in degrees.
+            (float): current schedule cool set point in °F.
         """
-        result = self.get_schedule_setpoint(self.device_id.program_cool)
-        if not isinstance(result, int):
+        result = float(self.get_schedule_setpoint(self.device_id.program_cool))
+        if not isinstance(result, float):
             raise TypeError(
-                f"schedule cool set point is type {type(result)}, " f"should be int"
+                f"schedule cool set point is type {type(result)}, " f"should be float"
             )
         return result
 
@@ -743,7 +723,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
 
         This will also attempt to turn the thermostat to 'Heat'
         inputs:
-            temp(int): desired temperature in degrees.
+            temp(int): desired temperature in °F.
         returns:
             None
         """
@@ -755,7 +735,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
 
         This will also attempt to turn the thermostat to 'Cool'
         inputs:
-            temp(int): desired temperature in degrees.
+            temp(int): desired temperature in °F.
         returns:
             None
         """

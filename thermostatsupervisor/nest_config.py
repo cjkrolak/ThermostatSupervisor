@@ -8,8 +8,8 @@ MAIN_LEVEL = 0  # zone 0
 BASEMENT = 1  # zone 1
 
 # constants
-MAX_HEAT_SETPOINT = 69
-MIN_COOL_SETPOINT = 70
+MAX_HEAT_SETPOINT = 69.0
+MIN_COOL_SETPOINT = 70.0
 
 # all environment variables specific to this thermostat type
 env_variables = {
