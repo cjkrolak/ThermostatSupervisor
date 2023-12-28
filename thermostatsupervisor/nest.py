@@ -502,7 +502,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         """
         return self.get_battery_voltage() > 0.0
 
-    def get_heat_setpoint_raw(self) -> int:  # used
+    def get_heat_setpoint_raw(self) -> float:  # used
         """
         Refresh the cached zone information and return the heat setpoint.
 
@@ -511,7 +511,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         inputs:
             None
         returns:
-            (int): heating set point in degrees F.
+            (float): heating set point in °F.
         """
         self.refresh_zone_info()
         if self.is_heat_mode() or self.is_auto_mode():
@@ -520,35 +520,35 @@ class ThermostatZone(tc.ThermostatCommonZone):
             )
         else:
             # set point value is only valid for current mode
-            return util.BOGUS_INT  # TODO, what should this value be?
+            return float(util.BOGUS_INT)  # TODO, what should this value be?
 
     def get_heat_setpoint(self) -> str:
         """Return heat setpoint with units as a string."""
         return util.temp_value_with_units(self.get_heat_setpoint_raw())
 
-    def get_schedule_heat_sp(self) -> int:  # used
+    def get_schedule_heat_sp(self) -> float:  # used
         """
         Return the schedule heat setpoint.
 
         inputs:
             None
         returns:
-            (int): scheduled heating set point in degrees.
+            (float): scheduled heating set point in °F.
         """
-        return nest_config.MAX_HEAT_SETPOINT
+        return float(nest_config.MAX_HEAT_SETPOINT)
 
-    def get_schedule_cool_sp(self) -> int:
+    def get_schedule_cool_sp(self) -> float:
         """
         Return the schedule cool setpoint.
 
         inputs:
             None
         returns:
-            (int): scheduled cooling set point in degrees F.
+            (float): scheduled cooling set point in °F.
         """
-        return nest_config.MIN_COOL_SETPOINT
+        return float(nest_config.MIN_COOL_SETPOINT)
 
-    def get_cool_setpoint_raw(self) -> int:
+    def get_cool_setpoint_raw(self) -> float:
         """
         Return the cool setpoint.
 
@@ -557,7 +557,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         inputs:
             None
         returns:
-            (int): cooling set point in degrees F.
+            (float): cooling set point in °F.
         """
         self.refresh_zone_info()
         if self.is_cool_mode() or self.is_auto_mode():
@@ -566,7 +566,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
             )
         else:
             # set point value is only valid for current mode
-            return util.BOGUS_INT  # TODO, what should this value be?
+            return float(util.BOGUS_INT)  # TODO, what should this value be?
 
     def get_cool_setpoint(self) -> str:
         """Return cool setpoint with units as a string."""
@@ -579,7 +579,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         inputs:
             None
         returns:
-            (int): cooling set point in degrees F.
+            (int): cooling set point in °F.
         """
         return NotImplementedError(
             "Safety Temperature is not yet available through nest API"

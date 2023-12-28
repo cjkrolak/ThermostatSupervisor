@@ -98,7 +98,7 @@ runtime parameters can be specified to override defaults either via single dash 
   * emulator = zone 0 only
 * argv[3] or '-p'= poll time in seconds (default is thermostat-specific)
 * argv[4] or '-c'= re-connect time in seconds (default is thermostat-specific)
-* argv[5] or '-d'= tolerance from setpoint allowed in degrees (default is 2 degrees)
+* argv[5] or '-d'= tolerance from setpoint allowed in °F (default is 2°F)
 * argv[6] or '-m'= target thermostat mode (e.g. OFF_MODE, COOL_MODE, HEAT_MODE, DRY_MODE, etc.), not yet fully functional.
 * argv[7] or '-n'= number of measurements (default is infinitity).<br/><br/>
 command line usage (unnamed):  "*python -m thermostatsupervisor.supervise \<thermostat type\> \<zone\> \<poll time\> \<connection time\> \<tolerance\> \<target mode\> \<measurements\>*".<br/>

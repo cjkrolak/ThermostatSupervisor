@@ -284,6 +284,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
           dict if parameter=None
           str if parameter != None
         """
+        del trait  # not needed for sht31
         try:
             response = requests.get(self.url, timeout=util.HTTP_TIMEOUT)
         except requests.exceptions.ConnectionError as ex:
@@ -361,7 +362,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         inputs:
             None
         returns:
-            (float): temperature in degrees.
+            (float): temperature in °F.
         """
         return float(self.get_metadata(parameter=self.tempfield))
 
@@ -500,8 +501,6 @@ class ThermostatZone(tc.ThermostatCommonZone):
             util.log_msg(
                 f"heat setpoint={self.get_heat_setpoint()}", mode=util.BOTH_LOG
             )
-            # util.log_msg("heat setpoint raw=%s" %
-            #              zone.get_heat_setpoint_raw())
             util.log_msg(
                 f"schedule heat sp={self.get_schedule_heat_sp()}", mode=util.BOTH_LOG
             )
@@ -512,8 +511,6 @@ class ThermostatZone(tc.ThermostatCommonZone):
             util.log_msg(
                 f"cool setpoint={self.get_cool_setpoint()}", mode=util.BOTH_LOG
             )
-            # util.log_msg("cool setpoint raw=%s" %
-            #              zone.get_cool_setpoint_raw(), mode=util.BOTH_LOG)
             util.log_msg(
                 f"schedule cool sp={self.get_schedule_cool_sp()}", mode=util.BOTH_LOG
             )

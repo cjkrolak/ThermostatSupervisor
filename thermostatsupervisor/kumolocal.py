@@ -88,9 +88,9 @@ class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
         kumos = self.make_pykumos()
         device_id = kumos[self.zone_name]
         # print zone name the first time it is known
-        if self.device_id is None:
+        if self.device_id is None and self.verbose:
             util.log_msg(
-                f"zone {zone} name = '{self.zone_name}', " f"device_id={device_id}",
+                f"zone {zone} name='{self.zone_name}', " f"device_id={device_id}",
                 mode=util.DEBUG_LOG + util.STDOUT_LOG,
                 func_name=1,
             )
@@ -451,14 +451,14 @@ class ThermostatZone(tc.ThermostatCommonZone):
         self.refresh_zone_info()
         return int(self.device_id.get_standby())
 
-    def get_heat_setpoint_raw(self) -> int:  # used
+    def get_heat_setpoint_raw(self) -> float:  # used
         """
         Refresh the cached zone information and return the heat setpoint.
 
         inputs:
             None
         returns:
-            (int): heating set point in degrees F.
+            (float): heating set point in °F.
         """
         self.refresh_zone_info()
         return util.c_to_f(self.device_id.get_heat_setpoint())
@@ -467,36 +467,36 @@ class ThermostatZone(tc.ThermostatCommonZone):
         """Return heat setpoint with units as a string."""
         return util.temp_value_with_units(self.get_heat_setpoint_raw())
 
-    def get_schedule_heat_sp(self) -> int:  # used
+    def get_schedule_heat_sp(self) -> float:  # used
         """
         Return the schedule heat setpoint.
 
         inputs:
             None
         returns:
-            (int): scheduled heating set point in degrees.
+            (float): scheduled heating set point in °F.
         """
-        return kumolocal_config.MAX_HEAT_SETPOINT  # max heat set point allowed
+        return float(kumolocal_config.MAX_HEAT_SETPOINT)  # max heat set point allowed
 
-    def get_schedule_cool_sp(self) -> int:
+    def get_schedule_cool_sp(self) -> float:
         """
         Return the schedule cool setpoint.
 
         inputs:
             None
         returns:
-            (int): scheduled cooling set point in degrees F.
+            (float): scheduled cooling set point in °F.
         """
-        return kumolocal_config.MIN_COOL_SETPOINT  # min cool set point allowed
+        return float(kumolocal_config.MIN_COOL_SETPOINT)  # min cool set point allowed
 
-    def get_cool_setpoint_raw(self) -> int:
+    def get_cool_setpoint_raw(self) -> float:
         """
         Return the cool setpoint.
 
         inputs:
             None
         returns:
-            (int): cooling set point in degrees F.
+            (float): cooling set point in °F.
         """
         self.refresh_zone_info()
         return util.c_to_f(self.device_id.get_cool_setpoint())
