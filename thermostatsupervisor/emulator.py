@@ -1,5 +1,6 @@
 """emulator integration"""
 import random
+import time
 import traceback
 
 # local imports
@@ -126,6 +127,10 @@ class ThermostatZone(tc.ThermostatCommonZone):
         # runtime parameter defaults
         self.poll_time_sec = 1 * 60  # default to 1 minutes
         self.connection_time_sec = 1 * 60 * 60  # default to 1 hours
+
+        # server data cache expiration parameters
+        self.fetch_interval_sec = 30  # age of server data before refresh
+        self.last_fetch_time = time.time() - 2 * self.fetch_interval_sec
 
         # switch config for this thermostat, numbers are unique and arbitrary
         self.system_switch_position[tc.ThermostatCommonZone.OFF_MODE] = 0
@@ -532,8 +537,13 @@ class ThermostatZone(tc.ThermostatCommonZone):
         returns:
             None, zone_data is refreshed.
         """
-        del force_refresh
-        # do nothing
+        now_time = time.time()
+        # refresh if past expiration date or force_refresh option
+        if force_refresh or (
+            now_time >= (self.last_fetch_time + self.fetch_interval_sec)
+        ):
+            # do nothing
+            self.last_fetch_time = now_time
 
     def report_heating_parameters(self, switch_position=None):
         """

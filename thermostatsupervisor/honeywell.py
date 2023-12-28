@@ -431,6 +431,10 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
         # not showing error on Pi at 10 minutes, so changed default to 10 min.
         self.connection_time_sec = 8 * 60 * 60  # default to 8 hours
 
+        # server data cache expiration parameters
+        self.fetch_interval_sec = 60  # age of server data before refresh
+        self.last_fetch_time = time.time() - 2 * self.fetch_interval_sec
+
     def get_zone_name(self) -> str:  # used
         """
         Refresh the cached zone information then return Name.
@@ -877,20 +881,22 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
         returns:
             None, populates self.zone_info dict.
         """
-        del force_refresh  # not used
-        all_zones_info = get_zones_info_with_retries(
-            self.pyhtcc.get_zones_info, self.thermostat_type, self.zone_name
-        )
-        # all_zones_info = self.pyhtcc.get_zones_info()
-        for zone_data in all_zones_info:
-            if zone_data["DeviceID"] == self.device_id:
-                pyhtcc.logger.debug(
-                    f"Refreshed zone info for \
-                                    {self.device_id}"
-                )
-                self.zone_info = zone_data
-                self.last_fetch_time = time.time()
-                return
+        now_time = time.time()
+        # refresh if past expiration date or force_refresh option
+        if force_refresh or (
+            now_time >= (self.last_fetch_time + self.fetch_interval_sec)
+        ):
+            all_zones_info = get_zones_info_with_retries(
+                self.pyhtcc.get_zones_info, self.thermostat_type, self.zone_name
+            )
+            for zone_data in all_zones_info:
+                if zone_data["DeviceID"] == self.device_id:
+                    pyhtcc.logger.debug(
+                        f"Refreshed zone info for \
+                                        {self.device_id}"
+                    )
+                    self.zone_info = zone_data
+                    self.last_fetch_time = now_time
 
 
 # add default requests session default timeout to prevent TimeoutExceptions
