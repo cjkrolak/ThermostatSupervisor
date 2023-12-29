@@ -63,7 +63,7 @@ class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
         self.zone_name = kumocloud_config.metadata[self.zone_number]["zone_name"]
         self.device_id = self.get_target_zone_id(self.zone_name)
         self.serial_number = None  # will be populated when unit is queried.
-        self.zone_info = None
+        self.zone_info = {}
 
     def get_target_zone_id(self, zone=0):
         """
@@ -229,7 +229,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         self.connection_time_sec = 8 * 60 * 60  # default to 8 hours
 
         # server data cache expiration parameters
-        self.fetch_interval_sec = 10  # age of server data before refresh
+        self.fetch_interval_sec = 60  # age of server data before refresh
         self.last_fetch_time = time.time() - 2 * self.fetch_interval_sec
 
         # switch config for this thermostat
