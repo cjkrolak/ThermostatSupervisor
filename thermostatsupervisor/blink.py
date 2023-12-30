@@ -487,6 +487,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
 if __name__ == "__main__":
     # verify environment
     env.get_python_version()
+    env.show_package_version(blinkpy)
 
     # get zone override
     api.uip = api.UserInputs(argv_list=None, thermostat_type=blink_config.ALIAS)
@@ -496,14 +497,15 @@ if __name__ == "__main__":
         blink_config.ALIAS, zone_number, ThermostatClass, ThermostatZone
     )
 
-    tc.print_select_data_from_all_zones(
-        blink_config.ALIAS,
-        blink_config.get_available_zones(),
-        ThermostatClass,
-        ThermostatZone,
-        display_wifi=True,
-        display_battery=True,
-    )
+    # this code is rem'd out because it will trigger blink server spam detectors.
+    # tc.print_select_data_from_all_zones(
+    #     blink_config.ALIAS,
+    #     blink_config.get_available_zones(),
+    #     ThermostatClass,
+    #     ThermostatZone,
+    #     display_wifi=True,
+    #     display_battery=True,
+    # )
 
     # measure thermostat response time
     if blink_config.check_response_time:

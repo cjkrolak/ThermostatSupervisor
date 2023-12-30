@@ -810,6 +810,7 @@ radiotherm.thermostat.Thermostat.__init__ = __init__
 if __name__ == "__main__":
     # verify environment
     env.get_python_version()
+    env.show_package_version(radiotherm)
 
     # get zone override
     api.uip = api.UserInputs(argv_list=None, thermostat_type=mmm_config.ALIAS)
