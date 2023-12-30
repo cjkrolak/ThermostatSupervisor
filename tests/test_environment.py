@@ -254,6 +254,10 @@ class EnvironmentTests(utc.UnitTest):
                 f"{return_type}, actual_type {type(return_val)}",
             )
 
+    def test_show_package_version(self):
+        """Verify show_package_version()."""
+        env.show_package_version(thermostatsupervisor)
+
 
 if __name__ == "__main__":
     util.log_msg.debug = True

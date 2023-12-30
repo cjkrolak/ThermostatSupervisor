@@ -726,6 +726,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
 if __name__ == "__main__":
     # verify environment
     env.get_python_version()
+    env.show_package_version(nest)
 
     # get zone override
     api.uip = api.UserInputs(argv_list=None, thermostat_type=nest_config.ALIAS)
