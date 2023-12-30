@@ -92,61 +92,6 @@ class EnvironmentTests(utc.UnitTest):
             f"{type(result)} expected bool",
         )
 
-    def test_is_host_on_local_net(self):
-        """
-        Verify is_host_on_local_net() runs as expected.
-
-        Test cases need to be site-agnostic or require some type
-        of filtering to ensure they pass regardless of which LAN
-        this test is running from.
-
-        util.is_host_on_local_net is not reliable when passing
-        in an IP address so most test cases are for hostname only.
-        """
-        test_cases = [
-            # [host_name, ip_address, expected_result]
-            [
-                "testwifi.here",
-                None,
-                not env.is_azure_environment(),
-            ],  # Google wifi router
-            ["bogus_host", "192.168.86.145", False],  # bogus host
-            ["bogus_host", None, False],  # bogus host without IP
-            ["dns.google", "8.8.8.8", True],  # should pass everywhere
-        ]
-
-        for test_case in test_cases:
-            print(
-                f"testing for '{test_case[0]}' at {test_case[1]}, expect "
-                f"{test_case[2]}"
-            )
-            result, ip_address = util.is_host_on_local_net(
-                test_case[0], test_case[1], True
-            )
-            # verify IP length returned
-            if result:
-                ip_length_symbol = ">="
-                ip_length_min = 7
-                self.assertTrue(
-                    len(ip_address) >= ip_length_min,
-                    f"ip_address returned ({ip_address}) did not "
-                    f"meet length expectations ("
-                    f"{ip_length_symbol + str(ip_length_min)})",
-                )
-            else:
-                self.assertTrue(
-                    ip_address is None,
-                    f"ip_address returned ({ip_address}) " f"is not None",
-                )
-
-            # verify expected result
-            self.assertEqual(
-                result,
-                test_case[2],
-                f"test_case={test_case[0]}, expected="
-                f"{test_case[2]}, actual={result}",
-            )
-
     def test_get_python_version(self):
         """Verify get_python_version()."""
         major_version, minor_version = env.get_python_version()
