@@ -293,6 +293,7 @@ def dynamic_module_import(name, path=None, pkg=None, verbose=False):
         util.log_msg("module load failed: " + name, mode=util.BOTH_LOG, func_name=1)
         raise ex
     else:
+        show_package_version(mod)
         return mod
 
 
@@ -330,7 +331,11 @@ def get_package_version(module, element=None, verbose=False):
         element = element.lower()
 
     # trim off any dev suffixes from module version
-    module_version = ".".join(module.__version__.split(".")[:3])
+    try:
+        module_version = ".".join(module.__version__.split(".")[:3])
+    except AttributeError:
+        # __version__ attribute not available for pkg use dummy verison.
+        module_version = "0.0.0"
 
     # parse the version string into a tuple of ints
     ver_tuple = tuple(map(int, module_version.split(".")))
@@ -350,3 +355,17 @@ def get_package_version(module, element=None, verbose=False):
     else:
         raise AttributeError(f"{element} is not a valid choice for element input")
     return return_val
+
+
+def show_package_version(module):
+    """
+    Display the current package version.
+
+    inputs:
+        module(obj): imported module.
+    returns:
+        (None): displays package version to stdio.
+    """
+    pkg_version = get_package_version(module)
+    pkg_version_str = ".".join(tuple(map(str, pkg_version)))
+    print(f"'{module.__name__}' version installed: " f"{pkg_version_str}")
