@@ -1,6 +1,6 @@
 [![Codacy Security Scan](https://github.com/cjkrolak/ThermostatSupervisor/actions/workflows/codacy-analysis.yml/badge.svg)](https://github.com/cjkrolak/ThermostatSupervisor/actions/workflows/codacy-analysis.yml)
 [![CodeQL](https://github.com/cjkrolak/ThermostatSupervisor/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/cjkrolak/ThermostatSupervisor/actions/workflows/codeql-analysis.yml)
-[![Build Status](https://dev.azure.com/cjkrolak/cjkrolak/_apis/build/status/cjkrolak.ThermostatSupervisor?branchName=develop)](https://dev.azure.com/cjkrolak/cjkrolak/_build/latest?definitionId=1&branchName=develop)
+[![Build Status](https://dev.azure.com/cjkrolak/ThermostatSupervisor/_apis/build/status%2Fcjkrolak.ThermostatSupervisor?branchName=develop)](https://dev.azure.com/cjkrolak/ThermostatSupervisor/_build/latest?definitionId=3&branchName=develop)
 [![Docker Image CI](https://github.com/cjkrolak/ThermostatSupervisor/actions/workflows/docker-image.yml/badge.svg)](https://github.com/cjkrolak/ThermostatSupervisor/actions/workflows/docker-image.yml)
 [![OSSAR](https://github.com/cjkrolak/ThermostatSupervisor/actions/workflows/ossar-analysis.yml/badge.svg)](https://github.com/cjkrolak/ThermostatSupervisor/actions/workflows/ossar-analysis.yml)
 [![Pylint](https://github.com/cjkrolak/ThermostatSupervisor/actions/workflows/pylint.yml/badge.svg)](https://github.com/cjkrolak/ThermostatSupervisor/actions/workflows/pylint.yml)
