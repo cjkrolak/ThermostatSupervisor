@@ -1,14 +1,42 @@
-**/data
+# files excluded by git
+
+# python cache files
+__pycache__
 **/__pycache__
-**/debug
-**/doc
-supervisor-env.txt
-**/htmlcov
+
+# python distribution files
+dist
+build
+*.egg-info
+
+# python testing files
+htmlcov
+.tox
 .coverage
+
+# python virtual environment files
+.venv
+venv
+env
+
+# python logs
+*.log
+
+# python test coverage files
+.coverage
+.coverage.*
+htmlcov
+
+# project files
 .project
 .pydevproject
+.settings
+
+# data and environmental files
+**/data
+data
+debug
+doc
 *.ini
 *.json
-.settings
-dist/
-**.egg-info/
+supervisor-env.txt

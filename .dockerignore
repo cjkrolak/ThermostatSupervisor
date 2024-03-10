@@ -1,17 +1,81 @@
-.git
-.github
-azure-pipelines.yml
-CONTRIBUTING.md
+# files excluded by git
+
+# python cache files
+__pycache__
+**/__pycache__
+
+# python distribution files
+dist
+build
+*.egg-info
+
+# python testing files
+htmlcov
+.tox
+.coverage
+
+# python virtual environment files
+.venv
+venv
+env
+
+# python logs
+*.log
+
+# python test coverage files
+.coverage
+.coverage.*
+htmlcov
+
+# project files
+.project
+.pydevproject
+.settings
+
+# data and environmental files
+**/data
 data
 debug
 doc
-LICENSE
-setup.cfg
+*.ini
+*.json
 supervisor-env.txt
-tests/data
-tests/htmlcov
-thermostatsupervisor/data
+
+# files included in git but not included in docker
+
+# git
+.git
+.github
 .gitattributes
 .gitignore
-.project
-.pydevproject
+.gitmodules
+.gitconfig
+.gitkeep
+.gitmessage
+.gitlab-ci.yml
+.gitlab
+.gitignore_global
+
+# docker build files
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# testing files
+test
+tests
+test_*.py
+*_test.py
+tests.py
+test.py
+
+# IDE files
+.vscode
+settings
+
+# editor files
+*.editorconfig
+.editorconfig
+
+# CI/CD files
+azure-pipelines.yml
