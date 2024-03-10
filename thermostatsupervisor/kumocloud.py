@@ -548,9 +548,10 @@ class ThermostatZone(tc.ThermostatCommonZone):
 
         rssi is sometimes reported in the reportedCondition dict,
         rssi is always reported in the rssi dict.
+        rssi dict can be empty if unit is off.
         """
         self.refresh_zone_info()
-        return float(self.get_parameter("rssi", "rssi"))
+        return float(self.get_parameter("rssi", "rssi", None, util.BOGUS_INT))
 
     def get_wifi_status(self) -> bool:  # noqa R0201
         """Return the wifi connection status."""
