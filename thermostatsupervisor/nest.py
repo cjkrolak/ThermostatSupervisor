@@ -23,7 +23,7 @@ from thermostatsupervisor import utilities as util
 # python-nest package import
 # note this code uses python-google-nest package.
 # Installing python-nest package will corrupt the python-google-nest install
-NEST_DEBUG = False  # debug uses local nest repo instead of pkg
+NEST_DEBUG = True  # debug uses local nest repo instead of pkg
 if NEST_DEBUG and not env.is_azure_environment():
     mod_path = "..\\python-nest\\nest"
     if env.is_interactive_environment():
@@ -88,6 +88,8 @@ class ThermostatClass(tc.ThermostatCommon):
             reautherize_callback=self.reautherize_callback,
             cache_period=self.cache_period,
         )
+        print(f"DEBUG: nest tstat obj dir: {dir(self.thermostat_obj)}")
+
         # get device data
         self.devices = self.get_device_data()
 
