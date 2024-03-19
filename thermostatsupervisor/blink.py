@@ -48,7 +48,8 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):
         self.bl_uname = os.environ.get(
             self.BL_UNAME_KEY, "<" + self.BL_UNAME_KEY + "_KEY_MISSING>"
         )
-        self.bl_pwd = os.environ.get(self.BL_PASSWORD_KEY, "<" + self.BL_PASSWORD_KEY + "_KEY_MISSING>"
+        self.bl_pwd = os.environ.get(
+            self.BL_PASSWORD_KEY, "<" + self.BL_PASSWORD_KEY + "_KEY_MISSING>"
         )
         self.auth_dict = {"username": self.bl_uname, "password": self.bl_pwd}
         self.BL_2FA_KEY = "BLINK_2FA"
