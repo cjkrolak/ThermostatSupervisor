@@ -23,10 +23,8 @@ RUN pip list
 # copy source code
 COPY . .
 
-# execute the script, default to Honeywell zone 0 if runtime parameters are not provided
-#CMD ["supervise.py", "honeywell", "0"]
-#ENTRYPOINT ["python3"]
+# execute the script
 ENTRYPOINT ["python3", "-m"]
-# defaults runtime parameters if not specified
+# defaults runtime parameters to emulator zone 0 if runtime parameters are not provided
 # [module, thermostat, zone, poll time, connect time, tolerance, target mode, measurements]
 CMD ["thermostatsupervisor.supervise", "emulator", "0", "30", "86400", "3", "OFF_MODE", "4"]
