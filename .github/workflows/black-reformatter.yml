@@ -1,7 +1,9 @@
 name: black-action
+
 on:
   pull_request:
     branches: [ develop ]
+
 jobs:
   linter_name:
     name: runner / black
