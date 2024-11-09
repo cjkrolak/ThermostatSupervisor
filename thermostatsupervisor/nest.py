@@ -88,6 +88,8 @@ class ThermostatClass(tc.ThermostatCommon):
             reautherize_callback=self.reautherize_callback,
             cache_period=self.cache_period,
         )
+        print(f"DEBUG: nest tstat obj dir: {dir(self.thermostat_obj)}")
+
         # get device data
         self.devices = self.get_device_data()
 
