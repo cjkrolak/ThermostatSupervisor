@@ -114,8 +114,10 @@ class ThermostatClass(tc.ThermostatCommon):
             self.devices = self.thermostat_obj.get_devices()
         except oauthlib.oauth2.rfc6749.errors.InvalidGrantError as e:
             print(f"ERROR: {e}")
-            print("access token has expired, user must manually reauthorize account "
-                  "and get new access token, then update the access_token.json file.")
+            print(
+                "access token has expired, user must manually reauthorize account "
+                "and get new access token, then update the access_token.json file."
+            )
             raise e
         # TODO is there a chance that meta data changes?
         return self.devices
