@@ -13,6 +13,7 @@ import time
 
 # thrid party libaries
 import oauthlib.oauth2.rfc6749.errors
+import requests
 
 # local imports
 from thermostatsupervisor import nest_config
@@ -24,7 +25,7 @@ from thermostatsupervisor import utilities as util
 # python-nest package import
 # note this code uses python-google-nest package.
 # Installing python-nest package will corrupt the python-google-nest install
-NEST_DEBUG = True  # debug uses local nest repo instead of pkg
+NEST_DEBUG = False  # debug uses local nest repo instead of pkg
 if NEST_DEBUG and not env.is_azure_environment():
     mod_path = "..\\python-nest\\nest"
     if env.is_interactive_environment():
@@ -55,6 +56,7 @@ class ThermostatClass(tc.ThermostatCommon):
 
         # gcloud token cache
         self.access_token_cache_file = nest_config.cache_file_location
+        self.refresh_token = None
         self.cache_period = nest_config.cache_period_sec
 
         # get credentials from env vars
@@ -115,12 +117,53 @@ class ThermostatClass(tc.ThermostatCommon):
         except oauthlib.oauth2.rfc6749.errors.InvalidGrantError as e:
             print(f"ERROR: {e}")
             print(
-                "access token has expired, user must manually reauthorize account "
-                "and get new access token, then update the access_token.json file."
+                "access token has expired, attempting to refresh the access token..."
             )
-            raise e
+            self.refresh_oauth_token()
+            # raise e
         # TODO is there a chance that meta data changes?
         return self.devices
+
+    def refresh_oauth_token(self):
+        """
+        Refreshes the OAuth2 access token using the provided client credentials and
+        refresh token.
+        Args:
+            None
+        Returns:
+            None, refresh token and token file are updated.
+        """
+
+        # Read refresh tokenfrom from file
+        print("reading refresh token from file...")
+        if not os.path.exists(self.access_token_cache_file):
+            raise FileNotFoundError(
+                f"Token cache file not found: {self.access_token_cache_file}")
+        with open(self.access_token_cache_file, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+            current_refresh_token = data['refresh_token']
+     
+        params = {
+                "grant_type": "refresh_token",
+                "client_id": self.client_id,
+                "client_secret": self.client_secret,
+                "refresh_token": current_refresh_token
+        }
+
+        authorization_url = "https://www.googleapis.com/oauth2/v4/token"
+
+        r = requests.post(authorization_url, data=params, timeout=10)
+
+        if r.ok:
+            self.refresh_token = r.json()['access_token']
+      
+            # update the token file
+            print("updating access token file...")
+            data['refresh_token'] = r.json()['access_token']
+
+            # Write JSON back to file
+            with open('data.json', 'w') as f:
+                json.dump(data, f, indent=4)
 
     def get_zone_name(self):
         """
@@ -150,7 +193,7 @@ class ThermostatClass(tc.ThermostatCommon):
         returns:
             callable[(str), (str)]: callback function.
         """
-        print(f"Please go to {authorization_url} and authorize access")
+        print(f"Please go to URL\n\n'{authorization_url}'\n\nand authorize access")
         return input("Enter the full callback URL: ")
 
     def get_target_zone_id(self, zone=0):
