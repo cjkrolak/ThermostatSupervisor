@@ -119,7 +119,7 @@ def is_interactive_environment():
     parent = psutil.Process(os.getpid()).parent().name()
     if parent in ["cmd.exe", "py.exe", "bash"]:
         return False
-    elif parent == "eclipse.exe":
+    elif parent in ["eclipse.exe", "python.exe", "pycharm.exe"]:
         return True
     else:
         print(f"DEBUG: parent process={parent}")
