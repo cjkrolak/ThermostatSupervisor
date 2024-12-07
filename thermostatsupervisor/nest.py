@@ -161,7 +161,7 @@ class ThermostatClass(tc.ThermostatCommon):
             data["refresh_token"] = r.json()["access_token"]
 
             # Write JSON back to file
-            with open("data.json", "w") as f:
+            with open(self.access_token_cache_file, "w") as f:
                 json.dump(data, f, indent=4)
 
     def get_zone_name(self):
