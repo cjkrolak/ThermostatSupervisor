@@ -116,9 +116,7 @@ class ThermostatClass(tc.ThermostatCommon):
             self.devices = self.thermostat_obj.get_devices()
         except oauthlib.oauth2.rfc6749.errors.InvalidGrantError as e:
             print(f"ERROR: {e}")
-            print(
-                "access token has expired, attempting to refresh the access token..."
-            )
+            print("access token has expired, attempting to refresh the access token...")
             self.refresh_oauth_token()
             # raise e
         # TODO is there a chance that meta data changes?
@@ -138,16 +136,17 @@ class ThermostatClass(tc.ThermostatCommon):
         print("reading refresh token from file...")
         if not os.path.exists(self.access_token_cache_file):
             raise FileNotFoundError(
-                f"Token cache file not found: {self.access_token_cache_file}")
-        with open(self.access_token_cache_file, 'r', encoding='utf-8') as f:
+                f"Token cache file not found: {self.access_token_cache_file}"
+            )
+        with open(self.access_token_cache_file, "r", encoding="utf-8") as f:
             data = json.load(f)
-            current_refresh_token = data['refresh_token']
-     
+            current_refresh_token = data["refresh_token"]
+
         params = {
-                "grant_type": "refresh_token",
-                "client_id": self.client_id,
-                "client_secret": self.client_secret,
-                "refresh_token": current_refresh_token
+            "grant_type": "refresh_token",
+            "client_id": self.client_id,
+            "client_secret": self.client_secret,
+            "refresh_token": current_refresh_token,
         }
 
         authorization_url = "https://www.googleapis.com/oauth2/v4/token"
@@ -155,14 +154,14 @@ class ThermostatClass(tc.ThermostatCommon):
         r = requests.post(authorization_url, data=params, timeout=10)
 
         if r.ok:
-            self.refresh_token = r.json()['access_token']
-      
+            self.refresh_token = r.json()["access_token"]
+
             # update the token file
             print("updating access token file...")
-            data['refresh_token'] = r.json()['access_token']
+            data["refresh_token"] = r.json()["access_token"]
 
             # Write JSON back to file
-            with open('data.json', 'w') as f:
+            with open(self.access_token_cache_file, "w") as f:
                 json.dump(data, f, indent=4)
 
     def get_zone_name(self):
