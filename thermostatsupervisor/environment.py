@@ -271,10 +271,7 @@ def dynamic_module_import(name, path=None, pkg=None, verbose=False):
             path = convert_to_absolute_path(path)
 
             # local file import from relative or abs path
-            print(
-                f"WARNING: attempting local import of {name} from "
-                f"path {path}..."
-            )
+            print(f"WARNING: attempting local import of {name} from " f"path {path}...")
             if verbose:
                 print(f"target dir contents={os.listdir(path)}")
                 print(f"adding '{path}' to system path")
