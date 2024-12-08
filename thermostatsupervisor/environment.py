@@ -263,7 +263,11 @@ def dynamic_module_import(name, path=None, pkg=None, verbose=False):
     if pkg is not None:
         pkg_path = get_parent_path(os.getcwd()) + "//" + pkg
         print(f"adding package '{pkg_path}' to path...")
-        sys.path.insert(1, pkg_path)
+        # add to front(0) of path to ensure that package folder is prioritized over
+        # local folder
+        sys.path.insert(0, pkg_path)
+        if verbose:
+            print(f"sys.path={sys.path}")
 
     try:
         if path:
