@@ -227,16 +227,16 @@ class EnvironmentTests(utc.UnitTest):
         absolute_path = env.convert_to_absolute_path(relative_path)
         self.assertTrue(
             os.path.isabs(absolute_path),
-            f"convert_to_absolute_path() returned '{absolute_path}' which is not an absolute path",
-        )
+            f"convert_to_absolute_path() returned '{absolute_path}' which is not an "
+            "absolute path",)
 
         # Test with an empty string
         relative_path = ""
         absolute_path = env.convert_to_absolute_path(relative_path)
         self.assertTrue(
             os.path.isabs(absolute_path),
-            f"convert_to_absolute_path() returned '{absolute_path}' which is not an absolute path",
-        )
+            f"convert_to_absolute_path() returned '{absolute_path}' which is not an "
+            "absolute path",)
 
         # Test with a None input
         with self.assertRaises(TypeError):
