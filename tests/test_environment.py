@@ -203,6 +203,49 @@ class EnvironmentTests(utc.UnitTest):
         """Verify show_package_version()."""
         env.show_package_version(thermostatsupervisor)
 
+    def test_get_package_path(self):
+        """Verify get_package_path()."""
+        pkg = thermostatsupervisor
+        return_val = env.get_package_path(pkg)
+        self.assertTrue(
+            isinstance(return_val, str),
+            f"get_package_path() returned '{return_val}' which is not a string",
+        )
+        self.assertTrue(
+            os.path.exists(return_val),
+            f"get_package_path() returned '{return_val}' which does not exist",
+        )
+        self.assertTrue(
+            return_val.endswith(".py"),
+            f"get_package_path() returned '{return_val}' which is not a .py file",
+        )
+
+    def test_convert_to_absolute_path(self):
+        """Verify convert_to_absolute_path()."""
+        # Test with a valid relative path
+        relative_path = "some/relative/path"
+        absolute_path = env.convert_to_absolute_path(relative_path)
+        self.assertTrue(
+            os.path.isabs(absolute_path),
+            f"convert_to_absolute_path() returned '{absolute_path}' which is not an absolute path",
+        )
+
+        # Test with an empty string
+        relative_path = ""
+        absolute_path = env.convert_to_absolute_path(relative_path)
+        self.assertTrue(
+            os.path.isabs(absolute_path),
+            f"convert_to_absolute_path() returned '{absolute_path}' which is not an absolute path",
+        )
+
+        # Test with a None input
+        with self.assertRaises(TypeError):
+            env.convert_to_absolute_path(None)
+
+        # Test with a non-string input
+        with self.assertRaises(TypeError):
+            env.convert_to_absolute_path(123)
+
 
 if __name__ == "__main__":
     util.log_msg.debug = True

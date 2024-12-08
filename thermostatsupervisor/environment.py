@@ -267,13 +267,17 @@ def dynamic_module_import(name, path=None, pkg=None, verbose=False):
 
     try:
         if path:
+            # convert to abs path
+            path = convert_to_absolute_path(path)
+
             # local file import from relative or abs path
             print(
                 f"WARNING: attempting local import of {name} from "
-                f"working directory {os.getcwd()}..."
+                f"path {path}..."
             )
             if verbose:
                 print(f"target dir contents={os.listdir(path)}")
+                print(f"adding '{path}' to system path")
             sys.path.insert(1, path)
             mod = importlib.import_module(name)
             if mod is None:
@@ -295,6 +299,20 @@ def dynamic_module_import(name, path=None, pkg=None, verbose=False):
     else:
         show_package_version(mod)
         return mod
+
+
+def convert_to_absolute_path(relative_path):
+    """
+    Convert a relative path to an absolute path.
+
+    inputs:
+        relative_path(str): relative path
+    returns:
+        (str): absolute path
+    """
+    if not isinstance(relative_path, str):
+        raise TypeError("relative_path must be a string")
+    return os.path.abspath(relative_path).replace("\\", "/")
 
 
 def get_parent_path(source_path, verbose=False):
@@ -366,6 +384,19 @@ def show_package_version(module):
     returns:
         (None): displays package version to stdio.
     """
+    pkg_path = get_package_path(module).replace("\\", "/")
     pkg_version = get_package_version(module)
     pkg_version_str = ".".join(tuple(map(str, pkg_version)))
-    print(f"'{module.__name__}' version installed: " f"{pkg_version_str}")
+    print(f"'{module.__name__}' version {pkg_version_str} installed from {pkg_path}")
+
+
+def get_package_path(module):
+    """
+    Get the path to the installed package.
+
+    inputs:
+        module(obj): imported module.
+    returns:
+        (str): path to installed package.
+    """
+    return module.__dict__["__file__"]
