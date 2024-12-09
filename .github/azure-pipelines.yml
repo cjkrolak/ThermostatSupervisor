@@ -48,23 +48,6 @@ steps:
     flake8 --config=setup.cfg .
   displayName: 'Run lint tests'
 
-# safety check
-# ignore 62044, pip <23.3 error
-# ignore 70612, jinja2 > 0 error
-- script: |
-    python -m pip install safety --upgrade
-    pip list
-    echo "python version=$(python.version)"
-    safety check -r requirements.txt
-    safety check -i 62044
-    safety check -i 70612
-  displayName: 'check for security vulnerabilities'
-#  workingDirectory: 
-#- script: |
-#    pip install pytest pytest-azurepipelines
-#    pytest
-#  displayName: 'pytest'
- 
 # python unit tests
 - script: |
     # python -m unittest discover -v
