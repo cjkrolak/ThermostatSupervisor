@@ -1,0 +1,18 @@
+name: Safety Scan
+on:
+    pull_request:
+      branches: [ develop ]
+jobs:
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run Safety CLI to check for vulnerabilities
+        uses: pyupio/safety-action@v1
+        with:
+          api-key: ${{ secrets.SAFETY_API_KEY }}
+
+#      args:
+#          -r requirements.txt
+#          -i 62044
+#          -i 70612
