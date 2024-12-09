@@ -12,7 +12,9 @@ jobs:
         with:
           api-key: ${{ secrets.SAFETY_API_KEY }}
 
+# these args were used in the ADO pipeline with safety check, not sure if they are needed here or in a safety policy
+# ref: https://docs.safetycli.com/safety-docs/administration/safety-policy-files
 #      args:
 #          -r requirements.txt
-#          -i 62044
-#          -i 70612
+#          -i 62044 , pip <23.3 error
+#          -i 70612, jinja2 > 0 error
