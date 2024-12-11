@@ -1,12 +1,15 @@
-version: "3.0"
+version: '3.0'
 
 scanning-settings:
   max-depth: 6
   exclude: []
-  include-files: []
+  include-files:
+    - path: requirements.txt
+      file-type: requirements.txt
+    - path: requirements_sht31.txt
+      file-type: requirements.txt
   system:
     targets: []
-
 
 report:
   dependency-vulnerabilities:
@@ -16,7 +19,13 @@ report:
         environment-results: true
         unpinned-requirements: true
       cvss-severity: []
-
+      vulnerabilities:
+        70612:
+          reason: Jinga2>0 error
+          expires: '2024-06-01'
+        62044:
+          reason: pip<23.3 error
+          expires: '2024-06-01'
 
 fail-scan-with-exit-code:
   dependency-vulnerabilities:
