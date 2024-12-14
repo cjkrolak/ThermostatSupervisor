@@ -415,9 +415,10 @@ class Sensors:
                 f"toggles completed at "
                 f"{recovery_freq_hz} Hz"
             )
-            msg_dict[
-                "next_step"
-            ] = "please reboot pi, restart flask server, and test bus using the diag command.  Reboot sequence may need to be repeated multiple times to resolve a locked i2c bus."
+            msg_dict["next_step"] = \
+                ("please reboot pi, restart flask server, and test bus using the diag "
+                 "command.  Reboot sequence may need to be repeated multiple times to "
+                 "resolve a locked i2c bus.")
             return {"i2c_recovery": msg_dict}
         finally:
             GPIO.cleanup()  # clean up GPIO
