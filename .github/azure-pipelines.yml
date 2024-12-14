@@ -18,9 +18,9 @@ pool:
 
 strategy:
   matrix:
-    Python309:
-      python.version: '3.9'
-    # rem out 3.10 thru 3.12 to save CI time
+    # rem out 3.09 thru 3.12 to save CI time
+    # Python309:
+    #   python.version: '3.9'
     # Python310:
     #   python.version: '3.10'
     # Python311:
