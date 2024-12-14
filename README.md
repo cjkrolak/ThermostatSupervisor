@@ -139,7 +139,11 @@ Production data is at root, subfolders provide additional commands:<br/>
 * /enable_heater: enable the internal heater
 * /disable_heater: disable the internal heater
 * /soft_reset: perform soft reset
-* /reset: perform hard reset<br/>
+* /reset: perform hard reset
+* /i2c_recovery: perform clock reset to unlock a stuck i2c bus
+* /i2c_detect: detect i2c device on either bus
+* /i2c_detect_0: detect i2c device on bus 0
+* /i2c_detect_1: detect i2c device on bus 1<br/>
 
 ### server command line usage:<br/>
 "*python -m thermostatsupervisor.sht31_flask_server \<debug\>*"<br/>
