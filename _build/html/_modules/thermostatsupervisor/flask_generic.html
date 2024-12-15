@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>thermostatsupervisor.flask_generic &#8212; ThermostatSupervisor  documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=d1102ebc" />
+    <link rel="stylesheet" type="text/css" href="../../_static/basic.css?v=686e5160" />
+    <link rel="stylesheet" type="text/css" href="../../_static/alabaster.css?v=27fed22d" />
+    <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for thermostatsupervisor.flask_generic</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Generic Flask functionality.&quot;&quot;&quot;</span>
+
+<span class="c1"># built-in libraries</span>
+<span class="kn">import</span> <span class="nn">datetime</span>
+
+<span class="c1"># third party libraries</span>
+<span class="kn">from</span> <span class="nn">flask_apscheduler</span> <span class="kn">import</span> <span class="n">APScheduler</span>
+<span class="kn">from</span> <span class="nn">flask_ipban</span> <span class="kn">import</span> <span class="n">IpBan</span>
+
+<span class="c1"># local imports</span>
+
+<span class="c1"># ipban</span>
+<span class="n">ipban_ban_count</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="n">ipban_ban_seconds</span> <span class="o">=</span> <span class="mi">3600</span> <span class="o">*</span> <span class="mi">24</span> <span class="o">*</span> <span class="mi">7</span>  <span class="c1"># 1 wk</span>
+<span class="n">ipban_persistent</span> <span class="o">=</span> <span class="kc">False</span>  <span class="c1"># True to persist across restarts</span>
+
+
+<div class="viewcode-block" id="initialize_ipban">
+<a class="viewcode-back" href="../../docs/thermostatsupervisor.html#thermostatsupervisor.flask_generic.initialize_ipban">[docs]</a>
+<span class="k">def</span> <span class="nf">initialize_ipban</span><span class="p">(</span><span class="n">app</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Initialize ipban agent for blocking hacking attempts.</span>
+
+<span class="sd">    inputs:</span>
+<span class="sd">        app (flask app object)</span>
+<span class="sd">    returns:</span>
+<span class="sd">        (ip_ban object)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># setup ipban</span>
+    <span class="n">ip_ban</span> <span class="o">=</span> <span class="n">IpBan</span><span class="p">(</span>
+        <span class="n">app</span><span class="o">=</span><span class="n">app</span><span class="p">,</span>
+        <span class="n">ban_count</span><span class="o">=</span><span class="n">ipban_ban_count</span><span class="p">,</span>
+        <span class="n">ban_seconds</span><span class="o">=</span><span class="n">ipban_ban_seconds</span><span class="p">,</span>
+        <span class="n">persist</span><span class="o">=</span><span class="n">ipban_persistent</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">ip_ban</span><span class="o">.</span><span class="n">init_app</span><span class="p">(</span><span class="n">app</span><span class="p">)</span>
+    <span class="n">ip_ban</span><span class="o">.</span><span class="n">load_nuisances</span><span class="p">()</span>
+    <span class="n">print_ipban_block_list</span><span class="p">(</span><span class="n">ip_ban</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">ip_ban</span></div>
+
+
+
+<div class="viewcode-block" id="print_ipban_block_list">
+<a class="viewcode-back" href="../../docs/thermostatsupervisor.html#thermostatsupervisor.flask_generic.print_ipban_block_list">[docs]</a>
+<span class="k">def</span> <span class="nf">print_ipban_block_list</span><span class="p">(</span><span class="n">ip_ban</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Print the current ip_ban block list to the console.</span>
+
+<span class="sd">    inputs:</span>
+<span class="sd">        ip_ban(ip_ban object)</span>
+<span class="sd">    returns:</span>
+<span class="sd">        None</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># s = &quot;&quot;</span>
+    <span class="c1"># s += &quot;&lt;table class=&#39;table&#39;&gt;&lt;thead&gt;\n&quot;</span>
+    <span class="c1"># s += (&quot;&lt;tr&gt;&lt;th&gt;ip&lt;/th&gt;&lt;th&gt;count&lt;/th&gt;&lt;th&gt;permanent&lt;/th&gt;&lt;th&gt;url&lt;/th&gt;&lt;th&gt;&quot;</span>
+    <span class="c1">#       f&quot;timestamp&lt;/th&gt;&lt;/tr&gt;\n&quot;)</span>
+    <span class="c1"># s += &quot;&quot;&lt;/thead&gt;&lt;tbody&gt;\n&quot;</span>
+    <span class="c1"># for k, r in ip_ban.get_block_list().items():</span>
+    <span class="c1">#     s += (f&quot;&lt;tr&gt;&lt;td&gt;{k}&lt;/td&gt;&lt;td&gt;{r[&#39;count&#39;]}&lt;/td&gt;&lt;td&gt;&quot;</span>
+    <span class="c1">#           f&quot;{r.get(&#39;permanent&#39;, &#39;&#39;)}&lt;/td&gt;&lt;td&gt;{r.get(&#39;url&#39;, &#39;&#39;)}&lt;/td&gt;&lt;td&gt;&quot;</span>
+    <span class="c1">#           f&quot;{r[&#39;timestamp&#39;]}&lt;/td&gt;&lt;/tr&gt;\n&quot;)</span>
+    <span class="c1"># print(f&quot;{s}&quot;)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;ip_ban black list: </span><span class="si">{</span><span class="n">ip_ban</span><span class="o">.</span><span class="n">get_block_list</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="print_ipban_block_list_with_timestamp">
+<a class="viewcode-back" href="../../docs/thermostatsupervisor.html#thermostatsupervisor.flask_generic.print_ipban_block_list_with_timestamp">[docs]</a>
+<span class="k">def</span> <span class="nf">print_ipban_block_list_with_timestamp</span><span class="p">(</span><span class="n">ip_ban</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Print the current ip_ban block list to the console with timestamp.</span>
+
+<span class="sd">    inputs:</span>
+<span class="sd">        ip_ban(ip_ban object)</span>
+<span class="sd">    returns:</span>
+<span class="sd">        None</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">now</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span>
+    <span class="n">now_str</span> <span class="o">=</span> <span class="n">now</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s2">&quot;%Y-%m-</span><span class="si">%d</span><span class="s2"> %H:%M:%S&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">now_str</span><span class="si">}</span><span class="s2">: ip_ban black list: </span><span class="si">{</span><span class="n">ip_ban</span><span class="o">.</span><span class="n">get_block_list</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="schedule_ipban_block_list_report">
+<a class="viewcode-back" href="../../docs/thermostatsupervisor.html#thermostatsupervisor.flask_generic.schedule_ipban_block_list_report">[docs]</a>
+<span class="k">def</span> <span class="nf">schedule_ipban_block_list_report</span><span class="p">(</span><span class="n">ip_ban</span><span class="p">,</span> <span class="n">debug_mode</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Schedule an ip_ban blocked ip list report.</span>
+
+<span class="sd">    inputs:</span>
+<span class="sd">        ip_ban(ip_ban object)</span>
+<span class="sd">    returns:</span>
+<span class="sd">        None</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># interval = 1 day std, 1 min in debug mode</span>
+    <span class="n">interval_sec</span> <span class="o">=</span> <span class="mi">60</span> <span class="o">*</span> <span class="p">[</span><span class="mi">60</span> <span class="o">*</span> <span class="mi">24</span><span class="p">,</span> <span class="mi">1</span><span class="p">][</span><span class="n">debug_mode</span><span class="p">]</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;ip_ban blacklist report scheduled every </span><span class="si">{</span><span class="n">interval_sec</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mf">60.0</span><span class="si">}</span><span class="s2"> minutes&quot;</span><span class="p">)</span>
+    <span class="n">scheduler</span> <span class="o">=</span> <span class="n">APScheduler</span><span class="p">()</span>
+    <span class="n">kwargs</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;ip_ban&quot;</span><span class="p">:</span> <span class="n">ip_ban</span><span class="p">}</span>
+    <span class="n">scheduler</span><span class="o">.</span><span class="n">add_job</span><span class="p">(</span>
+        <span class="nb">id</span><span class="o">=</span><span class="s2">&quot;ip_ban blacklist report&quot;</span><span class="p">,</span>
+        <span class="n">func</span><span class="o">=</span><span class="n">print_ipban_block_list_with_timestamp</span><span class="p">,</span>
+        <span class="n">kwargs</span><span class="o">=</span><span class="n">kwargs</span><span class="p">,</span>
+        <span class="n">trigger</span><span class="o">=</span><span class="s2">&quot;interval&quot;</span><span class="p">,</span>
+        <span class="n">seconds</span><span class="o">=</span><span class="n">interval_sec</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">scheduler</span><span class="o">.</span><span class="n">start</span><span class="p">()</span></div>
+
+
+
+<div class="viewcode-block" id="set_flask_cookie_config">
+<a class="viewcode-back" href="../../docs/thermostatsupervisor.html#thermostatsupervisor.flask_generic.set_flask_cookie_config">[docs]</a>
+<span class="k">def</span> <span class="nf">set_flask_cookie_config</span><span class="p">(</span><span class="n">app</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Set cookie config to protect against cookie attack vectors in</span>
+<span class="sd">    the Flask configuration.</span>
+
+<span class="sd">    inputs:</span>
+<span class="sd">        app (flask app object)</span>
+<span class="sd">    returns:</span>
+<span class="sd">        None</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">app</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+        <span class="n">SESSION_COOKIE_SECURE</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">SESSION_COOKIE_HTTPONLY</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">SESSION_COOKIE_SAMESITE</span><span class="o">=</span><span class="s2">&quot;Lax&quot;</span><span class="p">,</span>
+    <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="print_flask_config">
+<a class="viewcode-back" href="../../docs/thermostatsupervisor.html#thermostatsupervisor.flask_generic.print_flask_config">[docs]</a>
+<span class="k">def</span> <span class="nf">print_flask_config</span><span class="p">(</span><span class="n">app</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot; &quot;&quot;&quot;</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;flask config:&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">app</span><span class="o">.</span><span class="n">config</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../index.html">ThermostatSupervisor</a></h1>
+
+
+
+
+
+
+
+
+
+<search id="searchbox" style="display: none" role="search">
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Search"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3>Navigation</h3>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;2024, Christopher Krolak.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 8.1.3</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

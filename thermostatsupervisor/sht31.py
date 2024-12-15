@@ -288,8 +288,8 @@ class ThermostatZone(tc.ThermostatCommonZone):
                       dict
           retry(bool): if True, will retry on Exception
         returns:
-          dict if parameter=None
-          str if parameter != None
+          (dict) if parameter=None
+          (str) if parameter != None
         """
         del trait  # not needed for sht31
         try:

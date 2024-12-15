@@ -1,0 +1,1025 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>thermostatsupervisor.mmm &#8212; ThermostatSupervisor  documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=d1102ebc" />
+    <link rel="stylesheet" type="text/css" href="../../_static/basic.css?v=686e5160" />
+    <link rel="stylesheet" type="text/css" href="../../_static/alabaster.css?v=27fed22d" />
+    <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for thermostatsupervisor.mmm</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">connection to 3m50 thermoststat on local net.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="c1"># built-in imports</span>
+<span class="kn">import</span> <span class="nn">datetime</span>
+<span class="kn">import</span> <span class="nn">pprint</span>
+<span class="kn">import</span> <span class="nn">socket</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">import</span> <span class="nn">traceback</span>
+<span class="kn">import</span> <span class="nn">urllib</span>
+<span class="kn">from</span> <span class="nn">dns.exception</span> <span class="kn">import</span> <span class="n">DNSException</span>
+
+<span class="c1"># local imports</span>
+<span class="kn">from</span> <span class="nn">thermostatsupervisor</span> <span class="kn">import</span> <span class="n">mmm_config</span>
+<span class="kn">from</span> <span class="nn">thermostatsupervisor</span> <span class="kn">import</span> <span class="n">thermostat_api</span> <span class="k">as</span> <span class="n">api</span>
+<span class="kn">from</span> <span class="nn">thermostatsupervisor</span> <span class="kn">import</span> <span class="n">thermostat_common</span> <span class="k">as</span> <span class="n">tc</span>
+<span class="kn">from</span> <span class="nn">thermostatsupervisor</span> <span class="kn">import</span> <span class="n">environment</span> <span class="k">as</span> <span class="n">env</span>
+<span class="kn">from</span> <span class="nn">thermostatsupervisor</span> <span class="kn">import</span> <span class="n">utilities</span> <span class="k">as</span> <span class="n">util</span>
+
+<span class="c1"># radiotherm import</span>
+<span class="n">MMM_DEBUG</span> <span class="o">=</span> <span class="kc">False</span>  <span class="c1"># debug uses local radiotherm repo instead of pkg</span>
+<span class="k">if</span> <span class="n">MMM_DEBUG</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">env</span><span class="o">.</span><span class="n">is_azure_environment</span><span class="p">():</span>
+    <span class="n">mod_path</span> <span class="o">=</span> <span class="s2">&quot;..//radiotherm&quot;</span>
+    <span class="k">if</span> <span class="n">env</span><span class="o">.</span><span class="n">is_interactive_environment</span><span class="p">():</span>
+        <span class="n">mod_path</span> <span class="o">=</span> <span class="s2">&quot;..</span><span class="se">\\</span><span class="s2">&quot;</span> <span class="o">+</span> <span class="n">mod_path</span>
+    <span class="n">radiotherm</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">dynamic_module_import</span><span class="p">(</span><span class="s2">&quot;radiotherm&quot;</span><span class="p">,</span> <span class="n">mod_path</span><span class="p">)</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">radiotherm</span>  <span class="c1"># noqa E402, from path / site packages</span>
+
+<span class="n">SOCKET_TIMEOUT</span> <span class="o">=</span> <span class="mi">45</span>  <span class="c1"># http socket timeout override</span>
+
+
+<div class="viewcode-block" id="ThermostatClass">
+<a class="viewcode-back" href="../../docs/thermostatsupervisor.html#thermostatsupervisor.mmm.ThermostatClass">[docs]</a>
+<span class="k">class</span> <span class="nc">ThermostatClass</span><span class="p">(</span><span class="n">tc</span><span class="o">.</span><span class="n">ThermostatCommon</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;3m50 thermostat zone functions.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">zone</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Constructor, connect to thermostat.</span>
+
+<span class="sd">        inputs:</span>
+<span class="sd">            zone(str):  zone of thermostat on local net.</span>
+<span class="sd">                        mmm_config.metadata dict must have correct local IP</span>
+<span class="sd">                        address for each zone.</span>
+<span class="sd">            verbose(bool): debug flag.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># construct the superclass</span>
+        <span class="c1"># tc.ThermostatCommonZone.__init__(self)</span>
+        <span class="c1"># tc.ThermostatCommon.__init__(self)</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+
+        <span class="c1"># set tstat type and debug flag</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">thermostat_type</span> <span class="o">=</span> <span class="n">mmm_config</span><span class="o">.</span><span class="n">ALIAS</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span> <span class="o">=</span> <span class="n">verbose</span>
+
+        <span class="c1"># configure zone info</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">zone_name</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">zone</span><span class="p">)</span>
+        <span class="c1"># use hard-coded IP address if provided, otherwise</span>
+        <span class="c1"># use host dns lookup</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">host_name</span> <span class="o">=</span> <span class="n">mmm_config</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">zone_name</span><span class="p">][</span><span class="s2">&quot;host_name&quot;</span><span class="p">]</span>
+        <span class="c1"># populate IP address from metadata dict.</span>
+        <span class="k">if</span> <span class="s2">&quot;ip_address&quot;</span> <span class="ow">in</span> <span class="n">mmm_config</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">zone_name</span><span class="p">]:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ip_address</span> <span class="o">=</span> <span class="n">mmm_config</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">zone_name</span><span class="p">][</span><span class="s2">&quot;ip_address&quot;</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># get IP address from DNS lookup on local net.</span>
+            <span class="n">ip_status</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ip_address</span> <span class="o">=</span> <span class="n">util</span><span class="o">.</span><span class="n">is_host_on_local_net</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">host_name</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span>
+            <span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">ip_status</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">DNSException</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;failed to resolve ip address for 3m thermostat &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">host_name</span><span class="si">}</span><span class="s2">&#39;&quot;</span>
+                <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">device_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_target_zone_id</span><span class="p">()</span>
+
+<div class="viewcode-block" id="ThermostatClass.get_target_zone_id">
+<a class="viewcode-back" href="../../docs/thermostatsupervisor.html#thermostatsupervisor.mmm.ThermostatClass.get_target_zone_id">[docs]</a>
+    <span class="k">def</span> <span class="nf">get_target_zone_id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">object</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return the target zone ID from the</span>
+<span class="sd">        zone number provided.</span>
+
+<span class="sd">        inputs:</span>
+<span class="sd">            None</span>
+<span class="sd">        returns:</span>
+<span class="sd">            (obj):  device object.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># verify thermostat exists on network</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">device_id</span> <span class="o">=</span> <span class="n">radiotherm</span><span class="o">.</span><span class="n">get_thermostat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ip_address</span><span class="p">)</span>
+        <span class="k">except</span> <span class="n">urllib</span><span class="o">.</span><span class="n">error</span><span class="o">.</span><span class="n">URLError</span> <span class="k">as</span> <span class="n">ex</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;FATAL ERROR: 3m thermostat not found at ip address: &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">ip_address</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span> <span class="kn">from</span> <span class="nn">ex</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">device_id</span></div>
+
+
+<div class="viewcode-block" id="ThermostatClass.print_all_thermostat_metadata">
+<a class="viewcode-back" href="../../docs/thermostatsupervisor.html#thermostatsupervisor.mmm.ThermostatClass.print_all_thermostat_metadata">[docs]</a>
+    <span class="k">def</span> <span class="nf">print_all_thermostat_metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">zone</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return initial meta data queried from thermostat.</span>
+
+<span class="sd">        inputs:</span>
+<span class="sd">            zone(int) zone number</span>
+<span class="sd">        returns:</span>
+<span class="sd">            None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># dump all meta data</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">get_all_metadata</span><span class="p">(</span><span class="n">zone</span><span class="p">)</span>
+
+        <span class="c1"># dump uiData in a readable format</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">exec_print_all_thermostat_metadata</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_latestdata</span><span class="p">,</span> <span class="p">[</span><span class="n">zone</span><span class="p">])</span></div>
+
+
+<div class="viewcode-block" id="ThermostatClass.get_meta_data_dict">
+<a class="viewcode-back" href="../../docs/thermostatsupervisor.html#thermostatsupervisor.mmm.ThermostatClass.get_meta_data_dict">[docs]</a>
+    <span class="k">def</span> <span class="nf">get_meta_data_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">zone</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Build meta data dictionary from list of object attributes.</span>
+
+<span class="sd">        inputs:</span>
+<span class="sd">            zone(int): zone number</span>
+<span class="sd">        returns:</span>
+<span class="sd">            (dict) of meta data</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">util</span><span class="o">.</span><span class="n">log_msg</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;querying thermostat zone </span><span class="si">{</span><span class="n">zone</span><span class="si">}</span><span class="s2"> for meta data...&quot;</span><span class="p">,</span>
+            <span class="n">mode</span><span class="o">=</span><span class="n">util</span><span class="o">.</span><span class="n">BOTH_LOG</span><span class="p">,</span>
+            <span class="n">func_name</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">attr_dict</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">ignore_fields</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;get&quot;</span><span class="p">,</span> <span class="s2">&quot;post&quot;</span><span class="p">,</span> <span class="s2">&quot;reboot&quot;</span><span class="p">,</span> <span class="s2">&quot;set_day_program&quot;</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">attr</span> <span class="ow">in</span> <span class="nb">dir</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">device_id</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">attr</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="s2">&quot;_&quot;</span> <span class="ow">and</span> <span class="n">attr</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">ignore_fields</span><span class="p">:</span>
+                <span class="n">key</span> <span class="o">=</span> <span class="n">attr</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">val</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">device_id</span><span class="o">.</span><span class="fm">__getattribute__</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+                <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span>
+                    <span class="n">val</span> <span class="o">=</span> <span class="s2">&quot;&lt;attribute is not readable&gt;&quot;</span>
+                <span class="k">except</span> <span class="ne">AttributeError</span> <span class="k">as</span> <span class="n">ex</span><span class="p">:</span>
+                    <span class="n">val</span> <span class="o">=</span> <span class="n">ex</span>
+                <span class="k">except</span> <span class="n">socket</span><span class="o">.</span><span class="n">timeout</span><span class="p">:</span>
+                    <span class="n">val</span> <span class="o">=</span> <span class="s2">&quot;&lt;socket timeout&gt;&quot;</span>
+                <span class="n">attr_dict</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">val</span>
+        <span class="k">return</span> <span class="n">attr_dict</span></div>
+
+
+<div class="viewcode-block" id="ThermostatClass.get_all_metadata">
+<a class="viewcode-back" href="../../docs/thermostatsupervisor.html#thermostatsupervisor.mmm.ThermostatClass.get_all_metadata">[docs]</a>
+    <span class="k">def</span> <span class="nf">get_all_metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">zone</span><span class="p">,</span> <span class="n">retry</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get all the current thermostat metadata.</span>
+
+<span class="sd">        inputs:</span>
+<span class="sd">            zone(int): zone number</span>
+<span class="sd">            retry(bool): if True will retry once.</span>
+<span class="sd">        returns:</span>
+<span class="sd">            (list) of thermostat attributes.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">del</span> <span class="n">retry</span>  <span class="c1"># not used</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_meta_data_dict</span><span class="p">(</span><span class="n">zone</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ThermostatClass.get_metadata">
+<a class="viewcode-back" href="../../docs/thermostatsupervisor.html#thermostatsupervisor.mmm.ThermostatClass.get_metadata">[docs]</a>
+    <span class="k">def</span> <span class="nf">get_metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">zone</span><span class="p">,</span> <span class="n">trait</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">parameter</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="p">(</span><span class="nb">dict</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get the current thermostat metadata settings.</span>
+
+<span class="sd">        inputs:</span>
+<span class="sd">          zone(str or int): zone name</span>
+<span class="sd">          trait(str): trait or parent key, if None will assume a non-nested dict</span>
+<span class="sd">          parameter(str): target parameter, None = all settings</span>
+<span class="sd">        returns:</span>
+<span class="sd">          (dict) if parameter=None</span>
+<span class="sd">          (str) if parameter != None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">del</span> <span class="n">trait</span>  <span class="c1"># not used on mmm</span>
+        <span class="k">if</span> <span class="n">parameter</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_meta_data_dict</span><span class="p">(</span><span class="n">zone</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_meta_data_dict</span><span class="p">(</span><span class="n">zone</span><span class="p">)[</span><span class="n">parameter</span><span class="p">][</span><span class="s2">&quot;raw&quot;</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="ThermostatClass.get_latestdata">
+<a class="viewcode-back" href="../../docs/thermostatsupervisor.html#thermostatsupervisor.mmm.ThermostatClass.get_latestdata">[docs]</a>
+    <span class="k">def</span> <span class="nf">get_latestdata</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">zone</span><span class="p">,</span> <span class="n">debug</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="p">(</span><span class="nb">dict</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get the current thermostat latest data.</span>
+
+<span class="sd">        inputs:</span>
+<span class="sd">          zone(int): target zone</span>
+<span class="sd">          debug(bool): debug flag</span>
+<span class="sd">        returns:</span>
+<span class="sd">          (dict) if parameter=None</span>
+<span class="sd">          (str) if parameter != None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">latest_data_dict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_meta_data_dict</span><span class="p">(</span><span class="n">zone</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">debug</span><span class="p">:</span>
+            <span class="n">util</span><span class="o">.</span><span class="n">log_msg</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;zone</span><span class="si">{</span><span class="n">zone</span><span class="si">}</span><span class="s2"> latestData: </span><span class="si">{</span><span class="n">latest_data_dict</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                <span class="n">mode</span><span class="o">=</span><span class="n">util</span><span class="o">.</span><span class="n">BOTH_LOG</span><span class="p">,</span>
+                <span class="n">func_name</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="n">latest_data_dict</span></div>
+
+
+<div class="viewcode-block" id="ThermostatClass.get_ui_data">
+<a class="viewcode-back" href="../../docs/thermostatsupervisor.html#thermostatsupervisor.mmm.ThermostatClass.get_ui_data">[docs]</a>
+    <span class="k">def</span> <span class="nf">get_ui_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">zone</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get the latest thermostat ui data</span>
+
+<span class="sd">        inputs:</span>
+<span class="sd">          zone(int): target zone.</span>
+<span class="sd">        returns:</span>
+<span class="sd">          (dict)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_meta_data_dict</span><span class="p">(</span><span class="n">zone</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ThermostatClass.get_ui_data_param">
+<a class="viewcode-back" href="../../docs/thermostatsupervisor.html#thermostatsupervisor.mmm.ThermostatClass.get_ui_data_param">[docs]</a>
+    <span class="k">def</span> <span class="nf">get_ui_data_param</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">zone</span><span class="p">,</span> <span class="n">parameter</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get the latest thermostat ui data for one specific parameter.</span>
+
+<span class="sd">        inputs:</span>
+<span class="sd">          zone(int): target zone</span>
+<span class="sd">          parameter(str): UI parameter</span>
+<span class="sd">        returns:</span>
+<span class="sd">          (various) value or data structure of interest</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_meta_data_dict</span><span class="p">(</span><span class="n">zone</span><span class="p">)[</span><span class="n">parameter</span><span class="p">][</span><span class="s2">&quot;raw&quot;</span><span class="p">]</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="ThermostatZone">
+<a class="viewcode-back" href="../../docs/thermostatsupervisor.html#thermostatsupervisor.mmm.ThermostatZone">[docs]</a>
+<span class="k">class</span> <span class="nc">ThermostatZone</span><span class="p">(</span><span class="n">tc</span><span class="o">.</span><span class="n">ThermostatCommonZone</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;3m50 thermostat zone functions.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Thermostat_obj</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Constructor, connect to thermostat.</span>
+
+<span class="sd">        mmm_metadata dict above must have correct local IP address for each</span>
+<span class="sd">            zone.</span>
+
+<span class="sd">        inputs:</span>
+<span class="sd">            Thermostat_obj(obj):  Thermostat class instance.</span>
+<span class="sd">            verbose(bool): debug flag.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># construct the superclass</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+
+        <span class="c1"># switch config for this thermostat</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">system_switch_position</span><span class="p">[</span><span class="n">tc</span><span class="o">.</span><span class="n">ThermostatCommonZone</span><span class="o">.</span><span class="n">COOL_MODE</span><span class="p">]</span> <span class="o">=</span> <span class="mi">2</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">system_switch_position</span><span class="p">[</span><span class="n">tc</span><span class="o">.</span><span class="n">ThermostatCommonZone</span><span class="o">.</span><span class="n">HEAT_MODE</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">system_switch_position</span><span class="p">[</span><span class="n">tc</span><span class="o">.</span><span class="n">ThermostatCommonZone</span><span class="o">.</span><span class="n">OFF_MODE</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">system_switch_position</span><span class="p">[</span><span class="n">tc</span><span class="o">.</span><span class="n">ThermostatCommonZone</span><span class="o">.</span><span class="n">AUTO_MODE</span><span class="p">]</span> <span class="o">=</span> <span class="mi">3</span>
+
+        <span class="c1"># need verification</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">system_switch_position</span><span class="p">[</span><span class="n">tc</span><span class="o">.</span><span class="n">ThermostatCommonZone</span><span class="o">.</span><span class="n">DRY_MODE</span><span class="p">]</span> <span class="o">=</span> <span class="n">util</span><span class="o">.</span><span class="n">BOGUS_INT</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">system_switch_position</span><span class="p">[</span><span class="n">tc</span><span class="o">.</span><span class="n">ThermostatCommonZone</span><span class="o">.</span><span class="n">FAN_MODE</span><span class="p">]</span> <span class="o">=</span> <span class="n">util</span><span class="o">.</span><span class="n">BOGUS_INT</span>
+
+        <span class="c1"># zone info</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span> <span class="o">=</span> <span class="n">verbose</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">thermostat_type</span> <span class="o">=</span> <span class="n">mmm_config</span><span class="o">.</span><span class="n">ALIAS</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">device_id</span> <span class="o">=</span> <span class="n">Thermostat_obj</span><span class="o">.</span><span class="n">device_id</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">zone_name</span> <span class="o">=</span> <span class="n">Thermostat_obj</span><span class="o">.</span><span class="n">zone_name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">zone_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_zone_name</span><span class="p">()</span>
+
+        <span class="c1"># runtime parameter defaults</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">poll_time_sec</span> <span class="o">=</span> <span class="mi">10</span> <span class="o">*</span> <span class="mi">60</span>  <span class="c1"># default to 10 minutes</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connection_time_sec</span> <span class="o">=</span> <span class="mi">8</span> <span class="o">*</span> <span class="mi">60</span> <span class="o">*</span> <span class="mi">60</span>  <span class="c1"># default to 8 hours</span>
+
+<div class="viewcode-block" id="ThermostatZone.get_zone_name">
+<a class="viewcode-back" href="../../docs/thermostatsupervisor.html#thermostatsupervisor.mmm.ThermostatZone.get_zone_name">[docs]</a>
+    <span class="k">def</span> <span class="nf">get_zone_name</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">zone</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return the name associated with the zone number.</span>
+
+<span class="sd">        inputs:</span>
+<span class="sd">            zone(int): Zone number</span>
+<span class="sd">        returns:</span>
+<span class="sd">            (str) zone name</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">zone</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># pull from thermostat</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">device_id</span><span class="o">.</span><span class="n">name</span><span class="p">[</span><span class="s2">&quot;raw&quot;</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># override from config file</span>
+            <span class="k">return</span> <span class="n">mmm_config</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="n">zone</span><span class="p">][</span><span class="s2">&quot;zone_name&quot;</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="ThermostatZone.get_display_temp">
+<a class="viewcode-back" href="../../docs/thermostatsupervisor.html#thermostatsupervisor.mmm.ThermostatZone.get_display_temp">[docs]</a>
+    <span class="k">def</span> <span class="nf">get_display_temp</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return DispTemperature.</span>
+
+<span class="sd">        inputs:</span>
+<span class="sd">            None</span>
+<span class="sd">        returns:</span>
+<span class="sd">            (float): display temp in °F.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">device_id</span><span class="o">.</span><span class="n">temp</span><span class="p">[</span><span class="s2">&quot;raw&quot;</span><span class="p">])</span></div>
+
+
+<div class="viewcode-block" id="ThermostatZone.get_display_humidity">
+<a class="viewcode-back" href="../../docs/thermostatsupervisor.html#thermostatsupervisor.mmm.ThermostatZone.get_display_humidity">[docs]</a>
+    <span class="k">def</span> <span class="nf">get_display_humidity</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="p">(</span><span class="nb">float</span><span class="p">,</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return Humidity.</span>
+
+<span class="sd">        inputs:</span>
+<span class="sd">            None</span>
+<span class="sd">        returns:</span>
+<span class="sd">            (float, None): humidity in %RH, return None if not supported.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="kc">None</span>  <span class="c1"># not available</span></div>
+
+
+<div class="viewcode-block" id="ThermostatZone.get_is_humidity_supported">
+<a class="viewcode-back" href="../../docs/thermostatsupervisor.html#thermostatsupervisor.mmm.ThermostatZone.get_is_humidity_supported">[docs]</a>
+    <span class="k">def</span> <span class="nf">get_is_humidity_supported</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return humidity sensor status.</span>
+
+<span class="sd">        inputs:</span>
+<span class="sd">            None</span>
+<span class="sd">        returns:</span>
+<span class="sd">            (bool): True if humidity is supported.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_display_humidity</span><span class="p">()</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span></div>
+
+
+<div class="viewcode-block" id="ThermostatZone.is_heat_mode">
+<a class="viewcode-back" href="../../docs/thermostatsupervisor.html#thermostatsupervisor.mmm.ThermostatZone.is_heat_mode">[docs]</a>
+    <span class="k">def</span> <span class="nf">is_heat_mode</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return the heat mode.</span>
+
+<span class="sd">        inputs:</span>
+<span class="sd">            None</span>
+<span class="sd">        returns:</span>
+<span class="sd">            (int): heat mode.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_tmode</span><span class="p">()</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">system_switch_position</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">HEAT_MODE</span><span class="p">])</span></div>
+
+
+<div class="viewcode-block" id="ThermostatZone.is_cool_mode">
+<a class="viewcode-back" href="../../docs/thermostatsupervisor.html#thermostatsupervisor.mmm.ThermostatZone.is_cool_mode">[docs]</a>
+    <span class="k">def</span> <span class="nf">is_cool_mode</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return the cool mode.</span>
+
+<span class="sd">        inputs:</span>
+<span class="sd">            None</span>
+<span class="sd">        returns:</span>
+<span class="sd">            (int): 1=cool mode enabled, 0=disabled.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_tmode</span><span class="p">()</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">system_switch_position</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">COOL_MODE</span><span class="p">])</span></div>
+
+
+<div class="viewcode-block" id="ThermostatZone.is_dry_mode">
+<a class="viewcode-back" href="../../docs/thermostatsupervisor.html#thermostatsupervisor.mmm.ThermostatZone.is_dry_mode">[docs]</a>
+    <span class="k">def</span> <span class="nf">is_dry_mode</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return the dry mode.</span>
+
+<span class="sd">        inputs:</span>
+<span class="sd">            None</span>
+<span class="sd">        returns:</span>
+<span class="sd">            (int): 1=dry mode enabled, 0=disabled.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_tmode</span><span class="p">()</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">system_switch_position</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">DRY_MODE</span><span class="p">])</span></div>
+
+
+<div class="viewcode-block" id="ThermostatZone.is_auto_mode">
+<a class="viewcode-back" href="../../docs/thermostatsupervisor.html#thermostatsupervisor.mmm.ThermostatZone.is_auto_mode">[docs]</a>
+    <span class="k">def</span> <span class="nf">is_auto_mode</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return the auto mode.</span>
+
+<span class="sd">        inputs:</span>
+<span class="sd">            None</span>
+<span class="sd">        returns:</span>
+<span class="sd">            (int): 1=auto mode enabled, 0=disabled.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_tmode</span><span class="p">()</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">system_switch_position</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">AUTO_MODE</span><span class="p">])</span></div>
+
+
+    <span class="k">def</span> <span class="nf">_get_tmode</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">retries</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get tmode from device, retry on Attribute error.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">tmode</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">device_id</span><span class="o">.</span><span class="n">tmode</span><span class="p">[</span><span class="s2">&quot;raw&quot;</span><span class="p">]</span>
+        <span class="k">except</span> <span class="ne">AttributeError</span> <span class="k">as</span> <span class="n">ex</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">retries</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="n">traceback</span><span class="o">.</span><span class="n">format_exc</span><span class="p">())</span>
+                <span class="nb">print</span><span class="p">(</span>
+                    <span class="s2">&quot;WARNING: AttributeError while querying tstat.tmode, &quot;</span>
+                    <span class="s2">&quot;retrying after brief delay...&quot;</span>
+                <span class="p">)</span>
+                <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
+                <span class="n">tmode</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_tmode</span><span class="p">(</span><span class="n">retries</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">ex</span>
+        <span class="k">return</span> <span class="n">tmode</span>
+
+<div class="viewcode-block" id="ThermostatZone.is_fan_mode">
+<a class="viewcode-back" href="../../docs/thermostatsupervisor.html#thermostatsupervisor.mmm.ThermostatZone.is_fan_mode">[docs]</a>
+    <span class="k">def</span> <span class="nf">is_fan_mode</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return the fan mode.</span>
+
+<span class="sd">        Fan mode is fan on for circulation but not applying heat or cooling.</span>
+<span class="sd">        inputs:</span>
+<span class="sd">            None</span>
+<span class="sd">        returns:</span>
+<span class="sd">            (int): 1=fan mode enabled, 0=disabled.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">device_id</span><span class="o">.</span><span class="n">fmode</span><span class="p">[</span><span class="s2">&quot;raw&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="mi">2</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_off_mode</span><span class="p">())</span></div>
+
+
+<div class="viewcode-block" id="ThermostatZone.is_off_mode">
+<a class="viewcode-back" href="../../docs/thermostatsupervisor.html#thermostatsupervisor.mmm.ThermostatZone.is_off_mode">[docs]</a>
+    <span class="k">def</span> <span class="nf">is_off_mode</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return the off mode.</span>
+
+<span class="sd">        inputs:</span>
+<span class="sd">            None</span>
+<span class="sd">        returns:</span>
+<span class="sd">            (int): off mode, 1=enabled, 0=disabled.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">int</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_get_tmode</span><span class="p">()</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">system_switch_position</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">OFF_MODE</span><span class="p">]</span>
+            <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">device_id</span><span class="o">.</span><span class="n">fmode</span><span class="p">[</span><span class="s2">&quot;raw&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="mi">2</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ThermostatZone.is_heating">
+<a class="viewcode-back" href="../../docs/thermostatsupervisor.html#thermostatsupervisor.mmm.ThermostatZone.is_heating">[docs]</a>
+    <span class="k">def</span> <span class="nf">is_heating</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return 1 if heating relay is active, else 0.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">int</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">is_heat_mode</span><span class="p">()</span>
+            <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_power_on</span><span class="p">()</span>
+            <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_heat_setpoint_raw</span><span class="p">()</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_display_temp</span><span class="p">()</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ThermostatZone.is_cooling">
+<a class="viewcode-back" href="../../docs/thermostatsupervisor.html#thermostatsupervisor.mmm.ThermostatZone.is_cooling">[docs]</a>
+    <span class="k">def</span> <span class="nf">is_cooling</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return 1 if cooling relay is active, else 0.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">int</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">is_cool_mode</span><span class="p">()</span>
+            <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_power_on</span><span class="p">()</span>
+            <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_cool_setpoint_raw</span><span class="p">()</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_display_temp</span><span class="p">()</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ThermostatZone.is_drying">
+<a class="viewcode-back" href="../../docs/thermostatsupervisor.html#thermostatsupervisor.mmm.ThermostatZone.is_drying">[docs]</a>
+    <span class="k">def</span> <span class="nf">is_drying</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return 1 if drying relay is active, else 0.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="mi">0</span>  <span class="c1"># not applicable</span></div>
+
+
+<div class="viewcode-block" id="ThermostatZone.is_auto">
+<a class="viewcode-back" href="../../docs/thermostatsupervisor.html#thermostatsupervisor.mmm.ThermostatZone.is_auto">[docs]</a>
+    <span class="k">def</span> <span class="nf">is_auto</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return 1 if auto relay is active, else 0.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="mi">0</span>  <span class="c1"># not applicable</span></div>
+
+
+<div class="viewcode-block" id="ThermostatZone.is_fanning">
+<a class="viewcode-back" href="../../docs/thermostatsupervisor.html#thermostatsupervisor.mmm.ThermostatZone.is_fanning">[docs]</a>
+    <span class="k">def</span> <span class="nf">is_fanning</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return 1 if fan relay is active, else 0.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">is_fan_on</span><span class="p">()</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_power_on</span><span class="p">())</span></div>
+
+
+<div class="viewcode-block" id="ThermostatZone.is_power_on">
+<a class="viewcode-back" href="../../docs/thermostatsupervisor.html#thermostatsupervisor.mmm.ThermostatZone.is_power_on">[docs]</a>
+    <span class="k">def</span> <span class="nf">is_power_on</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return 1 if power relay is active, else 0.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">device_id</span><span class="o">.</span><span class="n">power</span><span class="p">[</span><span class="s2">&quot;raw&quot;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ThermostatZone.is_fan_on">
+<a class="viewcode-back" href="../../docs/thermostatsupervisor.html#thermostatsupervisor.mmm.ThermostatZone.is_fan_on">[docs]</a>
+    <span class="k">def</span> <span class="nf">is_fan_on</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return 1 if fan relay is active, else 0.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">device_id</span><span class="o">.</span><span class="n">fstate</span><span class="p">[</span><span class="s2">&quot;raw&quot;</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="ThermostatZone.is_defrosting">
+<a class="viewcode-back" href="../../docs/thermostatsupervisor.html#thermostatsupervisor.mmm.ThermostatZone.is_defrosting">[docs]</a>
+    <span class="k">def</span> <span class="nf">is_defrosting</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return 1 if defrosting is active, else 0.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="mi">0</span>  <span class="c1"># not applicable</span></div>
+
+
+<div class="viewcode-block" id="ThermostatZone.is_standby">
+<a class="viewcode-back" href="../../docs/thermostatsupervisor.html#thermostatsupervisor.mmm.ThermostatZone.is_standby">[docs]</a>
+    <span class="k">def</span> <span class="nf">is_standby</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return 1 if standby is active, else 0.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="mi">0</span>  <span class="c1"># not applicable</span></div>
+
+
+<div class="viewcode-block" id="ThermostatZone.get_setpoint_list">
+<a class="viewcode-back" href="../../docs/thermostatsupervisor.html#thermostatsupervisor.mmm.ThermostatZone.get_setpoint_list">[docs]</a>
+    <span class="k">def</span> <span class="nf">get_setpoint_list</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sp_dict</span><span class="p">,</span> <span class="n">day</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return list of 4 setpoints for the day.</span>
+
+<span class="sd">        inputs:</span>
+<span class="sd">            sp_dict(dict): setpoint dictionary</span>
+<span class="sd">            day(int): day of the week, 0=Monday</span>
+<span class="sd">        returns:</span>
+<span class="sd">            list of 8 elements, representing 4 pairs of elapsed minutes</span>
+<span class="sd">            and setpoint</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">sp_lst</span> <span class="o">=</span> <span class="n">sp_dict</span><span class="p">[</span><span class="s2">&quot;raw&quot;</span><span class="p">][</span><span class="nb">str</span><span class="p">(</span><span class="n">day</span><span class="p">)]</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">sp_lst</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">8</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;setpoint list is not 8 elements long: </span><span class="si">{</span><span class="n">sp_lst</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">sp_dict</span><span class="p">[</span><span class="s2">&quot;raw&quot;</span><span class="p">][</span><span class="nb">str</span><span class="p">(</span><span class="n">day</span><span class="p">)]</span></div>
+
+
+<div class="viewcode-block" id="ThermostatZone.get_previous_days_setpoint">
+<a class="viewcode-back" href="../../docs/thermostatsupervisor.html#thermostatsupervisor.mmm.ThermostatZone.get_previous_days_setpoint">[docs]</a>
+    <span class="k">def</span> <span class="nf">get_previous_days_setpoint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sp_dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return last setpoint from day before today.</span>
+
+<span class="sd">        inputs:</span>
+<span class="sd">            sp_dict(dict): setpoint dictionary</span>
+<span class="sd">        returns:</span>
+<span class="sd">            (int)last temperature set the day before.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">today</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">today</span><span class="p">()</span><span class="o">.</span><span class="n">weekday</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">today</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">yesterday</span> <span class="o">=</span> <span class="mi">6</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">yesterday</span> <span class="o">=</span> <span class="n">today</span> <span class="o">-</span> <span class="mi">1</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_setpoint_list</span><span class="p">(</span><span class="n">sp_dict</span><span class="p">,</span> <span class="n">yesterday</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="ThermostatZone.get_schedule_setpoint">
+<a class="viewcode-back" href="../../docs/thermostatsupervisor.html#thermostatsupervisor.mmm.ThermostatZone.get_schedule_setpoint">[docs]</a>
+    <span class="k">def</span> <span class="nf">get_schedule_setpoint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sp_dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return current setpoint.</span>
+
+<span class="sd">        inputs:</span>
+<span class="sd">            sp_dict(dict): setpoint dictionary</span>
+<span class="sd">        returns:</span>
+<span class="sd">            (float) last temperature set the day before.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">current_sp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_previous_days_setpoint</span><span class="p">(</span><span class="n">sp_dict</span><span class="p">)</span>
+        <span class="n">now</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span>
+        <span class="n">minutes_since_midnight</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">now</span> <span class="o">-</span> <span class="n">now</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">hour</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">minute</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">second</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">microsecond</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="p">)</span><span class="o">.</span><span class="n">total_seconds</span><span class="p">()</span> <span class="o">/</span> <span class="mi">60</span>
+        <span class="n">todays_setpoint_lst</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_setpoint_list</span><span class="p">(</span>
+            <span class="n">sp_dict</span><span class="p">,</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">today</span><span class="p">()</span><span class="o">.</span><span class="n">weekday</span><span class="p">()</span>
+        <span class="p">)</span>
+        <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">6</span><span class="p">]:</span>
+            <span class="k">if</span> <span class="n">todays_setpoint_lst</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">minutes_since_midnight</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">current_sp</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># store setpoint corresponding to this time</span>
+                <span class="n">current_sp</span> <span class="o">=</span> <span class="n">todays_setpoint_lst</span><span class="p">[</span><span class="n">idx</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span>
+        <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">current_sp</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ThermostatZone.get_heat_setpoint">
+<a class="viewcode-back" href="../../docs/thermostatsupervisor.html#thermostatsupervisor.mmm.ThermostatZone.get_heat_setpoint">[docs]</a>
+    <span class="k">def</span> <span class="nf">get_heat_setpoint</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return the current heat setpoint.</span>
+
+<span class="sd">        t_heat field is only present if in heat mode.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">util</span><span class="o">.</span><span class="n">temp_value_with_units</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_heat_setpoint_raw</span><span class="p">())</span></div>
+
+
+<div class="viewcode-block" id="ThermostatZone.get_heat_setpoint_raw">
+<a class="viewcode-back" href="../../docs/thermostatsupervisor.html#thermostatsupervisor.mmm.ThermostatZone.get_heat_setpoint_raw">[docs]</a>
+    <span class="k">def</span> <span class="nf">get_heat_setpoint_raw</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return the current raw heat setpoint.</span>
+
+<span class="sd">        t_heat field is only present if in heat mode.</span>
+<span class="sd">        inputs:</span>
+<span class="sd">            None</span>
+<span class="sd">        returns:</span>
+<span class="sd">            (float): current raw heat set point in °F.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_heat_setpoint</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="nb">float</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;heat set point raw is type </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">result</span><span class="p">)</span><span class="si">}</span><span class="s2">, should be float&quot;</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="n">result</span></div>
+
+
+<div class="viewcode-block" id="ThermostatZone.get_cool_setpoint">
+<a class="viewcode-back" href="../../docs/thermostatsupervisor.html#thermostatsupervisor.mmm.ThermostatZone.get_cool_setpoint">[docs]</a>
+    <span class="k">def</span> <span class="nf">get_cool_setpoint</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return the current cool setpoint.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">util</span><span class="o">.</span><span class="n">temp_value_with_units</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_cool_setpoint_raw</span><span class="p">())</span></div>
+
+
+<div class="viewcode-block" id="ThermostatZone.get_cool_setpoint_raw">
+<a class="viewcode-back" href="../../docs/thermostatsupervisor.html#thermostatsupervisor.mmm.ThermostatZone.get_cool_setpoint_raw">[docs]</a>
+    <span class="k">def</span> <span class="nf">get_cool_setpoint_raw</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return the current raw cool setpoint.</span>
+
+<span class="sd">        t_cool field is only present if in cool mode.</span>
+<span class="sd">        inputs:</span>
+<span class="sd">            None</span>
+<span class="sd">        returns:</span>
+<span class="sd">            (float): current raw cool set point in °F.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_cool_setpoint</span><span class="p">())</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">)):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;cool setpoint raw is type </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">result</span><span class="p">)</span><span class="si">}</span><span class="s2">, should be &quot;</span> <span class="sa">f</span><span class="s2">&quot;(int, float)&quot;</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="n">result</span></div>
+
+
+<div class="viewcode-block" id="ThermostatZone.get_schedule_program_heat">
+<a class="viewcode-back" href="../../docs/thermostatsupervisor.html#thermostatsupervisor.mmm.ThermostatZone.get_schedule_program_heat">[docs]</a>
+    <span class="k">def</span> <span class="nf">get_schedule_program_heat</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return the scheduled heat program, times and settings.</span>
+
+<span class="sd">        inputs:</span>
+<span class="sd">            None</span>
+<span class="sd">        returns:</span>
+<span class="sd">            (dict): scheduled heat set points and times in °F.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">device_id</span><span class="o">.</span><span class="n">program_heat</span><span class="p">[</span><span class="s2">&quot;raw&quot;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;heat program schedule set point is type </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">result</span><span class="p">)</span><span class="si">}</span><span class="s2">,&quot;</span>
+                <span class="sa">f</span><span class="s2">&quot; should be dict&quot;</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="n">result</span></div>
+
+
+<div class="viewcode-block" id="ThermostatZone.get_schedule_heat_sp">
+<a class="viewcode-back" href="../../docs/thermostatsupervisor.html#thermostatsupervisor.mmm.ThermostatZone.get_schedule_heat_sp">[docs]</a>
+    <span class="k">def</span> <span class="nf">get_schedule_heat_sp</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return the scheduled heat setpoint.</span>
+
+<span class="sd">        inputs:</span>
+<span class="sd">            None</span>
+<span class="sd">        returns:</span>
+<span class="sd">            (float): current scheduled heat set point in °F.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_schedule_setpoint</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">device_id</span><span class="o">.</span><span class="n">program_heat</span><span class="p">))</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="nb">float</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;schedule heat set point is type </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">result</span><span class="p">)</span><span class="si">}</span><span class="s2">, &quot;</span> <span class="sa">f</span><span class="s2">&quot;should be float&quot;</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="n">result</span></div>
+
+
+<div class="viewcode-block" id="ThermostatZone.get_schedule_program_cool">
+<a class="viewcode-back" href="../../docs/thermostatsupervisor.html#thermostatsupervisor.mmm.ThermostatZone.get_schedule_program_cool">[docs]</a>
+    <span class="k">def</span> <span class="nf">get_schedule_program_cool</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return the sechduled cool setpoint.</span>
+
+<span class="sd">        inputs:</span>
+<span class="sd">            None</span>
+<span class="sd">        returns:</span>
+<span class="sd">            (dict): current scheduled cool set point in °F.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">device_id</span><span class="o">.</span><span class="n">program_cool</span><span class="p">[</span><span class="s2">&quot;raw&quot;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;schedule program cool set point is type </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">result</span><span class="p">)</span><span class="si">}</span><span class="s2">,&quot;</span>
+                <span class="sa">f</span><span class="s2">&quot; should be dict&quot;</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="n">result</span></div>
+
+
+<div class="viewcode-block" id="ThermostatZone.get_schedule_cool_sp">
+<a class="viewcode-back" href="../../docs/thermostatsupervisor.html#thermostatsupervisor.mmm.ThermostatZone.get_schedule_cool_sp">[docs]</a>
+    <span class="k">def</span> <span class="nf">get_schedule_cool_sp</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return the sechduled cool setpoint.</span>
+
+<span class="sd">        inputs:</span>
+<span class="sd">            None</span>
+<span class="sd">        returns:</span>
+<span class="sd">            (float): current schedule cool set point in °F.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_schedule_setpoint</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">device_id</span><span class="o">.</span><span class="n">program_cool</span><span class="p">))</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="nb">float</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;schedule cool set point is type </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">result</span><span class="p">)</span><span class="si">}</span><span class="s2">, &quot;</span> <span class="sa">f</span><span class="s2">&quot;should be float&quot;</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="n">result</span></div>
+
+
+<div class="viewcode-block" id="ThermostatZone.get_is_invacation_hold_mode">
+<a class="viewcode-back" href="../../docs/thermostatsupervisor.html#thermostatsupervisor.mmm.ThermostatZone.get_is_invacation_hold_mode">[docs]</a>
+    <span class="k">def</span> <span class="nf">get_is_invacation_hold_mode</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return the in vacation hold status.</span>
+
+<span class="sd">        inputs:</span>
+<span class="sd">            None</span>
+<span class="sd">        returns:</span>
+<span class="sd">            (int): 0=Disabled, 1=Enabled</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">device_id</span><span class="o">.</span><span class="n">hold</span><span class="p">[</span><span class="s2">&quot;raw&quot;</span><span class="p">])</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="nb">bool</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;is_invacation_hold_mode is type </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">result</span><span class="p">)</span><span class="si">}</span><span class="s2">, &quot;</span> <span class="sa">f</span><span class="s2">&quot;should be bool&quot;</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="n">result</span></div>
+
+
+<div class="viewcode-block" id="ThermostatZone.get_vacation_hold">
+<a class="viewcode-back" href="../../docs/thermostatsupervisor.html#thermostatsupervisor.mmm.ThermostatZone.get_vacation_hold">[docs]</a>
+    <span class="k">def</span> <span class="nf">get_vacation_hold</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return the Hold setting.</span>
+
+<span class="sd">        inputs:</span>
+<span class="sd">            None</span>
+<span class="sd">        returns:</span>
+<span class="sd">            (int): 0=Disabled, 1=Enabled</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">device_id</span><span class="o">.</span><span class="n">override</span><span class="p">[</span><span class="s2">&quot;raw&quot;</span><span class="p">])</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="nb">bool</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;get_vacation_hold_mode is type </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">result</span><span class="p">)</span><span class="si">}</span><span class="s2">, &quot;</span> <span class="sa">f</span><span class="s2">&quot;should be bool&quot;</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="n">result</span></div>
+
+
+<div class="viewcode-block" id="ThermostatZone.get_vacation_hold_until_time">
+<a class="viewcode-back" href="../../docs/thermostatsupervisor.html#thermostatsupervisor.mmm.ThermostatZone.get_vacation_hold_until_time">[docs]</a>
+    <span class="k">def</span> <span class="nf">get_vacation_hold_until_time</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return the &#39;VacationHoldUntilTime&#39;.</span>
+
+<span class="sd">        inputs:</span>
+<span class="sd">            None</span>
+<span class="sd">        returns:</span>
+<span class="sd">            (int): vacation hold time in minutes.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="o">-</span><span class="mi">1</span>  <span class="c1"># not implemented</span></div>
+
+
+<div class="viewcode-block" id="ThermostatZone.get_temporary_hold_until_time">
+<a class="viewcode-back" href="../../docs/thermostatsupervisor.html#thermostatsupervisor.mmm.ThermostatZone.get_temporary_hold_until_time">[docs]</a>
+    <span class="k">def</span> <span class="nf">get_temporary_hold_until_time</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return the &#39;TemporaryHoldUntilTime&#39;.</span>
+
+<span class="sd">        inputs:</span>
+<span class="sd">            None</span>
+<span class="sd">        returns:</span>
+<span class="sd">            (int): temporary hold time in minutes.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_heat_mode</span><span class="p">()</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">sp_dict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">device_id</span><span class="o">.</span><span class="n">program_heat</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_cool_mode</span><span class="p">()</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">sp_dict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">device_id</span><span class="o">.</span><span class="n">program_cool</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># off mode, use dummy dict.</span>
+            <span class="n">sp_dict</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s2">&quot;raw&quot;</span><span class="p">:</span> <span class="p">{</span>
+                    <span class="s2">&quot;0&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="mi">8</span><span class="p">,</span>
+                    <span class="s2">&quot;1&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="mi">8</span><span class="p">,</span>
+                    <span class="s2">&quot;2&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="mi">8</span><span class="p">,</span>
+                    <span class="s2">&quot;3&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="mi">8</span><span class="p">,</span>
+                    <span class="s2">&quot;4&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="mi">8</span><span class="p">,</span>
+                    <span class="s2">&quot;5&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="mi">8</span><span class="p">,</span>
+                    <span class="s2">&quot;6&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="mi">8</span><span class="p">,</span>
+                <span class="p">}</span>
+            <span class="p">}</span>
+            <span class="c1"># raise ValueError(&quot;unknown heat/cool mode&quot;)</span>
+        <span class="n">now</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span>
+        <span class="n">minutes_since_midnight</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">now</span> <span class="o">-</span> <span class="n">now</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">hour</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">minute</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">second</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">microsecond</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="p">)</span><span class="o">.</span><span class="n">total_seconds</span><span class="p">()</span> <span class="o">/</span> <span class="mi">60</span>
+        <span class="n">todays_setpoint_lst</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_setpoint_list</span><span class="p">(</span>
+            <span class="n">sp_dict</span><span class="p">,</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="o">.</span><span class="n">today</span><span class="p">()</span><span class="o">.</span><span class="n">weekday</span><span class="p">()</span>
+        <span class="p">)</span>
+        <span class="k">for</span> <span class="n">idx</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">6</span><span class="p">]:</span>
+            <span class="k">if</span> <span class="n">todays_setpoint_lst</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">minutes_since_midnight</span><span class="p">:</span>
+                <span class="n">time_delta</span> <span class="o">=</span> <span class="n">todays_setpoint_lst</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">-</span> <span class="n">minutes_since_midnight</span>
+                <span class="k">break</span>  <span class="c1"># found next timer</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">time_delta</span> <span class="o">=</span> <span class="mi">24</span> <span class="o">*</span> <span class="mi">60</span> <span class="o">-</span> <span class="n">minutes_since_midnight</span>
+
+        <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="n">time_delta</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ThermostatZone.get_setpoint_change_allowed">
+<a class="viewcode-back" href="../../docs/thermostatsupervisor.html#thermostatsupervisor.mmm.ThermostatZone.get_setpoint_change_allowed">[docs]</a>
+    <span class="k">def</span> <span class="nf">get_setpoint_change_allowed</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return the &#39;SetpointChangeAllowed&#39; setting.</span>
+
+<span class="sd">        inputs:</span>
+<span class="sd">            None</span>
+<span class="sd">        returns:</span>
+<span class="sd">            (bool): &#39;SetpointChangeAllowed&#39; will be True in heating mode,</span>
+<span class="sd">            False in OFF mode (assume True in cooling mode too)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="kc">False</span>  <span class="c1"># not implemented</span></div>
+
+
+<div class="viewcode-block" id="ThermostatZone.get_system_switch_position">
+<a class="viewcode-back" href="../../docs/thermostatsupervisor.html#thermostatsupervisor.mmm.ThermostatZone.get_system_switch_position">[docs]</a>
+    <span class="k">def</span> <span class="nf">get_system_switch_position</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the thermostat mode.</span>
+
+<span class="sd">        inputs:</span>
+<span class="sd">            None</span>
+<span class="sd">        returns:</span>
+<span class="sd">            (int): thermostat mode, refer to tc.system_swtich position</span>
+<span class="sd">            for details.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_tmode</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;get_system_switch_position is type </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">result</span><span class="p">)</span><span class="si">}</span><span class="s2">, &quot;</span> <span class="sa">f</span><span class="s2">&quot;should be int&quot;</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="n">result</span></div>
+
+
+<div class="viewcode-block" id="ThermostatZone.set_heat_setpoint">
+<a class="viewcode-back" href="../../docs/thermostatsupervisor.html#thermostatsupervisor.mmm.ThermostatZone.set_heat_setpoint">[docs]</a>
+    <span class="k">def</span> <span class="nf">set_heat_setpoint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">temp</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Set a new heat setpoint.</span>
+
+<span class="sd">        This will also attempt to turn the thermostat to &#39;Heat&#39;</span>
+<span class="sd">        inputs:</span>
+<span class="sd">            temp(int): desired temperature in °F.</span>
+<span class="sd">        returns:</span>
+<span class="sd">            None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">device_id</span><span class="o">.</span><span class="n">t_heat</span> <span class="o">=</span> <span class="n">temp</span></div>
+
+
+<div class="viewcode-block" id="ThermostatZone.set_cool_setpoint">
+<a class="viewcode-back" href="../../docs/thermostatsupervisor.html#thermostatsupervisor.mmm.ThermostatZone.set_cool_setpoint">[docs]</a>
+    <span class="k">def</span> <span class="nf">set_cool_setpoint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">temp</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Set a new cool setpoint.</span>
+
+<span class="sd">        This will also attempt to turn the thermostat to &#39;Cool&#39;</span>
+<span class="sd">        inputs:</span>
+<span class="sd">            temp(int): desired temperature in °F.</span>
+<span class="sd">        returns:</span>
+<span class="sd">            None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">device_id</span><span class="o">.</span><span class="n">t_cool</span> <span class="o">=</span> <span class="n">temp</span></div>
+</div>
+
+
+
+<span class="c1"># monkeypatch radiotherm.thermostat.Thermostat __init__ method with longer</span>
+<span class="c1"># socket.timeout delay, based on radiotherm version 2.1</span>
+<span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">host</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="n">SOCKET_TIMEOUT</span><span class="p">):</span>  <span class="c1"># changed from 4 (default)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">host</span> <span class="o">=</span> <span class="n">host</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">timeout</span> <span class="o">=</span> <span class="n">timeout</span>
+
+
+<span class="n">radiotherm</span><span class="o">.</span><span class="n">thermostat</span><span class="o">.</span><span class="n">Thermostat</span><span class="o">.</span><span class="fm">__init__</span> <span class="o">=</span> <span class="fm">__init__</span>
+<span class="c1"># end of monkeypatch radiotherm.thermostat.Thermostst __init__</span>
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="c1"># verify environment</span>
+    <span class="n">env</span><span class="o">.</span><span class="n">get_python_version</span><span class="p">()</span>
+    <span class="n">env</span><span class="o">.</span><span class="n">show_package_version</span><span class="p">(</span><span class="n">radiotherm</span><span class="p">)</span>
+
+    <span class="c1"># get zone override</span>
+    <span class="n">api</span><span class="o">.</span><span class="n">uip</span> <span class="o">=</span> <span class="n">api</span><span class="o">.</span><span class="n">UserInputs</span><span class="p">(</span><span class="n">argv_list</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">thermostat_type</span><span class="o">=</span><span class="n">mmm_config</span><span class="o">.</span><span class="n">ALIAS</span><span class="p">)</span>
+    <span class="n">zone_number</span> <span class="o">=</span> <span class="n">api</span><span class="o">.</span><span class="n">uip</span><span class="o">.</span><span class="n">get_user_inputs</span><span class="p">(</span><span class="n">api</span><span class="o">.</span><span class="n">uip</span><span class="o">.</span><span class="n">zone_name</span><span class="p">,</span> <span class="n">api</span><span class="o">.</span><span class="n">input_flds</span><span class="o">.</span><span class="n">zone</span><span class="p">)</span>
+
+    <span class="n">_</span><span class="p">,</span> <span class="n">Zone</span> <span class="o">=</span> <span class="n">tc</span><span class="o">.</span><span class="n">thermostat_basic_checkout</span><span class="p">(</span>
+        <span class="n">mmm_config</span><span class="o">.</span><span class="n">ALIAS</span><span class="p">,</span> <span class="n">zone_number</span><span class="p">,</span> <span class="n">ThermostatClass</span><span class="p">,</span> <span class="n">ThermostatZone</span>
+    <span class="p">)</span>
+
+    <span class="n">tc</span><span class="o">.</span><span class="n">print_select_data_from_all_zones</span><span class="p">(</span>
+        <span class="n">mmm_config</span><span class="o">.</span><span class="n">ALIAS</span><span class="p">,</span>
+        <span class="n">mmm_config</span><span class="o">.</span><span class="n">get_available_zones</span><span class="p">(),</span>
+        <span class="n">ThermostatClass</span><span class="p">,</span>
+        <span class="n">ThermostatZone</span><span class="p">,</span>
+        <span class="n">display_wifi</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">display_battery</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="c1"># measure thermostat response time</span>
+    <span class="k">if</span> <span class="n">mmm_config</span><span class="o">.</span><span class="n">check_response_time</span><span class="p">:</span>
+        <span class="n">MEASUREMENTS</span> <span class="o">=</span> <span class="mi">60</span>  <span class="c1"># running higher than normal count here because</span>
+        <span class="c1"># intermittent failures have been observed.</span>
+        <span class="n">meas_data</span> <span class="o">=</span> <span class="n">Zone</span><span class="o">.</span><span class="n">measure_thermostat_repeatability</span><span class="p">(</span>
+            <span class="n">MEASUREMENTS</span><span class="p">,</span>
+            <span class="n">measure_response_time</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">ppp</span> <span class="o">=</span> <span class="n">pprint</span><span class="o">.</span><span class="n">PrettyPrinter</span><span class="p">(</span><span class="n">indent</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
+        <span class="n">ppp</span><span class="o">.</span><span class="n">pprint</span><span class="p">(</span><span class="n">meas_data</span><span class="p">)</span>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../index.html">ThermostatSupervisor</a></h1>
+
+
+
+
+
+
+
+
+
+<search id="searchbox" style="display: none" role="search">
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Search"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3>Navigation</h3>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;2024, Christopher Krolak.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 8.1.3</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

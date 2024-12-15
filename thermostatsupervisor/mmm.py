@@ -155,12 +155,11 @@ class ThermostatClass(tc.ThermostatCommon):
 
         inputs:
           zone(str or int): zone name
-          trait(str): trait or parent key, if None will assume a non-nested
-                      dict
+          trait(str): trait or parent key, if None will assume a non-nested dict
           parameter(str): target parameter, None = all settings
         returns:
-          dict if parameter=None
-          str if parameter != None
+          (dict) if parameter=None
+          (str) if parameter != None
         """
         del trait  # not used on mmm
         if parameter is None:
@@ -176,8 +175,8 @@ class ThermostatClass(tc.ThermostatCommon):
           zone(int): target zone
           debug(bool): debug flag
         returns:
-          dict if parameter=None
-          str if parameter != None
+          (dict) if parameter=None
+          (str) if parameter != None
         """
         latest_data_dict = self.get_meta_data_dict(zone)
         if debug:

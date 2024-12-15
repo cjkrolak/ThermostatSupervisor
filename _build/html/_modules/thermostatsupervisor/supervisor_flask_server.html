@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>thermostatsupervisor.supervisor_flask_server &#8212; ThermostatSupervisor  documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=d1102ebc" />
+    <link rel="stylesheet" type="text/css" href="../../_static/basic.css?v=686e5160" />
+    <link rel="stylesheet" type="text/css" href="../../_static/alabaster.css?v=27fed22d" />
+    <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for thermostatsupervisor.supervisor_flask_server</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Flask server for displaying supervisor output on web page.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="c1"># built-in libraries</span>
+<span class="kn">import</span> <span class="nn">html</span>
+<span class="kn">from</span> <span class="nn">subprocess</span> <span class="kn">import</span> <span class="n">Popen</span><span class="p">,</span> <span class="n">PIPE</span><span class="p">,</span> <span class="n">STDOUT</span><span class="p">,</span> <span class="n">DEVNULL</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">webbrowser</span>
+
+<span class="c1"># third party imports</span>
+<span class="kn">from</span> <span class="nn">flask</span> <span class="kn">import</span> <span class="n">Flask</span><span class="p">,</span> <span class="n">Response</span>
+<span class="kn">from</span> <span class="nn">flask_wtf.csrf</span> <span class="kn">import</span> <span class="n">CSRFProtect</span>
+
+<span class="c1"># local imports</span>
+<span class="kn">from</span> <span class="nn">thermostatsupervisor</span> <span class="kn">import</span> <span class="n">environment</span> <span class="k">as</span> <span class="n">env</span>
+<span class="kn">from</span> <span class="nn">thermostatsupervisor</span> <span class="kn">import</span> <span class="n">flask_generic</span> <span class="k">as</span> <span class="n">flg</span>
+<span class="kn">from</span> <span class="nn">thermostatsupervisor</span> <span class="kn">import</span> <span class="n">supervise</span> <span class="k">as</span> <span class="n">sup</span>
+<span class="kn">from</span> <span class="nn">thermostatsupervisor</span> <span class="kn">import</span> <span class="n">thermostat_api</span> <span class="k">as</span> <span class="n">api</span>
+<span class="kn">from</span> <span class="nn">thermostatsupervisor</span> <span class="kn">import</span> <span class="n">utilities</span> <span class="k">as</span> <span class="n">util</span>
+
+<span class="c1"># flask server</span>
+<span class="k">if</span> <span class="n">env</span><span class="o">.</span><span class="n">is_windows_environment</span><span class="p">():</span>
+    <span class="c1"># win server from Eclipse IDE:</span>
+    <span class="c1">#     loopback will work to itself but not remote clients</span>
+    <span class="c1">#     local IP works both itself and to remote Linux client.</span>
+    <span class="c1"># win server from command line:</span>
+    <span class="c1">#</span>
+    <span class="n">flask_ip_address</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">get_local_ip</span><span class="p">()</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="c1"># Linux server from Thoney IDE: must update Thonny to run from root</span>
+    <span class="c1">#   page opens on both loopback Linux and remote Win client, but</span>
+    <span class="c1">#       no data loads.</span>
+    <span class="c1"># flask_ip_address = &#39;127.0.0.1&#39;  # almost works from Linux client</span>
+    <span class="n">flask_ip_address</span> <span class="o">=</span> <span class="s2">&quot;0.0.0.0&quot;</span>
+    <span class="c1"># on Linux both methds are returning correct page header, but no data</span>
+<span class="n">FLASK_PORT</span> <span class="o">=</span> <span class="mi">5001</span>  <span class="c1"># note: ports below 1024 require root access on Linux</span>
+<span class="n">FLASK_USE_HTTPS</span> <span class="o">=</span> <span class="kc">False</span>  <span class="c1"># HTTPS requires a cert to be installed.</span>
+<span class="k">if</span> <span class="n">FLASK_USE_HTTPS</span><span class="p">:</span>
+    <span class="n">FLASK_SSL_CERT</span> <span class="o">=</span> <span class="s2">&quot;adhoc&quot;</span>  <span class="c1"># adhoc</span>
+    <span class="n">flask_kwargs</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;ssl_context&quot;</span><span class="p">:</span> <span class="n">FLASK_SSL_CERT</span><span class="p">}</span>
+    <span class="n">FLASK_URL_PREFIX</span> <span class="o">=</span> <span class="s2">&quot;https://&quot;</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="n">FLASK_SSL_CERT</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># adhoc</span>
+    <span class="n">flask_kwargs</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">FLASK_URL_PREFIX</span> <span class="o">=</span> <span class="s2">&quot;http://&quot;</span>
+<span class="n">flask_url</span> <span class="o">=</span> <span class="n">FLASK_URL_PREFIX</span> <span class="o">+</span> <span class="n">flask_ip_address</span> <span class="o">+</span> <span class="s2">&quot;:&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">FLASK_PORT</span><span class="p">)</span>
+
+<span class="n">argv</span> <span class="o">=</span> <span class="p">[]</span>  <span class="c1"># supervisor runtime args list</span>
+
+
+<div class="viewcode-block" id="create_app">
+<a class="viewcode-back" href="../../docs/thermostatsupervisor.html#thermostatsupervisor.supervisor_flask_server.create_app">[docs]</a>
+<span class="k">def</span> <span class="nf">create_app</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Create the flask object.&quot;&quot;&quot;</span>
+    <span class="n">app_</span> <span class="o">=</span> <span class="n">Flask</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+    <span class="c1"># api = Api(app)</span>
+
+    <span class="c1"># api.add_resource(Controller, &quot;/&quot;)</span>
+    <span class="k">return</span> <span class="n">app_</span></div>
+
+
+
+<span class="c1"># create the flask app</span>
+<span class="n">app</span> <span class="o">=</span> <span class="n">create_app</span><span class="p">()</span>
+<span class="n">csrf</span> <span class="o">=</span> <span class="n">CSRFProtect</span><span class="p">(</span><span class="n">app</span><span class="p">)</span>  <span class="c1"># enable CSRF protection</span>
+<span class="n">ip_ban</span> <span class="o">=</span> <span class="n">flg</span><span class="o">.</span><span class="n">initialize_ipban</span><span class="p">(</span><span class="n">app</span><span class="p">)</span>  <span class="c1"># hacker blacklisting agent</span>
+<span class="n">flg</span><span class="o">.</span><span class="n">set_flask_cookie_config</span><span class="p">(</span><span class="n">app</span><span class="p">)</span>
+<span class="n">flg</span><span class="o">.</span><span class="n">print_flask_config</span><span class="p">(</span><span class="n">app</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="favicon">
+<a class="viewcode-back" href="../../docs/thermostatsupervisor.html#thermostatsupervisor.supervisor_flask_server.favicon">[docs]</a>
+<span class="nd">@app</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s2">&quot;/favicon.ico&quot;</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">favicon</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Faviocon displayed in browser tab.&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">app</span><span class="o">.</span><span class="n">send_static_file</span><span class="p">(</span><span class="s2">&quot;honeywell.ico&quot;</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="index">
+<a class="viewcode-back" href="../../docs/thermostatsupervisor.html#thermostatsupervisor.supervisor_flask_server.index">[docs]</a>
+<span class="nd">@app</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">index</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;index route&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">run_supervise</span><span class="p">():</span>
+        <span class="n">sup</span><span class="o">.</span><span class="n">argv</span> <span class="o">=</span> <span class="n">argv</span>  <span class="c1"># pass runtime overrides to supervise</span>
+        <span class="n">api</span><span class="o">.</span><span class="n">uip</span> <span class="o">=</span> <span class="n">api</span><span class="o">.</span><span class="n">UserInputs</span><span class="p">(</span><span class="n">argv</span><span class="p">)</span>
+        <span class="n">thermostat_type</span> <span class="o">=</span> <span class="n">api</span><span class="o">.</span><span class="n">uip</span><span class="o">.</span><span class="n">get_user_inputs</span><span class="p">(</span>
+            <span class="n">api</span><span class="o">.</span><span class="n">uip</span><span class="o">.</span><span class="n">zone_name</span><span class="p">,</span> <span class="n">api</span><span class="o">.</span><span class="n">input_flds</span><span class="o">.</span><span class="n">thermostat_type</span>
+        <span class="p">)</span>
+        <span class="n">zone</span> <span class="o">=</span> <span class="n">api</span><span class="o">.</span><span class="n">uip</span><span class="o">.</span><span class="n">get_user_inputs</span><span class="p">(</span><span class="n">api</span><span class="o">.</span><span class="n">uip</span><span class="o">.</span><span class="n">zone_name</span><span class="p">,</span> <span class="n">api</span><span class="o">.</span><span class="n">input_flds</span><span class="o">.</span><span class="n">zone</span><span class="p">)</span>
+        <span class="n">measurement_cnt</span> <span class="o">=</span> <span class="n">api</span><span class="o">.</span><span class="n">uip</span><span class="o">.</span><span class="n">get_user_inputs</span><span class="p">(</span>
+            <span class="n">api</span><span class="o">.</span><span class="n">uip</span><span class="o">.</span><span class="n">zone_name</span><span class="p">,</span> <span class="n">api</span><span class="o">.</span><span class="n">input_flds</span><span class="o">.</span><span class="n">measurements</span>
+        <span class="p">)</span>
+        <span class="n">title</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">thermostat_type</span><span class="si">}</span><span class="s2"> thermostat zone </span><span class="si">{</span><span class="n">zone</span><span class="si">}</span><span class="s2">, &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">measurement_cnt</span><span class="si">}</span><span class="s2"> measurements&quot;</span>
+        <span class="p">)</span>
+        <span class="k">yield</span> <span class="sa">f</span><span class="s2">&quot;&lt;!doctype html&gt;&lt;title&gt;</span><span class="si">{</span><span class="n">title</span><span class="si">}</span><span class="s2">&lt;/title&gt;&quot;</span>
+
+        <span class="c1"># runtime variabless</span>
+        <span class="n">executable</span> <span class="o">=</span> <span class="s2">&quot;python&quot;</span>
+        <span class="n">dont_buffer</span> <span class="o">=</span> <span class="s2">&quot;-u&quot;</span>  <span class="c1"># option to not buffer results</span>
+        <span class="n">run_module</span> <span class="o">=</span> <span class="s2">&quot;-m&quot;</span>  <span class="c1"># option to reference package</span>
+        <span class="n">script</span> <span class="o">=</span> <span class="s2">&quot;thermostatsupervisor.supervise&quot;</span>
+        <span class="k">if</span> <span class="n">argv</span><span class="p">:</span>
+            <span class="c1"># argv list override for unit testing</span>
+            <span class="n">arg_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">executable</span><span class="p">,</span> <span class="n">dont_buffer</span><span class="p">,</span> <span class="n">run_module</span><span class="p">,</span> <span class="n">script</span><span class="p">]</span> <span class="o">+</span> <span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+        <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">arg_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">executable</span><span class="p">,</span> <span class="n">dont_buffer</span><span class="p">,</span> <span class="n">run_module</span><span class="p">,</span> <span class="n">script</span><span class="p">]</span> <span class="o">+</span> <span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">arg_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">executable</span><span class="p">,</span> <span class="n">dont_buffer</span><span class="p">,</span> <span class="n">run_module</span><span class="p">,</span> <span class="n">script</span><span class="p">]</span>
+        <span class="k">with</span> <span class="n">Popen</span><span class="p">(</span>
+            <span class="n">arg_list</span><span class="p">,</span>
+            <span class="n">stdin</span><span class="o">=</span><span class="n">DEVNULL</span><span class="p">,</span>
+            <span class="n">stdout</span><span class="o">=</span><span class="n">PIPE</span><span class="p">,</span>
+            <span class="n">stderr</span><span class="o">=</span><span class="n">STDOUT</span><span class="p">,</span>
+            <span class="n">bufsize</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+            <span class="n">universal_newlines</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">shell</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="p">)</span> <span class="k">as</span> <span class="n">p_out</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">line</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">p_out</span><span class="o">.</span><span class="n">stdout</span><span class="p">):</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;DEBUG: line </span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">line</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">file</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">)</span>
+                <span class="k">yield</span> <span class="s2">&quot;&lt;code&gt;</span><span class="si">{}</span><span class="s2">&lt;/code&gt;&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">html</span><span class="o">.</span><span class="n">escape</span><span class="p">(</span><span class="n">line</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)))</span>
+                <span class="k">yield</span> <span class="s2">&quot;&lt;br&gt;</span><span class="se">\n</span><span class="s2">&quot;</span>
+
+    <span class="k">return</span> <span class="n">Response</span><span class="p">(</span><span class="n">run_supervise</span><span class="p">(),</span> <span class="n">mimetype</span><span class="o">=</span><span class="s2">&quot;text/html&quot;</span><span class="p">)</span></div>
+
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="c1"># enable logging to STDERR for Flask</span>
+    <span class="n">util</span><span class="o">.</span><span class="n">log_stdout_to_stderr</span> <span class="o">=</span> <span class="kc">True</span>
+
+    <span class="c1"># show the page in browser</span>
+    <span class="n">webbrowser</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">flask_url</span><span class="p">,</span> <span class="n">new</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+    <span class="n">flg</span><span class="o">.</span><span class="n">schedule_ipban_block_list_report</span><span class="p">(</span><span class="n">ip_ban</span><span class="p">,</span> <span class="n">debug_mode</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">app</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
+        <span class="n">host</span><span class="o">=</span><span class="n">flask_ip_address</span><span class="p">,</span>
+        <span class="n">port</span><span class="o">=</span><span class="n">FLASK_PORT</span><span class="p">,</span>
+        <span class="n">debug</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>  <span class="c1"># True causes 2 tabs to open, enables auto-reload</span>
+        <span class="n">threaded</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>  <span class="c1"># threaded=True may speed up rendering on web page</span>
+        <span class="n">ssl_context</span><span class="o">=</span><span class="n">FLASK_SSL_CERT</span><span class="p">,</span>
+    <span class="p">)</span>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../index.html">ThermostatSupervisor</a></h1>
+
+
+
+
+
+
+
+
+
+<search id="searchbox" style="display: none" role="search">
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Search"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3>Navigation</h3>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;2024, Christopher Krolak.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 8.1.3</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>
