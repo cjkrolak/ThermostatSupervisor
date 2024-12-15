@@ -147,8 +147,8 @@ class ThermostatClass(pyhtcc.PyHTCC, tc.ThermostatCommon):
                       dict
           parameter(str): target parameter, None = all settings
         returns:
-          dict if parameter=None
-          str if parameter != None
+          (dict) if parameter=None
+          (str) if parameter != None
         """
         del trait  # not used on Honeywell
         zone_info_list = self.get_zones_info()
