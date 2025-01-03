@@ -96,7 +96,7 @@ class ThermostatClass(tc.ThermostatCommon):
         print(f"DEBUG: nest tstat obj dir: {dir(self.thermostat_obj)}")
 
         # get device data
-        self.devices = None  # initialize
+        self.devices = []  # initialize
         self.devices = self.get_device_data()
 
         # configure zone info
@@ -247,7 +247,13 @@ class ThermostatClass(tc.ThermostatCommon):
                 "parmaeter in get_metadata function"
             )
 
-        meta_data = self.devices[zone_num].traits
+        try:
+            meta_data = self.devices[zone_num].traits
+        except IndexError:
+            raise IndexError(
+                f"zone {zone_num} not found in nest device list, "
+                f"device list={self.devices}"
+            )
         # return all meta data for zone
         if parameter is None:
             return meta_data
