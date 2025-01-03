@@ -170,6 +170,12 @@ class ThermostatClass(tc.ThermostatCommon):
             # Write JSON back to file
             with open(self.access_token_cache_file, "w", encoding="utf-8") as f:
                 json.dump(data, f, indent=4)
+        else:
+            print(f"ERROR: {r.status_code}")
+            print(f"ERROR: {r.text}")
+            raise requests.exceptions.RequestException(
+                f"Failed to refresh token: {r.status_code}"
+            )
 
     def get_zone_name(self):
         """
