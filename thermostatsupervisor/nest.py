@@ -10,6 +10,8 @@ import json
 import os
 import pprint
 import time
+import traceback
+from typing import Union
 
 # thrid party libaries
 import oauthlib.oauth2.rfc6749.errors
@@ -119,7 +121,11 @@ class ThermostatClass(tc.ThermostatCommon):
             print("access token has expired, attempting to refresh the access token...")
             self.refresh_oauth_token()
             # raise e
+        except:
+            print(traceback.format_exc())
+            raise
         # TODO is there a chance that meta data changes?
+        print(f"DEBUG: nest devices: {self.devices}, type={type(self.devices)}")
         return self.devices
 
     def refresh_oauth_token(self):
@@ -161,7 +167,7 @@ class ThermostatClass(tc.ThermostatCommon):
             data["refresh_token"] = r.json()["access_token"]
 
             # Write JSON back to file
-            with open(self.access_token_cache_file, "w") as f:
+            with open(self.access_token_cache_file, "w", encoding="utf-8") as f:
                 json.dump(data, f, indent=4)
 
     def get_zone_name(self):
@@ -374,7 +380,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         display_temp_f = util.c_to_f(display_temp_c)
         return display_temp_f
 
-    def get_display_humidity(self) -> (float, None):
+    def get_display_humidity(self) -> Union[float, None]:
         """
         Refresh the cached zone information and return IndoorHumidity.
 
