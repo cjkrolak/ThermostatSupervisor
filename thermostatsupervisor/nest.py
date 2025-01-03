@@ -96,6 +96,7 @@ class ThermostatClass(tc.ThermostatCommon):
         print(f"DEBUG: nest tstat obj dir: {dir(self.thermostat_obj)}")
 
         # get device data
+        self.devices = None  # initialize
         self.devices = self.get_device_data()
 
         # configure zone info
