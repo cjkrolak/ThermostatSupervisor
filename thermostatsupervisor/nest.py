@@ -148,6 +148,7 @@ class ThermostatClass(tc.ThermostatCommon):
         with open(self.access_token_cache_file, "r", encoding="utf-8") as f:
             data = json.load(f)
             current_refresh_token = data["refresh_token"]
+            print(f"current refresh token: {current_refresh_token}")
 
         params = {
             "grant_type": "refresh_token",
