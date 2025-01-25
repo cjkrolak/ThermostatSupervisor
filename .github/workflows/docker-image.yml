@@ -7,28 +7,77 @@ on:
 #    branches: [ main, develop ]
 # docker build should run on push after code is merged into branch
 
-jobs:
+env:
+  # Use docker.io for Docker Hub if empty
+  REGISTRY: ghcr.io
+  # github.repository as <account>/<repo>
+  IMAGE_NAME: ${{ github.repository }}
 
+jobs:
   build:
 
     runs-on: ubuntu-latest
+    permissions:
+        contents: read
+        packages: write
+        # This is used to complete the identity challenge
+        # with sigstore/fulcio when running outside of PRs.
+        id-token: write
 
     steps:
+    # checkout code
     - name: checkout code
       uses: actions/checkout@v4
-      # https://github.com/docker/setup-qemu-action
+
+    # setup QEMU
+    # https://github.com/docker/setup-qemu-action
     - name: Set up QEMU
       uses: docker/setup-qemu-action@v3
-      # https://github.com/docker/setup-buildx-action
+
+    # setup Buildx
+    # https://github.com/docker/setup-buildx-action
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
       with:
         version: latest
+
+    # Install the cosign tool except on PR
+    # https://github.com/sigstore/cosign-installer
+    - name: Install cosign
+      uses: sigstore/cosign-installer@v3
+      with:
+        cosign-release: 'v2.2.4'
+
+    # log in to DockerHub
     - name: Log in to Docker Hub
       uses: docker/login-action@v3
       with:
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
+
+    # Extract metadata (tags, labels) for Docker
+    # https://github.com/docker/metadata-action
+    - name: Extract Docker metadata
+      id: meta
+      uses: docker/metadata-action@96383f45573cb7f253c731d3b3ab81c87ef81934 # v5.0.0
+      with:
+        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+
+    # build and push the docker image
     - name: Build and Push the multi-platform Docker image
+      id: build-and-push
       run: docker buildx build . --file Dockerfile --tag ${{ secrets.DOCKER_USERNAME }}/thermostatsupervisor:${{github.ref_name}} --platform linux/amd64,linux/arm/v6,linux/arm/v7,linux/arm64 --push
 
+    # Sign the resulting Docker image digest except on PRs.
+    # This will only write to the public Rekor transparency log when the Docker
+    # repository is public to avoid leaking data.  If you would like to publish
+    # transparency data even for private images, pass --force to cosign below.
+    # https://github.com/sigstore/cosign
+    - name: Sign the published Docker image
+      env:
+        # https://docs.github.com/en/actions/security-guides/security-hardening-for-github-actions#using-an-intermediate-environment-variable
+        TAGS: ${{ steps.meta.outputs.tags }}
+        DIGEST: ${{ steps.build-and-push.outputs.digest }}
+      # This step uses the identity token to provision an ephemeral certificate
+      # against the sigstore community Fulcio instance.
+      run: echo "${TAGS}" | xargs -I {} cosign sign --yes {}@${DIGEST}
