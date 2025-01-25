@@ -122,7 +122,7 @@ class ThermostatClass(tc.ThermostatCommon):
             print("access token has expired, attempting to refresh the access token...")
             self.refresh_oauth_token()
             # raise e
-        except:
+        except Exception:
             print(traceback.format_exc())
             raise
         # TODO is there a chance that meta data changes?
