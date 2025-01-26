@@ -55,7 +55,7 @@ steps:
 - script: |
     # python -m unittest discover -v
     # discover process is not allowing argv override so calling unit_test_common instead.
-    python -m tests.unit_test_common
+    python -m tests.unit_test_coverage
   displayName: 'Unit Tests'
   env:
     GMAIL_USERNAME: '$(GMAIL_USERNAME)'  # used for some unit tests
@@ -69,4 +69,9 @@ steps:
     BLINK_USERNAME: '$(BLINK_USERNAME)' # used for blink int test
     BLINK_PASSWORD: '$(BLINK_PASSWORD)' # used for blink int test
     BLINK_2FA: '$(BLINK_2FA)' # used for blink int test
- 
+
+# publish code coverage results to ADO pipeline 
+- task: PublishCodeCoverageResults@2
+  inputs:
+    summaryFileLocation: 'htmlcov/index.html'
+  displayName: 'Publish Code Coverage'
