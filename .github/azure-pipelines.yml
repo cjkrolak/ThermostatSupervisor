@@ -34,9 +34,9 @@ steps:
 - task: UsePythonVersion@0
   inputs:
     versionSpec: '$(python.version)'
-    githubToken: $(THERMOSTATSUPERVISOR_PR)
-    disableDownloadFromRegistry: false
-    allowUnstable: true
+    # githubToken: $(THERMOSTATSUPERVISOR_PR)
+    # github token appears to enforce only supported python versions, ref #884
+    # v3.13 is not supported by ubuntu-latest, once it is, the github token can be enabled.
   displayName: 'Use Python $(python.version)'
 
 - script: |
