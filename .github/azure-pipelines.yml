@@ -34,9 +34,8 @@ steps:
 - task: UsePythonVersion@0
   inputs:
     versionSpec: '$(python.version)'
+    githubToken: $(THERMOSTATSUPERVISOR_PR)
   displayName: 'Use Python $(python.version)'
-  env:
-    GITHUB_TOKEN: $(THERMOSTATSUPERVISOR_PR)
 
 - script: |
     python -m pip install --upgrade pip
