@@ -25,10 +25,12 @@ strategy:
     #   python.version: '3.10'
     # Python311:
     #  python.version: '3.11'
-    # Python312:
-    #  python.version: '3.12'
-    Python313:
-      python.version: '3.13'
+    Python312:
+      python.version: '3.12'
+    # Python313:
+      # python 3.13 is not yet hosted by github actions
+      # in order to use v3.13 user must disable the github token and download annonymously
+      # python.version: '3.13'
 
 steps:
 - task: UsePythonVersion@0
