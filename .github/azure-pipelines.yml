@@ -18,9 +18,9 @@ pool:
 
 strategy:
   matrix:
-    Python309:
-      python.version: '3.9'
-    # rem out 3.10 thru 3.12 to save CI time
+    # rem out 3.09 thru 3.12 to save CI time
+    # Python309:
+    #   python.version: '3.9'
     # Python310:
     #   python.version: '3.10'
     # Python311:
@@ -34,6 +34,9 @@ steps:
 - task: UsePythonVersion@0
   inputs:
     versionSpec: '$(python.version)'
+    # githubToken: $(THERMOSTATSUPERVISOR_PR)
+    # github token appears to enforce only supported python versions, ref #884
+    # v3.13 is not supported by ubuntu-latest, once it is, the github token can be enabled.
   displayName: 'Use Python $(python.version)'
 
 - script: |
@@ -48,28 +51,11 @@ steps:
     flake8 --config=setup.cfg .
   displayName: 'Run lint tests'
 
-# safety check
-# ignore 62044, pip <23.3 error
-# ignore 70612, jinja2 > 0 error
-- script: |
-    python -m pip install safety --upgrade
-    pip list
-    echo "python version=$(python.version)"
-    safety check -r requirements.txt
-    safety check -i 62044
-    safety check -i 70612
-  displayName: 'check for security vulnerabilities'
-#  workingDirectory: 
-#- script: |
-#    pip install pytest pytest-azurepipelines
-#    pytest
-#  displayName: 'pytest'
- 
 # python unit tests
 - script: |
     # python -m unittest discover -v
     # discover process is not allowing argv override so calling unit_test_common instead.
-    python -m tests.unit_test_common
+    python -m tests.unit_test_coverage
   displayName: 'Unit Tests'
   env:
     GMAIL_USERNAME: '$(GMAIL_USERNAME)'  # used for some unit tests
@@ -83,4 +69,9 @@ steps:
     BLINK_USERNAME: '$(BLINK_USERNAME)' # used for blink int test
     BLINK_PASSWORD: '$(BLINK_PASSWORD)' # used for blink int test
     BLINK_2FA: '$(BLINK_2FA)' # used for blink int test
- 
+
+# publish code coverage results to ADO pipeline 
+- task: PublishCodeCoverageResults@2
+  inputs:
+    summaryFileLocation: 'htmlcov/index.html'
+  displayName: 'Publish Code Coverage'

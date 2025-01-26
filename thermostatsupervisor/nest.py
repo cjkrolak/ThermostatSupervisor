@@ -10,6 +10,8 @@ import json
 import os
 import pprint
 import time
+import traceback
+from typing import Union
 
 # thrid party libaries
 import oauthlib.oauth2.rfc6749.errors
@@ -94,6 +96,7 @@ class ThermostatClass(tc.ThermostatCommon):
         print(f"DEBUG: nest tstat obj dir: {dir(self.thermostat_obj)}")
 
         # get device data
+        self.devices = []  # initialize
         self.devices = self.get_device_data()
 
         # configure zone info
@@ -119,7 +122,11 @@ class ThermostatClass(tc.ThermostatCommon):
             print("access token has expired, attempting to refresh the access token...")
             self.refresh_oauth_token()
             # raise e
+        except Exception:
+            print(traceback.format_exc())
+            raise
         # TODO is there a chance that meta data changes?
+        print(f"DEBUG: nest devices: {self.devices}, type={type(self.devices)}")
         return self.devices
 
     def refresh_oauth_token(self):
@@ -141,6 +148,7 @@ class ThermostatClass(tc.ThermostatCommon):
         with open(self.access_token_cache_file, "r", encoding="utf-8") as f:
             data = json.load(f)
             current_refresh_token = data["refresh_token"]
+            print(f"current refresh token: {current_refresh_token}")
 
         params = {
             "grant_type": "refresh_token",
@@ -161,8 +169,14 @@ class ThermostatClass(tc.ThermostatCommon):
             data["refresh_token"] = r.json()["access_token"]
 
             # Write JSON back to file
-            with open(self.access_token_cache_file, "w") as f:
+            with open(self.access_token_cache_file, "w", encoding="utf-8") as f:
                 json.dump(data, f, indent=4)
+        else:
+            print(f"ERROR: {r.status_code}")
+            print(f"ERROR: {r.text}")
+            raise requests.exceptions.RequestException(
+                f"Failed to refresh token: {r.status_code}"
+            )
 
     def get_zone_name(self):
         """
@@ -240,7 +254,13 @@ class ThermostatClass(tc.ThermostatCommon):
                 "parmaeter in get_metadata function"
             )
 
-        meta_data = self.devices[zone_num].traits
+        try:
+            meta_data = self.devices[zone_num].traits
+        except IndexError:
+            raise IndexError(
+                f"zone {zone_num} not found in nest device list, "
+                f"device list={self.devices}"
+            )
         # return all meta data for zone
         if parameter is None:
             return meta_data
@@ -374,7 +394,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         display_temp_f = util.c_to_f(display_temp_c)
         return display_temp_f
 
-    def get_display_humidity(self) -> (float, None):
+    def get_display_humidity(self) -> Union[float, None]:
         """
         Refresh the cached zone information and return IndoorHumidity.
 
@@ -719,61 +739,6 @@ class ThermostatZone(tc.ThermostatCommonZone):
         ):
             self.Thermostat.get_device_data()
             self.last_fetch_time = now_time
-
-    def report_heating_parameters(self, switch_position=None):
-        """
-        Display critical thermostat settings and reading to the screen.
-
-        inputs:
-            switch_position(int): switch position override, used for testing.
-        returns:
-            None
-        """
-        # current temp as measured by thermostat
-        util.log_msg(
-            f"display temp=" f"{util.temp_value_with_units(self.get_display_temp())}",
-            mode=util.BOTH_LOG,
-            func_name=1,
-        )
-
-        # get switch position
-        if switch_position is None:
-            switch_position = self.get_system_switch_position()
-
-        # heating status
-        if switch_position == self.system_switch_position[self.HEAT_MODE]:
-            util.log_msg(f"heat mode={self.is_heat_mode()}", mode=util.BOTH_LOG)
-            util.log_msg(
-                f"heat setpoint={self.get_heat_setpoint_raw()}", mode=util.BOTH_LOG
-            )
-            util.log_msg(
-                f"schedule heat sp={self.get_schedule_heat_sp()}", mode=util.BOTH_LOG
-            )
-
-        # cooling status
-        if switch_position == self.system_switch_position[self.COOL_MODE]:
-            util.log_msg(f"cool mode={self.is_cool_mode()}", mode=util.BOTH_LOG)
-            util.log_msg(
-                f"cool setpoint={self.get_cool_setpoint_raw()}", mode=util.BOTH_LOG
-            )
-            util.log_msg(
-                f"schedule cool sp={self.get_schedule_cool_sp()}", mode=util.BOTH_LOG
-            )
-
-        # hold settings
-        util.log_msg(
-            f"is in vacation hold mode={self.get_is_invacation_hold_mode()}",
-            mode=util.BOTH_LOG,
-        )
-        util.log_msg(f"vacation hold={self.get_vacation_hold()}", mode=util.BOTH_LOG)
-        util.log_msg(
-            f"vacation hold until time={self.get_vacation_hold_until_time()}",
-            mode=util.BOTH_LOG,
-        )
-        util.log_msg(
-            f"temporary hold until time=" f"{self.get_temporary_hold_until_time()}",
-            mode=util.BOTH_LOG,
-        )
 
 
 if __name__ == "__main__":
