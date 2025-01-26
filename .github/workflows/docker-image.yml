@@ -18,11 +18,11 @@ jobs:
 
     runs-on: ubuntu-latest
     permissions:
-        contents: read
-        packages: write
-        # This is used to complete the identity challenge
-        # with sigstore/fulcio when running outside of PRs.
-        id-token: write
+      contents: read
+      packages: write
+      # This is used to complete the identity challenge
+      # with sigstore/fulcio when running outside of PRs.
+      id-token: write
 
     steps:
     # checkout code
@@ -66,7 +66,13 @@ jobs:
     # build and push the docker image
     - name: Build and Push the multi-platform Docker image
       id: build-and-push
-      run: docker buildx build . --file Dockerfile --tag ${{ env.IMAGE_NAME }}:${{github.ref_name}} --platform linux/amd64,linux/arm/v6,linux/arm/v7,linux/arm64 --push
+      uses: docker/build-push-action@v4
+      with:
+        context: .
+        file: Dockerfile
+        platforms: linux/amd64,linux/arm/v6,linux/arm/v7,linux/arm64
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
 
     # Sign the resulting Docker image digest except on PRs.
     # This will only write to the public Rekor transparency log when the Docker
