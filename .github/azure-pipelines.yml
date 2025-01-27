@@ -57,6 +57,8 @@ steps:
     # discover process is not allowing argv override so calling unit_test_common instead.
     python -m tests.unit_test_coverage
   displayName: 'Unit Tests'
+  # timeout after 30 minutes, nominal job time is 10 minutes
+  timeoutInMinutes: "30"
   env:
     GMAIL_USERNAME: '$(GMAIL_USERNAME)'  # used for some unit tests
     GMAIL_PASSWORD: '$(GMAIL_PASSWORD)'  # used for some unit test
