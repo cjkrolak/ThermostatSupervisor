@@ -75,5 +75,5 @@ steps:
 # publish code coverage results to ADO pipeline 
 - task: PublishCodeCoverageResults@2
   inputs:
-    summaryFileLocation: 'htmlcov/index.html'
+    summaryFileLocation: '/tests/coverage.xml'
   displayName: 'Publish Code Coverage'

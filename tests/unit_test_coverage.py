@@ -40,6 +40,7 @@ def code_coverage_all_tests():
         cov.stop()
         cov.report()
         cov.html_report(directory="htmlcov")
+        cov.xml_report(outfile="/tests/coverage.xml")
 
 
 if __name__ == "__main__":
