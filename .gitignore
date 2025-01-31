@@ -13,6 +13,8 @@ build
 htmlcov
 .tox
 .coverage
+.coverage.*
+coverage.xml
 
 # python virtual environment files
 .venv
@@ -21,11 +23,6 @@ env
 
 # python logs
 *.log
-
-# python test coverage files
-.coverage
-.coverage.*
-htmlcov
 
 # project files
 .project
