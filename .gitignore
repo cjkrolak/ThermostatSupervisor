@@ -14,7 +14,7 @@ htmlcov
 .tox
 .coverage
 .coverage.*
-**/coverage.xml
+coverage.xml
 
 # python virtual environment files
 .venv
