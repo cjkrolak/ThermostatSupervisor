@@ -28,6 +28,8 @@ except ImportError as ex:
 
 # third party imports
 from flask import Flask, request
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 from flask_restful import Resource, Api  # noqa F405
 from flask_wtf.csrf import CSRFProtect
 import munch
@@ -787,6 +789,15 @@ def create_app():
 
     # add API routes
     api = Api(app_)
+
+    # Initialize rate limiter
+    limiter = Limiter(
+        get_remote_address,
+        app=app_,
+        default_limits=["200 per day", "50 per hour"]
+    )
+
+    # add API functions
     api.add_resource(Controller, "/")
     api.add_resource(ControllerUnit, sht31_config.flask_folder.unit_test)
     api.add_resource(ReadFaultRegister, sht31_config.flask_folder.diag)
@@ -799,6 +810,22 @@ def create_app():
     api.add_resource(I2CDetect, sht31_config.flask_folder.i2c_detect)
     api.add_resource(I2CDetectBus0, sht31_config.flask_folder.i2c_detect_0)
     api.add_resource(I2CDetectBus1, sht31_config.flask_folder.i2c_detect_1)
+
+    # add rate limiters
+    rate_limit_default = "1 per minute"
+    limiter.limit(rate_limit_default)(Controller)
+    limiter.limit(rate_limit_default)(ControllerUnit)
+    limiter.limit(rate_limit_default)(ReadFaultRegister)
+    limiter.limit(rate_limit_default)(ClearFaultRegister)
+    limiter.limit(rate_limit_default)(EnableHeater)
+    limiter.limit(rate_limit_default)(DisableHeater)
+    limiter.limit(rate_limit_default)(SoftReset)
+    limiter.limit(rate_limit_default)(Reset)
+    limiter.limit(rate_limit_default)(I2CRecovery)
+    limiter.limit(rate_limit_default)(I2CDetect)
+    limiter.limit(rate_limit_default)(I2CDetectBus0)
+    limiter.limit(rate_limit_default)(I2CDetectBus1)
+
     return app_
 
 

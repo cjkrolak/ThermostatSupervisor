@@ -8,7 +8,8 @@ import sys
 import webbrowser
 
 # third party imports
-from flask import Flask, Response
+from flask import Flask, Response, request
+from flask_limiter import Limiter
 from flask_wtf.csrf import CSRFProtect
 
 # local imports
@@ -59,6 +60,7 @@ def create_app():
 
 # create the flask app
 app = create_app()
+limiter = Limiter(app, key_func=lambda: request.headers.get('X-Real-IP'))
 csrf = CSRFProtect(app)  # enable CSRF protection
 ip_ban = flg.initialize_ipban(app)  # hacker blacklisting agent
 flg.set_flask_cookie_config(app)
@@ -72,6 +74,7 @@ def favicon():
 
 
 @app.route("/")
+@limiter.limit("1 per minute")
 def index():
     """index route"""
 
