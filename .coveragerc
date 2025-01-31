@@ -10,6 +10,7 @@ omit =
     tests/*
     test_*
     *_test_*
+    */blinkpy/*
 
 [report]
 # Regexes for lines to exclude from consideration
