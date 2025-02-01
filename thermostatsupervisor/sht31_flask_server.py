@@ -795,7 +795,7 @@ class I2CDetectBus1(Resource):
         return helper.i2c_detect(1)
 
 
-fast_rate_limiter = ["200 per day", "60 per hour"]
+fast_rate_limiter = ["200 per day", "1 per hour"]
 
 
 def create_app():
