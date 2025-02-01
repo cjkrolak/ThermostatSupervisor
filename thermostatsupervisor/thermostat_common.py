@@ -625,9 +625,9 @@ class ThermostatCommonZone:
         """Return raw cool set point (number only, no units)."""
         return float(util.BOGUS_INT)  # placeholder
 
-    def get_cool_setpoint(self) -> int:  # noqa R0201
+    def get_cool_setpoint(self) -> str:  # noqa R0201
         """Return raw cool set point (number and units)."""
-        return util.BOGUS_INT  # placeholder
+        return util.BOGUS_STR  # placeholder
 
     def get_schedule_program_cool(self) -> dict:  # noqa R0201
         """
