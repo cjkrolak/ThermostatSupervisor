@@ -794,7 +794,7 @@ def create_app():
     limiter = Limiter(
         get_remote_address,
         app=app_,
-        default_limits=["200 per day", "50 per hour"]
+        default_limits=["2 per day", "1 per hour"]
     )
 
     # add API functions
