@@ -38,7 +38,7 @@ else:
 
 
 class ThermostatClass(tc.ThermostatCommon):
-    """Nest thermostat functions."""
+    """Nest Thermostat class."""
 
     def __init__(self, zone, verbose=True):
         """
@@ -256,11 +256,11 @@ class ThermostatClass(tc.ThermostatCommon):
 
         try:
             meta_data = self.devices[zone_num].traits
-        except IndexError:
+        except IndexError as exc:
             raise IndexError(
                 f"zone {zone_num} not found in nest device list, "
                 f"device list={self.devices}"
-            )
+            ) from exc
         # return all meta data for zone
         if parameter is None:
             return meta_data
@@ -288,11 +288,7 @@ class ThermostatClass(tc.ThermostatCommon):
 
 
 class ThermostatZone(tc.ThermostatCommonZone):
-    """
-    KumoCloud single zone on local network.
-
-    Class needs to be updated for multi-zone support.
-    """
+    """Nest Thermostat Zone class."""
 
     def __init__(self, Thermostat_obj, verbose=True):
         """

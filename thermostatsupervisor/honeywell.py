@@ -10,6 +10,7 @@ import os
 import pprint
 import time
 import traceback
+from typing import Union
 
 # local imports
 from thermostatsupervisor import email_notification
@@ -137,7 +138,7 @@ class ThermostatClass(pyhtcc.PyHTCC, tc.ThermostatCommon):
 
     def get_metadata(
         self, zone=honeywell_config.default_zone, trait=None, parameter=None
-    ) -> (dict, str):
+    ) -> Union[dict, str]:
         """
         Return the current thermostat metadata settings.
 
@@ -459,7 +460,7 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
         """
         return float(self.get_indoor_temperature_raw())
 
-    def get_display_humidity(self) -> (float, None):
+    def get_display_humidity(self) -> Union[float, None]:
         """
         Refresh the cached zone information then return IndoorHumidity.
 

@@ -58,7 +58,7 @@ class ThermostatCommon:
             (dict): dictionary of meta data.
         """
         raise NotImplementedError(
-            "get_metadata is not implemented for this" "thermostat type"
+            "get_metadata is not implemented for this thermostat type"
         )
 
     def print_all_thermostat_metadata(self, zone):  # noqa R0201

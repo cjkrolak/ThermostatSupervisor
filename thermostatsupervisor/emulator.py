@@ -2,6 +2,7 @@
 import random
 import time
 import traceback
+from typing import Union
 
 # local imports
 from thermostatsupervisor import emulator_config
@@ -54,14 +55,16 @@ class ThermostatClass(tc.ThermostatCommon):
         """
         return zone
 
-    def get_all_metadata(self, zone=None):
-        """Get all thermostat meta data for zone from kumocloud.
+    def get_all_metadata(self, zone=None, retry=False):
+        """Get all thermostat meta data for zone from emulator.
 
         inputs:
             zone(int): specified zone, if None will print all zones.
+            retry(bool): if True will retry the request, not currrently implemented.
         returns:
             (dict): JSON dict
         """
+        del retry  # unused on emulator
         return self.get_metadata(zone)
 
     def get_metadata(self, zone=None, trait=None, parameter=None):
@@ -107,11 +110,7 @@ class ThermostatClass(tc.ThermostatCommon):
 
 
 class ThermostatZone(tc.ThermostatCommonZone):
-    """
-    KumoCloud single zone from kumocloud.
-
-    Class needs to be updated for multi-zone support.
-    """
+    """Emulator thermostat zone functions."""
 
     def __init__(self, Thermostat_obj, verbose=True):
         """
@@ -219,7 +218,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
             emulator_config.NORMAL_TEMP_VARIATION,
         )
 
-    def get_display_humidity(self) -> (float, None):
+    def get_display_humidity(self) -> Union[float, None]:
         """
         Refresh the cached zone information and return IndoorHumidity
         with random +/-1% noise value.
@@ -530,13 +529,13 @@ class ThermostatZone(tc.ThermostatCommonZone):
 
     def refresh_zone_info(self, force_refresh=False):
         """
-        Refresh zone info from KumoCloud.
-
-        inputs:
-            force_refresh(bool): if True, ignore expiration timer.
-        returns:
-            None, zone_data is refreshed.
+        Refreshes the zone information if the current time exceeds the fetch interval
+        or if the force_refresh flag is set to True.
+        Args:
+            force_refresh (bool): If True, forces the refresh of zone information
+                                  regardless of the fetch interval. Default is False.
         """
+
         now_time = time.time()
         # refresh if past expiration date or force_refresh option
         if force_refresh or (
