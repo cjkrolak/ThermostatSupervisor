@@ -8,8 +8,9 @@ import sys
 import webbrowser
 
 # third party imports
-from flask import Flask, Response, request
+from flask import Flask, Response
 from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 from flask_wtf.csrf import CSRFProtect
 
 # local imports
@@ -60,7 +61,12 @@ def create_app():
 
 # create the flask app
 app = create_app()
-limiter = Limiter(app, key_func=lambda: request.headers.get('X-Real-IP'))
+# Initialize rate limiter
+limiter = Limiter(
+    get_remote_address,
+    app=app,
+    default_limits=["200 per day", "60 per hour"]
+)
 csrf = CSRFProtect(app)  # enable CSRF protection
 ip_ban = flg.initialize_ipban(app)  # hacker blacklisting agent
 flg.set_flask_cookie_config(app)

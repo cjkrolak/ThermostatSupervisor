@@ -119,7 +119,8 @@ def print_flask_config(app):
     Prints the configuration settings of a Flask application.
 
     Args:
-        app (Flask): The Flask application instance whose configuration is to be printed.
+        app (Flask): The Flask application instance whose configuration is to be
+                     printed.
     """
     print("flask config:")
     print(f"{app.config}")

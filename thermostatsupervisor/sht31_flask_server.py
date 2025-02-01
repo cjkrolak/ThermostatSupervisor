@@ -645,7 +645,6 @@ class Controller(Resource):
     def __init__(self):
         pass
 
-    # @limiter.limit(fast_rate_limiter)
     def get(self):
         """Map the get method."""
         helper = Sensors()
@@ -658,7 +657,6 @@ class ControllerUnit(Resource):
     def __init__(self):
         pass
 
-    # @limiter.limit(fast_rate_limiter)
     def get(self):
         """Map the get method."""
         helper = Sensors()
@@ -671,7 +669,6 @@ class ReadFaultRegister(Resource):
     def __init__(self):
         pass
 
-    # @limiter.limit(fast_rate_limiter)
     def get(self):
         """Map the get method."""
         helper = Sensors()
@@ -684,7 +681,6 @@ class ClearFaultRegister(Resource):
     def __init__(self):
         pass
 
-    # @limiter.limit(fast_rate_limiter)
     def get(self):
         """Map the get method."""
         helper = Sensors()
@@ -697,7 +693,6 @@ class EnableHeater(Resource):
     def __init__(self):
         pass
 
-    # @limiter.limit(fast_rate_limiter)
     def get(self):
         """Map the get method."""
         helper = Sensors()
@@ -710,7 +705,6 @@ class DisableHeater(Resource):
     def __init__(self):
         pass
 
-    # @limiter.limit(fast_rate_limiter)
     def get(self):
         """Map the get method."""
         helper = Sensors()
@@ -723,7 +717,6 @@ class SoftReset(Resource):
     def __init__(self):
         pass
 
-    # @limiter.limit(fast_rate_limiter)
     def get(self):
         """Map the get method."""
         helper = Sensors()
@@ -736,7 +729,6 @@ class Reset(Resource):
     def __init__(self):
         pass
 
-    # @limiter.limit(fast_rate_limiter)
     def get(self):
         """Map the get method."""
         helper = Sensors()
@@ -749,7 +741,6 @@ class I2CRecovery(Resource):
     def __init__(self):
         pass
 
-    # @limiter.limit(fast_rate_limiter)
     def get(self):
         """Map the get method."""
         helper = Sensors()
@@ -762,7 +753,6 @@ class I2CDetect(Resource):
     def __init__(self):
         pass
 
-    # @limiter.limit(fast_rate_limiter)
     def get(self):
         """Map the get method."""
         helper = Sensors()
@@ -775,7 +765,6 @@ class I2CDetectBus0(Resource):
     def __init__(self):
         pass
 
-    # @limiter.limit(fast_rate_limiter)
     def get(self):
         """Map the get method."""
         helper = Sensors()
@@ -788,14 +777,10 @@ class I2CDetectBus1(Resource):
     def __init__(self):
         pass
 
-    # @limiter.limit(fast_rate_limiter)
     def get(self):
         """Map the get method."""
         helper = Sensors()
         return helper.i2c_detect(1)
-
-
-fast_rate_limiter = ["200 per day", "1 per hour"]
 
 
 def create_app():
@@ -806,10 +791,10 @@ def create_app():
     api = Api(app_)
 
     # Initialize rate limiter
-    limiter = Limiter(
+    Limiter(
         get_remote_address,
         app=app_,
-        default_limits=fast_rate_limiter
+        default_limits=["200 per day", "60 per hour"]
     )
 
     # add API functions
