@@ -28,6 +28,8 @@ except ImportError as ex:
 
 # third party imports
 from flask import Flask, request
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 from flask_restful import Resource, Api  # noqa F405
 from flask_wtf.csrf import CSRFProtect
 import munch
@@ -787,6 +789,11 @@ def create_app():
 
     # add API routes
     api = Api(app_)
+
+    # Initialize rate limiter
+    Limiter(get_remote_address, app=app_, default_limits=["200 per day", "60 per hour"])
+
+    # add API functions
     api.add_resource(Controller, "/")
     api.add_resource(ControllerUnit, sht31_config.flask_folder.unit_test)
     api.add_resource(ReadFaultRegister, sht31_config.flask_folder.diag)
@@ -799,6 +806,7 @@ def create_app():
     api.add_resource(I2CDetect, sht31_config.flask_folder.i2c_detect)
     api.add_resource(I2CDetectBus0, sht31_config.flask_folder.i2c_detect_0)
     api.add_resource(I2CDetectBus1, sht31_config.flask_folder.i2c_detect_1)
+
     return app_
 
 
