@@ -36,23 +36,24 @@ required_env_variables = {
 # zone number assignments are arbitrary.
 metadata = {
     # cabin zones
-    0: {"zone_name": "cabin doorbell"},
-    1: {"zone_name": "cabin driveway"},
-    2: {"zone_name": "beach"},
-    3: {"zone_name": "front yard"},
-    4: {"zone_name": "back yard"},
-    5: {"zone_name": "front dogs"},
-    6: {"zone_name": "road"},
+    0: {"zone_name": "cabin driveway"},
+    1: {"zone_name": "beach"},
+    2: {"zone_name": "front yard"},
+    3: {"zone_name": "back yard"},
+    4: {"zone_name": "front dogs"},
+    5: {"zone_name": "road"},
+    6: {"zone_name": "dock"},
     7: {"zone_name": "cabin garage"},
     8: {"zone_name": "loft"},
+    9: {"zone_name": "cabin doorbell"},
     # home zones
-    9: {"zone_name": "home doorbell"},
-    10: {"zone_name": "home driveway"},
-    11: {"zone_name": "west"},
-    12: {"zone_name": "north"},
-    13: {"zone_name": "south"},
-    14: {"zone_name": "nw-se"},
+    10: {"zone_name": "west"},
+    11: {"zone_name": "north"},
+    12: {"zone_name": "south"},
+    13: {"zone_name": "nw-se"},
+    14: {"zone_name": "home driveway"},
     15: {"zone_name": "cat camera"},
+    16: {"zone_name": "home doorbell"},
 }
 
 # supported thermostat configs
