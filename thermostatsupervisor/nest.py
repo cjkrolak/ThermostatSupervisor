@@ -38,7 +38,7 @@ else:
 
 
 class ThermostatClass(tc.ThermostatCommon):
-    """ Nest Thermostat class.  """
+    """Nest Thermostat class."""
 
     def __init__(self, zone, verbose=True):
         """
@@ -288,7 +288,7 @@ class ThermostatClass(tc.ThermostatCommon):
 
 
 class ThermostatZone(tc.ThermostatCommonZone):
-    """ Nest Thermostat Zone class.  """
+    """Nest Thermostat Zone class."""
 
     def __init__(self, Thermostat_obj, verbose=True):
         """
