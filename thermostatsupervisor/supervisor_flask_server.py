@@ -63,9 +63,7 @@ def create_app():
 app = create_app()
 # Initialize rate limiter
 limiter = Limiter(
-    get_remote_address,
-    app=app,
-    default_limits=["200 per day", "60 per hour"]
+    get_remote_address, app=app, default_limits=["200 per day", "60 per hour"]
 )
 csrf = CSRFProtect(app)  # enable CSRF protection
 ip_ban = flg.initialize_ipban(app)  # hacker blacklisting agent

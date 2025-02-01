@@ -791,11 +791,7 @@ def create_app():
     api = Api(app_)
 
     # Initialize rate limiter
-    Limiter(
-        get_remote_address,
-        app=app_,
-        default_limits=["200 per day", "60 per hour"]
-    )
+    Limiter(get_remote_address, app=app_, default_limits=["200 per day", "60 per hour"])
 
     # add API functions
     api.add_resource(Controller, "/")
