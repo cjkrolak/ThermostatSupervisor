@@ -4,6 +4,7 @@ import os
 import pprint
 import time
 import traceback
+from typing import Union
 
 # third party imports
 
@@ -357,7 +358,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
             )
         )
 
-    def get_display_humidity(self) -> (float, None):
+    def get_display_humidity(self) -> Union[float, None]:
         """
         Refresh the cached zone information and return IndoorHumidity.
 
