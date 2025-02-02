@@ -454,7 +454,7 @@ class UserInputs:
         valid_sflags = []
         for parent_key, child_dict in self.user_inputs.items():
             for child_key, _ in child_dict.items():
-                valid_sflags.append(child_dict["sflag"])
+                valid_sflags.append(self.user_inputs[parent_key][child_key]["sflag"])
         return valid_sflags
 
     def parse_runtime_parameters(self, argv_list=None):
