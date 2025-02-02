@@ -177,6 +177,16 @@ class Test(utc.UnitTest):
                 "args": None,
                 "return_type": int,
             },
+            "is_defrosting": {
+                "key": self.Zone.is_defrosting,
+                "args": None,
+                "return_type": int,
+            },
+            "is_standby": {
+                "key": self.Zone.is_standby,
+                "args": None,
+                "return_type": int,
+            },
             "is_off_mode": {
                 "key": self.Zone.is_off_mode,
                 "args": None,

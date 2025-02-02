@@ -521,6 +521,14 @@ class ThermostatCommonZone:
         """Return 1 if fan relay is active, else 0."""
         return util.BOGUS_INT
 
+    def is_defrosting(self):  # noqa R0201
+        """Return 1 if defrosting relay is active, else 0."""
+        return util.BOGUS_INT
+
+    def is_standby(self):  # noqa R0201
+        """Return 1 if standby relay is active, else 0."""
+        return util.BOGUS_INT
+
     def set_heat_setpoint(self, temp: int) -> None:  # noqa R0201
         """
         Set a new heat setpoint.
