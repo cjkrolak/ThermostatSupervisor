@@ -131,6 +131,43 @@ class IntegrationTest(utc.UnitTest):
         )
 
 
+@unittest.skipIf(
+    env.is_azure_environment(), "this test not supported on Azure Pipelines"
+)
+@unittest.skipIf(
+    not utc.ENABLE_FLASK_INTEGRATION_TESTS, "flask integration tests are disabled"
+)
+class TestRunSupervise(utc.UnitTest):
+    """Unit tests for run_supervise function."""
+
+    def setUp(self):
+        super().setUp()
+        self.app = sfs.create_app()
+        self.client = self.app.test_client()
+        sfs.argv = utc.unit_test_argv
+
+    def test_run_supervise_response(self):
+        """Test the response of run_supervise function."""
+        with self.app.test_request_context():
+            response = sfs.index()
+            self.assertEqual(response.status_code, 200)
+            self.assertIn(
+                f"<title>{utc.unit_test_argv[1]} thermostat zone "
+                f"{utc.unit_test_argv[2]}, {utc.unit_test_argv[7]} "
+                "measurements</title>",
+                response.get_data(as_text=True),
+            )
+
+    def test_run_supervise_output(self):
+        """Test the output of run_supervise function."""
+        with self.app.test_request_context():
+            response = sfs.index()
+            content = response.get_data(as_text=True)
+            self.assertIn("<code>", content)
+            self.assertIn("</code>", content)
+            self.assertIn("<br>", content)
+
+
 if __name__ == "__main__":
     util.log_msg.debug = True
     unittest.main(verbosity=2)

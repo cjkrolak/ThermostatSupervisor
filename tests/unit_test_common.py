@@ -3,6 +3,7 @@ Common functions used in multiple unit tests.
 """
 # global imports
 import argparse
+from io import TextIOWrapper
 import os
 import pprint
 import sys
@@ -535,6 +536,14 @@ class RuntimeParameterTest(UnitTest):
     test_fields_with_file = None  # placeholder, will be populated by child
     parent_key = util.default_parent_key  # will be updated during inheritance.
 
+    def setUp(self):
+        self.print_test_name()
+        util.log_msg.file_name = "unit_test.txt"
+        self.initialize_user_inputs()
+
+    def tearDown(self):
+        self.print_test_result()
+
     def get_test_list(self, test_fields):
         """
         Return the test list with string elements.
@@ -605,14 +614,6 @@ class RuntimeParameterTest(UnitTest):
                 )
             )
         return actual_values
-
-    def setUp(self):
-        self.print_test_name()
-        util.log_msg.file_name = "unit_test.txt"
-        self.initialize_user_inputs()
-
-    def tearDown(self):
-        self.print_test_result()
 
     def verify_parsed_values(self, parent_key=None):
         """
@@ -686,23 +687,36 @@ class RuntimeParameterTest(UnitTest):
         print(f"args returned: {' '.join(f'{k}={v}' for k, v in vars(args).items())}")
         # assert(args.thermostat_type == "emulator")
 
-    def is_valid_file(self, parser, arg):
+    def test_is_valid_file(self):
         """
-        Verify if the provided file path is valid and return a file handle.
-        Args:
-            parser (argparse.ArgumentParser): The argument parser instance.
-            arg (str): The file name with path.
-        Returns:
-            file object: The opened file handle if the file exists.
-        Raises:
-            ArgumentError: If the file does not exist.
+        Verify is_valid_file() works as expected.
         """
-        arg = arg.strip()  # remove any leading spaces
-        if not os.path.exists(arg):
-            parser.error(f"The file {os.path.abspath(arg)} does not exist!")
-            return None
-        else:
-            return open(arg, "rt", encoding="utf8")  # return a file handle
+        self.uip = self.mod.UserInputs()
+        test_cases = [
+            # Test case format: (filename, expected_result)
+            (None, SystemExit),  # None should fail
+            ("", SystemExit),  # Empty string should fail
+            ("nonexistent.txt", SystemExit),  # Non-existent file should fail
+            (unit_test_argv_file, TextIOWrapper),  # Existing file should pass
+            (
+                os.path.dirname(unit_test_argv_file),
+                (PermissionError, IsADirectoryError),
+            ),  # Directory should fail permission on Windows, IsADirectory on Linux
+        ]
+
+        for test_case in test_cases:
+            filename, expected = test_case
+            print(f"test case: filename='{filename}', expected={expected}")
+            if expected != TextIOWrapper:
+                with self.assertRaises(expected):
+                    self.uip.is_valid_file(filename)
+            else:
+                actual = self.uip.is_valid_file(filename)
+                self.assertTrue(
+                    isinstance(actual, expected),
+                    f"filename='{filename}', expected type={expected}, "
+                    f"actual type={type(actual)}",
+                )
 
     def test_parse_named_arguments_sflag(self):
         """

@@ -767,7 +767,7 @@ class UserInputs:
                 )
                 raise
 
-    def is_valid_file(self, arg):
+    def is_valid_file(self, arg=None):
         """
         Verify file input is valid.
 
@@ -776,10 +776,12 @@ class UserInputs:
         returns:
             open file handle
         """
-        arg = arg.strip()  # remove any leading spaces
-        if not os.path.exists(arg):
-            self.parser.error(f"The file {os.path.abspath(arg)} does not exist!")
-            return None
+        if arg is not None:
+            arg = arg.strip()  # remove any leading spaces
+        if arg in [None, ""]:
+            self.parser.error(f"The file '{arg}' does not exist!")
+        elif not os.path.exists(arg):
+            self.parser.error(f"The file '{os.path.abspath(arg)}' does not exist!")
         else:
             return open(arg, "r", encoding="utf8")  # return a file handle
 
