@@ -504,7 +504,7 @@ class Sensors:
                 r"\s+Signal level=(?P<signal_level_dBm>.+) d.+$"
             ),
             re.compile(
-                r"^Signal level=(?P<signal_quality>\d+)/" r"(?P<signal_total>\d+).*$"
+                r"^Signal level=(?P<signal_quality>\d+)/(?P<signal_total>\d+).*$"
             ),
         ]
 

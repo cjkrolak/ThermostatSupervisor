@@ -9,6 +9,7 @@ import time
 import traceback
 import urllib
 from dns.exception import DNSException
+from typing import Union
 
 # local imports
 from thermostatsupervisor import mmm_config
@@ -149,7 +150,7 @@ class ThermostatClass(tc.ThermostatCommon):
         del retry  # not used
         return self.get_meta_data_dict(zone)
 
-    def get_metadata(self, zone, trait=None, parameter=None) -> (dict, str):
+    def get_metadata(self, zone, trait=None, parameter=None) -> Union[dict, str]:
         """
         Get the current thermostat metadata settings.
 
@@ -167,7 +168,7 @@ class ThermostatClass(tc.ThermostatCommon):
         else:
             return self.get_meta_data_dict(zone)[parameter]["raw"]
 
-    def get_latestdata(self, zone, debug=False) -> (dict, str):
+    def get_latestdata(self, zone, debug=False) -> Union[dict, str]:
         """
         Get the current thermostat latest data.
 

@@ -18,6 +18,19 @@ class IntegrationTest(utc.IntegrationTest):
     """
 
     def setUpIntTest(self):
+        """
+        Set up the integration test environment for the Blink thermostat.
+        This method initializes common setup procedures and prints the test name.
+        It also configures the command-line arguments required for the Blink thermostat
+        integration test, including the module name, thermostat type, default zone,
+        poll time, reconnect time, tolerance, thermostat mode, and the number of
+        measurements.
+        Attributes:
+            unit_test_argv (list): List of command-line arguments for the Blink
+                                   thermostat.
+            mod (module): The Blink thermostat module.
+            mod_config (module): The configuration module for the Blink thermostat.
+        """
         self.setup_common()
         self.print_test_name()
 

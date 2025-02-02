@@ -20,6 +20,24 @@ class IntegrationTest(utc.IntegrationTest):
     """
 
     def setUpIntTest(self):
+        """
+        Set up the integration test environment for the SHT31 thermostat.
+        This method initializes common setup procedures and prints the test name.
+        It also configures the command-line arguments required for the test.
+        The command-line arguments include:
+            - Module name ("supervise.py")
+            - Thermostat type ("sht31")
+            - Zone configuration (default zone from sht31_config)
+            - Poll time in seconds (5)
+            - Reconnect time in seconds (12)
+            - Tolerance value (2)
+            - Thermostat mode ("UNKNOWN_MODE")
+            - Number of measurements (6)
+        Attributes:
+            unit_test_argv (list): List of command-line arguments for the test.
+            mod (module): The SHT31 module.
+            mod_config (module): The SHT31 configuration module.
+        """
         self.setup_common()
         self.print_test_name()
 

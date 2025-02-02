@@ -16,6 +16,7 @@ import os
 import threading
 import time
 import traceback
+from typing import Union
 
 # third party imports
 import requests
@@ -220,7 +221,7 @@ class ThermostatClass(tc.ThermostatCommon):
                     func_name=1,
                 )
                 time.sleep(self.retry_delay)
-                self.get_metadata(zone, parameter=parameter, retry=False)
+                return self.get_metadata(zone, parameter=parameter, retry=False)
             else:
                 raise RuntimeError(
                     "FATAL ERROR: SHT31 server is not responding"
@@ -315,7 +316,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
                         func_name=1,
                     )
                     time.sleep(self.retry_delay)
-                    self.get_metadata(parameter=None, retry=False)
+                    return self.get_metadata(parameter=None, retry=False)
                 else:
                     raise RuntimeError(
                         "FATAL ERROR: SHT31 server is not responding"
@@ -333,7 +334,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
                         func_name=1,
                     )
                     time.sleep(self.retry_delay)
-                    self.get_metadata(parameter=parameter, retry=False)
+                    return self.get_metadata(parameter=parameter, retry=False)
                 else:
                     raise RuntimeError(
                         "FATAL ERROR: SHT31 server is not responding"
@@ -355,7 +356,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
                         func_name=1,
                     )
                     time.sleep(self.retry_delay)
-                    self.get_metadata(parameter=parameter, retry=False)
+                    return self.get_metadata(parameter=parameter, retry=False)
                 else:
                     raise KeyError(
                         f"FATAL ERROR: SHT31 server response did not contain "
@@ -373,7 +374,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         """
         return float(self.get_metadata(parameter=self.tempfield))
 
-    def get_display_humidity(self) -> (float, None):
+    def get_display_humidity(self) -> Union[float, None]:
         """
         Return Humidity.
 

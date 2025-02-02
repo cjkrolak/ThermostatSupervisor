@@ -779,6 +779,7 @@ class UserInputs:
         arg = arg.strip()  # remove any leading spaces
         if not os.path.exists(arg):
             self.parser.error(f"The file {os.path.abspath(arg)} does not exist!")
+            return None
         else:
             return open(arg, "r", encoding="utf8")  # return a file handle
 
