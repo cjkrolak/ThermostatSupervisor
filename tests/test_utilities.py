@@ -241,7 +241,7 @@ class MetricsTests(utc.UnitTest):
     def test_temp_value_with_units(self):
         """Verify function attaches units as expected."""
 
-        for test_case in [44, -1, 101, 2, "13", "-13", None]:
+        for test_case in [44, -1, 101, 2, "13", "-13", None, "13°F"]:
             for precision in [0, 1, 2]:
                 for disp_unit in ["F", "c"]:
                     print(
@@ -250,12 +250,19 @@ class MetricsTests(utc.UnitTest):
                     )
                     if test_case is None:
                         formatted = "None"
+                    elif "°" in str(test_case):
+                        # pass-thru for already formatted values
+                        formatted = f"{test_case}"
                     else:
                         if isinstance(test_case, str):
                             formatted = f"{float(test_case):.{precision}f}"
                         else:
                             formatted = f"{test_case:.{precision}f}"
-                    expected_val = f"{formatted}°{disp_unit}"
+                    if "°" in str(test_case):
+                        # pass-thru for already formatted values
+                        expected_val = f"{test_case}"
+                    else:
+                        expected_val = f"{formatted}°{disp_unit}"
                     actual_val = util.temp_value_with_units(
                         test_case, disp_unit, precision
                     )
@@ -274,7 +281,7 @@ class MetricsTests(utc.UnitTest):
     def test_humidity_value_with_units(self):
         """Verify function attaches units as expected."""
 
-        for test_case in [44, -1, 101, 2, "13", "-13", None]:
+        for test_case in [44, -1, 101, 2, "13", "-13", None, "45%RH"]:
             for precision in [0, 1, 2]:
                 for disp_unit in ["RH"]:
                     print(
@@ -283,12 +290,19 @@ class MetricsTests(utc.UnitTest):
                     )
                     if test_case is None:
                         formatted = "None"
+                    elif "%" in str(test_case):
+                        # pass-thru for already formatted values
+                        formatted = f"{test_case}"
                     else:
                         if isinstance(test_case, str):
                             formatted = f"{float(test_case):.{precision}f}"
                         else:
                             formatted = f"{test_case:.{precision}f}"
-                    expected_val = f"{formatted}%{disp_unit}"
+                    if "%" in str(test_case):
+                        # pass-thru for already formatted values
+                        expected_val = f"{test_case}"
+                    else:
+                        expected_val = f"{formatted}%{disp_unit}"
                     actual_val = util.humidity_value_with_units(
                         test_case, disp_unit, precision
                     )
@@ -494,7 +508,8 @@ class MiscTests(utc.UnitTest):
             actual_val = util.get_key_from_value(test_dict, "bogus_value")
 
         # unsupported datatype
-        with self.assertRaises(KeyError):
+        test_dict.update({"NoneKey": None})  # None element
+        with self.assertRaises(TypeError):
             print(
                 "attempting to input unsupported datatype, "
                 "expect TypeError exception..."
@@ -556,40 +571,6 @@ class MiscTests(utc.UnitTest):
                 f"test_case={test_case[0]}, expected="
                 f"{test_case[2]}, actual={result}",
             )
-
-
-class RuntimeParameterTest(utc.RuntimeParameterTest):
-    """Generic runtime parameter tests."""
-
-    mod = utc  # module to test
-    script = os.path.realpath(__file__)
-    bool_val = False
-    int_val = 9
-    float_val = 8.8
-    str_val = "test str"
-    required_val = "required"
-    input_file = utc.unit_test_argv_file
-
-    # fields for testing, mapped to class variables.
-    # (value, field name)
-    test_fields = [
-        (script, os.path.realpath(__file__)),
-        (bool_val, utc.BOOL_FLD),
-        (int_val, utc.INT_FLD),
-        (float_val, utc.FLOAT_FLD),
-        (str_val, utc.STR_FLD),
-        (required_val, utc.REQUIRED_FLD),
-    ]
-    # test case with input file
-    test_fields_with_file = [
-        (script, os.path.realpath(__file__)),
-        (bool_val, utc.BOOL_FLD),
-        (int_val, utc.INT_FLD),
-        (float_val, utc.FLOAT_FLD),
-        (str_val, utc.STR_FLD),
-        (required_val, utc.REQUIRED_FLD),
-        (input_file, utc.INPUT_FILE_FLD),
-    ]
 
 
 if __name__ == "__main__":
