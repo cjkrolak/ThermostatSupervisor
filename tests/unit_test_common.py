@@ -252,6 +252,7 @@ class FunctionalIntegrationTest(IntegrationTest):
 
     metadata_field = None  # thermostat-specific
     metadata_type = str  # thermostat-specific
+    trait_field = None  # thermostat-specific
 
     def test_a_thermostat_basic_checkout(self):
         """
@@ -597,10 +598,10 @@ class RuntimeParameterTest(UnitTest):
             (list) of actual values.
         """
         actual_values = []
-        for x in range(0, len(self.test_fields)):
+        for _, test_field in enumerate(self.test_fields):
             actual_values.append(
                 self.uip.get_user_inputs(
-                    list(self.uip.user_inputs.keys())[0], key, self.test_fields[x][1]
+                    list(self.uip.user_inputs.keys())[0], key, test_field[1]
                 )
             )
         return actual_values
@@ -625,16 +626,16 @@ class RuntimeParameterTest(UnitTest):
         else:
             expected_values = self.get_expected_vals_dict(parent_key)
 
-        for parent_key, child_dict in expected_values.items():
+        for local_parent_key, child_dict in expected_values.items():
             for c_key, _ in child_dict.items():
                 self.assertEqual(
-                    expected_values[parent_key][c_key],
-                    self.uip.get_user_inputs(parent_key, c_key),
-                    f"expected({type(expected_values[parent_key][c_key])})"
-                    f" {expected_values[parent_key][c_key]} != "
+                    expected_values[local_parent_key][c_key],
+                    self.uip.get_user_inputs(local_parent_key, c_key),
+                    f"expected({type(expected_values[local_parent_key][c_key])})"
+                    f" {expected_values[local_parent_key][c_key]} != "
                     f"actual("
-                    f"{type(self.uip.get_user_inputs(parent_key, c_key))})"
-                    f" {self.uip.get_user_inputs(parent_key, c_key)}",
+                    f"{type(self.uip.get_user_inputs(local_parent_key, c_key))})"
+                    f" {self.uip.get_user_inputs(local_parent_key, c_key)}",
                 )
 
     def initialize_user_inputs(self):
@@ -683,22 +684,25 @@ class RuntimeParameterTest(UnitTest):
         argv = ["-f" + input_file]  # space after sflag is appended onto str
         args = parser.parse_args(argv)
         print(
-            "args returned: %s" % (" ".join(f"{k}={v}" for k, v in vars(args).items()))
+            f"args returned: {' '.join(f'{k}={v}' for k, v in vars(args).items())}"
         )
         # assert(args.thermostat_type == "emulator")
 
     def is_valid_file(self, parser, arg):
         """
-        Verify file input is valid.
-
-        inputs:
-            arg(str): file name with path.
-        returns:
-            open file handle
+        Verify if the provided file path is valid and return a file handle.
+        Args:
+            parser (argparse.ArgumentParser): The argument parser instance.
+            arg (str): The file name with path.
+        Returns:
+            file object: The opened file handle if the file exists.
+        Raises:
+            ArgumentError: If the file does not exist.
         """
         arg = arg.strip()  # remove any leading spaces
         if not os.path.exists(arg):
             parser.error(f"The file {os.path.abspath(arg)} does not exist!")
+            return None
         else:
             return open(arg, "rt", encoding="utf8")  # return a file handle
 
