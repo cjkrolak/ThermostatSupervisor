@@ -776,8 +776,6 @@ class UserInputs:
         returns:
             open file handle
         """
-        # if arg is None:
-        #     raise ValueError(f"filename input '{arg}' to 'is_valid_file' cannot be None")
         if arg is not None:
             arg = arg.strip()  # remove any leading spaces
         if arg in [None, ""]:

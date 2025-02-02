@@ -1,12 +1,15 @@
 """
 Unit tests for the `flask_generic` module in the `thermostatsupervisor` package.
 Classes:
-    TestFlaskGeneric: Contains unit tests for the `schedule_ipban_block_list_report` and `print_ipban_block_list_with_timestamp` functions.
+    TestFlaskGeneric: Contains unit tests for the `schedule_ipban_block_list_report`
+                      and `print_ipban_block_list_with_timestamp` functions.
 Methods:
     test_schedule_ipban_block_list_report(MockAPScheduler):
-        Tests the `schedule_ipban_block_list_report` function to ensure it schedules the IP ban block list report correctly with different debug modes.
+        Tests the `schedule_ipban_block_list_report` function to ensure it schedules
+        the IP ban block list report correctly with different debug modes.
     test_print_ipban_block_list_with_timestamp(mock_datetime):
-        Tests the `print_ipban_block_list_with_timestamp` function to ensure it prints the IP ban block list with the correct timestamp.
+        Tests the `print_ipban_block_list_with_timestamp` function to ensure it prints
+        the IP ban block list with the correct timestamp.
 """
 
 # built-in modules
@@ -35,7 +38,8 @@ class TestFlaskGeneric(utc.UnitTest):
           the print function is called with the expected output string containing the
           timestamp and the IP ban block list.
     2. `test_schedule_ipban_block_list_report_debug_mode`:
-        - Tests the `schedule_ipban_block_list_report` function to ensure that it schedules
+        - Tests the `schedule_ipban_block_list_report` function to ensure that it
+          schedules.
         - Sets `debug_mode` to True and verifies that the print function is called with
           the expected message indicating that the IP ban blacklist report is scheduled
           every 1.0 minutes.
@@ -75,10 +79,11 @@ class TestFlaskGeneric(utc.UnitTest):
             - Set the expected timestamp to "2024-01-01 12:00:00".
             - Mock the current datetime to return the expected timestamp.
         Act:
-            - Call the print_ipban_block_list_with_timestamp function with the mocked IP ban list.
+            - Call the print_ipban_block_list_with_timestamp function with the mocked
+              IP ban list.
         Assert:
-            - Verify that the print function is called once with the expected output string
-              containing the timestamp and the IP ban block list.
+            - Verify that the print function is called once with the expected output
+              string containing the timestamp and the IP ban block list.
         """
 
         # Arrange
@@ -93,7 +98,8 @@ class TestFlaskGeneric(utc.UnitTest):
 
             # Assert
             mock_print.assert_called_once_with(
-                f"{expected_timestamp}: ip_ban black list: {self.mock_ip_ban.get_block_list()}"
+                f"{expected_timestamp}: ip_ban black list: "
+                f"{self.mock_ip_ban.get_block_list()}"
             )
 
     @patch("builtins.print")
@@ -108,10 +114,12 @@ class TestFlaskGeneric(utc.UnitTest):
             - Define the expected interval as "1.0" minutes.
         Act:
             - Patch the `BackgroundScheduler` from `apscheduler.schedulers.background`.
-            - Call `schedule_ipban_block_list_report` with the mock IP ban object and debug mode.
+            - Call `schedule_ipban_block_list_report` with the mock IP ban object and
+              debug mode.
         Assert:
-            - Verify that the print function is called once with the expected message indicating
-              that the IP ban blacklist report is scheduled every 1.0 minutes.
+            - Verify that the print function is called once with the expected message
+              indicating that the IP ban blacklist report is scheduled every
+              1.0 minutes.
         """
 
         # Arrange

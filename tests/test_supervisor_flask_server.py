@@ -152,7 +152,9 @@ class TestRunSupervise(utc.UnitTest):
             response = sfs.index()
             self.assertEqual(response.status_code, 200)
             self.assertIn(
-                f"<title>{utc.unit_test_argv[1]} thermostat zone {utc.unit_test_argv[2]}, {utc.unit_test_argv[7]} measurements</title>",
+                f"<title>{utc.unit_test_argv[1]} thermostat zone "
+                f"{utc.unit_test_argv[2]}, {utc.unit_test_argv[7]} "
+                "measurements</title>",
                 response.get_data(as_text=True),
             )
 
