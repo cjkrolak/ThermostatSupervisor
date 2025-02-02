@@ -698,7 +698,10 @@ class RuntimeParameterTest(UnitTest):
             ("", SystemExit),  # Empty string should fail
             ("nonexistent.txt", SystemExit),  # Non-existent file should fail
             (unit_test_argv_file, TextIOWrapper),  # Existing file should pass
-            (os.path.dirname(unit_test_argv_file), PermissionError),  # Directory should fail
+            (
+                os.path.dirname(unit_test_argv_file),
+                PermissionError,
+            ),  # Directory should fail
         ]
 
         for test_case in test_cases:
@@ -709,9 +712,11 @@ class RuntimeParameterTest(UnitTest):
                     self.uip.is_valid_file(filename)
             else:
                 actual = self.uip.is_valid_file(filename)
-                self.assertTrue(isinstance(actual, expected),
-                                f"filename='{filename}', expected type={expected}, "
-                                f"actual type={type(actual)}")
+                self.assertTrue(
+                    isinstance(actual, expected),
+                    f"filename='{filename}', expected type={expected}, "
+                    f"actual type={type(actual)}",
+                )
 
     def test_parse_named_arguments_sflag(self):
         """

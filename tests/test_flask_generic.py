@@ -19,7 +19,7 @@ from unittest.mock import MagicMock, patch
 # local modules
 from thermostatsupervisor.flask_generic import (
     print_ipban_block_list_with_timestamp,
-    schedule_ipban_block_list_report
+    schedule_ipban_block_list_report,
 )
 from tests import unit_test_common as utc
 from thermostatsupervisor import utilities as util
@@ -45,6 +45,7 @@ class TestFlaskGeneric(utc.UnitTest):
           the expected message indicating that the IP ban blacklist report is scheduled
           every 1440.0 minutes.
     """
+
     def setUp(self):
         """
         Set up the test environment for the Flask application.
@@ -56,9 +57,14 @@ class TestFlaskGeneric(utc.UnitTest):
 
         super().setUp()
         self.mock_ip_ban = MagicMock()
-        self.mock_ip_ban.get_block_list.return_value = {"192.168.1.1": {"count": 3, "timestamp": datetime.datetime(2024, 1, 1, 12, 0, 0)}}
+        self.mock_ip_ban.get_block_list.return_value = {
+            "192.168.1.1": {
+                "count": 3,
+                "timestamp": datetime.datetime(2024, 1, 1, 12, 0, 0),
+            }
+        }
 
-    @patch('builtins.print')
+    @patch("builtins.print")
     def test_print_ipban_block_list_with_timestamp(self, mock_print):
         """
         Test the print_ipban_block_list_with_timestamp function to ensure it prints
@@ -79,7 +85,7 @@ class TestFlaskGeneric(utc.UnitTest):
         expected_timestamp = "2024-01-01 12:00:00"
         mock_now = datetime.datetime(2024, 1, 1, 12, 0, 0)
 
-        with patch('datetime.datetime') as mock_datetime:
+        with patch("datetime.datetime") as mock_datetime:
             mock_datetime.now.return_value = mock_now
 
             # Act
@@ -90,7 +96,7 @@ class TestFlaskGeneric(utc.UnitTest):
                 f"{expected_timestamp}: ip_ban black list: {self.mock_ip_ban.get_block_list()}"
             )
 
-    @patch('builtins.print')
+    @patch("builtins.print")
     def test_schedule_ipban_block_list_report_debug_mode(self, mock_print):
         """
         Test the `schedule_ipban_block_list_report` function to ensure that it schedules
@@ -113,7 +119,7 @@ class TestFlaskGeneric(utc.UnitTest):
         expected_interval = "1.0"
 
         # Act
-        with patch('apscheduler.schedulers.background.BackgroundScheduler'):
+        with patch("apscheduler.schedulers.background.BackgroundScheduler"):
             schedule_ipban_block_list_report(self.mock_ip_ban, debug_mode)
 
         # Assert
@@ -121,7 +127,7 @@ class TestFlaskGeneric(utc.UnitTest):
             f"ip_ban blacklist report scheduled every {expected_interval} minutes"
         )
 
-    @patch('builtins.print')
+    @patch("builtins.print")
     def test_schedule_ipban_block_list_report_normal_mode(self, mock_print):
         """
         Test the `schedule_ipban_block_list_report` function in normal mode.
@@ -142,7 +148,7 @@ class TestFlaskGeneric(utc.UnitTest):
         expected_interval = "1440.0"
 
         # Act
-        with patch('apscheduler.schedulers.background.BackgroundScheduler'):
+        with patch("apscheduler.schedulers.background.BackgroundScheduler"):
             schedule_ipban_block_list_report(self.mock_ip_ban, debug_mode)
 
         # Assert
