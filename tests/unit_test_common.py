@@ -700,8 +700,8 @@ class RuntimeParameterTest(UnitTest):
             (unit_test_argv_file, TextIOWrapper),  # Existing file should pass
             (
                 os.path.dirname(unit_test_argv_file),
-                PermissionError,
-            ),  # Directory should fail
+                (PermissionError, IsADirectoryError),
+            ),  # Directory should fail permission on Windows, IsADirectory on Linux
         ]
 
         for test_case in test_cases:
