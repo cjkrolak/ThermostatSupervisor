@@ -339,8 +339,8 @@ class Sensors:
 
                 # read the measurement data
                 data = self.read_i2c_data(
-                    bus, sht31_config.I2C_ADDRESS, register=0x00,
-                    length=i2c_data_length)
+                    bus, sht31_config.I2C_ADDRESS, register=0x00, length=i2c_data_length
+                )
 
                 # convert the data
                 _, temp_c, temp_f, humidity = self.convert_data(data)
