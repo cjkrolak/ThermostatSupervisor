@@ -121,7 +121,7 @@ class Sensors:
             raise ValueError(
                 f"ERROR: {util.get_function_name()} expects "
                 f"{i2c_data_length} bytes of data, "
-                f"received {len(data)}"
+                f"received {len(data)}, raw data: {data}"
             )
         # convert the data
         temp = data[0] * 256 + data[1]
