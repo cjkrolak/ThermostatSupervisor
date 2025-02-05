@@ -127,18 +127,18 @@ class Sensors:
         # verify data CRC
         if not self.validate_crc(data[0:2], data[2]):
             print(
-            f"WARNING: CRC validation failed for temperature data. "
-            f"Expected: {data[2]}, "
-            f"Calculated: {self.calculate_crc(data[0:2])}"
-            )
+                f"WARNING: CRC validation failed for temperature data. "
+                f"Expected: {data[2]}, "
+                f"Calculated: {self.calculate_crc(data[0:2])}"
+                )
         else:
             print(f"DEBUG: temperature raw: {data[0:2]}, CRC: {data[2]}")
         if not self.validate_crc(data[3:5], data[5]):
             print(
-            f"WARNING: CRC validation failed for humidity data. "
-            f"Expected: {data[5]}, "
-            f"Calculated: {self.calculate_crc(data[3:5])}"
-            )
+                f"WARNING: CRC validation failed for humidity data. "
+                f"Expected: {data[5]}, "
+                f"Calculated: {self.calculate_crc(data[3:5])}"
+                )
         else:
             print(f"DEBUG: humidity raw: {data[3:5]}, CRC: {data[5]}")
 
@@ -230,9 +230,9 @@ class Sensors:
             crc ^= byte
             for _ in range(8):
                 if crc & 0x80:
-                    crc = ((crc << 1) ^ 0x31) & 0xFF  # polynomial = 0x31
+                    crc = ((crc << 1) ^ 0x31)  # polynomial = 0x31
                 else:
-                    crc = (crc << 1) & 0xFF
+                    crc = (crc << 1)
         return crc
 
     def validate_crc(self, data, checksum):
