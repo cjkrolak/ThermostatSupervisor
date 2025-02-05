@@ -186,7 +186,7 @@ class TestSht31FlaskServer(utc.UnitTest):
         """Set up test fixtures."""
         self.mock_app = MagicMock()
         self.mock_app.debug = True
-        with patch('thermostatsupervisor.sht31_flask_server.app', self.mock_app):
+        with patch("thermostatsupervisor.sht31_flask_server.app", self.mock_app):
             self.sensors = sht31_fs.Sensors()
 
     def test_init(self):
@@ -195,7 +195,7 @@ class TestSht31FlaskServer(utc.UnitTest):
 
         # Test with debug False
         self.mock_app.debug = False
-        with patch('thermostatsupervisor.sht31_flask_server.app', self.mock_app):
+        with patch("thermostatsupervisor.sht31_flask_server.app", self.mock_app):
             sensors = sht31_fs.Sensors()
             self.assertFalse(sensors.verbose)
 
@@ -232,12 +232,12 @@ class TestSht31FlaskServer(utc.UnitTest):
     def test_convert_data_invalid_input(self):
         """Test convert_data with invalid input."""
         invalid_inputs = [
-            [],            # Empty list
-            [100],        # Single value
+            [],  # Empty list
+            [100],  # Single value
             [100] * (sht31_fs.i2c_data_length - 1),  # Too few values
             [100] * (sht31_fs.i2c_data_length + 1),  # Too many values
-            None,         # None
-            "invalid"     # Wrong type
+            None,  # None
+            "invalid",  # Wrong type
         ]
 
         for invalid_input in invalid_inputs:
