@@ -106,7 +106,20 @@ class Sensors:
             temp_c(float): temp on °C
             temp_f(float): temp in °F
             humidity(float): humidity in %RH
+        data structure:
+        0 = temp MSB
+        1 = temp LSB
+        2 = temp CRC
+        3 = humidity MSB
+        4 = humidity LSB
+        5 = humidity CRC
         """
+
+        if len(data) != 6:
+            raise ValueError(
+                f"ERROR: {util.get_function_name()} expects 6 bytes of data, "
+                f"received {len(data)}"
+            )
         # convert the data
         temp = data[0] * 256 + data[1]
         temp_c = -45 + (175 * temp / 65535.0)
@@ -193,8 +206,8 @@ class Sensors:
         returns:
             response(class 'list'): raw data structure
         """
-        # Temp MSB, temp LSB, temp CRC, humidity MSB,
-        # humidity LSB, humidity CRC
+        # 0=Temp MSB, 1=temp LSB, 2=temp CRC,
+        # 3=humidity MSB, 4=humidity LSB, 5=humidity CRC
         # read_i2c_block_data(i2c_addr, register, length,
         #                     force=None)
         try:
@@ -205,6 +218,7 @@ class Sensors:
                 f"address {hex(i2c_addr)} is not responding"
             )
             raise exc
+        print(f"DEBUG: raw data read from SHT31: {response}, length={len(response)}")
         return response
 
     def parse_fault_register_data(self, data):
