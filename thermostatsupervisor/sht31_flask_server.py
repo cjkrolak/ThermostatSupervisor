@@ -123,6 +123,25 @@ class Sensors:
                 f"{i2c_data_length} bytes of data, "
                 f"received {len(data)}, raw data: {data}"
             )
+
+        # verify data CRC
+        if not self.validate_crc(data[0:2], data[2]):
+            print(
+            f"WARNING: CRC validation failed for temperature data. "
+            f"Expected: {data[2]}, "
+            f"Calculated: {self.calculate_crc(data[0:2])}"
+            )
+        else:
+            print(f"DEBUG: temperature raw: {data[0:2]}, CRC: {data[2]}")
+        if not self.validate_crc(data[3:5], data[5]):
+            print(
+            f"WARNING: CRC validation failed for humidity data. "
+            f"Expected: {data[5]}, "
+            f"Calculated: {self.calculate_crc(data[3:5])}"
+            )
+        else:
+            print(f"DEBUG: humidity raw: {data[3:5]}, CRC: {data[5]}")
+
         # convert the data
         temp = data[0] * 256 + data[1]
         temp_c = -45 + (175 * temp / 65535.0)
@@ -253,23 +272,9 @@ class Sensors:
             )
             raise exc
 
-        # verify response CRC
-        if not self.validate_crc(response[0:2], response[2]):
-            print(
-            f"WARNING: CRC validation failed for temperature data. "
-            f"Expected: {response[2]}, "
-            f"Calculated: {self.calculate_crc(response[0:2])}"
-            )
-        else:
-            print(f"DEBUG: temperature raw: {response[0:2]}, CRC: {response[2]}")
-        if not self.validate_crc(response[3:5], response[5]):
-            print(
-            f"WARNING: CRC validation failed for humidity data. "
-            f"Expected: {response[5]}, "
-            f"Calculated: {self.calculate_crc(response[3:5])}"
-            )
-        else:
-            print(f"DEBUG: humidity raw: {response[3:5]}, CRC: {response[5]}")
+        if len(response) != length:
+            raise ValueError(f"ERROR: i2c data read error, expected {length} "
+                             f"bytes, actual {len(response)}")
 
         return response
 
