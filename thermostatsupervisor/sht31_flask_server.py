@@ -87,6 +87,8 @@ disable_heater = (0x30, [0x66])
 clear_status_register = (0x30, [0x41])
 read_status_register = (0xF3, [0x2D])
 
+i2c_data_length = 0x06  # 6 bytes of data
+
 
 class Sensors:
     """Sensor data."""
@@ -106,7 +108,21 @@ class Sensors:
             temp_c(float): temp on °C
             temp_f(float): temp in °F
             humidity(float): humidity in %RH
+        data structure:
+        0 = temp MSB
+        1 = temp LSB
+        2 = temp CRC
+        3 = humidity MSB
+        4 = humidity LSB
+        5 = humidity CRC
         """
+
+        if len(data) != i2c_data_length:
+            raise ValueError(
+                f"ERROR: {util.get_function_name()} expects "
+                f"{i2c_data_length} bytes of data, "
+                f"received {len(data)}, raw data: {data}"
+            )
         # convert the data
         temp = data[0] * 256 + data[1]
         temp_c = -45 + (175 * temp / 65535.0)
@@ -181,7 +197,7 @@ class Sensors:
             raise exc
         time.sleep(0.5)
 
-    def read_i2c_data(self, bus, i2c_addr, register=0x00, length=0x06):
+    def read_i2c_data(self, bus, i2c_addr, register=0x00, length=i2c_data_length):
         """
         Read i2c data.
 
@@ -193,8 +209,8 @@ class Sensors:
         returns:
             response(class 'list'): raw data structure
         """
-        # Temp MSB, temp LSB, temp CRC, humidity MSB,
-        # humidity LSB, humidity CRC
+        # 0=Temp MSB, 1=temp LSB, 2=temp CRC,
+        # 3=humidity MSB, 4=humidity LSB, 5=humidity CRC
         # read_i2c_block_data(i2c_addr, register, length,
         #                     force=None)
         try:
@@ -272,7 +288,8 @@ class Sensors:
         # loop for n measurements
         for measurement in range(measurements):
             # fabricated data for unit testing
-            data = [seed + measurement % 2] * 5  # almost mid range
+            data = [seed + measurement % 2] * i2c_data_length  # almost mid range
+            # print(f"DEBUG data: {data}, len: {len(data)}")
 
             # convert the data
             _, temp_c, temp_f, humidity = self.convert_data(data)
@@ -322,7 +339,7 @@ class Sensors:
 
                 # read the measurement data
                 data = self.read_i2c_data(
-                    bus, sht31_config.I2C_ADDRESS, register=0x00, length=0x06
+                    bus, sht31_config.I2C_ADDRESS, register=0x00, length=i2c_data_length
                 )
 
                 # convert the data

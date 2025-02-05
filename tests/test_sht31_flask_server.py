@@ -7,6 +7,9 @@ because ports cannot be opened on shared pool.
 # built-in imports
 import os
 import unittest
+from unittest.mock import patch, MagicMock
+
+# third party imports
 
 # local imports
 # thermostat_api is imported but not used to avoid a circular import
@@ -174,6 +177,72 @@ class RuntimeParameterTest(utc.RuntimeParameterTest):
         (script, os.path.realpath(__file__)),
         (debug, sht31_fs.input_flds.debug_fld),
     ]
+
+
+class TestSht31FlaskServer(utc.UnitTest):
+    """Test suite for SHT31 Flask Server Sensors class."""
+
+    def setUp(self):
+        """Set up test fixtures."""
+        self.mock_app = MagicMock()
+        self.mock_app.debug = True
+        with patch("thermostatsupervisor.sht31_flask_server.app", self.mock_app):
+            self.sensors = sht31_fs.Sensors()
+
+    def test_init(self):
+        """Test Sensors initialization."""
+        self.assertTrue(self.sensors.verbose)
+
+        # Test with debug False
+        self.mock_app.debug = False
+        with patch("thermostatsupervisor.sht31_flask_server.app", self.mock_app):
+            sensors = sht31_fs.Sensors()
+            self.assertFalse(sensors.verbose)
+
+    def test_convert_data_normal_range(self):
+        """Test convert_data with normal range values."""
+        test_data = [100, 150, 200, 250, 300, 350]  # Example raw data
+        temp, temp_c, temp_f, humidity = self.sensors.convert_data(test_data)
+
+        self.assertEqual(temp, 25750)  # 100 * 256 + 150
+        self.assertIsInstance(temp_c, float)
+        self.assertIsInstance(temp_f, float)
+        self.assertIsInstance(humidity, float)
+
+    def test_convert_data_min_values(self):
+        """Test convert_data with minimum values."""
+        test_data = [0] * sht31_fs.i2c_data_length  # Min possible values
+        temp, temp_c, temp_f, humidity = self.sensors.convert_data(test_data)
+
+        self.assertEqual(temp, 0)
+        self.assertAlmostEqual(temp_c, -45.0)
+        self.assertAlmostEqual(temp_f, -49.0)
+        self.assertGreaterEqual(humidity, 0.0)
+
+    def test_convert_data_max_values(self):
+        """Test convert_data with maximum values."""
+        test_data = [255] * sht31_fs.i2c_data_length  # Max possible values
+        temp, temp_c, temp_f, humidity = self.sensors.convert_data(test_data)
+
+        self.assertEqual(temp, 65535)
+        self.assertAlmostEqual(temp_c, 130.0, places=2)
+        self.assertAlmostEqual(temp_f, 266.0, places=2)
+        self.assertLessEqual(humidity, 100.0)
+
+    def test_convert_data_invalid_input(self):
+        """Test convert_data with invalid input."""
+        invalid_inputs = [
+            [],  # Empty list
+            [100],  # Single value
+            [100] * (sht31_fs.i2c_data_length - 1),  # Too few values
+            [100] * (sht31_fs.i2c_data_length + 1),  # Too many values
+            None,  # None
+            "invalid",  # Wrong type
+        ]
+
+        for invalid_input in invalid_inputs:
+            with self.assertRaises(Exception):
+                self.sensors.convert_data(invalid_input)
 
 
 if __name__ == "__main__":
