@@ -289,7 +289,8 @@ class Sensors:
         for measurement in range(measurements):
             # fabricated data for unit testing
             data = [seed + measurement % 2] * i2c_data_length  # almost mid range
-            print(f"DEBUG data: {data}, len: {len(data)}")
+            # print(f"DEBUG data: {data}, len: {len(data)}")
+
             # convert the data
             _, temp_c, temp_f, humidity = self.convert_data(data)
             rssi = self.get_iwconfig_wifi_strength()
