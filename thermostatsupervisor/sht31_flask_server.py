@@ -196,6 +196,37 @@ class Sensors:
             )
             raise exc
         time.sleep(0.5)
+      
+    def calculate_crc(self, data):
+        """
+        Calculate CRC checksum for SHT31 sensor data.
+
+        inputs:
+            data(bytes): 2 bytes of data to check
+        returns:
+            (int): calculated CRC value
+        """
+        crc = 0xFF  # Initialize CRC with 0xFF
+        for byte in data:
+            crc ^= byte
+            for _ in range(8):
+                if crc & 0x80:
+                    crc = ((crc << 1) ^ 0x31) & 0xFF  # polynomial = 0x31
+                else:
+                    crc = (crc << 1) & 0xFF
+        return crc
+
+    def validate_crc(self, data, checksum):
+        """
+        Validate CRC checksum from SHT31 sensor.
+
+        inputs:
+            data(bytes): 2 bytes of data to check
+            checksum(int): CRC value to verify against
+        returns:
+            (bool): True if checksum matches calculated CRC
+        """
+        return self.calculate_crc(data) == checksum
 
     def read_i2c_data(self, bus, i2c_addr, register=0x00, length=i2c_data_length):
         """
@@ -221,6 +252,25 @@ class Sensors:
                 f"address {hex(i2c_addr)} is not responding"
             )
             raise exc
+
+        # verify response CRC
+        if not self.validate_crc(response[0:2], response[2]):
+            print(
+            f"WARNING: CRC validation failed for temperature data. "
+            f"Expected: {response[2]}, "
+            f"Calculated: {self.calculate_crc(response[0:2])}"
+            )
+        else:
+            print(f"DEBUG: temperature raw: {response[0:2]}, CRC: {response[2]}")
+        if not self.validate_crc(response[3:5], response[5]):
+            print(
+            f"WARNING: CRC validation failed for humidity data. "
+            f"Expected: {response[5]}, "
+            f"Calculated: {self.calculate_crc(response[3:5])}"
+            )
+        else:
+            print(f"DEBUG: humidity raw: {response[3:5]}, CRC: {response[5]}")
+
         return response
 
     def parse_fault_register_data(self, data):
