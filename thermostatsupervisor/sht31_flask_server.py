@@ -233,7 +233,7 @@ class Sensors:
                     crc = ((crc << 1) ^ 0x31)  # polynomial = 0x31
                 else:
                     crc = (crc << 1)
-        return crc
+        return crc & 0xFF  # Ensure result is 8-bit
 
     def validate_crc(self, data, checksum):
         """
