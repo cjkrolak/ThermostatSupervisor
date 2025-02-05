@@ -201,7 +201,7 @@ class TestSht31FlaskServer(utc.UnitTest):
 
     def test_convert_data_normal_range(self):
         """Test convert_data with normal range values."""
-        test_data = [100, 150, 200, 250, 300]  # Example raw data
+        test_data = [100, 150, 200, 250, 300, 350]  # Example raw data
         temp, temp_c, temp_f, humidity = self.sensors.convert_data(test_data)
 
         self.assertEqual(temp, 25750)  # 100 * 256 + 150
@@ -211,7 +211,7 @@ class TestSht31FlaskServer(utc.UnitTest):
 
     def test_convert_data_min_values(self):
         """Test convert_data with minimum values."""
-        test_data = [0] * 5
+        test_data = [0] * sht31_fs.i2c_data_length  # Min possible values
         temp, temp_c, temp_f, humidity = self.sensors.convert_data(test_data)
 
         self.assertEqual(temp, 0)
@@ -221,7 +221,7 @@ class TestSht31FlaskServer(utc.UnitTest):
 
     def test_convert_data_max_values(self):
         """Test convert_data with maximum values."""
-        test_data = [255] * 5  # Max possible values
+        test_data = [255] * sht31_fs.i2c_data_length  # Max possible values
         temp, temp_c, temp_f, humidity = self.sensors.convert_data(test_data)
 
         self.assertEqual(temp, 65535)
@@ -234,8 +234,8 @@ class TestSht31FlaskServer(utc.UnitTest):
         invalid_inputs = [
             [],            # Empty list
             [100],        # Single value
-            [100] * 5,  # Too few values
-            [100] * 7,  # Too many values
+            [100] * (sht31_fs.i2c_data_length - 1),  # Too few values
+            [100] * (sht31_fs.i2c_data_length + 1),  # Too many values
             None,         # None
             "invalid"     # Wrong type
         ]

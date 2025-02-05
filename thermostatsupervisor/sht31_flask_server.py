@@ -87,6 +87,8 @@ disable_heater = (0x30, [0x66])
 clear_status_register = (0x30, [0x41])
 read_status_register = (0xF3, [0x2D])
 
+i2c_data_length = 0x06  # 6 bytes of data
+
 
 class Sensors:
     """Sensor data."""
@@ -115,9 +117,10 @@ class Sensors:
         5 = humidity CRC
         """
 
-        if len(data) != 6:
+        if len(data) != i2c_data_length:
             raise ValueError(
-                f"ERROR: {util.get_function_name()} expects 6 bytes of data, "
+                f"ERROR: {util.get_function_name()} expects "
+                f"{i2c_data_length} bytes of data, "
                 f"received {len(data)}"
             )
         # convert the data
@@ -194,7 +197,7 @@ class Sensors:
             raise exc
         time.sleep(0.5)
 
-    def read_i2c_data(self, bus, i2c_addr, register=0x00, length=0x06):
+    def read_i2c_data(self, bus, i2c_addr, register=0x00, length=i2c_data_length):
         """
         Read i2c data.
 
@@ -218,7 +221,6 @@ class Sensors:
                 f"address {hex(i2c_addr)} is not responding"
             )
             raise exc
-        print(f"DEBUG: raw data read from SHT31: {response}, length={len(response)}")
         return response
 
     def parse_fault_register_data(self, data):
@@ -286,8 +288,8 @@ class Sensors:
         # loop for n measurements
         for measurement in range(measurements):
             # fabricated data for unit testing
-            data = [seed + measurement % 2] * 5  # almost mid range
-
+            data = [seed + measurement % 2] * i2c_data_length  # almost mid range
+            print(f"DEBUG data: {data}, len: {len(data)}")
             # convert the data
             _, temp_c, temp_f, humidity = self.convert_data(data)
             rssi = self.get_iwconfig_wifi_strength()
@@ -336,8 +338,8 @@ class Sensors:
 
                 # read the measurement data
                 data = self.read_i2c_data(
-                    bus, sht31_config.I2C_ADDRESS, register=0x00, length=0x06
-                )
+                    bus, sht31_config.I2C_ADDRESS, register=0x00,
+                    length=i2c_data_length)
 
                 # convert the data
                 _, temp_c, temp_f, humidity = self.convert_data(data)
