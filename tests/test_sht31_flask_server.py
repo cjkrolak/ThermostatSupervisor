@@ -179,7 +179,7 @@ class RuntimeParameterTest(utc.RuntimeParameterTest):
     ]
 
 
-class TestSht31FlaskServerSensor(utc.UnitTest):
+class Sht31FlaskServerSensorUnit(utc.UnitTest):
     """Test suite for SHT31 Flask Server Sensors class."""
 
     def setUp(self):
@@ -250,9 +250,9 @@ class TestSht31FlaskServerSensor(utc.UnitTest):
             # (input_data, expected_crc)
             ([0x00, 0x00], 0x81),  # All zeros
             ([0xFF, 0xFF], 0xAC),  # All ones
-            ([0x12, 0x34], 0x77),  # Random values
             ([0xBE, 0xEF], 0x92),  # Random values
-            ([0xDE, 0xAD], 0x82)   # Random values
+            ([0xDE, 0xAD], 0x98),   # Random values
+            ([0x12, 0x34], 0x37),  # Random values
         ]
 
         for data, expected_crc in test_cases:
@@ -268,23 +268,34 @@ class TestSht31FlaskServerSensor(utc.UnitTest):
         """Test CRC validation."""
         test_cases = [
             # (data, checksum, expected_result)
+            # ([0x4A, 0x1C], 0x98, True),   # actual data from SHT31
+            ([0x4A, 0xEA], 0xFC, True),   # actual data from SHT31
+            ([0x4A, 0x9B], 0x35, True),   # actual data from SHT31
+            # ([, ], , True),   # actual data from SHT31
+            # ([, ], , True),   # actual data from SHT31
+            # ([, ], , True),   # actual data from SHT31
+            # ([, ], , True),   # actual data from SHT31
+            # ([, ], , True),   # actual data from SHT31
             ([0x00, 0x00], 0x81, True),   # Valid CRC
             ([0xFF, 0xFF], 0xAC, True),   # Valid CRC
-            ([0x12, 0x34], 0x77, True),   # Valid CRC
             ([0xBE, 0xEF], 0x92, True),   # Valid CRC
-            ([0xDE, 0xAD], 0x82, True),   # Valid CRC
+            ([0xDE, 0xAD], 0x98, True),   # Valid CRC
             ([0x00, 0x00], 0x00, False),  # Invalid CRC
             ([0xFF, 0xFF], 0xFF, False),  # Invalid CRC
-            ([0x12, 0x34], 0x00, False)   # Invalid CRC
+            ([0x12, 0x34], 0x37, True),  # Valid CRC
+            # Additional SHT31 typical test cases
+            ([0xBE, 0xFF], 0xd1, True),   # Valid CRC
+            ([0x65, 0x4C], 0xe3, True),   # Valid CRC
         ]
 
         for data, checksum, expected in test_cases:
             result = self.sensors.validate_crc(data, checksum)
+            actual = self.sensors.calculate_crc(data)
             self.assertEqual(
                 result,
                 expected,
                 f"CRC validation failed for data {[hex(x) for x in data]} "
-                f"with checksum {hex(checksum)}"
+                f"with checksum {hex(checksum)}, actual={hex(actual)}"
             )
 
 

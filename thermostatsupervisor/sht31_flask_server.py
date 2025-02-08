@@ -216,24 +216,36 @@ class Sensors:
             raise exc
         time.sleep(0.5)
       
-    def calculate_crc(self, data):
+    def calculate_crc(self, data, init=0xFF, poly=0x131, final_xor=0x00, reverse=False):
         """
         Calculate CRC checksum for SHT31 sensor data.
 
         inputs:
             data(bytes): 2 bytes of data to check
+            init(int): initial CRC value
+            poly(int): polynomial value, 0x131=x^8+x^5+x^4+1 = 100110001 for unsigned int
+            final_xor(int): final XOR value
+            reverse(bool): reverse the bits
         returns:
             (int): calculated CRC value
         """
-        crc = 0xFF  # Initialize CRC with 0xFF
+        crc = init  # Initialize CRC with 0xFF
         for byte in data:
             crc ^= byte
-            for _ in range(8):
-                if crc & 0x80:
-                    crc = ((crc << 1) ^ 0x31)  # polynomial = 0x31
+            for _ in range(8, 0, -1):
+                if reverse:
+                    if crc & 0x01:
+                        crc = (crc >> 1) ^ poly
+                    else:
+                        crc = (crc >> 1)
                 else:
-                    crc = (crc << 1)
-        return crc & 0xFF  # Ensure result is 8-bit
+                    if crc & 0x80:
+                        crc = (crc << 1) ^ poly  # polynomial = 0x31
+                    else:
+                        crc = (crc << 1)
+        crc &= 0xFF  # Ensure result is 8-bit
+        crc ^= final_xor
+        return crc
 
     def validate_crc(self, data, checksum):
         """
