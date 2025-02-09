@@ -260,7 +260,7 @@ class Sht31FlaskServerSensorUnit(utc.UnitTest):
             ([0x00, 0x00], 0x81),  # All zeros
             ([0xFF, 0xFF], 0xAC),  # All ones
             ([0xBE, 0xEF], 0x92),  # Random values
-            ([0xDE, 0xAD], 0x98),   # Random values
+            ([0xDE, 0xAD], 0x98),  # Random values
             ([0x12, 0x34], 0x37),  # Random values
         ]
 
@@ -270,25 +270,25 @@ class Sht31FlaskServerSensorUnit(utc.UnitTest):
                 calculated_crc,
                 expected_crc,
                 f"CRC mismatch for data {[hex(x) for x in data]}: "
-                f"expected {hex(expected_crc)}, got {hex(calculated_crc)}"
+                f"expected {hex(expected_crc)}, got {hex(calculated_crc)}",
             )
 
     def test_validate_crc(self):
         """Test CRC validation."""
         test_cases = [
             # (data, checksum, expected_result)
-            ([0x4A, 0xEA], 0xFC, True),   # actual data from SHT31
-            ([0x4A, 0x9B], 0x35, True),   # actual data from SHT31
-            ([0x00, 0x00], 0x81, True),   # Valid CRC
-            ([0xFF, 0xFF], 0xAC, True),   # Valid CRC
-            ([0xBE, 0xEF], 0x92, True),   # Valid CRC
-            ([0xDE, 0xAD], 0x98, True),   # Valid CRC
+            ([0x4A, 0xEA], 0xFC, True),  # actual data from SHT31
+            ([0x4A, 0x9B], 0x35, True),  # actual data from SHT31
+            ([0x00, 0x00], 0x81, True),  # Valid CRC
+            ([0xFF, 0xFF], 0xAC, True),  # Valid CRC
+            ([0xBE, 0xEF], 0x92, True),  # Valid CRC
+            ([0xDE, 0xAD], 0x98, True),  # Valid CRC
             ([0x00, 0x00], 0x00, False),  # Invalid CRC
             ([0xFF, 0xFF], 0xFF, False),  # Invalid CRC
             ([0x12, 0x34], 0x37, True),  # Valid CRC
             # Additional SHT31 typical test cases
-            ([0xBE, 0xFF], 0xd1, True),   # Valid CRC
-            ([0x65, 0x4C], 0xe3, True),   # Valid CRC
+            ([0xBE, 0xFF], 0xD1, True),  # Valid CRC
+            ([0x65, 0x4C], 0xE3, True),  # Valid CRC
         ]
 
         for data, checksum, expected in test_cases:
@@ -298,7 +298,7 @@ class Sht31FlaskServerSensorUnit(utc.UnitTest):
                 result,
                 expected,
                 f"CRC validation failed for data {[hex(x) for x in data]} "
-                f"with checksum {hex(checksum)}, actual={hex(actual)}"
+                f"with checksum {hex(checksum)}, actual={hex(actual)}",
             )
 
 
