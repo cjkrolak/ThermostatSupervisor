@@ -179,7 +179,7 @@ class RuntimeParameterTest(utc.RuntimeParameterTest):
     ]
 
 
-class TestSht31FlaskServer(utc.UnitTest):
+class Sht31FlaskServerSensorUnit(utc.UnitTest):
     """Test suite for SHT31 Flask Server Sensors class."""
 
     def setUp(self):
@@ -202,6 +202,9 @@ class TestSht31FlaskServer(utc.UnitTest):
     def test_convert_data_normal_range(self):
         """Test convert_data with normal range values."""
         test_data = [100, 150, 200, 250, 300, 350]  # Example raw data
+        # update CRC values in test_data
+        test_data[2] = self.sensors.calculate_crc(test_data[0:2])
+        test_data[5] = self.sensors.calculate_crc(test_data[3:5])
         temp, temp_c, temp_f, humidity = self.sensors.convert_data(test_data)
 
         self.assertEqual(temp, 25750)  # 100 * 256 + 150
@@ -212,6 +215,9 @@ class TestSht31FlaskServer(utc.UnitTest):
     def test_convert_data_min_values(self):
         """Test convert_data with minimum values."""
         test_data = [0] * sht31_fs.i2c_data_length  # Min possible values
+        # update CRC values in test_data
+        test_data[2] = self.sensors.calculate_crc(test_data[0:2])
+        test_data[5] = self.sensors.calculate_crc(test_data[3:5])
         temp, temp_c, temp_f, humidity = self.sensors.convert_data(test_data)
 
         self.assertEqual(temp, 0)
@@ -222,6 +228,9 @@ class TestSht31FlaskServer(utc.UnitTest):
     def test_convert_data_max_values(self):
         """Test convert_data with maximum values."""
         test_data = [255] * sht31_fs.i2c_data_length  # Max possible values
+        # update CRC values in test_data
+        test_data[2] = self.sensors.calculate_crc(test_data[0:2])
+        test_data[5] = self.sensors.calculate_crc(test_data[3:5])
         temp, temp_c, temp_f, humidity = self.sensors.convert_data(test_data)
 
         self.assertEqual(temp, 65535)
@@ -243,6 +252,54 @@ class TestSht31FlaskServer(utc.UnitTest):
         for invalid_input in invalid_inputs:
             with self.assertRaises(Exception):
                 self.sensors.convert_data(invalid_input)
+
+    def test_calculate_crc(self):
+        """Test CRC calculation."""
+        test_cases = [
+            # (input_data, expected_crc)
+            ([0x00, 0x00], 0x81),  # All zeros
+            ([0xFF, 0xFF], 0xAC),  # All ones
+            ([0xBE, 0xEF], 0x92),  # Random values
+            ([0xDE, 0xAD], 0x98),  # Random values
+            ([0x12, 0x34], 0x37),  # Random values
+        ]
+
+        for data, expected_crc in test_cases:
+            calculated_crc = self.sensors.calculate_crc(data)
+            self.assertEqual(
+                calculated_crc,
+                expected_crc,
+                f"CRC mismatch for data {[hex(x) for x in data]}: "
+                f"expected {hex(expected_crc)}, got {hex(calculated_crc)}",
+            )
+
+    def test_validate_crc(self):
+        """Test CRC validation."""
+        test_cases = [
+            # (data, checksum, expected_result)
+            ([0x4A, 0xEA], 0xFC, True),  # actual data from SHT31
+            ([0x4A, 0x9B], 0x35, True),  # actual data from SHT31
+            ([0x00, 0x00], 0x81, True),  # Valid CRC
+            ([0xFF, 0xFF], 0xAC, True),  # Valid CRC
+            ([0xBE, 0xEF], 0x92, True),  # Valid CRC
+            ([0xDE, 0xAD], 0x98, True),  # Valid CRC
+            ([0x00, 0x00], 0x00, False),  # Invalid CRC
+            ([0xFF, 0xFF], 0xFF, False),  # Invalid CRC
+            ([0x12, 0x34], 0x37, True),  # Valid CRC
+            # Additional SHT31 typical test cases
+            ([0xBE, 0xFF], 0xD1, True),  # Valid CRC
+            ([0x65, 0x4C], 0xE3, True),  # Valid CRC
+        ]
+
+        for data, checksum, expected in test_cases:
+            result = self.sensors.validate_crc(data, checksum)
+            actual = self.sensors.calculate_crc(data)
+            self.assertEqual(
+                result,
+                expected,
+                f"CRC validation failed for data {[hex(x) for x in data]} "
+                f"with checksum {hex(checksum)}, actual={hex(actual)}",
+            )
 
 
 if __name__ == "__main__":

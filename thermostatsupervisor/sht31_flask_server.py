@@ -123,6 +123,25 @@ class Sensors:
                 f"{i2c_data_length} bytes of data, "
                 f"received {len(data)}, raw data: {data}"
             )
+
+        # verify data CRC
+        if not self.validate_crc(data[0:2], data[2]):
+            print(
+                f"WARNING: CRC validation failed for temperature data: {data[0:2]}, "
+                f"Expected CRC: {data[2]}, "
+                f"Calculated CRC: {self.calculate_crc(data[0:2])}"
+            )
+        elif self.verbose:
+            print(f"temperature raw: {data[0:2]}, CRC: {data[2]}")
+        if not self.validate_crc(data[3:5], data[5]):
+            print(
+                f"WARNING: CRC validation failed for humidity data: {data[3:5]}, "
+                f"Expected CRC: {data[5]}, "
+                f"Calculated CRC: {self.calculate_crc(data[3:5])}"
+            )
+        elif self.verbose:
+            print(f"humidity raw: {data[3:5]}, CRC: {data[5]}")
+
         # convert the data
         temp = data[0] * 256 + data[1]
         temp_c = -45 + (175 * temp / 65535.0)
@@ -197,6 +216,49 @@ class Sensors:
             raise exc
         time.sleep(0.5)
 
+    def calculate_crc(self, data, init=0xFF, poly=0x131, final_xor=0x00, reverse=False):
+        """
+        Calculate CRC checksum for SHT31 sensor data.
+
+        inputs:
+            data(bytes): 2 bytes of data to check
+            init(int): initial CRC value
+            poly(int): polynomial value, 0x131=x^8+x^5+x^4+1=100110001 for unsigned int
+            final_xor(int): final XOR value
+            reverse(bool): reverse the bits
+        returns:
+            (int): calculated CRC value
+        """
+        crc = init  # Initialize CRC with 0xFF
+        for byte in data:
+            crc ^= byte
+            for _ in range(8, 0, -1):
+                if reverse:
+                    if crc & 0x01:
+                        crc = (crc >> 1) ^ poly
+                    else:
+                        crc = crc >> 1
+                else:
+                    if crc & 0x80:
+                        crc = (crc << 1) ^ poly  # polynomial = 0x31
+                    else:
+                        crc = crc << 1
+        crc &= 0xFF  # Ensure result is 8-bit
+        crc ^= final_xor
+        return crc
+
+    def validate_crc(self, data, checksum):
+        """
+        Validate CRC checksum from SHT31 sensor.
+
+        inputs:
+            data(bytes): 2 bytes of data to check
+            checksum(int): CRC value to verify against
+        returns:
+            (bool): True if checksum matches calculated CRC
+        """
+        return self.calculate_crc(data) == checksum
+
     def read_i2c_data(self, bus, i2c_addr, register=0x00, length=i2c_data_length):
         """
         Read i2c data.
@@ -221,6 +283,13 @@ class Sensors:
                 f"address {hex(i2c_addr)} is not responding"
             )
             raise exc
+
+        if len(response) != length:
+            raise ValueError(
+                f"ERROR: i2c data read error, expected {length} "
+                f"bytes, actual {len(response)}"
+            )
+
         return response
 
     def parse_fault_register_data(self, data):
@@ -289,6 +358,11 @@ class Sensors:
         for measurement in range(measurements):
             # fabricated data for unit testing
             data = [seed + measurement % 2] * i2c_data_length  # almost mid range
+
+            # update CRC in fabricated data
+            data[2] = self.calculate_crc(data[0:2])
+            data[5] = self.calculate_crc(data[3:5])
+
             # print(f"DEBUG data: {data}, len: {len(data)}")
 
             # convert the data
