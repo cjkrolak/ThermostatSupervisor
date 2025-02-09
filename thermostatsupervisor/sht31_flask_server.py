@@ -127,18 +127,18 @@ class Sensors:
         # verify data CRC
         if not self.validate_crc(data[0:2], data[2]):
             print(
-            f"WARNING: CRC validation failed for temperature data. {data[0:2]}, "
-            f"Expected CRC: {data[2]}, "
-            f"Calculated CRC: {self.calculate_crc(data[0:2])}"
-            )
+                f"WARNING: CRC validation failed for temperature data: {data[0:2]}, "
+                f"Expected CRC: {data[2]}, "
+                f"Calculated CRC: {self.calculate_crc(data[0:2])}"
+                )
         elif self.verbose:
             print(f"temperature raw: {data[0:2]}, CRC: {data[2]}")
         if not self.validate_crc(data[3:5], data[5]):
             print(
-            f"WARNING: CRC validation failed for humidity data: {data[3:5]}, "
-            f"Expected CRC: {data[5]}, "
-            f"Calculated CRC: {self.calculate_crc(data[3:5])}"
-            )
+                f"WARNING: CRC validation failed for humidity data: {data[3:5]}, "
+                f"Expected CRC: {data[5]}, "
+                f"Calculated CRC: {self.calculate_crc(data[3:5])}"
+                )
         elif self.verbose:
             print(f"humidity raw: {data[3:5]}, CRC: {data[5]}")
 
