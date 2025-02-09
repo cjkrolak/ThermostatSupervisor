@@ -129,18 +129,20 @@ class Sensors:
             print(
                 f"WARNING: CRC validation failed for temperature data. "
                 f"Expected: {data[2]}, "
-                f"Calculated: {self.calculate_crc(data[0:2])}"
+                f"Calculated: {self.calculate_crc(data[0:2])}",
+                file=sys.stderr
                 )
         else:
-            print(f"DEBUG: temperature raw: {data[0:2]}, CRC: {data[2]}")
+            print(f"temperature raw: {data[0:2]}, CRC: {data[2]}", file=sys.stderr)
         if not self.validate_crc(data[3:5], data[5]):
             print(
                 f"WARNING: CRC validation failed for humidity data. "
                 f"Expected: {data[5]}, "
-                f"Calculated: {self.calculate_crc(data[3:5])}"
+                f"Calculated: {self.calculate_crc(data[3:5])}",
+                file=sys.stderr
                 )
         else:
-            print(f"DEBUG: humidity raw: {data[3:5]}, CRC: {data[5]}")
+            print(f"humidity raw: {data[3:5]}, CRC: {data[5]}", file=sys.stderr)
 
         # convert the data
         temp = data[0] * 256 + data[1]
@@ -215,7 +217,7 @@ class Sensors:
             )
             raise exc
         time.sleep(0.5)
-      
+
     def calculate_crc(self, data, init=0xFF, poly=0x131, final_xor=0x00, reverse=False):
         """
         Calculate CRC checksum for SHT31 sensor data.

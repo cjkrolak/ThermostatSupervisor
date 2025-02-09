@@ -268,14 +268,8 @@ class Sht31FlaskServerSensorUnit(utc.UnitTest):
         """Test CRC validation."""
         test_cases = [
             # (data, checksum, expected_result)
-            # ([0x4A, 0x1C], 0x98, True),   # actual data from SHT31
             ([0x4A, 0xEA], 0xFC, True),   # actual data from SHT31
             ([0x4A, 0x9B], 0x35, True),   # actual data from SHT31
-            # ([, ], , True),   # actual data from SHT31
-            # ([, ], , True),   # actual data from SHT31
-            # ([, ], , True),   # actual data from SHT31
-            # ([, ], , True),   # actual data from SHT31
-            # ([, ], , True),   # actual data from SHT31
             ([0x00, 0x00], 0x81, True),   # Valid CRC
             ([0xFF, 0xFF], 0xAC, True),   # Valid CRC
             ([0xBE, 0xEF], 0x92, True),   # Valid CRC
