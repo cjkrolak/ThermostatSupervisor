@@ -202,6 +202,9 @@ class Sht31FlaskServerSensorUnit(utc.UnitTest):
     def test_convert_data_normal_range(self):
         """Test convert_data with normal range values."""
         test_data = [100, 150, 200, 250, 300, 350]  # Example raw data
+        # update CRC values in test_data
+        test_data[2] = self.sensors.calculate_crc(test_data[0:2])
+        test_data[5] = self.sensors.calculate_crc(test_data[3:5])
         temp, temp_c, temp_f, humidity = self.sensors.convert_data(test_data)
 
         self.assertEqual(temp, 25750)  # 100 * 256 + 150
@@ -212,6 +215,9 @@ class Sht31FlaskServerSensorUnit(utc.UnitTest):
     def test_convert_data_min_values(self):
         """Test convert_data with minimum values."""
         test_data = [0] * sht31_fs.i2c_data_length  # Min possible values
+        # update CRC values in test_data
+        test_data[2] = self.sensors.calculate_crc(test_data[0:2])
+        test_data[5] = self.sensors.calculate_crc(test_data[3:5])
         temp, temp_c, temp_f, humidity = self.sensors.convert_data(test_data)
 
         self.assertEqual(temp, 0)
@@ -222,6 +228,9 @@ class Sht31FlaskServerSensorUnit(utc.UnitTest):
     def test_convert_data_max_values(self):
         """Test convert_data with maximum values."""
         test_data = [255] * sht31_fs.i2c_data_length  # Max possible values
+        # update CRC values in test_data
+        test_data[2] = self.sensors.calculate_crc(test_data[0:2])
+        test_data[5] = self.sensors.calculate_crc(test_data[3:5])
         temp, temp_c, temp_f, humidity = self.sensors.convert_data(test_data)
 
         self.assertEqual(temp, 65535)

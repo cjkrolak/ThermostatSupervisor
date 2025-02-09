@@ -127,22 +127,20 @@ class Sensors:
         # verify data CRC
         if not self.validate_crc(data[0:2], data[2]):
             print(
-                f"WARNING: CRC validation failed for temperature data. "
-                f"Expected: {data[2]}, "
-                f"Calculated: {self.calculate_crc(data[0:2])}",
-                file=sys.stderr
-                )
+            f"WARNING: CRC validation failed for temperature data. {data[0:2]}, "
+            f"Expected CRC: {data[2]}, "
+            f"Calculated CRC: {self.calculate_crc(data[0:2])}"
+            )
         else:
-            print(f"temperature raw: {data[0:2]}, CRC: {data[2]}", file=sys.stderr)
+            print(f"temperature raw: {data[0:2]}, CRC: {data[2]}")
         if not self.validate_crc(data[3:5], data[5]):
             print(
-                f"WARNING: CRC validation failed for humidity data. "
-                f"Expected: {data[5]}, "
-                f"Calculated: {self.calculate_crc(data[3:5])}",
-                file=sys.stderr
-                )
+            f"WARNING: CRC validation failed for humidity data: {data[3:5]}, "
+            f"Expected CRC: {data[5]}, "
+            f"Calculated CRC: {self.calculate_crc(data[3:5])}"
+            )
         else:
-            print(f"humidity raw: {data[3:5]}, CRC: {data[5]}", file=sys.stderr)
+            print(f"humidity raw: {data[3:5]}, CRC: {data[5]}")
 
         # convert the data
         temp = data[0] * 256 + data[1]
@@ -225,7 +223,7 @@ class Sensors:
         inputs:
             data(bytes): 2 bytes of data to check
             init(int): initial CRC value
-            poly(int): polynomial value, 0x131=x^8+x^5+x^4+1 = 100110001 for unsigned int
+            poly(int): polynomial value, 0x131=x^8+x^5+x^4+1=100110001 for unsigned int
             final_xor(int): final XOR value
             reverse(bool): reverse the bits
         returns:
@@ -358,6 +356,11 @@ class Sensors:
         for measurement in range(measurements):
             # fabricated data for unit testing
             data = [seed + measurement % 2] * i2c_data_length  # almost mid range
+
+            # update CRC in fabricated data
+            data[2] = self.calculate_crc(data[0:2])
+            data[5] = self.calculate_crc(data[3:5])
+
             # print(f"DEBUG data: {data}, len: {len(data)}")
 
             # convert the data
