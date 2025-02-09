@@ -130,7 +130,7 @@ class Sensors:
                 f"WARNING: CRC validation failed for temperature data: {data[0:2]}, "
                 f"Expected CRC: {data[2]}, "
                 f"Calculated CRC: {self.calculate_crc(data[0:2])}"
-                )
+            )
         elif self.verbose:
             print(f"temperature raw: {data[0:2]}, CRC: {data[2]}")
         if not self.validate_crc(data[3:5], data[5]):
@@ -138,7 +138,7 @@ class Sensors:
                 f"WARNING: CRC validation failed for humidity data: {data[3:5]}, "
                 f"Expected CRC: {data[5]}, "
                 f"Calculated CRC: {self.calculate_crc(data[3:5])}"
-                )
+            )
         elif self.verbose:
             print(f"humidity raw: {data[3:5]}, CRC: {data[5]}")
 
@@ -237,12 +237,12 @@ class Sensors:
                     if crc & 0x01:
                         crc = (crc >> 1) ^ poly
                     else:
-                        crc = (crc >> 1)
+                        crc = crc >> 1
                 else:
                     if crc & 0x80:
                         crc = (crc << 1) ^ poly  # polynomial = 0x31
                     else:
-                        crc = (crc << 1)
+                        crc = crc << 1
         crc &= 0xFF  # Ensure result is 8-bit
         crc ^= final_xor
         return crc
@@ -285,8 +285,10 @@ class Sensors:
             raise exc
 
         if len(response) != length:
-            raise ValueError(f"ERROR: i2c data read error, expected {length} "
-                             f"bytes, actual {len(response)}")
+            raise ValueError(
+                f"ERROR: i2c data read error, expected {length} "
+                f"bytes, actual {len(response)}"
+            )
 
         return response
 
