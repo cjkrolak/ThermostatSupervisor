@@ -131,7 +131,7 @@ class Sensors:
             f"Expected CRC: {data[2]}, "
             f"Calculated CRC: {self.calculate_crc(data[0:2])}"
             )
-        else:
+        elif self.verbose:
             print(f"temperature raw: {data[0:2]}, CRC: {data[2]}")
         if not self.validate_crc(data[3:5], data[5]):
             print(
@@ -139,7 +139,7 @@ class Sensors:
             f"Expected CRC: {data[5]}, "
             f"Calculated CRC: {self.calculate_crc(data[3:5])}"
             )
-        else:
+        elif self.verbose:
             print(f"humidity raw: {data[3:5]}, CRC: {data[5]}")
 
         # convert the data
