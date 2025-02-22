@@ -28,7 +28,7 @@ except ImportError as ex:
     pi_library_exception = ex  # unsuccessful
 
 # third party imports
-from flask import Flask, request
+from flask import Flask, jsonify, request
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_restful import Resource, Api  # noqa F405
@@ -891,7 +891,7 @@ class PrintIPBanBlockList(Resource):
         # print block list to server console
         flg.print_ipban_block_list_with_timestamp(ip_ban)
         # return block list to API
-        return ip_ban.get_block_list()
+        return jsonify(ip_ban.get_block_list())
 
 
 class ClearIPBanBlockList(Resource):
