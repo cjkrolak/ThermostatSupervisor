@@ -891,7 +891,8 @@ class PrintIPBanBlockList(Resource):
         # print block list to server console
         flg.print_ipban_block_list_with_timestamp(ip_ban)
         # return block list to API
-        return {"ipban_block_list": jsonify(ip_ban.get_block_list())}
+        return jsonify(ip_ban.get_block_list())
+        # return {"ipban_block_list": jsonify(ip_ban.get_block_list())}
 
 
 class ClearIPBanBlockList(Resource):
@@ -905,7 +906,8 @@ class ClearIPBanBlockList(Resource):
         # clear block list
         flg.clear_ipban_block_list(ip_ban)
         # return block list to API
-        return {"ipban_block_list": jsonify(ip_ban.get_block_list())}
+        return jsonify(ip_ban.get_block_list())
+        # return {"ipban_block_list": jsonify(ip_ban.get_block_list())}
 
 
 def create_app():
