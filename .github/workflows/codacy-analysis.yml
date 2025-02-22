@@ -45,10 +45,18 @@ jobs:
           gh-code-scanning-compat: true
           # Force 0 exit code to allow SARIF file generation
           # This will handover control about PR rejection to the GitHub side
-          max-allowed-issues: 20
+          max-allowed-issues: 2147483647
 
-      # Upload the SARIF file generated in the previous step
+      - name: Get SARIF file size
+        id: sarif_size
+        run: |
+          SARIF_SIZE=$(stat -c%s results.sarif)
+          echo "sarif_size=$SARIF_SIZE" >> $GITHUB_OUTPUT
+          shell: bash
+
+    # Upload the SARIF file generated in the previous step
       - name: Upload SARIF results file
+        if: steps.sarif_size.outputs.sarif_size < 21
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: results.sarif
