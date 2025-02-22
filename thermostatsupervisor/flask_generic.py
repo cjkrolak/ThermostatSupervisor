@@ -25,7 +25,10 @@ class CustomJSONEncoder(json.JSONEncoder):
     """
     def default(self, o):
         if isinstance(o, datetime.datetime):
+            print(f"CustomJSONEncoder enabled: {o}")
             return o.isoformat()
+        else:
+            print(f"CustomJSONEncoder bypassed: {o}, {type(o)}")
         return super().default(o)
 
 
