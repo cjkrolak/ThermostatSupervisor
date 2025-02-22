@@ -4,6 +4,7 @@ example from http://www.pibits.net/code/raspberry-pi-sht31-sensor-example.php
 """
 
 # built-in imports
+import logging
 import re
 import statistics
 import subprocess
@@ -40,6 +41,11 @@ from thermostatsupervisor import environment as env
 from thermostatsupervisor import flask_generic as flg
 from thermostatsupervisor import sht31_config
 from thermostatsupervisor import utilities as util
+
+# enable logging
+limiter_logger = logging.getLogger("flask_limiter")
+limiter_logger.setLevel(logging.DEBUG)
+limiter_logger.addHandler(logging.StreamHandler(sys.stdout))
 
 # runtime override fields
 input_flds = munch.Munch()
