@@ -50,8 +50,9 @@ jobs:
       - name: Get SARIF file size
         id: sarif_size
         run: |
-          SARIF_SIZE=$(stat -c%s results.sarif)
-          echo "sarif_size=$SARIF_SIZE" >> $GITHUB_ENV
+          SARIF_SIZE=$(wc -l < results.sarif)
+          echo "sarif_size=$SARIF_SIZE" >> $GITHUB_OUTPUT
+          echo "SARIF file size: $SARIF_SIZE lines"
         shell: bash
 
     # Upload the SARIF file generated in the previous step
