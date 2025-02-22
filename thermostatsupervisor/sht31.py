@@ -209,8 +209,9 @@ class ThermostatClass(tc.ThermostatCommon):
 
         # catch 404 web site response, no need to retry
         if "404 Not Found" in response.text:
-            fail_msg = \
+            fail_msg = (
                 f"FATAL ERROR 404: sht31 server does not support route {self.url}"
+            )
             util.log_msg(
                 fail_msg,
                 mode=util.BOTH_LOG,
@@ -220,8 +221,9 @@ class ThermostatClass(tc.ThermostatCommon):
 
         # catch 403 web site response, no need to retry
         if "403 Forbidden" in response.text:
-            fail_msg = \
+            fail_msg = (
                 f"FATAL ERROR 403: client is forbidden from accessing route {self.url}"
+            )
             util.log_msg(
                 fail_msg,
                 mode=util.BOTH_LOG,
@@ -237,8 +239,9 @@ class ThermostatClass(tc.ThermostatCommon):
                 return response.json()[parameter]
         except json.decoder.JSONDecodeError as ex:
             util.log_msg(traceback.format_exc(), mode=util.BOTH_LOG, func_name=1)
-            util.log_msg(f"raw response={response.text}", mode=util.BOTH_LOG,
-                         func_name=1)
+            util.log_msg(
+                f"raw response={response.text}", mode=util.BOTH_LOG, func_name=1
+            )
             if retry:
                 util.log_msg(
                     f"waiting {self.retry_delay} seconds and retrying SHT31 "
