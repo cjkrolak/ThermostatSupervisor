@@ -50,7 +50,15 @@ def initialize_ipban(app):
         persist=ipban_persistent,
     )
 
-    def ban_callback(ip):
+    def ban_callback(sender, ip, **extra):
+        """Callback function to be executed when an IP is banned.
+        Args:
+            sender: The sender object (unused).
+            ip (str): The IP address that has been banned.
+            **extra: Additional keyword arguments (unused).
+        """
+        del sender  # unused
+        del extra  # unused
         now = datetime.datetime.now()
         now_str = now.strftime("%Y-%m-%d %H:%M:%S")
         print(f"{now_str}: Banned IP: {ip}, count: {ip_ban.get_block_list()[ip]}")
