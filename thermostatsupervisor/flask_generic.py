@@ -23,6 +23,7 @@ class CustomJSONEncoder(json.JSONEncoder):
     This encoder extends the default JSONEncoder to serialize datetime objects
     into ISO 8601 formatted strings.
     """
+
     def default(self, o):
         if isinstance(o, datetime.datetime):
             print(f"CustomJSONEncoder enabled: {o}")
