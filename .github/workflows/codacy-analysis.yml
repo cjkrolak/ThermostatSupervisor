@@ -47,6 +47,12 @@ jobs:
           # This will handover control about PR rejection to the GitHub side
           max-allowed-issues: 2147483647
 
+      # Limit the number of issues to 20 to avoid exceeding the GitHub Advanced Security limit
+      - name: Limit SARIF results to the first 20 issues
+        run: |
+          jq '.runs[0].results = (.runs[0].results | to_entries | .[0:20] | from_entries)' results.sarif > results_limited.sarif
+          mv results_limited.sarif results.sarif
+
       # Upload the SARIF file generated in the previous step
       - name: Upload SARIF results file
         uses: github/codeql-action/upload-sarif@v3
