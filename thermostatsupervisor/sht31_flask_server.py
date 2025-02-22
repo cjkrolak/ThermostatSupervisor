@@ -907,6 +907,8 @@ class ClearIPBanBlockList(Resource):
         flg.clear_ipban_block_list(ip_ban)
         print("IPBan block list after clear:")
         flg.print_ipban_block_list_with_timestamp(ip_ban)
+        # return block list to API
+        return jsonify(ip_ban.get_block_list())
 
 
 def create_app():

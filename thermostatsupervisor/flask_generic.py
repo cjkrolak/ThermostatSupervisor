@@ -71,12 +71,16 @@ def clear_ipban_block_list(ip_ban, ip_address=None):
     returns:
         None
     """
+    print(f"ip_ban black list before: {ip_ban.get_block_list()}")
     if ip_address is None:
         # clear all ip addresses
+        print("clearing all ip addresses from block list")
         ip_ban.banned_ips = {}
     else:
         # clear one ip address
+        print(f"clearing ip address {ip_address} from block list")
         ip_ban.remove(ip_address)
+    print(f"ip_ban black list after: {ip_ban.get_block_list()}")
 
 
 def print_ipban_block_list(ip_ban):
