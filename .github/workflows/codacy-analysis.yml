@@ -51,7 +51,7 @@ jobs:
         id: sarif_size
         run: |
           SARIF_SIZE=$(stat -c%s results.sarif)
-          echo "sarif_size=$SARIF_SIZE" >> $GITHUB_OUTPUT
+          echo "sarif_size=$SARIF_SIZE" >> $GITHUB_ENV
         shell: bash
 
     # Upload the SARIF file generated in the previous step
