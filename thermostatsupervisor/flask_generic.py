@@ -5,6 +5,7 @@ import datetime
 import json
 
 # third party libraries
+from flask import signals
 from flask_apscheduler import APScheduler
 from flask_ipban import IpBan
 
@@ -54,7 +55,7 @@ def initialize_ipban(app):
         now_str = now.strftime("%Y-%m-%d %H:%M:%S")
         print(f"{now_str}: Banned IP: {ip}, count: {ip_ban.get_block_list()[ip]}")
 
-    ip_ban.ban_callback = ban_callback
+    signals.message_flashed.connect(ban_callback)
     ip_ban.init_app(app)
     ip_ban.load_nuisances()
     print_ipban_block_list(ip_ban)
