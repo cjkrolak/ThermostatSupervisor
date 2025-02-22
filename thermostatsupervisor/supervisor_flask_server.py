@@ -137,7 +137,7 @@ if __name__ == "__main__":
 
     # show the page in browser
     webbrowser.open(flask_url, new=2)
-    flg.schedule_ipban_block_list_report(ip_ban, debug_mode=False)
+    flg.schedule_ipban_black_list_report(ip_ban, debug_mode=False)
     app.run(
         host=flask_ip_address,
         port=FLASK_PORT,
