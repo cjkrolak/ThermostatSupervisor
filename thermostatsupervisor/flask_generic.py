@@ -31,6 +31,13 @@ def initialize_ipban(app):
         ban_seconds=ipban_ban_seconds,
         persist=ipban_persistent,
     )
+
+    def ban_callback(ip, reason):
+        now = datetime.datetime.now()
+        now_str = now.strftime("%Y-%m-%d %H:%M:%S")
+        print(f"{now_str}: Banned IP: {ip}, Reason: {reason}")
+
+    ip_ban.ban_callback = ban_callback
     ip_ban.init_app(app)
     ip_ban.load_nuisances()
     print_ipban_block_list(ip_ban)
