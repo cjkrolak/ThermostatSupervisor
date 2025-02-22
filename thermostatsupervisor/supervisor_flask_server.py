@@ -53,6 +53,10 @@ argv = []  # supervisor runtime args list
 def create_app():
     """Create the flask object."""
     app_ = Flask(__name__)
+
+    # override JSONEncoder
+    app_.json_encoder = flg.CustomJSONEncoder
+
     # api = Api(app)
 
     # api.add_resource(Controller, "/")

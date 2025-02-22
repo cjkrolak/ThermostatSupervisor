@@ -913,6 +913,9 @@ def create_app():
     """Create the api object."""
     app_ = Flask(__name__)
 
+    # override JSONEncoder
+    app_.json_encoder = flg.CustomJSONEncoder
+
     # add API routes
     api = Api(app_)
 

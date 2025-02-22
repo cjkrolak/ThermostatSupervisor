@@ -2,6 +2,7 @@
 
 # built-in libraries
 import datetime
+import json
 
 # third party libraries
 from flask_apscheduler import APScheduler
@@ -13,6 +14,19 @@ from flask_ipban import IpBan
 ipban_ban_count = 1
 ipban_ban_seconds = 3600 * 24 * 7  # 1 wk
 ipban_persistent = False  # True to persist across restarts
+
+
+# custom JSON encoder to convert datetime objects to isoformat
+class CustomJSONEncoder(json.JSONEncoder):
+    """
+    A custom JSON encoder that handles datetime objects.
+    This encoder extends the default JSONEncoder to serialize datetime objects
+    into ISO 8601 formatted strings.
+    """
+    def default(self, o):
+        if isinstance(o, datetime.datetime):
+            return o.isoformat()
+        return super().default(o)
 
 
 def initialize_ipban(app):
