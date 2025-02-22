@@ -880,32 +880,32 @@ class I2CDetectBus1(Resource):
         return helper.i2c_detect(1)
 
 
-class PrintIPBanBlackList(Resource):
-    """Print IPBan black list to flask server console."""
+class PrintIPBanBlockList(Resource):
+    """Print IPBan block list to flask server console."""
 
     def __init__(self):
         pass
 
     def get(self):
         """Map the get method."""
-        # print black list to server console
-        flg.print_ipban_black_list_with_timestamp(ip_ban)
-        # return black list to API
-        return {"ipban_black_list": jsonify(ip_ban.get_black_list())}
+        # print block list to server console
+        flg.print_ipban_block_list_with_timestamp(ip_ban)
+        # return block list to API
+        return {"ipban_block_list": jsonify(ip_ban.get_block_list())}
 
 
-class ClearIPBanBlackList(Resource):
-    """Clear IPBan black list to flask server console."""
+class ClearIPBanBlockList(Resource):
+    """Clear IPBan block list to flask server console."""
 
     def __init__(self):
         pass
 
     def get(self):
         """Map the get method."""
-        # clear black list
-        flg.clear_ipban_black_list(ip_ban)
-        # return black list to API
-        return {"ipban_black_list": jsonify(ip_ban.get_black_list())}
+        # clear block list
+        flg.clear_ipban_block_list(ip_ban)
+        # return block list to API
+        return {"ipban_block_list": jsonify(ip_ban.get_block_list())}
 
 
 def create_app():
@@ -938,8 +938,8 @@ def create_app():
     api.add_resource(I2CDetect, sht31_config.flask_folder.i2c_detect)
     api.add_resource(I2CDetectBus0, sht31_config.flask_folder.i2c_detect_0)
     api.add_resource(I2CDetectBus1, sht31_config.flask_folder.i2c_detect_1)
-    api.add_resource(PrintIPBanBlackList, sht31_config.flask_folder.print_black_list)
-    api.add_resource(ClearIPBanBlackList, sht31_config.flask_folder.clear_black_list)
+    api.add_resource(PrintIPBanBlockList, sht31_config.flask_folder.print_block_list)
+    api.add_resource(ClearIPBanBlockList, sht31_config.flask_folder.clear_block_list)
 
     return app_
 
@@ -947,7 +947,7 @@ def create_app():
 # create the flask app
 app = create_app()
 csrf = CSRFProtect(app)  # enable CSRF protection
-ip_ban = flg.initialize_ipban(app)  # hacker blacklisting agent
+ip_ban = flg.initialize_ipban(app)  # hacker BlockListing agent
 flg.set_flask_cookie_config(app)
 flg.print_flask_config(app)
 
@@ -1026,7 +1026,7 @@ if __name__ == "__main__":
     print(f"Flask debug mode={debug}", file=sys.stderr)
 
     # launch the Flask API on development server
-    flg.schedule_ipban_black_list_report(ip_ban, debug_mode=debug)
+    flg.schedule_ipban_block_list_report(ip_ban, debug_mode=debug)
     app.run(
         host="0.0.0.0",
         port=sht31_config.FLASK_PORT,

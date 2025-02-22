@@ -52,43 +52,43 @@ def initialize_ipban(app):
     def ban_callback(ip):
         now = datetime.datetime.now()
         now_str = now.strftime("%Y-%m-%d %H:%M:%S")
-        print(f"{now_str}: Banned IP: {ip}, count: {ip_ban.get_black_list()[ip]}")
+        print(f"{now_str}: Banned IP: {ip}, count: {ip_ban.get_block_list()[ip]}")
 
     ip_ban.ban_callback = ban_callback
     ip_ban.init_app(app)
     ip_ban.load_nuisances()
-    print_ipban_black_list(ip_ban)
+    print_ipban_block_list(ip_ban)
     return ip_ban
 
 
-def clear_ipban_black_list(ip_ban, ip_address=None):
+def clear_ipban_block_list(ip_ban, ip_address=None):
     """
-    Clear specified IP address from the ip_ban black list.
+    Clear specified IP address from the ip_ban block list.
 
     inputs:
         ip_ban(ip_ban object)
-        ip_address(string): IP address to clear from the black list.
+        ip_address(string): IP address to clear from the block list.
     returns:
         None
     """
-    print(f"ip_ban black list before: {ip_ban.get_black_list()}")
+    print(f"ip_ban block list before: {ip_ban.get_block_list()}")
     if ip_address is None:
         # clear all ip addresses
-        print("clearing all ip addresses from black list")
-        for ip in ip_ban.get_black_list():
+        print("clearing all ip addresses from block list")
+        for ip in ip_ban.get_block_list():
             if not ip_ban.remove(ip):
-                print(f"WARNING: {ip} not found in black list")
+                print(f"WARNING: {ip} not found in block list")
     else:
         # clear one ip address
-        print(f"clearing ip address {ip_address} from black list")
+        print(f"clearing ip address {ip_address} from block list")
         if not ip_ban.remove(ip_address):
-            print(f"WARNING: {ip_address} not found in black list")
-    print(f"ip_ban black list after: {ip_ban.get_black_list()}")
+            print(f"WARNING: {ip_address} not found in block list")
+    print(f"ip_ban block list after: {ip_ban.get_block_list()}")
 
 
-def print_ipban_black_list(ip_ban):
+def print_ipban_block_list(ip_ban):
     """
-    Print the current ip_ban black list to the console.
+    Print the current ip_ban block list to the console.
 
     inputs:
         ip_ban(ip_ban object)
@@ -100,15 +100,15 @@ def print_ipban_black_list(ip_ban):
     # s += ("<tr><th>ip</th><th>count</th><th>permanent</th><th>url</th><th>"
     #       f"timestamp</th></tr>\n")
     # s += ""</thead><tbody>\n"
-    # for k, r in ip_ban.get_black_list().items():
+    # for k, r in ip_ban.get_block_list().items():
     #     s += (f"<tr><td>{k}</td><td>{r['count']}</td><td>"
     #           f"{r.get('permanent', '')}</td><td>{r.get('url', '')}</td><td>"
     #           f"{r['timestamp']}</td></tr>\n")
     # print(f"{s}")
-    print(f"ip_ban black list: {ip_ban.get_black_list()}")
+    print(f"ip_ban block list: {ip_ban.get_block_list()}")
 
 
-def print_ipban_black_list_with_timestamp(ip_ban):
+def print_ipban_block_list_with_timestamp(ip_ban):
     """
     Print the current ip_ban block list to the console with timestamp.
 
@@ -119,10 +119,10 @@ def print_ipban_black_list_with_timestamp(ip_ban):
     """
     now = datetime.datetime.now()
     now_str = now.strftime("%Y-%m-%d %H:%M:%S")
-    print(f"{now_str}: ip_ban black list: {ip_ban.get_black_list()}")
+    print(f"{now_str}: ip_ban block list: {ip_ban.get_block_list()}")
 
 
-def schedule_ipban_black_list_report(ip_ban, debug_mode=False):
+def schedule_ipban_block_list_report(ip_ban, debug_mode=False):
     """
     Schedule an ip_ban blocked ip list report.
 
@@ -133,12 +133,12 @@ def schedule_ipban_black_list_report(ip_ban, debug_mode=False):
     """
     # interval = 1 day std, 1 min in debug mode
     interval_sec = 60 * [60 * 24, 1][debug_mode]
-    print(f"ip_ban blacklist report scheduled every {interval_sec / 60.0} minutes")
+    print(f"ip_ban BlockList report scheduled every {interval_sec / 60.0} minutes")
     scheduler = APScheduler()
     kwargs = {"ip_ban": ip_ban}
     scheduler.add_job(
-        id="ip_ban blacklist report",
-        func=print_ipban_black_list_with_timestamp,
+        id="ip_ban BlockList report",
+        func=print_ipban_block_list_with_timestamp,
         kwargs=kwargs,
         trigger="interval",
         seconds=interval_sec,

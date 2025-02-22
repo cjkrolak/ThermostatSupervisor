@@ -45,7 +45,7 @@ class IntegrationTest(utc.UnitTest):
         no_test_list = ["i2c_recovery", "reset"]
 
         # no server outptu for these pages
-        no_server_output_list = ["print_black_list", "clear_black_list"]
+        no_server_output_list = ["print_block_list", "clear_block_list"]
 
         # loopback does not work so use local sht31 zone if testing
         # on the local net.  If not, use the DNS name.

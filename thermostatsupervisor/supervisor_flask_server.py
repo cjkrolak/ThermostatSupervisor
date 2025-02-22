@@ -70,7 +70,7 @@ limiter = Limiter(
     get_remote_address, app=app, default_limits=["200 per day", "60 per hour"]
 )
 csrf = CSRFProtect(app)  # enable CSRF protection
-ip_ban = flg.initialize_ipban(app)  # hacker blacklisting agent
+ip_ban = flg.initialize_ipban(app)  # hacker BlockListing agent
 flg.set_flask_cookie_config(app)
 flg.print_flask_config(app)
 
@@ -137,7 +137,7 @@ if __name__ == "__main__":
 
     # show the page in browser
     webbrowser.open(flask_url, new=2)
-    flg.schedule_ipban_black_list_report(ip_ban, debug_mode=False)
+    flg.schedule_ipban_block_list_report(ip_ban, debug_mode=False)
     app.run(
         host=flask_ip_address,
         port=FLASK_PORT,
