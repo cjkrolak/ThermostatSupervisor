@@ -41,12 +41,12 @@ class TestFlaskGeneric(utc.UnitTest):
         - Tests the `schedule_ipban_block_list_report` function to ensure that it
           schedules.
         - Sets `debug_mode` to True and verifies that the print function is called with
-          the expected message indicating that the IP ban blacklist report is scheduled
+          the expected message indicating that the IP ban BlockList report is scheduled
           every 1.0 minutes.
     3. `test_schedule_ipban_block_list_report_normal_mode`:
         - Tests the `schedule_ipban_block_list_report` function in normal mode.
         - Sets `debug_mode` to False and verifies that the print function is called with
-          the expected message indicating that the IP ban blacklist report is scheduled
+          the expected message indicating that the IP ban BlockList report is scheduled
           every 1440.0 minutes.
     """
 
@@ -98,7 +98,7 @@ class TestFlaskGeneric(utc.UnitTest):
 
             # Assert
             mock_print.assert_called_once_with(
-                f"{expected_timestamp}: ip_ban black list: "
+                f"{expected_timestamp}: ip_ban block list: "
                 f"{self.mock_ip_ban.get_block_list()}"
             )
 
@@ -118,7 +118,7 @@ class TestFlaskGeneric(utc.UnitTest):
               debug mode.
         Assert:
             - Verify that the print function is called once with the expected message
-              indicating that the IP ban blacklist report is scheduled every
+              indicating that the IP ban BlockList report is scheduled every
               1.0 minutes.
         """
 
@@ -132,7 +132,7 @@ class TestFlaskGeneric(utc.UnitTest):
 
         # Assert
         mock_print.assert_called_once_with(
-            f"ip_ban blacklist report scheduled every {expected_interval} minutes"
+            f"ip_ban BlockList report scheduled every {expected_interval} minutes"
         )
 
     @patch("builtins.print")
@@ -148,7 +148,7 @@ class TestFlaskGeneric(utc.UnitTest):
         Assertions:
             mock_print.assert_called_once_with: Verifies that the print function
             is called once with the expected message indicating the IP ban
-            blacklist report is scheduled every 1440.0 minutes.
+            BlockList report is scheduled every 1440.0 minutes.
         """
 
         # Arrange
@@ -161,7 +161,7 @@ class TestFlaskGeneric(utc.UnitTest):
 
         # Assert
         mock_print.assert_called_once_with(
-            f"ip_ban blacklist report scheduled every {expected_interval} minutes"
+            f"ip_ban BlockList report scheduled every {expected_interval} minutes"
         )
 
 

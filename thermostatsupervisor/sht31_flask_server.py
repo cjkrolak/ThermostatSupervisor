@@ -4,6 +4,7 @@ example from http://www.pibits.net/code/raspberry-pi-sht31-sensor-example.php
 """
 
 # built-in imports
+import logging
 import re
 import statistics
 import subprocess
@@ -27,7 +28,7 @@ except ImportError as ex:
     pi_library_exception = ex  # unsuccessful
 
 # third party imports
-from flask import Flask, request
+from flask import Flask, jsonify, request
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_restful import Resource, Api  # noqa F405
@@ -40,6 +41,11 @@ from thermostatsupervisor import environment as env
 from thermostatsupervisor import flask_generic as flg
 from thermostatsupervisor import sht31_config
 from thermostatsupervisor import utilities as util
+
+# enable logging
+limiter_logger = logging.getLogger("flask_limiter")
+limiter_logger.setLevel(logging.DEBUG)
+limiter_logger.addHandler(logging.StreamHandler(sys.stdout))
 
 # runtime override fields
 input_flds = munch.Munch()
@@ -874,15 +880,52 @@ class I2CDetectBus1(Resource):
         return helper.i2c_detect(1)
 
 
+class PrintIPBanBlockList(Resource):
+    """Print IPBan block list to flask server console."""
+
+    def __init__(self):
+        pass
+
+    def get(self):
+        """Map the get method."""
+        # print block list to server console
+        flg.print_ipban_block_list_with_timestamp(ip_ban)
+        # return block list to API
+        return jsonify(ip_ban.get_block_list())
+        # return {"ipban_block_list": jsonify(ip_ban.get_block_list())}
+
+
+class ClearIPBanBlockList(Resource):
+    """Clear IPBan block list to flask server console."""
+
+    def __init__(self):
+        pass
+
+    def get(self):
+        """Map the get method."""
+        # clear block list
+        flg.clear_ipban_block_list(ip_ban)
+        # return block list to API
+        return jsonify(ip_ban.get_block_list())
+        # return {"ipban_block_list": jsonify(ip_ban.get_block_list())}
+
+
 def create_app():
     """Create the api object."""
     app_ = Flask(__name__)
+
+    # override JSONEncoder
+    app_.json_encoder = flg.CustomJSONEncoder
 
     # add API routes
     api = Api(app_)
 
     # Initialize rate limiter
-    Limiter(get_remote_address, app=app_, default_limits=["200 per day", "60 per hour"])
+    Limiter(
+        get_remote_address,
+        app=app_,
+        default_limits=["200 per day", "60 per hour"],
+    )
 
     # add API functions
     api.add_resource(Controller, "/")
@@ -897,6 +940,8 @@ def create_app():
     api.add_resource(I2CDetect, sht31_config.flask_folder.i2c_detect)
     api.add_resource(I2CDetectBus0, sht31_config.flask_folder.i2c_detect_0)
     api.add_resource(I2CDetectBus1, sht31_config.flask_folder.i2c_detect_1)
+    api.add_resource(PrintIPBanBlockList, sht31_config.flask_folder.print_block_list)
+    api.add_resource(ClearIPBanBlockList, sht31_config.flask_folder.clear_block_list)
 
     return app_
 
@@ -904,7 +949,7 @@ def create_app():
 # create the flask app
 app = create_app()
 csrf = CSRFProtect(app)  # enable CSRF protection
-ip_ban = flg.initialize_ipban(app)  # hacker blacklisting agent
+ip_ban = flg.initialize_ipban(app)  # hacker BlockListing agent
 flg.set_flask_cookie_config(app)
 flg.print_flask_config(app)
 

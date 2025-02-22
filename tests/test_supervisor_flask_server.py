@@ -41,7 +41,7 @@ class IntegrationTest(utc.UnitTest):
 
     app = sfs.create_app()
     csrf = CSRFProtect(app)  # enable CSRF protection
-    ip_ban = flg.initialize_ipban(app)  # hacker blacklisting agent
+    ip_ban = flg.initialize_ipban(app)  # hacker BlockListing agent
     flg.set_flask_cookie_config(app)
     flg.print_flask_config(app)
 

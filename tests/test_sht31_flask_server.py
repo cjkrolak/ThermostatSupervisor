@@ -44,6 +44,9 @@ class IntegrationTest(utc.UnitTest):
         # do not test these pages
         no_test_list = ["i2c_recovery", "reset"]
 
+        # no server outptu for these pages
+        no_server_output_list = ["print_block_list", "clear_block_list"]
+
         # loopback does not work so use local sht31 zone if testing
         # on the local net.  If not, use the DNS name.
         zone = sht31_config.get_preferred_zone()
@@ -60,10 +63,18 @@ class IntegrationTest(utc.UnitTest):
             print("printing thermostat meta data:")
             return_data = Thermostat.print_all_thermostat_metadata(zone)
 
-            # validate dictionary was returned
-            self.assertTrue(
-                isinstance(return_data, dict), "return data is not a dictionary"
-            )
+            # validate return type was returned
+            if test_case in no_server_output_list:
+                self.assertTrue(
+                    isinstance(return_data, type(None)),
+                    "return data is not NoneType, return type: " f"{type(return_data)}",
+                )
+            else:
+                self.assertTrue(
+                    isinstance(return_data, dict),
+                    "return data is not a dictionary, return type: "
+                    f"{type(return_data)}",
+                )
 
             # validate key as proof of correct return page
             if test_case in ["production", "unit_test"]:
@@ -82,13 +93,16 @@ class IntegrationTest(utc.UnitTest):
                 expected_key = "i2c_recovery"
             elif test_case == "reset":
                 expected_key = "message"
+            elif test_case in no_server_output_list:
+                expected_key = "skip_key_check"
             else:
                 expected_key = "bogus"
-            self.assertTrue(
-                expected_key in return_data,
-                f"test_case '{test_case}': key '{expected_key}' "
-                f"was not found in return data: {return_data}",
-            )
+            if expected_key != "skip_key_check":
+                self.assertTrue(
+                    expected_key in return_data,
+                    f"test_case '{test_case}': key '{expected_key}' "
+                    f"was not found in return data: {return_data}",
+                )
 
     def test_sht31_flask_server(self):
         """

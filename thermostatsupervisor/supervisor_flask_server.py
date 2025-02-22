@@ -53,6 +53,10 @@ argv = []  # supervisor runtime args list
 def create_app():
     """Create the flask object."""
     app_ = Flask(__name__)
+
+    # override JSONEncoder
+    app_.json_encoder = flg.CustomJSONEncoder
+
     # api = Api(app)
 
     # api.add_resource(Controller, "/")
@@ -66,7 +70,7 @@ limiter = Limiter(
     get_remote_address, app=app, default_limits=["200 per day", "60 per hour"]
 )
 csrf = CSRFProtect(app)  # enable CSRF protection
-ip_ban = flg.initialize_ipban(app)  # hacker blacklisting agent
+ip_ban = flg.initialize_ipban(app)  # hacker BlockListing agent
 flg.set_flask_cookie_config(app)
 flg.print_flask_config(app)
 

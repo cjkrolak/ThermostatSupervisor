@@ -143,7 +143,9 @@ Production data is at root, subfolders provide additional commands:<br/>
 * /i2c_recovery: perform clock reset to unlock a stuck i2c bus
 * /i2c_detect: detect i2c device on either bus
 * /i2c_detect_0: detect i2c device on bus 0
-* /i2c_detect_1: detect i2c device on bus 1<br/>
+* /i2c_detect_1: detect i2c device on bus 1
+* /print_block_list: print out the ip ban block list
+* /clear_block_list: clear the ip ban block list<br/>
 
 ### server command line usage:<br/>
 "*python -m thermostatsupervisor.sht31_flask_server \<debug\>*"<br/>
