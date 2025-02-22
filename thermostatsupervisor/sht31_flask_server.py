@@ -888,7 +888,10 @@ class PrintIPBanBlockList(Resource):
 
     def get(self):
         """Map the get method."""
+        # print block list to server console
         flg.print_ipban_block_list_with_timestamp(ip_ban)
+        # return block list to API
+        return ip_ban.get_block_list()
 
 
 class ClearIPBanBlockList(Resource):

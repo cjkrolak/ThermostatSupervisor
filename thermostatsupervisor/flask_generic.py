@@ -4,7 +4,6 @@
 import datetime
 
 # third party libraries
-from flask import request
 from flask_apscheduler import APScheduler
 from flask_ipban import IpBan
 
@@ -56,8 +55,11 @@ def clear_ipban_block_list(ip_ban, ip_address=None):
         None
     """
     if ip_address is None:
-        ip_address = request.remote_addr
-    ip_ban.remove(ip_address)
+        # clear all ip addresses
+        ip_ban.banned_ips = {}
+    else:
+        # clear one ip address
+        ip_ban.remove(ip_address)
 
 
 def print_ipban_block_list(ip_ban):
