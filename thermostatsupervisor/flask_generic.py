@@ -2,6 +2,7 @@
 
 # built-in libraries
 import datetime
+import sys
 
 # third party libraries
 from flask_apscheduler import APScheduler
@@ -35,7 +36,7 @@ def initialize_ipban(app):
     def ban_callback(ip, reason):
         now = datetime.datetime.now()
         now_str = now.strftime("%Y-%m-%d %H:%M:%S")
-        print(f"{now_str}: Banned IP: {ip}, Reason: {reason}")
+        print(f"{now_str}: Banned IP: {ip}, Reason: {reason}", file=sys.stderr)
 
     ip_ban.ban_callback = ban_callback
     ip_ban.init_app(app)
