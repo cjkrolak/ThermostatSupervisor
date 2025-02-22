@@ -82,6 +82,8 @@ class IntegrationTest(utc.UnitTest):
                 expected_key = "i2c_recovery"
             elif test_case == "reset":
                 expected_key = "message"
+            elif test_case in ["print_block_list"]:
+                expected_key = "ip_ban block list"
             else:
                 expected_key = "bogus"
             self.assertTrue(

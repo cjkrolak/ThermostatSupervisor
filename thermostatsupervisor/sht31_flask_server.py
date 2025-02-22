@@ -880,6 +880,17 @@ class I2CDetectBus1(Resource):
         return helper.i2c_detect(1)
 
 
+class IPBanPrintBlockList(Resource):
+    """IPBan endpoints."""
+
+    def __init__(self):
+        pass
+
+    def get(self):
+        """Map the get method."""
+        return flg.print_ipban_block_list_with_timestamp(ip_ban)
+
+
 def create_app():
     """Create the api object."""
     app_ = Flask(__name__)
@@ -907,6 +918,7 @@ def create_app():
     api.add_resource(I2CDetect, sht31_config.flask_folder.i2c_detect)
     api.add_resource(I2CDetectBus0, sht31_config.flask_folder.i2c_detect_0)
     api.add_resource(I2CDetectBus1, sht31_config.flask_folder.i2c_detect_1)
+    api.add_resource(IPBanPrintBlockList, sht31_config.flask_folder.print_block_list)
 
     return app_
 
