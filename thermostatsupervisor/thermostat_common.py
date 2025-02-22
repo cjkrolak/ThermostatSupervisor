@@ -88,7 +88,9 @@ class ThermostatCommon:
             (dict): return data
         """
         # dump metadata in a readable format
+        print("debug 1")
         return_data = func(*args)
+        print("debug 2")
         pprint_obj = pprint.PrettyPrinter(indent=4)
         print("\n")
         util.log_msg("raw thermostat meta data:", mode=util.BOTH_LOG, func_name=1)

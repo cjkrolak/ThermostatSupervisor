@@ -880,15 +880,30 @@ class I2CDetectBus1(Resource):
         return helper.i2c_detect(1)
 
 
-class IPBanPrintBlockList(Resource):
-    """IPBan endpoints."""
+class PrintIPBanBlockList(Resource):
+    """Print IPBan block list to flask server console."""
 
     def __init__(self):
         pass
 
     def get(self):
         """Map the get method."""
-        return flg.print_ipban_block_list_with_timestamp(ip_ban)
+        flg.print_ipban_block_list_with_timestamp(ip_ban)
+
+
+class ClearIPBanBlockList(Resource):
+    """Clear IPBan block list to flask server console."""
+
+    def __init__(self):
+        pass
+
+    def get(self):
+        """Map the get method."""
+        print("IPBan block list before clear:")
+        flg.print_ipban_block_list_with_timestamp(ip_ban)
+        flg.clear_ipban_block_list(ip_ban)
+        print("IPBan block list after clear:")
+        flg.print_ipban_block_list_with_timestamp(ip_ban)
 
 
 def create_app():
@@ -918,7 +933,8 @@ def create_app():
     api.add_resource(I2CDetect, sht31_config.flask_folder.i2c_detect)
     api.add_resource(I2CDetectBus0, sht31_config.flask_folder.i2c_detect_0)
     api.add_resource(I2CDetectBus1, sht31_config.flask_folder.i2c_detect_1)
-    api.add_resource(IPBanPrintBlockList, sht31_config.flask_folder.print_block_list)
+    api.add_resource(PrintIPBanBlockList, sht31_config.flask_folder.print_block_list)
+    api.add_resource(ClearIPBanBlockList, sht31_config.flask_folder.clear_block_list)
 
     return app_
 

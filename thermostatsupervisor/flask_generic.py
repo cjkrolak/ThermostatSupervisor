@@ -2,7 +2,6 @@
 
 # built-in libraries
 import datetime
-import sys
 
 # third party libraries
 from flask_apscheduler import APScheduler
@@ -43,6 +42,19 @@ def initialize_ipban(app):
     ip_ban.load_nuisances()
     print_ipban_block_list(ip_ban)
     return ip_ban
+
+
+def clear_ipban_block_list(ip_ban):
+    """
+    Clear the ip_ban block list.
+
+    inputs:
+        ip_ban(ip_ban object)
+    returns:
+        None
+    """
+    ip_ban.clear_block_list()
+    print_ipban_block_list(ip_ban)
 
 
 def print_ipban_block_list(ip_ban):
