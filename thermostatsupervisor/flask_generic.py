@@ -33,10 +33,10 @@ def initialize_ipban(app):
         persist=ipban_persistent,
     )
 
-    def ban_callback(ip, reason):
+    def ban_callback(ip):
         now = datetime.datetime.now()
         now_str = now.strftime("%Y-%m-%d %H:%M:%S")
-        print(f"{now_str}: Banned IP: {ip}, Reason: {reason}", file=sys.stderr)
+        print(f"{now_str}: Banned IP: {ip}, count: {ip_ban.get_block_list()[ip]}")
 
     ip_ban.ban_callback = ban_callback
     ip_ban.init_app(app)
