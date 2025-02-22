@@ -67,14 +67,13 @@ class IntegrationTest(utc.UnitTest):
             if test_case in no_server_output_list:
                 self.assertTrue(
                     isinstance(return_data, type(None)),
-                    "return data is not NoneType, return type: "
-                    f"{type(return_data)}"
+                    "return data is not NoneType, return type: " f"{type(return_data)}",
                 )
             else:
                 self.assertTrue(
                     isinstance(return_data, dict),
                     "return data is not a dictionary, return type: "
-                    f"{type(return_data)}"
+                    f"{type(return_data)}",
                 )
 
             # validate key as proof of correct return page
