@@ -33,6 +33,7 @@ jobs:
 
       # Execute Codacy Analysis CLI and generate a SARIF output with the security issues identified during the analysis
       - name: Run Codacy Analysis CLI
+        id: codacy
         uses: codacy/codacy-analysis-cli-action@v4
         with:
           # Check https://github.com/codacy/codacy-analysis-cli#project-token to get your project token from your Codacy repository
@@ -46,14 +47,11 @@ jobs:
           # Force 0 exit code to allow SARIF file generation
           # This will handover control about PR rejection to the GitHub side
           max-allowed-issues: 2147483647
-
-      - name: Get SARIF file size
+      - name: Count number of issues in SARIF file
         id: sarif_size
         run: |
-          SARIF_SIZE=$(wc -l < results.sarif)
-          echo "sarif_size=$SARIF_SIZE" >> $GITHUB_OUTPUT
-          echo "SARIF file size: $SARIF_SIZE lines"
-        shell: bash
+            echo "ISSUE_COUNT=$(jq '.runs[0].results | length' results.sarif)" >> $GITHUB_OUTPUT
+            echo "Issues count: $ISSUE_COUNT"
 
     # Upload the SARIF file generated in the previous step
       - name: Upload SARIF results file
