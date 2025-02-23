@@ -115,7 +115,7 @@ class IntegrationTest(utc.UnitTest):
         self.assertEqual(
             results.status_code,
             200,
-            f"web page response was {results.status_code}, " f"expected 200",
+            f"web page response was {results.status_code}, expected 200",
         )
 
         # check web page content vs. expectations
@@ -127,7 +127,7 @@ class IntegrationTest(utc.UnitTest):
         )
         self.assertTrue(
             exp_substr in results.content.decode("utf-8"),
-            f"did not find substring '{exp_substr}' in web page" " response",
+            f"did not find substring '{exp_substr}' in web page response",
         )
 
 

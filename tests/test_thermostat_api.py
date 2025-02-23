@@ -58,7 +58,7 @@ class Test(utc.UnitTest):
         try:
             self.assertFalse(
                 api.verify_required_env_variables(self.thermostat_type, "0"),
-                f"test passed with missing key '{missing_key}', " f"should have failed",
+                f"test passed with missing key '{missing_key}', should have failed",
             )
         except KeyError:
             print("KeyError raised as expected for missing key")

@@ -50,6 +50,21 @@ class IntegrationTest(utc.UnitTest):
         # loopback does not work so use local sht31 zone if testing
         # on the local net.  If not, use the DNS name.
         zone = sht31_config.get_preferred_zone()
+        # Define expected keys for each test case
+        expected_keys = {
+            "production": "measurements",
+            "unit_test": "measurements",
+            "diag": "raw_binary",
+            "clear_diag": "raw_binary",
+            "enable_heater": "raw_binary",
+            "disable_heater": "raw_binary",
+            "soft_reset": "raw_binary",
+            "i2c_detect": "i2c_detect",
+            "i2c_detect_0": "i2c_detect",
+            "i2c_detect_1": "i2c_detect",
+            "i2c_recovery": "i2c_recovery",
+            "reset": "message",
+        }
 
         for test_case in sht31_config.flask_folder:
             if test_case in no_test_list:
@@ -69,6 +84,7 @@ class IntegrationTest(utc.UnitTest):
                     isinstance(return_data, type(None)),
                     "return data is not NoneType, return type: " f"{type(return_data)}",
                 )
+                continue  # Skip key check for these cases
             else:
                 self.assertTrue(
                     isinstance(return_data, dict),
@@ -77,32 +93,12 @@ class IntegrationTest(utc.UnitTest):
                 )
 
             # validate key as proof of correct return page
-            if test_case in ["production", "unit_test"]:
-                expected_key = "measurements"
-            elif test_case in [
-                "diag",
-                "clear_diag",
-                "enable_heater",
-                "disable_heater",
-                "soft_reset",
-            ]:
-                expected_key = "raw_binary"
-            elif test_case in ["i2c_detect", "i2c_detect_0", "i2c_detect_1"]:
-                expected_key = "i2c_detect"
-            elif test_case == "i2c_recovery":
-                expected_key = "i2c_recovery"
-            elif test_case == "reset":
-                expected_key = "message"
-            elif test_case in no_server_output_list:
-                expected_key = "skip_key_check"
-            else:
-                expected_key = "bogus"
-            if expected_key != "skip_key_check":
-                self.assertTrue(
-                    expected_key in return_data,
-                    f"test_case '{test_case}': key '{expected_key}' "
-                    f"was not found in return data: {return_data}",
-                )
+            expected_key = expected_keys.get(test_case, "bogus")
+            self.assertTrue(
+                expected_key in return_data,
+                f"test_case '{test_case}': key '{expected_key}' "
+                f"was not found in return data: {return_data}",
+            )
 
     def test_sht31_flask_server(self):
         """
