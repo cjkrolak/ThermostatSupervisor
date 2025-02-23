@@ -50,12 +50,13 @@ jobs:
       - name: Count number of issues in SARIF file
         id: sarif_size
         run: |
-            echo "ISSUE_COUNT=$(jq '.runs[0].results | length' results.sarif)" >> $GITHUB_OUTPUT
-            echo "Issues count: $ISSUE_COUNT"
+            ISSUE_COUNT=$(jq '.runs[0].results | length' results.sarif)
+            echo "ISSUE_COUNT=$ISSUE_COUNT" >> $GITHUB_OUTPUT
+            echo "Issues count: ${{ steps.sarif_size.outputs.ISSUE_COUNT }}"
 
     # Upload the SARIF file generated in the previous step
       - name: Upload SARIF results file
-        if: steps.sarif_size.outputs.sarif_size < 21
+        if: steps.sarif_size.outputs.ISSUE_COUNT < 21
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: results.sarif
