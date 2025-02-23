@@ -74,7 +74,7 @@ class IntegrationTest(utc.UnitTest):
             print(f"test_case={test_case}")
             Thermostat = sht31.ThermostatClass(
                 zone, path=sht31_config.flask_folder[test_case]
-                )
+            )
             print("printing thermostat meta data:")
             return_data = Thermostat.print_all_thermostat_metadata(zone)
 
@@ -98,7 +98,7 @@ class IntegrationTest(utc.UnitTest):
                 expected_key in return_data,
                 f"test_case '{test_case}': key '{expected_key}' "
                 f"was not found in return data: {return_data}",
-                )
+            )
 
     def test_sht31_flask_server(self):
         """

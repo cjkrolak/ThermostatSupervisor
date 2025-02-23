@@ -37,9 +37,7 @@ class Test(utc.UnitTest):
                 _ = os.environ[env_key]
                 print(f"environment variable key {env_key} was found (PASS)")
             except KeyError:
-                fail_msg = (
-                    f"{env_key} environment variable missing from environment"
-                )
+                fail_msg = f"{env_key} environment variable missing from environment"
                 self.fail(fail_msg)
 
     def test_send_email_alerts(self):
