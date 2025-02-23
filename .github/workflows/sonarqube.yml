@@ -1,8 +1,10 @@
 name: SonarQube Scan
 
+# run this workflow after the Azure Pipelines workflow is successful on develop.
 on:
   workflow_run:
     workflows: [azure-pipelines.yml]
+    branches: [develop]
     types:
       - completed
 jobs:
