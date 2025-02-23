@@ -397,7 +397,7 @@ class Test(utc.UnitTest):
                 expected_mode = self.Zone.OFF_MODE
             else:
                 expected_mode = test_case
-            print(f"reverting to '{test_case}' mode, " f"expected mode={expected_mode}")
+            print(f"reverting to '{test_case}' mode, expected mode={expected_mode}")
             new_mode = self.Zone.revert_thermostat_mode(test_case)
             self.assertEqual(
                 new_mode,
@@ -422,7 +422,7 @@ class Test(utc.UnitTest):
         ppp.pprint(meas_data)
         self.assertTrue(
             isinstance(meas_data, dict),
-            f"return data is type({type(meas_data)}), " f"expected a dict",
+            f"return data is type({type(meas_data)}), expected a dict",
         )
         self.assertEqual(
             meas_data["measurements"],

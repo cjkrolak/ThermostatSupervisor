@@ -95,7 +95,7 @@ class FunctionalIntegrationTest(IntegrationTest, utc.FunctionalIntegrationTest):
 
         # verify override option
         result = self.Zone.get_zone_name(self.Thermostat.zone_name)
-        print(f"Zone.get_zone_name({self.Thermostat.zone_name}) " f"returned {result}")
+        print(f"Zone.get_zone_name({self.Thermostat.zone_name}) returned {result}")
 
 
 @unittest.skipIf(not utc.ENABLE_MMM_TESTS, "mmm tests are disabled")
