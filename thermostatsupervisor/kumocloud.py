@@ -275,56 +275,28 @@ class ThermostatZone(tc.ThermostatCommonZone):
             default_val(str, int, float): default value on key errors
         """
         return_val = default_val
-        if grandparent_key is not None:
-            try:
-                # check parent keys
+        try:
+            if grandparent_key is not None:
                 grandparent_dict = self.zone_info[grandparent_key]
                 parent_dict = grandparent_dict[parent_key]
                 return_val = parent_dict[key]
-            except KeyError:
-                if default_val is None:
-                    # if no default val, then display detailed key error
-                    util.log_msg(
-                        traceback.format_exc(), mode=util.BOTH_LOG, func_name=1
-                    )
-                    util.log_msg("raw zone_info dict:", mode=util.BOTH_LOG, func_name=1)
-                    util.log_msg(
-                        pprint.pprint(self.zone_info), mode=util.BOTH_LOG, func_name=1
-                    )
-                    raise
-        elif parent_key is not None:
-            try:
+            elif parent_key is not None:
                 parent_dict = self.zone_info[parent_key]
                 return_val = parent_dict[key]
-            except KeyError:
-                if default_val is None:
-                    # if no default val, then display detailed key error
-                    util.log_msg(
-                        traceback.format_exc(), mode=util.BOTH_LOG, func_name=1
-                    )
-                    util.log_msg("raw zone_info dict:", mode=util.BOTH_LOG, func_name=1)
-                    util.log_msg(
-                        pprint.pprint(self.zone_info), mode=util.BOTH_LOG, func_name=1
-                    )
-                    raise
-        else:
-            try:
+            else:
                 return_val = self.zone_info[key]
-            except (KeyError, TypeError):
-                if default_val is None:
-                    # if no default val, then display detailed key error
-                    util.log_msg(
-                        traceback.format_exc(), mode=util.BOTH_LOG, func_name=1
-                    )
-                    util.log_msg(
-                        f"target key={key}, raw zone_info dict:",
-                        mode=util.BOTH_LOG,
-                        func_name=1,
-                    )
-                    util.log_msg(
-                        pprint.pprint(self.zone_info), mode=util.BOTH_LOG, func_name=1
-                    )
-                    raise
+        except (KeyError, TypeError):
+            if default_val is None:
+                # if no default val, then display detailed key error
+                util.log_msg(
+                    traceback.format_exc(), mode=util.BOTH_LOG, func_name=1
+                )
+                util.log_msg(
+                    f"target key={key}, raw zone_info dict:",
+                    mode=util.BOTH_LOG,
+                    func_name=1,
+                )
+                raise
         return return_val
 
     def get_zone_name(self):

@@ -710,11 +710,11 @@ class Test(utc.UnitTest):
                 api.uip.zone_name, api.input_flds.zone
             )
             mod = api.load_hardware_library(thermostat_type)
-            thermostat, zone = tc.thermostat_basic_checkout(
+            thermostat, zone_number = tc.thermostat_basic_checkout(
                 thermostat_type, zone_number, mod.ThermostatClass, mod.ThermostatZone
             )
             print(f"thermotat={type(thermostat)}")
-            print(f"thermotat={type(zone)}")
+            print(f"thermotat={type(zone_number)}")
         finally:
             self.Zone.get_system_switch_position = self.switch_position_backup
 

@@ -8,7 +8,6 @@ import inspect
 import os
 import socket
 import sys
-import traceback
 
 
 PACKAGE_NAME = "thermostatsupervisor"  # should match name in __init__.py
@@ -374,33 +373,24 @@ def is_host_on_local_net(host_name, ip_address=None, verbose=False):
         try:
             host_found = socket.gethostbyname(host_name)
         except socket.gaierror:
-            if verbose and False:
-                # for debug, currently disabled.
-                print(traceback.format_exc())
             return False, None
         if host_found:
             if verbose:
                 print(f"host {host_name} found at {host_found} on local net")
             return True, host_found
-        else:
-            if verbose:
-                print(f"host {host_name} is not detected on local net")
-            return False, None
+        if verbose:
+            print(f"host {host_name} is not detected on local net")
+        return False, None
 
-    else:
-        # match both IP and host if both are provided.
-        try:
-            host_found = socket.gethostbyaddr(ip_address)
-        except socket.herror:  # exception if DNS name is not set
-            if verbose and False:
-                # for debug, currently disabled.
-                print(traceback.format_exc())
-            return False, None
-        if host_name == host_found[0]:
-            return True, ip_address
-        else:
-            print(f"DEBUG: expected host={host_name}, " f"actual host={host_found}")
-            return False, None
+    # match both IP and host if both are provided.
+    try:
+        host_found = socket.gethostbyaddr(ip_address)
+    except socket.herror:  # exception if DNS name is not set
+        return False, None
+    if host_name == host_found[0]:
+        return True, ip_address
+    print(f"DEBUG: expected host={host_name}, actual host={host_found}")
+    return False, None
 
 
 # default parent_key if user_inputs are not pulled from file

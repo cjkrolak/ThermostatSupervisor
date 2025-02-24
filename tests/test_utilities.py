@@ -281,28 +281,22 @@ class MetricsTests(utc.UnitTest):
     def test_humidity_value_with_units(self):
         """Verify function attaches units as expected."""
 
-        for test_case in [44, -1, 101, 2, "13", "-13", None, "45%RH"]:
-            for precision in [0, 1, 2]:
-                for disp_unit in ["RH"]:
+        test_cases = [44, -1, 101, 2, "13", "-13", None, "45%RH"]
+        precisions = [0, 1, 2]
+        disp_units = ["RH"]
+
+        for test_case in test_cases:
+            for precision in precisions:
+                for disp_unit in disp_units:
                     print(
                         f"test case: value={test_case}, precision="
                         f"{precision}, units={disp_unit}"
                     )
-                    if test_case is None:
-                        formatted = "None"
-                    elif "%" in str(test_case):
-                        # pass-thru for already formatted values
-                        formatted = f"{test_case}"
-                    else:
-                        if isinstance(test_case, str):
-                            formatted = f"{float(test_case):.{precision}f}"
-                        else:
-                            formatted = f"{test_case:.{precision}f}"
-                    if "%" in str(test_case):
-                        # pass-thru for already formatted values
-                        expected_val = f"{test_case}"
-                    else:
-                        expected_val = f"{formatted}%{disp_unit}"
+
+                    expected_val = self._format_humidity_value(
+                        test_case, precision, disp_unit
+                    )
+
                     actual_val = util.humidity_value_with_units(
                         test_case, disp_unit, precision
                     )
@@ -317,6 +311,19 @@ class MetricsTests(utc.UnitTest):
         # test failing case
         with self.assertRaises(ValueError):
             util.humidity_value_with_units(-13, "bogus", 1)
+
+    def _format_humidity_value(self, test_case, precision, disp_unit):
+        """Helper function to format humidity values."""
+        if test_case is None:
+            return "None"
+        elif "%" in str(test_case):
+            return f"{test_case}"
+        else:
+            if isinstance(test_case, str):
+                formatted = f"{float(test_case):.{precision}f}"
+            else:
+                formatted = f"{test_case:.{precision}f}"
+            return f"{formatted}%{disp_unit}"
 
     def test_c_to_f(self):
         """Verify C to F calculations."""
