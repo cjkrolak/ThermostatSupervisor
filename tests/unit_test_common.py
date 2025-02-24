@@ -363,6 +363,55 @@ class FunctionalIntegrationTest(IntegrationTest):
                 )
             print("-" * 80)
 
+    def _test_get_metadata(self, trait=None, parameter=None):
+        """
+        Helper function to verify get_metadata().
+        """
+        # setup class instances
+        self.Thermostat, self.Zone = self.setup_thermostat_zone()
+
+        expected_return_type = dict if parameter is None else self.metadata_type
+        metadata = self.Thermostat.get_metadata(
+            zone=self.Thermostat.zone_name, trait=trait, parameter=parameter
+        )
+        self.assertIsInstance(
+            metadata,
+            expected_return_type,
+            f"parameter='{parameter}', metadata is type '{type(metadata)}', "
+            f"expected type '{expected_return_type}'",
+        )
+        return metadata
+
+    def test_get_all_meta_data(self):
+        """
+        Verify get_all_metadata().
+        """
+        metadata = self._test_get_metadata()
+        self.assertIsInstance(
+            metadata,
+            dict,
+            f"metadata is type '{type(metadata)}', "
+            f"expected type '{dict}'",
+        )
+
+    def test_get_meta_data(self):
+        """
+        Verify get_metadata().
+        """
+        # test None case
+        self._test_get_metadata()
+
+        # test parameter case
+        metadata = self._test_get_metadata(
+            trait=self.trait_field, parameter=self.metadata_field
+        )
+        self.assertIsInstance(
+            metadata,
+            self.metadata_type,
+            f"parameter='{self.metadata_field}', value={metadata}, metadata is type "
+            f"'{type(metadata)}', expected type '{self.metadata_type}'",
+        )
+
     def test_get_all_meta_data(self):
         """
         Verify get_all_metadata().
