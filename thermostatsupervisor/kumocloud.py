@@ -288,9 +288,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         except (KeyError, TypeError):
             if default_val is None:
                 # if no default val, then display detailed key error
-                util.log_msg(
-                    traceback.format_exc(), mode=util.BOTH_LOG, func_name=1
-                )
+                util.log_msg(traceback.format_exc(), mode=util.BOTH_LOG, func_name=1)
                 util.log_msg(
                     f"target key={key}, raw zone_info dict:",
                     mode=util.BOTH_LOG,
