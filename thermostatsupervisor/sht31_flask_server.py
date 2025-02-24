@@ -925,7 +925,7 @@ def create_app():
         get_remote_address,
         app=app_,
         default_limits=["200 per day", "60 per hour"],
-        )
+    )
 
     # add API functions
     api.add_resource(Controller, "/")

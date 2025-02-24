@@ -112,13 +112,16 @@ class UnitTest(unittest.TestCase, metaclass=PatchMeta):
             thermostat_type = api.uip.get_user_inputs(
                 api.uip.zone_name, api.input_flds.thermostat_type
             )
-            zone_number = api.uip.get_user_inputs(api.uip.zone_name,
-                                                  api.input_flds.zone)
+            zone_number = api.uip.get_user_inputs(
+                api.uip.zone_name, api.input_flds.zone
+            )
 
             # create class instances
             self.Thermostat, self.Zone = tc.create_thermostat_instance(
-                thermostat_type, zone_number, self.mod.ThermostatClass,
-                self.mod.ThermostatZone
+                thermostat_type,
+                zone_number,
+                self.mod.ThermostatClass,
+                self.mod.ThermostatZone,
             )
 
         # return the instances
@@ -233,13 +236,16 @@ class IntegrationTest(UnitTest):
             thermostat_type = api.uip.get_user_inputs(
                 api.uip.zone_name, api.input_flds.thermostat_type
             )
-            zone_number = api.uip.get_user_inputs(api.uip.zone_name,
-                                                  api.input_flds.zone)
+            zone_number = api.uip.get_user_inputs(
+                api.uip.zone_name, api.input_flds.zone
+            )
 
             # create class instances
             self.Thermostat, self.Zone = tc.create_thermostat_instance(
-                thermostat_type, zone_number, self.mod.ThermostatClass,
-                self.mod.ThermostatZone
+                thermostat_type,
+                zone_number,
+                self.mod.ThermostatClass,
+                self.mod.ThermostatZone,
             )
 
         # update runtime parameters
@@ -367,7 +373,8 @@ class FunctionalIntegrationTest(IntegrationTest):
         expected_return_type = dict
         metadata = self.Thermostat.get_all_metadata(zone=self.Thermostat.zone_name)
         self.assertIsInstance(
-            metadata, expected_return_type,
+            metadata,
+            expected_return_type,
             f"metadata is type '{type(metadata)}', "
             f"expected type '{expected_return_type}'",
         )
@@ -387,7 +394,8 @@ class FunctionalIntegrationTest(IntegrationTest):
             zone=self.Thermostat.zone_name, trait=trait, parameter=parameter
         )
         self.assertIsInstance(
-            metadata, expected_return_type,
+            metadata,
+            expected_return_type,
             f"parameter='{parameter}', metadata is type '{type(metadata)}', "
             f"expected type '{expected_return_type}'",
         )
@@ -400,7 +408,8 @@ class FunctionalIntegrationTest(IntegrationTest):
             zone=self.Thermostat.zone_name, trait=trait, parameter=parameter
         )
         self.assertIsInstance(
-            metadata, expected_return_type,
+            metadata,
+            expected_return_type,
             f"parameter='{parameter}', value={metadata}, metadata is type "
             f"'{type(metadata)}', expected type '{expected_return_type}'",
         )
@@ -453,14 +462,16 @@ class PerformanceIntegrationTest(IntegrationTest):
 
         # fail test if any measurement fails the limit.
         self.assertLessEqual(
-            meas_data["max"], self.timeout_limit,
+            meas_data["max"],
+            self.timeout_limit,
             f"max value observed ({meas_data['max']}) is greater than timout"
             f" setting ({self.timeout_limit})",
         )
 
         # fail test if thermostat timing margin is poor vs. 6 sigma value
         self.assertLessEqual(
-            meas_data["6sigma_upper"], self.timeout_limit,
+            meas_data["6sigma_upper"],
+            self.timeout_limit,
             f"6 sigma timing margin ({meas_data['6sigma_upper']}) is greater "
             f"than timout setting ({self.timeout_limit})",
         )
@@ -490,7 +501,8 @@ class PerformanceIntegrationTest(IntegrationTest):
         # fail test if thermostat temp repeatability is poor
         act_val = meas_data["stdev"]
         self.assertLessEqual(
-            act_val, self.temp_stdev_limit,
+            act_val,
+            self.temp_stdev_limit,
             f"temperature stdev ({act_val}) is greater than temp repeatability"
             f" limit ({self.temp_stdev_limit})",
         )
@@ -525,7 +537,8 @@ class PerformanceIntegrationTest(IntegrationTest):
         # fail test if thermostat humidity repeatability is poor
         act_val = meas_data["stdev"]
         self.assertLessEqual(
-            act_val, self.humidity_stdev_limit,
+            act_val,
+            self.humidity_stdev_limit,
             f"humidity stdev ({act_val}) is greater than humidity "
             f"repeatability limit ({self.humidity_stdev_limit})",
         )
@@ -718,7 +731,8 @@ class RuntimeParameterTest(UnitTest):
             else:
                 actual = self.uip.is_valid_file(filename)
                 self.assertIsInstance(
-                    actual, expected,
+                    actual,
+                    expected,
                     f"filename='{filename}', expected type={expected}, "
                     f"actual type={type(actual)}",
                 )
@@ -917,8 +931,10 @@ class RuntimeParameterTest(UnitTest):
                     result_dict = self.uip.validate_argv_inputs(
                         {self.parent_key: {child_key: test_dict}}
                     )
-                print(f"test case='{test_case}' did not throw an exception as expected"
-                      f", result_dict={result_dict}")
+                print(
+                    f"test case='{test_case}' did not throw an exception as expected"
+                    f", result_dict={result_dict}"
+                )
             else:
                 result_dict = self.uip.validate_argv_inputs(
                     {self.parent_key: {child_key: test_dict}}
