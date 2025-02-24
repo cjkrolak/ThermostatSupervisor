@@ -390,7 +390,7 @@ class FunctionalIntegrationTest(IntegrationTest):
         self.assertIsInstance(
             metadata,
             dict,
-            f"metadata is type '{type(metadata)}', " f"expected type '{dict}'",
+            f"metadata is type '{type(metadata)}', expected type '{dict}'",
         )
 
     def test_get_meta_data(self):
@@ -409,57 +409,6 @@ class FunctionalIntegrationTest(IntegrationTest):
             self.metadata_type,
             f"parameter='{self.metadata_field}', value={metadata}, metadata is type "
             f"'{type(metadata)}', expected type '{self.metadata_type}'",
-        )
-
-    def test_get_all_meta_data(self):
-        """
-        Verify get_all_metadata().
-        """
-        # setup class instances
-        self.Thermostat, self.Zone = self.setup_thermostat_zone()
-
-        expected_return_type = dict
-        metadata = self.Thermostat.get_all_metadata(zone=self.Thermostat.zone_name)
-        self.assertIsInstance(
-            metadata,
-            expected_return_type,
-            f"metadata is type '{type(metadata)}', "
-            f"expected type '{expected_return_type}'",
-        )
-
-    def test_get_meta_data(self):
-        """
-        Verify get_metadata().
-        """
-        # setup class instances
-        self.Thermostat, self.Zone = self.setup_thermostat_zone()
-
-        # test None case
-        trait = None
-        parameter = None
-        expected_return_type = dict
-        metadata = self.Thermostat.get_metadata(
-            zone=self.Thermostat.zone_name, trait=trait, parameter=parameter
-        )
-        self.assertIsInstance(
-            metadata,
-            expected_return_type,
-            f"parameter='{parameter}', metadata is type '{type(metadata)}', "
-            f"expected type '{expected_return_type}'",
-        )
-
-        # test parameter case
-        trait = self.trait_field
-        parameter = self.metadata_field
-        expected_return_type = self.metadata_type
-        metadata = self.Thermostat.get_metadata(
-            zone=self.Thermostat.zone_name, trait=trait, parameter=parameter
-        )
-        self.assertIsInstance(
-            metadata,
-            expected_return_type,
-            f"parameter='{parameter}', value={metadata}, metadata is type "
-            f"'{type(metadata)}', expected type '{expected_return_type}'",
         )
 
 
