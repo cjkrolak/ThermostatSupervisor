@@ -390,8 +390,7 @@ class FunctionalIntegrationTest(IntegrationTest):
         self.assertIsInstance(
             metadata,
             dict,
-            f"metadata is type '{type(metadata)}', "
-            f"expected type '{dict}'",
+            f"metadata is type '{type(metadata)}', " f"expected type '{dict}'",
         )
 
     def test_get_meta_data(self):
