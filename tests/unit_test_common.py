@@ -124,6 +124,10 @@ class UnitTest(unittest.TestCase, metaclass=PatchMeta):
                 self.mod.ThermostatZone,
             )
 
+        # update runtime parameters
+        if hasattr(self, 'Zone') and self.Zone is not None:
+            self.Zone.update_runtime_parameters()
+
         # return the instances
         return self.Thermostat, self.Zone
 
@@ -199,60 +203,24 @@ class IntegrationTest(UnitTest):
     mod = None  # module object
     mod_config = None  # config object
     unit_test_argv = []  # populated during setup
-    timeout_limit = None
-    timing_measurements = None
-    timing_func = None
-    temp_stdev_limit = None
-    temp_repeatability_measurements = None
-    humidity_stdev_limit = None
-    humidity_repeatability_measurements = None
-    poll_interval_sec = None
+    timeout_limit = 30  # 6 sigma timing upper limit in sec.
+    timing_measurements = 10  # number of timing measurements.
+    timing_func = None  # function used for timing measurement.
+    temp_stdev_limit = 1  # 1 sigma temp repeatability limit in F
+    temp_repeatability_measurements = 10  # number of temp msmts.
+    humidity_stdev_limit = 1  # 1 sigma humid repeatability limit %RH
+    humidity_repeatability_measurements = 10  # number of humid msmts.
+    poll_interval_sec = 0  # delay between repeat measurements
+
+    def setUp(self):
+        """Setup method for integration tests."""
+        super().setUp()
+        self.setup_common()
+        self.Thermostat, self.Zone = self.setup_thermostat_zone()
 
     def setup_common(self):
         """Test attributes common to all integration tests."""
-        self.timeout_limit = 30  # 6 sigma timing upper limit in sec.
-        self.timing_measurements = 10  # number of timing measurements.
-        self.timing_func = None  # function used for timing measurement.
-        self.temp_stdev_limit = 1  # 1 sigma temp repeatability limit in F
-        self.temp_repeatability_measurements = 10  # number of temp msmts.
-        self.humidity_stdev_limit = 1  # 1 sigma humid repeatability limit %RH
-        self.humidity_repeatability_measurements = 10  # number of humid msmts.
-        self.poll_interval_sec = 0  # delay between repeat measurements
-
-    def setup_thermostat_zone(self):
-        """
-        Create a Thermostat and Zone instance for integration testing.
-
-        This function is called at the beginning of integration tests.
-        If an existing thermostat/zone exists from previous test this function
-        will use the existing instances.
-        """
-        # parse runtime arguments
-        api.uip = api.UserInputs(self.unit_test_argv)
-
-        # create new Thermostat and Zone instances
-        if self.Thermostat is None and self.Zone is None:
-            util.log_msg.debug = True  # debug mode set
-            thermostat_type = api.uip.get_user_inputs(
-                api.uip.zone_name, api.input_flds.thermostat_type
-            )
-            zone_number = api.uip.get_user_inputs(
-                api.uip.zone_name, api.input_flds.zone
-            )
-
-            # create class instances
-            self.Thermostat, self.Zone = tc.create_thermostat_instance(
-                thermostat_type,
-                zone_number,
-                self.mod.ThermostatClass,
-                self.mod.ThermostatZone,
-            )
-
-        # update runtime parameters
-        self.Zone.update_runtime_parameters()
-
-        # return the instances
-        return self.Thermostat, self.Zone
+        pass  # Can be overridden in subclasses
 
 
 @unittest.skipIf(
@@ -299,6 +267,18 @@ class FunctionalIntegrationTest(IntegrationTest):
             display_battery=True,
         )
 
+    def _test_status_display(self, test_cases, display_func):
+        """Helper function to verify status display functions."""
+        for test_case in test_cases:
+            print(f"test case={test_case}")
+            result = display_func(test_case[0])
+            self.assertEqual(
+                result,
+                test_case[1],
+                f"test case={test_case[0]}, "
+                f"expected={test_case[1]}, actual={result}",
+            )
+
     def test_get_wifi_status_display(self):
         """
         Verify get_wifi_status_display on target thermostat.
@@ -310,16 +290,7 @@ class FunctionalIntegrationTest(IntegrationTest):
             (util.BOGUS_BOOL, "weak"),  # same as False
             ("bad string", "unknown"),
         ]
-
-        for test_case in test_cases:
-            print(f"test case={test_case}")
-            result = tc.get_wifi_status_display(test_case[0])
-            self.assertEqual(
-                result,
-                test_case[1],
-                f"test case={test_case[0]}, "
-                f"expected={test_case[1]}, actual={result}",
-            )
+        self._test_status_display(test_cases, tc.get_wifi_status_display)
 
     def test_get_battery_status_display(self):
         """
@@ -332,16 +303,7 @@ class FunctionalIntegrationTest(IntegrationTest):
             (util.BOGUS_BOOL, "bad"),  # same as False
             ("bad string", "unknown"),
         ]
-
-        for test_case in test_cases:
-            print(f"test case={test_case}")
-            result = tc.get_battery_status_display(test_case[0])
-            self.assertEqual(
-                result,
-                test_case[1],
-                f"test case={test_case[0]}, "
-                f"expected={test_case[1]}, actual={result}",
-            )
+        self._test_status_display(test_cases, tc.get_battery_status_display)
 
     def test_report_heating_parameters(self):
         """
