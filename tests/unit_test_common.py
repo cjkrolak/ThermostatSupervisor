@@ -125,7 +125,7 @@ class UnitTest(unittest.TestCase, metaclass=PatchMeta):
             )
 
         # update runtime parameters
-        if hasattr(self, 'Zone') and self.Zone is not None:
+        if hasattr(self, "Zone") and self.Zone is not None:
             self.Zone.update_runtime_parameters()
 
         # return the instances
