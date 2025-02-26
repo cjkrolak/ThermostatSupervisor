@@ -214,9 +214,14 @@ class IntegrationTest(UnitTest):
 
     def setUp(self):
         """Setup method for integration tests."""
+        self.setUpIntTest()  # must be called before setUp()
         super().setUp()
         self.setup_common()
         self.Thermostat, self.Zone = self.setup_thermostat_zone()
+
+    def setupIntTest(self):
+        """Test attributes specific to integration tests."""
+        pass  # Can be overridden in subclasses
 
     def setup_common(self):
         """Test attributes common to all integration tests."""
