@@ -315,7 +315,7 @@ class MetricsTests(utc.UnitTest):
     def _format_humidity_value(self, test_case, precision, disp_unit):
         """Helper function to format humidity values."""
         if test_case is None:
-            return "None"
+            return None
         elif "%" in str(test_case):
             return f"{test_case}"
         else:
