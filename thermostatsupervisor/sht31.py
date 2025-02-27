@@ -324,73 +324,74 @@ class ThermostatZone(tc.ThermostatCommonZone):
         del trait  # not needed for sht31
         try:
             response = requests.get(self.url, timeout=util.HTTP_TIMEOUT)
-        except requests.exceptions.ConnectionError as ex:
+            # Raise HTTPError for bad responses (4xx or 5xx)
+            response.raise_for_status()
+        except requests.exceptions.RequestException as ex:
             util.log_msg(
                 f"FATAL ERROR: unable to connect to sht31 thermometer at url "
-                f"'{self.url}'",
+                f"'{self.url}': {ex}",
                 mode=util.BOTH_LOG,
                 func_name=1,
             )
-            raise ex
+            if retry:
+                util.log_msg(
+                    f"waiting {self.retry_delay} seconds and retrying SHT31 "
+                    f"measurement one time...",
+                    mode=util.BOTH_LOG,
+                    func_name=1,
+                )
+                time.sleep(self.retry_delay)
+                return self.get_metadata(trait=None, parameter=parameter, retry=False)
+            raise  # re-raise the exception if retry is False
+
+        try:
+            json_response = response.json()
+        except json.decoder.JSONDecodeError as ex:
+            util.log_msg(traceback.format_exc(), mode=util.BOTH_LOG, func_name=1)
+            util.log_msg(
+                f"raw response={response.text}", mode=util.BOTH_LOG, func_name=1
+            )
+            if retry:
+                util.log_msg(
+                    f"waiting {self.retry_delay} seconds and retrying SHT31 "
+                    f"measurement one time...",
+                    mode=util.BOTH_LOG,
+                    func_name=1,
+                )
+                time.sleep(self.retry_delay)
+                return self.get_metadata(trait=None, parameter=parameter, retry=False)
+            else:
+                raise RuntimeError(
+                    "FATAL ERROR: SHT31 server is not responding"
+                ) from ex
+
         if parameter is None:
-            try:
-                return response.json()
-            except json.decoder.JSONDecodeError as ex:
-                util.log_msg(traceback.format_exc(), mode=util.BOTH_LOG, func_name=1)
-                if retry:
-                    util.log_msg(
-                        f"waiting {self.retry_delay} seconds and retrying "
-                        f"SHT31 measurement one time...",
-                        mode=util.BOTH_LOG,
-                        func_name=1,
-                    )
-                    time.sleep(self.retry_delay)
-                    return self.get_metadata(parameter=None, retry=False)
-                else:
-                    raise RuntimeError(
-                        "FATAL ERROR: SHT31 server is not responding"
-                    ) from ex
-        else:
-            try:
-                return response.json()[parameter]
-            except json.decoder.JSONDecodeError as ex:
-                util.log_msg(traceback.format_exc(), mode=util.BOTH_LOG, func_name=1)
-                if retry:
-                    util.log_msg(
-                        f"waiting {self.retry_delay} seconds and retrying "
-                        f"SHT31 measurement one time...",
-                        mode=util.BOTH_LOG,
-                        func_name=1,
-                    )
-                    time.sleep(self.retry_delay)
-                    return self.get_metadata(parameter=parameter, retry=False)
-                else:
-                    raise RuntimeError(
-                        "FATAL ERROR: SHT31 server is not responding"
-                    ) from ex
-            except KeyError as ex:
-                util.log_msg(traceback.format_exc(), mode=util.BOTH_LOG, func_name=1)
-                if "message" in response.json():
-                    util.log_msg(
-                        f"WARNING in Flask response: "
-                        f"'{response.json()['message']}'",
-                        mode=util.BOTH_LOG,
-                        func_name=1,
-                    )
-                if retry:
-                    util.log_msg(
-                        f"waiting {self.retry_delay} seconds and retrying "
-                        f"SHT31 measurement one time...",
-                        mode=util.BOTH_LOG,
-                        func_name=1,
-                    )
-                    time.sleep(self.retry_delay)
-                    return self.get_metadata(parameter=parameter, retry=False)
-                else:
-                    raise KeyError(
-                        f"FATAL ERROR: SHT31 server response did not contain "
-                        f"key '{parameter}', raw response={response.json()}"
-                    ) from ex
+            return json_response
+
+        try:
+            return json_response[parameter]
+        except KeyError as ex:
+            util.log_msg(traceback.format_exc(), mode=util.BOTH_LOG, func_name=1)
+            if "message" in json_response:
+                util.log_msg(
+                    f"WARNING in Flask response: " f"'{json_response['message']}'",
+                    mode=util.BOTH_LOG,
+                    func_name=1,
+                )
+            if retry:
+                util.log_msg(
+                    f"waiting {self.retry_delay} seconds and retrying SHT31 "
+                    f"measurement one time...",
+                    mode=util.BOTH_LOG,
+                    func_name=1,
+                )
+                time.sleep(self.retry_delay)
+                return self.get_metadata(trait=None, parameter=parameter, retry=False)
+            else:
+                raise KeyError(
+                    f"FATAL ERROR: SHT31 server response did not contain key "
+                    f"'{parameter}', raw response={json_response}"
+                ) from ex
 
     def get_display_temp(self) -> float:
         """

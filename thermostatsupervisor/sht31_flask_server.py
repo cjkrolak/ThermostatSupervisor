@@ -29,8 +29,8 @@ except ImportError as ex:
 
 # third party imports
 from flask import Flask, jsonify, request
-from flask_limiter import Limiter
-from flask_limiter.util import get_remote_address
+from flask_limiter import Limiter  # noqa F405
+from flask_limiter.util import get_remote_address  # noqa F405
 from flask_restful import Resource, Api  # noqa F405
 from flask_wtf.csrf import CSRFProtect
 import munch

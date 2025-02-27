@@ -26,7 +26,7 @@ class EnvironmentTests(utc.UnitTest):
         Verify is_interactive_environment().
         """
         return_val = env.is_interactive_environment()
-        self.assertTrue(isinstance(return_val, bool))
+        self.assertIsInstance(return_val, bool, "return value is not a boolean")
 
     def test_get_env_variable(self):
         """
@@ -78,7 +78,7 @@ class EnvironmentTests(utc.UnitTest):
         Verify is_windows_environment() returns a bool.
         """
         return_val = env.is_windows_environment()
-        self.assertTrue(isinstance(return_val, bool))
+        self.assertIsInstance(return_val, bool, "return value is not a boolean")
 
     def test_is_raspberrypi_environment(self):
         """

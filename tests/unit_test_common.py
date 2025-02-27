@@ -31,7 +31,7 @@ ENABLE_SUPERVISE_INTEGRATION_TESTS = True  # enable supervise int tests
 ENABLE_FLASK_INTEGRATION_TESTS = True  # enable flask int tests
 ENABLE_KUMOLOCAL_TESTS = False  # Kumolocal is local net only
 ENABLE_MMM_TESTS = False  # mmm50 is local net only
-ENABLE_SHT31_TESTS = False  # sht31 can fail on occasion
+ENABLE_SHT31_TESTS = True  # sht31 can fail on occasion
 ENABLE_BLINK_TESTS = (
     False and not env.is_azure_environment()
 )  # Blink cameras, TODO #638
@@ -78,7 +78,7 @@ class UnitTest(unittest.TestCase, metaclass=PatchMeta):
 
     mod = None  # imported module
     thermostat_type = None  # thermostat type
-    zone = None  # zone number
+    zone_number = None  # zone number
     Thermostat = None  # thermostat instance
     Zone = None  # zone instance
 
@@ -90,7 +90,7 @@ class UnitTest(unittest.TestCase, metaclass=PatchMeta):
         self.print_test_name()
         self.unit_test_argv = unit_test_argv
         self.thermostat_type = unit_test_argv[1]
-        self.zone = unit_test_argv[2]
+        self.zone_number = unit_test_argv[2]
         util.unit_test_mode = True
 
     def tearDown(self):
@@ -112,14 +112,23 @@ class UnitTest(unittest.TestCase, metaclass=PatchMeta):
             thermostat_type = api.uip.get_user_inputs(
                 api.uip.zone_name, api.input_flds.thermostat_type
             )
-            zone = api.uip.get_user_inputs(api.uip.zone_name, api.input_flds.zone)
+            zone_number = api.uip.get_user_inputs(
+                api.uip.zone_name, api.input_flds.zone
+            )
 
             # create class instances
             self.Thermostat, self.Zone = tc.create_thermostat_instance(
-                thermostat_type, zone, self.mod.ThermostatClass, self.mod.ThermostatZone
+                thermostat_type,
+                zone_number,
+                self.mod.ThermostatClass,
+                self.mod.ThermostatZone,
             )
 
-        # return instances
+        # update runtime parameters
+        if hasattr(self, "Zone") and self.Zone is not None:
+            self.Zone.update_runtime_parameters()
+
+        # return the instances
         return self.Thermostat, self.Zone
 
     def setup_mock_thermostat_zone(self):
@@ -194,55 +203,29 @@ class IntegrationTest(UnitTest):
     mod = None  # module object
     mod_config = None  # config object
     unit_test_argv = []  # populated during setup
-    timeout_limit = None
-    timing_measurements = None
-    timing_func = None
-    temp_stdev_limit = None
-    temp_repeatability_measurements = None
-    humidity_stdev_limit = None
-    humidity_repeatability_measurements = None
-    poll_interval_sec = None
+    timeout_limit = 30  # 6 sigma timing upper limit in sec.
+    timing_measurements = 10  # number of timing measurements.
+    timing_func = None  # function used for timing measurement.
+    temp_stdev_limit = 1  # 1 sigma temp repeatability limit in F
+    temp_repeatability_measurements = 10  # number of temp msmts.
+    humidity_stdev_limit = 1  # 1 sigma humid repeatability limit %RH
+    humidity_repeatability_measurements = 10  # number of humid msmts.
+    poll_interval_sec = 0  # delay between repeat measurements
+
+    def setUp(self):
+        """Setup method for integration tests."""
+        self.setUpIntTest()  # must be called before setUp()
+        super().setUp()
+        self.setup_common()
+        self.Thermostat, self.Zone = self.setup_thermostat_zone()
+
+    def setupIntTest(self):
+        """Test attributes specific to integration tests."""
+        pass  # Can be overridden in subclasses
 
     def setup_common(self):
         """Test attributes common to all integration tests."""
-        self.timeout_limit = 30  # 6 sigma timing upper limit in sec.
-        self.timing_measurements = 10  # number of timing measurements.
-        self.timing_func = None  # function used for timing measurement.
-        self.temp_stdev_limit = 1  # 1 sigma temp repeatability limit in F
-        self.temp_repeatability_measurements = 10  # number of temp msmts.
-        self.humidity_stdev_limit = 1  # 1 sigma humid repeatability limit %RH
-        self.humidity_repeatability_measurements = 10  # number of humid msmts.
-        self.poll_interval_sec = 0  # delay between repeat measurements
-
-    def setup_thermostat_zone(self):
-        """
-        Create a Thermostat and Zone instance for integration testing.
-
-        This function is called at the beginning of integration tests.
-        If an existing thermostat/zone exists from previous test this function
-        will use the existing instances.
-        """
-        # parse runtime arguments
-        api.uip = api.UserInputs(self.unit_test_argv)
-
-        # create new Thermostat and Zone instances
-        if self.Thermostat is None and self.Zone is None:
-            util.log_msg.debug = True  # debug mode set
-            thermostat_type = api.uip.get_user_inputs(
-                api.uip.zone_name, api.input_flds.thermostat_type
-            )
-            zone = api.uip.get_user_inputs(api.uip.zone_name, api.input_flds.zone)
-
-            # create class instances
-            self.Thermostat, self.Zone = tc.create_thermostat_instance(
-                thermostat_type, zone, self.mod.ThermostatClass, self.mod.ThermostatZone
-            )
-
-        # update runtime parameters
-        self.Zone.update_runtime_parameters()
-
-        # return instances
-        return self.Thermostat, self.Zone
+        pass  # Can be overridden in subclasses
 
 
 @unittest.skipIf(
@@ -289,6 +272,18 @@ class FunctionalIntegrationTest(IntegrationTest):
             display_battery=True,
         )
 
+    def _test_status_display(self, test_cases, display_func):
+        """Helper function to verify status display functions."""
+        for test_case in test_cases:
+            print(f"test case={test_case}")
+            result = display_func(test_case[0])
+            self.assertEqual(
+                result,
+                test_case[1],
+                f"test case={test_case[0]}, "
+                f"expected={test_case[1]}, actual={result}",
+            )
+
     def test_get_wifi_status_display(self):
         """
         Verify get_wifi_status_display on target thermostat.
@@ -300,16 +295,7 @@ class FunctionalIntegrationTest(IntegrationTest):
             (util.BOGUS_BOOL, "weak"),  # same as False
             ("bad string", "unknown"),
         ]
-
-        for test_case in test_cases:
-            print(f"test case={test_case}")
-            result = tc.get_wifi_status_display(test_case[0])
-            self.assertEqual(
-                result,
-                test_case[1],
-                f"test case={test_case[0]}, "
-                f"expected={test_case[1]}, actual={result}",
-            )
+        self._test_status_display(test_cases, tc.get_wifi_status_display)
 
     def test_get_battery_status_display(self):
         """
@@ -322,16 +308,7 @@ class FunctionalIntegrationTest(IntegrationTest):
             (util.BOGUS_BOOL, "bad"),  # same as False
             ("bad string", "unknown"),
         ]
-
-        for test_case in test_cases:
-            print(f"test case={test_case}")
-            result = tc.get_battery_status_display(test_case[0])
-            self.assertEqual(
-                result,
-                test_case[1],
-                f"test case={test_case[0]}, "
-                f"expected={test_case[1]}, actual={result}",
-            )
+        self._test_status_display(test_cases, tc.get_battery_status_display)
 
     def test_report_heating_parameters(self):
         """
@@ -353,52 +330,52 @@ class FunctionalIntegrationTest(IntegrationTest):
                 )
             print("-" * 80)
 
-    def test_get_all_meta_data(self):
+    def _test_get_metadata(self, trait=None, parameter=None):
         """
-        Verify get_all_metadata().
+        Helper function to verify get_metadata().
         """
         # setup class instances
         self.Thermostat, self.Zone = self.setup_thermostat_zone()
 
-        expected_return_type = dict
-        metadata = self.Thermostat.get_all_metadata(zone=self.Thermostat.zone_name)
-        self.assertTrue(
-            isinstance(metadata, expected_return_type),
-            f"metadata is type '{type(metadata)}', "
+        expected_return_type = dict if parameter is None else self.metadata_type
+        metadata = self.Thermostat.get_metadata(
+            zone=self.Thermostat.zone_name, trait=trait, parameter=parameter
+        )
+        self.assertIsInstance(
+            metadata,
+            expected_return_type,
+            f"parameter='{parameter}', metadata is type '{type(metadata)}', "
             f"expected type '{expected_return_type}'",
+        )
+        return metadata
+
+    def test_get_all_meta_data(self):
+        """
+        Verify get_all_metadata().
+        """
+        metadata = self._test_get_metadata()
+        self.assertIsInstance(
+            metadata,
+            dict,
+            f"metadata is type '{type(metadata)}', expected type '{dict}'",
         )
 
     def test_get_meta_data(self):
         """
         Verify get_metadata().
         """
-        # setup class instances
-        self.Thermostat, self.Zone = self.setup_thermostat_zone()
-
         # test None case
-        trait = None
-        parameter = None
-        expected_return_type = dict
-        metadata = self.Thermostat.get_metadata(
-            zone=self.Thermostat.zone_name, trait=trait, parameter=parameter
-        )
-        self.assertTrue(
-            isinstance(metadata, expected_return_type),
-            f"parameter='{parameter}', metadata is type '{type(metadata)}', "
-            f"expected type '{expected_return_type}'",
-        )
+        self._test_get_metadata()
 
         # test parameter case
-        trait = self.trait_field
-        parameter = self.metadata_field
-        expected_return_type = self.metadata_type
-        metadata = self.Thermostat.get_metadata(
-            zone=self.Thermostat.zone_name, trait=trait, parameter=parameter
+        metadata = self._test_get_metadata(
+            trait=self.trait_field, parameter=self.metadata_field
         )
-        self.assertTrue(
-            isinstance(metadata, expected_return_type),
-            f"parameter='{parameter}', value={metadata}, metadata is type "
-            f"'{type(metadata)}', expected type '{expected_return_type}'",
+        self.assertIsInstance(
+            metadata,
+            self.metadata_type,
+            f"parameter='{self.metadata_field}', value={metadata}, metadata is type "
+            f"'{type(metadata)}', expected type '{self.metadata_type}'",
         )
 
 
@@ -448,15 +425,17 @@ class PerformanceIntegrationTest(IntegrationTest):
         ppp.pprint(meas_data)
 
         # fail test if any measurement fails the limit.
-        self.assertTrue(
-            meas_data["max"] <= self.timeout_limit,
+        self.assertLessEqual(
+            meas_data["max"],
+            self.timeout_limit,
             f"max value observed ({meas_data['max']}) is greater than timout"
             f" setting ({self.timeout_limit})",
         )
 
         # fail test if thermostat timing margin is poor vs. 6 sigma value
-        self.assertTrue(
-            meas_data["6sigma_upper"] <= self.timeout_limit,
+        self.assertLessEqual(
+            meas_data["6sigma_upper"],
+            self.timeout_limit,
             f"6 sigma timing margin ({meas_data['6sigma_upper']}) is greater "
             f"than timout setting ({self.timeout_limit})",
         )
@@ -485,8 +464,9 @@ class PerformanceIntegrationTest(IntegrationTest):
 
         # fail test if thermostat temp repeatability is poor
         act_val = meas_data["stdev"]
-        self.assertTrue(
-            act_val <= self.temp_stdev_limit,
+        self.assertLessEqual(
+            act_val,
+            self.temp_stdev_limit,
             f"temperature stdev ({act_val}) is greater than temp repeatability"
             f" limit ({self.temp_stdev_limit})",
         )
@@ -520,8 +500,9 @@ class PerformanceIntegrationTest(IntegrationTest):
 
         # fail test if thermostat humidity repeatability is poor
         act_val = meas_data["stdev"]
-        self.assertTrue(
-            act_val <= self.humidity_stdev_limit,
+        self.assertLessEqual(
+            act_val,
+            self.humidity_stdev_limit,
             f"humidity stdev ({act_val}) is greater than humidity "
             f"repeatability limit ({self.humidity_stdev_limit})",
         )
@@ -712,8 +693,9 @@ class RuntimeParameterTest(UnitTest):
                     self.uip.is_valid_file(filename)
             else:
                 actual = self.uip.is_valid_file(filename)
-                self.assertTrue(
-                    isinstance(actual, expected),
+                self.assertIsInstance(
+                    actual,
+                    expected,
                     f"filename='{filename}', expected type={expected}, "
                     f"actual type={type(actual)}",
                 )
@@ -912,6 +894,10 @@ class RuntimeParameterTest(UnitTest):
                     result_dict = self.uip.validate_argv_inputs(
                         {self.parent_key: {child_key: test_dict}}
                     )
+                print(
+                    f"test case='{test_case}' did not throw an exception as expected"
+                    f", result_dict={result_dict}"
+                )
             else:
                 result_dict = self.uip.validate_argv_inputs(
                     {self.parent_key: {child_key: test_dict}}
