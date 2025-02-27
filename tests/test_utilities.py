@@ -300,12 +300,13 @@ class MetricsTests(utc.UnitTest):
                     actual_val = util.humidity_value_with_units(
                         test_case, disp_unit, precision
                     )
+                    print(f"expected={expected_val}, actual={actual_val}")
                     self.assertEqual(
                         expected_val,
                         actual_val,
                         f"test case: {test_case}, expected_val="
-                        f"{expected_val}, actual_val="
-                        f"{actual_val}",
+                        f"{expected_val}, type {type(expected_val)}, actual_val="
+                        f"{actual_val}, type {type(actual_val)}"
                     )
 
         # test failing case
@@ -315,7 +316,7 @@ class MetricsTests(utc.UnitTest):
     def _format_humidity_value(self, test_case, precision, disp_unit):
         """Helper function to format humidity values."""
         if test_case is None:
-            return None
+            return "None"  # cast to string
         elif "%" in str(test_case):
             return f"{test_case}"
         else:

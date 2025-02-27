@@ -272,7 +272,7 @@ def humidity_value_with_units(raw, disp_unit=" RH", precision=0) -> str:
             pass
 
     if raw is None:
-        formatted = f"{raw}"
+        return f"{raw}"  # pass-thru
     elif precision == 0:
         formatted = f"{raw:.0f}"
     else:

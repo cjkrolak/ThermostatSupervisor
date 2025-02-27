@@ -689,14 +689,12 @@ class RuntimeParameterTest(UnitTest):
             filename, expected = test_case
             print(f"test case: filename='{filename}', expected={expected}")
             if expected != TextIOWrapper:
-                with self.assertRaises(Exception) as context:
+                with self.assertRaises(expected):
                     self.uip.is_valid_file(filename)
-                self.assertIsInstance(context.exception, expected)
             else:
                 actual = self.uip.is_valid_file(filename)
                 self.assertIsInstance(
-                    actual,
-                    expected,
+                    actual, expected,
                     f"filename='{filename}', expected type={expected}, "
                     f"actual type={type(actual)}",
                 )
