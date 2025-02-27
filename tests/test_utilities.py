@@ -306,7 +306,7 @@ class MetricsTests(utc.UnitTest):
                         actual_val,
                         f"test case: {test_case}, expected_val="
                         f"{expected_val}, type {type(expected_val)}, actual_val="
-                        f"{actual_val}, type {type(actual_val)}"
+                        f"{actual_val}, type {type(actual_val)}",
                     )
 
         # test failing case

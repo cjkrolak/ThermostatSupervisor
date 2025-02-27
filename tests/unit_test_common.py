@@ -694,7 +694,8 @@ class RuntimeParameterTest(UnitTest):
             else:
                 actual = self.uip.is_valid_file(filename)
                 self.assertIsInstance(
-                    actual, expected,
+                    actual,
+                    expected,
                     f"filename='{filename}', expected type={expected}, "
                     f"actual type={type(actual)}",
                 )
