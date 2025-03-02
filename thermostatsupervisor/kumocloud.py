@@ -440,9 +440,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         returns:
             (int): eco mode, 1=enabled, 0=disabled.
         """
-        return int(
-            self.get_parameter("energy_save", "reportedInitialSettings")
-        )
+        return int(self.get_parameter("energy_save", "reportedInitialSettings"))
 
     def is_off_mode(self) -> int:
         """
