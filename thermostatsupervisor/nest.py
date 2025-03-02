@@ -314,7 +314,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         self.system_switch_position[tc.ThermostatCommonZone.OFF_MODE] = "OFF"
         self.system_switch_position[tc.ThermostatCommonZone.DRY_MODE] = "not supported"
         self.system_switch_position[tc.ThermostatCommonZone.AUTO_MODE] = "HEATCOOL"
-        self.system_switch_position[tc.ThermostatCommonZone.ECO_MODE] = "ECO"
+        self.system_switch_position[tc.ThermostatCommonZone.ECO_MODE] = "MANUAL_ECO"
 
         # zone info
         self.verbose = verbose
@@ -551,7 +551,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         """Return 1 if eco relay is active, else 0."""
         self.refresh_zone_info()
         return int(
-            self.get_trait("ThermostatHvac")["status"] in ("ECO")
+            self.get_trait("ThermostatMode")["mode"] in ("HEAT", "COOL", "HEATCOOL")
             and self.is_eco_mode()
         )
 
