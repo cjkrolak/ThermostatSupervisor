@@ -45,8 +45,8 @@ class IntegrationTest(utc.UnitTest):
         no_test_list = ["i2c_recovery", "reset"]
 
         # no server outptu for these pages
-        no_server_output_list = ["print_block_list", "clear_block_list"]
-
+        no_server_output_list = []
+        no_key_check_list = ["print_block_list", "clear_block_list"]
         # loopback does not work so use local sht31 zone if testing
         # on the local net.  If not, use the DNS name.
         zone = sht31_config.get_preferred_zone()
@@ -82,23 +82,24 @@ class IntegrationTest(utc.UnitTest):
             if test_case in no_server_output_list:
                 self.assertTrue(
                     isinstance(return_data, type(None)),
-                    "return data is not NoneType, return type: " f"{type(return_data)}",
+                    f"return data for test case {test_case} is not NoneType, "
+                    f"return type: {type(return_data)}",
                 )
-                continue  # Skip key check for these cases
             else:
                 self.assertTrue(
                     isinstance(return_data, dict),
-                    "return data is not a dictionary, return type: "
-                    f"{type(return_data)}",
+                    f"return data for test case {test_case} is not a dictionary, "
+                    f"return type: {type(return_data)}",
                 )
 
             # validate key as proof of correct return page
-            expected_key = expected_keys.get(test_case, "bogus")
-            self.assertTrue(
-                expected_key in return_data,
-                f"test_case '{test_case}': key '{expected_key}' "
-                f"was not found in return data: {return_data}",
-            )
+            if test_case not in no_key_check_list:
+                expected_key = expected_keys.get(test_case, "bogus")
+                self.assertTrue(
+                    expected_key in return_data,
+                    f"test_case '{test_case}': key '{expected_key}' "
+                    f"was not found in return data: {return_data}",
+                )
 
     def test_sht31_flask_server(self):
         """

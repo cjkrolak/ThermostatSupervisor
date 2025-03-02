@@ -126,7 +126,6 @@ class ThermostatClass(tc.ThermostatCommon):
             print(traceback.format_exc())
             raise
         # TODO is there a chance that meta data changes?
-        print(f"DEBUG: nest devices: {self.devices}, type={type(self.devices)}")
         return self.devices
 
     def refresh_oauth_token(self):
@@ -315,6 +314,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         self.system_switch_position[tc.ThermostatCommonZone.OFF_MODE] = "OFF"
         self.system_switch_position[tc.ThermostatCommonZone.DRY_MODE] = "not supported"
         self.system_switch_position[tc.ThermostatCommonZone.AUTO_MODE] = "HEATCOOL"
+        self.system_switch_position[tc.ThermostatCommonZone.ECO_MODE] = "MANUAL_ECO"
 
         # zone info
         self.verbose = verbose
@@ -495,6 +495,21 @@ class ThermostatZone(tc.ThermostatCommonZone):
             == self.system_switch_position[tc.ThermostatCommonZone.AUTO_MODE]
         )
 
+    def is_eco_mode(self) -> int:
+        """
+        Refresh the cached zone information and return the eco mode.
+
+        inputs:
+            None
+        returns:
+            (int): auto mode, 1=enabled, 0=disabled.
+        """
+        self.refresh_zone_info()
+        return int(
+            self.get_trait("ThermostatEco")["mode"]
+            == self.system_switch_position[tc.ThermostatCommonZone.ECO_MODE]
+        )
+
     def is_off_mode(self) -> int:
         """
         Refresh the cached zone information and return the off mode.
@@ -513,7 +528,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
     def is_heating(self):
         """Return 1 if heating relay is active, else 0."""
         self.refresh_zone_info()
-        return int(self.get_trait("ThermostatHvac")["status"] == "HEATTING")
+        return int(self.get_trait("ThermostatHvac")["status"] == "HEATING")
 
     def is_cooling(self):
         """Return 1 if cooling relay is active, else 0."""
@@ -530,6 +545,14 @@ class ThermostatZone(tc.ThermostatCommonZone):
         return int(
             self.get_trait("ThermostatHvac")["status"] in ("HEATING", "COOLING")
             and self.is_auto_mode()
+        )
+
+    def is_eco(self):
+        """Return 1 if eco relay is active, else 0."""
+        self.refresh_zone_info()
+        return int(
+            self.get_trait("ThermostatMode")["mode"] in ("HEAT", "COOL", "HEATCOOL")
+            and self.is_eco_mode()
         )
 
     def is_fanning(self):
@@ -650,7 +673,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         returns:
             (int): cooling set point in °F.
         """
-        return NotImplementedError(
+        raise NotImplementedError(
             "Safety Temperature is not yet available through nest API"
         )
 

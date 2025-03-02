@@ -106,13 +106,14 @@ class ThermostatCommonZone:
     AUTO_MODE = "AUTO_MODE"
     DRY_MODE = "DRY_MODE"
     FAN_MODE = "FAN_MODE"
+    ECO_MODE = "MANUAL_ECO"
     UNKNOWN_MODE = "UNKNOWN_MODE"  # bypass set mode or unable to detect
 
     # modes where heat is applied
-    heat_modes = [HEAT_MODE, AUTO_MODE]
+    heat_modes = [HEAT_MODE, AUTO_MODE, ECO_MODE]
 
     # modes where cooling is applied
-    cool_modes = [COOL_MODE, DRY_MODE, AUTO_MODE]
+    cool_modes = [COOL_MODE, DRY_MODE, AUTO_MODE, ECO_MODE]
 
     # modes in which setpoints apply
     controlled_modes = [HEAT_MODE, AUTO_MODE, COOL_MODE]
@@ -126,6 +127,7 @@ class ThermostatCommonZone:
         DRY_MODE: util.BOGUS_INT - 4,
         FAN_MODE: util.BOGUS_INT - 5,
         OFF_MODE: util.BOGUS_INT - 6,
+        ECO_MODE: util.BOGUS_INT - 7,
     }
     max_scheduled_heat_allowed = 74  # warn if scheduled heat value exceeds.
     min_scheduled_cool_allowed = 68  # warn if scheduled cool value exceeds.
@@ -229,6 +231,16 @@ class ThermostatCommonZone:
             self.get_setpoint_func = self.function_not_supported
         elif self.is_auto_mode():
             self.current_mode = self.AUTO_MODE
+            self.current_setpoint = util.BOGUS_INT
+            self.schedule_setpoint = util.BOGUS_INT
+            self.tolerance_sign = 1
+            self.operator = operator.ne
+            self.global_limit = util.BOGUS_INT
+            self.global_operator = operator.ne
+            self.revert_setpoint_func = self.function_not_supported
+            self.get_setpoint_func = self.function_not_supported
+        elif self.is_eco_mode():
+            self.current_mode = self.ECO_MODE
             self.current_setpoint = util.BOGUS_INT
             self.schedule_setpoint = util.BOGUS_INT
             self.tolerance_sign = 1
@@ -402,6 +414,8 @@ class ThermostatCommonZone:
             self.current_mode = self.DRY_MODE
         elif self.is_auto_mode():
             self.current_mode = self.AUTO_MODE
+        elif self.is_eco_mode():
+            self.current_mode = self.ECO_MODE
         elif self.is_fan_mode():
             self.current_mode = self.FAN_MODE
         elif self.is_off_mode():
@@ -483,6 +497,13 @@ class ThermostatCommonZone:
             == self.system_switch_position[self.AUTO_MODE]
         )
 
+    def is_eco_mode(self):
+        """Return True if in eco mode."""
+        return (
+            self.get_system_switch_position()
+            == self.system_switch_position[self.ECO_MODE]
+        )
+
     def is_fan_mode(self):
         """Return 1 if fan mode enabled, else 0."""
         return (
@@ -515,6 +536,10 @@ class ThermostatCommonZone:
 
     def is_auto(self):  # noqa R0201
         """Return 1 if auto relay is active, else 0."""
+        return util.BOGUS_INT
+
+    def is_eco(self):  # noqa R0201
+        """Return 1 if eco relay is active, else 0."""
         return util.BOGUS_INT
 
     def is_fanning(self):  # noqa R0201
@@ -1011,6 +1036,11 @@ class ThermostatCommonZone:
         )
         util.log_msg(
             f"auto mode={self.is_auto_mode()} " f"(actively auto={self.is_auto()})",
+            mode=mode,
+            func_name=1,
+        )
+        util.log_msg(
+            f"eco mode={self.is_eco_mode()} " f"(actively eco={self.is_eco()})",
             mode=mode,
             func_name=1,
         )
