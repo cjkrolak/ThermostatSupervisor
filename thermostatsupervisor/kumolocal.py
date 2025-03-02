@@ -379,6 +379,17 @@ class ThermostatZone(tc.ThermostatCommonZone):
             == self.system_switch_position[tc.ThermostatCommonZone.AUTO_MODE]
         )
 
+    def is_eco_mode(self) -> int:
+        """
+        Refresh the cached zone information and return the eco mode.
+
+        inputs:
+            None
+        returns:
+            (int): eco mode, 1=enabled, 0=disabled.
+        """
+        return int(0)  # not supported
+
     def is_off_mode(self) -> int:
         """
         Refresh the cached zone information and return the off mode.
@@ -421,6 +432,17 @@ class ThermostatZone(tc.ThermostatCommonZone):
         """Return 1 if auto relay is active, else 0."""
         return int(
             self.is_auto_mode()
+            and self.is_power_on()
+            and (
+                self.get_cool_setpoint_raw() < self.get_display_temp()
+                or self.get_heat_setpoint_raw() > self.get_display_temp()
+            )
+        )
+
+    def is_eco(self):
+        """Return 1 if eco relay is active, else 0."""
+        return int(
+            self.is_eco_mode()
             and self.is_power_on()
             and (
                 self.get_cool_setpoint_raw() < self.get_display_temp()

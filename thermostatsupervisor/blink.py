@@ -343,6 +343,10 @@ class ThermostatZone(tc.ThermostatCommonZone):
         """Return the auto mode."""
         return 0  # not applicable
 
+    def is_eco_mode(self) -> int:
+        """Return the auto mode."""
+        return 0  # not applicable
+
     def is_fan_mode(self) -> int:
         """Return the fan mode."""
         return 0  # not applicable
@@ -365,6 +369,10 @@ class ThermostatZone(tc.ThermostatCommonZone):
 
     def is_auto(self) -> int:
         """Return 1 if auto relay is active, else 0."""
+        return 0  # not applicable
+
+    def is_eco(self) -> int:
+        """Return 1 if eco relay is active, else 0."""
         return 0  # not applicable
 
     def is_fanning(self) -> int:

@@ -343,6 +343,17 @@ class ThermostatZone(tc.ThermostatCommonZone):
         """
         return int(self._get_tmode() == self.system_switch_position[self.AUTO_MODE])
 
+    def is_eco_mode(self) -> int:
+        """
+        Return the eco mode.
+
+        inputs:
+            None
+        returns:
+            (int): 1=eco mode enabled, 0=disabled.
+        """
+        return int(self._get_tmode() == self.system_switch_position[self.ECO_MODE])
+
     def _get_tmode(self, retries=1):
         """
         Get tmode from device, retry on Attribute error.
@@ -410,6 +421,10 @@ class ThermostatZone(tc.ThermostatCommonZone):
 
     def is_auto(self):
         """Return 1 if auto relay is active, else 0."""
+        return 0  # not applicable
+
+    def is_eco(self):
+        """Return 1 if eco relay is active, else 0."""
         return 0  # not applicable
 
     def is_fanning(self):

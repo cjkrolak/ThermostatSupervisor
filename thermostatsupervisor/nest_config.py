@@ -33,6 +33,7 @@ supported_configs = {
         "DRY_MODE",
         "AUTO_MODE",
         "UNKNOWN_MODE",
+        "MANUAL_ECO",
     ],
 }
 
