@@ -100,79 +100,103 @@ class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
         # return the target zone object
         return self.device_id
 
-    def get_kumocloud_thermostat_metadata(self, zone=None, debug=False):
+    def get_kumocloud_thermostat_metadata(self, zone=None, debug=False, retry=False):
         """Get all thermostat meta data for zone from kumocloud.
 
         inputs:
             zone(): specified zone, if None will print all zones.
             debug(bool): debug flag.
+            retry(bool): if True will retry with extended retry mechanism
         returns:
             (dict): JSON dict
         """
         del debug  # unused
-        try:
-            serial_num_lst = list(self.get_indoor_units())  # will query unit
-        except UnboundLocalError:  # patch for issue #205
+        
+        def _get_metadata_internal():
+            try:
+                serial_num_lst = list(self.get_indoor_units())  # will query unit
+            except UnboundLocalError:  # patch for issue #205
+                util.log_msg(
+                    "WARNING: Kumocloud refresh failed due to timeout",
+                    mode=util.BOTH_LOG,
+                    func_name=1,
+                )
+                time.sleep(10)
+                serial_num_lst = list(self.get_indoor_units())  # retry
             util.log_msg(
-                "WARNING: Kumocloud refresh failed due to timeout",
-                mode=util.BOTH_LOG,
-                func_name=1,
-            )
-            time.sleep(10)
-            serial_num_lst = list(self.get_indoor_units())  # retry
-        util.log_msg(
-            f"indoor unit serial numbers: {str(serial_num_lst)}",
-            mode=util.DEBUG_LOG + util.STDOUT_LOG,
-            func_name=1,
-        )
-
-        # validate serial number list
-        if not serial_num_lst:
-            raise tc.AuthenticationError(
-                "pykumo meta data is blank, probably"
-                " due to an Authentication Error,"
-                " check your credentials."
-            )
-
-        for serial_number in serial_num_lst:
-            util.log_msg(
-                f"Unit {self.get_name(serial_number)}: address: "
-                f"{self.get_address(serial_number)} credentials: "
-                f"{self.get_credentials(serial_number)}",
+                f"indoor unit serial numbers: {str(serial_num_lst)}",
                 mode=util.DEBUG_LOG + util.STDOUT_LOG,
                 func_name=1,
             )
-        if zone is None:
-            # returned cached raw data for all zones
-            raw_json = self.get_raw_json()  # does not fetch results,
+
+            # validate serial number list
+            if not serial_num_lst:
+                raise tc.AuthenticationError(
+                    "pykumo meta data is blank, probably"
+                    " due to an Authentication Error,"
+                    " check your credentials."
+                )
+
+            for serial_number in serial_num_lst:
+                util.log_msg(
+                    f"Unit {self.get_name(serial_number)}: address: "
+                    f"{self.get_address(serial_number)} credentials: "
+                    f"{self.get_credentials(serial_number)}",
+                    mode=util.DEBUG_LOG + util.STDOUT_LOG,
+                    func_name=1,
+                )
+            if zone is None:
+                # returned cached raw data for all zones
+                raw_json = self.get_raw_json()  # does not fetch results,
+            else:
+                # return cached raw data for specified zone
+                try:
+                    self.serial_number = serial_num_lst[zone]
+                except IndexError as exc:
+                    raise IndexError(
+                        f"ERROR: Invalid Zone, index ({zone}) does "
+                        "not exist in serial number list "
+                        f"({serial_num_lst})"
+                    ) from exc
+                raw_json = self.get_raw_json()[2]["children"][0]["zoneTable"][
+                    serial_num_lst[zone]
+                ]
+            return raw_json
+        
+        if retry:
+            # Use standardized extended retry mechanism
+            return util.execute_with_extended_retries(
+                func=_get_metadata_internal,
+                thermostat_type=getattr(self, 'thermostat_type', 'KumoLocal'),
+                zone_name=str(getattr(self, 'zone_name', zone)),
+                number_of_retries=5,
+                initial_retry_delay_sec=60,
+                exception_types=(
+                    UnboundLocalError,
+                    tc.AuthenticationError,
+                    IndexError,
+                    KeyError,
+                    ConnectionError,
+                    TimeoutError,
+                ),
+                email_notification=None,  # KumoLocal doesn't import email_notification
+            )
         else:
-            # return cached raw data for specified zone
-            try:
-                self.serial_number = serial_num_lst[zone]
-            except IndexError as exc:
-                raise IndexError(
-                    f"ERROR: Invalid Zone, index ({zone}) does "
-                    "not exist in serial number list "
-                    f"({serial_num_lst})"
-                ) from exc
-            raw_json = self.get_raw_json()[2]["children"][0]["zoneTable"][
-                serial_num_lst[zone]
-            ]
-        return raw_json
+            # Single attempt without retry
+            return _get_metadata_internal()
 
     def get_all_metadata(self, zone=None, retry=False):
         """Get all thermostat meta data for device_id from local API.
 
         inputs:
             zone(): specified zone
-            retry(bool): if True will retry once.
+            retry(bool): if True will retry with extended retry mechanism.
         returns:
             (dict): dictionary of meta data.
         """
-        del retry  # not used
-        return self.get_metadata(zone)
+        return self.get_metadata(zone, retry=retry)
 
-    def get_metadata(self, zone=None, trait=None, parameter=None):
+    def get_metadata(self, zone=None, trait=None, parameter=None, retry=False):
         """Get thermostat meta data for device_id from local API.
 
         inputs:
@@ -180,25 +204,46 @@ class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
             trait(str): trait or parent key, if None will assume a non-nested
                         dict
             parameter(str): target parameter, if None will return all.
-            debug(bool): debug flag.
+            retry(bool): if True will retry with extended retry mechanism
         returns:
             (dict): dictionary of meta data.
         """
         del trait  # not used on Kumolocal
         del zone  # unused
 
-        # refresh device status
-        self.device_id.update_status()
-        meta_data = {}
-        meta_data["status"] = self.device_id.get_status()
-        # pylint: disable=protected-access
-        meta_data["sensors"] = self.device_id._sensors
-        # pylint: disable=protected-access
-        meta_data["profile"] = self.device_id._profile
-        if parameter is None:
-            return meta_data
+        def _get_metadata_internal():
+            # refresh device status
+            self.device_id.update_status()
+            meta_data = {}
+            meta_data["status"] = self.device_id.get_status()
+            # pylint: disable=protected-access
+            meta_data["sensors"] = self.device_id._sensors
+            # pylint: disable=protected-access
+            meta_data["profile"] = self.device_id._profile
+            if parameter is None:
+                return meta_data
+            else:
+                return meta_data[parameter]
+        
+        if retry:
+            # Use standardized extended retry mechanism
+            return util.execute_with_extended_retries(
+                func=_get_metadata_internal,
+                thermostat_type='KumoLocal',
+                zone_name=str(getattr(self, 'zone_name', 'unknown')),
+                number_of_retries=5,
+                initial_retry_delay_sec=60,
+                exception_types=(
+                    KeyError,
+                    AttributeError,
+                    ConnectionError,
+                    TimeoutError,
+                ),
+                email_notification=None,  # KumoLocal doesn't import email_notification
+            )
         else:
-            return meta_data[parameter]
+            # Single attempt without retry
+            return _get_metadata_internal()
 
     def print_all_thermostat_metadata(self, zone):
         """Print all metadata for zone to the screen.

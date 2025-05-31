@@ -224,14 +224,13 @@ class ThermostatClass(tc.ThermostatCommon):
 
         inputs:
             zone(): specified zone
-            retry(bool): retry flag
+            retry(bool): if True will retry with extended retry mechanism
         returns:
             (dict): dictionary of meta data.
         """
-        del retry  # not used
-        return self.get_metadata(zone)
+        return self.get_metadata(zone, retry=retry)
 
-    def get_metadata(self, zone=None, trait=None, parameter=None):
+    def get_metadata(self, zone=None, trait=None, parameter=None, retry=False):
         """Get thermostat meta data for zone.
 
         inputs:
@@ -239,41 +238,65 @@ class ThermostatClass(tc.ThermostatCommon):
             trait(str): trait or parent key, if None will assume a non-nested
                         dict.
             parameter(str): target parameter, if None will return all.
+            retry(bool): if True will retry with extended retry mechanism
         returns:
             (dict): dictionary of meta data.
         """
-        # if zone input is str assume it is zone name, convert to zone_num.
-        if isinstance(zone, str):
-            zone_num = util.get_key_from_value(nest_config.metadata, zone)
-        elif isinstance(zone, int):
-            zone_num = zone
-        else:
-            raise TypeError(
-                f"type {type(zone)} not supported for zone input"
-                "parmaeter in get_metadata function"
-            )
+        def _get_metadata_internal():
+            # if zone input is str assume it is zone name, convert to zone_num.
+            if isinstance(zone, str):
+                zone_num = util.get_key_from_value(nest_config.metadata, zone)
+            elif isinstance(zone, int):
+                zone_num = zone
+            else:
+                raise TypeError(
+                    f"type {type(zone)} not supported for zone input"
+                    "parmaeter in get_metadata function"
+                )
 
-        try:
-            meta_data = self.devices[zone_num].traits
-        except IndexError as exc:
-            raise IndexError(
-                f"zone {zone_num} not found in nest device list, "
-                f"device list={self.devices}"
-            ) from exc
-        # return all meta data for zone
-        if parameter is None:
-            return meta_data
+            try:
+                meta_data = self.devices[zone_num].traits
+            except IndexError as exc:
+                raise IndexError(
+                    f"zone {zone_num} not found in nest device list, "
+                    f"device list={self.devices}"
+                ) from exc
+            # return all meta data for zone
+            if parameter is None:
+                return meta_data
 
-        # trait must be specified if parameter is specified.
-        if trait is None:
-            raise NotImplementedError(
-                "nest get_metadata() requires a trait "
-                f"parameter along when querying "
-                f"parameter='{parameter}'"
+            # trait must be specified if parameter is specified.
+            if trait is None:
+                raise NotImplementedError(
+                    "nest get_metadata() requires a trait "
+                    f"parameter along when querying "
+                    f"parameter='{parameter}'"
+                )
+            else:
+                # return parameter
+                return meta_data[trait][parameter]
+        
+        if retry:
+            # Use standardized extended retry mechanism
+            return util.execute_with_extended_retries(
+                func=_get_metadata_internal,
+                thermostat_type='Nest',
+                zone_name=str(zone),
+                number_of_retries=5,
+                initial_retry_delay_sec=60,
+                exception_types=(
+                    TypeError,
+                    IndexError,
+                    KeyError,
+                    NotImplementedError,
+                    ConnectionError,
+                    TimeoutError,
+                ),
+                email_notification=None,  # Nest doesn't import email_notification
             )
         else:
-            # return parameter
-            return meta_data[trait][parameter]
+            # Single attempt without retry
+            return _get_metadata_internal()
 
     def print_all_thermostat_metadata(self, zone):
         """Print all metadata for zone to the screen.

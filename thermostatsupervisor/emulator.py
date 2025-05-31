@@ -60,14 +60,13 @@ class ThermostatClass(tc.ThermostatCommon):
 
         inputs:
             zone(int): specified zone, if None will print all zones.
-            retry(bool): if True will retry the request, not currrently implemented.
+            retry(bool): if True will retry with extended retry mechanism.
         returns:
             (dict): JSON dict
         """
-        del retry  # unused on emulator
-        return self.get_metadata(zone)
+        return self.get_metadata(zone, retry=retry)
 
-    def get_metadata(self, zone=None, trait=None, parameter=None):
+    def get_metadata(self, zone=None, trait=None, parameter=None, retry=False):
         """Get all thermostat meta data for zone from emulator.
 
         inputs:
@@ -75,28 +74,49 @@ class ThermostatClass(tc.ThermostatCommon):
             trait(str): trait or parent key, if None will assume a non-nested
             dict
             parameter(str): target parameter, if None will return all.
-            debug(bool): if True will print unit details.
+            retry(bool): if True will retry with extended retry mechanism
         returns:
             (int, float, str, dict): depends on parameter
         """
         del trait  # unused on emulator
-        if zone is None:
-            # returned cached raw data for all zones
-            meta_data_dict = self.meta_data_dict
+        
+        def _get_metadata_internal():
+            if zone is None:
+                # returned cached raw data for all zones
+                meta_data_dict = self.meta_data_dict
+            else:
+                # return cached raw data for specified zone
+                meta_data_dict = self.meta_data_dict[zone]
+            if parameter is None:
+                return meta_data_dict
+            else:
+                try:
+                    return meta_data_dict[parameter]
+                except KeyError:
+                    print(
+                        f"ERROR: parameter {parameter} does not exist in "
+                        f"meta_data_dict: {meta_data_dict}"
+                    )
+                    raise
+        
+        if retry:
+            # Use standardized extended retry mechanism
+            return util.execute_with_extended_retries(
+                func=_get_metadata_internal,
+                thermostat_type='Emulator',
+                zone_name=str(zone) if zone is not None else 'all',
+                number_of_retries=5,
+                initial_retry_delay_sec=60,
+                exception_types=(
+                    KeyError,
+                    AttributeError,
+                    ValueError,
+                ),
+                email_notification=None,  # Emulator doesn't import email_notification
+            )
         else:
-            # return cached raw data for specified zone
-            meta_data_dict = self.meta_data_dict[zone]
-        if parameter is None:
-            return meta_data_dict
-        else:
-            try:
-                return meta_data_dict[parameter]
-            except KeyError:
-                print(
-                    f"ERROR: parameter {parameter} does not exist in "
-                    f"meta_data_dict: {meta_data_dict}"
-                )
-                raise
+            # Single attempt without retry
+            return _get_metadata_internal()
 
     def print_all_thermostat_metadata(self, zone):
         """Print all metadata for zone to the screen.
