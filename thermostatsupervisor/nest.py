@@ -242,6 +242,7 @@ class ThermostatClass(tc.ThermostatCommon):
         returns:
             (dict): dictionary of meta data.
         """
+
         def _get_metadata_internal():
             # if zone input is str assume it is zone name, convert to zone_num.
             if isinstance(zone, str):
@@ -275,12 +276,12 @@ class ThermostatClass(tc.ThermostatCommon):
             else:
                 # return parameter
                 return meta_data[trait][parameter]
-        
+
         if retry:
             # Use standardized extended retry mechanism
             return util.execute_with_extended_retries(
                 func=_get_metadata_internal,
-                thermostat_type='Nest',
+                thermostat_type="Nest",
                 zone_name=str(zone),
                 number_of_retries=5,
                 initial_retry_delay_sec=60,

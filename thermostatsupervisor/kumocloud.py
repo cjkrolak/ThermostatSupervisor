@@ -127,7 +127,7 @@ class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
             (int, float, str, dict): depends on parameter
         """
         del trait  # not needed on Kumocloud
-        
+
         def _get_metadata_internal():
             try:
                 serial_num_lst = list(self.get_indoor_units())  # will query unit
@@ -189,13 +189,13 @@ class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
                 return raw_json
             else:
                 return raw_json[parameter]
-        
+
         if retry:
             # Use standardized extended retry mechanism
             return util.execute_with_extended_retries(
                 func=_get_metadata_internal,
-                thermostat_type=getattr(self, 'thermostat_type', 'KumoCloud'),
-                zone_name=str(getattr(self, 'zone_name', zone)),
+                thermostat_type=getattr(self, "thermostat_type", "KumoCloud"),
+                zone_name=str(getattr(self, "zone_name", zone)),
                 number_of_retries=5,
                 initial_retry_delay_sec=60,
                 exception_types=(

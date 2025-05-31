@@ -196,22 +196,22 @@ class ThermostatClass(tc.ThermostatCommon):
             (dict) empty dict.
         """
         del trait  # not needed for sht31
-        
+
         def _get_metadata_internal():
             response = requests.get(self.url, timeout=util.HTTP_TIMEOUT)
-            
+
             # catch 404 web site response, no need to retry
             if "404 Not Found" in response.text:
                 raise RuntimeError(
                     f"FATAL ERROR 404: sht31 server does not support route {self.url}"
                 )
-            
+
             # catch 403 web site response, no need to retry
             if "403 Forbidden" in response.text:
                 raise RuntimeError(
                     f"FATAL ERROR 403: client is forbidden from accessing route {self.url}"
                 )
-            
+
             # parse the web site response
             try:
                 if parameter is None:
@@ -219,8 +219,10 @@ class ThermostatClass(tc.ThermostatCommon):
                 else:
                     return response.json()[parameter]
             except json.decoder.JSONDecodeError as ex:
-                raise RuntimeError("FATAL ERROR: SHT31 server is not responding") from ex
-        
+                raise RuntimeError(
+                    "FATAL ERROR: SHT31 server is not responding"
+                ) from ex
+
         if retry:
             # Use standardized extended retry mechanism
             return util.execute_with_extended_retries(
@@ -309,20 +311,22 @@ class ThermostatZone(tc.ThermostatCommonZone):
           (str) if parameter != None
         """
         del trait  # not needed for sht31
-        
+
         def _get_metadata_internal():
             response = requests.get(self.url, timeout=util.HTTP_TIMEOUT)
             # Raise HTTPError for bad responses (4xx or 5xx)
             response.raise_for_status()
-            
+
             try:
                 json_response = response.json()
             except json.decoder.JSONDecodeError as ex:
-                raise RuntimeError("FATAL ERROR: SHT31 server is not responding") from ex
-            
+                raise RuntimeError(
+                    "FATAL ERROR: SHT31 server is not responding"
+                ) from ex
+
             if parameter is None:
                 return json_response
-            
+
             try:
                 return json_response[parameter]
             except KeyError as ex:
@@ -336,13 +340,13 @@ class ThermostatZone(tc.ThermostatCommonZone):
                     f"FATAL ERROR: SHT31 server response did not contain key "
                     f"'{parameter}', raw response={json_response}"
                 ) from ex
-        
+
         if retry:
             # Use standardized extended retry mechanism
             return util.execute_with_extended_retries(
                 func=_get_metadata_internal,
                 thermostat_type="SHT31",  # ThermostatZone doesn't have thermostat_type attribute
-                zone_name=str(getattr(self, 'zone_name', 'unknown')),
+                zone_name=str(getattr(self, "zone_name", "unknown")),
                 number_of_retries=5,
                 initial_retry_delay_sec=self.retry_delay,
                 exception_types=(
