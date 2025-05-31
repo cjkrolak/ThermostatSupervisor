@@ -84,7 +84,9 @@ def supervisor(thermostat_type, zone_str):
         mode=util.BOTH_LOG,
     )
 
-    # delete packages if necessary
+    # clean-up sessions and delete packages if necessary
+    if "Thermostat" in locals() and hasattr(Thermostat, 'close'):
+        Thermostat.close()
     if "Zone" in locals():
         del Zone
     if "Thermostat" in locals():
