@@ -3,7 +3,7 @@ name: Sphinx Documentation
 on:
   push:
     branches:
-      - develop
+      - main
 
 jobs:
   build:
@@ -30,4 +30,4 @@ jobs:
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./docs/_build/html
+          publish_dir: ./_build/html
