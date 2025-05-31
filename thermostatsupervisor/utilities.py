@@ -816,7 +816,8 @@ def execute_with_extended_retries(
         thermostat_type(str): thermostat type for logging/email
         zone_name(str): zone name for logging/email
         number_of_retries(int): maximum number of retry attempts (default: 5)
-        initial_retry_delay_sec(int): initial delay between retries in seconds (default: 60)
+        initial_retry_delay_sec(int): initial delay between retries in seconds
+                                      (default: 60)
         exception_types(tuple): tuple of exception types to catch and retry on
         email_notification(module): email notification module for alerts
     returns:

@@ -5,11 +5,9 @@ using pyhtcc library.
 https://pypi.org/project/pyhtcc/
 """
 # built-in imports
-import datetime
 import os
 import pprint
 import time
-import traceback
 from typing import Union
 
 # local imports

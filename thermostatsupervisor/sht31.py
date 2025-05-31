@@ -15,7 +15,6 @@ import json
 import os
 import threading
 import time
-import traceback
 from typing import Union
 
 # third party imports
@@ -209,7 +208,8 @@ class ThermostatClass(tc.ThermostatCommon):
             # catch 403 web site response, no need to retry
             if "403 Forbidden" in response.text:
                 raise RuntimeError(
-                    f"FATAL ERROR 403: client is forbidden from accessing route {self.url}"
+                    f"FATAL ERROR 403: client is forbidden from accessing "
+                    f"route {self.url}"
                 )
 
             # parse the web site response
@@ -345,7 +345,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
             # Use standardized extended retry mechanism
             return util.execute_with_extended_retries(
                 func=_get_metadata_internal,
-                thermostat_type="SHT31",  # ThermostatZone doesn't have thermostat_type attribute
+                thermostat_type="SHT31",
                 zone_name=str(getattr(self, "zone_name", "unknown")),
                 number_of_retries=5,
                 initial_retry_delay_sec=self.retry_delay,

@@ -171,18 +171,21 @@ class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
             else:
                 # if zone name input, find zone index
                 if not isinstance(zone, int):
-                    zone = self.get_zone_index_from_name()
+                    self.zone_name = zone
+                    zone_index = self.get_zone_index_from_name()
+                else:
+                    zone_index = zone
                 # return cached raw data for specified zone, will be a dict
                 try:
-                    self.serial_number = serial_num_lst[zone]
+                    self.serial_number = serial_num_lst[zone_index]
                 except IndexError as exc:
                     raise IndexError(
-                        f"ERROR: Invalid Zone, index ({zone}) does "
+                        f"ERROR: Invalid Zone, index ({zone_index}) does "
                         "not exist in serial number list "
                         f"({serial_num_lst})"
                     ) from exc
                 raw_json = self.get_raw_json()[2]["children"][0]["zoneTable"][
-                    serial_num_lst[zone]
+                    serial_num_lst[zone_index]
                 ]
 
             if parameter is None:
@@ -195,7 +198,7 @@ class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
             return util.execute_with_extended_retries(
                 func=_get_metadata_internal,
                 thermostat_type=getattr(self, "thermostat_type", "KumoCloud"),
-                zone_name=str(getattr(self, "zone_name", zone)),
+                zone_name=str(getattr(self, "zone_name", str(zone))),
                 number_of_retries=5,
                 initial_retry_delay_sec=60,
                 exception_types=(
