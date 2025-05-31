@@ -585,7 +585,7 @@ class Test(utc.UnitTest):
     def test_query_thermostat_zone_flag_all_deviations(self):
         """
         Test query_thermostat_zone function with flag_all_deviations enabled.
-        
+
         This tests the specific logic where flag_all_deviations=True changes
         the operator and tolerance behavior for heat and cool modes.
         """
@@ -620,51 +620,51 @@ class Test(utc.UnitTest):
         try:
             for test_case_name, test_case in test_cases.items():
                 print(f"Testing: {test_case_name}")
-                
+
                 # Mock the mode
                 self.mock_set_mode(test_case["mode"])
-                
+
                 # Reset tolerance_degrees to default before each test
                 self.Zone.tolerance_degrees = self.Zone.tolerance_degrees_default
-                
+
                 # Set flag_all_deviations and call query_thermostat_zone directly
                 self.Zone.flag_all_deviations = test_case["flag_all_deviations"]
                 self.Zone.query_thermostat_zone()
-                
+
                 # Verify the operator was set correctly
                 self.assertEqual(
                     self.Zone.operator,
                     test_case["expected_operator"],
                     f"Test case '{test_case_name}': operator mismatch. "
                     f"Expected {test_case['expected_operator']}, "
-                    f"got {self.Zone.operator}"
+                    f"got {self.Zone.operator}",
                 )
-                
+
                 # Verify tolerance was set correctly
                 self.assertEqual(
                     self.Zone.tolerance_degrees,
                     test_case["expected_tolerance"],
                     f"Test case '{test_case_name}': tolerance_degrees mismatch. "
                     f"Expected {test_case['expected_tolerance']}, "
-                    f"got {self.Zone.tolerance_degrees}"
+                    f"got {self.Zone.tolerance_degrees}",
                 )
-                
+
                 # Verify the current_mode was set correctly
                 self.assertEqual(
                     self.Zone.current_mode,
                     test_case["mode"],
                     f"Test case '{test_case_name}': current_mode mismatch. "
                     f"Expected {test_case['mode']}, "
-                    f"got {self.Zone.current_mode}"
+                    f"got {self.Zone.current_mode}",
                 )
-                
+
         finally:
             self.restore_functions()
 
     def test_query_thermostat_zone_auto_and_fan_modes(self):
         """
         Test query_thermostat_zone function specifically for AUTO_MODE and FAN_MODE.
-        
+
         These modes have specific parameter settings that need to be verified.
         """
         test_cases = {
@@ -694,68 +694,66 @@ class Test(utc.UnitTest):
         try:
             for mode, expected_values in test_cases.items():
                 print(f"Testing query_thermostat_zone for {mode}")
-                
+
                 # Mock the mode
                 self.mock_set_mode(mode)
-                
+
                 # Call query_thermostat_zone
                 self.Zone.query_thermostat_zone()
-                
+
                 # Verify all expected parameter values
                 self.assertEqual(
-                    self.Zone.current_mode,
-                    mode,
-                    f"Mode {mode}: current_mode mismatch"
+                    self.Zone.current_mode, mode, f"Mode {mode}: current_mode mismatch"
                 )
-                
+
                 self.assertEqual(
                     self.Zone.current_setpoint,
                     expected_values["expected_current_setpoint"],
-                    f"Mode {mode}: current_setpoint mismatch"
+                    f"Mode {mode}: current_setpoint mismatch",
                 )
-                
+
                 self.assertEqual(
                     self.Zone.schedule_setpoint,
                     expected_values["expected_schedule_setpoint"],
-                    f"Mode {mode}: schedule_setpoint mismatch"
+                    f"Mode {mode}: schedule_setpoint mismatch",
                 )
-                
+
                 self.assertEqual(
                     self.Zone.tolerance_sign,
                     expected_values["expected_tolerance_sign"],
-                    f"Mode {mode}: tolerance_sign mismatch"
+                    f"Mode {mode}: tolerance_sign mismatch",
                 )
-                
+
                 self.assertEqual(
                     self.Zone.operator,
                     expected_values["expected_operator"],
-                    f"Mode {mode}: operator mismatch"
+                    f"Mode {mode}: operator mismatch",
                 )
-                
+
                 self.assertEqual(
                     self.Zone.global_limit,
                     expected_values["expected_global_limit"],
-                    f"Mode {mode}: global_limit mismatch"
+                    f"Mode {mode}: global_limit mismatch",
                 )
-                
+
                 self.assertEqual(
                     self.Zone.global_operator,
                     expected_values["expected_global_operator"],
-                    f"Mode {mode}: global_operator mismatch"
+                    f"Mode {mode}: global_operator mismatch",
                 )
-                
+
                 self.assertEqual(
                     self.Zone.revert_setpoint_func,
                     expected_values["expected_revert_func"],
-                    f"Mode {mode}: revert_setpoint_func mismatch"
+                    f"Mode {mode}: revert_setpoint_func mismatch",
                 )
-                
+
                 self.assertEqual(
                     self.Zone.get_setpoint_func,
                     expected_values["expected_get_func"],
-                    f"Mode {mode}: get_setpoint_func mismatch"
+                    f"Mode {mode}: get_setpoint_func mismatch",
                 )
-                
+
         finally:
             self.restore_functions()
 
