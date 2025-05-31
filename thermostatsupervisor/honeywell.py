@@ -270,117 +270,25 @@ def get_zones_info_with_retries(func, thermostat_type, zone_name) -> list:
     returns:
         list of zone info.
     """
-    initial_trial_number = 1
-    trial_number = initial_trial_number
-    number_of_retries = 5
-    retry_delay_sec = 60
-    return_val = []
-    while trial_number < number_of_retries:
-        time_now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        try:
-            return_val = func()
-        except (
-            pyhtcc.requests.exceptions.ConnectionError,
-            pyhtcc.pyhtcc.UnexpectedError,
-            pyhtcc.pyhtcc.NoZonesFoundError,
-            pyhtcc.pyhtcc.UnauthorizedError,
-            pyhtcc.requests.exceptions.HTTPError,
-        ) as ex:
-            # set flag to force re-authentication
-            tc.connection_ok = False
-
-            util.log_msg(
-                f"WARNING: exception on trial {trial_number}",
-                mode=util.BOTH_LOG,
-                func_name=1,
-            )
-            util.log_msg(traceback.format_exc(), mode=util.BOTH_LOG, func_name=1)
-            msg_suffix = [
-                "",
-                f" waiting {retry_delay_sec} seconds and then " + "retrying...",
-            ][trial_number < number_of_retries]
-            util.log_msg(
-                f"{time_now}: exception during "
-                f"{util.get_function_name()}"
-                f", on trial {trial_number} of "
-                f"{number_of_retries}, probably a"
-                " connection issue"
-                f"{msg_suffix}",
-                mode=util.BOTH_LOG,
-                func_name=1,
-            )
-
-            # warning email
-            email_notification.send_email_alert(
-                subject=(
-                    f"{thermostat_type} zone "
-                    f"{zone_name}: "
-                    "intermittent error during "
-                    f"{util.get_function_name()}"
-                ),
-                body=(
-                    f"{util.get_function_name()}: trial "
-                    f"{trial_number} of "
-                    f"{number_of_retries} at "
-                    f"{time_now}\n{traceback.format_exc()}"
-                ),
-            )
-
-            # exhausted retries, raise exception
-            if trial_number > number_of_retries:
-                util.log_msg(
-                    f"ERRROR: exhausted {number_of_retries} "
-                    f"retries during {util.get_function_name()}",
-                    mode=util.BOTH_LOG,
-                    func_name=1,
-                )
-                raise ex
-
-            # delay in between retries
-            if trial_number <= number_of_retries:
-                util.log_msg(
-                    f"Delaying {retry_delay_sec} prior to retry...",
-                    mode=util.BOTH_LOG,
-                    func_name=1,
-                )
-                time.sleep(retry_delay_sec)
-
-            # increment retry parameters
-            trial_number += 1
-            retry_delay_sec *= 2  # double each time.
-
-        except Exception as ex:
-            util.log_msg(traceback.format_exc(), mode=util.BOTH_LOG, func_name=1)
-            util.log_msg(
-                f"ERROR: unhandled exception {ex} during "
-                f"{util.get_function_name()}",
-                mode=util.BOTH_LOG,
-                func_name=1,
-            )
-            raise ex
-        else:  # good response
-            # log the mitigated failure
-            if trial_number > initial_trial_number:
-                email_notification.send_email_alert(
-                    subject=(
-                        f"{thermostat_type} zone "
-                        f"{zone_name}: "
-                        "(mitigated) intermittent connection error "
-                        f"during {util.get_function_name()}"
-                    ),
-                    body=(
-                        f"{util.get_function_name()}: trial "
-                        f"{trial_number} of {number_of_retries} at "
-                        f"{time_now}"
-                    ),
-                )
-
-            # reset retry parameters
-            tc.connection_ok = True
-
-            break  # exit while loop
-
-    return return_val
+    # Define Honeywell-specific exception types
+    honeywell_exceptions = (
+        pyhtcc.requests.exceptions.ConnectionError,
+        pyhtcc.pyhtcc.UnexpectedError,
+        pyhtcc.pyhtcc.NoZonesFoundError,
+        pyhtcc.pyhtcc.UnauthorizedError,
+        pyhtcc.requests.exceptions.HTTPError,
+    )
+    
+    # Use the common retry utility
+    return util.execute_with_extended_retries(
+        func=func,
+        thermostat_type=thermostat_type,
+        zone_name=zone_name,
+        number_of_retries=5,
+        initial_retry_delay_sec=60,
+        exception_types=honeywell_exceptions,
+        email_notification=email_notification,
+    )
 
 
 class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):

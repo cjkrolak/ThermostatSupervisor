@@ -191,70 +191,57 @@ class ThermostatClass(tc.ThermostatCommon):
             trait(str): trait or parent key, if None will assume a non-nested
                         dict
             parameter(str): target parameter, if None will fetch all.
-            retry(bool): if True will retry once.
+            retry(bool): if True will retry with extended retry mechanism.
         returns:
             (dict) empty dict.
         """
         del trait  # not needed for sht31
-        try:
+        
+        def _get_metadata_internal():
             response = requests.get(self.url, timeout=util.HTTP_TIMEOUT)
-        except requests.exceptions.ConnectionError as ex:
-            util.log_msg(
-                f"FATAL ERROR: unable to connect to sht31 thermometer at url "
-                f"'{self.url}'",
-                mode=util.BOTH_LOG,
-                func_name=1,
-            )
-            raise ex
-
-        # catch 404 web site response, no need to retry
-        if "404 Not Found" in response.text:
-            fail_msg = (
-                f"FATAL ERROR 404: sht31 server does not support route {self.url}"
-            )
-            util.log_msg(
-                fail_msg,
-                mode=util.BOTH_LOG,
-                func_name=1,
-            )
-            raise RuntimeError(fail_msg)
-
-        # catch 403 web site response, no need to retry
-        if "403 Forbidden" in response.text:
-            fail_msg = (
-                f"FATAL ERROR 403: client is forbidden from accessing route {self.url}"
-            )
-            util.log_msg(
-                fail_msg,
-                mode=util.BOTH_LOG,
-                func_name=1,
-            )
-            raise RuntimeError(fail_msg)
-
-        # parse the web site response
-        try:
-            if parameter is None:
-                return response.json()
-            else:
-                return response.json()[parameter]
-        except json.decoder.JSONDecodeError as ex:
-            util.log_msg(traceback.format_exc(), mode=util.BOTH_LOG, func_name=1)
-            util.log_msg(
-                f"raw response={response.text}", mode=util.BOTH_LOG, func_name=1
-            )
-            if retry:
-                util.log_msg(
-                    f"waiting {self.retry_delay} seconds and retrying SHT31 "
-                    f"measurement one time...",
-                    mode=util.BOTH_LOG,
-                    func_name=1,
-                )
-                time.sleep(self.retry_delay)
-                return self.get_metadata(zone, parameter=parameter, retry=False)
-            else:
+            
+            # catch 404 web site response, no need to retry
+            if "404 Not Found" in response.text:
                 raise RuntimeError(
-                    "FATAL ERROR: SHT31 server is not responding"
-                ) from ex
+                    f"FATAL ERROR 404: sht31 server does not support route {self.url}"
+                )
+            
+            # catch 403 web site response, no need to retry
+            if "403 Forbidden" in response.text:
+                raise RuntimeError(
+                    f"FATAL ERROR 403: client is forbidden from accessing route {self.url}"
+                )
+            
+            # parse the web site response
+            try:
+                if parameter is None:
+                    return response.json()
+                else:
+                    return response.json()[parameter]
+            except json.decoder.JSONDecodeError as ex:
+                raise RuntimeError("FATAL ERROR: SHT31 server is not responding") from ex
+        
+        if retry:
+            # Use standardized extended retry mechanism
+            return util.execute_with_extended_retries(
+                func=_get_metadata_internal,
+                thermostat_type=self.thermostat_type,
+                zone_name=str(self.zone_name),
+                number_of_retries=5,
+                initial_retry_delay_sec=self.retry_delay,
+                exception_types=(
+                    requests.exceptions.ConnectionError,
+                    requests.exceptions.HTTPError,
+                    requests.exceptions.Timeout,
+                    requests.exceptions.RequestException,
+                    json.decoder.JSONDecodeError,
+                    RuntimeError,
+                ),
+                email_notification=None,  # SHT31 doesn't import email_notification
+            )
+        else:
+            # Single attempt without retry
+            return _get_metadata_internal()
 
 
 class ThermostatZone(tc.ThermostatCommonZone):
@@ -316,82 +303,62 @@ class ThermostatZone(tc.ThermostatCommonZone):
           parameter(str): target parameter, None = all settings
           trait(str): trait or parent key, if None will assume a non-nested
                       dict
-          retry(bool): if True, will retry on Exception
+          retry(bool): if True, will retry with extended retry mechanism
         returns:
           (dict) if parameter=None
           (str) if parameter != None
         """
         del trait  # not needed for sht31
-        try:
+        
+        def _get_metadata_internal():
             response = requests.get(self.url, timeout=util.HTTP_TIMEOUT)
             # Raise HTTPError for bad responses (4xx or 5xx)
             response.raise_for_status()
-        except requests.exceptions.RequestException as ex:
-            util.log_msg(
-                f"FATAL ERROR: unable to connect to sht31 thermometer at url "
-                f"'{self.url}': {ex}",
-                mode=util.BOTH_LOG,
-                func_name=1,
-            )
-            if retry:
-                util.log_msg(
-                    f"waiting {self.retry_delay} seconds and retrying SHT31 "
-                    f"measurement one time...",
-                    mode=util.BOTH_LOG,
-                    func_name=1,
-                )
-                time.sleep(self.retry_delay)
-                return self.get_metadata(trait=None, parameter=parameter, retry=False)
-            raise  # re-raise the exception if retry is False
-
-        try:
-            json_response = response.json()
-        except json.decoder.JSONDecodeError as ex:
-            util.log_msg(traceback.format_exc(), mode=util.BOTH_LOG, func_name=1)
-            util.log_msg(
-                f"raw response={response.text}", mode=util.BOTH_LOG, func_name=1
-            )
-            if retry:
-                util.log_msg(
-                    f"waiting {self.retry_delay} seconds and retrying SHT31 "
-                    f"measurement one time...",
-                    mode=util.BOTH_LOG,
-                    func_name=1,
-                )
-                time.sleep(self.retry_delay)
-                return self.get_metadata(trait=None, parameter=parameter, retry=False)
-            else:
-                raise RuntimeError(
-                    "FATAL ERROR: SHT31 server is not responding"
-                ) from ex
-
-        if parameter is None:
-            return json_response
-
-        try:
-            return json_response[parameter]
-        except KeyError as ex:
-            util.log_msg(traceback.format_exc(), mode=util.BOTH_LOG, func_name=1)
-            if "message" in json_response:
-                util.log_msg(
-                    f"WARNING in Flask response: " f"'{json_response['message']}'",
-                    mode=util.BOTH_LOG,
-                    func_name=1,
-                )
-            if retry:
-                util.log_msg(
-                    f"waiting {self.retry_delay} seconds and retrying SHT31 "
-                    f"measurement one time...",
-                    mode=util.BOTH_LOG,
-                    func_name=1,
-                )
-                time.sleep(self.retry_delay)
-                return self.get_metadata(trait=None, parameter=parameter, retry=False)
-            else:
+            
+            try:
+                json_response = response.json()
+            except json.decoder.JSONDecodeError as ex:
+                raise RuntimeError("FATAL ERROR: SHT31 server is not responding") from ex
+            
+            if parameter is None:
+                return json_response
+            
+            try:
+                return json_response[parameter]
+            except KeyError as ex:
+                if "message" in json_response:
+                    util.log_msg(
+                        f"WARNING in Flask response: '{json_response['message']}'",
+                        mode=util.BOTH_LOG,
+                        func_name=1,
+                    )
                 raise KeyError(
                     f"FATAL ERROR: SHT31 server response did not contain key "
                     f"'{parameter}', raw response={json_response}"
                 ) from ex
+        
+        if retry:
+            # Use standardized extended retry mechanism
+            return util.execute_with_extended_retries(
+                func=_get_metadata_internal,
+                thermostat_type="SHT31",  # ThermostatZone doesn't have thermostat_type attribute
+                zone_name=str(getattr(self, 'zone_name', 'unknown')),
+                number_of_retries=5,
+                initial_retry_delay_sec=self.retry_delay,
+                exception_types=(
+                    requests.exceptions.RequestException,
+                    requests.exceptions.ConnectionError,
+                    requests.exceptions.HTTPError,
+                    requests.exceptions.Timeout,
+                    json.decoder.JSONDecodeError,
+                    KeyError,
+                    RuntimeError,
+                ),
+                email_notification=None,  # SHT31 doesn't import email_notification
+            )
+        else:
+            # Single attempt without retry
+            return _get_metadata_internal()
 
     def get_display_temp(self) -> float:
         """

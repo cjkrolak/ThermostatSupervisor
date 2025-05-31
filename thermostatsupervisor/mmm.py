@@ -358,20 +358,36 @@ class ThermostatZone(tc.ThermostatCommonZone):
         """
         Get tmode from device, retry on Attribute error.
         """
+        def _get_tmode_internal():
+            return self.device_id.tmode["raw"]
+        
+        # Use standardized extended retry for more robust error handling
         try:
-            tmode = self.device_id.tmode["raw"]
-        except AttributeError as ex:
-            if retries > 0:
-                print(traceback.format_exc())
-                print(
-                    "WARNING: AttributeError while querying tstat.tmode, "
-                    "retrying after brief delay..."
-                )
-                time.sleep(10)
-                tmode = self._get_tmode(retries - 1)
-            else:
-                raise ex
-        return tmode
+            return util.execute_with_extended_retries(
+                func=_get_tmode_internal,
+                thermostat_type=self.thermostat_type,
+                zone_name=str(self.zone_name),
+                number_of_retries=5,
+                initial_retry_delay_sec=60,
+                exception_types=(AttributeError, ConnectionError, TimeoutError),
+                email_notification=None,  # MMM doesn't import email_notification
+            )
+        except Exception:
+            # Fallback to original simple retry for backward compatibility
+            try:
+                tmode = self.device_id.tmode["raw"]
+            except AttributeError as ex:
+                if retries > 0:
+                    print(traceback.format_exc())
+                    print(
+                        "WARNING: AttributeError while querying tstat.tmode, "
+                        "retrying after brief delay..."
+                    )
+                    time.sleep(10)
+                    tmode = self._get_tmode(retries - 1)
+                else:
+                    raise ex
+            return tmode
 
     def is_fan_mode(self) -> int:
         """

@@ -794,3 +794,173 @@ class UserInputs:
             self.user_inputs_file[section] = {}
             for key in config[section]:
                 self.user_inputs_file[section][key] = config[section][key]
+
+
+def execute_with_extended_retries(
+    func,
+    thermostat_type: str,
+    zone_name: str,
+    number_of_retries: int = 5,
+    initial_retry_delay_sec: int = 60,
+    exception_types: tuple = None,
+    email_notification=None,
+):
+    """
+    Execute a function with extended retry logic and exponential backoff.
+
+    This function standardizes the retry mechanism across all thermostat types,
+    based on the implementation originally in honeywell.py.
+
+    inputs:
+        func(callable): function to execute with retries
+        thermostat_type(str): thermostat type for logging/email
+        zone_name(str): zone name for logging/email
+        number_of_retries(int): maximum number of retry attempts (default: 5)
+        initial_retry_delay_sec(int): initial delay between retries in seconds (default: 60)
+        exception_types(tuple): tuple of exception types to catch and retry on
+        email_notification(module): email notification module for alerts
+    returns:
+        result of func() if successful
+    raises:
+        Exception: if all retries are exhausted
+    """
+    import datetime
+    import time
+    import traceback
+    
+    # Import thermostat_common to access connection_ok flag
+    try:
+        from thermostatsupervisor import thermostat_common as tc
+    except ImportError:
+        tc = None
+    
+    # Default exception types if not provided
+    if exception_types is None:
+        # Use generic exceptions that are common across all thermostat types
+        import requests
+        exception_types = (
+            requests.exceptions.ConnectionError,
+            requests.exceptions.HTTPError,
+            requests.exceptions.Timeout,
+            ConnectionError,
+            TimeoutError,
+        )
+    
+    initial_trial_number = 1
+    trial_number = initial_trial_number
+    retry_delay_sec = initial_retry_delay_sec
+    return_val = None
+    
+    while trial_number <= number_of_retries:
+        time_now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        try:
+            return_val = func()
+        except exception_types as ex:
+            # Set flag to force re-authentication if available
+            if tc is not None:
+                tc.connection_ok = False
+            
+            log_msg(
+                f"WARNING: exception on trial {trial_number}",
+                mode=BOTH_LOG,
+                func_name=1,
+            )
+            log_msg(traceback.format_exc(), mode=BOTH_LOG, func_name=1)
+            
+            msg_suffix = [
+                "",
+                f" waiting {retry_delay_sec} seconds and then retrying...",
+            ][trial_number < number_of_retries]
+            
+            log_msg(
+                f"{time_now}: exception during "
+                f"{get_function_name()}"
+                f", on trial {trial_number} of "
+                f"{number_of_retries}, probably a"
+                " connection issue"
+                f"{msg_suffix}",
+                mode=BOTH_LOG,
+                func_name=1,
+            )
+            
+            # Send warning email if email notification module is available
+            if email_notification is not None:
+                try:
+                    email_notification.send_email_alert(
+                        subject=(
+                            f"{thermostat_type} zone "
+                            f"{zone_name}: "
+                            "intermittent error during "
+                            f"{get_function_name()}"
+                        ),
+                        body=(
+                            f"{get_function_name()}: trial "
+                            f"{trial_number} of "
+                            f"{number_of_retries} at "
+                            f"{time_now}\n{traceback.format_exc()}"
+                        ),
+                    )
+                except Exception:
+                    # Don't let email failures prevent retry logic
+                    pass
+            
+            # Exhausted retries, raise exception
+            if trial_number >= number_of_retries:
+                log_msg(
+                    f"ERROR: exhausted {number_of_retries} "
+                    f"retries during {get_function_name()}",
+                    mode=BOTH_LOG,
+                    func_name=1,
+                )
+                raise ex
+            
+            # Delay between retries
+            if trial_number < number_of_retries:
+                log_msg(
+                    f"Delaying {retry_delay_sec} prior to retry...",
+                    mode=BOTH_LOG,
+                    func_name=1,
+                )
+                time.sleep(retry_delay_sec)
+            
+            # Increment retry parameters
+            trial_number += 1
+            retry_delay_sec *= 2  # Exponential backoff: double each time
+            
+        except Exception as ex:
+            log_msg(traceback.format_exc(), mode=BOTH_LOG, func_name=1)
+            log_msg(
+                f"ERROR: unhandled exception {ex} during "
+                f"{get_function_name()}",
+                mode=BOTH_LOG,
+                func_name=1,
+            )
+            raise ex
+        else:  # Good response
+            # Log the mitigated failure if we had to retry
+            if trial_number > initial_trial_number and email_notification is not None:
+                try:
+                    email_notification.send_email_alert(
+                        subject=(
+                            f"{thermostat_type} zone "
+                            f"{zone_name}: "
+                            "(mitigated) intermittent connection error "
+                            f"during {get_function_name()}"
+                        ),
+                        body=(
+                            f"{get_function_name()}: trial "
+                            f"{trial_number} of {number_of_retries} at "
+                            f"{time_now}"
+                        ),
+                    )
+                except Exception:
+                    # Don't let email failures affect the successful result
+                    pass
+            
+            # Reset connection status if available
+            if tc is not None:
+                tc.connection_ok = True
+            
+            break  # Exit while loop on success
+    
+    return return_val
