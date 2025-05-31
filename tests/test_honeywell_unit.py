@@ -5,7 +5,6 @@ Tests retry functionality with mocked exceptions.
 """
 # built-in imports
 import http.client
-import time
 import unittest
 import urllib3.exceptions
 from unittest import mock
