@@ -64,9 +64,19 @@ class ThermostatClass(pyhtcc.PyHTCC, tc.ThermostatCommon):
         self.zone_name = int(zone)
         self.device_id = self.get_target_zone_id(self.zone_name)
 
+    def close(self):
+        """Explicitly close the session created in pyhtcc."""
+        if hasattr(self, "session") and self.session is not None:
+            self.session.close()
+            self.session = None
+
     def __del__(self):
-        """Clean-up session created in pyhtcc."""
-        self.session.close()
+        """Clean-up session created in pyhtcc (fallback)."""
+        try:
+            self.close()
+        except (AttributeError, TypeError):
+            # Handle cases where session doesn't exist or other cleanup issues
+            pass
 
     def _get_zone_device_ids(self) -> list:
         """
