@@ -358,9 +358,10 @@ class ThermostatZone(tc.ThermostatCommonZone):
         """
         Get tmode from device, retry on Attribute error.
         """
+
         def _get_tmode_internal():
             return self.device_id.tmode["raw"]
-        
+
         # Use standardized extended retry for more robust error handling
         try:
             return util.execute_with_extended_retries(

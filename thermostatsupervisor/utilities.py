@@ -827,17 +827,18 @@ def execute_with_extended_retries(
     import datetime
     import time
     import traceback
-    
+
     # Import thermostat_common to access connection_ok flag
     try:
         from thermostatsupervisor import thermostat_common as tc
     except ImportError:
         tc = None
-    
+
     # Default exception types if not provided
     if exception_types is None:
         # Use generic exceptions that are common across all thermostat types
         import requests
+
         exception_types = (
             requests.exceptions.ConnectionError,
             requests.exceptions.HTTPError,
@@ -845,12 +846,12 @@ def execute_with_extended_retries(
             ConnectionError,
             TimeoutError,
         )
-    
+
     initial_trial_number = 1
     trial_number = initial_trial_number
     retry_delay_sec = initial_retry_delay_sec
     return_val = None
-    
+
     while trial_number <= number_of_retries:
         time_now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         try:
@@ -859,19 +860,19 @@ def execute_with_extended_retries(
             # Set flag to force re-authentication if available
             if tc is not None:
                 tc.connection_ok = False
-            
+
             log_msg(
                 f"WARNING: exception on trial {trial_number}",
                 mode=BOTH_LOG,
                 func_name=1,
             )
             log_msg(traceback.format_exc(), mode=BOTH_LOG, func_name=1)
-            
+
             msg_suffix = [
                 "",
                 f" waiting {retry_delay_sec} seconds and then retrying...",
             ][trial_number < number_of_retries]
-            
+
             log_msg(
                 f"{time_now}: exception during "
                 f"{get_function_name()}"
@@ -882,7 +883,7 @@ def execute_with_extended_retries(
                 mode=BOTH_LOG,
                 func_name=1,
             )
-            
+
             # Send warning email if email notification module is available
             if email_notification is not None:
                 try:
@@ -903,7 +904,7 @@ def execute_with_extended_retries(
                 except Exception:
                     # Don't let email failures prevent retry logic
                     pass
-            
+
             # Exhausted retries, raise exception
             if trial_number >= number_of_retries:
                 log_msg(
@@ -913,7 +914,7 @@ def execute_with_extended_retries(
                     func_name=1,
                 )
                 raise ex
-            
+
             # Delay between retries
             if trial_number < number_of_retries:
                 log_msg(
@@ -922,16 +923,15 @@ def execute_with_extended_retries(
                     func_name=1,
                 )
                 time.sleep(retry_delay_sec)
-            
+
             # Increment retry parameters
             trial_number += 1
             retry_delay_sec *= 2  # Exponential backoff: double each time
-            
+
         except Exception as ex:
             log_msg(traceback.format_exc(), mode=BOTH_LOG, func_name=1)
             log_msg(
-                f"ERROR: unhandled exception {ex} during "
-                f"{get_function_name()}",
+                f"ERROR: unhandled exception {ex} during " f"{get_function_name()}",
                 mode=BOTH_LOG,
                 func_name=1,
             )
@@ -956,11 +956,11 @@ def execute_with_extended_retries(
                 except Exception:
                     # Don't let email failures affect the successful result
                     pass
-            
+
             # Reset connection status if available
             if tc is not None:
                 tc.connection_ok = True
-            
+
             break  # Exit while loop on success
-    
+
     return return_val

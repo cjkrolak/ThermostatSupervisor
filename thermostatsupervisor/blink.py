@@ -217,7 +217,7 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):
             (dict): dictionary of meta data.
         """
         del trait  # unused on blink
-        
+
         def _get_metadata_internal():
             zone_name = blink_config.metadata[self.zone_number]["zone_name"]
             if self.blink.cameras == {}:
@@ -234,13 +234,13 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):
                     else:
                         return camera.attributes[parameter]
             raise ValueError(f"Camera zone {zone}({zone_name}) was not found")
-        
+
         if retry:
             # Use standardized extended retry mechanism
             return util.execute_with_extended_retries(
                 func=_get_metadata_internal,
-                thermostat_type=getattr(self, 'thermostat_type', 'Blink'),
-                zone_name=str(getattr(self, 'zone_name', zone)),
+                thermostat_type=getattr(self, "thermostat_type", "Blink"),
+                zone_name=str(getattr(self, "zone_name", zone)),
                 number_of_retries=5,
                 initial_retry_delay_sec=60,
                 exception_types=(

@@ -79,7 +79,7 @@ class ThermostatClass(tc.ThermostatCommon):
             (int, float, str, dict): depends on parameter
         """
         del trait  # unused on emulator
-        
+
         def _get_metadata_internal():
             if zone is None:
                 # returned cached raw data for all zones
@@ -98,13 +98,13 @@ class ThermostatClass(tc.ThermostatCommon):
                         f"meta_data_dict: {meta_data_dict}"
                     )
                     raise
-        
+
         if retry:
             # Use standardized extended retry mechanism
             return util.execute_with_extended_retries(
                 func=_get_metadata_internal,
-                thermostat_type='Emulator',
-                zone_name=str(zone) if zone is not None else 'all',
+                thermostat_type="Emulator",
+                zone_name=str(zone) if zone is not None else "all",
                 number_of_retries=5,
                 initial_retry_delay_sec=60,
                 exception_types=(

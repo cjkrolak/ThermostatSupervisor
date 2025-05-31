@@ -288,7 +288,7 @@ def get_zones_info_with_retries(func, thermostat_type, zone_name) -> list:
         pyhtcc.pyhtcc.UnauthorizedError,
         pyhtcc.requests.exceptions.HTTPError,
     )
-    
+
     # Use the common retry utility
     return util.execute_with_extended_retries(
         func=func,
