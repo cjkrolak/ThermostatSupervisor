@@ -66,7 +66,7 @@ class ThermostatClass(pyhtcc.PyHTCC, tc.ThermostatCommon):
 
     def close(self):
         """Explicitly close the session created in pyhtcc."""
-        if hasattr(self, 'session') and self.session is not None:
+        if hasattr(self, "session") and self.session is not None:
             self.session.close()
             self.session = None
 
