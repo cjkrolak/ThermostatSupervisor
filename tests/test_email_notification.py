@@ -65,7 +65,7 @@ class Test(utc.UnitTest):
                 "SMTP port input, should fail."
             )
             # Mock SMTP_SSL to force a connection error for bad port
-            with mock.patch('smtplib.SMTP_SSL') as mock_smtp:
+            with mock.patch("smtplib.SMTP_SSL") as mock_smtp:
                 mock_smtp.side_effect = OSError("Connection failed")
                 return_status, return_status_msg = eml.send_email_alert(
                     server_port=13, subject="test email alert (bad port)", body=body
@@ -90,7 +90,7 @@ class Test(utc.UnitTest):
                 "sender email address, should fail."
             )
             # Mock SMTP_SSL to simulate successful connection but failed authentication
-            with mock.patch('smtplib.SMTP_SSL') as mock_smtp:
+            with mock.patch("smtplib.SMTP_SSL") as mock_smtp:
                 mock_instance = mock_smtp.return_value
                 mock_instance.ehlo.return_value = None
                 mock_instance.login.side_effect = smtplib.SMTPAuthenticationError(
@@ -187,7 +187,7 @@ class Test(utc.UnitTest):
             try:
                 # Mock SMTP_SSL to simulate successful connection and login,
                 # but failed sendmail
-                with mock.patch('smtplib.SMTP_SSL') as mock_smtp:
+                with mock.patch("smtplib.SMTP_SSL") as mock_smtp:
                     mock_instance = mock_smtp.return_value
                     mock_instance.ehlo.return_value = None
                     mock_instance.login.return_value = None
