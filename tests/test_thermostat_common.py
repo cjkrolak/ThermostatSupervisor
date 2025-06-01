@@ -924,12 +924,17 @@ class Test(utc.UnitTest):
                 api.uip.zone_name, api.input_flds.zone
             )
             mod = api.load_hardware_library(thermostat_type)
-            
+
             # Mock the environment variable verification to avoid requiring credentials
             # for this unit test which should be truly loopback
-            with unittest.mock.patch.object(api, 'verify_required_env_variables', return_value=True):
+            with unittest.mock.patch.object(
+                api, "verify_required_env_variables", return_value=True
+            ):
                 thermostat, zone_number = tc.thermostat_basic_checkout(
-                    thermostat_type, zone_number, mod.ThermostatClass, mod.ThermostatZone
+                    thermostat_type,
+                    zone_number,
+                    mod.ThermostatClass,
+                    mod.ThermostatZone,
                 )
             print(f"thermotat={type(thermostat)}")
             print(f"thermotat={type(zone_number)}")
@@ -955,10 +960,12 @@ class Test(utc.UnitTest):
                 api.uip.zone_name, api.input_flds.zone
             )
             mod = api.load_hardware_library(thermostat_type)
-            
+
             # Mock the environment variable verification to avoid requiring credentials
             # for this unit test which should be truly loopback
-            with unittest.mock.patch.object(api, 'verify_required_env_variables', return_value=True):
+            with unittest.mock.patch.object(
+                api, "verify_required_env_variables", return_value=True
+            ):
                 tc.print_select_data_from_all_zones(
                     thermostat_type,
                     [zone_number],
