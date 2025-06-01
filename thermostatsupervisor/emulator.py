@@ -661,7 +661,8 @@ class ThermostatZone(tc.ThermostatCommonZone):
         Check if deviation data exists.
 
         inputs:
-            key(str): if provided, check for specific key, otherwise check if file exists
+            key(str): if provided, check for specific key, otherwise check if
+                file exists
         returns:
             (bool): True if deviation data exists
         """
