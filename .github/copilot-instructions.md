@@ -1,6 +1,3 @@
-Python Instructions
-Write clear and concise comments for each function.
-Ensure functions have descriptive names and include type hints.
 ```markdown
 ### Python Instructions
 - Write clear and concise comments for each function.
@@ -30,4 +27,27 @@ Ensure functions have descriptive names and include type hints.
 - Account for common edge cases like empty inputs, invalid data types, and large datasets.
 - Include comments for edge cases and the expected behavior in those cases.
 - Write unit tests for functions and document them with docstrings explaining the test cases.
+
+### Linting and Code Quality
+- Ensure linting is passing on each commit before submitting changes.
+- Run `flake8 --config=setup.cfg .` to verify code style compliance.
+- Address all linting issues before committing code.
+- Follow the existing flake8 configuration in `setup.cfg` which includes black compatibility settings.
+- Use `pylint $(git ls-files '*.py')` for additional code quality checks.
+
+### Code Coverage Requirements
+- Add unit and integration test code coverage on all new code.
+- Verify code coverage on existing code where code changes are being made.
+- Use `python -m tests.unit_test_coverage` to run tests and generate coverage reports.
+- Review coverage reports in `htmlcov/index.html` to identify areas needing more tests.
+- Update or enhance test code if coverage is insufficient for modified areas.
+- Strive to maintain or improve overall project coverage with each change.
+
+### Documentation and Comments Enhancement
+- Verify docstrings and comments on existing code where code changes are being made.
+- Update or enhance docstrings and comments if they are outdated or insufficient.
+- Ensure all modified functions have proper docstrings following PEP 257 conventions.
+- Add explanatory comments for complex logic or algorithmic decisions in modified code.
+- Document any changes to function signatures, parameters, or return values.
+- Maintain consistency with existing documentation style throughout the codebase.
 ```
