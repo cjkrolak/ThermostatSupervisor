@@ -9,11 +9,15 @@ name: Azure Pipelines
 trigger:
   none
 
-# trigger on PR to dev branch only
+# trigger on PR to dev branch only for relevant file changes
 pr:
   branches:
     include:
     - develop
+  paths:
+    include:
+    - '**/*.py'
+    - '.github/azure-pipelines.yml'
 
 pool:
   vmImage: ubuntu-latest
