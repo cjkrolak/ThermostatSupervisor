@@ -280,7 +280,6 @@ def get_zones_info_with_retries(func, thermostat_type, zone_name) -> list:
     returns:
         list of zone info.
     """
-
     # Define Honeywell-specific exception types
     honeywell_exceptions = (
         pyhtcc.requests.exceptions.ConnectionError,
@@ -292,13 +291,21 @@ def get_zones_info_with_retries(func, thermostat_type, zone_name) -> list:
         http.client.RemoteDisconnected,
 
 
+    # Use shorter retry parameters during unit testing to prevent test hanging
+    if util.unit_test_mode:
+        number_of_retries = 2  # Reduce from 5 to 2 retries
+        initial_retry_delay_sec = 1  # Reduce from 60s to 1s initial delay
+    else:
+        number_of_retries = 5
+        initial_retry_delay_sec = 60
+
     # Use the common retry utility
     return util.execute_with_extended_retries(
         func=func,
         thermostat_type=thermostat_type,
         zone_name=zone_name,
-        number_of_retries=5,
-        initial_retry_delay_sec=60,
+        number_of_retries=number_of_retries,
+        initial_retry_delay_sec=initial_retry_delay_sec,
         exception_types=honeywell_exceptions,
         email_notification=email_notification,
     )
