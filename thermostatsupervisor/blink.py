@@ -193,17 +193,18 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):
         if self.verbose:
             print("-" * table_length)
 
-    def get_all_metadata(self, zone=None):
+    def get_all_metadata(self, zone=None, retry=False):
         """Get all thermostat meta data for device_id from local API.
 
         inputs:
             zone(): specified zone
+            retry(bool): if True will retry with extended retry mechanism
         returns:
             (dict): dictionary of meta data.
         """
-        return self.get_metadata(zone)
+        return self.get_metadata(zone, retry=retry)
 
-    def get_metadata(self, zone=None, trait=None, parameter=None):
+    def get_metadata(self, zone=None, trait=None, parameter=None, retry=False):
         """Get thermostat meta data for device_id from local API.
 
         inputs:
@@ -211,25 +212,49 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):
             trait(str): trait or parent key, if None will assume a non-nested
             dict
             parameter(str): target parameter, if None will return all.
+            retry(bool): if True will retry with extended retry mechanism
         returns:
             (dict): dictionary of meta data.
         """
         del trait  # unused on blink
-        zone_name = blink_config.metadata[self.zone_number]["zone_name"]
-        if self.blink.cameras == {}:
-            raise ValueError(
-                "camera list is empty when searching for camera" f" {zone_name}"
+
+        def _get_metadata_internal():
+            zone_name = blink_config.metadata[self.zone_number]["zone_name"]
+            if self.blink.cameras == {}:
+                raise ValueError(
+                    "camera list is empty when searching for camera" f" {zone_name}"
+                )
+            for name, camera in self.blink.cameras.items():
+                # print(f"DEBUG: camera {name}: {camera.attributes}")
+                if name == zone_name:
+                    if self.verbose:
+                        print(f"found camera {name}: {camera.attributes}")
+                    if parameter is None:
+                        return camera.attributes
+                    else:
+                        return camera.attributes[parameter]
+            raise ValueError(f"Camera zone {zone}({zone_name}) was not found")
+
+        if retry:
+            # Use standardized extended retry mechanism
+            return util.execute_with_extended_retries(
+                func=_get_metadata_internal,
+                thermostat_type=getattr(self, "thermostat_type", "Blink"),
+                zone_name=str(getattr(self, "zone_name", zone)),
+                number_of_retries=5,
+                initial_retry_delay_sec=60,
+                exception_types=(
+                    ValueError,
+                    KeyError,
+                    AttributeError,
+                    ConnectionError,
+                    TimeoutError,
+                ),
+                email_notification=None,  # Blink doesn't import email_notification
             )
-        for name, camera in self.blink.cameras.items():
-            # print(f"DEBUG: camera {name}: {camera.attributes}")
-            if name == zone_name:
-                if self.verbose:
-                    print(f"found camera {name}: {camera.attributes}")
-                if parameter is None:
-                    return camera.attributes
-                else:
-                    return camera.attributes[parameter]
-        raise ValueError(f"Camera zone {zone}({zone_name}) was not found")
+        else:
+            # Single attempt without retry
+            return _get_metadata_internal()
 
     def print_all_thermostat_metadata(self, zone):
         """Print all metadata for zone to the screen.
