@@ -6,10 +6,12 @@ https://pypi.org/project/pyhtcc/
 """
 # built-in imports
 import datetime
+import http.client
 import os
 import pprint
 import time
 import traceback
+import urllib3.exceptions
 from typing import Union
 
 # local imports
@@ -295,6 +297,8 @@ def get_zones_info_with_retries(func, thermostat_type, zone_name) -> list:
             pyhtcc.pyhtcc.NoZonesFoundError,
             pyhtcc.pyhtcc.UnauthorizedError,
             pyhtcc.requests.exceptions.HTTPError,
+            urllib3.exceptions.ProtocolError,
+            http.client.RemoteDisconnected,
         ) as ex:
             # set flag to force re-authentication
             tc.connection_ok = False
