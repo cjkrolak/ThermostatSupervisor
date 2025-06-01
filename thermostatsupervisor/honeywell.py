@@ -290,6 +290,7 @@ def get_zones_info_with_retries(func, thermostat_type, zone_name) -> list:
         pyhtcc.requests.exceptions.HTTPError,
         urllib3.exceptions.ProtocolError,
         http.client.RemoteDisconnected,
+    )
 
 
     # Use shorter retry parameters during unit testing to prevent test hanging
