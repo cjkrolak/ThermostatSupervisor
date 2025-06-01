@@ -6,6 +6,8 @@ name: black-action
       - 'feature/*'
       - 'bugfix/*'
       - 'hotfix/*'
+permissions:
+  contents: write
 jobs:
   linter_name:
     name: runner / black
