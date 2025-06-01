@@ -5,12 +5,10 @@ using pyhtcc library.
 https://pypi.org/project/pyhtcc/
 """
 # built-in imports
-import datetime
 import http.client
 import os
 import pprint
 import time
-import traceback
 import urllib3.exceptions
 from typing import Union
 
