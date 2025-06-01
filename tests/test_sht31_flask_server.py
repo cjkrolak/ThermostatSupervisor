@@ -140,7 +140,7 @@ class IntegrationTest(utc.UnitTest):
         print(f"heat mode={Zone.is_heat_mode()}")
         print(f"cool mode={Zone.is_cool_mode()}")
         print(f"temporary hold minutes={Zone.get_temporary_hold_until_time()}")
-        meta_data = Thermostat.get_all_metadata(sht31_config.UNIT_TEST_ZONE)
+        meta_data = Thermostat.get_all_metadata(sht31_config.UNIT_TEST_ZONE, retry=True)
         print(f"thermostat meta data={meta_data}")
         print(
             f"thermostat display temp="
