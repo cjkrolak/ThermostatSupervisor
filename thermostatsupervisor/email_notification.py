@@ -6,6 +6,7 @@ dependencies:
   'GMAIL_USERNAME':  from address on gmail service
   'GMAIL_PASSWORD':  GMAIL_USERNAME password
 """
+
 # built-in libraries
 from email.mime.text import MIMEText
 import smtplib
