@@ -280,7 +280,7 @@ def get_zones_info_with_retries(func, thermostat_type, zone_name) -> list:
     returns:
         list of zone info.
     """
-   
+
     # Define Honeywell-specific exception types
     honeywell_exceptions = (
         pyhtcc.requests.exceptions.ConnectionError,
