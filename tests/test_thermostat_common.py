@@ -6,6 +6,7 @@ import operator
 import pprint
 import random
 import unittest
+import unittest.mock
 
 # local imports
 from thermostatsupervisor import thermostat_api as api
@@ -904,7 +905,6 @@ class Test(utc.UnitTest):
         finally:
             self.Zone.get_system_switch_position = self.switch_position_backup
 
-    @unittest.skipIf(not utc.ENABLE_SHT31_TESTS, "sht31 tests are disabled")
     def test_thermostat_basic_checkout(self):
         """Verify thermostat_basic_checkout()."""
 
@@ -924,15 +924,23 @@ class Test(utc.UnitTest):
                 api.uip.zone_name, api.input_flds.zone
             )
             mod = api.load_hardware_library(thermostat_type)
-            thermostat, zone_number = tc.thermostat_basic_checkout(
-                thermostat_type, zone_number, mod.ThermostatClass, mod.ThermostatZone
-            )
+
+            # Mock the environment variable verification to avoid requiring credentials
+            # for this unit test which should be truly loopback
+            with unittest.mock.patch.object(
+                api, "verify_required_env_variables", return_value=True
+            ):
+                thermostat, zone_number = tc.thermostat_basic_checkout(
+                    thermostat_type,
+                    zone_number,
+                    mod.ThermostatClass,
+                    mod.ThermostatZone,
+                )
             print(f"thermotat={type(thermostat)}")
             print(f"thermotat={type(zone_number)}")
         finally:
             self.Zone.get_system_switch_position = self.switch_position_backup
 
-    @unittest.skipIf(not utc.ENABLE_SHT31_TESTS, "sht31 tests are disabled")
     def test_print_select_data_from_all_zones(self):
         """Verify print_select_data_from_all_zones()."""
 
@@ -952,14 +960,20 @@ class Test(utc.UnitTest):
                 api.uip.zone_name, api.input_flds.zone
             )
             mod = api.load_hardware_library(thermostat_type)
-            tc.print_select_data_from_all_zones(
-                thermostat_type,
-                [zone_number],
-                mod.ThermostatClass,
-                mod.ThermostatZone,
-                display_wifi=True,
-                display_battery=True,
-            )
+
+            # Mock the environment variable verification to avoid requiring credentials
+            # for this unit test which should be truly loopback
+            with unittest.mock.patch.object(
+                api, "verify_required_env_variables", return_value=True
+            ):
+                tc.print_select_data_from_all_zones(
+                    thermostat_type,
+                    [zone_number],
+                    mod.ThermostatClass,
+                    mod.ThermostatZone,
+                    display_wifi=True,
+                    display_battery=True,
+                )
         finally:
             self.Zone.get_system_switch_position = self.switch_position_backup
 
