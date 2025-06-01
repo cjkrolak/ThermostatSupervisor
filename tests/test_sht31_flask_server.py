@@ -335,7 +335,8 @@ class Sht31FlaskServerSensorUnit(utc.UnitTest):
                         # Create a proper mock that returns values based on the key
                         def mock_args_get(key, default=None, type=None):
                             values = {
-                                "measurements": 1,  # Single measurement for simple comparison
+                                "measurements": 1,  # Single measurement for
+                                # simple comparison
                                 "seed": seed,
                             }
                             value = values.get(key, default)
@@ -370,8 +371,9 @@ class Sht31FlaskServerSensorUnit(utc.UnitTest):
                         self.assertNotEqual(
                             temp_f1,
                             temp_f2,
-                            f"Different seeds {hex(seed1)} and {hex(seed2)} should produce "
-                            f"different temperatures, but both gave {temp_f1}°F",
+                            f"Different seeds {hex(seed1)} and {hex(seed2)} "
+                            f"should produce different temperatures, "
+                            f"but both gave {temp_f1}°F",
                         )
 
                         # Also verify humidity values are different
@@ -380,8 +382,9 @@ class Sht31FlaskServerSensorUnit(utc.UnitTest):
                         self.assertNotEqual(
                             humidity1,
                             humidity2,
-                            f"Different seeds {hex(seed1)} and {hex(seed2)} should produce "
-                            f"different humidity values, but both gave {humidity1}%RH",
+                            f"Different seeds {hex(seed1)} and {hex(seed2)} "
+                            f"should produce different humidity values, "
+                            f"but both gave {humidity1}%RH",
                         )
 
                 # Test reproducibility - same seed should give same results

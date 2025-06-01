@@ -67,12 +67,6 @@ class FunctionalIntegrationTest(IntegrationTest, utc.FunctionalIntegrationTest):
                 Zone.has_deviation_data(), "Should have no deviation data initially"
             )
 
-            # Get baseline values
-            initial_temp = Zone.get_display_temp()
-            initial_humidity = Zone.get_display_humidity()
-            initial_heat_sp = Zone.get_heat_setpoint_raw()
-            initial_cool_sp = Zone.get_cool_setpoint_raw()
-
             # Test 2: Create deviation file
             Zone.create_deviation_file()
             self.assertTrue(
@@ -150,7 +144,8 @@ class FunctionalIntegrationTest(IntegrationTest, utc.FunctionalIntegrationTest):
             )
 
             # Test 7: Verify normal behavior is restored
-            # Note: We can't compare exact values due to random noise, but values should be in normal range
+            # Note: We can't compare exact values due to random noise,
+            # but values should be in normal range
             current_temp = Zone.get_display_temp()
             current_humidity = Zone.get_display_humidity()
 
@@ -163,7 +158,8 @@ class FunctionalIntegrationTest(IntegrationTest, utc.FunctionalIntegrationTest):
             self.assertLessEqual(
                 temp_diff,
                 emulator_config.NORMAL_TEMP_VARIATION,
-                "Temperature should be within normal variation after clearing deviation",
+                "Temperature should be within normal variation "
+                "after clearing deviation",
             )
             self.assertLessEqual(
                 humidity_diff,
