@@ -282,10 +282,17 @@ def get_zones_info_with_retries(func, thermostat_type, zone_name) -> list:
     """
     initial_trial_number = 1
     trial_number = initial_trial_number
-    number_of_retries = 5
-    retry_delay_sec = 60
+
+    # Use shorter retry parameters during unit testing to prevent test hanging
+    if util.unit_test_mode:
+        number_of_retries = 2  # Reduce from 5 to 2 retries
+        retry_delay_sec = 1  # Reduce from 60s to 1s initial delay
+    else:
+        number_of_retries = 5
+        retry_delay_sec = 60
+
     return_val = []
-    while trial_number < number_of_retries:
+    while trial_number <= number_of_retries:
         time_now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         try:
             return_val = func()
@@ -337,7 +344,7 @@ def get_zones_info_with_retries(func, thermostat_type, zone_name) -> list:
             )
 
             # exhausted retries, raise exception
-            if trial_number > number_of_retries:
+            if trial_number >= number_of_retries:
                 util.log_msg(
                     f"ERRROR: exhausted {number_of_retries} "
                     f"retries during {util.get_function_name()}",
@@ -347,7 +354,7 @@ def get_zones_info_with_retries(func, thermostat_type, zone_name) -> list:
                 raise ex
 
             # delay in between retries
-            if trial_number <= number_of_retries:
+            if trial_number < number_of_retries:
                 util.log_msg(
                     f"Delaying {retry_delay_sec} prior to retry...",
                     mode=util.BOTH_LOG,

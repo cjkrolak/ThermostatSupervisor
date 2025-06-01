@@ -1,4 +1,6 @@
 """emulator integration"""
+import os
+import pickle
 import random
 import time
 import traceback
@@ -147,6 +149,12 @@ class ThermostatZone(tc.ThermostatCommonZone):
         self.zone_name = Thermostat_obj.zone_name
         self.zone_info = Thermostat_obj.get_all_metadata(Thermostat_obj.zone_name)
         self.zone_name = self.get_zone_name()
+
+        # deviation file support for testing
+        self.deviation_file_path = util.get_full_file_path(
+            f"emulator_deviation_zone_{self.device_id}.pkl"
+        )
+
         self.initialize_meta_data_dict()
 
     def initialize_meta_data_dict(self):
@@ -212,6 +220,12 @@ class ThermostatZone(tc.ThermostatCommonZone):
         returns:
             (float): indoor temp in °F.
         """
+        # Check for deviation data first
+        deviation_temp = self.get_deviation_value("display_temp")
+        if deviation_temp is not None:
+            return float(deviation_temp)
+
+        # Normal behavior if no deviation data
         self.refresh_zone_info()
         return self.get_parameter("display_temp") + random.uniform(
             -emulator_config.NORMAL_TEMP_VARIATION,
@@ -230,11 +244,17 @@ class ThermostatZone(tc.ThermostatCommonZone):
         """
         if not self.get_is_humidity_supported():
             return None
-        else:
-            return self.get_parameter("display_humidity") + random.uniform(
-                -emulator_config.NORMAL_HUMIDITY_VARIATION,
-                emulator_config.NORMAL_HUMIDITY_VARIATION,
-            )
+
+        # Check for deviation data first
+        deviation_humidity = self.get_deviation_value("display_humidity")
+        if deviation_humidity is not None:
+            return float(deviation_humidity)
+
+        # Normal behavior if no deviation data
+        return self.get_parameter("display_humidity") + random.uniform(
+            -emulator_config.NORMAL_HUMIDITY_VARIATION,
+            emulator_config.NORMAL_HUMIDITY_VARIATION,
+        )
 
     def get_is_humidity_supported(self) -> bool:  # used
         """
@@ -442,6 +462,12 @@ class ThermostatZone(tc.ThermostatCommonZone):
         returns:
             (float): heating set point in °F.
         """
+        # Check for deviation data first
+        deviation_setpoint = self.get_deviation_value("heat_setpoint")
+        if deviation_setpoint is not None:
+            return float(deviation_setpoint)
+
+        # Normal behavior if no deviation data
         self.refresh_zone_info()
         return float(self.get_parameter("heat_setpoint"))
 
@@ -480,6 +506,12 @@ class ThermostatZone(tc.ThermostatCommonZone):
         returns:
             (float): cooling set point in °F.
         """
+        # Check for deviation data first
+        deviation_setpoint = self.get_deviation_value("cool_setpoint")
+        if deviation_setpoint is not None:
+            return float(deviation_setpoint)
+
+        # Normal behavior if no deviation data
         self.refresh_zone_info()
         return float(self.get_parameter("cool_setpoint"))
 
@@ -551,6 +583,118 @@ class ThermostatZone(tc.ThermostatCommonZone):
             None
         """
         self.set_parameter("cool_setpoint", temp)
+
+    def create_deviation_file(self) -> None:
+        """
+        Create an empty deviation file for this thermostat zone.
+
+        inputs:
+            None
+        returns:
+            None
+        """
+        deviation_data = {}
+        with open(self.deviation_file_path, "wb") as handle:
+            pickle.dump(deviation_data, handle)
+        if self.verbose:
+            util.log_msg(
+                f"Created deviation file: {self.deviation_file_path}",
+                mode=util.BOTH_LOG,
+                func_name=1,
+            )
+
+    def set_deviation_value(self, key: str, value) -> None:
+        """
+        Set a deviation value for a specific parameter.
+
+        inputs:
+            key(str): parameter name (e.g., 'display_temp', 'display_humidity')
+            value: deviation value to set
+        returns:
+            None
+        """
+        # Read existing deviation data or create empty dict
+        deviation_data = {}
+        if os.path.exists(self.deviation_file_path):
+            try:
+                with open(self.deviation_file_path, "rb") as handle:
+                    deviation_data = pickle.load(handle)
+            except (pickle.PickleError, EOFError):
+                deviation_data = {}
+
+        # Update the value
+        deviation_data[key] = value
+
+        # Write back to file
+        with open(self.deviation_file_path, "wb") as handle:
+            pickle.dump(deviation_data, handle)
+
+        if self.verbose:
+            util.log_msg(
+                f"Set deviation value {key}={value} in {self.deviation_file_path}",
+                mode=util.BOTH_LOG,
+                func_name=1,
+            )
+
+    def get_deviation_value(self, key: str, default_val=None):
+        """
+        Get a deviation value for a specific parameter.
+
+        inputs:
+            key(str): parameter name
+            default_val: default value if key not found or file doesn't exist
+        returns:
+            deviation value or default_val
+        """
+        if not os.path.exists(self.deviation_file_path):
+            return default_val
+
+        try:
+            with open(self.deviation_file_path, "rb") as handle:
+                deviation_data = pickle.load(handle)
+                return deviation_data.get(key, default_val)
+        except (pickle.PickleError, EOFError):
+            return default_val
+
+    def has_deviation_data(self, key: str = None) -> bool:
+        """
+        Check if deviation data exists.
+
+        inputs:
+            key(str): if provided, check for specific key, otherwise check if file exists
+        returns:
+            (bool): True if deviation data exists
+        """
+        if not os.path.exists(self.deviation_file_path):
+            return False
+
+        if key is None:
+            return True
+
+        try:
+            with open(self.deviation_file_path, "rb") as handle:
+                deviation_data = pickle.load(handle)
+                return key in deviation_data
+        except (pickle.PickleError, EOFError):
+            return False
+
+    def clear_deviation_data(self) -> None:
+        """
+        Clear all deviation data by removing the deviation file.
+
+        inputs:
+            None
+        returns:
+            None
+        """
+        if os.path.exists(self.deviation_file_path):
+            os.remove(self.deviation_file_path)
+            if self.verbose:
+                util.log_msg(
+                    f"Cleared deviation file: {self.deviation_file_path}",
+                    mode=util.BOTH_LOG,
+                    func_name=1,
+                )
 
     def refresh_zone_info(self, force_refresh=False):
         """
