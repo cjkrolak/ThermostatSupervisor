@@ -316,93 +316,104 @@ class Sht31FlaskServerSensorUnit(utc.UnitTest):
         """Test that seed parameter affects generated unit test data."""
         # Import Flask app from sht31_flask_server module
         from thermostatsupervisor.sht31_flask_server import app
-        
+
         # Test different seed values to ensure they produce different results
         test_seeds = [0x7F, 0x50, 0xA0]  # Default seed, and two other values
         results = {}
-        
+
         # Create Flask application context for the test
         with app.test_request_context():
             # Mock the wifi strength method to avoid system dependency
-            with patch.object(self.sensors, 'get_iwconfig_wifi_strength', return_value=-50):
+            with patch.object(
+                self.sensors, "get_iwconfig_wifi_strength", return_value=-50
+            ):
                 for seed in test_seeds:
                     # Mock Flask request args with specific seed and measurements=1
-                    with patch('thermostatsupervisor.sht31_flask_server.request') as mock_request:
+                    with patch(
+                        "thermostatsupervisor.sht31_flask_server.request"
+                    ) as mock_request:
                         # Create a proper mock that returns values based on the key
                         def mock_args_get(key, default=None, type=None):
                             values = {
-                                'measurements': 1,  # Single measurement for simple comparison
-                                'seed': seed
+                                "measurements": 1,  # Single measurement for simple comparison
+                                "seed": seed,
                             }
                             value = values.get(key, default)
                             if type is not None and value is not None:
                                 return type(value)
                             return value
-                        
+
                         mock_request.args.get = mock_args_get
-                        
+
                         # Get unit test data with the mocked seed
                         data = self.sensors.get_unit_test()
-                        
+
                         # Store results for comparison
                         results[seed] = data
-                        
+
                         # Verify the response contains expected keys
-                        self.assertIn('measurements', data)
-                        self.assertIn('Temp(F) mean', data)
-                        self.assertIn('Temp(C) mean', data)
-                        self.assertIn('Humidity(%RH) mean', data)
-                        
+                        self.assertIn("measurements", data)
+                        self.assertIn("Temp(F) mean", data)
+                        self.assertIn("Temp(C) mean", data)
+                        self.assertIn("Humidity(%RH) mean", data)
+
                         # Verify measurements count is correct
-                        self.assertEqual(data['measurements'], 1)
-                
+                        self.assertEqual(data["measurements"], 1)
+
                 # Verify that different seeds produce different temperature values
                 seed_values = list(test_seeds)
                 for i in range(len(seed_values)):
                     for j in range(i + 1, len(seed_values)):
                         seed1, seed2 = seed_values[i], seed_values[j]
-                        temp_f1 = results[seed1]['Temp(F) mean']
-                        temp_f2 = results[seed2]['Temp(F) mean']
+                        temp_f1 = results[seed1]["Temp(F) mean"]
+                        temp_f2 = results[seed2]["Temp(F) mean"]
                         self.assertNotEqual(
-                            temp_f1, temp_f2,
+                            temp_f1,
+                            temp_f2,
                             f"Different seeds {hex(seed1)} and {hex(seed2)} should produce "
-                            f"different temperatures, but both gave {temp_f1}°F"
+                            f"different temperatures, but both gave {temp_f1}°F",
                         )
-                        
+
                         # Also verify humidity values are different
-                        humidity1 = results[seed1]['Humidity(%RH) mean']
-                        humidity2 = results[seed2]['Humidity(%RH) mean']
+                        humidity1 = results[seed1]["Humidity(%RH) mean"]
+                        humidity2 = results[seed2]["Humidity(%RH) mean"]
                         self.assertNotEqual(
-                            humidity1, humidity2,
+                            humidity1,
+                            humidity2,
                             f"Different seeds {hex(seed1)} and {hex(seed2)} should produce "
-                            f"different humidity values, but both gave {humidity1}%RH"
+                            f"different humidity values, but both gave {humidity1}%RH",
                         )
-                
+
                 # Test reproducibility - same seed should give same results
-                with patch('thermostatsupervisor.sht31_flask_server.request') as mock_request:
+                with patch(
+                    "thermostatsupervisor.sht31_flask_server.request"
+                ) as mock_request:
+
                     def mock_args_get_repeat(key, default=None, type=None):
                         values = {
-                            'measurements': 1,
-                            'seed': test_seeds[0]  # Use first seed again
+                            "measurements": 1,
+                            "seed": test_seeds[0],  # Use first seed again
                         }
                         value = values.get(key, default)
                         if type is not None and value is not None:
                             return type(value)
                         return value
-                    
+
                     mock_request.args.get = mock_args_get_repeat
-                    
+
                     repeat_data = self.sensors.get_unit_test()
-                    
+
                     # Verify reproducibility
                     original_data = results[test_seeds[0]]
                     self.assertEqual(
-                        repeat_data['Temp(F) mean'], original_data['Temp(F) mean'],
-                        "Same seed should produce identical temperature readings"
+                        repeat_data["Temp(F) mean"],
+                        original_data["Temp(F) mean"],
+                        "Same seed should produce identical temperature readings",
                     )
                     self.assertEqual(
-                        repeat_data['Humidity(%RH) mean'], original_data['Humidity(%RH) mean'],
-                        "Same seed should produce identical humidity readings"
+                        repeat_data["Humidity(%RH) mean"],
+                        original_data["Humidity(%RH) mean"],
+                        "Same seed should produce identical humidity readings",
                     )
 
 
