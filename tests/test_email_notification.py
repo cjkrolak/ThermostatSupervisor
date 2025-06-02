@@ -97,52 +97,14 @@ class Test(utc.UnitTest):
             original_unit_test_mode = util.unit_test_mode
             util.unit_test_mode = False
             try:
-
-        # Temporarily disable unit_test_mode to test error conditions
-        original_unit_test_mode = util.unit_test_mode
-        util.unit_test_mode = False
-        try:
-            body = (
-                "this is a test of the email notification alert with bad "
-                "SMTP port input, should fail."
-            )
-            # Mock SMTP_SSL to force a connection error for bad port
-            with mock.patch("smtplib.SMTP_SSL") as mock_smtp:
-                mock_smtp.side_effect = OSError("Connection failed")
                 return_status, return_status_msg = eml.send_email_alert(
-                    server_port=13, subject="test email alert (bad port)", body=body
+                    subject="test email alert (bad auth)", body=body
                 )
-            fail_msg = (
-                f"send email with bad server port failed for status code: "
-                f"{return_status}: {return_status_msg}"
-            )
-            self.assertEqual(return_status, util.CONNECTION_ERROR, fail_msg)
-        finally:
-            # Restore original unit_test_mode
-            util.unit_test_mode = original_unit_test_mode
-
-        # send message with bad email address,
-        # util.AUTHORIZATION_ERROR expected
-        # Temporarily disable unit_test_mode to test error conditions
-        original_unit_test_mode = util.unit_test_mode
-        util.unit_test_mode = False
-        try:
-            body = (
-                "this is a test of the email notification alert with bad "
-                "sender email address, should fail."
-            )
-            # Mock SMTP_SSL to simulate successful connection but failed authentication
-            with mock.patch("smtplib.SMTP_SSL") as mock_smtp:
-                mock_instance = mock_smtp.return_value
-                mock_instance.ehlo.return_value = None
-                mock_instance.login.side_effect = smtplib.SMTPAuthenticationError(
-                    535, "Authentication failed"
-                )
-                mock_instance.close.return_value = None
             finally:
                 util.unit_test_mode = original_unit_test_mode
+
         fail_msg = (
-            f"send email with bad from addresss failed for status "
+            f"send email with bad from address failed for status "
             f"code: {return_status}: {return_status_msg}"
         )
         self.assertEqual(return_status, util.AUTHORIZATION_ERROR, fail_msg)
