@@ -41,8 +41,7 @@ class Test(utc.UnitTest):
                 self.fail(fail_msg)
 
     @mock.patch.dict(
-        os.environ,
-        {"GMAIL_USERNAME": "test@gmail.com", "GMAIL_PASSWORD": "testpass"}
+        os.environ, {"GMAIL_USERNAME": "test@gmail.com", "GMAIL_PASSWORD": "testpass"}
     )
     def test_send_email_alerts(self):
         """Test send_email_alerts() functionality."""
@@ -65,7 +64,7 @@ class Test(utc.UnitTest):
             "SMTP port input, should fail."
         )
         # Mock SMTP_SSL to raise an OSError for bad port
-        with mock.patch('smtplib.SMTP_SSL', side_effect=OSError("Connection refused")):
+        with mock.patch("smtplib.SMTP_SSL", side_effect=OSError("Connection refused")):
             # Temporarily disable unit test mode to test connection error
             original_unit_test_mode = util.unit_test_mode
             util.unit_test_mode = False
@@ -92,7 +91,7 @@ class Test(utc.UnitTest):
         mock_server.login.side_effect = smtplib.SMTPAuthenticationError(
             535, "Authentication failed"
         )
-        with mock.patch('smtplib.SMTP_SSL', return_value=mock_server):
+        with mock.patch("smtplib.SMTP_SSL", return_value=mock_server):
             # Temporarily disable unit test mode to test authorization error
             original_unit_test_mode = util.unit_test_mode
             util.unit_test_mode = False
@@ -159,8 +158,7 @@ class Test(utc.UnitTest):
                     util.unit_test_mode = original_unit_test_mode
 
     @mock.patch.dict(
-        os.environ,
-        {"GMAIL_USERNAME": "test@gmail.com", "GMAIL_PASSWORD": "testpass"}
+        os.environ, {"GMAIL_USERNAME": "test@gmail.com", "GMAIL_PASSWORD": "testpass"}
     )
     def test_send_email_alert_smtp_exceptions(self):
         """
@@ -192,7 +190,7 @@ class Test(utc.UnitTest):
             mock_server = mock.Mock()
             mock_server.sendmail.side_effect = side_effect
 
-            with mock.patch('smtplib.SMTP_SSL', return_value=mock_server):
+            with mock.patch("smtplib.SMTP_SSL", return_value=mock_server):
                 # send message with no inputs, UTIL.NO_ERROR expected
                 body = (
                     "this is a test of the email notification alert for exception "
