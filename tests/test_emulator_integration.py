@@ -158,8 +158,8 @@ class FunctionalIntegrationTest(IntegrationTest, utc.FunctionalIntegrationTest):
             self.assertLessEqual(
                 temp_diff,
                 emulator_config.NORMAL_TEMP_VARIATION,
-                "Temperature should be within normal variation "
-                "after clearing deviation",
+                "Temperature should be within normal variation after clearing "
+                "deviation",
             )
             self.assertLessEqual(
                 humidity_diff,
