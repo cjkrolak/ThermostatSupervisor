@@ -67,6 +67,10 @@ class FunctionalIntegrationTest(IntegrationTest, utc.FunctionalIntegrationTest):
                 Zone.has_deviation_data(), "Should have no deviation data initially"
             )
 
+            # Get baseline values (stored for potential future use)
+            # Note: These values are not currently used in assertions
+            # due to random noise
+
             # Test 2: Create deviation file
             Zone.create_deviation_file()
             self.assertTrue(

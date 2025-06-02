@@ -110,6 +110,15 @@ def send_email_alert(
         func_name=1,
     )
 
+    # Skip actual email sending during unit tests after all validation is complete
+    if util.unit_test_mode:
+        util.log_msg(
+            f"Unit test mode: Skipping email send - Subject: {subject}",
+            mode=util.DEBUG_LOG + util.STDOUT_LOG,
+            func_name=1,
+        )
+        return (util.NO_ERROR, return_status_msg_dict[util.NO_ERROR])
+
     try:
         server = smtplib.SMTP_SSL(server_url, server_port)
         util.log_msg(
