@@ -292,7 +292,6 @@ def get_zones_info_with_retries(func, thermostat_type, zone_name) -> list:
         http.client.RemoteDisconnected,
     )
 
-
     # Use shorter retry parameters during unit testing to prevent test hanging
     if util.unit_test_mode:
         number_of_retries = 2  # Reduce from 5 to 2 retries
