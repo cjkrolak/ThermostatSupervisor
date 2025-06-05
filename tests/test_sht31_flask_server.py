@@ -422,8 +422,7 @@ class Sht31FlaskServerSensorUnit(utc.UnitTest):
 
 @unittest.skipIf(not utc.ENABLE_SHT31_TESTS, "sht31 tests are disabled")
 @unittest.skipIf(
-    not utc.ENABLE_FLASK_INTEGRATION_TESTS,
-    "flask integration tests are disabled"
+    not utc.ENABLE_FLASK_INTEGRATION_TESTS, "flask integration tests are disabled"
 )
 class TestSht31FlaskClientAzure(utc.UnitTest):
     """
@@ -437,24 +436,24 @@ class TestSht31FlaskClientAzure(utc.UnitTest):
         super().setUp()
         self.app = sht31_fs.create_app()
         self.client = self.app.test_client()
-        self.app.config['TESTING'] = True
+        self.app.config["TESTING"] = True
 
     def test_sht31_flask_server_endpoints_response(self):
         """Test that SHT31 Flask server endpoints return valid responses."""
         # Define endpoints that should return 200 status
         test_endpoints = [
-            ('/', 'production'),
-            ('/unit', 'unit_test'),
-            ('/diag', 'diag'),
-            ('/clear_diag', 'clear_diag'),
-            ('/enable_heater', 'enable_heater'),
-            ('/disable_heater', 'disable_heater'),
-            ('/soft_reset', 'soft_reset'),
-            ('/i2c_detect', 'i2c_detect'),
-            ('/i2c_detect/0', 'i2c_detect_0'),
-            ('/i2c_detect/1', 'i2c_detect_1'),
-            ('/print_block_list', 'print_block_list'),
-            ('/clear_block_list', 'clear_block_list'),
+            ("/", "production"),
+            ("/unit", "unit_test"),
+            ("/diag", "diag"),
+            ("/clear_diag", "clear_diag"),
+            ("/enable_heater", "enable_heater"),
+            ("/disable_heater", "disable_heater"),
+            ("/soft_reset", "soft_reset"),
+            ("/i2c_detect", "i2c_detect"),
+            ("/i2c_detect/0", "i2c_detect_0"),
+            ("/i2c_detect/1", "i2c_detect_1"),
+            ("/print_block_list", "print_block_list"),
+            ("/clear_block_list", "clear_block_list"),
             # Note: skipping '/reset' and '/i2c_recovery' for side effects
         ]
 
@@ -463,31 +462,36 @@ class TestSht31FlaskClientAzure(utc.UnitTest):
                 try:
                     response = self.client.get(endpoint)
                     # Check that we get a valid response
-                    self.assertIn(response.status_code, [200, 400, 404, 500],
-                                  f"Endpoint {endpoint} returned unexpected "
-                                  f"status {response.status_code}")
+                    self.assertIn(
+                        response.status_code,
+                        [200, 400, 404, 500],
+                        f"Endpoint {endpoint} returned unexpected "
+                        f"status {response.status_code}",
+                    )
 
                     # For successful responses, check that we get JSON data
                     if response.status_code == 200:
                         self.assertTrue(
-                            response.is_json or
-                            response.mimetype == 'application/json',
-                            f"Endpoint {endpoint} should return JSON data")
+                            response.is_json or response.mimetype == "application/json",
+                            f"Endpoint {endpoint} should return JSON data",
+                        )
                         data = response.get_json()
                         self.assertIsInstance(
-                            data, dict,
-                            f"Endpoint {endpoint} should return dict data")
+                            data, dict, f"Endpoint {endpoint} should return dict data"
+                        )
                 except Exception as e:
                     # In test environment, some endpoints may fail due to
                     # missing hardware. This is acceptable as we're testing
                     # the Flask routing, not hardware
-                    print(f"Warning: Endpoint {endpoint} failed with {e}, "
-                          f"this may be expected in test environment")
+                    print(
+                        f"Warning: Endpoint {endpoint} failed with {e}, "
+                        f"this may be expected in test environment"
+                    )
 
     def test_sht31_flask_server_unit_test_endpoint(self):
         """Test the unit_test endpoint specifically."""
         try:
-            response = self.client.get('/unit')
+            response = self.client.get("/unit")
 
             # Should get a valid response (404 is OK if endpoint doesn't exist)
             self.assertIn(response.status_code, [200, 400, 404, 500])
@@ -495,13 +499,13 @@ class TestSht31FlaskClientAzure(utc.UnitTest):
             if response.status_code == 200:
                 # Should return JSON data
                 self.assertTrue(
-                    response.is_json or
-                    response.mimetype == 'application/json')
+                    response.is_json or response.mimetype == "application/json"
+                )
                 data = response.get_json()
                 self.assertIsInstance(data, dict)
                 # Should contain measurements key for unit test endpoint
-                if 'measurements' in data:
-                    self.assertIsInstance(data['measurements'], int)
+                if "measurements" in data:
+                    self.assertIsInstance(data["measurements"], int)
         except (FileNotFoundError, OSError) as e:
             # Expected in test environments where system utilities like
             # iwconfig aren't available

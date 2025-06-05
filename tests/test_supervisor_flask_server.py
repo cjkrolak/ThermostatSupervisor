@@ -161,7 +161,7 @@ class TestRunSupervise(utc.UnitTest):
             response = sfs.index()
             # The response is a streaming response, consume the generator
             content_parts = list(response.response)
-            content = ''.join(content_parts)
+            content = "".join(content_parts)
             # At minimum, we should get the HTML title
             self.assertIn("<title>", content)
             # Note: <code> and <br> may not appear if subprocess doesn't
