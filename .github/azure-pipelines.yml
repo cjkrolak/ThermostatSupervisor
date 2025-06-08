@@ -83,15 +83,13 @@ steps:
 # build docker image
 - script: |
     # Set image and tag variables
-    image="${DOCKER_USERNAME}/thermostatsupervisor"
+    image="$(DOCKER_USERNAME)/thermostatsupervisor"
     tag="develop"
     # Print the full Docker image and tag name
     echo "Building Docker image: ${image}:${tag}"
     # Build the Docker image
     docker build -t ${image}:${tag} .
   displayName: 'Build Docker Image'
-  env:
-    DOCKER_USERNAME: '$(DOCKER_USERNAME)'
 
 # docker scout CVE scanning
 - task: CmdLine@2
@@ -101,12 +99,9 @@ steps:
       # Install the Docker Scout CLI
       curl -sSfL https://raw.githubusercontent.com/docker/scout-cli/main/install.sh | sh -s --
       # Login to Docker Hub required for Docker Scout CLI
-      docker login -u ${DOCKER_USERNAME} -p ${DOCKER_PASSWORD}
+      docker login -u $(DOCKER_USERNAME) -p $(DOCKER_PASSWORD)
       # Get a CVE report for the built image and fail the pipeline when critical or high CVEs are detected
-      docker scout cves ${DOCKER_USERNAME}/thermostatsupervisor:develop --exit-code --only-severity critical,high
-  env:
-    DOCKER_USERNAME: '$(DOCKER_USERNAME)'
-    DOCKER_PASSWORD: '$(DOCKER_PASSWORD)'
+      docker scout cves $(DOCKER_USERNAME)/thermostatsupervisor:develop --exit-code --only-severity critical,high
 
 # publish code coverage results to ADO pipeline 
 - task: PublishCodeCoverageResults@2
