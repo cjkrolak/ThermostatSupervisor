@@ -85,6 +85,8 @@ steps:
     # Set image and tag variables
     image="${DOCKER_USERNAME}/thermostatsupervisor"
     tag="develop"
+    # Print the full Docker image and tag name
+    echo "Building Docker image: ${image}:${tag}"
     # Build the Docker image
     docker build -t ${image}:${tag} .
   displayName: 'Build Docker Image'
