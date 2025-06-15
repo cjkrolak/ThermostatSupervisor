@@ -78,8 +78,6 @@ steps:
     BLINK_PASSWORD: '$(BLINK_PASSWORD)' # used for blink int test
     BLINK_2FA: '$(BLINK_2FA)' # used for blink int test
 
-
-
 # publish code coverage results to ADO pipeline 
 - task: PublishCodeCoverageResults@2
   inputs:
