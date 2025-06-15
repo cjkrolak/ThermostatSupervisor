@@ -7,8 +7,17 @@ This test requires connection to Kumocloud thermostat.
 import unittest
 
 # local imports
-from thermostatsupervisor import kumocloud
-from thermostatsupervisor import kumocloud_config
+# conditionally import kumocloud module to handle missing pykumo dependency
+try:
+    from thermostatsupervisor import kumocloud
+    from thermostatsupervisor import kumocloud_config
+    kumocloud_import_error = None
+except ImportError as ex:
+    # pykumo library not available, tests will be skipped
+    kumocloud = None
+    kumocloud_config = None
+    kumocloud_import_error = ex
+
 from thermostatsupervisor import utilities as util
 from tests import unit_test_common as utc
 
@@ -38,6 +47,8 @@ class IntegrationTest(utc.IntegrationTest):
         self.mod_config = kumocloud_config
 
 
+@unittest.skipIf(not utc.ENABLE_KUMOCLOUD_TESTS or kumocloud_import_error,
+                 "kumocloud tests are disabled")
 class FunctionalIntegrationTest(IntegrationTest, utc.FunctionalIntegrationTest):
     """
     Test functional performance of kumocloud.py.
@@ -52,6 +63,8 @@ class FunctionalIntegrationTest(IntegrationTest, utc.FunctionalIntegrationTest):
         self.metadata_type = str
 
 
+@unittest.skipIf(not utc.ENABLE_KUMOCLOUD_TESTS or kumocloud_import_error,
+                 "kumocloud tests are disabled")
 class SuperviseIntegrationTest(IntegrationTest, utc.SuperviseIntegrationTest):
     """
     Test supervise functionality of kumocloud.py.
@@ -62,6 +75,8 @@ class SuperviseIntegrationTest(IntegrationTest, utc.SuperviseIntegrationTest):
         self.setUpIntTest()
 
 
+@unittest.skipIf(not utc.ENABLE_KUMOCLOUD_TESTS or kumocloud_import_error,
+                 "kumocloud tests are disabled")
 class PerformanceIntegrationTest(IntegrationTest, utc.PerformanceIntegrationTest):
     """
     Test performance of kumocloud.py.
