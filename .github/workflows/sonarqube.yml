@@ -1,12 +1,12 @@
 name: SonarQube Scan
 
-# run this workflow after the Azure Pipelines workflow is successful on develop.
+# run this workflow on push to develop branch or on pull requests to develop
 on:
-  workflow_run:
-    workflows: [Azure Pipelines]
+  push:
     branches: [develop]
-    types:
-      - completed
+  pull_request:
+    branches: [develop]
+
 jobs:
   sonarqube:
     name: SonarQube
@@ -16,6 +16,33 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.13'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      
+      - name: Run tests and generate coverage
+        run: |
+          python -m tests.unit_test_coverage
+        timeout-minutes: 30
+        env:
+          GMAIL_USERNAME: ${{ secrets.GMAIL_USERNAME }}
+          GMAIL_PASSWORD: ${{ secrets.GMAIL_PASSWORD }}
+          TCC_USERNAME: ${{ secrets.TCC_USERNAME }}
+          TCC_PASSWORD: ${{ secrets.TCC_PASSWORD }}
+          SHT31_REMOTE_IP_ADDRESS_1: ${{ secrets.SHT31_REMOTE_IP_ADDRESS_1 }}
+          KUMO_USERNAME: ${{ secrets.KUMO_USERNAME }}
+          KUMO_PASSWORD: ${{ secrets.KUMO_PASSWORD }}
+          BLINK_USERNAME: ${{ secrets.BLINK_USERNAME }}
+          BLINK_PASSWORD: ${{ secrets.BLINK_PASSWORD }}
+          BLINK_2FA: ${{ secrets.BLINK_2FA }}
+      
       - name: SonarQube Scan
         uses: SonarSource/sonarqube-scan-action@v5
         env:
