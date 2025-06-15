@@ -83,3 +83,22 @@ steps:
   inputs:
     summaryFileLocation: 'coverage.xml'
   displayName: 'Publish Code Coverage'
+
+# trigger SonarQube workflow in GitHub Actions after successful completion
+- script: |
+    curl -X POST \
+      -H "Authorization: token $(GITHUB_TOKEN)" \
+      -H "Accept: application/vnd.github.v3+json" \
+      https://api.github.com/repos/cjkrolak/ThermostatSupervisor/dispatches \
+      -d '{
+        "event_type": "azure-pipeline-completed",
+        "client_payload": {
+          "pipeline_result": "success",
+          "pipeline_id": "$(Build.BuildId)",
+          "branch": "$(Build.SourceBranch)"
+        }
+      }'
+  displayName: 'Trigger SonarQube Analysis'
+  condition: succeeded()
+  env:
+    GITHUB_TOKEN: '$(GITHUB_TOKEN)' # GitHub token with repo:write access needed

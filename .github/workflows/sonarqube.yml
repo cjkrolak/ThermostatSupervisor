@@ -1,15 +1,15 @@
 name: SonarQube Scan
 
-# run this workflow on push to develop branch or on pull requests to develop
+# run this workflow after the Azure DevOps pipeline completes successfully on develop
 on:
-  push:
-    branches: [develop]
-  pull_request:
-    branches: [develop]
+  repository_dispatch:
+    types: [azure-pipeline-completed]
 
 jobs:
   sonarqube:
     name: SonarQube
+    # Only run if the Azure pipeline was successful
+    if: github.event.client_payload.pipeline_result == 'success'
 
     runs-on: ubuntu-latest
     steps:
@@ -27,6 +27,13 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
       
+      - name: Download coverage results from Azure DevOps
+        run: |
+          echo "Azure DevOps pipeline completed successfully"
+          echo "Pipeline ID: ${{ github.event.client_payload.pipeline_id }}"
+          echo "Branch: ${{ github.event.client_payload.branch }}"
+          echo "Coverage file should be available from the Azure DevOps pipeline"
+          
       - name: Run tests and generate coverage
         run: |
           python -m tests.unit_test_coverage
