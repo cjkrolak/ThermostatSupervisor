@@ -372,8 +372,8 @@ def verify_required_env_variables(tstat, zone_str, verbose=True):
         if verbose:
             print(f"checking required environment key: {key}...", end="")
 
-        # In unit test mode, don't fail on missing environment variables
-        # The specific thermostat implementations can handle this gracefully
+        # In unit test mode, don't raise exceptions for missing environment variables
+        # but still track failures to return the correct status
         if util.unit_test_mode:
             try:
                 env.env_variables[key] = env.get_env_variable(key)["value"]
@@ -383,10 +383,12 @@ def verify_required_env_variables(tstat, zone_str, verbose=True):
                 else:
                     if verbose:
                         print("MISSING (unittest mode - continuing)")
+                    key_status = False  # Mark as failed even in unit test mode
             except (KeyError, TypeError):
                 if verbose:
                     print("MISSING (unittest mode - continuing)")
                 env.env_variables[key] = None
+                key_status = False  # Mark as failed even in unit test mode
         else:
             env.env_variables[key] = env.get_env_variable(key)["value"]
             if env.env_variables[key] is not None:

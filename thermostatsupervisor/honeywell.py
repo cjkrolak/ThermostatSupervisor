@@ -327,7 +327,7 @@ def get_zones_info_with_retries(func, thermostat_type, zone_name) -> list:
 
     # Use shorter retry parameters during unit testing to prevent test hanging
     if util.unit_test_mode:
-        number_of_retries = 2  # Reduce from 5 to 2 retries
+        number_of_retries = 3  # 3 total attempts (1 initial + 2 retries)
         initial_retry_delay_sec = 1  # Reduce from 60s to 1s initial delay
     else:
         number_of_retries = 5
