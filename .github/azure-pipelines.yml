@@ -83,22 +83,3 @@ steps:
   inputs:
     summaryFileLocation: 'coverage.xml'
   displayName: 'Publish Code Coverage'
-
-# trigger GitHub Actions workflow that serves as bridge for SonarQube
-- script: |
-    curl -X POST \
-      -H "Authorization: token $(GITHUB_TOKEN)" \
-      -H "Accept: application/vnd.github.v3+json" \
-      https://api.github.com/repos/cjkrolak/ThermostatSupervisor/dispatches \
-      -d '{
-        "event_type": "azure-pipeline-completed",
-        "client_payload": {
-          "pipeline_result": "success",
-          "pipeline_id": "$(Build.BuildId)",
-          "branch": "$(Build.SourceBranch)"
-        }
-      }'
-  displayName: 'Trigger GitHub Actions Bridge Workflow'
-  condition: succeeded()
-  env:
-    GITHUB_TOKEN: '$(GITHUB_TOKEN)' # GitHub token with repo:write access needed

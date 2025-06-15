@@ -1,18 +1,15 @@
 name: SonarQube Scan
 
-# run this workflow after the Azure Pipelines workflow is successful on develop.
+# run this workflow on push/PR to develop branch.
 on:
-  workflow_run:
-    workflows: [Azure Pipelines]
+  push:
     branches: [develop]
-    types:
-      - completed
+  pull_request:
+    branches: [develop]
+    
 jobs:
   sonarqube:
     name: SonarQube
-    # Only run if the Azure Pipelines workflow was successful
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
-
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
