@@ -84,7 +84,7 @@ steps:
     summaryFileLocation: 'coverage.xml'
   displayName: 'Publish Code Coverage'
 
-# trigger SonarQube workflow in GitHub Actions after successful completion
+# trigger GitHub Actions workflow that serves as bridge for SonarQube
 - script: |
     curl -X POST \
       -H "Authorization: token $(GITHUB_TOKEN)" \
@@ -98,7 +98,7 @@ steps:
           "branch": "$(Build.SourceBranch)"
         }
       }'
-  displayName: 'Trigger SonarQube Analysis'
+  displayName: 'Trigger GitHub Actions Bridge Workflow'
   condition: succeeded()
   env:
     GITHUB_TOKEN: '$(GITHUB_TOKEN)' # GitHub token with repo:write access needed
