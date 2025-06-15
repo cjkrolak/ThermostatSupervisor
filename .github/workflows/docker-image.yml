@@ -74,6 +74,14 @@ jobs:
         push: true
         tags: ${{ steps.meta.outputs.tags }}
 
+    # Docker Scout CVE scanning
+    - name: Find CVEs on image with Docker Scout
+      run: |
+        # Install the Docker Scout CLI
+        curl -sSfL https://raw.githubusercontent.com/docker/scout-cli/main/install.sh | sh -s --
+        # Get a CVE report for the built image and fail the pipeline when critical or high CVEs are detected
+        docker scout cves ${{ secrets.DOCKER_USERNAME }}/thermostatsupervisor:develop --exit-code --only-severity critical,high
+
     # Sign the resulting Docker image digest except on PRs.
     # This will only write to the public Rekor transparency log when the Docker
     # repository is public to avoid leaking data.  If you would like to publish
