@@ -47,7 +47,8 @@ class IntegrationTest(utc.IntegrationTest):
         self.mod_config = kumocloud_config
 
 
-@unittest.skipIf(not utc.ENABLE_KUMOCLOUD_TESTS or kumocloud_import_error, "kumocloud tests are disabled")
+@unittest.skipIf(not utc.ENABLE_KUMOCLOUD_TESTS or kumocloud_import_error,
+                 "kumocloud tests are disabled")
 class FunctionalIntegrationTest(IntegrationTest, utc.FunctionalIntegrationTest):
     """
     Test functional performance of kumocloud.py.
@@ -62,7 +63,8 @@ class FunctionalIntegrationTest(IntegrationTest, utc.FunctionalIntegrationTest):
         self.metadata_type = str
 
 
-@unittest.skipIf(not utc.ENABLE_KUMOCLOUD_TESTS or kumocloud_import_error, "kumocloud tests are disabled")
+@unittest.skipIf(not utc.ENABLE_KUMOCLOUD_TESTS or kumocloud_import_error,
+                 "kumocloud tests are disabled")
 class SuperviseIntegrationTest(IntegrationTest, utc.SuperviseIntegrationTest):
     """
     Test supervise functionality of kumocloud.py.
@@ -73,7 +75,8 @@ class SuperviseIntegrationTest(IntegrationTest, utc.SuperviseIntegrationTest):
         self.setUpIntTest()
 
 
-@unittest.skipIf(not utc.ENABLE_KUMOCLOUD_TESTS or kumocloud_import_error, "kumocloud tests are disabled")
+@unittest.skipIf(not utc.ENABLE_KUMOCLOUD_TESTS or kumocloud_import_error,
+                 "kumocloud tests are disabled")
 class PerformanceIntegrationTest(IntegrationTest, utc.PerformanceIntegrationTest):
     """
     Test performance of kumocloud.py.
