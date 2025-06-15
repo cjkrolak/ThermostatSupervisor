@@ -4,7 +4,6 @@ using pyhtcc library.
 
 https://pypi.org/project/pyhtcc/
 """
-
 # built-in imports
 import http.client
 import os
@@ -54,27 +53,7 @@ class ThermostatClass(pyhtcc.PyHTCC, tc.ThermostatCommon):
         # construct the superclass
         # call both parent class __init__
         self.args = [self.tcc_uname, self.tcc_pwd]
-
-        # Handle network failures during unit tests
-        if util.unit_test_mode:
-            try:
-                pyhtcc.PyHTCC.__init__(self, *self.args)
-            except (pyhtcc.requests.exceptions.ConnectionError,
-                    urllib3.exceptions.NameResolutionError,
-                    pyhtcc.requests.exceptions.HTTPError) as e:
-                # During unit tests, initialize without network connection
-                # Set up minimal attributes that pyhtcc normally provides
-                self.session = None
-                self.authenticated = False
-                self.devices = []
-                util.log_msg(
-                    f"Unit test mode: Skipping network initialization due to: {e}",
-                    mode=util.DEBUG_LOG + util.STDOUT_LOG,
-                    func_name=1,
-                )
-        else:
-            pyhtcc.PyHTCC.__init__(self, *self.args)
-
+        pyhtcc.PyHTCC.__init__(self, *self.args)
         tc.ThermostatCommon.__init__(self)
 
         # set tstat type and debug flag
@@ -83,12 +62,7 @@ class ThermostatClass(pyhtcc.PyHTCC, tc.ThermostatCommon):
 
         # configure zone info
         self.zone_name = int(zone)
-        if (util.unit_test_mode and hasattr(self, 'authenticated')
-                and not self.authenticated):
-            # During unit tests without network connection, use a dummy device ID
-            self.device_id = 0  # dummy device ID for unit tests
-        else:
-            self.device_id = self.get_target_zone_id(self.zone_name)
+        self.device_id = self.get_target_zone_id(self.zone_name)
 
     def close(self):
         """Explicitly close the session created in pyhtcc."""
@@ -289,13 +263,6 @@ class ThermostatClass(pyhtcc.PyHTCC, tc.ThermostatCommon):
         returns:
             list of zone info.
         """
-        # Return dummy data during unit tests if no session available
-        if (util.unit_test_mode and (not hasattr(self, 'session')
-                                     or self.session is None
-                                     or not hasattr(self, 'authenticated')
-                                     or not self.authenticated)):
-            return [{"DeviceID": 0, "Name": "Unit Test Zone"}]
-
         return get_zones_info_with_retries(
             super().get_zones_info, self.thermostat_type, self.zone_name
         )
@@ -313,33 +280,25 @@ def get_zones_info_with_retries(func, thermostat_type, zone_name) -> list:
     returns:
         list of zone info.
     """
+
     # Define Honeywell-specific exception types
     honeywell_exceptions = (
         pyhtcc.requests.exceptions.ConnectionError,
         pyhtcc.pyhtcc.UnexpectedError,
         pyhtcc.pyhtcc.NoZonesFoundError,
         pyhtcc.pyhtcc.UnauthorizedError,
-        pyhtcc.pyhtcc.NoSessionError,
         pyhtcc.requests.exceptions.HTTPError,
         urllib3.exceptions.ProtocolError,
         http.client.RemoteDisconnected,
     )
-
-    # Use shorter retry parameters during unit testing to prevent test hanging
-    if util.unit_test_mode:
-        number_of_retries = 3  # 3 total attempts (1 initial + 2 retries)
-        initial_retry_delay_sec = 1  # Reduce from 60s to 1s initial delay
-    else:
-        number_of_retries = 5
-        initial_retry_delay_sec = 60
 
     # Use the common retry utility
     return util.execute_with_extended_retries(
         func=func,
         thermostat_type=thermostat_type,
         zone_name=zone_name,
-        number_of_retries=number_of_retries,
-        initial_retry_delay_sec=initial_retry_delay_sec,
+        number_of_retries=5,
+        initial_retry_delay_sec=60,
         exception_types=honeywell_exceptions,
         email_notification=email_notification,
     )

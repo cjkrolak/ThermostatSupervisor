@@ -371,37 +371,18 @@ def verify_required_env_variables(tstat, zone_str, verbose=True):
             key = key + str(zone_str)
         if verbose:
             print(f"checking required environment key: {key}...", end="")
-
-        # In unit test mode, don't raise exceptions for missing environment variables
-        # but still track failures to return the correct status
-        if util.unit_test_mode:
-            try:
-                env.env_variables[key] = env.get_env_variable(key)["value"]
-                if env.env_variables[key] is not None:
-                    if verbose:
-                        print("OK")
-                else:
-                    if verbose:
-                        print("MISSING (unittest mode - continuing)")
-                    key_status = False  # Mark as failed even in unit test mode
-            except (KeyError, TypeError):
-                if verbose:
-                    print("MISSING (unittest mode - continuing)")
-                env.env_variables[key] = None
-                key_status = False  # Mark as failed even in unit test mode
+        env.env_variables[key] = env.get_env_variable(key)["value"]
+        if env.env_variables[key] is not None:
+            if verbose:
+                print("OK")
         else:
-            env.env_variables[key] = env.get_env_variable(key)["value"]
-            if env.env_variables[key] is not None:
-                if verbose:
-                    print("OK")
-            else:
-                util.log_msg(
-                    f"{tstat}: zone {zone_str}: FATAL error: one or more required"
-                    f" environemental keys are missing, exiting program",
-                    mode=util.BOTH_LOG,
-                )
-                key_status = False
-                raise KeyError
+            util.log_msg(
+                f"{tstat}: zone {zone_str}: FATAL error: one or more required"
+                f" environemental keys are missing, exiting program",
+                mode=util.BOTH_LOG,
+            )
+            key_status = False
+            raise KeyError
     if verbose:
         print("\n")
     return key_status
