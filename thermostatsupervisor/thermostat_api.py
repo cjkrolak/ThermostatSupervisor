@@ -84,15 +84,18 @@ class UserInputs(util.UserInputs):
         thermostat_type=DEFAULT_THERMOSTAT,
         zone_name=DEFAULT_ZONE_NAME,
     ):
-        """
-        UserInputs constructor for thermostat_api.
+        """Initialize UserInputs for thermostat_api.
 
-        inputs:
-            argv_list(list): override runtime values.
-            help_description(str): description field for help text.
-            suppress_warnings(bool): True to suppress warning msgs.
-            thermostat_type(str): thermostat type.
-            zone_name(str): thermostat zone name (e.g. 'living room')
+        Args:
+            argv_list (list, optional): Override runtime values. Defaults to None.
+            help_description (str, optional): Description field for help text.
+                Defaults to None.
+            suppress_warnings (bool, optional): True to suppress warning messages.
+                Defaults to False.
+            thermostat_type (str, optional): Thermostat type alias.
+                Defaults to DEFAULT_THERMOSTAT.
+            zone_name (str, optional): Thermostat zone name (e.g. 'living room').
+                Defaults to DEFAULT_ZONE_NAME.
         """
         self.argv_list = argv_list
         self.help_description = help_description
@@ -104,11 +107,11 @@ class UserInputs(util.UserInputs):
         super().__init__(argv_list, help_description, suppress_warnings, zone_name)
 
     def initialize_user_inputs(self, parent_keys=None):
-        """
-        Populate user_inputs dict.
+        """Populate user_inputs dictionary with thermostat-specific parameters.
 
-        inputs:
-            parent_keys(list): list of parent keys
+        Args:
+            parent_keys (list, optional): List of parent keys to initialize.
+                Defaults to [self.default_parent_key].
         """
         if parent_keys is None:
             parent_keys = [self.default_parent_key]
@@ -350,16 +353,22 @@ class UserInputs(util.UserInputs):
 
 
 def verify_required_env_variables(tstat, zone_str, verbose=True):
-    """
-    Verify all required env variables are present for thermostat
-    configuration in use.
+    """Verify all required environment variables are present for thermostat config.
 
-    inputs:
-        tstat(int) thermostat type mapping to thermostat_api
-        zone_str(str): zone input as a string
-        verbose(bool): debug flag.
-    returns:
-        (bool): True if all keys are present, else False
+    Checks that all required environment variables for the specified thermostat type
+    are present in the environment. Some environment variables may require
+    zone-specific suffixes (indicated by trailing underscore).
+
+    Args:
+        tstat (str): Thermostat type alias (e.g., 'honeywell', 'emulator')
+        zone_str (str): Zone identifier as string
+        verbose (bool, optional): Enable debug output. Defaults to True.
+
+    Returns:
+        bool: True if all required environment variables are present
+
+    Raises:
+        KeyError: If required environment variables are missing
     """
     if verbose:
         print("\nchecking required environment variables:")
@@ -389,13 +398,22 @@ def verify_required_env_variables(tstat, zone_str, verbose=True):
 
 
 def load_hardware_library(thermostat_type):
-    """
-    Dynamic load 3rd party library for requested hardware type.
+    """Dynamically load appropriate hardware library for the thermostat type.
 
-    inputs:
-        thermostat_type(str): thermostat alias string
-    returns:
-        (obj): loaded python module
+    Imports the hardware-specific module for the given thermostat type using dynamic
+    module loading. This allows the system to support multiple thermostat brands
+    without static imports.
+
+    Args:
+        thermostat_type (str): Thermostat type alias (e.g., 'honeywell',
+            'emulator')
+
+    Returns:
+        module: Loaded Python module for the thermostat type
+
+    Raises:
+        ImportError: If the thermostat type module cannot be loaded
+        KeyError: If the thermostat type is not supported
     """
     pkg_name = (
         util.PACKAGE_NAME + "." + SUPPORTED_THERMOSTATS[thermostat_type]["module"]
