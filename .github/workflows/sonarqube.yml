@@ -1,21 +1,21 @@
 name: SonarQube Scan
 
-# run this workflow after the Azure Pipelines workflow is successful on develop.
+# run this workflow when triggered by Azure DevOps pipeline completion
 on:
-  workflow_run:
-    workflows: [Azure Pipelines]
-    branches: [develop]
-    types:
-      - completed
+  repository_dispatch:
+    types: [azure-pipeline-completed]
+    
 jobs:
   sonarqube:
     name: SonarQube
-
     runs-on: ubuntu-latest
+    # Only run if Azure pipeline was successful
+    if: github.event.client_payload.result == 'success'
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
+      
       - name: SonarQube Scan
         uses: SonarSource/sonarqube-scan-action@v5
         env:
