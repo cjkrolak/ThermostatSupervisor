@@ -12,6 +12,7 @@ flask-ipban>=1.1.5  # blacklisting hacker ips
 Flask_Limiter>=3.10.1  # rate limiting
 Flask_RESTful>=0.3.9  # flask servers
 Flask_wtf>=1.1.1  # CSRF protection on flask servers
+gunicorn>=21.2.0  # WSGI HTTP Server for production deployment
 munch>=3.0.0  # munch classes, replaced bunch
 oauthlib>=3.1.1  # nest error handling
 psutil>=5.9.5  # process id utility
