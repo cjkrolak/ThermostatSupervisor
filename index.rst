@@ -1,17 +1,54 @@
-.. ThermostatSupervisor documentation master file, created by
-   sphinx-quickstart on Sat Dec 14 07:30:12 2024.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
+.. ThermostatSupervisor documentation master file
 
-ThermostatSupervisor documentation
-==================================
+ThermostatSupervisor API Documentation
+=======================================
 
-Add your content using ``reStructuredText`` syntax. See the
-`reStructuredText <https://www.sphinx-doc.org/en/master/usage/restructuredtext/index.html>`_
-documentation for details.
+Welcome to ThermostatSupervisor's API documentation. This project provides a comprehensive
+framework for monitoring and controlling various thermostat types remotely.
 
+Overview
+--------
+
+ThermostatSupervisor supports multiple thermostat brands and types including:
+
+* Honeywell (via pyhtcc)
+* 3M-50 thermostats (via radiotherm)
+* KumoCloud/KumoLocal
+* Nest thermostats
+* Blink cameras (temperature sensors)
+* SHT31 temperature sensors
+* Emulator for testing
+
+Key Features
+------------
+
+* Remote thermostat monitoring and control
+* Flask-based web interface
+* Scheduled temperature management
+* Deviation detection and correction
+* Multi-zone support
+* Temperature and humidity logging
+* Email notifications
 
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:
+   :caption: API Documentation:
+   
+   api/overview
+   api/thermostat_api
+   api/thermostat_classes
+   api/zone_classes
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Module Reference:
+   
+   docs/thermostatsupervisor
+
+Indices and tables
+==================
+
+* :ref:`genindex`
+* :ref:`modindex`
+* :ref:`search`
 
