@@ -7,6 +7,7 @@ import traceback
 from typing import Union
 
 # third party imports
+import requests
 
 # local imports
 from thermostatsupervisor import environment as env
@@ -15,19 +16,12 @@ from thermostatsupervisor import thermostat_api as api
 from thermostatsupervisor import thermostat_common as tc
 from thermostatsupervisor import utilities as util
 
-# pykumo import
-PYKUMO_DEBUG = False  # debug uses local pykumo repo instead of pkg
-if PYKUMO_DEBUG and not env.is_azure_environment():
-    mod_path = "..\\pykumo\\pykumo"
-    if env.is_interactive_environment():
-        mod_path = "..\\" + mod_path
-    pykumo = env.dynamic_module_import("pykumo", mod_path)
-else:
-    import pykumo  # noqa E402, from path / site packages
+# pykumo import - removed for v3 API implementation
+# v3 API uses direct REST calls instead of pykumo library
 
 
-class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
-    """KumoCloud thermostat functions."""
+class ThermostatClass(tc.ThermostatCommon):
+    """KumoCloud thermostat functions using v3 API."""
 
     def __init__(self, zone, verbose=True):
         """
@@ -48,12 +42,21 @@ class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
         )
 
         # construct the superclass
-        # call both parent class __init__
-        self._need_fetch = True  # force data fetch
-        self.args = [self.kc_uname, self.kc_pwd]
-        # kumocloud account init sets the self._url
-        pykumo.KumoCloudAccount.__init__(self, *self.args)
         tc.ThermostatCommon.__init__(self)
+
+        # v3 API configuration
+        self.base_url = "https://app-prod.kumocloud.com"
+        self.app_version = "3.0.3"
+        self.access_token = None
+        self.refresh_token = None
+        self._need_fetch = True  # force data fetch
+
+        # cached data storage
+        self._sites_data = None
+        self._zones_data = None
+        self._device_data = {}
+        self._last_fetch_time = 0
+        self.fetch_interval_sec = 60
 
         # set tstat type and debug flag
         self.thermostat_type = kumocloud_config.ALIAS
@@ -65,6 +68,277 @@ class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
         self.device_id = self.get_target_zone_id(self.zone_name)
         self.serial_number = None  # will be populated when unit is queried.
         self.zone_info = {}
+
+        # authenticate on initialization
+        self._authenticate()
+
+    def _get_base_headers(self):
+        """Get base headers required for v3 API."""
+        return {
+            "Accept": "application/json text/plain, */*",
+            "Accept-Encoding": "gzip, deflate, br",
+            "Accept-Language": "en-US, en",
+            "x-app-version": self.app_version,
+            "Content-Type": "application/json"
+        }
+
+    def _authenticate(self):
+        """Authenticate with KumoCloud v3 API and store tokens."""
+        login_url = f"{self.base_url}/v3/login"
+        login_data = {
+            "username": self.kc_uname,
+            "password": self.kc_pwd,
+            "appVersion": self.app_version
+        }
+
+        try:
+            response = requests.post(
+                login_url,
+                json=login_data,
+                headers=self._get_base_headers(),
+                timeout=util.HTTP_TIMEOUT
+            )
+            response.raise_for_status()
+
+            auth_data = response.json()
+            self.access_token = auth_data["token"]["access"]
+            self.refresh_token = auth_data["token"]["refresh"]
+
+            if self.verbose:
+                util.log_msg(
+                    "Successfully authenticated with KumoCloud v3 API",
+                    mode=util.DEBUG_LOG + util.STDOUT_LOG,
+                    func_name=1,
+                )
+
+        except requests.exceptions.RequestException as e:
+            raise tc.AuthenticationError(
+                f"Failed to authenticate with KumoCloud v3 API: {e}"
+            ) from e
+        except KeyError as e:
+            raise tc.AuthenticationError(
+                f"Invalid response format from KumoCloud v3 API: {e}"
+            ) from e
+
+    def _refresh_access_token(self):
+        """Refresh the access token using the refresh token."""
+        refresh_url = f"{self.base_url}/v3/refresh"
+        headers = self._get_base_headers()
+        headers["Authorization"] = f"Bearer {self.refresh_token}"
+
+        refresh_data = {"refresh": self.refresh_token}
+
+        try:
+            response = requests.post(
+                refresh_url,
+                json=refresh_data,
+                headers=headers,
+                timeout=util.HTTP_TIMEOUT
+            )
+            response.raise_for_status()
+
+            token_data = response.json()
+            self.access_token = token_data["access"]
+            self.refresh_token = token_data["refresh"]
+
+            if self.verbose:
+                util.log_msg(
+                    "Successfully refreshed KumoCloud v3 API tokens",
+                    mode=util.DEBUG_LOG + util.STDOUT_LOG,
+                    func_name=1,
+                )
+
+        except requests.exceptions.RequestException as e:
+            # If refresh fails, try full re-authentication
+            if self.verbose:
+                util.log_msg(
+                    f"Token refresh failed, attempting re-authentication: {e}",
+                    mode=util.DEBUG_LOG + util.STDOUT_LOG,
+                    func_name=1,
+                )
+            self._authenticate()
+
+    def _get_auth_headers(self):
+        """Get headers with authentication token."""
+        headers = self._get_base_headers()
+        if self.access_token:
+            headers["Authorization"] = f"Bearer {self.access_token}"
+        return headers
+
+    def _make_authenticated_request(self, url, method="GET", data=None,
+                                    retry_auth=True):
+        """Make authenticated request to v3 API with automatic token refresh."""
+        headers = self._get_auth_headers()
+
+        try:
+            if method.upper() == "POST":
+                response = requests.post(
+                    url, json=data, headers=headers, timeout=util.HTTP_TIMEOUT
+                )
+            else:
+                response = requests.get(
+                    url, headers=headers, timeout=util.HTTP_TIMEOUT
+                )
+
+            response.raise_for_status()
+            return response.json()
+
+        except requests.exceptions.HTTPError as e:
+            if e.response.status_code == 401 and retry_auth:
+                # Token expired, try to refresh and retry
+                self._refresh_access_token()
+                return self._make_authenticated_request(
+                    url, method, data, retry_auth=False
+                )
+            else:
+                raise
+
+    def _fetch_if_needed(self):
+        """Fetch data from v3 API if needed (cache expiration)."""
+        current_time = time.time()
+        if (self._need_fetch or
+                current_time >= (self._last_fetch_time +
+                                 self.fetch_interval_sec)):
+            self._fetch_sites_data()
+            self._need_fetch = False
+            self._last_fetch_time = current_time
+
+    def _fetch_sites_data(self):
+        """Fetch sites data from v3 API."""
+        sites_url = f"{self.base_url}/v3/sites/"
+        self._sites_data = self._make_authenticated_request(sites_url)
+
+        if self._sites_data and len(self._sites_data) > 0:
+            # Get the first site (most users have only one)
+            site_id = self._sites_data[0]["id"]
+            self._fetch_zones_data(site_id)
+
+    def _fetch_zones_data(self, site_id):
+        """Fetch zones data for a specific site."""
+        zones_url = f"{self.base_url}/v3/sites/{site_id}/zones"
+        self._zones_data = self._make_authenticated_request(zones_url)
+
+        # Fetch device data for each zone
+        if self._zones_data:
+            for zone in self._zones_data:
+                if "adapter" in zone and "deviceSerial" in zone["adapter"]:
+                    device_serial = zone["adapter"]["deviceSerial"]
+                    self._fetch_device_data(device_serial)
+
+    def _fetch_device_data(self, device_serial):
+        """Fetch device data for a specific device serial."""
+        device_status_url = f"{self.base_url}/v3/devices/{device_serial}/status"
+        device_settings_url = (
+            f"{self.base_url}/v3/devices/{device_serial}/initial-settings"
+        )
+
+        try:
+            status_data = self._make_authenticated_request(device_status_url)
+            settings_data = self._make_authenticated_request(device_settings_url)
+
+            # Combine status and settings data
+            self._device_data[device_serial] = {
+                "status": status_data,
+                "settings": settings_data,
+                "serial": device_serial
+            }
+        except Exception as e:
+            util.log_msg(
+                f"Failed to fetch device data for {device_serial}: {e}",
+                mode=util.BOTH_LOG,
+                func_name=1,
+            )
+
+    def get_indoor_units(self):
+        """Get list of indoor unit serial numbers (compatibility method)."""
+        self._fetch_if_needed()
+        serial_numbers = []
+
+        if self._zones_data:
+            for zone in self._zones_data:
+                if "adapter" in zone and "deviceSerial" in zone["adapter"]:
+                    serial_numbers.append(zone["adapter"]["deviceSerial"])
+
+        return serial_numbers
+
+    def get_raw_json(self):
+        """Get raw JSON data compatible with old API (compatibility method)."""
+        self._fetch_if_needed()
+
+        # Create a structure similar to the old API format
+        # [0]: token, username, device fields (not used in new implementation)
+        # [1]: last update date
+        # [2]: zone meta data
+        # [3]: device token (not used in new implementation)
+
+        zone_table = {}
+        if self._zones_data and self._device_data:
+            for zone in self._zones_data:
+                if "adapter" in zone and "deviceSerial" in zone["adapter"]:
+                    device_serial = zone["adapter"]["deviceSerial"]
+                    if device_serial in self._device_data:
+                        # Create zone entry compatible with old format
+                        device_data = self._device_data[device_serial]
+                        zone_entry = self._convert_v3_to_legacy_format(
+                            device_data, zone
+                        )
+                        zone_table[device_serial] = zone_entry
+
+        return [
+            {},  # token/username data (not used)
+            time.time(),  # last update timestamp
+            {"children": [{"zoneTable": zone_table}]},  # zone metadata
+            {}  # device token (not used)
+        ]
+
+    def _convert_v3_to_legacy_format(self, device_data, zone_data):
+        """Convert v3 API data format to legacy format for compatibility."""
+        legacy_format = {
+            "label": zone_data.get("label", "Unknown Zone"),
+            "reportedCondition": {},
+            "reportedInitialSettings": {},
+            "rssi": {}
+        }
+
+        if "status" in device_data:
+            status = device_data["status"]
+            # Map v3 status fields to legacy format
+            if "roomTemp" in status:
+                legacy_format["reportedCondition"]["room_temp"] = status["roomTemp"]
+            if "spHeat" in status:
+                legacy_format["reportedCondition"]["sp_heat"] = status["spHeat"]
+            if "spCool" in status:
+                legacy_format["reportedCondition"]["sp_cool"] = status["spCool"]
+            if "power" in status:
+                legacy_format["reportedCondition"]["power"] = status["power"]
+            if "mode" in status:
+                legacy_format["reportedCondition"]["operation_mode"] = (
+                    status["mode"]
+                )
+            if "fanSpeed" in status:
+                legacy_format["reportedCondition"]["fan_speed"] = (
+                    status["fanSpeed"]
+                )
+            if "defrost" in status:
+                legacy_format["reportedCondition"]["defrost"] = {
+                    "status_display": status["defrost"]
+                }
+            if "standby" in status:
+                legacy_format["reportedCondition"]["standby"] = {
+                    "status_display": status["standby"]
+                }
+            if "wifiSignal" in status:
+                legacy_format["rssi"]["rssi"] = status["wifiSignal"]
+
+        if "settings" in device_data:
+            settings = device_data["settings"]
+            # Map v3 settings fields to legacy format
+            if "energySave" in settings:
+                legacy_format["reportedInitialSettings"]["energy_save"] = (
+                    settings["energySave"]
+                )
+
+        return legacy_format
 
     def get_target_zone_id(self, zone=0):
         """
@@ -115,7 +389,7 @@ class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
         return self.get_metadata(zone, retry=retry)
 
     def get_metadata(self, zone=None, trait=None, parameter=None, retry=False):
-        """Get all thermostat meta data for zone from kumocloud.
+        """Get all thermostat meta data for zone from kumocloud v3 API.
 
         inputs:
             zone(int): specified zone, if None will print all zones.
@@ -131,7 +405,7 @@ class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
         def _get_metadata_internal():
             try:
                 serial_num_lst = list(self.get_indoor_units())  # will query unit
-            except UnboundLocalError:  # patch for issue #205
+            except Exception:  # catch any exception during fetch
                 util.log_msg(
                     "WARNING: Kumocloud refresh failed due to timeout",
                     mode=util.BOTH_LOG,
@@ -149,7 +423,7 @@ class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
             # validate serial number list
             if not serial_num_lst:
                 raise tc.AuthenticationError(
-                    "pykumo meta data is blank, probably"
+                    "KumoCloud v3 API meta data is blank, probably"
                     " due to an Authentication Error,"
                     " check your credentials."
                 )
@@ -160,14 +434,12 @@ class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
                     print(f"zone index={idx}, serial_number={serial_number}")
                 kumocloud_config.metadata[idx]["serial_number"] = serial_number
 
-            # raw_json list:
-            # [0]: token, username, device fields
-            # [1]: lastupdate date
-            # [2]: zone meta data
-            # [3]: device token
+            # Get data using the compatibility method
+            raw_json_data = self.get_raw_json()
+
             if zone is None:
                 # returned cached raw data for all zones
-                raw_json = self.get_raw_json()[2]  # does not fetch results,
+                raw_json = raw_json_data[2]  # zone meta data
             else:
                 # if zone name input, find zone index
                 if not isinstance(zone, int):
@@ -184,7 +456,7 @@ class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
                         "not exist in serial number list "
                         f"({serial_num_lst})"
                     ) from exc
-                raw_json = self.get_raw_json()[2]["children"][0]["zoneTable"][
+                raw_json = raw_json_data[2]["children"][0]["zoneTable"][
                     serial_num_lst[zone_index]
                 ]
 
@@ -202,7 +474,7 @@ class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
                 number_of_retries=5,
                 initial_retry_delay_sec=60,
                 exception_types=(
-                    UnboundLocalError,
+                    Exception,  # Catch broader exceptions for v3 API
                     tc.AuthenticationError,
                     IndexError,
                     KeyError,
@@ -730,7 +1002,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
 
     def refresh_zone_info(self, force_refresh=False):
         """
-        Refresh zone info from KumoCloud.
+        Refresh zone info from KumoCloud v3 API.
 
         inputs:
             force_refresh(bool): if True, ignore expiration timer.
@@ -745,9 +1017,9 @@ class ThermostatZone(tc.ThermostatCommonZone):
             self.Thermostat._need_fetch = True  # pylint: disable=protected-access
             try:
                 self.Thermostat._fetch_if_needed()  # pylint: disable=protected-access
-            except UnboundLocalError:  # patch for issue #205
+            except Exception:  # catch any exception from v3 API
                 util.log_msg(
-                    "WARNING: Kumocloud refresh failed due to timeout",
+                    "WARNING: Kumocloud v3 API refresh failed",
                     mode=util.BOTH_LOG,
                     func_name=1,
                 )
@@ -759,7 +1031,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
 if __name__ == "__main__":
     # verify environment
     env.get_python_version()
-    env.show_package_version(pykumo)
+    # Note: pykumo version check removed since we now use v3 API directly
 
     # get zone override
     api.uip = api.UserInputs(argv_list=None, thermostat_type=kumocloud_config.ALIAS)
@@ -783,7 +1055,7 @@ if __name__ == "__main__":
         MEASUREMENTS = 30
         meas_data = Zone.measure_thermostat_repeatability(
             MEASUREMENTS,
-            func=Zone.pyhtcc.get_zones_info,
+            func=Zone.Thermostat.get_all_metadata,  # Updated to use correct method
             measure_response_time=True,
         )
         ppp = pprint.PrettyPrinter(indent=4)
