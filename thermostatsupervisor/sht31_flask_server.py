@@ -928,7 +928,7 @@ def create_app():
     )
 
     # add API functions
-    api.add_resource(Controller, "/")
+    api.add_resource(Controller, sht31_config.flask_folder.production)
     api.add_resource(ControllerUnit, sht31_config.flask_folder.unit_test)
     api.add_resource(ReadFaultRegister, sht31_config.flask_folder.diag)
     api.add_resource(ClearFaultRegister, sht31_config.flask_folder.clear_diag)

@@ -442,7 +442,7 @@ class TestSht31FlaskClientAzure(utc.UnitTest):
         """Test that SHT31 Flask server endpoints return valid responses."""
         # Define endpoints that should return 200 status
         test_endpoints = [
-            ("/", "production"),
+            ("/data", "production"),
             ("/unit", "unit_test"),
             ("/diag", "diag"),
             ("/clear_diag", "clear_diag"),

@@ -132,7 +132,8 @@ command line usage:  "*python -m thermostatsupervisor.sht31 \<thermostat type\> 
 ## sht31_flask_server.py:
 This module will render sht31 sensor output on an HTML page using Flask.<br/>
 Port is currently hard-coded to 5000.<br/>
-Production data is at root, subfolders provide additional commands:<br/>
+Production data is at /data, subfolders provide additional commands:<br/>
+* /data: production data
 * /unit: unit test (fabricated) data
 * /diag: fault register data
 * /clear_diag: clear the fault register
@@ -152,7 +153,7 @@ Production data is at root, subfolders provide additional commands:<br/>
 argv[1] = debug (bool): True to enable Flask debug mode, False is default.<br/>
 
 ### client URL usage:<br/>
-production: "*\<ip\>:\<port\>?measurements=\<measurements\>*"<br/>
+production: "*\<ip\>:\<port\>/data?measurements=\<measurements\>*"<br/>
 unit test: "*\<ip\>:\<port\>/unit?measurements=\<measurements\>&seed=\<seed\>*"<br/>
 diag: "*\<ip\>:\<port\>/diag*"<br/>
 measurements=number of measurements to average (default=10)<br/>
