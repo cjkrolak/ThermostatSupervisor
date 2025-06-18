@@ -184,6 +184,8 @@ Zone number refers to the thermostat order in nest server, 0=first thermostat da
 command line usage:  "*python -m thermostatsupervisor.nest \<thermostat type\> \<zone\>*"
 
 ## Supervisor API required methods:<br/>
+**For complete API documentation, see: [ThermostatSupervisor API Documentation](https://cjkrolak.github.io/ThermostatSupervisor/)**<br/><br/>
+
 **Thermostat class:**<br/>
 * print_all_thermostat_metadata(): Print all thermostat meta data.
 * get_target_zone_id(): Return the target zone ID.
@@ -196,3 +198,16 @@ command line usage:  "*python -m thermostatsupervisor.nest \<thermostat type\> \
 * get_schedule_cool_sp(): Retrieve the scheduled cool setpoint.
 * set_cool_setpoint():  Set a new cool setpoint.
 * refresh_zone_info():  Refresh the zone_info attribute.
+
+# API Documentation
+
+Comprehensive API documentation is automatically generated and available at:
+
+**[https://cjkrolak.github.io/ThermostatSupervisor/](https://cjkrolak.github.io/ThermostatSupervisor/)**
+
+The documentation includes:
+- Complete API reference for all modules
+- Required and optional method specifications
+- Examples and usage patterns
+- Supported thermostat types and configurations
+- Environment variable requirements
