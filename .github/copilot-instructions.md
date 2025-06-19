@@ -18,9 +18,12 @@
 ### Code Style and Formatting
 - Follow the [PEP 8](https://peps.python.org/pep-0008/) style guide for Python.
 - Maintain proper indentation (use 4 spaces for each level of indentation).
-- Ensure lines do not exceed 79 characters.
+- **Ensure lines do not exceed 88 characters** (as configured in setup.cfg for black compatibility).
 - Place function and class docstrings immediately after the `def` or `class` keyword.
 - Use blank lines to separate functions, classes, and code blocks where appropriate.
+- **Ensure blank lines are completely empty** - no trailing whitespace or spaces.
+- **Remove all trailing whitespace** from the end of lines.
+- **Properly align continuation lines** with the opening parenthesis or bracket.
 
 ### Edge Cases and Testing
 - Always include test cases for critical paths of the application.
@@ -29,11 +32,17 @@
 - Write unit tests for functions and document them with docstrings explaining the test cases.
 
 ### Linting and Code Quality
-- Ensure linting is passing on each commit before submitting changes.
-- Run `flake8 --config=setup.cfg .` to verify code style compliance.
-- Address all linting issues before committing code.
+- **MANDATORY**: All code changes MUST pass flake8 linting before committing.
+- **ALWAYS run** `flake8 --config=setup.cfg .` to verify code style compliance before any commit.
+- **ZERO linting errors policy**: Address ALL linting issues before committing code - no exceptions.
 - Follow the existing flake8 configuration in `setup.cfg` which includes black compatibility settings.
+- Pay special attention to:
+  - W293: blank line contains whitespace (ensure blank lines are completely empty)
+  - W291: trailing whitespace (remove all trailing spaces)
+  - E128: continuation line under-indented for visual indent (align with opening parenthesis)
+  - E501: line too long (respect max-line-length = 88 from setup.cfg)
 - Use `pylint $(git ls-files '*.py')` for additional code quality checks.
+- Run flake8 on the entire codebase (`flake8 --config=setup.cfg .`) not just modified files.
 
 ### Code Coverage Requirements
 - Add unit and integration test code coverage on all new code.
