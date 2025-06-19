@@ -20,14 +20,14 @@ class TestWSGIEntryPoints(unittest.TestCase):
         """Test that supervisor WSGI application can be created."""
         # The application should already be created when importing the module
         self.assertIsNotNone(supervisor_wsgi.application)
-        self.assertTrue(hasattr(supervisor_wsgi.application, 'wsgi_app'))
+        self.assertTrue(hasattr(supervisor_wsgi.application, "wsgi_app"))
         print("Supervisor WSGI application created successfully")
 
     def test_sht31_wsgi_application_creation(self):
         """Test that SHT31 WSGI application can be created."""
         # The application should already be created when importing the module
         self.assertIsNotNone(sht31_wsgi.application)
-        self.assertTrue(hasattr(sht31_wsgi.application, 'wsgi_app'))
+        self.assertTrue(hasattr(sht31_wsgi.application, "wsgi_app"))
         print("SHT31 WSGI application created successfully")
 
     def test_supervisor_wsgi_app_config(self):
