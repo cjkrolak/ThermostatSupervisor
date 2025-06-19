@@ -47,6 +47,8 @@ docker run --rm -it --privileged --env-file 'envfile' 'username'/thermostatsuper
 * 'module' is the module to run, (e.g. 'supervise', 'honeywell', 'kumocloud', etc.).<br/>
 * 'runtime parameters' are supervise runtime parameters as specified below.<br/>
 
+**Note:** The Docker container is configured to use the timezone specified in the `timezone` file (currently America/Chicago). This ensures that time-based functions display the correct local time instead of UTC.
+
 ## GitHub repository environment variables required for docker image build (settings / secrets):
 * 'DOCKER_USERNAME' is your DockerHub username<br/>
 * 'DOCKER_PASSWORD' is your DockerHub password<br/>

@@ -4,6 +4,15 @@ FROM python:3.13
 # display python version
 RUN python --version
 
+# install timezone data and configure timezone
+RUN apt-get update && apt-get install -y tzdata && rm -rf /var/lib/apt/lists/*
+COPY timezone /tmp/timezone
+RUN TZ=$(cat /tmp/timezone) && \
+    ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && \
+    echo $TZ > /etc/timezone && \
+    echo "export TZ=$TZ" >> /etc/environment
+ENV TZ=America/Chicago
+
 # set working directory
 WORKDIR /usr/src/app  
 
