@@ -50,4 +50,21 @@
 - Add explanatory comments for complex logic or algorithmic decisions in modified code.
 - Document any changes to function signatures, parameters, or return values.
 - Maintain consistency with existing documentation style throughout the codebase.
+
+### Sphinx API Documentation System
+- The project uses Sphinx for comprehensive API documentation deployed to GitHub Pages at https://cjkrolak.github.io/ThermostatSupervisor/
+- When making changes to API classes or methods, ensure corresponding documentation is updated:
+  - Update docstrings in source code to maintain autodoc compatibility
+  - Review and update relevant .rst files in the `api/` directory if structural changes are made
+  - Ensure new classes or modules are included in the appropriate documentation sections
+- Key documentation files that may need updates:
+  - `api/thermostat_api.rst` - Main API module documentation
+  - `api/thermostat_classes.rst` - Thermostat class specifications and required methods
+  - `api/zone_classes.rst` - Zone class methods and functionality
+  - `api/overview.rst` - High-level API overview and supported thermostats
+  - `index.rst` - Main documentation index and table of contents
+- Test documentation builds locally using `make html` before committing changes
+- The GitHub Actions workflow `.github/workflows/sphinx.yml` automatically builds and deploys documentation on main branch pushes
+- Follow Napoleon extension conventions for Google/NumPy style docstrings to ensure proper parsing
+- Maintain intersphinx cross-references to Python and Flask documentation where applicable
 ```
