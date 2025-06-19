@@ -16,16 +16,42 @@ from thermostatsupervisor import utilities as util
 
 # pykumo
 PYKUMO_DEBUG = False  # debug uses local pykumo repo instead of pkg
-if PYKUMO_DEBUG and not env.is_azure_environment():
-    mod_path = "..\\pykumo\\pykumo"
-    if env.is_interactive_environment():
-        mod_path = "..\\" + mod_path
-    pykumo = env.dynamic_module_import("pykumo", mod_path)
+pykumo = None  # will be set if import succeeds
+pykumo_import_error = None
+
+try:
+    if PYKUMO_DEBUG and not env.is_azure_environment():
+        mod_path = "..\\pykumo\\pykumo"
+        if env.is_interactive_environment():
+            mod_path = "..\\" + mod_path
+        pykumo = env.dynamic_module_import("pykumo", mod_path)
+    else:
+        import pykumo  # noqa E402, from path / site packages
+except ImportError as ex:
+    # pykumo is optional for kumolocal functionality
+    # This allows the module to be imported even when pykumo is not available
+    pykumo_import_error = ex
+    util.log_msg(
+        f"WARNING: pykumo library not available: {ex}. "
+        "KumoLocal functionality will be disabled.",
+        mode=util.STDERR_LOG
+    )
+
+
+# Dynamic base class creation based on pykumo availability
+if pykumo is not None:
+    # pykumo is available, use proper multiple inheritance
+    class _KumoLocalBase(pykumo.KumoCloudAccount, tc.ThermostatCommon):
+        """Base class for KumoLocal when pykumo is available."""
+        pass
 else:
-    import pykumo  # noqa E402, from path / site packages
+    # pykumo is not available, use only ThermostatCommon
+    class _KumoLocalBase(tc.ThermostatCommon):
+        """Base class for KumoLocal when pykumo is not available."""
+        pass
 
 
-class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
+class ThermostatClass(_KumoLocalBase):
     """KumoCloud thermostat functions."""
 
     def __init__(self, zone, verbose=True):
@@ -36,6 +62,13 @@ class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
             zone(str):  zone of thermostat.
             verbose(bool): debug flag.
         """
+        # Check if pykumo is available
+        if pykumo is None:
+            raise ImportError(
+                f"pykumo library is required for KumoLocal functionality. "
+                f"Original error: {pykumo_import_error}"
+            )
+
         # Kumocloud server auth credentials from env vars
         self.KC_UNAME_KEY = "KUMO_USERNAME"
         self.KC_PASSWORD_KEY = "KUMO_PASSWORD"
