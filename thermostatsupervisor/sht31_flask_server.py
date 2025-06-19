@@ -581,11 +581,11 @@ class Sensors:
             GPIO.setmode(GPIO.BCM)  # broadcom pin numbering
             GPIO.setup(sht31_config.SDA_PIN, GPIO.IN)
             GPIO.setup(sht31_config.SCL_PIN, GPIO.IN)
-            
+
             # read current pin states
             sda_level = GPIO.input(sht31_config.SDA_PIN)
             scl_level = GPIO.input(sht31_config.SCL_PIN)
-            
+
             # create response dictionary
             logic_levels = {
                 "sda_pin": sht31_config.SDA_PIN,
@@ -596,7 +596,7 @@ class Sensors:
                 "scl_state": "HIGH" if scl_level else "LOW",
                 "timestamp": time.time()
             }
-            
+
             return {"i2c_logic_levels": logic_levels}
         finally:
             GPIO.cleanup()  # clean up GPIO
@@ -604,7 +604,7 @@ class Sensors:
     def i2c_bus_health_check(self):
         """
         Comprehensive i2c bus health diagnostic.
-        
+
         Checks for stuck bus conditions by monitoring pin states and
         combining with device detection results.
 
@@ -617,18 +617,18 @@ class Sensors:
             # get current logic levels
             logic_data = self.i2c_read_logic_levels()
             logic_levels = logic_data["i2c_logic_levels"]
-            
+
             # get device detection results
             detect_data = self.i2c_detect()
-            
+
             # analyze bus health
             sda_level = logic_levels["sda_level"]
             scl_level = logic_levels["scl_level"]
-            
+
             # determine bus status
             bus_status = "UNKNOWN"
             health_issues = []
-            
+
             if sda_level == 0 and scl_level == 0:
                 bus_status = "STUCK_LOW"
                 health_issues.append("Both SDA and SCL pins stuck LOW")
@@ -641,13 +641,13 @@ class Sensors:
             elif sda_level == 1 and scl_level == 1:
                 bus_status = "IDLE"
                 health_issues.append("Bus appears idle (both pins HIGH)")
-            
+
             # check for device detection errors
             if "error" in str(detect_data):
                 health_issues.append("Device detection reported errors")
                 if bus_status == "IDLE":
                     bus_status = "ERROR_WITH_DETECTION"
-            
+
             # determine overall health
             if not health_issues:
                 overall_health = "HEALTHY"
@@ -655,7 +655,7 @@ class Sensors:
                 overall_health = "CRITICAL"
             else:
                 overall_health = "WARNING"
-            
+
             # create comprehensive response
             health_check = {
                 "bus_status": bus_status,
@@ -666,7 +666,7 @@ class Sensors:
                 "timestamp": time.time(),
                 "recommendations": self._get_health_recommendations(bus_status)
             }
-            
+
             return {"i2c_bus_health": health_check}
         except Exception as exc:
             return {
@@ -681,14 +681,14 @@ class Sensors:
     def _get_health_recommendations(self, bus_status):
         """
         Get recommendations based on bus health status.
-        
+
         inputs:
             bus_status(str): current bus status
         returns:
             (list): list of recommended actions
         """
         recommendations = []
-        
+
         if bus_status in ["STUCK_LOW", "SDA_STUCK_LOW", "SCL_STUCK_LOW"]:
             recommendations.extend([
                 "Bus appears stuck - try i2c recovery sequence",
@@ -709,7 +709,7 @@ class Sensors:
             ])
         else:
             recommendations.append("Monitor bus status for any changes")
-            
+
         return recommendations
 
     def get_iwlist_wifi_strength(self, cell=0) -> float:  # noqa R0201
