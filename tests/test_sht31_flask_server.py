@@ -421,101 +421,120 @@ class Sht31FlaskServerSensorUnit(utc.UnitTest):
                         "Same seed should produce identical humidity readings",
                     )
 
-    @patch('thermostatsupervisor.sht31_flask_server.GPIO')
-    def test_i2c_read_logic_levels(self, mock_gpio):
+    def test_i2c_read_logic_levels(self):
         """Test i2c logic levels reading method."""
-        # Mock GPIO setup and input calls
-        mock_gpio.BCM = 'BCM'
-        mock_gpio.IN = 'IN'
-        mock_gpio.input.side_effect = [1, 0]  # SDA high, SCL low
+        # Mock the pi_library_exception to None (successful GPIO import)
+        with patch(
+            'thermostatsupervisor.sht31_flask_server.pi_library_exception', None
+        ):
+            # Mock the GPIO module
+            with patch('thermostatsupervisor.sht31_flask_server.GPIO') as mock_gpio:
+                # Mock GPIO setup and input calls
+                mock_gpio.BCM = 'BCM'
+                mock_gpio.IN = 'IN'
+                mock_gpio.input.side_effect = [1, 0]  # SDA high, SCL low
 
-        # Call the method
-        result = self.sensors.i2c_read_logic_levels()
+                # Call the method
+                result = self.sensors.i2c_read_logic_levels()
 
-        # Validate result structure
-        self.assertIn("i2c_logic_levels", result)
-        logic_data = result["i2c_logic_levels"]
+                # Validate result structure
+                self.assertIn("i2c_logic_levels", result)
+                logic_data = result["i2c_logic_levels"]
 
-        # Check required fields
-        required_fields = ["sda_pin", "scl_pin", "sda_level", "scl_level",
-                           "sda_state", "scl_state", "timestamp"]
-        for field in required_fields:
-            self.assertIn(field, logic_data)
+                # Check required fields
+                required_fields = ["sda_pin", "scl_pin", "sda_level", "scl_level",
+                                   "sda_state", "scl_state", "timestamp"]
+                for field in required_fields:
+                    self.assertIn(field, logic_data)
 
-        # Verify pin assignments
-        self.assertEqual(logic_data["sda_pin"], sht31_config.SDA_PIN)
-        self.assertEqual(logic_data["scl_pin"], sht31_config.SCL_PIN)
+                # Verify pin assignments
+                self.assertEqual(logic_data["sda_pin"], sht31_config.SDA_PIN)
+                self.assertEqual(logic_data["scl_pin"], sht31_config.SCL_PIN)
 
-        # Verify logic levels
-        self.assertEqual(logic_data["sda_level"], 1)
-        self.assertEqual(logic_data["scl_level"], 0)
-        self.assertEqual(logic_data["sda_state"], "HIGH")
-        self.assertEqual(logic_data["scl_state"], "LOW")
+                # Verify logic levels
+                self.assertEqual(logic_data["sda_level"], 1)
+                self.assertEqual(logic_data["scl_level"], 0)
+                self.assertEqual(logic_data["sda_state"], "HIGH")
+                self.assertEqual(logic_data["scl_state"], "LOW")
 
-        # Verify GPIO was set up correctly
-        mock_gpio.setmode.assert_called_with('BCM')
-        mock_gpio.setup.assert_any_call(sht31_config.SDA_PIN, 'IN')
-        mock_gpio.setup.assert_any_call(sht31_config.SCL_PIN, 'IN')
-        mock_gpio.cleanup.assert_called_once()
+                # Verify GPIO was set up correctly
+                mock_gpio.setmode.assert_called_with('BCM')
+                mock_gpio.setup.assert_any_call(sht31_config.SDA_PIN, 'IN')
+                mock_gpio.setup.assert_any_call(sht31_config.SCL_PIN, 'IN')
+                mock_gpio.cleanup.assert_called_once()
 
-    @patch('thermostatsupervisor.sht31_flask_server.GPIO')
-    def test_i2c_bus_health_check(self, mock_gpio):
+    def test_i2c_bus_health_check(self):
         """Test comprehensive i2c bus health check method."""
-        # Mock GPIO calls for healthy bus (both pins high)
-        mock_gpio.BCM = 'BCM'
-        mock_gpio.IN = 'IN'
-        mock_gpio.input.side_effect = [1, 1]  # Both SDA and SCL high
+        # Mock the pi_library_exception to None (successful GPIO import)
+        with patch(
+            'thermostatsupervisor.sht31_flask_server.pi_library_exception', None
+        ):
+            # Mock the GPIO module
+            with patch('thermostatsupervisor.sht31_flask_server.GPIO') as mock_gpio:
+                # Mock GPIO calls for healthy bus (both pins high)
+                mock_gpio.BCM = 'BCM'
+                mock_gpio.IN = 'IN'
+                mock_gpio.input.side_effect = [1, 1]  # SDA and SCL high
 
-        # Mock i2c_detect to return successful detection
-        with patch.object(self.sensors, 'i2c_detect') as mock_detect:
-            mock_detect.return_value = {"i2c_detect": {"bus_1": {"addr_base_40": {}}}}
+                # Mock i2c_detect to return successful detection
+                with patch.object(self.sensors, 'i2c_detect') as mock_detect:
+                    mock_detect.return_value = {
+                        "i2c_detect": {"bus_1": {"addr_base_40": {}}}
+                    }
 
-            # Call the method
-            result = self.sensors.i2c_bus_health_check()
+                    # Call the method
+                    result = self.sensors.i2c_bus_health_check()
 
-            # Validate result structure
-            self.assertIn("i2c_bus_health", result)
-            health_data = result["i2c_bus_health"]
+                    # Validate result structure
+                    self.assertIn("i2c_bus_health", result)
+                    health_data = result["i2c_bus_health"]
 
-            # Check required fields
-            required_fields = ["bus_status", "overall_health", "health_issues",
-                               "logic_levels", "device_detection", "timestamp",
-                               "recommendations"]
-            for field in required_fields:
-                self.assertIn(field, health_data)
+                    # Check required fields
+                    required_fields = ["bus_status", "overall_health", "health_issues",
+                                       "logic_levels", "device_detection", "timestamp",
+                                       "recommendations"]
+                    for field in required_fields:
+                        self.assertIn(field, health_data)
 
-            # For healthy bus, should be IDLE status
-            self.assertEqual(health_data["bus_status"], "IDLE")
-            self.assertIsInstance(health_data["health_issues"], list)
-            self.assertIsInstance(health_data["recommendations"], list)
+                    # For healthy bus, should be IDLE status
+                    self.assertEqual(health_data["bus_status"], "IDLE")
+                    self.assertIsInstance(health_data["health_issues"], list)
+                    self.assertIsInstance(health_data["recommendations"], list)
 
-    @patch('thermostatsupervisor.sht31_flask_server.GPIO')
-    def test_i2c_bus_health_check_stuck_low(self, mock_gpio):
+    def test_i2c_bus_health_check_stuck_low(self):
         """Test i2c bus health check for stuck low condition."""
-        # Mock GPIO calls for stuck bus (both pins low)
-        mock_gpio.BCM = 'BCM'
-        mock_gpio.IN = 'IN'
-        mock_gpio.input.side_effect = [0, 0]  # Both SDA and SCL low
+        # Mock the pi_library_exception to None (successful GPIO import)
+        with patch(
+            'thermostatsupervisor.sht31_flask_server.pi_library_exception', None
+        ):
+            # Mock the GPIO module
+            with patch('thermostatsupervisor.sht31_flask_server.GPIO') as mock_gpio:
+                # Mock GPIO calls for stuck bus (both pins low)
+                mock_gpio.BCM = 'BCM'
+                mock_gpio.IN = 'IN'
+                mock_gpio.input.side_effect = [0, 0]  # Both SDA and SCL low
 
-        # Mock i2c_detect to return successful detection
-        with patch.object(self.sensors, 'i2c_detect') as mock_detect:
-            mock_detect.return_value = {"i2c_detect": {"bus_1": {}}}
+                # Mock i2c_detect to return successful detection
+                with patch.object(self.sensors, 'i2c_detect') as mock_detect:
+                    mock_detect.return_value = {"i2c_detect": {"bus_1": {}}}
 
-            # Call the method
-            result = self.sensors.i2c_bus_health_check()
+                    # Call the method
+                    result = self.sensors.i2c_bus_health_check()
 
-            # Validate result structure
-            health_data = result["i2c_bus_health"]
+                    # Validate result structure
+                    health_data = result["i2c_bus_health"]
 
-            # For stuck bus, should be STUCK_LOW status and CRITICAL health
-            self.assertEqual(health_data["bus_status"], "STUCK_LOW")
-            self.assertEqual(health_data["overall_health"], "CRITICAL")
-            self.assertIn("Both SDA and SCL pins stuck LOW",
-                          health_data["health_issues"])
+                    # For stuck bus, should be STUCK_LOW and CRITICAL
+                    self.assertEqual(health_data["bus_status"], "STUCK_LOW")
+                    self.assertEqual(health_data["overall_health"], "CRITICAL")
+                    self.assertIn("Both SDA and SCL pins stuck LOW",
+                                  health_data["health_issues"])
 
-            # Should have recovery recommendations
-            recommendations = health_data["recommendations"]
-            self.assertTrue(any("recovery" in rec.lower() for rec in recommendations))
+                    # Should have recovery recommendations
+                    recommendations = health_data["recommendations"]
+                    self.assertTrue(
+                        any("recovery" in rec.lower() for rec in recommendations)
+                    )
 
     def test_get_health_recommendations(self):
         """Test health recommendations generation."""

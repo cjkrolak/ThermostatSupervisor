@@ -26,6 +26,8 @@ except ImportError as ex:
         "this is expected in unittest mode"
     )
     pi_library_exception = ex  # unsuccessful
+    # Create a placeholder GPIO for testing
+    GPIO = None
 
 # third party imports
 from flask import Flask, jsonify, request
@@ -576,6 +578,20 @@ class Sensors:
         returns:
             (dict): current logic levels of SDA and SCL pins
         """
+        if pi_library_exception:
+            return {
+                "i2c_logic_levels": {
+                    "error": "GPIO library not available in test environment",
+                    "sda_pin": sht31_config.SDA_PIN,
+                    "scl_pin": sht31_config.SCL_PIN,
+                    "sda_level": None,
+                    "scl_level": None,
+                    "sda_state": "UNKNOWN",
+                    "scl_state": "UNKNOWN",
+                    "timestamp": time.time()
+                }
+            }
+
         try:
             # set GPIO mode and configure pins as inputs
             GPIO.setmode(GPIO.BCM)  # broadcom pin numbering
@@ -620,6 +636,22 @@ class Sensors:
 
             # get device detection results
             detect_data = self.i2c_detect()
+
+            # handle test environment where GPIO is not available
+            if "error" in logic_levels:
+                return {
+                    "i2c_bus_health": {
+                        "bus_status": "TEST_MODE",
+                        "overall_health": "UNKNOWN",
+                        "health_issues": ["GPIO not available in test environment"],
+                        "logic_levels": logic_levels,
+                        "device_detection": detect_data,
+                        "timestamp": time.time(),
+                        "recommendations": [
+                            "Run on actual hardware for GPIO diagnostics"
+                        ]
+                    }
+                }
 
             # analyze bus health
             sda_level = logic_levels["sda_level"]

@@ -52,6 +52,23 @@
 - Update or enhance test code if coverage is insufficient for modified areas.
 - Strive to maintain or improve overall project coverage with each change.
 
+### Unit Test Requirements and Failure Handling
+- **MANDATORY**: All unit tests MUST pass before committing code changes.
+- **ALWAYS run unit tests** using `python -m unittest <test_module>` or `python -m tests.unit_test_coverage` to verify functionality.
+- **AUTOMATIC FAILURE ANALYSIS**: When unit tests fail, automatically analyze and fix test failures:
+  - Examine the test failure output to understand the root cause
+  - Identify whether the issue is in the implementation code or test setup
+  - Fix implementation bugs that cause legitimate test failures
+  - Update or fix test mocking/setup issues (e.g., import errors, missing dependencies)
+  - Handle environment-specific issues (e.g., missing hardware libraries in test environments)
+  - Ensure proper test isolation and cleanup
+- **Test Environment Compatibility**: Account for differences between production and test environments:
+  - Handle missing hardware-specific libraries (e.g., RPi.GPIO, smbus) gracefully in tests
+  - Use proper mocking strategies to simulate hardware behavior
+  - Ensure tests can run in CI/CD environments without physical hardware dependencies
+- **Zero test failures policy**: Address ALL test failures before committing - no exceptions.
+- Run a focused test suite on modified code areas before running the full test suite.
+
 ### Documentation and Comments Enhancement
 - Verify docstrings and comments on existing code where code changes are being made.
 - Update or enhance docstrings and comments if they are outdated or insufficient.
