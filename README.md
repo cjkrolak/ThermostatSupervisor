@@ -186,7 +186,7 @@ Zone number refers to the thermostat order in nest server, 0=first thermostat da
 command line usage:  "*python -m thermostatsupervisor.nest \<thermostat type\> \<zone\>*"
 
 ## Supervisor API required methods:<br/>
-**For complete API documentation, see: [ThermostatSupervisor API Documentation](https://cjkrolak.github.io/ThermostatSupervisor/)**<br/><br/>
+**For complete API documentation, see: [Thermostat Classes API](https://cjkrolak.github.io/ThermostatSupervisor/api/thermostat_classes.html) and [Zone Classes API](https://cjkrolak.github.io/ThermostatSupervisor/api/zone_classes.html)**<br/><br/>
 
 **Thermostat class:**<br/>
 * print_all_thermostat_metadata(): Print all thermostat meta data.
@@ -203,9 +203,15 @@ command line usage:  "*python -m thermostatsupervisor.nest \<thermostat type\> \
 
 # API Documentation
 
-Comprehensive API documentation is automatically generated and available at:
+Comprehensive API documentation is automatically generated and available through GitHub Pages:
 
-**[https://cjkrolak.github.io/ThermostatSupervisor/](https://cjkrolak.github.io/ThermostatSupervisor/)**
+**Main Documentation:** [ThermostatSupervisor API Documentation](https://cjkrolak.github.io/ThermostatSupervisor/)
+
+**Specific API References:**
+- **[API Overview](https://cjkrolak.github.io/ThermostatSupervisor/api/overview.html)** - Core API structure and supported thermostats
+- **[Thermostat API Module](https://cjkrolak.github.io/ThermostatSupervisor/api/thermostat_api.html)** - Main API module and configuration
+- **[Thermostat Classes](https://cjkrolak.github.io/ThermostatSupervisor/api/thermostat_classes.html)** - Required thermostat class methods
+- **[Zone Classes](https://cjkrolak.github.io/ThermostatSupervisor/api/zone_classes.html)** - Required zone class methods and functionality
 
 The documentation includes:
 - Complete API reference for all modules
