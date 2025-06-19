@@ -3,13 +3,19 @@
 #                 thermostatsupervisor.sht31_wsgi:application
 
 import multiprocessing
+import platform
 
 # Server socket
 bind = "0.0.0.0:5000"
 backlog = 2048
 
 # Worker processes
-workers = multiprocessing.cpu_count() * 2 + 1
+# Limit workers to 1 on ARM processors due to memory constraints
+machine = platform.machine().lower()
+if any(arch in machine for arch in ['arm', 'aarch']):
+    workers = 1
+else:
+    workers = multiprocessing.cpu_count() * 2 + 1
 worker_class = "sync"
 worker_connections = 1000
 timeout = 30
