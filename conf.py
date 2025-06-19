@@ -51,11 +51,11 @@ napoleon_use_rtype = True
 
 # Autodoc settings
 autodoc_default_options = {
-    'members': True,
-    'member-order': 'bysource',
-    'special-members': '__init__',
-    'undoc-members': True,
-    'show-inheritance': True,
+    "members": True,
+    "member-order": "bysource",
+    "special-members": "__init__",
+    "undoc-members": True,
+    "show-inheritance": True,
 }
 
 # Autosummary settings
@@ -63,8 +63,8 @@ autosummary_generate = True
 
 # Intersphinx mapping
 intersphinx_mapping = {
-    'python': ('https://docs.python.org/3', None),
-    'flask': ('https://flask.palletsprojects.com/en/2.3.x/', None),
+    "python": ("https://docs.python.org/3", None),
+    "flask": ("https://flask.palletsprojects.com/en/2.3.x/", None),
 }
 
 templates_path = ["_templates"]
@@ -82,14 +82,14 @@ html_theme = "alabaster"
 
 # Theme options are theme-specific and customize the look and feel of a theme
 html_theme_options = {
-    'description': 'Monitor and control thermostats remotely',
-    'github_user': 'cjkrolak',
-    'github_repo': 'ThermostatSupervisor',
-    'github_button': True,
-    'github_type': 'star',
-    'show_powered_by': False,
-    'sidebar_width': '240px',
-    'page_width': '1200px',
+    "description": "Monitor and control thermostats remotely",
+    "github_user": "cjkrolak",
+    "github_repo": "ThermostatSupervisor",
+    "github_button": True,
+    "github_type": "star",
+    "show_powered_by": False,
+    "sidebar_width": "240px",
+    "page_width": "1200px",
 }
 
 # Add any paths that contain custom static files (such as style sheets) here,
@@ -105,4 +105,4 @@ html_show_copyright = True
 html_show_sphinx = True
 
 # Generate a GitHub Pages .nojekyll file
-html_extra_path = ['.nojekyll'] if os.path.exists('.nojekyll') else []
+html_extra_path = [".nojekyll"] if os.path.exists(".nojekyll") else []
