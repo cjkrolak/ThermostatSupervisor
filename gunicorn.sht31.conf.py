@@ -12,7 +12,7 @@ backlog = 2048
 # Worker processes
 # Limit workers to 1 on ARM processors due to memory constraints
 machine = platform.machine().lower()
-if any(arch in machine for arch in ['arm', 'aarch']):
+if any(arch in machine for arch in ["arm", "aarch"]):
     workers = 1
 else:
     workers = multiprocessing.cpu_count() * 2 + 1
@@ -28,7 +28,7 @@ max_requests_jitter = 50
 # Logging
 loglevel = "info"
 accesslog = "-"  # Log to stdout
-errorlog = "-"   # Log to stderr
+errorlog = "-"  # Log to stderr
 access_log_format = '%(h)s %(l)s %(u)s %(t)s "%(r)s" %(s)s %(b)s "%(f)s" "%(a)s"'
 
 # Process naming
