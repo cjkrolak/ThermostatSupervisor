@@ -32,7 +32,7 @@ ENABLE_FLASK_INTEGRATION_TESTS = True  # enable flask int tests
 ENABLE_KUMOLOCAL_TESTS = False  # Kumolocal is local net only
 ENABLE_KUMOCLOUD_TESTS = False  # Kumocloud tests are disabled due to API changes
 ENABLE_MMM_TESTS = False  # mmm50 is local net only
-ENABLE_SHT31_TESTS = False  # sht31 can fail on occasion
+ENABLE_SHT31_TESTS = True  # sht31 tests now have robust diagnostics
 ENABLE_BLINK_TESTS = (
     False and not env.is_azure_environment()
 )  # Blink cameras, TODO #638
