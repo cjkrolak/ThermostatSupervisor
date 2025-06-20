@@ -425,13 +425,13 @@ class Sht31FlaskServerSensorUnit(utc.UnitTest):
         """Test i2c logic levels reading method."""
         # Mock the pi_library_exception to None (successful GPIO import)
         with patch(
-            'thermostatsupervisor.sht31_flask_server.pi_library_exception', None
+            "thermostatsupervisor.sht31_flask_server.pi_library_exception", None
         ):
             # Mock the GPIO module
-            with patch('thermostatsupervisor.sht31_flask_server.GPIO') as mock_gpio:
+            with patch("thermostatsupervisor.sht31_flask_server.GPIO") as mock_gpio:
                 # Mock GPIO setup and input calls
-                mock_gpio.BCM = 'BCM'
-                mock_gpio.IN = 'IN'
+                mock_gpio.BCM = "BCM"
+                mock_gpio.IN = "IN"
                 mock_gpio.input.side_effect = [1, 0]  # SDA high, SCL low
 
                 # Call the method
@@ -442,8 +442,15 @@ class Sht31FlaskServerSensorUnit(utc.UnitTest):
                 logic_data = result["i2c_logic_levels"]
 
                 # Check required fields
-                required_fields = ["sda_pin", "scl_pin", "sda_level", "scl_level",
-                                   "sda_state", "scl_state", "timestamp"]
+                required_fields = [
+                    "sda_pin",
+                    "scl_pin",
+                    "sda_level",
+                    "scl_level",
+                    "sda_state",
+                    "scl_state",
+                    "timestamp",
+                ]
                 for field in required_fields:
                     self.assertIn(field, logic_data)
 
@@ -458,26 +465,26 @@ class Sht31FlaskServerSensorUnit(utc.UnitTest):
                 self.assertEqual(logic_data["scl_state"], "LOW")
 
                 # Verify GPIO was set up correctly
-                mock_gpio.setmode.assert_called_with('BCM')
-                mock_gpio.setup.assert_any_call(sht31_config.SDA_PIN, 'IN')
-                mock_gpio.setup.assert_any_call(sht31_config.SCL_PIN, 'IN')
+                mock_gpio.setmode.assert_called_with("BCM")
+                mock_gpio.setup.assert_any_call(sht31_config.SDA_PIN, "IN")
+                mock_gpio.setup.assert_any_call(sht31_config.SCL_PIN, "IN")
                 mock_gpio.cleanup.assert_called_once()
 
     def test_i2c_bus_health_check(self):
         """Test comprehensive i2c bus health check method."""
         # Mock the pi_library_exception to None (successful GPIO import)
         with patch(
-            'thermostatsupervisor.sht31_flask_server.pi_library_exception', None
+            "thermostatsupervisor.sht31_flask_server.pi_library_exception", None
         ):
             # Mock the GPIO module
-            with patch('thermostatsupervisor.sht31_flask_server.GPIO') as mock_gpio:
+            with patch("thermostatsupervisor.sht31_flask_server.GPIO") as mock_gpio:
                 # Mock GPIO calls for healthy bus (both pins high)
-                mock_gpio.BCM = 'BCM'
-                mock_gpio.IN = 'IN'
+                mock_gpio.BCM = "BCM"
+                mock_gpio.IN = "IN"
                 mock_gpio.input.side_effect = [1, 1]  # SDA and SCL high
 
                 # Mock i2c_detect to return successful detection
-                with patch.object(self.sensors, 'i2c_detect') as mock_detect:
+                with patch.object(self.sensors, "i2c_detect") as mock_detect:
                     mock_detect.return_value = {
                         "i2c_detect": {"bus_1": {"addr_base_40": {}}}
                     }
@@ -490,9 +497,15 @@ class Sht31FlaskServerSensorUnit(utc.UnitTest):
                     health_data = result["i2c_bus_health"]
 
                     # Check required fields
-                    required_fields = ["bus_status", "overall_health", "health_issues",
-                                       "logic_levels", "device_detection", "timestamp",
-                                       "recommendations"]
+                    required_fields = [
+                        "bus_status",
+                        "overall_health",
+                        "health_issues",
+                        "logic_levels",
+                        "device_detection",
+                        "timestamp",
+                        "recommendations",
+                    ]
                     for field in required_fields:
                         self.assertIn(field, health_data)
 
@@ -505,17 +518,17 @@ class Sht31FlaskServerSensorUnit(utc.UnitTest):
         """Test i2c bus health check for stuck low condition."""
         # Mock the pi_library_exception to None (successful GPIO import)
         with patch(
-            'thermostatsupervisor.sht31_flask_server.pi_library_exception', None
+            "thermostatsupervisor.sht31_flask_server.pi_library_exception", None
         ):
             # Mock the GPIO module
-            with patch('thermostatsupervisor.sht31_flask_server.GPIO') as mock_gpio:
+            with patch("thermostatsupervisor.sht31_flask_server.GPIO") as mock_gpio:
                 # Mock GPIO calls for stuck bus (both pins low)
-                mock_gpio.BCM = 'BCM'
-                mock_gpio.IN = 'IN'
+                mock_gpio.BCM = "BCM"
+                mock_gpio.IN = "IN"
                 mock_gpio.input.side_effect = [0, 0]  # Both SDA and SCL low
 
                 # Mock i2c_detect to return successful detection
-                with patch.object(self.sensors, 'i2c_detect') as mock_detect:
+                with patch.object(self.sensors, "i2c_detect") as mock_detect:
                     mock_detect.return_value = {"i2c_detect": {"bus_1": {}}}
 
                     # Call the method
@@ -527,8 +540,9 @@ class Sht31FlaskServerSensorUnit(utc.UnitTest):
                     # For stuck bus, should be STUCK_LOW and CRITICAL
                     self.assertEqual(health_data["bus_status"], "STUCK_LOW")
                     self.assertEqual(health_data["overall_health"], "CRITICAL")
-                    self.assertIn("Both SDA and SCL pins stuck LOW",
-                                  health_data["health_issues"])
+                    self.assertIn(
+                        "Both SDA and SCL pins stuck LOW", health_data["health_issues"]
+                    )
 
                     # Should have recovery recommendations
                     recommendations = health_data["recommendations"]

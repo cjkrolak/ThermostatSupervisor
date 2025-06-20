@@ -588,7 +588,7 @@ class Sensors:
                     "scl_level": None,
                     "sda_state": "UNKNOWN",
                     "scl_state": "UNKNOWN",
-                    "timestamp": time.time()
+                    "timestamp": time.time(),
                 }
             }
 
@@ -610,7 +610,7 @@ class Sensors:
                 "scl_level": scl_level,
                 "sda_state": "HIGH" if sda_level else "LOW",
                 "scl_state": "HIGH" if scl_level else "LOW",
-                "timestamp": time.time()
+                "timestamp": time.time(),
             }
 
             return {"i2c_logic_levels": logic_levels}
@@ -649,7 +649,7 @@ class Sensors:
                         "timestamp": time.time(),
                         "recommendations": [
                             "Run on actual hardware for GPIO diagnostics"
-                        ]
+                        ],
                     }
                 }
 
@@ -696,7 +696,7 @@ class Sensors:
                 "logic_levels": logic_levels,
                 "device_detection": detect_data,
                 "timestamp": time.time(),
-                "recommendations": self._get_health_recommendations(bus_status)
+                "recommendations": self._get_health_recommendations(bus_status),
             }
 
             return {"i2c_bus_health": health_check}
@@ -706,7 +706,7 @@ class Sensors:
                     "bus_status": "ERROR",
                     "overall_health": "CRITICAL",
                     "error": str(exc),
-                    "timestamp": time.time()
+                    "timestamp": time.time(),
                 }
             }
 
@@ -722,23 +722,29 @@ class Sensors:
         recommendations = []
 
         if bus_status in ["STUCK_LOW", "SDA_STUCK_LOW", "SCL_STUCK_LOW"]:
-            recommendations.extend([
-                "Bus appears stuck - try i2c recovery sequence",
-                "Check physical connections to SHT31 sensor",
-                "Consider power cycling the system",
-                "Verify no short circuits on i2c lines"
-            ])
+            recommendations.extend(
+                [
+                    "Bus appears stuck - try i2c recovery sequence",
+                    "Check physical connections to SHT31 sensor",
+                    "Consider power cycling the system",
+                    "Verify no short circuits on i2c lines",
+                ]
+            )
         elif bus_status == "ERROR_WITH_DETECTION":
-            recommendations.extend([
-                "Device detection failed - check sensor connection",
-                "Verify sensor power supply",
-                "Try i2c bus recovery if issues persist"
-            ])
+            recommendations.extend(
+                [
+                    "Device detection failed - check sensor connection",
+                    "Verify sensor power supply",
+                    "Try i2c bus recovery if issues persist",
+                ]
+            )
         elif bus_status == "IDLE":
-            recommendations.extend([
-                "Bus appears idle - this is normal when not communicating",
-                "Run device detection to verify sensor connectivity"
-            ])
+            recommendations.extend(
+                [
+                    "Bus appears idle - this is normal when not communicating",
+                    "Run device detection to verify sensor connectivity",
+                ]
+            )
         else:
             recommendations.append("Monitor bus status for any changes")
 
