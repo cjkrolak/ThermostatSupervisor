@@ -26,6 +26,8 @@ except ImportError as ex:
         "this is expected in unittest mode"
     )
     pi_library_exception = ex  # unsuccessful
+    # Create a placeholder GPIO for testing
+    GPIO = None
 
 # third party imports
 from flask import Flask, jsonify, request
@@ -567,6 +569,181 @@ class Sensors:
         parsed_device_dict["i2c_detect"]["bus_" + str(bus)] = bus_dict
         return parsed_device_dict
 
+    def i2c_read_logic_levels(self):
+        """
+        Read current logic levels of i2c SDA and SCL pins.
+
+        inputs:
+            None
+        returns:
+            (dict): current logic levels of SDA and SCL pins
+        """
+        if pi_library_exception:
+            return {
+                "i2c_logic_levels": {
+                    "error": "GPIO library not available in test environment",
+                    "sda_pin": sht31_config.SDA_PIN,
+                    "scl_pin": sht31_config.SCL_PIN,
+                    "sda_level": None,
+                    "scl_level": None,
+                    "sda_state": "UNKNOWN",
+                    "scl_state": "UNKNOWN",
+                    "timestamp": time.time()
+                }
+            }
+
+        try:
+            # set GPIO mode and configure pins as inputs
+            GPIO.setmode(GPIO.BCM)  # broadcom pin numbering
+            GPIO.setup(sht31_config.SDA_PIN, GPIO.IN)
+            GPIO.setup(sht31_config.SCL_PIN, GPIO.IN)
+
+            # read current pin states
+            sda_level = GPIO.input(sht31_config.SDA_PIN)
+            scl_level = GPIO.input(sht31_config.SCL_PIN)
+
+            # create response dictionary
+            logic_levels = {
+                "sda_pin": sht31_config.SDA_PIN,
+                "scl_pin": sht31_config.SCL_PIN,
+                "sda_level": sda_level,
+                "scl_level": scl_level,
+                "sda_state": "HIGH" if sda_level else "LOW",
+                "scl_state": "HIGH" if scl_level else "LOW",
+                "timestamp": time.time()
+            }
+
+            return {"i2c_logic_levels": logic_levels}
+        finally:
+            GPIO.cleanup()  # clean up GPIO
+
+    def i2c_bus_health_check(self):
+        """
+        Comprehensive i2c bus health diagnostic.
+
+        Checks for stuck bus conditions by monitoring pin states and
+        combining with device detection results.
+
+        inputs:
+            None
+        returns:
+            (dict): comprehensive bus health status
+        """
+        try:
+            # get current logic levels
+            logic_data = self.i2c_read_logic_levels()
+            logic_levels = logic_data["i2c_logic_levels"]
+
+            # get device detection results
+            detect_data = self.i2c_detect()
+
+            # handle test environment where GPIO is not available
+            if "error" in logic_levels:
+                return {
+                    "i2c_bus_health": {
+                        "bus_status": "TEST_MODE",
+                        "overall_health": "UNKNOWN",
+                        "health_issues": ["GPIO not available in test environment"],
+                        "logic_levels": logic_levels,
+                        "device_detection": detect_data,
+                        "timestamp": time.time(),
+                        "recommendations": [
+                            "Run on actual hardware for GPIO diagnostics"
+                        ]
+                    }
+                }
+
+            # analyze bus health
+            sda_level = logic_levels["sda_level"]
+            scl_level = logic_levels["scl_level"]
+
+            # determine bus status
+            bus_status = "UNKNOWN"
+            health_issues = []
+
+            if sda_level == 0 and scl_level == 0:
+                bus_status = "STUCK_LOW"
+                health_issues.append("Both SDA and SCL pins stuck LOW")
+            elif sda_level == 0:
+                bus_status = "SDA_STUCK_LOW"
+                health_issues.append("SDA pin stuck LOW")
+            elif scl_level == 0:
+                bus_status = "SCL_STUCK_LOW"
+                health_issues.append("SCL pin stuck LOW")
+            elif sda_level == 1 and scl_level == 1:
+                bus_status = "IDLE"
+                health_issues.append("Bus appears idle (both pins HIGH)")
+
+            # check for device detection errors
+            if "error" in str(detect_data):
+                health_issues.append("Device detection reported errors")
+                if bus_status == "IDLE":
+                    bus_status = "ERROR_WITH_DETECTION"
+
+            # determine overall health
+            if not health_issues:
+                overall_health = "HEALTHY"
+            elif bus_status in ["STUCK_LOW", "SDA_STUCK_LOW", "SCL_STUCK_LOW"]:
+                overall_health = "CRITICAL"
+            else:
+                overall_health = "WARNING"
+
+            # create comprehensive response
+            health_check = {
+                "bus_status": bus_status,
+                "overall_health": overall_health,
+                "health_issues": health_issues,
+                "logic_levels": logic_levels,
+                "device_detection": detect_data,
+                "timestamp": time.time(),
+                "recommendations": self._get_health_recommendations(bus_status)
+            }
+
+            return {"i2c_bus_health": health_check}
+        except Exception as exc:
+            return {
+                "i2c_bus_health": {
+                    "bus_status": "ERROR",
+                    "overall_health": "CRITICAL",
+                    "error": str(exc),
+                    "timestamp": time.time()
+                }
+            }
+
+    def _get_health_recommendations(self, bus_status):
+        """
+        Get recommendations based on bus health status.
+
+        inputs:
+            bus_status(str): current bus status
+        returns:
+            (list): list of recommended actions
+        """
+        recommendations = []
+
+        if bus_status in ["STUCK_LOW", "SDA_STUCK_LOW", "SCL_STUCK_LOW"]:
+            recommendations.extend([
+                "Bus appears stuck - try i2c recovery sequence",
+                "Check physical connections to SHT31 sensor",
+                "Consider power cycling the system",
+                "Verify no short circuits on i2c lines"
+            ])
+        elif bus_status == "ERROR_WITH_DETECTION":
+            recommendations.extend([
+                "Device detection failed - check sensor connection",
+                "Verify sensor power supply",
+                "Try i2c bus recovery if issues persist"
+            ])
+        elif bus_status == "IDLE":
+            recommendations.extend([
+                "Bus appears idle - this is normal when not communicating",
+                "Run device detection to verify sensor connectivity"
+            ])
+        else:
+            recommendations.append("Monitor bus status for any changes")
+
+        return recommendations
+
     def get_iwlist_wifi_strength(self, cell=0) -> float:  # noqa R0201
         """
         Return the Raspberry pi wifi signal strength in dBm from iwlist.
@@ -880,6 +1057,30 @@ class I2CDetectBus1(Resource):
         return helper.i2c_detect(1)
 
 
+class I2CLogicLevels(Resource):
+    """Read current i2c logic levels."""
+
+    def __init__(self):
+        pass
+
+    def get(self):
+        """Map the get method."""
+        helper = Sensors()
+        return helper.i2c_read_logic_levels()
+
+
+class I2CBusHealth(Resource):
+    """Comprehensive i2c bus health check."""
+
+    def __init__(self):
+        pass
+
+    def get(self):
+        """Map the get method."""
+        helper = Sensors()
+        return helper.i2c_bus_health_check()
+
+
 class PrintIPBanBlockList(Resource):
     """Print IPBan block list to flask server console."""
 
@@ -940,6 +1141,8 @@ def create_app():
     api.add_resource(I2CDetect, sht31_config.flask_folder.i2c_detect)
     api.add_resource(I2CDetectBus0, sht31_config.flask_folder.i2c_detect_0)
     api.add_resource(I2CDetectBus1, sht31_config.flask_folder.i2c_detect_1)
+    api.add_resource(I2CLogicLevels, sht31_config.flask_folder.i2c_logic_levels)
+    api.add_resource(I2CBusHealth, sht31_config.flask_folder.i2c_bus_health)
     api.add_resource(PrintIPBanBlockList, sht31_config.flask_folder.print_block_list)
     api.add_resource(ClearIPBanBlockList, sht31_config.flask_folder.clear_block_list)
 

@@ -146,6 +146,8 @@ Production data is at root, subfolders provide additional commands:<br/>
 * /i2c_detect: detect i2c device on either bus
 * /i2c_detect_0: detect i2c device on bus 0
 * /i2c_detect_1: detect i2c device on bus 1
+* /i2c_logic_levels: read current logic levels of i2c SDA and SCL pins
+* /i2c_bus_health: comprehensive i2c bus health check with diagnostics
 * /print_block_list: print out the ip ban block list
 * /clear_block_list: clear the ip ban block list<br/>
 

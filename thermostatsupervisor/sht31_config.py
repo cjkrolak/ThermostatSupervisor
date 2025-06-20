@@ -43,6 +43,8 @@ flask_folder.i2c_recovery = "/i2c_recovery"
 flask_folder.i2c_detect = "/i2c_detect"
 flask_folder.i2c_detect_0 = "/i2c_detect/0"
 flask_folder.i2c_detect_1 = "/i2c_detect/1"
+flask_folder.i2c_logic_levels = "/i2c_logic_levels"
+flask_folder.i2c_bus_health = "/i2c_bus_health"
 flask_folder.print_block_list = "/print_block_list"
 flask_folder.clear_block_list = "/clear_block_list"
 
