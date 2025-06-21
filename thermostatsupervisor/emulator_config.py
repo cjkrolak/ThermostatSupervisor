@@ -31,7 +31,7 @@ supported_configs = {
         "AUTO_MODE",
         "UNKNOWN_MODE",
     ],
-    "zip_code": "02101",  # Default zip code for outdoor weather data
+    "zip_code": "55378",  # Zip code for outdoor weather data
 }
 
 
