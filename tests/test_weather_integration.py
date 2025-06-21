@@ -35,7 +35,7 @@ class TestWeatherIntegration(unittest.TestCase):
         zip_code = emulator_config.supported_configs.get('zip_code')
         self.assertIsNotNone(zip_code)
         self.assertIsInstance(zip_code, str)
-        self.assertEqual(zip_code, '02101')
+        self.assertEqual(zip_code, '55378')
 
     @patch('thermostatsupervisor.weather.get_outdoor_weather')
     @patch('thermostatsupervisor.weather.get_weather_api_key')
@@ -63,11 +63,11 @@ class TestWeatherIntegration(unittest.TestCase):
         # Check that our modified configs have zip codes
         emulator_config_api = api.SUPPORTED_THERMOSTATS.get('emulator', {})
         self.assertIn('zip_code', emulator_config_api)
-        self.assertEqual(emulator_config_api['zip_code'], '02101')
+        self.assertEqual(emulator_config_api['zip_code'], '55378')
 
         honeywell_config_api = api.SUPPORTED_THERMOSTATS.get('honeywell', {})
         self.assertIn('zip_code', honeywell_config_api)
-        self.assertEqual(honeywell_config_api['zip_code'], '12345')
+        self.assertEqual(honeywell_config_api['zip_code'], '55378')
 
 
 if __name__ == "__main__":
