@@ -6,11 +6,9 @@ without requiring actual kumolocal devices.
 """
 # built-in imports
 import unittest
-from unittest.mock import Mock, patch
 
 # local imports
 from thermostatsupervisor import kumolocal_config
-from thermostatsupervisor import utilities as util
 from tests import unit_test_common as utc
 
 
