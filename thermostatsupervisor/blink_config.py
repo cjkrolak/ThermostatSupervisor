@@ -62,6 +62,9 @@ supported_configs = {
     "type": 6,
     "zones": list(metadata.keys()),
     "modes": ["OFF_MODE"],
+    "zip_code": "55760",  # Zip code for outdoor weather data (zones 0-9)
+    # Note: zones 10-16 are in a different location (55378) but weather
+    # is fetched once per thermostat type for efficiency
 }
 
 
