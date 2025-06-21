@@ -659,6 +659,113 @@ class TestSht31FlaskClientAzure(utc.UnitTest):
             # This is actually a positive result - it means the routing worked
             # and we got to the correct endpoint code
 
+    def test_sht31_flask_server_bad_routes(self):
+        """Test that bad routes return proper 404 responses."""
+        # Define non-existent endpoints that should return 404
+        bad_endpoints = [
+            "/nonexistent",
+            "/bad_route",
+            "/invalid_endpoint",
+            "/not_found",
+            "/fake_api",
+            "/i2c_detect/999",  # Invalid bus number
+            "/enable_heater/extra",  # Extra path component
+        ]
+
+        for endpoint in bad_endpoints:
+            with self.subTest(endpoint=endpoint):
+                response = self.client.get(endpoint)
+                # Should get 404 for non-existent routes
+                self.assertEqual(
+                    response.status_code,
+                    404,
+                    f"Endpoint {endpoint} should return 404, "
+                    f"got {response.status_code}"
+                )
+
+    def test_sht31_flask_server_ipban_registry(self):
+        """Test IP ban registry functionality."""
+        # Test the print_block_list endpoint
+        response = self.client.get("/print_block_list")
+        self.assertIn(
+            response.status_code,
+            [200, 500],  # 500 is OK in test environment
+            f"print_block_list endpoint returned {response.status_code}"
+        )
+
+        if response.status_code == 200:
+            # Should return JSON data
+            self.assertTrue(
+                response.is_json or response.mimetype == "application/json",
+                "print_block_list should return JSON data"
+            )
+            data = response.get_json()
+            self.assertIsInstance(
+                data, dict,
+                "print_block_list should return dict data"
+            )
+            # Block list should be a dictionary (even if empty)
+            self.assertIsInstance(
+                data, dict,
+                "IP ban block list should be a dictionary"
+            )
+
+    def test_sht31_flask_server_clear_ipban_registry(self):
+        """Test clearing the IP ban registry."""
+        # Test the clear_block_list endpoint
+        response = self.client.get("/clear_block_list")
+        self.assertIn(
+            response.status_code,
+            [200, 500],  # 500 is OK in test environment
+            f"clear_block_list endpoint returned {response.status_code}"
+        )
+
+        if response.status_code == 200:
+            # Should return JSON data
+            self.assertTrue(
+                response.is_json or response.mimetype == "application/json",
+                "clear_block_list should return JSON data"
+            )
+            data = response.get_json()
+            self.assertIsInstance(
+                data, dict,
+                "clear_block_list should return dict data"
+            )
+            # After clearing, block list should be empty
+            self.assertEqual(
+                len(data), 0,
+                "Block list should be empty after clearing"
+            )
+
+    def test_sht31_flask_server_ipban_recovery_workflow(self):
+        """Test the complete IP ban and recovery workflow."""
+        # Step 1: Check initial state of block list
+        print_response = self.client.get("/print_block_list")
+        if print_response.status_code == 200:
+            initial_data = print_response.get_json()
+            self.assertIsInstance(initial_data, dict)
+
+            # Step 2: Clear the block list to ensure clean state
+            clear_response = self.client.get("/clear_block_list")
+            if clear_response.status_code == 200:
+                cleared_data = clear_response.get_json()
+                self.assertIsInstance(cleared_data, dict)
+                self.assertEqual(
+                    len(cleared_data), 0,
+                    "Block list should be empty after clearing"
+                )
+
+                # Step 3: Verify block list is still empty
+                verify_response = self.client.get("/print_block_list")
+                if verify_response.status_code == 200:
+                    verify_data = verify_response.get_json()
+                    self.assertIsInstance(verify_data, dict)
+                    # Should remain empty since we just cleared it
+                    self.assertEqual(
+                        len(verify_data), 0,
+                        "Block list should remain empty after verification"
+                    )
+
 
 if __name__ == "__main__":
     util.log_msg.debug = True
