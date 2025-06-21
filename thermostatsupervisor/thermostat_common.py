@@ -13,6 +13,7 @@ import traceback
 from thermostatsupervisor import email_notification as eml
 from thermostatsupervisor import thermostat_api as api
 from thermostatsupervisor import utilities as util
+from thermostatsupervisor import weather
 
 
 DEGREE_SIGN = "\N{DEGREE SIGN}"
@@ -1357,6 +1358,7 @@ def print_select_data_from_all_zones(
     ThermostatZone,
     display_wifi=True,
     display_battery=True,
+    display_outdoor_weather=True,
 ):
     """
     Cycle through all zones and print out select data.
@@ -1368,12 +1370,31 @@ def print_select_data_from_all_zones(
         ThermostatZone(cls): ThermostatZone class
         display_wifi(bool): display wifi status
         display_battery(bool): display battery status
+        display_outdoor_weather(bool): display outdoor weather data
     returns:
         Thermostat(obj): Thermostat object
         Zone(obj):  Zone object
     """
     util.log_msg.debug = False  # debug mode unset
     print("\nquerying select data for all zones:")
+
+    # Get outdoor weather data once if enabled (same for all zones)
+    outdoor_weather_data = None
+    if display_outdoor_weather:
+        try:
+            # Get zip code from thermostat configuration
+            zip_code = api.SUPPORTED_THERMOSTATS.get(thermostat_type, {}).get(
+                "zip_code"
+            )
+            if zip_code:
+                api_key = weather.get_weather_api_key()
+                outdoor_weather_data = weather.get_outdoor_weather(zip_code, api_key)
+        except Exception as e:
+            util.log_msg(
+                f"Failed to get outdoor weather data: {e}",
+                mode=util.BOTH_LOG,
+                func_name=1
+            )
 
     for zone in zone_lst:
         # create class instances
@@ -1400,6 +1421,11 @@ def print_select_data_from_all_zones(
                 f", battery voltage: {battery_voltage:.2f} volts "
                 f"({battery_status_display})"
             )
+
+        # outdoor weather data
+        if display_outdoor_weather and outdoor_weather_data:
+            weather_display = weather.format_weather_display(outdoor_weather_data)
+            msg += f", {weather_display}"
 
         print(msg)
 
