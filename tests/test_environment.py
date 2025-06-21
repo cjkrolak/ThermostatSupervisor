@@ -220,6 +220,63 @@ class EnvironmentTests(utc.UnitTest):
             f"get_package_path() returned '{return_val}' which is not a .py file",
         )
 
+    def test_dynamic_module_import_no_reimport(self):
+        """
+        Verify dynamic_module_import() doesn't re-import local modules.
+        """
+        # Create a temporary module for testing
+        import tempfile
+        import shutil
+
+        test_dir = tempfile.mkdtemp()
+        test_module_path = os.path.join(test_dir, "test_reuse_module.py")
+
+        try:
+            # Create a test module file
+            with open(test_module_path, 'w') as f:
+                f.write('''"""Test module for import reuse."""
+__version__ = "1.0.0"
+import_count = 0
+
+def get_import_count():
+    global import_count
+    import_count += 1
+    return import_count
+''')
+
+            # First import should print warning
+            mod1 = env.dynamic_module_import("test_reuse_module", path=test_dir)
+            self.assertIsNotNone(mod1)
+            self.assertTrue(hasattr(mod1, "get_import_count"))
+
+            # Check that module is in sys.modules
+            self.assertIn("test_reuse_module", sys.modules)
+
+            # Second import should NOT print warning
+            initial_path_count = sys.path.count(test_dir)
+            mod2 = env.dynamic_module_import("test_reuse_module", path=test_dir)
+            final_path_count = sys.path.count(test_dir)
+
+            # Verify the path wasn't added again
+            self.assertEqual(
+                initial_path_count,
+                final_path_count,
+                "Path was added to sys.path again during second import"
+            )
+
+            # Verify both imports return the same module object
+            self.assertIs(
+                mod1, mod2, "Second import returned different module object"
+            )
+
+        finally:
+            # Clean up
+            if "test_reuse_module" in sys.modules:
+                del sys.modules["test_reuse_module"]
+            while test_dir in sys.path:
+                sys.path.remove(test_dir)
+            shutil.rmtree(test_dir, ignore_errors=True)
+
     def test_convert_to_absolute_path(self):
         """Verify convert_to_absolute_path()."""
         # Test with a valid relative path
