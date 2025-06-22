@@ -1132,6 +1132,7 @@ def create_app():
         get_remote_address,
         app=app_,
         default_limits=["200 per day", "60 per hour"],
+        storage_uri=env.get_flask_limiter_storage_uri(),
     )
 
     # add API functions
