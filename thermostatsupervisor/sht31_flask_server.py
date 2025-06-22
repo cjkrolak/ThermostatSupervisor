@@ -269,7 +269,7 @@ class Sensors:
 
     def read_i2c_data(self, bus, i2c_addr, register=0x00, length=i2c_data_length):
         """
-        Read i2c data.
+        Read i2c data with retry logic for intermittent i2c failures.
 
         inputs:
             bus(class 'SMBus'): i2c bus object
@@ -283,22 +283,36 @@ class Sensors:
         # 3=humidity MSB, 4=humidity LSB, 5=humidity CRC
         # read_i2c_block_data(i2c_addr, register, length,
         #                     force=None)
-        try:
-            response = bus.read_i2c_block_data(i2c_addr, register, length)
-        except OSError as exc:
-            print(
-                f"FATAL ERROR({util.get_function_name()}): i2c device at "
-                f"address {hex(i2c_addr)} is not responding"
-            )
-            raise exc
 
-        if len(response) != length:
-            raise ValueError(
-                f"ERROR: i2c data read error, expected {length} "
-                f"bytes, actual {len(response)}"
-            )
+        def _perform_i2c_read():
+            """Internal function to perform the actual i2c read operation."""
+            try:
+                response = bus.read_i2c_block_data(i2c_addr, register, length)
+            except OSError as exc:
+                print(
+                    f"WARNING({util.get_function_name()}): i2c device at "
+                    f"address {hex(i2c_addr)} is not responding, retrying..."
+                )
+                raise exc
 
-        return response
+            if len(response) != length:
+                raise ValueError(
+                    f"ERROR: i2c data read error, expected {length} "
+                    f"bytes, actual {len(response)}"
+                )
+
+            return response
+
+        # Use retry logic for i2c operations with shorter delays
+        return util.execute_with_extended_retries(
+            _perform_i2c_read,
+            thermostat_type="sht31",
+            zone_name="sensor",
+            number_of_retries=3,
+            initial_retry_delay_sec=1,
+            exception_types=(OSError,),
+            email_notification=None
+        )
 
     def parse_fault_register_data(self, data):
         """
