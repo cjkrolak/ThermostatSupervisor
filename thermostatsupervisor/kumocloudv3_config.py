@@ -36,6 +36,7 @@ supported_configs = {
         "AUTO_MODE",
         "UNKNOWN_MODE",
     ],
+    "zip_code": "55760",  # Zip code for outdoor weather data
 }
 
 # metadata dict
