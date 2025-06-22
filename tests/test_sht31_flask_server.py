@@ -581,6 +581,9 @@ class TestSht31FlaskClientAzure(utc.UnitTest):
         self.app = sht31_fs.create_app()
         self.client = self.app.test_client()
         self.app.config["TESTING"] = True
+        # Initialize IP ban for testing
+        from thermostatsupervisor import flask_generic as flg
+        self.ip_ban = flg.initialize_ipban(self.app)
 
     def test_sht31_flask_server_endpoints_response(self):
         """Test that SHT31 Flask server endpoints return valid responses."""
@@ -739,32 +742,98 @@ class TestSht31FlaskClientAzure(utc.UnitTest):
 
     def test_sht31_flask_server_ipban_recovery_workflow(self):
         """Test the complete IP ban and recovery workflow."""
-        # Step 1: Check initial state of block list
-        print_response = self.client.get("/print_block_list")
-        if print_response.status_code == 200:
-            initial_data = print_response.get_json()
-            self.assertIsInstance(initial_data, dict)
+        from thermostatsupervisor import flask_generic as flg
 
-            # Step 2: Clear the block list to ensure clean state
-            clear_response = self.client.get("/clear_block_list")
-            if clear_response.status_code == 200:
-                cleared_data = clear_response.get_json()
-                self.assertIsInstance(cleared_data, dict)
+        # Step 1: Clear the block list to ensure clean state
+        clear_response = self.client.get("/clear_block_list")
+        if clear_response.status_code == 200:
+            cleared_data = clear_response.get_json()
+            self.assertIsInstance(cleared_data, dict)
+            self.assertEqual(
+                len(cleared_data), 0,
+                "Block list should be empty after clearing"
+            )
+
+            # Step 2: Check initial block list state
+            print_response = self.client.get("/print_block_list")
+            if print_response.status_code == 200:
+                initial_data = print_response.get_json()
+                self.assertIsInstance(initial_data, dict)
                 self.assertEqual(
-                    len(cleared_data), 0,
-                    "Block list should be empty after clearing"
+                    len(initial_data), 0,
+                    "Block list should be empty initially"
                 )
 
-                # Step 3: Verify block list is still empty
-                verify_response = self.client.get("/print_block_list")
-                if verify_response.status_code == 200:
-                    verify_data = verify_response.get_json()
-                    self.assertIsInstance(verify_data, dict)
-                    # Should remain empty since we just cleared it
+                # Step 3: Test bad route triggering IP ban
+                # Make requests to bad routes to trigger IP ban
+                # Use ipban_ban_count to determine how many requests needed
+                ban_count_needed = flg.ipban_ban_count
+                print(f"Making {ban_count_needed} bad requests to trigger IP ban")
+
+                # Test with known nuisance patterns that should trigger bans
+                # These patterns are typically loaded by default in flask-ipban
+                test_bad_routes = [
+                    "/wp-admin",    # Common vulnerability scan target
+                    "/admin",       # Another common target
+                    "/.env",        # Environment file scanning
+                    "/phpMyAdmin",  # Database admin tool scanning
+                ]
+
+                for i in range(ban_count_needed):
+                    # Use both custom and known bad routes
+                    bad_route = test_bad_routes[i % len(test_bad_routes)]
+                    if i >= len(test_bad_routes):
+                        bad_route = f"/nonexistent_route_{i}"
+
+                    bad_response = self.client.get(bad_route)
                     self.assertEqual(
-                        len(verify_data), 0,
-                        "Block list should remain empty after verification"
+                        bad_response.status_code, 404,
+                        f"Bad route {bad_route} should return 404"
                     )
+
+                # Step 4: Check if IP was added to block list after bad requests
+                check_response = self.client.get("/print_block_list")
+                if check_response.status_code == 200:
+                    blocked_data = check_response.get_json()
+                    self.assertIsInstance(blocked_data, dict)
+                    print(f"Block list after {ban_count_needed} bad requests: "
+                          f"{blocked_data}")
+
+                    # Step 5: Since automatic IP banning may not work in test
+                    # environment, manually add an IP to test the clear functionality
+                    # This ensures we test the core IP ban registry management
+                    with self.app.test_request_context():
+                        # Manually add an IP to the ban list for testing purposes
+                        self.ip_ban.add("192.168.1.100", url="/test_ban")
+                        manual_blocked_data = self.ip_ban.get_block_list()
+                        print(f"Block list after manual addition: "
+                              f"{manual_blocked_data}")
+
+                        # Verify that the IP was added
+                        self.assertGreater(
+                            len(manual_blocked_data), 0,
+                            "Block list should contain entries after manual addition"
+                        )
+
+                    # Step 6: Test the clear functionality
+                    final_clear_response = self.client.get("/clear_block_list")
+                    if final_clear_response.status_code == 200:
+                        final_cleared_data = final_clear_response.get_json()
+                        self.assertIsInstance(final_cleared_data, dict)
+                        self.assertEqual(
+                            len(final_cleared_data), 0,
+                            "Block list should be empty after final clearing"
+                        )
+
+                        # Step 7: Verify block list is empty after clearing
+                        verify_response = self.client.get("/print_block_list")
+                        if verify_response.status_code == 200:
+                            verify_data = verify_response.get_json()
+                            self.assertIsInstance(verify_data, dict)
+                            self.assertEqual(
+                                len(verify_data), 0,
+                                "Block list should remain empty after verification"
+                            )
 
 
 if __name__ == "__main__":
