@@ -233,8 +233,9 @@ class EnvironmentTests(utc.UnitTest):
 
         try:
             # Create a test module file
-            with open(test_module_path, 'w') as f:
-                f.write('''"""Test module for import reuse."""
+            with open(test_module_path, "w") as f:
+                f.write(
+                    '''"""Test module for import reuse."""
 __version__ = "1.0.0"
 import_count = 0
 
@@ -242,7 +243,8 @@ def get_import_count():
     global import_count
     import_count += 1
     return import_count
-''')
+'''
+                )
 
             # First import should print warning
             mod1 = env.dynamic_module_import("test_reuse_module", path=test_dir)
@@ -261,13 +263,11 @@ def get_import_count():
             self.assertEqual(
                 initial_path_count,
                 final_path_count,
-                "Path was added to sys.path again during second import"
+                "Path was added to sys.path again during second import",
             )
 
             # Verify both imports return the same module object
-            self.assertIs(
-                mod1, mod2, "Second import returned different module object"
-            )
+            self.assertIs(mod1, mod2, "Second import returned different module object")
 
         finally:
             # Clean up

@@ -1393,7 +1393,7 @@ def print_select_data_from_all_zones(
             util.log_msg(
                 f"Failed to get outdoor weather data: {e}",
                 mode=util.BOTH_LOG,
-                func_name=1
+                func_name=1,
             )
 
     for zone in zone_lst:
