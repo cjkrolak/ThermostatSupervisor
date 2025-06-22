@@ -11,11 +11,11 @@ class TestWeather(unittest.TestCase):
 
     def test_get_weather_api_key(self):
         """Test get_weather_api_key function."""
-        with patch.dict('os.environ', {'WEATHER_API_KEY': 'test_key'}):
+        with patch.dict("os.environ", {"WEATHER_API_KEY": "test_key"}):
             result = weather.get_weather_api_key()
-            self.assertEqual(result, 'test_key')
+            self.assertEqual(result, "test_key")
 
-        with patch.dict('os.environ', {}, clear=True):
+        with patch.dict("os.environ", {}, clear=True):
             result = weather.get_weather_api_key()
             self.assertIsNone(result)
 
@@ -39,19 +39,14 @@ class TestWeather(unittest.TestCase):
         with self.assertRaises(weather.WeatherError):
             weather.get_outdoor_weather(None)
 
-    @patch('requests.get')
+    @patch("requests.get")
     def test_get_outdoor_weather_with_api_key(self, mock_get):
         """Test get_outdoor_weather with API key."""
         # Mock successful API response
         mock_response = MagicMock()
         mock_response.json.return_value = {
-            "main": {
-                "temp": 75.5,
-                "humidity": 60
-            },
-            "weather": [
-                {"description": "partly cloudy"}
-            ]
+            "main": {"temp": 75.5, "humidity": 60},
+            "weather": [{"description": "partly cloudy"}],
         }
         mock_response.raise_for_status.return_value = None
         mock_get.return_value = mock_response
@@ -63,7 +58,7 @@ class TestWeather(unittest.TestCase):
         self.assertEqual(result["outdoor_conditions"], "Partly Cloudy")
         self.assertEqual(result["data_source"], "OpenWeatherMap")
 
-    @patch('requests.get')
+    @patch("requests.get")
     def test_get_outdoor_weather_api_error(self, mock_get):
         """Test get_outdoor_weather with API error."""
         mock_get.side_effect = Exception("API Error")
@@ -76,7 +71,7 @@ class TestWeather(unittest.TestCase):
         weather_data = {
             "outdoor_temp": 75.5,
             "outdoor_humidity": 60.0,
-            "outdoor_conditions": "Partly Cloudy"
+            "outdoor_conditions": "Partly Cloudy",
         }
 
         result = weather.format_weather_display(weather_data)

@@ -10,11 +10,13 @@ from thermostatsupervisor import utilities as util
 
 class WeatherError(Exception):
     """Exception raised for weather API errors."""
+
     pass
 
 
-def get_outdoor_weather(zip_code: str,
-                        api_key: Optional[str] = None) -> Dict[str, Union[float, str]]:
+def get_outdoor_weather(
+    zip_code: str, api_key: Optional[str] = None
+) -> Dict[str, Union[float, str]]:
     """
     Get outdoor temperature and humidity data for a given zip code.
 
@@ -43,13 +45,13 @@ def get_outdoor_weather(zip_code: str,
         util.log_msg(
             f"No weather API key provided, returning mock data for zip {zip_code}",
             mode=util.BOTH_LOG,
-            func_name=1
+            func_name=1,
         )
         return {
             "outdoor_temp": 72.0,
             "outdoor_humidity": 50.0,
             "outdoor_conditions": "Clear",
-            "data_source": "mock"
+            "data_source": "mock",
         }
 
     try:
@@ -58,7 +60,7 @@ def get_outdoor_weather(zip_code: str,
         params = {
             "zip": f"{zip_code},US",
             "appid": api_key,
-            "units": "imperial"  # Fahrenheit
+            "units": "imperial",  # Fahrenheit
         }
 
         response = requests.get(url, params=params, timeout=10)
@@ -70,28 +72,20 @@ def get_outdoor_weather(zip_code: str,
             "outdoor_temp": float(weather_data["main"]["temp"]),
             "outdoor_humidity": float(weather_data["main"]["humidity"]),
             "outdoor_conditions": weather_data["weather"][0]["description"].title(),
-            "data_source": "OpenWeatherMap"
+            "data_source": "OpenWeatherMap",
         }
 
     except requests.exceptions.RequestException as e:
         util.log_msg(
-            f"Weather API request failed: {e}",
-            mode=util.BOTH_LOG,
-            func_name=1
+            f"Weather API request failed: {e}", mode=util.BOTH_LOG, func_name=1
         )
         raise WeatherError(f"Failed to fetch weather data: {e}")
     except Exception as e:
-        util.log_msg(
-            f"Weather API general error: {e}",
-            mode=util.BOTH_LOG,
-            func_name=1
-        )
+        util.log_msg(f"Weather API general error: {e}", mode=util.BOTH_LOG, func_name=1)
         raise WeatherError(f"Failed to fetch weather data: {e}")
     except (KeyError, ValueError) as e:
         util.log_msg(
-            f"Weather API response parsing failed: {e}",
-            mode=util.BOTH_LOG,
-            func_name=1
+            f"Weather API response parsing failed: {e}", mode=util.BOTH_LOG, func_name=1
         )
         raise WeatherError(f"Invalid weather data format: {e}")
 
@@ -104,6 +98,7 @@ def get_weather_api_key() -> Optional[str]:
         str or None: API key if found in environment variables
     """
     import os
+
     return os.environ.get("WEATHER_API_KEY")
 
 
