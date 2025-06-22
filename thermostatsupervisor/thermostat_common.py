@@ -819,7 +819,20 @@ class ThermostatCommonZone:
             if user_input is not None:
                 setattr(self, cls_method, user_input)
                 if self.verbose:
-                    util.log_msg(f"{inp}={user_input}", mode=util.BOTH_LOG, func_name=1)
+                    # Add units to specific parameters for clarity
+                    if inp == api.input_flds.poll_time:
+                        display_value = f"{user_input} seconds"
+                    elif inp == api.input_flds.connection_time:
+                        display_value = f"{user_input} seconds"
+                    elif inp == api.input_flds.tolerance:
+                        display_value = util.temp_value_with_units(
+                            user_input, precision=0
+                        )
+                    else:
+                        display_value = str(user_input)
+                    util.log_msg(
+                        f"{inp}={display_value}", mode=util.BOTH_LOG, func_name=1
+                    )
 
     def verify_current_mode(self, target_mode):
         """
