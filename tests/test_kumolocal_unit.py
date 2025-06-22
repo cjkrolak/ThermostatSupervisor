@@ -23,7 +23,7 @@ class LocalNetworkDetectionUnitTest(utc.UnitTest):
         self.print_test_name()
 
         # Reset metadata to initial state
-        self.original_metadata = kumolocal_config.metadata.copy()
+        self.original_metadata = copy.deepcopy(kumolocal_config.metadata)
 
     def tearDown(self):
         """Cleanup after unit tests."""
