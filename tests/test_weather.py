@@ -28,8 +28,9 @@ class TestWeather(unittest.TestCase):
         self.assertIn("outdoor_humidity", result)
         self.assertIn("outdoor_conditions", result)
         self.assertEqual(result["data_source"], "mock")
-        self.assertEqual(result["outdoor_temp"], 72.0)
-        self.assertEqual(result["outdoor_humidity"], 50.0)
+        self.assertEqual(result["outdoor_temp"], -999.0)
+        self.assertEqual(result["outdoor_humidity"], -999.0)
+        self.assertEqual(result["outdoor_conditions"], "Missing API Key")
 
     def test_get_outdoor_weather_invalid_zip(self):
         """Test get_outdoor_weather with invalid zip code."""
