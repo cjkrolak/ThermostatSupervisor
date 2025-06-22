@@ -81,9 +81,11 @@ class LocalNetworkDetectionUnitTest(utc.UnitTest):
                     """Mock implementation for testing."""
                     zone_number = zone if zone is not None else self.zone_number
                     if zone_number in kumolocal_config.metadata:
-                        return kumolocal_config.metadata[zone_number].get(
+                        value = kumolocal_config.metadata[zone_number].get(
                             "local_net_available", False
                         )
+                        # Handle case where value is None (not yet detected)
+                        return value if value is not None else False
                     return False
 
             mock_thermostat = MockThermostat()
