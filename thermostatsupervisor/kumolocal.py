@@ -159,6 +159,9 @@ class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
                             func_name=1,
                         )
                 else:
+                    # Update metadata to indicate local network is not available
+                    zone_meta = kumolocal_config.metadata[zone_idx]
+                    zone_meta["local_net_available"] = False
                     if self.verbose:
                         util.log_msg(
                             f"Zone {zone_idx} ({device_name}): "
