@@ -23,6 +23,7 @@ supported_configs = {
     "type": 1,
     "zones": [0],
     "modes": ["OFF_MODE", "HEAT_MODE", "COOL_MODE", "UNKNOWN_MODE"],
+    "zip_code": "55378",  # Zip code for outdoor weather data
 }
 
 
