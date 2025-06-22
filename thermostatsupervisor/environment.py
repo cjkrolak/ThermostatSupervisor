@@ -271,6 +271,12 @@ def dynamic_module_import(name, path=None, pkg=None, verbose=False):
 
     try:
         if path:
+            # check if module is already imported to avoid re-importing
+            if name in sys.modules:
+                if verbose:
+                    print(f"module '{name}' already imported, reusing existing module")
+                return sys.modules[name]
+
             # convert to abs path
             path = convert_to_absolute_path(path)
 
