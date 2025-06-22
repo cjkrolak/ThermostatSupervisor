@@ -48,9 +48,9 @@ def get_outdoor_weather(
             func_name=1,
         )
         return {
-            "outdoor_temp": 72.0,
-            "outdoor_humidity": 50.0,
-            "outdoor_conditions": "Clear",
+            "outdoor_temp": -999.0,
+            "outdoor_humidity": -999.0,
+            "outdoor_conditions": "Missing API Key",
             "data_source": "mock",
         }
 
