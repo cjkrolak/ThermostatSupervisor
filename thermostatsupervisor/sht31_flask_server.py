@@ -311,7 +311,7 @@ class Sensors:
             number_of_retries=3,
             initial_retry_delay_sec=1,
             exception_types=(OSError,),
-            email_notification=None
+            email_notification=None,
         )
 
     def parse_fault_register_data(self, data):
