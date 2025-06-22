@@ -801,7 +801,7 @@ def execute_with_extended_retries(
     thermostat_type: str,
     zone_name: str,
     number_of_retries: int = 5,
-    initial_retry_delay_sec: int = 60,
+    initial_retry_delay_sec: int = 30,
     exception_types: tuple = None,
     email_notification=None,
 ):
@@ -817,7 +817,7 @@ def execute_with_extended_retries(
         zone_name(str): zone name for logging/email
         number_of_retries(int): maximum number of retry attempts (default: 5)
         initial_retry_delay_sec(int): initial delay between retries in seconds
-                                      (default: 60)
+                                      (default: 30)
         exception_types(tuple): tuple of exception types to catch and retry on
         email_notification(module): email notification module for alerts
     returns:
@@ -927,7 +927,7 @@ def execute_with_extended_retries(
 
             # Increment retry parameters
             trial_number += 1
-            retry_delay_sec *= 2  # Exponential backoff: double each time
+            retry_delay_sec += 30  # Linear backoff: add 30 seconds each time
 
         except Exception as ex:
             log_msg(traceback.format_exc(), mode=BOTH_LOG, func_name=1)
