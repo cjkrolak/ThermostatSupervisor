@@ -64,6 +64,9 @@ class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
         self.device_id = self.get_target_zone_id(self.zone_number)
         self.serial_number = None  # will be populated when unit is queried.
 
+        # detect local network availability for this zone
+        self.detect_local_network_availability()
+
     def get_zone_name(self):
         """
         Return the name associated with the zone number from metadata dict.
@@ -99,6 +102,81 @@ class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
 
         # return the target zone object
         return self.device_id
+
+    def detect_local_network_availability(self):
+        """
+        Detect if kumolocal devices are available on the local network.
+
+        Updates kumolocal_config.metadata with detected network information.
+
+        inputs:
+            None
+        returns:
+            None (updates metadata dict)
+        """
+        try:
+            # Get kumocloud metadata to extract local addresses
+            serial_num_lst = list(self.get_indoor_units())
+
+            if not serial_num_lst:
+                if self.verbose:
+                    util.log_msg(
+                        "No kumolocal units found in kumocloud account",
+                        mode=util.DEBUG_LOG + util.STDOUT_LOG,
+                        func_name=1,
+                    )
+                return
+
+            # Check each zone's local network availability
+            for zone_idx, serial_number in enumerate(serial_num_lst):
+                if zone_idx not in kumolocal_config.metadata:
+                    continue
+
+                # Get local address from kumocloud
+                local_address = self.get_address(serial_number)
+                device_name = self.get_name(serial_number)
+
+                if local_address and local_address != "0.0.0.0":
+                    # Test if device is reachable on local network
+                    is_available, detected_ip = util.is_host_on_local_net(
+                        host_name=device_name,
+                        ip_address=local_address,
+                        verbose=self.verbose
+                    )
+
+                    # Update metadata with detection results
+                    zone_meta = kumolocal_config.metadata[zone_idx]
+                    zone_meta["ip_address"] = local_address
+                    zone_meta["host_name"] = device_name
+                    zone_meta["local_net_available"] = is_available
+
+                    if self.verbose:
+                        status = "available" if is_available else "not available"
+                        util.log_msg(
+                            f"Zone {zone_idx} ({device_name}): "
+                            f"local network {status} at {local_address}",
+                            mode=util.DEBUG_LOG + util.STDOUT_LOG,
+                            func_name=1,
+                        )
+                else:
+                    # Update metadata to indicate local network is not available
+                    zone_meta = kumolocal_config.metadata[zone_idx]
+                    zone_meta["local_net_available"] = False
+                    if self.verbose:
+                        util.log_msg(
+                            f"Zone {zone_idx} ({device_name}): "
+                            f"no local address available from kumocloud",
+                            mode=util.DEBUG_LOG + util.STDOUT_LOG,
+                            func_name=1,
+                        )
+
+        except Exception as exc:
+            if self.verbose:
+                util.log_msg(
+                    f"Warning: local network detection failed: {exc}",
+                    mode=util.DEBUG_LOG + util.STDOUT_LOG,
+                    func_name=1,
+                )
 
     def get_kumocloud_thermostat_metadata(self, zone=None, debug=False, retry=False):
         """Get all thermostat meta data for zone from kumocloud.
@@ -254,6 +332,24 @@ class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
             None, prints result to screen
         """
         self.exec_print_all_thermostat_metadata(self.get_all_metadata, [zone])
+
+    def is_local_network_available(self, zone=None):
+        """
+        Check if kumolocal device is available on local network.
+
+        inputs:
+            zone(int): zone number, defaults to self.zone_number
+        returns:
+            bool: True if device is available on local network, False otherwise
+        """
+        zone_number = zone if zone is not None else self.zone_number
+        if zone_number in kumolocal_config.metadata:
+            value = kumolocal_config.metadata[zone_number].get(
+                "local_net_available", False
+            )
+            # Handle case where value is None (not yet detected)
+            return value if value is not None else False
+        return False
 
 
 class ThermostatZone(tc.ThermostatCommonZone):
