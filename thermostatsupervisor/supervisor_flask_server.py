@@ -84,7 +84,7 @@ def favicon():
     return app.send_static_file("honeywell.ico")
 
 
-@app.route("/")
+@app.route("/data")
 @limiter.limit("1 per minute")
 def index():
     """index route"""
