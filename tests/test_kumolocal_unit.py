@@ -36,13 +36,9 @@ class LocalNetworkDetectionUnitTest(utc.UnitTest):
     def test_metadata_has_local_net_available_field(self):
         """Test that metadata includes local_net_available field."""
         for zone_id in kumolocal_config.metadata:
-            self.assertIn(
-                "local_net_available", kumolocal_config.metadata[zone_id]
-            )
+            self.assertIn("local_net_available", kumolocal_config.metadata[zone_id])
             # Should be None initially
-            self.assertIsNone(
-                kumolocal_config.metadata[zone_id]["local_net_available"]
-            )
+            self.assertIsNone(kumolocal_config.metadata[zone_id]["local_net_available"])
 
     def test_local_network_detection_method_signature(self):
         """Test that detect_local_network_availability method can be called."""

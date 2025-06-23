@@ -141,7 +141,7 @@ class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
                     is_available, detected_ip = util.is_host_on_local_net(
                         host_name=device_name,
                         ip_address=local_address,
-                        verbose=self.verbose
+                        verbose=self.verbose,
                     )
 
                     # Update metadata with detection results
