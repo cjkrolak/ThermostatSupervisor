@@ -49,7 +49,7 @@ class IntegrationTest(utc.IntegrationTest):
 
 
 @unittest.skipIf(
-    not utc.ENABLE_KUMOCLOUD_TESTS or kumocloudv3_import_error,
+    not utc.ENABLE_KUMOCLOUDV3_TESTS or kumocloudv3_import_error,
     "kumocloudv3 tests are disabled",
 )
 class FunctionalIntegrationTest(IntegrationTest, utc.FunctionalIntegrationTest):
@@ -67,7 +67,7 @@ class FunctionalIntegrationTest(IntegrationTest, utc.FunctionalIntegrationTest):
 
 
 @unittest.skipIf(
-    not utc.ENABLE_KUMOCLOUD_TESTS or kumocloudv3_import_error,
+    not utc.ENABLE_KUMOCLOUDV3_TESTS or kumocloudv3_import_error,
     "kumocloudv3 tests are disabled",
 )
 class SuperviseIntegrationTest(IntegrationTest, utc.SuperviseIntegrationTest):
@@ -81,7 +81,7 @@ class SuperviseIntegrationTest(IntegrationTest, utc.SuperviseIntegrationTest):
 
 
 @unittest.skipIf(
-    not utc.ENABLE_KUMOCLOUD_TESTS or kumocloudv3_import_error,
+    not utc.ENABLE_KUMOCLOUDV3_TESTS or kumocloudv3_import_error,
     "kumocloudv3 tests are disabled",
 )
 class PerformanceIntegrationTest(IntegrationTest, utc.PerformanceIntegrationTest):
