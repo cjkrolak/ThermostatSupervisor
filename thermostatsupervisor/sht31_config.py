@@ -61,14 +61,20 @@ API_RSSI_STD = "rssi(dBm) std"
 
 # SHT31D config
 I2C_BUS = 1  # 0 = /dev/i2c-0 (port I2C0), 1 = /dev/i2c-1 (port I2C1)
-I2C_ADDRESS = 0x45  # i2c address, 0x44=a, 0x45=b
+# NOTE: SHT31 address discrepancy explanation:
+# - The SHT31 sensor address is controlled by ADDR_PIN (GPIO4)
+# - ADDR_PIN LOW (default) = 0x44, ADDR_PIN HIGH = 0x45
+# - i2cdetect may show 0x44 if run before GPIO configuration
+# - This program sets ADDR_PIN HIGH to use 0x45 during sensor initialization
+I2C_ADDRESS = 0x45  # i2c address, 0x44=default/low, 0x45=configured/high
 MEASUREMENTS = 10  # number of MEASUREMENTS to average
 
 # pi0 / sht31 connection config, -1 means non-addressible pin
 V3_PIN = -1  # 3.3v power pin (red), (pi pin 1)
 SDA_PIN = 2  # i2c data signal (brown), GPIO2 (pi pin 3)
 SCL_PIN = 3  # i2c clock signal (orange), GPIO3 (pi pin 5)
-ADDR_PIN = 4  # i2c address (white), GPIO4, low = 0x44, high=0x45 (pi pin 7)
+ADDR_PIN = 4  # i2c address control (white), GPIO4 (pi pin 7)
+# Controls SHT31 i2c address: LOW=0x44 (default), HIGH=0x45 (configured)
 GND_PIN = -1  # ground wire (black), (pi pin 9)
 ALERT_PIN = 17  # i2c alert pint (yellow), GPIO17 (pi pin 11)
 

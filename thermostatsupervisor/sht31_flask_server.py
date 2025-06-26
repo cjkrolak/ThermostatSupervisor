@@ -185,10 +185,15 @@ class Sensors:
         """
         Set the address for the sht31.
 
+        NOTE: This explains the i2cdetect vs configured address discrepancy.
+        The SHT31 sensor defaults to address 0x44 on power-up. When i2cdetect
+        runs before this method, it will show 0x44. This method configures
+        ADDR_PIN to switch the sensor to the desired address (typically 0x45).
+
         inputs:
-            i2c_addr(int): bus address of SHT31.
-            addr_pin(int):
-            alert_pin(int):
+            i2c_addr(int): bus address of SHT31 (0x44 or 0x45).
+            addr_pin(int): GPIO pin number controlling SHT31 address selection.
+            alert_pin(int): GPIO pin number for SHT31 alert functionality.
         returns:
             None
         """
@@ -196,10 +201,11 @@ class Sensors:
         GPIO.setmode(GPIO.BCM)  # broadcom pin numbering
         GPIO.setup(addr_pin, GPIO.OUT)  # address pin set as output
         GPIO.setup(alert_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+        # Configure SHT31 address: 0x45 requires ADDR_PIN HIGH, 0x44 uses LOW
         if i2c_addr == 0x45:
-            GPIO.output(addr_pin, GPIO.HIGH)
+            GPIO.output(addr_pin, GPIO.HIGH)  # Switch to address 0x45
         else:
-            GPIO.output(addr_pin, GPIO.LOW)
+            GPIO.output(addr_pin, GPIO.LOW)   # Use default address 0x44
 
     def send_i2c_cmd(self, bus, i2c_addr, i2c_command):
         """
