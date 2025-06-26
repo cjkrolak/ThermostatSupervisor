@@ -92,6 +92,22 @@ set_cool_setpoint()
 **Description:** Changes the cooling setpoint for the zone. This typically creates 
 a temporary override of the programmed schedule.
 
+get_safety_temperature()
+~~~~~~~~~~~~~~~~~~~~~~~
+
+**Purpose:** Get the safety temperature setting for the zone.
+
+**Signature:** ``get_safety_temperature() -> int``
+
+**Returns:** 
+  - ``int``: Safety temperature in degrees Fahrenheit
+
+**Description:** Returns a safety temperature value that can be used when normal
+setpoints are unavailable (e.g., when thermostat is in OFF mode). For Nest thermostats,
+this returns configured values from nest_config.py since the Google Nest API does not
+expose safety temperature settings. Returns heat safety temperature for heat/auto modes,
+cool safety temperature for other modes.
+
 refresh_zone_info()
 ~~~~~~~~~~~~~~~~~~
 
@@ -190,6 +206,7 @@ Setpoint Queries
 - ``get_cool_setpoint()``: Current cooling setpoint
 - ``get_heat_setpoint_raw()``: Raw heating setpoint data
 - ``get_cool_setpoint_raw()``: Raw cooling setpoint data
+- ``get_safety_temperature()``: Safety temperature when normal setpoints unavailable
 
 System Status
 ~~~~~~~~~~~~
