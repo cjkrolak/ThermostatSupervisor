@@ -80,6 +80,16 @@ Both configurations include:
 2. **Firewall**: Configure firewall to allow only necessary ports
 3. **Reverse Proxy**: Consider using Nginx or Apache as a reverse proxy
 4. **SSL/TLS**: Configure HTTPS certificates for production
+5. **Rate Limiting Storage**: For production deployments with multiple workers or servers, configure external storage for rate limiting:
+   ```bash
+   # Redis storage (recommended for production)
+   export FLASK_LIMITER_STORAGE_URI="redis://localhost:6379"
+   
+   # Memcached storage
+   export FLASK_LIMITER_STORAGE_URI="memcached://localhost:11211"
+   
+   # Default (development): memory://
+   ```
 
 ## Monitoring and Management
 

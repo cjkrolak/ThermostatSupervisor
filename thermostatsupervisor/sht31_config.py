@@ -31,7 +31,7 @@ else:
 
 # diagnostic parameters
 flask_folder = munch.Munch()
-flask_folder.production = ""
+flask_folder.production = "/data"
 flask_folder.unit_test = "/unit"
 flask_folder.diag = "/diag"
 flask_folder.clear_diag = "/clear_diag"

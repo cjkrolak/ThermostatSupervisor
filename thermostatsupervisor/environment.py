@@ -29,6 +29,7 @@ MIN_PYTHON_MINOR_VERSION = 7  # minimum python minor version required
 env_variables = {
     "GMAIL_USERNAME": None,
     "GMAIL_PASSWORD": None,
+    "FLASK_LIMITER_STORAGE_URI": None,
 }
 env_variables.update(honeywell_config.env_variables)
 env_variables.update(kumocloud_config.env_variables)
@@ -407,3 +408,17 @@ def get_package_path(module):
         (str): path to installed package.
     """
     return module.__dict__["__file__"]
+
+
+def get_flask_limiter_storage_uri():
+    """
+    Get Flask-Limiter storage URI from environment or default.
+
+    Returns:
+        str: Storage URI for Flask-Limiter. Defaults to 'memory://' if not set.
+    """
+    storage_uri = get_env_variable("FLASK_LIMITER_STORAGE_URI").get("value")
+    if storage_uri is None:
+        # Default to explicit memory storage to avoid warnings
+        storage_uri = "memory://"
+    return storage_uri
