@@ -57,12 +57,8 @@ class ThermostatClass(tc.ThermostatCommon):
         # URL and port configuration
         self.port = str(sht31_config.FLASK_PORT)  # Flask server port on host
         if (
-            (
-                self.zone_name == sht31_config.UNIT_TEST_ZONE
-                or util.unit_test_mode
-            )
-            and self.path == sht31_config.flask_folder.production
-        ):
+            self.zone_name == sht31_config.UNIT_TEST_ZONE or util.unit_test_mode
+        ) and self.path == sht31_config.flask_folder.production:
             self.path = sht31_config.flask_folder.unit_test
             self.unit_test_seed = "?seed=" + str(sht31_config.UNIT_TEST_SEED)
         else:
