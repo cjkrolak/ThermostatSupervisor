@@ -205,7 +205,7 @@ class Sensors:
         if i2c_addr == 0x45:
             GPIO.output(addr_pin, GPIO.HIGH)  # Switch to address 0x45
         else:
-            GPIO.output(addr_pin, GPIO.LOW)   # Use default address 0x44
+            GPIO.output(addr_pin, GPIO.LOW)  # Use default address 0x44
 
     def send_i2c_cmd(self, bus, i2c_addr, i2c_command):
         """
