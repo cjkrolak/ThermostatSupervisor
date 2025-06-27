@@ -37,8 +37,8 @@ class TestNestSafetyTemperature(unittest.TestCase):
 
     def test_safety_temperature_constants_exist(self):
         """Verify that safety temperature constants are properly defined."""
-        self.assertTrue(hasattr(nest_config, 'SAFETY_HEAT_TEMPERATURE'))
-        self.assertTrue(hasattr(nest_config, 'SAFETY_COOL_TEMPERATURE'))
+        self.assertTrue(hasattr(nest_config, "SAFETY_HEAT_TEMPERATURE"))
+        self.assertTrue(hasattr(nest_config, "SAFETY_COOL_TEMPERATURE"))
         self.assertIsInstance(nest_config.SAFETY_HEAT_TEMPERATURE, float)
         self.assertIsInstance(nest_config.SAFETY_COOL_TEMPERATURE, float)
 
@@ -109,5 +109,5 @@ class TestNestSafetyTemperature(unittest.TestCase):
         self.assertLess(heat_safety, cool_safety)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main(verbosity=2)
