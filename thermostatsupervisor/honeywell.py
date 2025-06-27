@@ -60,9 +60,7 @@ class SupervisorLogHandler(logging.Handler):
 
             # Log through supervisor's logging system
             util.log_msg(
-                f"[pyhtcc] {msg}",
-                mode=log_mode,
-                file_name="honeywell_log.txt"
+                f"[pyhtcc] {msg}", mode=log_mode, file_name="honeywell_log.txt"
             )
         except Exception:
             # Fallback to avoid breaking logging completely
@@ -139,7 +137,7 @@ class ThermostatClass(pyhtcc.PyHTCC, tc.ThermostatCommon):
         supervisor_handler.setLevel(logging.DEBUG)
 
         # Set a simple formatter
-        formatter = logging.Formatter('%(name)s - %(levelname)s - %(message)s')
+        formatter = logging.Formatter("%(name)s - %(levelname)s - %(message)s")
         supervisor_handler.setFormatter(formatter)
 
         pyhtcc_logger.addHandler(supervisor_handler)
