@@ -12,6 +12,7 @@ from thermostatsupervisor import blink_config
 from thermostatsupervisor import emulator_config
 from thermostatsupervisor import honeywell_config
 from thermostatsupervisor import kumocloud_config
+from thermostatsupervisor import kumocloudv3_config
 from thermostatsupervisor import kumolocal_config
 from thermostatsupervisor import mmm_config
 from thermostatsupervisor import nest_config
@@ -29,6 +30,7 @@ config_modules = [
     emulator_config,
     honeywell_config,
     kumocloud_config,
+    kumocloudv3_config,
     kumolocal_config,
     mmm_config,
     nest_config,
