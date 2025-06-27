@@ -55,8 +55,8 @@ docker run --rm -it --privileged --env-file 'envfile' 'username'/thermostatsuper
 
 # Execution Information:
 ## debug / diagnostics:
-1. Honeywell pyhtcc.txt file in /home/pi/log/pyhtcc/ shows logging specific to pyhtcc class
-2. ./data/ folder contains supervisor logs
+1. ./data/ folder contains supervisor logs, including integrated pyhtcc logs
+2. Honeywell pyhtcc logs are integrated into supervisor logging (./data/honeywell_log.txt)
 
 ## required environment variables:<br/>
 Environment variables required depend on the thermostat being used.<br/>
