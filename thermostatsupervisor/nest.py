@@ -692,14 +692,23 @@ class ThermostatZone(tc.ThermostatCommonZone):
         """
         Get the safety temperature setting.
 
+        Since Google Nest API does not expose safety temperature settings,
+        this method returns configured safety temperature values from
+        nest_config.py. Users should adjust these values in the config
+        based on their comfort and safety requirements.
+
         inputs:
             None
         returns:
-            (int): cooling set point in °F.
+            (int): safety temperature in °F. Returns heat safety temperature
+                   when in heat/auto mode, cool safety temperature otherwise.
         """
-        raise NotImplementedError(
-            "Safety Temperature is not yet available through nest API"
-        )
+        # Return appropriate safety temperature based on current mode
+        if self.is_heat_mode() or self.is_auto_mode():
+            return int(nest_config.SAFETY_HEAT_TEMPERATURE)
+        else:
+            # Default to cool safety temperature for cool/off/dry modes
+            return int(nest_config.SAFETY_COOL_TEMPERATURE)
 
     def get_is_invacation_hold_mode(self) -> bool:  # used
         """
