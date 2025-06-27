@@ -51,7 +51,7 @@ class TestNestSafetyTemperature(unittest.TestCase):
         expected = int(nest_config.SAFETY_HEAT_TEMPERATURE)
 
         self.assertEqual(result, expected)
-        self.assertEqual(result, 65)  # Verify configured value
+        self.assertEqual(result, 45)  # Verify configured value
 
     def test_safety_temperature_auto_mode(self):
         """Test safety temperature returns heat value in auto mode."""
@@ -62,7 +62,7 @@ class TestNestSafetyTemperature(unittest.TestCase):
         expected = int(nest_config.SAFETY_HEAT_TEMPERATURE)
 
         self.assertEqual(result, expected)
-        self.assertEqual(result, 65)  # Verify configured value
+        self.assertEqual(result, 45)  # Verify configured value
 
     def test_safety_temperature_cool_mode(self):
         """Test safety temperature returns cool value in cool mode."""
