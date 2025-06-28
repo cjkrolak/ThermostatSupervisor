@@ -298,6 +298,7 @@ class Sht31FlaskServerSensorUnit(utc.UnitTest):
 
                 # Verify pin assignments
                 from thermostatsupervisor import sht31_config
+
                 self.assertEqual(logic_data["sda_pin"], sht31_config.SDA_PIN)
                 self.assertEqual(logic_data["scl_pin"], sht31_config.SCL_PIN)
 
