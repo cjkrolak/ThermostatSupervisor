@@ -655,7 +655,7 @@ class Sht31FlaskServerSensorUnit(utc.UnitTest):
             "thermostatsupervisor.environment.is_windows_environment", return_value=True
         ):
             with patch.object(self.sensors, "shell_cmd") as mock_shell:
-                mock_shell.return_value = 'Signal: 75%'
+                mock_shell.return_value = "Signal: 75%"
 
                 result = self.sensors.get_iwconfig_wifi_strength()
 
@@ -667,14 +667,14 @@ class Sht31FlaskServerSensorUnit(utc.UnitTest):
         """Test WiFi strength detection on Linux."""
         with patch(
             "thermostatsupervisor.environment.is_windows_environment",
-            return_value=False
+            return_value=False,
         ):
             with patch.object(self.sensors, "shell_cmd") as mock_shell:
                 mock_shell.return_value = (
                     'wlan0     IEEE 802.11  ESSID:"TestNetwork"\n'
-                    '          Mode:Managed  Frequency:2.437 GHz  '
-                    'Access Point: 00:11:22:33:44:55\n'
-                    '          Link Quality=65/70  Signal level=-45 dBm\n'
+                    "          Mode:Managed  Frequency:2.437 GHz  "
+                    "Access Point: 00:11:22:33:44:55\n"
+                    "          Link Quality=65/70  Signal level=-45 dBm\n"
                 )
 
                 result = self.sensors.get_iwconfig_wifi_strength()
@@ -781,7 +781,7 @@ class Sht31FlaskServerSensorUnit(utc.UnitTest):
         # Create a Flask app context for testing
         from thermostatsupervisor.sht31_flask_server import app
 
-        with app.test_request_context('/unit?measurements=5&seed=123'):
+        with app.test_request_context("/unit?measurements=5&seed=123"):
             with patch.object(
                 self.sensors, "get_iwconfig_wifi_strength", return_value=-50.0
             ):
@@ -807,8 +807,9 @@ class Sht31FlaskServerSensorUnit(utc.UnitTest):
             # Should print CRC warnings
             self.assertTrue(mock_print.called)
             warning_calls = [
-                call for call in mock_print.call_args_list
-                if 'WARNING: CRC validation failed' in str(call)
+                call
+                for call in mock_print.call_args_list
+                if "WARNING: CRC validation failed" in str(call)
             ]
             self.assertGreater(len(warning_calls), 0)
 
@@ -824,7 +825,7 @@ class Sht31FlaskServerSensorUnit(utc.UnitTest):
 
         with patch(
             "thermostatsupervisor.environment.is_windows_environment",
-            return_value=False
+            return_value=False,
         ):
             with patch.object(
                 self.sensors, "shell_cmd", return_value=mock_iwlist_output
@@ -866,7 +867,7 @@ class TestSht31FlaskEndpoints(utc.UnitTest):
             self.assertIsInstance(endpoint, sht31_fs.Controller)
 
             # Test that get method calls Sensors().get()
-            with patch.object(sht31_fs.Sensors, 'get') as mock_get:
+            with patch.object(sht31_fs.Sensors, "get") as mock_get:
                 mock_get.return_value = {"test": "data"}
                 endpoint.get()
                 mock_get.assert_called_once()
@@ -878,7 +879,7 @@ class TestSht31FlaskEndpoints(utc.UnitTest):
             self.assertIsInstance(endpoint, sht31_fs.ControllerUnit)
 
             # Test that get method calls Sensors().get_unit_test()
-            with patch.object(sht31_fs.Sensors, 'get_unit_test') as mock_get:
+            with patch.object(sht31_fs.Sensors, "get_unit_test") as mock_get:
                 mock_get.return_value = {"test": "unit_data"}
                 endpoint.get()
                 mock_get.assert_called_once()
@@ -890,7 +891,7 @@ class TestSht31FlaskEndpoints(utc.UnitTest):
             self.assertIsInstance(endpoint, sht31_fs.ReadFaultRegister)
 
             # Test that get method calls Sensors().send_cmd_get_diag()
-            with patch.object(sht31_fs.Sensors, 'send_cmd_get_diag') as mock_get:
+            with patch.object(sht31_fs.Sensors, "send_cmd_get_diag") as mock_get:
                 mock_get.return_value = {"diag": "data"}
                 endpoint.get()
                 mock_get.assert_called_once()
@@ -902,7 +903,7 @@ class TestSht31FlaskEndpoints(utc.UnitTest):
             self.assertIsInstance(endpoint, sht31_fs.ClearFaultRegister)
 
             # Test that get method calls Sensors().send_cmd_get_diag()
-            with patch.object(sht31_fs.Sensors, 'send_cmd_get_diag') as mock_get:
+            with patch.object(sht31_fs.Sensors, "send_cmd_get_diag") as mock_get:
                 mock_get.return_value = {"cleared": "data"}
                 endpoint.get()
                 mock_get.assert_called_once()
@@ -913,7 +914,7 @@ class TestSht31FlaskEndpoints(utc.UnitTest):
             endpoint = sht31_fs.EnableHeater()
             self.assertIsInstance(endpoint, sht31_fs.EnableHeater)
 
-            with patch.object(sht31_fs.Sensors, 'send_cmd_get_diag') as mock_get:
+            with patch.object(sht31_fs.Sensors, "send_cmd_get_diag") as mock_get:
                 mock_get.return_value = {"heater": "enabled"}
                 endpoint.get()
                 mock_get.assert_called_once()
@@ -924,7 +925,7 @@ class TestSht31FlaskEndpoints(utc.UnitTest):
             endpoint = sht31_fs.DisableHeater()
             self.assertIsInstance(endpoint, sht31_fs.DisableHeater)
 
-            with patch.object(sht31_fs.Sensors, 'send_cmd_get_diag') as mock_get:
+            with patch.object(sht31_fs.Sensors, "send_cmd_get_diag") as mock_get:
                 mock_get.return_value = {"heater": "disabled"}
                 endpoint.get()
                 mock_get.assert_called_once()
@@ -935,7 +936,7 @@ class TestSht31FlaskEndpoints(utc.UnitTest):
             endpoint = sht31_fs.SoftReset()
             self.assertIsInstance(endpoint, sht31_fs.SoftReset)
 
-            with patch.object(sht31_fs.Sensors, 'send_cmd_get_diag') as mock_get:
+            with patch.object(sht31_fs.Sensors, "send_cmd_get_diag") as mock_get:
                 mock_get.return_value = {"reset": "soft"}
                 endpoint.get()
                 mock_get.assert_called_once()
@@ -946,7 +947,7 @@ class TestSht31FlaskEndpoints(utc.UnitTest):
             endpoint = sht31_fs.Reset()
             self.assertIsInstance(endpoint, sht31_fs.Reset)
 
-            with patch.object(sht31_fs.Sensors, 'send_cmd_get_diag') as mock_get:
+            with patch.object(sht31_fs.Sensors, "send_cmd_get_diag") as mock_get:
                 mock_get.return_value = {"reset": "hard"}
                 endpoint.get()
                 mock_get.assert_called_once()
@@ -957,7 +958,7 @@ class TestSht31FlaskEndpoints(utc.UnitTest):
             endpoint = sht31_fs.I2CRecovery()
             self.assertIsInstance(endpoint, sht31_fs.I2CRecovery)
 
-            with patch.object(sht31_fs.Sensors, 'i2c_recovery') as mock_recovery:
+            with patch.object(sht31_fs.Sensors, "i2c_recovery") as mock_recovery:
                 mock_recovery.return_value = {"recovery": "success"}
                 endpoint.get()
                 mock_recovery.assert_called_once()
@@ -968,7 +969,7 @@ class TestSht31FlaskEndpoints(utc.UnitTest):
             endpoint = sht31_fs.I2CDetect()
             self.assertIsInstance(endpoint, sht31_fs.I2CDetect)
 
-            with patch.object(sht31_fs.Sensors, 'i2c_detect') as mock_detect:
+            with patch.object(sht31_fs.Sensors, "i2c_detect") as mock_detect:
                 mock_detect.return_value = {"devices": "found"}
                 endpoint.get()
                 mock_detect.assert_called_once()
@@ -979,7 +980,7 @@ class TestSht31FlaskEndpoints(utc.UnitTest):
             endpoint = sht31_fs.I2CLogicLevels()
             self.assertIsInstance(endpoint, sht31_fs.I2CLogicLevels)
 
-            with patch.object(sht31_fs.Sensors, 'i2c_read_logic_levels') as mock_logic:
+            with patch.object(sht31_fs.Sensors, "i2c_read_logic_levels") as mock_logic:
                 mock_logic.return_value = {"logic": "levels"}
                 endpoint.get()
                 mock_logic.assert_called_once()
@@ -990,7 +991,7 @@ class TestSht31FlaskEndpoints(utc.UnitTest):
             endpoint = sht31_fs.I2CBusHealth()
             self.assertIsInstance(endpoint, sht31_fs.I2CBusHealth)
 
-            with patch.object(sht31_fs.Sensors, 'i2c_bus_health_check') as mock_health:
+            with patch.object(sht31_fs.Sensors, "i2c_bus_health_check") as mock_health:
                 mock_health.return_value = {"health": "good"}
                 endpoint.get()
                 mock_health.assert_called_once()
@@ -1001,7 +1002,7 @@ class TestSht31FlaskEndpoints(utc.UnitTest):
             endpoint = sht31_fs.I2CDetectBus0()
             self.assertIsInstance(endpoint, sht31_fs.I2CDetectBus0)
 
-            with patch.object(sht31_fs.Sensors, 'i2c_detect') as mock_detect:
+            with patch.object(sht31_fs.Sensors, "i2c_detect") as mock_detect:
                 mock_detect.return_value = {"devices": "found"}
                 endpoint.get()
                 mock_detect.assert_called_once_with(0)
@@ -1012,7 +1013,7 @@ class TestSht31FlaskEndpoints(utc.UnitTest):
             endpoint = sht31_fs.I2CDetectBus1()
             self.assertIsInstance(endpoint, sht31_fs.I2CDetectBus1)
 
-            with patch.object(sht31_fs.Sensors, 'i2c_detect') as mock_detect:
+            with patch.object(sht31_fs.Sensors, "i2c_detect") as mock_detect:
                 mock_detect.return_value = {"devices": "found"}
                 endpoint.get()
                 mock_detect.assert_called_once_with(1)
@@ -1054,9 +1055,7 @@ class TestSht31FlaskEndpoints(utc.UnitTest):
                     with patch(
                         "thermostatsupervisor.sht31_flask_server.jsonify"
                     ) as mock_jsonify:
-                        mock_ip_ban.get_block_list.return_value = {
-                            "cleared": "data"
-                        }
+                        mock_ip_ban.get_block_list.return_value = {"cleared": "data"}
                         mock_jsonify.return_value = {"cleared": "data"}
 
                         endpoint.get()
