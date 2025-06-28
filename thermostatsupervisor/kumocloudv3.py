@@ -46,8 +46,16 @@ class ThermostatClass(tc.ThermostatCommon):
         self.verbose = verbose
 
         # v3 API endpoints and session
-        self.base_url = "https://app.kumocloud.com"
+        self.base_url = "https://app-prod.kumocloud.com"
         self.session = requests.Session()
+
+        # Set base headers required by v3 API
+        self.session.headers.update({
+            "Accept": "application/json, text/plain, */*",
+            "Accept-Encoding": "gzip, deflate, br",
+            "Accept-Language": "en-US, en",
+            "x-app-version": "3.0.3"
+        })
         self.auth_token = None
         self.refresh_token = None
         self.token_expires_at = 0
@@ -93,8 +101,9 @@ class ThermostatClass(tc.ThermostatCommon):
 
         login_url = f"{self.base_url}/v3/login"
         login_data = {
-            "email": self.kc_uname,
-            "password": self.kc_pwd
+            "username": self.kc_uname,
+            "password": self.kc_pwd,
+            "appVersion": "3.0.3"
         }
 
         try:
@@ -102,8 +111,11 @@ class ThermostatClass(tc.ThermostatCommon):
             response.raise_for_status()
 
             auth_response = response.json()
-            self.auth_token = auth_response.get("token")
-            self.refresh_token = auth_response.get("refreshToken")
+
+            # Extract tokens from the correct structure
+            token_data = auth_response.get("token", {})
+            self.auth_token = token_data.get("access")
+            self.refresh_token = token_data.get("refresh")
 
             if not self.auth_token:
                 error = tc.AuthenticationError(
@@ -118,7 +130,7 @@ class ThermostatClass(tc.ThermostatCommon):
 
             # Set authorization header for future requests
             self.session.headers.update({
-                "Authorization": f"Bearer {self.auth_token}"
+                "Authentication": f"Bearer {self.auth_token}"
             })
 
             # Mark as successfully authenticated
@@ -160,16 +172,28 @@ class ThermostatClass(tc.ThermostatCommon):
             return self._authenticate()
 
         refresh_url = f"{self.base_url}/v3/refresh"
+
+        # According to the API docs, refresh uses Authentication header
+        # with refresh token and POST body with refresh token
+        refresh_headers = {
+            "Authentication": f"Bearer {self.refresh_token}"
+        }
         refresh_data = {
-            "refreshToken": self.refresh_token
+            "refresh": self.refresh_token
         }
 
         try:
-            response = self.session.post(refresh_url, json=refresh_data, timeout=30)
+            response = self.session.post(
+                refresh_url,
+                json=refresh_data,
+                headers=refresh_headers,
+                timeout=30
+            )
             response.raise_for_status()
 
             refresh_response = response.json()
-            self.auth_token = refresh_response.get("token")
+            self.auth_token = refresh_response.get("access")
+            self.refresh_token = refresh_response.get("refresh")
 
             if not self.auth_token:
                 # Refresh failed, try full authentication
@@ -179,7 +203,7 @@ class ThermostatClass(tc.ThermostatCommon):
 
             # Update authorization header
             self.session.headers.update({
-                "Authorization": f"Bearer {self.auth_token}"
+                "Authentication": f"Bearer {self.auth_token}"
             })
 
             return True
