@@ -183,18 +183,19 @@ class ThermostatClass(tc.ThermostatCommon):
 
         # According to the API docs, refresh uses Authentication header
         # with refresh token and POST body with refresh token
-        refresh_headers = {
-            "Authentication": f"Bearer {self.refresh_token}"
-        }
         refresh_data = {
             "refresh": self.refresh_token
         }
+
+        # Temporarily update session headers with refresh token
+        self.session.headers.update({
+            "Authentication": f"Bearer {self.refresh_token}"
+        })
 
         try:
             response = self.session.post(
                 refresh_url,
                 json=refresh_data,
-                headers=refresh_headers,
                 timeout=30
             )
             response.raise_for_status()
@@ -223,6 +224,15 @@ class ThermostatClass(tc.ThermostatCommon):
         except requests.exceptions.RequestException:
             # Refresh failed, try full authentication
             return self._authenticate()
+        finally:
+            # Always ensure we have the correct auth header for the current token state
+            if self.auth_token:
+                self.session.headers.update({
+                    "Authentication": f"Bearer {self.auth_token}"
+                })
+            else:
+                # No valid token, remove auth header
+                self.session.headers.pop("Authentication", None)
 
     def _ensure_authenticated(self) -> None:
         """Ensure we have a valid authentication token."""
