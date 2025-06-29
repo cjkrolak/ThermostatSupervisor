@@ -59,6 +59,7 @@ class ThermostatClass(tc.ThermostatCommon):
         self.auth_token = None
         self.refresh_token = None
         self.token_expires_at = 0
+        self.refresh_token_expires_at = 0
 
         # configure zone info
         self.zone_number = int(zone)
@@ -125,8 +126,11 @@ class ThermostatClass(tc.ThermostatCommon):
                 self._authenticated = False
                 raise error
 
-            # Set token expiration (tokens typically expire in 1 hour)
-            self.token_expires_at = time.time() + 3600
+            # Set token expiration (access token expires in 20 minutes)
+            self.token_expires_at = time.time() + 1200  # 20 minutes
+
+            # Set refresh token expiration (refresh token expires in 1 month)
+            self.refresh_token_expires_at = time.time() + 2592000  # 30 days
 
             # Set authorization header for future requests
             self.session.headers.update({
@@ -171,6 +175,10 @@ class ThermostatClass(tc.ThermostatCommon):
         if not self.refresh_token:
             return self._authenticate()
 
+        # Check if refresh token has expired
+        if time.time() >= self.refresh_token_expires_at - 300:  # 5 min buffer
+            return self._authenticate()
+
         refresh_url = f"{self.base_url}/v3/refresh"
 
         # According to the API docs, refresh uses Authentication header
@@ -199,7 +207,11 @@ class ThermostatClass(tc.ThermostatCommon):
                 # Refresh failed, try full authentication
                 return self._authenticate()
 
-            self.token_expires_at = time.time() + 3600
+            self.token_expires_at = time.time() + 1200  # 20 minutes
+
+            # Update refresh token expiration if we got a new one
+            if refresh_response.get("refresh"):
+                self.refresh_token_expires_at = time.time() + 2592000  # 30 days
 
             # Update authorization header
             self.session.headers.update({
@@ -238,7 +250,13 @@ class ThermostatClass(tc.ThermostatCommon):
         # We are authenticated, check if token needs refresh
         # Refresh 5 minutes early
         if time.time() >= self.token_expires_at - 300:
-            self._refresh_auth_token()
+            # Check if refresh token is still valid (with 1 hour buffer)
+            if time.time() >= self.refresh_token_expires_at - 3600:
+                # Refresh token expired, need full re-authentication
+                self._authenticate()
+            else:
+                # Refresh token still valid, just refresh access token
+                self._refresh_auth_token()
 
     def _make_authenticated_request(
         self, method: str, url: str, **kwargs
