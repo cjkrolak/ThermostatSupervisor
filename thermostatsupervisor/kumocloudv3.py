@@ -113,10 +113,16 @@ class ThermostatClass(tc.ThermostatCommon):
 
             auth_response = response.json()
 
-            # Extract tokens from the correct structure
-            token_data = auth_response.get("token", {})
-            self.auth_token = token_data.get("access")
-            self.refresh_token = token_data.get("refresh")
+            # Extract tokens - try nested structure first, then top-level
+            # This handles both possible response formats from the v3 API
+            if "token" in auth_response:
+                token_data = auth_response["token"]
+                self.auth_token = token_data.get("access")
+                self.refresh_token = token_data.get("refresh")
+            else:
+                # Tokens at top level
+                self.auth_token = auth_response.get("access")
+                self.refresh_token = auth_response.get("refresh")
 
             if not self.auth_token:
                 error = tc.AuthenticationError(
@@ -187,6 +193,9 @@ class ThermostatClass(tc.ThermostatCommon):
             "refresh": self.refresh_token
         }
 
+        # Store the current auth header to restore later
+        current_auth_header = self.session.headers.get("Authentication")
+
         # Temporarily update session headers with refresh token
         self.session.headers.update({
             "Authentication": f"Bearer {self.refresh_token}"
@@ -201,20 +210,31 @@ class ThermostatClass(tc.ThermostatCommon):
             response.raise_for_status()
 
             refresh_response = response.json()
-            self.auth_token = refresh_response.get("access")
-            self.refresh_token = refresh_response.get("refresh")
 
-            if not self.auth_token:
+            # Extract tokens - try nested structure first, then top-level
+            # This handles both possible response formats from the v3 API
+            if "token" in refresh_response:
+                token_data = refresh_response["token"]
+                new_auth_token = token_data.get("access")
+                new_refresh_token = token_data.get("refresh")
+            else:
+                # Tokens at top level
+                new_auth_token = refresh_response.get("access")
+                new_refresh_token = refresh_response.get("refresh")
+
+            if not new_auth_token:
                 # Refresh failed, try full authentication
                 return self._authenticate()
 
-            self.token_expires_at = time.time() + 1200  # 20 minutes
-
-            # Update refresh token expiration if we got a new one
-            if refresh_response.get("refresh"):
+            # Update instance variables only after successful token extraction
+            self.auth_token = new_auth_token
+            if new_refresh_token:
+                self.refresh_token = new_refresh_token
                 self.refresh_token_expires_at = time.time() + 2592000  # 30 days
 
-            # Update authorization header
+            self.token_expires_at = time.time() + 1200  # 20 minutes
+
+            # Update authorization header with new access token
             self.session.headers.update({
                 "Authentication": f"Bearer {self.auth_token}"
             })
@@ -222,17 +242,23 @@ class ThermostatClass(tc.ThermostatCommon):
             return True
 
         except requests.exceptions.RequestException:
-            # Refresh failed, try full authentication
-            return self._authenticate()
-        finally:
-            # Always ensure we have the correct auth header for the current token state
-            if self.auth_token:
+            # Refresh failed, restore original header and try full authentication
+            if current_auth_header:
                 self.session.headers.update({
-                    "Authentication": f"Bearer {self.auth_token}"
+                    "Authentication": current_auth_header
                 })
             else:
-                # No valid token, remove auth header
                 self.session.headers.pop("Authentication", None)
+            return self._authenticate()
+        except Exception:
+            # Any other error, restore original header
+            if current_auth_header:
+                self.session.headers.update({
+                    "Authentication": current_auth_header
+                })
+            else:
+                self.session.headers.pop("Authentication", None)
+            raise
 
     def _ensure_authenticated(self) -> None:
         """Ensure we have a valid authentication token."""
@@ -282,13 +308,28 @@ class ThermostatClass(tc.ThermostatCommon):
         returns:
             (requests.Response): HTTP response
         """
+        # Ensure we have valid authentication before making request
         self._ensure_authenticated()
 
+        # Ensure the session has the correct auth header
+        if self.auth_token:
+            self.session.headers.update({
+                "Authentication": f"Bearer {self.auth_token}"
+            })
+
+        # Make the first request attempt
         response = self.session.request(method, url, timeout=30, **kwargs)
 
+        # If we get 401, try to refresh token and retry once
         if response.status_code == 401:
-            # Token expired, refresh and retry
+            # Token might be expired, try refresh
             if self._refresh_auth_token():
+                # Ensure session header is updated with new token
+                if self.auth_token:
+                    self.session.headers.update({
+                        "Authentication": f"Bearer {self.auth_token}"
+                    })
+                # Retry the request with new token
                 response = self.session.request(
                     method, url, timeout=30, **kwargs
                 )
