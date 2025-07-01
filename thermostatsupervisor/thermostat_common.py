@@ -19,6 +19,13 @@ from thermostatsupervisor import weather
 DEGREE_SIGN = "\N{DEGREE SIGN}"
 
 connection_ok = True  # global flag for connection OK.
+server_spamming_detected = False  # global flag for pyhtcc server spamming
+
+
+def reset_server_spamming_flag():
+    """Reset the server spamming detection flag."""
+    global server_spamming_detected
+    server_spamming_detected = False
 
 
 class ThermostatCommon:
