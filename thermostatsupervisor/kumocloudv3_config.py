@@ -4,10 +4,12 @@ kumocloudv3 config file.
 ALIAS = "kumocloudv3"
 
 # thermostat zones
-# NOTE: Zone assignments are swapped in v3 API compared to older kumo APIs
-# v3 API: zone 1 = MAIN_LEVEL, zone 0 = BASEMENT
-MAIN_LEVEL = 1  # zone 1
-BASEMENT = 0  # zone 0
+# NOTE: Zone assignments are dynamically updated from v3 API at runtime
+# The values below are defaults/fallbacks in case dynamic assignment fails
+# v3 API zone assignments are not static - sometimes zone 0 is MAIN_LEVEL,
+# other times zone 1 is MAIN_LEVEL, depending on the actual installation
+MAIN_LEVEL = 1  # zone 1 (default, updated dynamically)
+BASEMENT = 0  # zone 0 (default, updated dynamically)
 
 # constants
 MAX_HEAT_SETPOINT = 68
