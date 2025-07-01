@@ -92,12 +92,43 @@ steps:
     # Validate token is present
     if [ -z "${GITHUB_TOKEN}" ]; then
       echo "ERROR: GITHUB_TOKEN is not set"
-      echo "Please ensure GITHUB_TOKEN variable is configured in Azure DevOps with a Personal Access Token"
-      echo "The token must have 'repo' or 'public_repo' scope to trigger workflow dispatches"
+      echo ""
+      echo "🔧 SETUP INSTRUCTIONS:"
+      echo "1. Go to Azure DevOps > Pipelines > Library > Variable groups"
+      echo "2. Create/edit the variable group used by this pipeline"
+      echo "3. Add variable: GITHUB_TOKEN"
+      echo "4. Value should be a GitHub Personal Access Token (classic) with these scopes:"
+      echo "   - repo (for private repos) OR public_repo (for public repos)"
+      echo "   - workflow (to trigger workflow dispatches)"
+      echo "5. Mark the variable as secret in Azure DevOps"
+      echo ""
+      echo "🔗 Create token at: https://github.com/settings/tokens"
       exit 1
     fi
     
+    echo "GITHUB_TOKEN is configured (${#GITHUB_TOKEN} characters)"
+    
+    # Test basic GitHub API access first
+    echo "Testing GitHub API access..."
+    test_response=$(curl -w "%{http_code}" -s -H "Authorization: token ${GITHUB_TOKEN}" https://api.github.com/user)
+    test_code="${test_response: -3}"
+    
+    if [[ ${test_code} -ne 200 ]]; then
+      echo "ERROR: GitHub API authentication failed (HTTP ${test_code})"
+      echo "The GITHUB_TOKEN is invalid or expired"
+      echo ""
+      echo "🔧 TOKEN TROUBLESHOOTING:"
+      echo "1. Verify the token at: https://github.com/settings/tokens"
+      echo "2. Check if the token has expired"
+      echo "3. Ensure the token has 'repo' and 'workflow' scopes"
+      echo "4. The token must belong to a user with push access to the repository"
+      exit 1
+    fi
+    
+    echo "✅ GitHub API authentication successful"
+    
     # Make the API request with detailed error handling
+    echo "Triggering repository dispatch event..."
     response=$(curl -w "%{http_code}" -s -X POST \
       -H "Accept: application/vnd.github.v3+json" \
       -H "Authorization: token ${GITHUB_TOKEN}" \
@@ -110,35 +141,47 @@ steps:
     response_body="${response%???}"
     
     echo "HTTP Response Code: ${http_code}"
-    echo "Response Body: ${response_body}"
+    if [ -n "${response_body}" ]; then
+      echo "Response Body: ${response_body}"
+    fi
     
     # Check if the request was successful (2xx status codes)
     if [[ ${http_code} -ge 200 && ${http_code} -lt 300 ]]; then
-      echo "Successfully triggered SonarQube workflow"
+      echo "✅ Successfully triggered SonarQube workflow"
       exit 0
     elif [[ ${http_code} -eq 401 ]]; then
-      echo "ERROR: Authentication failed (HTTP 401)"
-      echo "The GITHUB_TOKEN is invalid or lacks required permissions"
-      echo "Required: Personal Access Token with 'repo' or 'public_repo' scope"
+      echo "❌ ERROR: Authentication failed (HTTP 401)"
+      echo ""
+      echo "🔧 TOKEN PERMISSIONS ISSUE:"
+      echo "The GITHUB_TOKEN lacks required permissions for workflow dispatches"
+      echo ""
+      echo "Required token scopes:"
+      echo "  - repo (for private repositories)"
+      echo "  - workflow (to trigger repository dispatch events)"
+      echo ""
+      echo "🔗 Update token at: https://github.com/settings/tokens"
       echo "Response: ${response_body}"
       exit 1
     elif [[ ${http_code} -eq 403 ]]; then
-      echo "ERROR: Forbidden (HTTP 403)"
-      echo "The GITHUB_TOKEN lacks permission to trigger workflow dispatches"
-      echo "Required: Personal Access Token with 'repo' or 'public_repo' scope"
+      echo "❌ ERROR: Forbidden (HTTP 403)"
+      echo "The token user lacks push access to the repository or token scopes insufficient"
+      echo ""
+      echo "Required:"
+      echo "  - Token owner must have push access to cjkrolak/ThermostatSupervisor"
+      echo "  - Token must have 'repo' and 'workflow' scopes"
       echo "Response: ${response_body}"
       exit 1
     elif [[ ${http_code} -eq 404 ]]; then
-      echo "ERROR: Repository not found (HTTP 404)"
-      echo "Check repository name or token permissions"
+      echo "❌ ERROR: Repository not found (HTTP 404)"
+      echo "Check repository name or ensure token has access to the repository"
       echo "Response: ${response_body}"
       exit 1
     else
-      echo "ERROR: Failed to trigger SonarQube workflow. HTTP ${http_code}"
+      echo "❌ ERROR: Failed to trigger SonarQube workflow. HTTP ${http_code}"
       echo "Response: ${response_body}"
       exit 1
     fi
   displayName: 'Trigger SonarQube Workflow'
   condition: succeeded()
   env:
-    GITHUB_TOKEN: '$(GITHUB_TOKEN)'  # Azure DevOps pipeline variable - must be Personal Access Token with repo scope
+    GITHUB_TOKEN: '$(GITHUB_TOKEN)'  # Azure DevOps pipeline variable - must be Personal Access Token with 'repo' and 'workflow' scopes
