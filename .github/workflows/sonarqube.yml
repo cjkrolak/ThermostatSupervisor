@@ -11,6 +11,11 @@ jobs:
     runs-on: ubuntu-latest
     # Only run if Azure pipeline was successful
     if: github.event.client_payload.result == 'success'
+    permissions:
+      # Grant permissions needed for the action
+      contents: read
+      pull-requests: read
+      checks: write
     steps:
       - uses: actions/checkout@v4
         with:
@@ -20,3 +25,5 @@ jobs:
         uses: SonarSource/sonarqube-scan-action@v5
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: https://sonarcloud.io
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
