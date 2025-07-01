@@ -54,9 +54,7 @@ class SupervisorLogHandler(logging.Handler):
             log_mode = level_mapping.get(record.levelno, util.DATA_LOG)
 
             # Log through supervisor's logging system
-            util.log_msg(
-                f"[pykumo] {msg}", mode=log_mode, file_name="kumo_log.txt"
-            )
+            util.log_msg(f"[pykumo] {msg}", mode=log_mode, file_name="kumo_log.txt")
         except Exception:
             # Fallback to avoid breaking logging completely
             self.handleError(record)
@@ -115,10 +113,10 @@ class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
         """
         # List of pykumo modules that have loggers
         pykumo_modules = [
-            'pykumo.py_kumo_cloud_account',
-            'pykumo.py_kumo',
-            'pykumo.py_kumo_base',
-            'pykumo.py_kumo_station'
+            "pykumo.py_kumo_cloud_account",
+            "pykumo.py_kumo",
+            "pykumo.py_kumo_base",
+            "pykumo.py_kumo_station",
         ]
 
         for module_name in pykumo_modules:
@@ -135,9 +133,7 @@ class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
                 supervisor_handler.setLevel(logging.DEBUG)
 
                 # Set a simple formatter
-                formatter = logging.Formatter(
-                    "%(name)s - %(levelname)s - %(message)s"
-                )
+                formatter = logging.Formatter("%(name)s - %(levelname)s - %(message)s")
                 supervisor_handler.setFormatter(formatter)
 
                 pykumo_logger.addHandler(supervisor_handler)

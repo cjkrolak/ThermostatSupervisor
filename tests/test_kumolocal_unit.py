@@ -111,12 +111,14 @@ class LocalNetworkDetectionUnitTest(utc.UnitTest):
 
                 @staticmethod
                 def log_msg(msg, mode, func_name=None, file_name=None):
-                    captured_logs.append({
-                        'msg': msg,
-                        'mode': mode,
-                        'func_name': func_name,
-                        'file_name': file_name
-                    })
+                    captured_logs.append(
+                        {
+                            "msg": msg,
+                            "mode": mode,
+                            "func_name": func_name,
+                            "file_name": file_name,
+                        }
+                    )
 
             # Temporarily replace util module
             original_util = kumolocal.util
@@ -129,15 +131,20 @@ class LocalNetworkDetectionUnitTest(utc.UnitTest):
 
                 # Test logging with the handler
                 record = logging.LogRecord(
-                    name='test', level=logging.INFO, pathname='', lineno=0,
-                    msg='Test message', args=(), exc_info=None
+                    name="test",
+                    level=logging.INFO,
+                    pathname="",
+                    lineno=0,
+                    msg="Test message",
+                    args=(),
+                    exc_info=None,
                 )
                 handler.emit(record)
 
                 # Verify that a log message was captured
                 self.assertTrue(len(captured_logs) > 0)
-                self.assertIn('[pykumo]', captured_logs[0]['msg'])
-                self.assertEqual('kumo_log.txt', captured_logs[0]['file_name'])
+                self.assertIn("[pykumo]", captured_logs[0]["msg"])
+                self.assertEqual("kumo_log.txt", captured_logs[0]["file_name"])
 
             finally:
                 # Restore original util module
