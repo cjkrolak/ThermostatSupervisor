@@ -1,5 +1,6 @@
 """KumoCloud integration"""
 # built-in imports
+import logging
 import os
 import pprint
 import time
@@ -24,6 +25,41 @@ if PYKUMO_DEBUG and not env.is_azure_environment():
     pykumo = env.dynamic_module_import("pykumo", mod_path)
 else:
     import pykumo  # noqa E402, from path / site packages
+
+
+class SupervisorLogHandler(logging.Handler):
+    """Custom logging handler to redirect pykumo logs to supervisor logging."""
+
+    def emit(self, record):
+        """
+        Emit a log record through the supervisor's log_msg function.
+
+        inputs:
+            record(LogRecord): The logging record to emit
+        """
+        try:
+            # Format the message
+            msg = self.format(record)
+
+            # Map logging levels to supervisor log modes
+            level_mapping = {
+                logging.DEBUG: util.DEBUG_LOG + util.DATA_LOG,
+                logging.INFO: util.DATA_LOG,
+                logging.WARNING: util.DATA_LOG,
+                logging.ERROR: util.DATA_LOG + util.STDERR_LOG,
+                logging.CRITICAL: util.DATA_LOG + util.STDERR_LOG,
+            }
+
+            # Get the appropriate log mode, default to DATA_LOG for unknown levels
+            log_mode = level_mapping.get(record.levelno, util.DATA_LOG)
+
+            # Log through supervisor's logging system
+            util.log_msg(
+                f"[pykumo] {msg}", mode=log_mode, file_name="kumo_log.txt"
+            )
+        except Exception:
+            # Fallback to avoid breaking logging completely
+            self.handleError(record)
 
 
 class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
@@ -55,6 +91,9 @@ class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
         pykumo.KumoCloudAccount.__init__(self, *self.args)
         tc.ThermostatCommon.__init__(self)
 
+        # integrate pykumo logger with supervisor logging system
+        self._setup_pykumo_logging()
+
         # set tstat type and debug flag
         self.thermostat_type = kumocloud_config.ALIAS
         self.verbose = verbose
@@ -65,6 +104,55 @@ class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
         self.device_id = self.get_target_zone_id(self.zone_name)
         self.serial_number = None  # will be populated when unit is queried.
         self.zone_info = {}
+
+    def _setup_pykumo_logging(self):
+        """
+        Configure pykumo loggers to use supervisor logging system.
+
+        This method sets up a custom handler that redirects pykumo log messages
+        to the supervisor's log_msg function, ensuring all logging goes to the
+        same destination.
+        """
+        # List of pykumo modules that have loggers
+        pykumo_modules = [
+            'pykumo.py_kumo_cloud_account',
+            'pykumo.py_kumo',
+            'pykumo.py_kumo_base',
+            'pykumo.py_kumo_station'
+        ]
+
+        for module_name in pykumo_modules:
+            try:
+                # Get the logger for each pykumo module
+                pykumo_logger = logging.getLogger(module_name)
+
+                # Remove any existing handlers to avoid duplicate logging
+                for handler in pykumo_logger.handlers[:]:
+                    pykumo_logger.removeHandler(handler)
+
+                # Add our custom handler
+                supervisor_handler = SupervisorLogHandler()
+                supervisor_handler.setLevel(logging.DEBUG)
+
+                # Set a simple formatter
+                formatter = logging.Formatter(
+                    "%(name)s - %(levelname)s - %(message)s"
+                )
+                supervisor_handler.setFormatter(formatter)
+
+                pykumo_logger.addHandler(supervisor_handler)
+                pykumo_logger.setLevel(logging.DEBUG)
+
+                # Prevent propagation to avoid duplicate messages
+                pykumo_logger.propagate = False
+
+            except Exception as exc:
+                # Log setup failure but don't break initialization
+                util.log_msg(
+                    f"Failed to setup logging for {module_name}: {exc}",
+                    mode=util.DATA_LOG + util.STDERR_LOG,
+                    func_name=1,
+                )
 
     def get_target_zone_id(self, zone=0):
         """
