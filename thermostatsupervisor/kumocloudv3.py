@@ -360,18 +360,18 @@ class ThermostatClass(tc.ThermostatCommon):
 
         return response.json()
 
-    def _get_devices(self, zone_id: str) -> List[Dict[str, Any]]:
+    def _get_device(self, device_serial: str) -> Dict[str, Any]:
         """
-        Get devices data for a zone from v3 API.
+        Get device data from v3 API using device serial number.
 
         inputs:
-            zone_id(str): Zone identifier
+            device_serial(str): Device serial number from adapter.deviceSerial
 
         returns:
-            (List[Dict]): List of devices
+            (Dict): Device data
         """
-        devices_url = f"{self.base_url}/v3/zones/{zone_id}/devices/"
-        response = self._make_authenticated_request("GET", devices_url)
+        device_url = f"{self.base_url}/v3/devices/{device_serial}"
+        response = self._make_authenticated_request("GET", device_url)
 
         return response.json()
 
@@ -393,15 +393,11 @@ class ThermostatClass(tc.ThermostatCommon):
 
                 zones = self._get_zones(site_id)
                 for zone in zones:
-                    zone_id = zone.get("id")
-                    if not zone_id:
-                        continue
-
-                    devices = self._get_devices(zone_id)
-                    for device in devices:
-                        serial = device.get("serialNumber")
-                        if serial:
-                            serial_numbers.append(serial)
+                    # Extract device serial from zone's adapter.deviceSerial field
+                    adapter = zone.get("adapter", {})
+                    device_serial = adapter.get("deviceSerial")
+                    if device_serial:
+                        serial_numbers.append(device_serial)
 
             return serial_numbers
 
@@ -443,20 +439,18 @@ class ThermostatClass(tc.ThermostatCommon):
 
                 zones = self._get_zones(site_id)
                 for zone in zones:
-                    zone_id = zone.get("id")
-                    if not zone_id:
-                        continue
-
-                    devices = self._get_devices(zone_id)
-                    for device in devices:
-                        serial = device.get("serialNumber")
-                        if serial:
-                            # Convert v3 device data to legacy format
-                            legacy_device = self._convert_device_to_legacy_format(
-                                device, zone
-                            )
-                            zone_data["children"][0]["zoneTable"][serial] = \
-                                legacy_device
+                    # Extract device serial from zone's adapter.deviceSerial field
+                    adapter = zone.get("adapter", {})
+                    device_serial = adapter.get("deviceSerial")
+                    if device_serial:
+                        # Get device details using the device serial
+                        device = self._get_device(device_serial)
+                        # Convert v3 device data to legacy format
+                        legacy_device = self._convert_device_to_legacy_format(
+                            device, zone
+                        )
+                        zone_data["children"][0]["zoneTable"][device_serial] = \
+                            legacy_device
 
             device_token = self.auth_token
 
