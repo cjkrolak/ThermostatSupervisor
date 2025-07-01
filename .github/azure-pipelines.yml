@@ -86,10 +86,31 @@ steps:
 
 # trigger SonarQube workflow on successful completion
 - script: |
-    curl -X POST \
+    set -e  # Exit on any error
+    echo "Triggering SonarQube workflow..."
+    response=$(curl -w "%{http_code}" -s -X POST \
       -H "Accept: application/vnd.github.v3+json" \
-      -H "Authorization: token $(GITHUB_TOKEN)" \
+      -H "Authorization: token ${GITHUB_TOKEN}" \
       https://api.github.com/repos/cjkrolak/ThermostatSupervisor/dispatches \
-      -d '{"event_type":"azure-pipeline-completed","client_payload":{"result":"success","run_id":"$(Build.BuildId)"}}'
+      -d '{"event_type":"azure-pipeline-completed","client_payload":{"result":"success","run_id":"$(Build.BuildId)"}}')
+    
+    # Extract HTTP status code (last 3 characters)
+    http_code="${response: -3}"
+    response_body="${response%???}"
+    
+    echo "HTTP Response Code: ${http_code}"
+    echo "Response Body: ${response_body}"
+    
+    # Check if the request was successful (2xx status codes)
+    if [[ ${http_code} -ge 200 && ${http_code} -lt 300 ]]; then
+      echo "Successfully triggered SonarQube workflow"
+      exit 0
+    else
+      echo "ERROR: Failed to trigger SonarQube workflow. HTTP ${http_code}"
+      echo "Response: ${response_body}"
+      exit 1
+    fi
   displayName: 'Trigger SonarQube Workflow'
   condition: succeeded()
+  env:
+    GITHUB_TOKEN: '$(GITHUB_TOKEN)'  # Azure DevOps pipeline variable
