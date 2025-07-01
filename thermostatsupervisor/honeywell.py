@@ -355,6 +355,7 @@ def get_zones_info_with_retries(func, thermostat_type, zone_name) -> list:
         pyhtcc.pyhtcc.UnexpectedError,
         pyhtcc.pyhtcc.NoZonesFoundError,
         pyhtcc.pyhtcc.UnauthorizedError,
+        pyhtcc.pyhtcc.TooManyAttemptsError,
         pyhtcc.requests.exceptions.HTTPError,
         urllib3.exceptions.ProtocolError,
         http.client.RemoteDisconnected,
