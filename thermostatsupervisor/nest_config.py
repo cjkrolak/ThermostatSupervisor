@@ -22,6 +22,9 @@ env_variables = {
     "GCLOUD_CLIENT_ID": None,
     "GCLOUD_CLIENT_SECRET": None,
     "DAC_PROJECT_ID": None,
+    "NEST_ACCESS_TOKEN": None,
+    "NEST_REFRESH_TOKEN": None,
+    "NEST_TOKEN_EXPIRES_IN": None,
 }
 
 # min required env variables on all runs

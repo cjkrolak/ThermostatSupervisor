@@ -83,6 +83,9 @@ class ThermostatClass(tc.ThermostatCommon):
                 # project_id is the project id UUID
                 self.project_id = data["web"]["dac_project_id"]
 
+        # check if token cache should be auto-generated from environment variables
+        self._create_token_cache_from_env_if_needed()
+
         # establish thermostat object
         self.thermostat_obj = nest.Nest(
             project_id=self.project_id,
@@ -105,6 +108,59 @@ class ThermostatClass(tc.ThermostatCommon):
         self.device_id = None  # initialize
         self.device_id = self.get_target_zone_id(self.zone_number)
         self.serial_number = None  # will be populated when unit is queried.
+
+    def _create_token_cache_from_env_if_needed(self):
+        """
+        Create token cache file from environment variables if it doesn't exist
+        and all required token environment variables are present.
+
+        This allows automation of initial authorization by pre-seeding
+        the token cache from environment variables, eliminating the need
+        for manual URL authorization prompts.
+        """
+        # Check if token cache file already exists
+        if os.path.exists(self.access_token_cache_file):
+            if self.verbose:
+                print(f"Token cache file already exists: "
+                      f"{self.access_token_cache_file}")
+            return
+
+        # Get token data from environment variables
+        access_token = os.environ.get("NEST_ACCESS_TOKEN")
+        refresh_token = os.environ.get("NEST_REFRESH_TOKEN")
+        expires_in = os.environ.get("NEST_TOKEN_EXPIRES_IN")
+
+        # Check if all required token environment variables are present
+        if not (access_token and refresh_token):
+            if self.verbose:
+                print("Token cache file not found and token environment "
+                      "variables not available")
+                print("Manual authorization will be required on first run")
+            return
+
+        # Create token data structure
+        token_data = {
+            "access_token": access_token,
+            "refresh_token": refresh_token,
+            "expires_in": int(expires_in) if expires_in else 3600,
+            "scope": ["https://www.googleapis.com/auth/sdm.service"],
+            "token_type": "Bearer"
+        }
+
+        # Calculate and add expires_at timestamp
+        # Set to current time + expires_in seconds (allowing immediate refresh
+        # if needed)
+        token_data["expires_at"] = time.time() + token_data["expires_in"]
+
+        try:
+            # Create token cache file
+            with open(self.access_token_cache_file, "w", encoding="utf-8") as f:
+                json.dump(token_data, f, indent=4)
+            print(f"Created token cache file from environment variables: "
+                  f"{self.access_token_cache_file}")
+        except Exception as e:
+            print(f"ERROR: Failed to create token cache file: {e}")
+            # Don't raise exception - fall back to manual authorization
 
     def get_device_data(self):
         """

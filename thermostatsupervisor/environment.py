@@ -20,6 +20,7 @@ from thermostatsupervisor import honeywell_config
 from thermostatsupervisor import kumocloud_config
 from thermostatsupervisor import kumolocal_config
 from thermostatsupervisor import mmm_config
+from thermostatsupervisor import nest_config
 from thermostatsupervisor import sht31_config
 
 MIN_PYTHON_MAJOR_VERSION = 3  # minimum python major version required
@@ -35,6 +36,7 @@ env_variables.update(honeywell_config.env_variables)
 env_variables.update(kumocloud_config.env_variables)
 env_variables.update(kumolocal_config.env_variables)
 env_variables.update(mmm_config.env_variables)
+env_variables.update(nest_config.env_variables)
 env_variables.update(sht31_config.env_variables)
 
 
