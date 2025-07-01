@@ -88,9 +88,20 @@ steps:
 - script: |
     set -e  # Exit on any error
     echo "Triggering SonarQube workflow..."
+    
+    # Validate token is present
+    if [ -z "${GITHUB_TOKEN}" ]; then
+      echo "ERROR: GITHUB_TOKEN is not set"
+      echo "Please ensure GITHUB_TOKEN variable is configured in Azure DevOps with a Personal Access Token"
+      echo "The token must have 'repo' or 'public_repo' scope to trigger workflow dispatches"
+      exit 1
+    fi
+    
+    # Make the API request with detailed error handling
     response=$(curl -w "%{http_code}" -s -X POST \
       -H "Accept: application/vnd.github.v3+json" \
       -H "Authorization: token ${GITHUB_TOKEN}" \
+      -H "User-Agent: Azure-DevOps-Pipeline" \
       https://api.github.com/repos/cjkrolak/ThermostatSupervisor/dispatches \
       -d '{"event_type":"azure-pipeline-completed","client_payload":{"result":"success","run_id":"$(Build.BuildId)"}}')
     
@@ -105,6 +116,23 @@ steps:
     if [[ ${http_code} -ge 200 && ${http_code} -lt 300 ]]; then
       echo "Successfully triggered SonarQube workflow"
       exit 0
+    elif [[ ${http_code} -eq 401 ]]; then
+      echo "ERROR: Authentication failed (HTTP 401)"
+      echo "The GITHUB_TOKEN is invalid or lacks required permissions"
+      echo "Required: Personal Access Token with 'repo' or 'public_repo' scope"
+      echo "Response: ${response_body}"
+      exit 1
+    elif [[ ${http_code} -eq 403 ]]; then
+      echo "ERROR: Forbidden (HTTP 403)"
+      echo "The GITHUB_TOKEN lacks permission to trigger workflow dispatches"
+      echo "Required: Personal Access Token with 'repo' or 'public_repo' scope"
+      echo "Response: ${response_body}"
+      exit 1
+    elif [[ ${http_code} -eq 404 ]]; then
+      echo "ERROR: Repository not found (HTTP 404)"
+      echo "Check repository name or token permissions"
+      echo "Response: ${response_body}"
+      exit 1
     else
       echo "ERROR: Failed to trigger SonarQube workflow. HTTP ${http_code}"
       echo "Response: ${response_body}"
@@ -113,4 +141,4 @@ steps:
   displayName: 'Trigger SonarQube Workflow'
   condition: succeeded()
   env:
-    GITHUB_TOKEN: '$(GITHUB_TOKEN)'  # Azure DevOps pipeline variable
+    GITHUB_TOKEN: '$(GITHUB_TOKEN)'  # Azure DevOps pipeline variable - must be Personal Access Token with repo scope
