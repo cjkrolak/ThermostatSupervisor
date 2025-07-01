@@ -32,9 +32,7 @@ class TestNestEnvTokenCache(utc.UnitTest):
 
         # Sample environment variable token data
         self.env_access_token = "ya29.a0AfB_byENV_ACCESS_TOKEN"
-        self.env_refresh_token = (
-            "1//040ENV_REFRESH_TOKEN_FROM_ENVIRONMENT_VARIABLES"
-        )
+        self.env_refresh_token = "1//040ENV_REFRESH_TOKEN_FROM_ENVIRONMENT_VARIABLES"
         self.env_expires_in = "3600"
 
     def tearDown(self):
@@ -45,8 +43,7 @@ class TestNestEnvTokenCache(utc.UnitTest):
         os.rmdir(self.temp_dir)
 
         # Clean up environment variables
-        for var in ["NEST_ACCESS_TOKEN", "NEST_REFRESH_TOKEN",
-                    "NEST_TOKEN_EXPIRES_IN"]:
+        for var in ["NEST_ACCESS_TOKEN", "NEST_REFRESH_TOKEN", "NEST_TOKEN_EXPIRES_IN"]:
             if var in os.environ:
                 del os.environ[var]
 
@@ -76,14 +73,14 @@ class TestNestEnvTokenCache(utc.UnitTest):
         self.assertEqual(token_data["access_token"], self.env_access_token)
         self.assertEqual(token_data["refresh_token"], self.env_refresh_token)
         self.assertEqual(token_data["expires_in"], int(self.env_expires_in))
-        self.assertEqual(token_data["scope"],
-                         ["https://www.googleapis.com/auth/sdm.service"])
+        self.assertEqual(
+            token_data["scope"], ["https://www.googleapis.com/auth/sdm.service"]
+        )
         self.assertEqual(token_data["token_type"], "Bearer")
         self.assertIn("expires_at", token_data)
         # Verify expires_at is approximately current time + expires_in
         expected_expires_at = time.time() + int(self.env_expires_in)
-        self.assertAlmostEqual(token_data["expires_at"], expected_expires_at,
-                               delta=5)
+        self.assertAlmostEqual(token_data["expires_at"], expected_expires_at, delta=5)
 
     @patch.dict(os.environ, {}, clear=False)
     def test_create_token_cache_from_env_minimal_data(self):

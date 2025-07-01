@@ -35,7 +35,7 @@ class TestNestEnvIntegration(utc.UnitTest):
             "DAC_PROJECT_ID": "test_project_id",
             "NEST_ACCESS_TOKEN": "ya29.test_access_token",
             "NEST_REFRESH_TOKEN": "1//040test_refresh_token",
-            "NEST_TOKEN_EXPIRES_IN": "3600"
+            "NEST_TOKEN_EXPIRES_IN": "3600",
         }
 
     def tearDown(self):
@@ -70,12 +70,15 @@ class TestNestEnvIntegration(utc.UnitTest):
         with open(self.cache_file_path, "r", encoding="utf-8") as f:
             token_data = json.load(f)
 
-        self.assertEqual(token_data["access_token"],
-                         self.mock_env_vars["NEST_ACCESS_TOKEN"])
-        self.assertEqual(token_data["refresh_token"],
-                         self.mock_env_vars["NEST_REFRESH_TOKEN"])
-        self.assertEqual(token_data["expires_in"],
-                         int(self.mock_env_vars["NEST_TOKEN_EXPIRES_IN"]))
+        self.assertEqual(
+            token_data["access_token"], self.mock_env_vars["NEST_ACCESS_TOKEN"]
+        )
+        self.assertEqual(
+            token_data["refresh_token"], self.mock_env_vars["NEST_REFRESH_TOKEN"]
+        )
+        self.assertEqual(
+            token_data["expires_in"], int(self.mock_env_vars["NEST_TOKEN_EXPIRES_IN"])
+        )
 
     @patch.dict(os.environ, {}, clear=False)
     def test_no_env_vars_no_cache_created(self):
