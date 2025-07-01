@@ -22,6 +22,7 @@ class IntegrationTest(utc.IntegrationTest):
         """Setup common to integration tests."""
         # Check for server spamming detection and skip if detected
         from thermostatsupervisor import thermostat_common as tc
+
         if tc.server_spamming_detected:
             self.skipTest(
                 "Skipping Honeywell integration test due to detected "

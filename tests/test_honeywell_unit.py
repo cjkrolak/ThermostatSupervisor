@@ -130,7 +130,7 @@ class Test(utc.UnitTest):
             self.assertTrue(
                 tc.server_spamming_detected,
                 "server_spamming_detected flag should be set when "
-                "TooManyAttemptsError is detected"
+                "TooManyAttemptsError is detected",
             )
 
             # Test reset functionality
@@ -138,7 +138,7 @@ class Test(utc.UnitTest):
             self.assertFalse(
                 tc.server_spamming_detected,
                 "server_spamming_detected flag should be reset after calling "
-                "reset_server_spamming_flag()"
+                "reset_server_spamming_flag()",
             )
 
 
