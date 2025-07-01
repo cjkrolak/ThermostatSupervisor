@@ -50,13 +50,15 @@ class ThermostatClass(tc.ThermostatCommon):
         self.session = requests.Session()
 
         # Set base headers required by v3 API
-        self.session.headers.update({
-            "Accept": "application/json, text/plain, */*",
-            "Accept-Encoding": "gzip, deflate, br",
-            "Accept-Language": "en-US, en",
-            "x-app-version": "3.0.9",
-            "Content-Type": "application/json"
-        })
+        self.session.headers.update(
+            {
+                "Accept": "application/json, text/plain, */*",
+                "Accept-Encoding": "gzip, deflate, br",
+                "Accept-Language": "en-US, en",
+                "x-app-version": "3.0.9",
+                "Content-Type": "application/json",
+            }
+        )
         self.auth_token = None
         self.refresh_token = None
         self.token_expires_at = 0
@@ -119,7 +121,7 @@ class ThermostatClass(tc.ThermostatCommon):
         login_data = {
             "username": self.kc_uname,
             "password": self.kc_pwd,
-            "appVersion": "3.0.9"
+            "appVersion": "3.0.9",
         }
 
         try:
@@ -140,9 +142,7 @@ class ThermostatClass(tc.ThermostatCommon):
                 self.refresh_token = auth_response.get("refresh")
 
             if not self.auth_token:
-                error = tc.AuthenticationError(
-                    "No auth token received from v3 API"
-                )
+                error = tc.AuthenticationError("No auth token received from v3 API")
                 self._authentication_error = error
                 self._authenticated = False
                 raise error
@@ -154,9 +154,7 @@ class ThermostatClass(tc.ThermostatCommon):
             self.refresh_token_expires_at = time.time() + 2592000  # 30 days
 
             # Set authorization header for future requests
-            self.session.headers.update({
-                "Authorization": f"Bearer {self.auth_token}"
-            })
+            self.session.headers.update({"Authorization": f"Bearer {self.auth_token}"})
 
             # Mark as successfully authenticated
             self._authenticated = True
@@ -172,16 +170,12 @@ class ThermostatClass(tc.ThermostatCommon):
             return True
 
         except requests.exceptions.RequestException as exc:
-            error = tc.AuthenticationError(
-                f"Failed to authenticate with v3 API: {exc}"
-            )
+            error = tc.AuthenticationError(f"Failed to authenticate with v3 API: {exc}")
             self._authentication_error = error
             self._authenticated = False
             raise error from exc
         except (KeyError, ValueError) as exc:
-            error = tc.AuthenticationError(
-                f"Invalid response from v3 API: {exc}"
-            )
+            error = tc.AuthenticationError(f"Invalid response from v3 API: {exc}")
             self._authentication_error = error
             self._authenticated = False
             raise error from exc
@@ -204,9 +198,7 @@ class ThermostatClass(tc.ThermostatCommon):
 
         # According to the API docs and working implementation,
         # refresh does NOT use Authorization header - only sends refresh token in body
-        refresh_data = {
-            "refresh": self.refresh_token
-        }
+        refresh_data = {"refresh": self.refresh_token}
 
         # Store the current auth header to restore later
         current_auth_header = self.session.headers.get("Authorization")
@@ -217,11 +209,7 @@ class ThermostatClass(tc.ThermostatCommon):
             del self.session.headers["Authorization"]
 
         try:
-            response = self.session.post(
-                refresh_url,
-                json=refresh_data,
-                timeout=30
-            )
+            response = self.session.post(refresh_url, json=refresh_data, timeout=30)
             response.raise_for_status()
 
             refresh_response = response.json()
@@ -243,25 +231,19 @@ class ThermostatClass(tc.ThermostatCommon):
             self.token_expires_at = time.time() + 1200  # 20 minutes
 
             # Update authorization header with new access token
-            self.session.headers.update({
-                "Authorization": f"Bearer {self.auth_token}"
-            })
+            self.session.headers.update({"Authorization": f"Bearer {self.auth_token}"})
 
             return True
 
         except requests.exceptions.RequestException:
             # Refresh failed, restore original header and try full authentication
             if current_auth_header:
-                self.session.headers.update({
-                    "Authorization": current_auth_header
-                })
+                self.session.headers.update({"Authorization": current_auth_header})
             return self._authenticate()
         except Exception:
             # Any other error, restore original header
             if current_auth_header:
-                self.session.headers.update({
-                    "Authorization": current_auth_header
-                })
+                self.session.headers.update({"Authorization": current_auth_header})
             raise
 
     def _ensure_authenticated(self) -> None:
@@ -313,16 +295,16 @@ class ThermostatClass(tc.ThermostatCommon):
 
             if not sites:
                 if self.verbose:
-                    print("Warning: No sites found, using default zone "
-                          "assignments")
+                    print("Warning: No sites found, using default zone " "assignments")
                 return
 
             # Get zones for the first site (assuming single site setup)
             site_id = sites[0].get("id")
             if not site_id:
                 if self.verbose:
-                    print("Warning: No site ID found, using default zone "
-                          "assignments")
+                    print(
+                        "Warning: No site ID found, using default zone " "assignments"
+                    )
                 return
 
             zones = self._get_zones(site_id)
@@ -335,8 +317,7 @@ class ThermostatClass(tc.ThermostatCommon):
                     zone_name_to_index[zone_name] = index
 
             if self.verbose:
-                print(f"Dynamic zone mapping discovered: "
-                      f"{zone_name_to_index}")
+                print(f"Dynamic zone mapping discovered: " f"{zone_name_to_index}")
 
             # Update config module constants based on actual API response
             # Look for common zone name patterns
@@ -348,30 +329,36 @@ class ThermostatClass(tc.ThermostatCommon):
                 zone_name_lower = zone_name.lower()
 
                 # Check for main level patterns
-                if any(pattern in zone_name_lower for pattern in
-                       ['main', 'level', 'living', 'first floor',
-                        '1st floor']):
+                if any(
+                    pattern in zone_name_lower
+                    for pattern in [
+                        "main",
+                        "level",
+                        "living",
+                        "first floor",
+                        "1st floor",
+                    ]
+                ):
                     main_level_index = index
 
                 # Check for basement patterns
-                elif any(pattern in zone_name_lower for pattern in
-                         ['basement', 'lower', 'cellar', 'downstairs']):
+                elif any(
+                    pattern in zone_name_lower
+                    for pattern in ["basement", "lower", "cellar", "downstairs"]
+                ):
                     basement_index = index
 
             # Update the config module with discovered assignments
             if main_level_index is not None:
                 kumocloudv3_config.MAIN_LEVEL = main_level_index
-                kumocloudv3_config.supported_configs["zones"][0] = (
-                    main_level_index)
+                kumocloudv3_config.supported_configs["zones"][0] = main_level_index
 
             if basement_index is not None:
                 kumocloudv3_config.BASEMENT = basement_index
                 if len(kumocloudv3_config.supported_configs["zones"]) > 1:
-                    kumocloudv3_config.supported_configs["zones"][1] = (
-                        basement_index)
+                    kumocloudv3_config.supported_configs["zones"][1] = basement_index
                 else:
-                    kumocloudv3_config.supported_configs["zones"].append(
-                        basement_index)
+                    kumocloudv3_config.supported_configs["zones"].append(basement_index)
 
             # Update metadata dict with discovered assignments
             if main_level_index is not None and basement_index is not None:
@@ -382,16 +369,25 @@ class ThermostatClass(tc.ThermostatCommon):
                 for zone_name, index in zone_name_to_index.items():
                     zone_name_lower = zone_name.lower()
 
-                    if any(pattern in zone_name_lower for pattern in
-                           ['main', 'level', 'living', 'first floor',
-                            '1st floor']):
+                    if any(
+                        pattern in zone_name_lower
+                        for pattern in [
+                            "main",
+                            "level",
+                            "living",
+                            "first floor",
+                            "1st floor",
+                        ]
+                    ):
                         kumocloudv3_config.metadata[index] = {
                             "zone_name": zone_name,
                             "host_name": "tbd",
                             "serial_number": None,
                         }
-                    elif any(pattern in zone_name_lower for pattern in
-                             ['basement', 'lower', 'cellar', 'downstairs']):
+                    elif any(
+                        pattern in zone_name_lower
+                        for pattern in ["basement", "lower", "cellar", "downstairs"]
+                    ):
                         kumocloudv3_config.metadata[index] = {
                             "zone_name": zone_name,
                             "host_name": "tbd",
@@ -406,9 +402,11 @@ class ThermostatClass(tc.ThermostatCommon):
                         }
 
             if self.verbose:
-                print(f"Updated zone assignments - MAIN_LEVEL: "
-                      f"{kumocloudv3_config.MAIN_LEVEL}, "
-                      f"BASEMENT: {kumocloudv3_config.BASEMENT}")
+                print(
+                    f"Updated zone assignments - MAIN_LEVEL: "
+                    f"{kumocloudv3_config.MAIN_LEVEL}, "
+                    f"BASEMENT: {kumocloudv3_config.BASEMENT}"
+                )
                 print(f"Updated metadata: {kumocloudv3_config.metadata}")
 
         except Exception as e:
@@ -435,9 +433,7 @@ class ThermostatClass(tc.ThermostatCommon):
 
         # Ensure the session has the correct auth header
         if self.auth_token:
-            self.session.headers.update({
-                "Authorization": f"Bearer {self.auth_token}"
-            })
+            self.session.headers.update({"Authorization": f"Bearer {self.auth_token}"})
 
         # Make the first request attempt
         response = self.session.request(method, url, timeout=30, **kwargs)
@@ -448,13 +444,11 @@ class ThermostatClass(tc.ThermostatCommon):
             if self._refresh_auth_token():
                 # Ensure session header is updated with new token
                 if self.auth_token:
-                    self.session.headers.update({
-                        "Authorization": f"Bearer {self.auth_token}"
-                    })
+                    self.session.headers.update(
+                        {"Authorization": f"Bearer {self.auth_token}"}
+                    )
                 # Retry the request with new token
-                response = self.session.request(
-                    method, url, timeout=30, **kwargs
-                )
+                response = self.session.request(method, url, timeout=30, **kwargs)
 
         response.raise_for_status()
         return response
@@ -534,9 +528,7 @@ class ThermostatClass(tc.ThermostatCommon):
             return serial_numbers
 
         except requests.exceptions.RequestException as exc:
-            raise tc.AuthenticationError(
-                f"Failed to get indoor units: {exc}"
-            ) from exc
+            raise tc.AuthenticationError(f"Failed to get indoor units: {exc}") from exc
 
     def get_raw_json(self) -> List[Any]:
         """
@@ -550,19 +542,12 @@ class ThermostatClass(tc.ThermostatCommon):
 
             # Convert v3 API response to legacy format
             # Legacy format: [token_info, last_update, zone_data, device_token]
-            token_info = {
-                "token": self.auth_token,
-                "username": self.kc_uname
-            }
+            token_info = {"token": self.auth_token, "username": self.kc_uname}
 
             last_update = time.strftime("%Y-%m-%d %H:%M:%S")
 
             # Build zone data structure compatible with legacy format
-            zone_data = {
-                "children": [{
-                    "zoneTable": {}
-                }]
-            }
+            zone_data = {"children": [{"zoneTable": {}}]}
 
             for site in sites:
                 site_id = site.get("id")
@@ -581,17 +566,16 @@ class ThermostatClass(tc.ThermostatCommon):
                         legacy_device = self._convert_device_to_legacy_format(
                             device, zone
                         )
-                        zone_data["children"][0]["zoneTable"][device_serial] = \
-                            legacy_device
+                        zone_data["children"][0]["zoneTable"][
+                            device_serial
+                        ] = legacy_device
 
             device_token = self.auth_token
 
             return [token_info, last_update, zone_data, device_token]
 
         except Exception as exc:
-            raise tc.AuthenticationError(
-                f"Failed to get raw JSON: {exc}"
-            ) from exc
+            raise tc.AuthenticationError(f"Failed to get raw JSON: {exc}") from exc
 
     def _convert_device_to_legacy_format(
         self, device: Dict[str, Any], zone: Dict[str, Any]
@@ -624,20 +608,16 @@ class ThermostatClass(tc.ThermostatCommon):
             },
             "inputs": {
                 "acoilSettings": {
-                    "humidistat": 1 if device.get(
-                        "hasHumiditySensor", False
-                    ) else 0,
+                    "humidistat": 1 if device.get("hasHumiditySensor", False) else 0,
                 }
             },
-            "rssi": {
-                "rssi": device.get("wifiSignalStrength", -50.0)
-            },
+            "rssi": {"rssi": device.get("wifiSignalStrength", -50.0)},
             "status_display": {
                 "reportedCondition": {
                     "defrost": 1 if device.get("defrosting", False) else 0,
                     "standby": 1 if device.get("standby", False) else 0,
                 }
-            }
+            },
         }
 
         # Handle missing fan_speed_text
@@ -799,8 +779,10 @@ class ThermostatClass(tc.ThermostatCommon):
                 ]
 
             # Check if authentication failed
-            if (isinstance(raw_json, dict)
-                    and raw_json.get("authentication_status") == "failed"):
+            if (
+                isinstance(raw_json, dict)
+                and raw_json.get("authentication_status") == "failed"
+            ):
                 if parameter is None:
                     return raw_json
                 else:
@@ -846,9 +828,11 @@ class ThermostatClass(tc.ThermostatCommon):
             result = _get_metadata_internal()
 
         # Post-process result to handle authentication failure with specific parameters
-        if (isinstance(result, dict)
-                and result.get("authentication_status") == "failed"
-                and parameter is not None):
+        if (
+            isinstance(result, dict)
+            and result.get("authentication_status") == "failed"
+            and parameter is not None
+        ):
             # Return a mock value for the specific parameter
             if parameter == "address":
                 return "127.0.0.1"  # Mock IP address
@@ -946,8 +930,10 @@ class ThermostatZone(tc.ThermostatCommonZone):
         return_val = default_val
 
         # Check if authentication failed
-        if (isinstance(self.zone_info, dict)
-                and self.zone_info.get("authentication_status") == "failed"):
+        if (
+            isinstance(self.zone_info, dict)
+            and self.zone_info.get("authentication_status") == "failed"
+        ):
             # Authentication failed, return default or mock values
             if key == "label":
                 return f"Zone_{self.zone_number}"  # Mock zone name
