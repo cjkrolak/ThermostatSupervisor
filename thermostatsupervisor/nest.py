@@ -161,11 +161,25 @@ class ThermostatClass(tc.ThermostatCommon):
         r = requests.post(authorization_url, data=params, timeout=10)
 
         if r.ok:
-            self.refresh_token = r.json()["access_token"]
+            response_data = r.json()
+
+            # Update access_token (this should be used for API calls)
+            self.refresh_token = response_data["access_token"]
 
             # update the token file
             print("updating access token file...")
-            data["refresh_token"] = r.json()["access_token"]
+            # Store the new access_token
+            data["access_token"] = response_data["access_token"]
+
+            # Only update refresh_token if a new one is provided in the response
+            # Google typically doesn't provide a new refresh_token on every refresh
+            if "refresh_token" in response_data:
+                data["refresh_token"] = response_data["refresh_token"]
+                print("received new refresh token, updating cache...")
+
+            # Update expiration time if provided
+            if "expires_in" in response_data:
+                data["expires_in"] = response_data["expires_in"]
 
             # Write JSON back to file
             with open(self.access_token_cache_file, "w", encoding="utf-8") as f:
