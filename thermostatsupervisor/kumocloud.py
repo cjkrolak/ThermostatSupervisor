@@ -180,11 +180,17 @@ class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
                 if kumocloud_config.metadata[i]["zone_name"] == self.zone_name
             ][0]
         except IndexError:
-            print(
-                f"ERROR: zone_name={self.zone_name} not present in meta data"
-                f" dict, valid values are {kumocloud_config.metadata.keys()}"
+            # Create a helpful error message with valid zone names
+            valid_zone_names = [
+                kumocloud_config.metadata[i]["zone_name"]
+                for i in kumocloud_config.metadata
+            ]
+            error_msg = (
+                f"zone_name='{self.zone_name}' not found in kumocloud metadata. "
+                f"Valid zone names are: {valid_zone_names}. "
+                f"Available zone indices are: {list(kumocloud_config.metadata.keys())}"
             )
-            raise
+            raise ValueError(error_msg) from None
         return zone_index
 
     def get_all_metadata(self, zone=None, retry=False):
