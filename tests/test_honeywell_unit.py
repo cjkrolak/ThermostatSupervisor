@@ -96,6 +96,51 @@ class Test(utc.UnitTest):
             # Verify it was called multiple times (retried)
             self.assertEqual(call_count, 2)
 
+    def test_get_zones_info_with_retries_too_many_attempts_error(self):
+        """
+        Test get_zones_info_with_retries() with TooManyAttemptsError.
+
+        Verify that TooManyAttemptsError is caught and the server_spamming_detected
+        flag is set in thermostat_common.
+        """
+        # Import required modules
+        import thermostatsupervisor.thermostat_common as tc
+        import pyhtcc
+
+        # Reset the server_spamming_detected flag
+        tc.server_spamming_detected = False
+
+        # Mock time.sleep and email notifications to speed up the test
+        with mock.patch("time.sleep"), mock.patch(
+            "thermostatsupervisor.email_notification.send_email_alert"
+        ):
+            # Mock a function that always raises TooManyAttemptsError
+            def mock_func():
+                raise pyhtcc.pyhtcc.TooManyAttemptsError(
+                    "mock TooManyAttemptsError for server spamming detection"
+                )
+
+            # Test that the function raises TooManyAttemptsError after retries
+            with self.assertRaises(pyhtcc.pyhtcc.TooManyAttemptsError):
+                honeywell.get_zones_info_with_retries(
+                    mock_func, "test_thermostat", "test_zone"
+                )
+
+            # Verify the server_spamming_detected flag was set
+            self.assertTrue(
+                tc.server_spamming_detected,
+                "server_spamming_detected flag should be set when "
+                "TooManyAttemptsError is detected",
+            )
+
+            # Test reset functionality
+            tc.reset_server_spamming_flag()
+            self.assertFalse(
+                tc.server_spamming_detected,
+                "server_spamming_detected flag should be reset after calling "
+                "reset_server_spamming_flag()",
+            )
+
 
 if __name__ == "__main__":
     util.log_msg.debug = True

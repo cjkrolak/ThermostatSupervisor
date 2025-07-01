@@ -6,6 +6,7 @@ https://pypi.org/project/pyhtcc/
 """
 # built-in imports
 import http.client
+import logging
 import os
 import pprint
 import time
@@ -29,6 +30,41 @@ if HONEYWELL_DEBUG and not env.is_azure_environment():
     pyhtcc = env.dynamic_module_import("pyhtcc", mod_path)
 else:
     import pyhtcc  # noqa E402, from path / site packages
+
+
+class SupervisorLogHandler(logging.Handler):
+    """Custom logging handler to redirect pyhtcc logs to supervisor logging."""
+
+    def emit(self, record):
+        """
+        Emit a log record through the supervisor's log_msg function.
+
+        inputs:
+            record(LogRecord): The logging record to emit
+        """
+        try:
+            # Format the message
+            msg = self.format(record)
+
+            # Map logging levels to supervisor log modes
+            level_mapping = {
+                logging.DEBUG: util.DEBUG_LOG + util.DATA_LOG,
+                logging.INFO: util.DATA_LOG,
+                logging.WARNING: util.DATA_LOG,
+                logging.ERROR: util.DATA_LOG + util.STDERR_LOG,
+                logging.CRITICAL: util.DATA_LOG + util.STDERR_LOG,
+            }
+
+            # Get the appropriate log mode, default to DATA_LOG for unknown levels
+            log_mode = level_mapping.get(record.levelno, util.DATA_LOG)
+
+            # Log through supervisor's logging system
+            util.log_msg(
+                f"[pyhtcc] {msg}", mode=log_mode, file_name="honeywell_log.txt"
+            )
+        except Exception:
+            # Fallback to avoid breaking logging completely
+            self.handleError(record)
 
 
 class ThermostatClass(pyhtcc.PyHTCC, tc.ThermostatCommon):
@@ -56,6 +92,9 @@ class ThermostatClass(pyhtcc.PyHTCC, tc.ThermostatCommon):
         pyhtcc.PyHTCC.__init__(self, *self.args)
         tc.ThermostatCommon.__init__(self)
 
+        # integrate pyhtcc logger with supervisor logging system
+        self._setup_pyhtcc_logging()
+
         # set tstat type and debug flag
         self.thermostat_type = honeywell_config.ALIAS
         self.verbose = verbose
@@ -77,6 +116,35 @@ class ThermostatClass(pyhtcc.PyHTCC, tc.ThermostatCommon):
         except (AttributeError, TypeError):
             # Handle cases where session doesn't exist or other cleanup issues
             pass
+
+    def _setup_pyhtcc_logging(self):
+        """
+        Configure pyhtcc logger to use supervisor logging system.
+
+        This method sets up a custom handler that redirects pyhtcc log messages
+        to the supervisor's log_msg function, ensuring all logging goes to the
+        same destination.
+        """
+        # Get the pyhtcc logger
+        pyhtcc_logger = pyhtcc.logger
+
+        # Remove any existing handlers to avoid duplicate logging
+        for handler in pyhtcc_logger.handlers[:]:
+            pyhtcc_logger.removeHandler(handler)
+
+        # Add our custom handler
+        supervisor_handler = SupervisorLogHandler()
+        supervisor_handler.setLevel(logging.DEBUG)
+
+        # Set a simple formatter
+        formatter = logging.Formatter("%(name)s - %(levelname)s - %(message)s")
+        supervisor_handler.setFormatter(formatter)
+
+        pyhtcc_logger.addHandler(supervisor_handler)
+        pyhtcc_logger.setLevel(logging.DEBUG)
+
+        # Prevent propagation to avoid duplicate messages
+        pyhtcc_logger.propagate = False
 
     def _get_zone_device_ids(self) -> list:
         """
@@ -287,6 +355,7 @@ def get_zones_info_with_retries(func, thermostat_type, zone_name) -> list:
         pyhtcc.pyhtcc.UnexpectedError,
         pyhtcc.pyhtcc.NoZonesFoundError,
         pyhtcc.pyhtcc.UnauthorizedError,
+        pyhtcc.pyhtcc.TooManyAttemptsError,
         pyhtcc.requests.exceptions.HTTPError,
         urllib3.exceptions.ProtocolError,
         http.client.RemoteDisconnected,

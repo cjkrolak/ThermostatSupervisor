@@ -11,6 +11,12 @@ BASEMENT = 1  # zone 1
 MAX_HEAT_SETPOINT = 69.0
 MIN_COOL_SETPOINT = 70.0
 
+# Safety temperature settings
+# These are used when thermostat is OFF and normal setpoints are unavailable
+# Users can adjust these values based on their comfort and safety requirements
+SAFETY_HEAT_TEMPERATURE = 45.0  # Minimum safe temperature (°F)
+SAFETY_COOL_TEMPERATURE = 75.0  # Maximum safe temperature (°F)
+
 # all environment variables specific to this thermostat type
 env_variables = {
     "GCLOUD_CLIENT_ID": None,

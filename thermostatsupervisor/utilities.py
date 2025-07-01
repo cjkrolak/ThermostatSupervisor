@@ -862,6 +862,16 @@ def execute_with_extended_retries(
             if tc is not None:
                 tc.connection_ok = False
 
+                # Check for TooManyAttemptsError to detect server spamming
+                if "TooManyAttemptsError" in str(type(ex)):
+                    tc.server_spamming_detected = True
+                    log_msg(
+                        "CRITICAL: pyhtcc server spamming detected - "
+                        "subsequent Honeywell integration tests will be skipped",
+                        mode=BOTH_LOG,
+                        func_name=1,
+                    )
+
             log_msg(
                 f"WARNING: exception on trial {trial_number}",
                 mode=BOTH_LOG,
