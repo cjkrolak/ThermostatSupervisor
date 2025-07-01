@@ -79,6 +79,10 @@ Environment variables required depend on the thermostat being used.<br/>
   * 'GCLOUD_CLIENT_ID': client ID from Google Clout OAuth credentials
   * 'GCLOUD_CLIENT_SECRET': client secret from Google Clout OAuth credentials
   * 'DAC_PROJECT_ID': project ID from the Nest Device access console
+  * Optional env vars to automate initial authorization (eliminates manual URL prompt):
+    * 'NEST_ACCESS_TOKEN': OAuth access token from previous authorization
+    * 'NEST_REFRESH_TOKEN': OAuth refresh token from previous authorization
+    * 'NEST_TOKEN_EXPIRES_IN': token expiration time in seconds (optional, defaults to 3600)
 * Flask applications support optional security and functionality env vars:
   * 'SECRET_KEY': secret key for Flask CSRF protection (optional - auto-generated if not provided)
   * 'WEATHER_API_KEY': OpenWeatherMap API key for outdoor weather data (optional - mock data used if not provided)
