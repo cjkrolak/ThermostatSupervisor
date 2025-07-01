@@ -95,6 +95,57 @@ class LocalNetworkDetectionUnitTest(utc.UnitTest):
         except ImportError:
             self.skipTest("kumolocal module not available for testing")
 
+    def test_pykumo_logging_integration(self):
+        """Test that pykumo logging integration can be initialized."""
+        try:
+            import logging
+            from thermostatsupervisor import kumolocal
+
+            # Mock the utilities module to capture log messages
+            captured_logs = []
+
+            class MockUtil:
+                DATA_LOG = 1
+                STDERR_LOG = 2
+                DEBUG_LOG = 4
+
+                @staticmethod
+                def log_msg(msg, mode, func_name=None, file_name=None):
+                    captured_logs.append({
+                        'msg': msg,
+                        'mode': mode,
+                        'func_name': func_name,
+                        'file_name': file_name
+                    })
+
+            # Temporarily replace util module
+            original_util = kumolocal.util
+            kumolocal.util = MockUtil
+
+            try:
+                # Test that we can create the SupervisorLogHandler
+                handler = kumolocal.SupervisorLogHandler()
+                self.assertIsInstance(handler, logging.Handler)
+
+                # Test logging with the handler
+                record = logging.LogRecord(
+                    name='test', level=logging.INFO, pathname='', lineno=0,
+                    msg='Test message', args=(), exc_info=None
+                )
+                handler.emit(record)
+
+                # Verify that a log message was captured
+                self.assertTrue(len(captured_logs) > 0)
+                self.assertIn('[pykumo]', captured_logs[0]['msg'])
+                self.assertEqual('kumo_log.txt', captured_logs[0]['file_name'])
+
+            finally:
+                # Restore original util module
+                kumolocal.util = original_util
+
+        except ImportError:
+            self.skipTest("kumolocal module not available for testing")
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
