@@ -4,6 +4,8 @@ kumocloudv3 config file.
 ALIAS = "kumocloudv3"
 
 # thermostat zones
+# NOTE: Zone assignments are swapped in v3 API compared to older kumo APIs
+# v3 API: zone 1 = MAIN_LEVEL, zone 0 = BASEMENT
 MAIN_LEVEL = 1  # zone 1
 BASEMENT = 0  # zone 0
 
