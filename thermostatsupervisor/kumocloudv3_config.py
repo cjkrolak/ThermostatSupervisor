@@ -4,8 +4,8 @@ kumocloudv3 config file.
 ALIAS = "kumocloudv3"
 
 # thermostat zones
-MAIN_LEVEL = 0  # zone 0
-BASEMENT = 1  # zone 1
+MAIN_LEVEL = 1  # zone 1
+BASEMENT = 0  # zone 0
 
 # constants
 MAX_HEAT_SETPOINT = 68
