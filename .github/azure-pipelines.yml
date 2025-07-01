@@ -90,13 +90,13 @@ steps:
     echo "Triggering SonarQube workflow..."
     
     # Validate token is present
-    if [ -z "${GITHUB_TOKEN}" ]; then
-      echo "ERROR: GITHUB_TOKEN is not set"
+    if [ -z "${THERMOSTATSUPERVISOR_PR}" ]; then
+      echo "ERROR: THERMOSTATSUPERVISOR_PR is not set"
       echo ""
       echo "🔧 SETUP INSTRUCTIONS:"
       echo "1. Go to Azure DevOps > Pipelines > Library > Variable groups"
       echo "2. Create/edit the variable group used by this pipeline"
-      echo "3. Add variable: GITHUB_TOKEN"
+      echo "3. Add variable: THERMOSTATSUPERVISOR_PR"
       echo "4. Value should be a GitHub Personal Access Token (classic) with these scopes:"
       echo "   - repo (for private repos) OR public_repo (for public repos)"
       echo "   - workflow (to trigger workflow dispatches)"
@@ -106,16 +106,16 @@ steps:
       exit 1
     fi
     
-    echo "GITHUB_TOKEN is configured (${#GITHUB_TOKEN} characters)"
+    echo "THERMOSTATSUPERVISOR_PR is configured (${#THERMOSTATSUPERVISOR_PR} characters)"
     
     # Test basic GitHub API access first
     echo "Testing GitHub API access..."
-    test_response=$(curl -w "%{http_code}" -s -H "Authorization: token ${GITHUB_TOKEN}" https://api.github.com/user)
+    test_response=$(curl -w "%{http_code}" -s -H "Authorization: token ${THERMOSTATSUPERVISOR_PR}" https://api.github.com/user)
     test_code="${test_response: -3}"
     
     if [[ ${test_code} -ne 200 ]]; then
       echo "ERROR: GitHub API authentication failed (HTTP ${test_code})"
-      echo "The GITHUB_TOKEN is invalid or expired"
+      echo "The THERMOSTATSUPERVISOR_PR is invalid or expired"
       echo ""
       echo "🔧 TOKEN TROUBLESHOOTING:"
       echo "1. Verify the token at: https://github.com/settings/tokens"
@@ -131,7 +131,7 @@ steps:
     echo "Triggering repository dispatch event..."
     response=$(curl -w "%{http_code}" -s -X POST \
       -H "Accept: application/vnd.github.v3+json" \
-      -H "Authorization: token ${GITHUB_TOKEN}" \
+      -H "Authorization: token ${THERMOSTATSUPERVISOR_PR}" \
       -H "User-Agent: Azure-DevOps-Pipeline" \
       https://api.github.com/repos/cjkrolak/ThermostatSupervisor/dispatches \
       -d '{"event_type":"azure-pipeline-completed","client_payload":{"result":"success","run_id":"$(Build.BuildId)"}}')
@@ -153,7 +153,7 @@ steps:
       echo "❌ ERROR: Authentication failed (HTTP 401)"
       echo ""
       echo "🔧 TOKEN PERMISSIONS ISSUE:"
-      echo "The GITHUB_TOKEN lacks required permissions for workflow dispatches"
+      echo "The THERMOSTATSUPERVISOR_PR lacks required permissions for workflow dispatches"
       echo ""
       echo "Required token scopes:"
       echo "  - repo (for private repositories)"
@@ -184,4 +184,4 @@ steps:
   displayName: 'Trigger SonarQube Workflow'
   condition: succeeded()
   env:
-    GITHUB_TOKEN: '$(GITHUB_TOKEN)'  # Azure DevOps pipeline variable - must be Personal Access Token with 'repo' and 'workflow' scopes
+    THERMOSTATSUPERVISOR_PR: '$(THERMOSTATSUPERVISOR_PR)'  # Azure DevOps pipeline variable - must be Personal Access Token with 'repo' and 'workflow' scopes
