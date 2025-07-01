@@ -9,7 +9,7 @@ import json
 import os
 import tempfile
 import unittest
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 
 # local imports
 from thermostatsupervisor import nest
@@ -70,13 +70,16 @@ class TestNestEnvIntegration(utc.UnitTest):
         with open(self.cache_file_path, "r", encoding="utf-8") as f:
             token_data = json.load(f)
 
-        self.assertEqual(token_data["access_token"], self.mock_env_vars["NEST_ACCESS_TOKEN"])
-        self.assertEqual(token_data["refresh_token"], self.mock_env_vars["NEST_REFRESH_TOKEN"])
-        self.assertEqual(token_data["expires_in"], int(self.mock_env_vars["NEST_TOKEN_EXPIRES_IN"]))
+        self.assertEqual(token_data["access_token"],
+                         self.mock_env_vars["NEST_ACCESS_TOKEN"])
+        self.assertEqual(token_data["refresh_token"],
+                         self.mock_env_vars["NEST_REFRESH_TOKEN"])
+        self.assertEqual(token_data["expires_in"],
+                         int(self.mock_env_vars["NEST_TOKEN_EXPIRES_IN"]))
 
     @patch.dict(os.environ, {}, clear=False)
     def test_no_env_vars_no_cache_created(self):
-        """Test that no cache file is created when environment variables are missing."""
+        """Test no cache file created when environment variables missing."""
         # Set only required OAuth credentials but no token env vars
         os.environ["GCLOUD_CLIENT_ID"] = "test_client_id"
         os.environ["GCLOUD_CLIENT_SECRET"] = "test_client_secret"

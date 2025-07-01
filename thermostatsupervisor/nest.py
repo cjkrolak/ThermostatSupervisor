@@ -121,7 +121,8 @@ class ThermostatClass(tc.ThermostatCommon):
         # Check if token cache file already exists
         if os.path.exists(self.access_token_cache_file):
             if self.verbose:
-                print(f"Token cache file already exists: {self.access_token_cache_file}")
+                print(f"Token cache file already exists: "
+                      f"{self.access_token_cache_file}")
             return
 
         # Get token data from environment variables
@@ -132,7 +133,8 @@ class ThermostatClass(tc.ThermostatCommon):
         # Check if all required token environment variables are present
         if not (access_token and refresh_token):
             if self.verbose:
-                print("Token cache file not found and token environment variables not available")
+                print("Token cache file not found and token environment "
+                      "variables not available")
                 print("Manual authorization will be required on first run")
             return
 
@@ -146,14 +148,16 @@ class ThermostatClass(tc.ThermostatCommon):
         }
 
         # Calculate and add expires_at timestamp
-        # Set to current time + expires_in seconds (allowing immediate refresh if needed)
+        # Set to current time + expires_in seconds (allowing immediate refresh
+        # if needed)
         token_data["expires_at"] = time.time() + token_data["expires_in"]
 
         try:
             # Create token cache file
             with open(self.access_token_cache_file, "w", encoding="utf-8") as f:
                 json.dump(token_data, f, indent=4)
-            print(f"Created token cache file from environment variables: {self.access_token_cache_file}")
+            print(f"Created token cache file from environment variables: "
+                  f"{self.access_token_cache_file}")
         except Exception as e:
             print(f"ERROR: Failed to create token cache file: {e}")
             # Don't raise exception - fall back to manual authorization
