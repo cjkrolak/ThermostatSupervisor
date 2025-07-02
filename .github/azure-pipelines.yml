@@ -84,6 +84,50 @@ steps:
     summaryFileLocation: 'coverage.xml'
   displayName: 'Publish Code Coverage'
 
+# Upload coverage.xml as GitHub artifact for SonarQube workflow
+- script: |
+    set -e
+    echo "Uploading coverage.xml as GitHub artifact..."
+    
+    # Validate token and file exist
+    if [ -z "${THERMOSTATSUPERVISOR_PR}" ]; then
+      echo "ERROR: THERMOSTATSUPERVISOR_PR is not set"
+      exit 1
+    fi
+    
+    if [ ! -f "coverage.xml" ]; then
+      echo "ERROR: coverage.xml not found"
+      exit 1
+    fi
+    
+    # Create a GitHub gist with the coverage data
+    response=$(curl -w "%{http_code}" -s -X POST \
+      -H "Accept: application/vnd.github.v3+json" \
+      -H "Authorization: token ${THERMOSTATSUPERVISOR_PR}" \
+      -H "User-Agent: Azure-DevOps-Pipeline" \
+      https://api.github.com/gists \
+      -d "{\"description\":\"Coverage data for SonarQube - Build $(Build.BuildId)\",\"public\":false,\"files\":{\"coverage.xml\":{\"content\":\"$(cat coverage.xml | sed 's/\"/\\\"/g' | sed 's/$/\\n/' | tr -d '\n')\"}}}")
+    
+    # Extract HTTP status code and response body
+    http_code="${response: -3}"
+    response_body="${response%???}"
+    
+    if [[ ${http_code} -ge 200 && ${http_code} -lt 300 ]]; then
+      # Extract gist ID from response
+      gist_id=$(echo "${response_body}" | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
+      echo "✅ Coverage uploaded successfully to gist: ${gist_id}"
+      echo "##vso[task.setvariable variable=coverageGistId;isOutput=true]${gist_id}"
+    else
+      echo "❌ Failed to upload coverage. HTTP ${http_code}"
+      echo "Response: ${response_body}"
+      exit 1
+    fi
+  name: 'uploadCoverage'
+  displayName: 'Upload Coverage Data'
+  condition: succeeded()
+  env:
+    THERMOSTATSUPERVISOR_PR: '$(THERMOSTATSUPERVISOR_PR)'
+
 # trigger SonarQube workflow on successful completion
 - script: |
     set -e  # Exit on any error
@@ -127,6 +171,10 @@ steps:
     
     echo "✅ GitHub API authentication successful"
     
+    # Get the coverage gist ID from previous step (if available)
+    coverage_gist_id="$(uploadCoverage.coverageGistId)"
+    echo "Coverage gist ID: ${coverage_gist_id}"
+    
     # Make the API request with detailed error handling
     echo "Triggering repository dispatch event..."
     response=$(curl -w "%{http_code}" -s -X POST \
@@ -134,7 +182,7 @@ steps:
       -H "Authorization: token ${THERMOSTATSUPERVISOR_PR}" \
       -H "User-Agent: Azure-DevOps-Pipeline" \
       https://api.github.com/repos/cjkrolak/ThermostatSupervisor/dispatches \
-      -d '{"event_type":"azure-pipeline-completed","client_payload":{"result":"success","run_id":"$(Build.BuildId)"}}')
+      -d "{\"event_type\":\"azure-pipeline-completed\",\"client_payload\":{\"result\":\"success\",\"run_id\":\"$(Build.BuildId)\",\"coverage_gist_id\":\"${coverage_gist_id}\"}}")
     
     # Extract HTTP status code (last 3 characters)
     http_code="${response: -3}"

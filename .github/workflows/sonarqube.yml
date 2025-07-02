@@ -28,14 +28,31 @@ jobs:
         with:
           python-version: '3.13'
 
-      - name: Install dependencies
+      - name: Download coverage data from Azure DevOps
         run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-
-      - name: Generate code coverage
-        run: |
-          python -m tests.unit_test_coverage
+          coverage_gist_id="${{ github.event.client_payload.coverage_gist_id }}"
+          
+          if [ -n "${coverage_gist_id}" ] && [ "${coverage_gist_id}" != "null" ]; then
+            echo "📥 Downloading coverage data from gist: ${coverage_gist_id}"
+            
+            # Download the gist content and extract coverage.xml directly
+            curl -s -H "Authorization: token ${{ secrets.THERMOSTATSUPERVISOR_PR }}" \
+              "https://api.github.com/gists/${coverage_gist_id}" | \
+              python3 -c "import json,sys; data=json.load(sys.stdin); open('coverage.xml','w').write(data['files']['coverage.xml']['content']); print('✅ Coverage data downloaded successfully')"
+            
+            # Cleanup: Delete the temporary gist
+            curl -s -X DELETE -H "Authorization: token ${{ secrets.THERMOSTATSUPERVISOR_PR }}" \
+              "https://api.github.com/gists/${coverage_gist_id}" || echo "Note: Could not delete temporary gist"
+              
+          else
+            echo "⚠️  No coverage gist ID provided, generating coverage data as fallback..."
+            
+            # Fallback: Generate coverage if no gist ID provided
+            python -m pip install --upgrade pip
+            pip install -r requirements.txt
+            
+            python -m tests.unit_test_coverage
+          fi
         # Continue even if some tests fail, as coverage is still generated
         continue-on-error: true
         env:
@@ -68,4 +85,4 @@ jobs:
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: https://sonarcloud.io
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.THERMOSTATSUPERVISOR_PR }}
