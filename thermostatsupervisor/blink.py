@@ -102,18 +102,31 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):
         self.blink.start()
         try:
             self.blink.auth.send_auth_key(self.blink, self.bl_2fa)
-        except AttributeError:
+        except (AttributeError, ValueError, KeyError) as e:
             error_msg = (
                 "ERROR: Blink authentication failed for zone "
-                f"{self.zone_number}, this may be due to spamming the "
-                "blink server, please try again later."
+                f"{self.zone_number}. This may be due to an invalid "
+                f"verification code or spamming the blink server. "
+                f"Error details: {str(e)}"
             )
             banner = "*" * len(error_msg)
             print(banner)
             print(error_msg)
             print(banner)
             sys.exit(1)
-        self.blink.setup_post_verify()
+
+        # Check if setup_post_verify succeeds
+        setup_success = self.blink.setup_post_verify()
+        if not setup_success:
+            error_msg = (
+                "ERROR: Blink post-verification setup failed for zone "
+                f"{self.zone_number}. Camera list may not be available."
+            )
+            banner = "*" * len(error_msg)
+            print(banner)
+            print(error_msg)
+            print(banner)
+            sys.exit(1)
 
     async def async_auth_start(self):
         """
@@ -141,18 +154,31 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):
             await self.blink.start()
             try:
                 await self.blink.auth.send_auth_key(self.blink, self.bl_2fa)
-            except AttributeError:
+            except (AttributeError, ValueError, KeyError) as e:
                 error_msg = (
                     "ERROR: Blink authentication failed for zone "
-                    f"{self.zone_number}, this may be due to spamming"
-                    " the blink server, please try again later."
+                    f"{self.zone_number}. This may be due to an invalid "
+                    f"verification code or spamming the blink server. "
+                    f"Error details: {str(e)}"
                 )
                 banner = "*" * len(error_msg)
                 print(banner)
                 print(error_msg)
                 print(banner)
                 sys.exit(1)
-            await self.blink.setup_post_verify()
+
+            # Check if setup_post_verify succeeds
+            setup_success = await self.blink.setup_post_verify()
+            if not setup_success:
+                error_msg = (
+                    "ERROR: Blink post-verification setup failed for zone "
+                    f"{self.zone_number}. Camera list may not be available."
+                )
+                banner = "*" * len(error_msg)
+                print(banner)
+                print(error_msg)
+                print(banner)
+                sys.exit(1)
 
     def get_zone_name(self):
         """
@@ -185,12 +211,20 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):
         if self.verbose:
             print("blink camera inventory:")
             print("-" * table_length)
+
+        if not self.blink.cameras:
+            if self.verbose:
+                print("WARNING: No cameras found in blink.cameras")
+                print("This may indicate authentication or setup issues")
+            return
+
         for name, camera in self.blink.cameras.items():
             if self.verbose:
                 print(name)
                 print(camera.attributes)
             self.camera_metadata[name] = camera.attributes
         if self.verbose:
+            print(f"Total cameras found: {len(self.blink.cameras)}")
             print("-" * table_length)
 
     def get_all_metadata(self, zone=None, retry=False):
@@ -221,9 +255,32 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):
         def _get_metadata_internal():
             zone_name = blink_config.metadata[self.zone_number]["zone_name"]
             if self.blink.cameras == {}:
-                raise ValueError(
-                    "camera list is empty when searching for camera" f" {zone_name}"
-                )
+                # Try to refresh the camera list once before failing
+                if self.verbose:
+                    print(
+                        f"Camera list is empty, attempting to refresh for "
+                        f"zone {zone_name}"
+                    )
+                try:
+                    # For async version, we can't easily call refresh here
+                    # So we'll just provide a more helpful error message
+                    available_cameras = (
+                        list(self.blink.cameras.keys())
+                        if self.blink.cameras else []
+                    )
+                    error_msg = (
+                        f"Camera list is empty when searching for camera "
+                        f"'{zone_name}'. Available cameras: {available_cameras}. "
+                        f"This may indicate authentication failed or no cameras "
+                        f"are available. Please check your Blink credentials "
+                        f"and 2FA code."
+                    )
+                    raise ValueError(error_msg)
+                except Exception as e:
+                    raise ValueError(
+                        f"Camera list is empty when searching for camera "
+                        f"'{zone_name}'. Failed to refresh camera list: {str(e)}"
+                    )
             for name, camera in self.blink.cameras.items():
                 # print(f"DEBUG: camera {name}: {camera.attributes}")
                 if name == zone_name:
@@ -233,7 +290,16 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):
                         return camera.attributes
                     else:
                         return camera.attributes[parameter]
-            raise ValueError(f"Camera zone {zone}({zone_name}) was not found")
+
+            # Provide helpful error when camera name doesn't match
+            available_cameras = list(self.blink.cameras.keys())
+            error_msg = (
+                f"Camera zone {zone}('{zone_name}') was not found. "
+                f"Available cameras: {available_cameras}. "
+                f"Please check the zone name in blink_config.py matches "
+                f"your Blink app."
+            )
+            raise ValueError(error_msg)
 
         if retry:
             # Use standardized extended retry mechanism
