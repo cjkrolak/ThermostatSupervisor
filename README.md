@@ -13,7 +13,9 @@ supervisor to detect and correct thermostat deviations<br/>
 1. Honeywell thermostat through TCC web site (user must configure TCC web site credentials as environment variables).
 2. 3M50 thermostat on local net (user must provide local IP address of each 3m50 thermostat zone).
 3. SHT31 temperature sensor either locally or remote (user must provide local/remote IP address in environment variables and setup firewall port routing if remote).
-4. Mitsubishi ductless thermostat through Kumocloud on remote network (monitoring) or local network (monitoring and control).
+4. Mitsubishi ductless thermostat through KumoCloud on remote network (monitoring) or local network (monitoring and control).
+   - KumoCloud (legacy API) - static zone assignments
+   - KumoCloudv3 (new v3 API) - dynamic zone assignments with improved functionality
 5. Blink camera temperature sensors.
 6. Nest thermostats.
 
@@ -44,7 +46,7 @@ docker run --rm -it --privileged --env-file 'envfile' 'username'/thermostatsuper
 * '--privileged' runs in privileged mode, this may be required to avoid PermissionErrors with device objects<br/>
 * 'username' is your DockerHub username<br/>
 * 'tag' is the Docker image tag (e.g. 'develop', 'main', etc.)<br/>
-* 'module' is the module to run, (e.g. 'supervise', 'honeywell', 'kumocloud', etc.).<br/>
+* 'module' is the module to run, (e.g. 'supervise', 'honeywell', 'kumocloud', 'kumocloudv3', etc.).<br/>
 * 'runtime parameters' are supervise runtime parameters as specified below.<br/>
 
 **Note:** The Docker container is configured to use the timezone specified in the `timezone` file (currently America/Chicago). This ensures that time-based functions display the correct local time instead of UTC.
@@ -97,12 +99,13 @@ Environment variables required depend on the thermostat being used.<br/>
 This is the main entry point script.<br/>
 runtime parameters can be specified to override defaults either via single dash named parameters or values in order:<br/>
 * '-h'= help screen
-* argv[1] or '-t'= Thermostat type, currently support "honeywell", "mmm50", "sht31", "kumocloud", "kumolocal" and "blink".  Default is "honeywell".
+* argv[1] or '-t'= Thermostat type, currently support "honeywell", "mmm50", "sht31", "kumocloud", "kumocloudv3", "kumolocal" and "blink".  Default is "honeywell".
 * argv[2] or '-z'= zone, currently support:
   * honeywell = zone 0 only
   * 3m50 = zones [0,1] on local net
   * sht31: 0 = local net, 1 = remote URL
   * kumocloud, kumolocal: [0,1]
+  * kumocloudv3: [0,1] (dynamically assigned based on v3 API response)
   * blink = [0,1,2,3,4,5,6,7,8]
   * emulator = zone 0 only
 * argv[3] or '-p'= poll time in seconds (default is thermostat-specific)
@@ -175,6 +178,13 @@ Script will connect to Mitsubishi ductless thermostat through kumocloud account 
 Default poll time is currently set to 10 minutes.<br/>
 Zone number refers to the thermostat order in kumocloud, 0=first thermostat data returned, 1=second thermostat, etc.<br/><br/>
 command line usage:  "*python -m thermostatsupervisor.kumocloud \<thermostat type\> \<zone\>*"
+
+## kumocloudv3.py:
+Script will connect to Mitsubishi ductless thermostat through the new KumoCloud v3 API.<br/>
+Default poll time is currently set to 18 seconds.<br/>
+Zone assignments are dynamically discovered from the v3 API and can vary between installations.<br/>
+Uses the same login credentials as legacy kumocloud but provides improved functionality and dynamic zone management.<br/><br/>
+command line usage:  "*python -m thermostatsupervisor.kumocloudv3 \<thermostat type\> \<zone\>*"
 
 ## kumolocal.py:
 Script will connect to Mitsubishi ductless thermostat through kumocloud account and local network.<br/>
