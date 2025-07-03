@@ -38,18 +38,22 @@ except ImportError:
     # Fallback for older versions or missing exceptions
     class LoginError(Exception):
         """Login error fallback."""
+
         pass
 
     class UnauthorizedError(Exception):
         """Unauthorized error fallback."""
+
         pass
 
     class ClientConnectionError(Exception):
         """Client connection error fallback."""
+
         pass
 
     class ContentTypeError(Exception):
         """Content type error fallback."""
+
         pass
 
 
@@ -155,8 +159,15 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):
                 # Success - break out of retry loop
                 break
 
-            except (AttributeError, ValueError, KeyError, LoginError,
-                    UnauthorizedError, ClientConnectionError, ContentTypeError) as e:
+            except (
+                AttributeError,
+                ValueError,
+                KeyError,
+                LoginError,
+                UnauthorizedError,
+                ClientConnectionError,
+                ContentTypeError,
+            ) as e:
                 if attempt < max_retries - 1:
                     if self.verbose:
                         print(
@@ -249,9 +260,15 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):
                     # Success - break out of retry loop
                     break
 
-                except (AttributeError, ValueError, KeyError, LoginError,
-                        UnauthorizedError, ClientConnectionError,
-                        ContentTypeError) as e:
+                except (
+                    AttributeError,
+                    ValueError,
+                    KeyError,
+                    LoginError,
+                    UnauthorizedError,
+                    ClientConnectionError,
+                    ContentTypeError,
+                ) as e:
                     if attempt < max_retries - 1:
                         if self.verbose:
                             print(
@@ -425,13 +442,14 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):
                     )
                 try:
                     # Try to refresh authentication token
-                    if hasattr(self.blink.auth, 'refresh_token'):
+                    if hasattr(self.blink.auth, "refresh_token"):
                         if env.get_package_version(blinkpy) >= (0, 22, 0):
                             # Async version - we can't easily call async refresh here
                             # So we'll just provide a more helpful error message
                             available_cameras = (
                                 list(self.blink.cameras.keys())
-                                if self.blink.cameras else []
+                                if self.blink.cameras
+                                else []
                             )
                             error_msg = (
                                 f"Camera list is empty when searching for camera "
@@ -451,9 +469,9 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):
                                     )
                                 self.blink.auth.refresh_token()
                                 # Try to refresh camera list after token refresh
-                                if hasattr(self.blink, 'refresh'):
+                                if hasattr(self.blink, "refresh"):
                                     self.blink.refresh()
-                                elif hasattr(self.blink, 'setup_camera_list'):
+                                elif hasattr(self.blink, "setup_camera_list"):
                                     self.blink.setup_camera_list()
                                 # Update our local camera metadata cache
                                 self.get_cameras()
@@ -466,7 +484,8 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):
                                 # If token refresh fails, still provide helpful error
                                 available_cameras = (
                                     list(self.blink.cameras.keys())
-                                    if self.blink.cameras else []
+                                    if self.blink.cameras
+                                    else []
                                 )
                                 error_msg = (
                                     f"Camera list is empty when searching for "
