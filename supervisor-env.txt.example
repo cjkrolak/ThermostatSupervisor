@@ -1,0 +1,34 @@
+# Example supervisor-env.txt file for local development
+# Copy this file to the project root directory to override environment variables
+# This file is ignored by git and is perfect for testing and debugging
+
+# Format: KEY=VALUE (one per line)
+# Lines starting with # are comments and will be ignored
+# Empty lines are also ignored
+
+# Required for all configurations:
+GMAIL_USERNAME=your.email@example.com
+GMAIL_PASSWORD=your_app_password_here
+
+# Optional Flask configuration:
+FLASK_LIMITER_STORAGE_URI=memory://
+
+# Honeywell thermostat credentials (if using):
+# TCC_USERNAME=your_tcc_username
+# TCC_PASSWORD=your_tcc_password
+
+# KumoCloud credentials (if using):
+# KUMO_USERNAME=your_kumo_username  
+# KUMO_PASSWORD=your_kumo_password
+
+# Nest API credentials (if using):
+# GCLOUD_CLIENT_ID=your_google_client_id
+# GCLOUD_CLIENT_SECRET=your_google_client_secret
+# DAC_PROJECT_ID=your_device_access_project_id
+# NEST_ACCESS_TOKEN=your_nest_access_token
+# NEST_REFRESH_TOKEN=your_nest_refresh_token
+# NEST_TOKEN_EXPIRES_IN=3600
+
+# SHT31 sensor IP addresses (if using):
+# SHT31_REMOTE_IP_ADDRESS_0=192.168.1.100
+# SHT31_REMOTE_IP_ADDRESS_1=192.168.1.101
