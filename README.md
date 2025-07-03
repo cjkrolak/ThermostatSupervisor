@@ -93,6 +93,7 @@ Environment variables required depend on the thermostat being used.<br/>
 * Linux: update file ~/.profile and then "source ~/.profile" to load the file<br/>
 * Windows: define env variables in control panel and then re-start IDE<br/>
 * docker image: export the env files to a text file and specify during the docker run command<br/>
+* **Local development**: Create a `supervisor-env.txt` file in the project root directory with KEY=VALUE pairs (one per line). This file will take precedence over system environment variables and is useful for testing and debugging. The file is automatically ignored by git. See `supervisor-env.txt.example` for a template.<br/>
 
 # Source Code Information:
 ## supervise.py:

@@ -40,15 +40,52 @@ env_variables.update(nest_config.env_variables)
 env_variables.update(sht31_config.env_variables)
 
 
+def _read_supervisor_env_file():
+    """
+    Read environment variables from supervisor-env.txt file.
+
+    Returns:
+        dict: Dictionary of environment variables from file, empty if file
+              doesn't exist or can't be read.
+    """
+    env_dict = {}
+    try:
+        # Look for supervisor-env.txt in the current working directory
+        env_file_path = os.path.join(os.getcwd(), "supervisor-env.txt")
+        if os.path.exists(env_file_path):
+            with open(env_file_path, 'r', encoding='utf-8') as f:
+                for line_num, line in enumerate(f, 1):
+                    line = line.strip()
+                    # Skip empty lines and comments
+                    if not line or line.startswith('#'):
+                        continue
+                    # Parse KEY=VALUE format
+                    if '=' in line:
+                        key, value = line.split('=', 1)
+                        env_dict[key.strip()] = value.strip()
+                    else:
+                        util.log_msg(
+                            f"Invalid format in supervisor-env.txt line "
+                            f"{line_num}: {line}",
+                            mode=util.DEBUG_LOG
+                        )
+    except Exception as ex:
+        util.log_msg(
+            f"Error reading supervisor-env.txt: {str(ex)}",
+            mode=util.DEBUG_LOG
+        )
+    return env_dict
+
+
 def get_env_variable(env_key):
     """
     Get environment variable.
 
-    Results will be logged but passwords will be masked off.
+    First attempts to read from supervisor-env.txt file, then falls back
+    to environment variables. Results will be logged but passwords will be masked off.
 
     inputs:
        env_key(str): env variable of interest
-       debug(bool): verbose debugging
     returns:
        (dict): {status, value, key}
     """
@@ -64,7 +101,18 @@ def get_env_variable(env_key):
         if env_key == sht31_config.UNIT_TEST_ENV_KEY:
             return_buffer["value"] = get_local_ip()
         else:
-            return_buffer["value"] = os.environ[env_key]
+            # First try to get from supervisor-env.txt file
+            file_env_vars = _read_supervisor_env_file()
+            if env_key in file_env_vars:
+                return_buffer["value"] = file_env_vars[env_key]
+                util.log_msg(
+                    f"Environment variable '{env_key}' loaded from "
+                    "supervisor-env.txt",
+                    mode=util.DEBUG_LOG
+                )
+            else:
+                # Fall back to system environment variables
+                return_buffer["value"] = os.environ[env_key]
 
         # mask off any password keys
         if "PASSWORD" in return_buffer["key"]:
