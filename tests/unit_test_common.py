@@ -221,7 +221,7 @@ class IntegrationTest(UnitTest):
         self.setup_common()
         self.Thermostat, self.Zone = self.setup_thermostat_zone()
 
-    def setupIntTest(self):
+    def setUpIntTest(self):
         """Test attributes specific to integration tests."""
         pass  # Can be overridden in subclasses
 
