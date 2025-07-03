@@ -100,13 +100,60 @@ steps:
       exit 1
     fi
     
-    # Create a GitHub gist with the coverage data
+    echo "Coverage file size: $(wc -c < coverage.xml) bytes"
+    
+    # Create JSON payload using a temporary file to avoid command line length limits
+    temp_json=$(mktemp)
+    cat > "${temp_json}" << 'EOF'
+{
+  "description": "Coverage data for SonarQube - Build BUILD_ID_PLACEHOLDER",
+  "public": false,
+  "files": {
+    "coverage.xml": {
+      "content": "CONTENT_PLACEHOLDER"
+    }
+  }
+}
+EOF
+    
+    # Replace placeholders with actual values
+    # First replace BUILD_ID_PLACEHOLDER with actual build ID
+    sed -i "s/BUILD_ID_PLACEHOLDER/$(Build.BuildId)/g" "${temp_json}"
+    
+    # Then replace CONTENT_PLACEHOLDER with properly escaped coverage.xml content
+    # Use Python to properly escape JSON content to avoid shell quoting issues
+    python3 -c "
+import json
+import sys
+
+# Read the coverage.xml content
+with open('coverage.xml', 'r') as f:
+    coverage_content = f.read()
+
+# Read the JSON template
+with open('${temp_json}', 'r') as f:
+    json_template = f.read()
+
+# Replace the content placeholder with properly escaped JSON string
+escaped_content = json.dumps(coverage_content)
+final_json = json_template.replace('\"CONTENT_PLACEHOLDER\"', escaped_content)
+
+# Write the final JSON
+with open('${temp_json}', 'w') as f:
+    f.write(final_json)
+"
+    
+    # Create the GitHub gist using the JSON file
     response=$(curl -w "%{http_code}" -s -X POST \
       -H "Accept: application/vnd.github.v3+json" \
       -H "Authorization: token ${THERMOSTATSUPERVISOR_PR}" \
       -H "User-Agent: Azure-DevOps-Pipeline" \
+      -H "Content-Type: application/json" \
       https://api.github.com/gists \
-      -d "{\"description\":\"Coverage data for SonarQube - Build $(Build.BuildId)\",\"public\":false,\"files\":{\"coverage.xml\":{\"content\":\"$(cat coverage.xml | sed 's/\"/\\\"/g' | sed 's/$/\\n/' | tr -d '\n')\"}}}")
+      --data-binary "@${temp_json}")
+    
+    # Clean up temporary file
+    rm -f "${temp_json}"
     
     # Extract HTTP status code and response body
     http_code="${response: -3}"
