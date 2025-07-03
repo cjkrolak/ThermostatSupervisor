@@ -53,26 +53,25 @@ def _read_supervisor_env_file():
         # Look for supervisor-env.txt in the current working directory
         env_file_path = os.path.join(os.getcwd(), "supervisor-env.txt")
         if os.path.exists(env_file_path):
-            with open(env_file_path, 'r', encoding='utf-8') as f:
+            with open(env_file_path, "r", encoding="utf-8") as f:
                 for line_num, line in enumerate(f, 1):
                     line = line.strip()
                     # Skip empty lines and comments
-                    if not line or line.startswith('#'):
+                    if not line or line.startswith("#"):
                         continue
                     # Parse KEY=VALUE format
-                    if '=' in line:
-                        key, value = line.split('=', 1)
+                    if "=" in line:
+                        key, value = line.split("=", 1)
                         env_dict[key.strip()] = value.strip()
                     else:
                         util.log_msg(
                             f"Invalid format in supervisor-env.txt line "
                             f"{line_num}: {line}",
-                            mode=util.DEBUG_LOG
+                            mode=util.DEBUG_LOG,
                         )
     except Exception as ex:
         util.log_msg(
-            f"Error reading supervisor-env.txt: {str(ex)}",
-            mode=util.DEBUG_LOG
+            f"Error reading supervisor-env.txt: {str(ex)}", mode=util.DEBUG_LOG
         )
     return env_dict
 
@@ -108,7 +107,7 @@ def get_env_variable(env_key):
                 util.log_msg(
                     f"Environment variable '{env_key}' loaded from "
                     "supervisor-env.txt",
-                    mode=util.DEBUG_LOG
+                    mode=util.DEBUG_LOG,
                 )
             else:
                 # Fall back to system environment variables

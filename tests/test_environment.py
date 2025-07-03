@@ -135,7 +135,7 @@ KEY4=value4=with=equals
                 "KEY1": "value1",
                 "KEY2": "value with spaces",
                 "KEY3": "value3",
-                "KEY4": "value4=with=equals"
+                "KEY4": "value4=with=equals",
             }
             self.assertEqual(result, expected)
 
