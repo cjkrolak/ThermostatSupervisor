@@ -41,6 +41,109 @@ class EnvironmentTests(utc.UnitTest):
             self.assertEqual(buff["status"], util.NO_ERROR)
             self.assertGreater(len(buff["value"]), 0)
 
+    def test_get_env_variable_from_file(self):
+        """
+        Test get_env_variable() with supervisor-env.txt file.
+        """
+        import tempfile
+        import shutil
+
+        # Create temporary directory
+        test_dir = tempfile.mkdtemp()
+        original_cwd = os.getcwd()
+
+        try:
+            # Change to test directory
+            os.chdir(test_dir)
+
+            # Create supervisor-env.txt file
+            env_content = """# Test environment file
+TEST_KEY1=test_value1
+TEST_KEY2=test_value2
+# Comment line
+TEST_PASSWORD=secret123
+
+EMPTY_LINE_ABOVE=yes
+"""
+            with open("supervisor-env.txt", "w") as f:
+                f.write(env_content)
+
+            # Test reading from file
+            result = env.get_env_variable("TEST_KEY1")
+            self.assertEqual(result["status"], util.NO_ERROR)
+            self.assertEqual(result["value"], "test_value1")
+
+            result = env.get_env_variable("TEST_KEY2")
+            self.assertEqual(result["status"], util.NO_ERROR)
+            self.assertEqual(result["value"], "test_value2")
+
+            result = env.get_env_variable("TEST_PASSWORD")
+            self.assertEqual(result["status"], util.NO_ERROR)
+            self.assertEqual(result["value"], "secret123")
+
+            # Test fallback to environment variable
+            os.environ["FALLBACK_TEST"] = "fallback_value"
+            result = env.get_env_variable("FALLBACK_TEST")
+            self.assertEqual(result["status"], util.NO_ERROR)
+            self.assertEqual(result["value"], "fallback_value")
+
+            # Test missing variable
+            result = env.get_env_variable("MISSING_VAR")
+            self.assertEqual(result["status"], util.ENVIRONMENT_ERROR)
+
+        finally:
+            # Cleanup
+            os.chdir(original_cwd)
+            if "FALLBACK_TEST" in os.environ:
+                del os.environ["FALLBACK_TEST"]
+            shutil.rmtree(test_dir, ignore_errors=True)
+
+    def test_read_supervisor_env_file_function(self):
+        """
+        Test the _read_supervisor_env_file() function directly.
+        """
+        import tempfile
+        import shutil
+
+        # Create temporary directory
+        test_dir = tempfile.mkdtemp()
+        original_cwd = os.getcwd()
+
+        try:
+            # Change to test directory
+            os.chdir(test_dir)
+
+            # Test with no file
+            result = env._read_supervisor_env_file()
+            self.assertEqual(result, {})
+
+            # Test with valid file
+            env_content = """# Comment
+KEY1=value1
+KEY2=value with spaces
+# Another comment
+
+KEY3=value3
+INVALID_LINE_NO_EQUALS
+KEY4=value4=with=equals
+"""
+            with open("supervisor-env.txt", "w") as f:
+                f.write(env_content)
+
+            result = env._read_supervisor_env_file()
+            expected = {
+                "KEY1": "value1",
+                "KEY2": "value with spaces",
+                "KEY3": "value3",
+                "KEY4": "value4=with=equals"
+            }
+            self.assertEqual(result, expected)
+
+        finally:
+            # Cleanup
+            os.chdir(original_cwd)
+            shutil.rmtree(test_dir, ignore_errors=True)
+
     def test_load_all_env_variables(self):
         """
         Confirm all env variables can be loaded.
