@@ -108,7 +108,7 @@ class FileAndLoggingTests(utc.UnitTest):
         # assuming file exists, should return non-zero value
         result = util.get_file_size_bytes(full_path)
         self.assertTrue(
-            result > 0, f"file size for existing file is {result}, " f"expected > 0"
+            result > 0, f"file size for existing file is {result}, expected > 0"
         )
 
         # bogus file, should return zero value
@@ -339,7 +339,7 @@ class MetricsTests(utc.UnitTest):
             self.assertEqual(
                 expected_tempf,
                 tempf,
-                f"test case {tempc}: " f"expected={expected_tempf}, actual={tempf}",
+                f"test case {tempc}: expected={expected_tempf}, actual={tempf}",
             )
 
         # verify exception cases
@@ -364,7 +364,7 @@ class MetricsTests(utc.UnitTest):
             self.assertEqual(
                 expected_tempc,
                 tempc,
-                f"test case {tempf}: " f"expected={expected_tempc}, actual={tempc}",
+                f"test case {tempf}: expected={expected_tempc}, actual={tempc}",
             )
 
         # verify exception case
@@ -406,7 +406,7 @@ class MiscTests(utc.UnitTest):
         result_1 = util.get_function_name(test)
         print(f"get_function_name({test})={result_1}")
         self.assertEqual(
-            ev_1, result_1, f"test{test}: expected={ev_1}, " f"actual={result_1}"
+            ev_1, result_1, f"test{test}: expected={ev_1}, actual={result_1}"
         )
 
         # test 2
@@ -419,7 +419,7 @@ class MiscTests(utc.UnitTest):
         print(f"get_function_name({test})={result_1}")
         self.assertTrue(
             result_1 in ev_1,
-            f"test{test}: expected values={ev_1}" f", actual={result_1}",
+            f"test{test}: expected values={ev_1}, actual={result_1}",
         )
 
         # test 3
@@ -433,7 +433,7 @@ class MiscTests(utc.UnitTest):
         print(f"get_function_name({test})={result_1}")
         self.assertTrue(
             result_1 in ev_1,
-            f"test{test}: expected values={ev_1}" f", actual={result_1}",
+            f"test{test}: expected values={ev_1}, actual={result_1}",
         )
 
     def test_utf8len(self):
@@ -447,7 +447,7 @@ class MiscTests(utc.UnitTest):
             self.assertEqual(
                 expected_value,
                 actual_value,
-                f"expected={expected_value}, " f"actual={actual_value}",
+                f"expected={expected_value}, actual={actual_value}",
             )
 
     def test_get_key_from_value(self):
@@ -569,7 +569,7 @@ class MiscTests(utc.UnitTest):
             else:
                 self.assertTrue(
                     ip_address is None,
-                    f"ip_address returned ({ip_address}) " f"is not None",
+                    f"ip_address returned ({ip_address}) is not None",
                 )
 
             # verify expected result

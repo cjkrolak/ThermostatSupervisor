@@ -168,7 +168,7 @@ class IntegrationTest(utc.UnitTest):
             max_val = limits["max_val"]
             self.assertTrue(
                 min_val <= return_val <= max_val,
-                f"'{param}'={return_val}, not between {min_val} " f"and {max_val}",
+                f"'{param}'={return_val}, not between {min_val} and {max_val}",
             )
         # cleanup
         del Zone

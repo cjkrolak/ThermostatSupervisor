@@ -80,14 +80,14 @@ def get_outdoor_weather(
             f"Weather API request failed: {e}", mode=util.BOTH_LOG, func_name=1
         )
         raise WeatherError(f"Failed to fetch weather data: {e}")
-    except Exception as e:
-        util.log_msg(f"Weather API general error: {e}", mode=util.BOTH_LOG, func_name=1)
-        raise WeatherError(f"Failed to fetch weather data: {e}")
     except (KeyError, ValueError) as e:
         util.log_msg(
             f"Weather API response parsing failed: {e}", mode=util.BOTH_LOG, func_name=1
         )
         raise WeatherError(f"Invalid weather data format: {e}")
+    except Exception as e:
+        util.log_msg(f"Weather API general error: {e}", mode=util.BOTH_LOG, func_name=1)
+        raise WeatherError(f"Failed to fetch weather data: {e}")
 
 
 def get_weather_api_key() -> Optional[str]:
