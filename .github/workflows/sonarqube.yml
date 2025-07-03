@@ -1,10 +1,11 @@
+---
 name: SonarQube Scan
 
 # run this workflow when triggered by Azure DevOps pipeline completion
-on:
+"on":
   repository_dispatch:
     types: [azure-pipeline-completed]
-    
+
 jobs:
   sonarqube:
     name: SonarQube
@@ -19,11 +20,69 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
-      
+          # Shallow clones should be disabled for better analysis relevancy
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Download coverage data from Azure DevOps
+        run: |
+          coverage_gist_id="${{ github.event.client_payload.coverage_gist_id }}"
+          
+          if [ -n "${coverage_gist_id}" ] && [ "${coverage_gist_id}" != "null" ]; then
+            echo "📥 Downloading coverage data from gist: ${coverage_gist_id}"
+            
+            # Download the gist content and extract coverage.xml directly
+            curl -s -H "Authorization: token ${{ secrets.THERMOSTATSUPERVISOR_PR }}" \
+              "https://api.github.com/gists/${coverage_gist_id}" | \
+              python3 -c "import json,sys; data=json.load(sys.stdin); open('coverage.xml','w').write(data['files']['coverage.xml']['content']); print('✅ Coverage data downloaded successfully')"
+            
+            # Cleanup: Delete the temporary gist
+            curl -s -X DELETE -H "Authorization: token ${{ secrets.THERMOSTATSUPERVISOR_PR }}" \
+              "https://api.github.com/gists/${coverage_gist_id}" || echo "Note: Could not delete temporary gist"
+              
+          else
+            echo "⚠️  No coverage gist ID provided, generating coverage data as fallback..."
+            
+            # Fallback: Generate coverage if no gist ID provided
+            python -m pip install --upgrade pip
+            pip install -r requirements.txt
+            
+            python -m tests.unit_test_coverage
+          fi
+        # Continue even if some tests fail, as coverage is still generated
+        continue-on-error: true
+        env:
+          GMAIL_USERNAME: ${{ secrets.GMAIL_USERNAME }}
+          GMAIL_PASSWORD: ${{ secrets.GMAIL_PASSWORD }}
+          TCC_USERNAME: ${{ secrets.TCC_USERNAME }}
+          TCC_PASSWORD: ${{ secrets.TCC_PASSWORD }}
+          SHT31_REMOTE_IP_ADDRESS_1: ${{ secrets.SHT31_REMOTE_IP_ADDRESS_1 }}
+          KUMO_USERNAME: ${{ secrets.KUMO_USERNAME }}
+          KUMO_PASSWORD: ${{ secrets.KUMO_PASSWORD }}
+          BLINK_USERNAME: ${{ secrets.BLINK_USERNAME }}
+          BLINK_PASSWORD: ${{ secrets.BLINK_PASSWORD }}
+          BLINK_2FA: ${{ secrets.BLINK_2FA }}
+
+      - name: Verify coverage file exists
+        run: |
+          if [ -f "coverage.xml" ]; then
+            echo "✅ coverage.xml found"
+            ls -la coverage.xml
+            echo "First few lines of coverage.xml:"
+            head -5 coverage.xml
+          else
+            echo "❌ coverage.xml not found"
+            ls -la
+            exit 1
+          fi
+
       - name: SonarQube Scan
         uses: SonarSource/sonarqube-scan-action@v5
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: https://sonarcloud.io
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.THERMOSTATSUPERVISOR_PR }}
