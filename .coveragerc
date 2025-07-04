@@ -3,6 +3,7 @@
 # branch option was causing understated result, so it's disabled.
 branch = False
 relative_files = True
+source = thermostatsupervisor
 
 omit =
     */site-packages/*
@@ -35,3 +36,6 @@ exclude_lines =
 
 [html]
 directory = coverage_html_report
+
+[xml]
+output = coverage.xml
