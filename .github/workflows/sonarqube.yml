@@ -155,28 +155,28 @@ jobs:
 
             # Check if it's valid XML
             if python3 -c "
-            import xml.etree.ElementTree as ET
-            try:
-                tree = ET.parse('coverage.xml')
-                root = tree.getroot()
-                print(f'✅ Valid XML with root element: {root.tag}')
+              import xml.etree.ElementTree as ET
+              try:
+                  tree = ET.parse('coverage.xml')
+                  root = tree.getroot()
+                  print(f'✅ Valid XML with root element: {root.tag}')
 
-                # Check if it has coverage data
-                if root.tag == 'coverage':
-                    lines_valid = root.get('lines-valid', '0')
-                    lines_covered = root.get('lines-covered', '0')
-                    print(f'Lines valid: {lines_valid}, Lines covered: {lines_covered}')
+                  # Check if it has coverage data
+                  if root.tag == 'coverage':
+                      lines_valid = root.get('lines-valid', '0')
+                      lines_covered = root.get('lines-covered', '0')
+                      print(f'Lines valid: {lines_valid}, Lines covered: {lines_covered}')
 
-                    if int(lines_valid) > 0:
-                        print('✅ Coverage data contains valid metrics')
-                    else:
-                        print('⚠️  Coverage data has no valid lines')
-                else:
-                    print('⚠️  Root element is not coverage')
+                      if int(lines_valid) > 0:
+                          print('✅ Coverage data contains valid metrics')
+                      else:
+                          print('⚠️  Coverage data has no valid lines')
+                  else:
+                      print('⚠️  Root element is not coverage')
 
-            except Exception as e:
-                print(f'❌ Invalid XML: {e}')
-                exit(1)
+              except Exception as e:
+                  print(f'❌ Invalid XML: {e}')
+                  exit(1)
             "; then
               echo "Coverage file validation passed"
             else
