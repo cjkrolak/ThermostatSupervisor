@@ -15,6 +15,7 @@ pr:
     include:
       - '**/*.py'
       - '.github/azure-pipelines.yml'
+      - '.github/workflows/sonarqube.yml'
 pool:
   vmImage: ubuntu-latest
 strategy:

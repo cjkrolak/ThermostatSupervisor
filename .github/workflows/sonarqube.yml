@@ -25,7 +25,7 @@ jobs:
     runs-on: ubuntu-latest
     # Run if Azure pipeline was successful OR if manually triggered OR if PR to develop
     if: |
-      github.event_name == 'workflow_dispatch' || 
+      github.event_name == 'workflow_dispatch' ||
       github.event_name == 'pull_request' ||
       (github.event_name == 'repository_dispatch' && github.event.client_payload.result == 'success')
     permissions:
@@ -48,7 +48,7 @@ jobs:
         run: |
           echo "Starting coverage data download process..."
           echo "Event type: ${{ github.event_name }}"
-          
+
           # Determine coverage gist ID from event payload or manual input
           if [ "${{ github.event_name }}" = "repository_dispatch" ]; then
             coverage_gist_id="${{ github.event.client_payload.coverage_gist_id }}"
@@ -60,41 +60,42 @@ jobs:
             coverage_gist_id=""
             echo "No coverage gist ID available for event type: ${{ github.event_name }}"
           fi
-          
+
           if [ -n "${coverage_gist_id}" ] && [ "${coverage_gist_id}" != "null" ] && [ "${coverage_gist_id}" != "" ]; then
             echo "📥 Downloading coverage data from gist: ${coverage_gist_id}"
-            
+
             # Download the gist content and extract coverage.xml directly
             echo "Fetching gist content..."
             curl -s -H "Authorization: token ${{ secrets.THERMOSTATSUPERVISOR_PR }}" \
               "https://api.github.com/gists/${coverage_gist_id}" > gist_response.json
-            
+
             if [ $? -eq 0 ] && [ -s gist_response.json ]; then
               echo "Gist downloaded successfully, extracting coverage.xml..."
+
               python3 -c "
-import json
-import sys
-try:
-    with open('gist_response.json', 'r') as f:
-        data = json.load(f)
-    
-    if 'files' in data and 'coverage.xml' in data['files']:
-        with open('coverage.xml', 'w') as f:
-            f.write(data['files']['coverage.xml']['content'])
-        print('✅ Coverage data downloaded successfully')
-    else:
-        print('❌ coverage.xml not found in gist')
-        sys.exit(1)
-except Exception as e:
-    print(f'❌ Error processing gist: {e}')
-    sys.exit(1)
-"
-              
+              import json
+              import sys
+              try:
+                  with open('gist_response.json', 'r') as f:
+                      data = json.load(f)
+
+                  if 'files' in data and 'coverage.xml' in data['files']:
+                      with open('coverage.xml', 'w') as f:
+                          f.write(data['files']['coverage.xml']['content'])
+                      print('✅ Coverage data downloaded successfully')
+                  else:
+                      print('❌ coverage.xml not found in gist')
+                      sys.exit(1)
+              except Exception as e:
+                  print(f'❌ Error processing gist: {e}')
+                  sys.exit(1)
+              "
+
               # Cleanup: Delete the temporary gist (ignore errors)
               echo "Cleaning up temporary gist..."
               curl -s -X DELETE -H "Authorization: token ${{ secrets.THERMOSTATSUPERVISOR_PR }}" \
                 "https://api.github.com/gists/${coverage_gist_id}" > /dev/null 2>&1 || echo "Note: Could not delete temporary gist"
-              
+
               rm -f gist_response.json
             else
               echo "❌ Failed to download gist or gist is empty"
@@ -102,20 +103,20 @@ except Exception as e:
               coverage_gist_id=""
             fi
           fi
-          
+
           # Fallback: Generate coverage if no gist ID provided or download failed
           if [ -z "${coverage_gist_id}" ] || [ "${coverage_gist_id}" = "null" ] || [ "${coverage_gist_id}" = "" ] || [ ! -f "coverage.xml" ]; then
             echo "⚠️  No coverage gist ID provided or download failed, generating coverage data as fallback..."
-            
+
             # Install dependencies
             echo "Installing dependencies..."
             python -m pip install --upgrade pip
             pip install -r requirements.txt
-            
+
             # Generate coverage
             echo "Running tests to generate coverage..."
             python -m tests.unit_test_coverage
-            
+
             if [ ! -f "coverage.xml" ]; then
               echo "❌ Failed to generate coverage.xml"
               exit 1
@@ -138,51 +139,51 @@ except Exception as e:
       - name: Verify coverage file exists and validate content
         run: |
           echo "Verifying coverage file..."
-          
+
           if [ -f "coverage.xml" ]; then
             echo "✅ coverage.xml found"
             ls -la coverage.xml
-            
+
             # Check file size
             file_size=$(wc -c < coverage.xml)
             echo "File size: ${file_size} bytes"
-            
+
             if [ ${file_size} -eq 0 ]; then
               echo "❌ coverage.xml is empty"
               exit 1
             fi
-            
+
             # Check if it's valid XML
             if python3 -c "
-import xml.etree.ElementTree as ET
-try:
-    tree = ET.parse('coverage.xml')
-    root = tree.getroot()
-    print(f'✅ Valid XML with root element: {root.tag}')
-    
-    # Check if it has coverage data
-    if root.tag == 'coverage':
-        lines_valid = root.get('lines-valid', '0')
-        lines_covered = root.get('lines-covered', '0')
-        print(f'Lines valid: {lines_valid}, Lines covered: {lines_covered}')
-        
-        if int(lines_valid) > 0:
-            print('✅ Coverage data contains valid metrics')
-        else:
-            print('⚠️  Coverage data has no valid lines')
-    else:
-        print('⚠️  Root element is not coverage')
-        
-except Exception as e:
-    print(f'❌ Invalid XML: {e}')
-    exit(1)
-"; then
+            import xml.etree.ElementTree as ET
+            try:
+                tree = ET.parse('coverage.xml')
+                root = tree.getroot()
+                print(f'✅ Valid XML with root element: {root.tag}')
+
+                # Check if it has coverage data
+                if root.tag == 'coverage':
+                    lines_valid = root.get('lines-valid', '0')
+                    lines_covered = root.get('lines-covered', '0')
+                    print(f'Lines valid: {lines_valid}, Lines covered: {lines_covered}')
+
+                    if int(lines_valid) > 0:
+                        print('✅ Coverage data contains valid metrics')
+                    else:
+                        print('⚠️  Coverage data has no valid lines')
+                else:
+                    print('⚠️  Root element is not coverage')
+
+            except Exception as e:
+                print(f'❌ Invalid XML: {e}')
+                exit(1)
+            "; then
               echo "Coverage file validation passed"
             else
               echo "❌ Coverage file validation failed"
               exit 1
             fi
-            
+
             echo "First 10 lines of coverage.xml:"
             head -10 coverage.xml
           else
@@ -198,7 +199,7 @@ except Exception as e:
           echo "Current working directory: $(pwd)"
           echo "Files in current directory:"
           ls -la
-          
+
           echo "=== SonarQube Configuration ==="
           if [ -f "sonar-project.properties" ]; then
             echo "sonar-project.properties content:"
@@ -206,7 +207,7 @@ except Exception as e:
           else
             echo "❌ sonar-project.properties not found"
           fi
-          
+
           echo "=== Coverage File Status ==="
           if [ -f "coverage.xml" ]; then
             echo "✅ coverage.xml exists in working directory"
