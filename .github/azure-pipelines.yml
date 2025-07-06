@@ -2,26 +2,21 @@
 # Create and test a Python package on multiple Python versions.
 # Add steps that analyze code, save the dist with the build record, publish to a PyPI-compatible index, and more:
 # https://docs.microsoft.com/azure/devops/pipelines/languages/python
-
+---
 name: Azure Pipelines
-
 # disable CI trigger
-trigger:
-  none
-
+trigger: none
 # trigger on PR to dev branch only for relevant file changes
 pr:
   branches:
     include:
-    - develop
+      - develop
   paths:
     include:
-    - '**/*.py'
-    - '.github/azure-pipelines.yml'
-
+      - '**/*.py'
+      - '.github/azure-pipelines.yml'
 pool:
   vmImage: ubuntu-latest
-
 strategy:
   matrix:
     # rem out 3.09 thru 3.12 to save CI time
@@ -35,248 +30,246 @@ strategy:
     #  python.version: '3.12'
     Python313:
       python.version: '3.13'
-
 steps:
-- task: UsePythonVersion@0
-  inputs:
-    versionSpec: '$(python.version)'
-    # githubToken: $(THERMOSTATSUPERVISOR_PR)
+  - task: UsePythonVersion@0
+    inputs:
+      versionSpec: '$(python.version)'
+      # githubToken: $(THERMOSTATSUPERVISOR_PR)
     # github token appears to enforce only supported python versions, ref #884
     # v3.13 is not supported by ubuntu-latest, once it is, the github token can be enabled.
-  displayName: 'Use Python $(python.version)'
 
-- script: |
-    python -m pip install --upgrade pip
-    pip install -r requirements.txt
-    pip list
-  displayName: 'Install dependencies'
+    displayName: 'Use Python $(python.version)'
+  - script: |
+      python -m pip install --upgrade pip
+      pip install -r requirements.txt
+      pip list
+    displayName: 'Install dependencies'
+  # line length and extend-ignore options added for compatibility with black
+  - script: |
+      python -m pip install flake8 --upgrade
+      flake8 --config=setup.cfg .
+    displayName: 'Run lint tests'
+  # python unit tests
+  - script: |
+      # python -m unittest discover -v
+      # discover process is not allowing argv override so calling unit_test_common instead.
+      python -m tests.unit_test_coverage
+    displayName: 'Unit Tests'
+    # timeout after 30 minutes, nominal job time is 10 minutes
 
-# line length and extend-ignore options added for compatibility with black
-- script: |
-    python -m pip install flake8 --upgrade
-    flake8 --config=setup.cfg .
-  displayName: 'Run lint tests'
+    timeoutInMinutes: "30"
+    env:
+      GMAIL_USERNAME: '$(GMAIL_USERNAME)'  # used for some unit tests
+      GMAIL_PASSWORD: '$(GMAIL_PASSWORD)'  # used for some unit test
+      TCC_USERNAME: '$(TCC_USERNAME)'  # used for Honeywell int test
+      TCC_PASSWORD: '$(TCC_PASSWORD)'  # used for Honeywell int test
+      SHT31_REMOTE_IP_ADDRESS_1: '$(SHT31_REMOTE_IP_ADDRESS_1)'
+      # SHT31_REMOTE_IP_ADDRESS_99: '$(SHT31_REMOTE_IP_ADDRESS_99)'
 
-# python unit tests
-- script: |
-    # python -m unittest discover -v
-    # discover process is not allowing argv override so calling unit_test_common instead.
-    python -m tests.unit_test_coverage
-  displayName: 'Unit Tests'
-  # timeout after 30 minutes, nominal job time is 10 minutes
-  timeoutInMinutes: "30"
-  env:
-    GMAIL_USERNAME: '$(GMAIL_USERNAME)'  # used for some unit tests
-    GMAIL_PASSWORD: '$(GMAIL_PASSWORD)'  # used for some unit test
-    TCC_USERNAME: '$(TCC_USERNAME)'  # used for Honeywell int test
-    TCC_PASSWORD: '$(TCC_PASSWORD)'  # used for Honeywell int test
-    SHT31_REMOTE_IP_ADDRESS_1: '$(SHT31_REMOTE_IP_ADDRESS_1)'
-    # SHT31_REMOTE_IP_ADDRESS_99: '$(SHT31_REMOTE_IP_ADDRESS_99)'
-    KUMO_USERNAME: '$(KUMO_USERNAME)' # used for kumocloud int test
-    KUMO_PASSWORD: '$(KUMO_PASSWORD)' # used for kumocloud int test
-    BLINK_USERNAME: '$(BLINK_USERNAME)' # used for blink int test
-    BLINK_PASSWORD: '$(BLINK_PASSWORD)' # used for blink int test
-    BLINK_2FA: '$(BLINK_2FA)' # used for blink int test
+      KUMO_USERNAME: '$(KUMO_USERNAME)'  # used for kumocloud int test
+      KUMO_PASSWORD: '$(KUMO_PASSWORD)'  # used for kumocloud int test
+      BLINK_USERNAME: '$(BLINK_USERNAME)'  # used for blink int test
+      BLINK_PASSWORD: '$(BLINK_PASSWORD)'  # used for blink int test
+      BLINK_2FA: '$(BLINK_2FA)'  # used for blink int test
+  # publish code coverage results to ADO pipeline
+  - task: PublishCodeCoverageResults@2
+    inputs:
+      summaryFileLocation: 'coverage.xml'
+    displayName: 'Publish Code Coverage'
+  # Upload coverage.xml as GitHub artifact for SonarQube workflow
+  - script: |
+      set -e
+      echo "Uploading coverage.xml as GitHub artifact..."
 
-# publish code coverage results to ADO pipeline 
-- task: PublishCodeCoverageResults@2
-  inputs:
-    summaryFileLocation: 'coverage.xml'
-  displayName: 'Publish Code Coverage'
+      # Validate token and file exist
+      if [ -z "${THERMOSTATSUPERVISOR_PR}" ]; then
+        echo "ERROR: THERMOSTATSUPERVISOR_PR is not set"
+        exit 1
+      fi
 
-# Upload coverage.xml as GitHub artifact for SonarQube workflow
-- script: |
-    set -e
-    echo "Uploading coverage.xml as GitHub artifact..."
-    
-    # Validate token and file exist
-    if [ -z "${THERMOSTATSUPERVISOR_PR}" ]; then
-      echo "ERROR: THERMOSTATSUPERVISOR_PR is not set"
-      exit 1
-    fi
-    
-    if [ ! -f "coverage.xml" ]; then
-      echo "ERROR: coverage.xml not found"
-      exit 1
-    fi
-    
-    echo "Coverage file size: $(wc -c < coverage.xml) bytes"
-    
-    # Create JSON payload using a temporary file to avoid command line length limits
-    temp_json=$(mktemp)
-    cat > "${temp_json}" << 'EOF'
-{
-  "description": "Coverage data for SonarQube - Build BUILD_ID_PLACEHOLDER",
-  "public": false,
-  "files": {
-    "coverage.xml": {
-      "content": "CONTENT_PLACEHOLDER"
-    }
-  }
-}
-EOF
-    
-    # Replace placeholders with actual values
-    # First replace BUILD_ID_PLACEHOLDER with actual build ID
-    sed -i "s/BUILD_ID_PLACEHOLDER/$(Build.BuildId)/g" "${temp_json}"
-    
-    # Then replace CONTENT_PLACEHOLDER with properly escaped coverage.xml content
-    # Use Python to properly escape JSON content to avoid shell quoting issues
-    python3 -c "
-import json
-import sys
+      if [ ! -f "coverage.xml" ]; then
+        echo "ERROR: coverage.xml not found"
+        exit 1
+      fi
 
-# Read the coverage.xml content
-with open('coverage.xml', 'r') as f:
-    coverage_content = f.read()
+      echo "Coverage file size: $(wc -c < coverage.xml) bytes"
 
-# Read the JSON template
-with open('${temp_json}', 'r') as f:
-    json_template = f.read()
+      # Create JSON payload using a temporary file to avoid command line length limits
+      temp_json=$(mktemp)
+      cat > "${temp_json}" << 'EOF'
 
-# Replace the content placeholder with properly escaped JSON string
-escaped_content = json.dumps(coverage_content)
-final_json = json_template.replace('\"CONTENT_PLACEHOLDER\"', escaped_content)
+      {
+        "description": "Coverage data for SonarQube - Build BUILD_ID_PLACEHOLDER",
+        "public": false,
+        "files": {
+          "coverage.xml": {
+            "content": "CONTENT_PLACEHOLDER"
+          }
+        }
+      }
+      EOF
 
-# Write the final JSON
-with open('${temp_json}', 'w') as f:
-    f.write(final_json)
-"
-    
-    # Create the GitHub gist using the JSON file
-    response=$(curl -w "%{http_code}" -s -X POST \
-      -H "Accept: application/vnd.github.v3+json" \
-      -H "Authorization: token ${THERMOSTATSUPERVISOR_PR}" \
-      -H "User-Agent: Azure-DevOps-Pipeline" \
-      -H "Content-Type: application/json" \
-      https://api.github.com/gists \
-      --data-binary "@${temp_json}")
-    
-    # Clean up temporary file
-    rm -f "${temp_json}"
-    
-    # Extract HTTP status code and response body
-    http_code="${response: -3}"
-    response_body="${response%???}"
-    
-    if [[ ${http_code} -ge 200 && ${http_code} -lt 300 ]]; then
-      # Extract gist ID from response
-      gist_id=$(echo "${response_body}" | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
-      echo "✅ Coverage uploaded successfully to gist: ${gist_id}"
-      echo "##vso[task.setvariable variable=coverageGistId;isOutput=true]${gist_id}"
-    else
-      echo "❌ Failed to upload coverage. HTTP ${http_code}"
-      echo "Response: ${response_body}"
-      exit 1
-    fi
-  name: 'uploadCoverage'
-  displayName: 'Upload Coverage Data'
-  condition: succeeded()
-  env:
-    THERMOSTATSUPERVISOR_PR: '$(THERMOSTATSUPERVISOR_PR)'
+      # Replace placeholders with actual values
+      # First replace BUILD_ID_PLACEHOLDER with actual build ID
+      sed -i "s/BUILD_ID_PLACEHOLDER/$(Build.BuildId)/g" "${temp_json}"
 
-# trigger SonarQube workflow on successful completion
-- script: |
-    set -e  # Exit on any error
-    echo "Triggering SonarQube workflow..."
-    
-    # Validate token is present
-    if [ -z "${THERMOSTATSUPERVISOR_PR}" ]; then
-      echo "ERROR: THERMOSTATSUPERVISOR_PR is not set"
-      echo ""
-      echo "🔧 SETUP INSTRUCTIONS:"
-      echo "1. Go to Azure DevOps > Pipelines > Library > Variable groups"
-      echo "2. Create/edit the variable group used by this pipeline"
-      echo "3. Add variable: THERMOSTATSUPERVISOR_PR"
-      echo "4. Value should be a GitHub Personal Access Token (classic) with these scopes:"
-      echo "   - repo (for private repos) OR public_repo (for public repos)"
-      echo "   - workflow (to trigger workflow dispatches)"
-      echo "5. Mark the variable as secret in Azure DevOps"
-      echo ""
-      echo "🔗 Create token at: https://github.com/settings/tokens"
-      exit 1
-    fi
-    
-    echo "THERMOSTATSUPERVISOR_PR is configured (${#THERMOSTATSUPERVISOR_PR} characters)"
-    
-    # Test basic GitHub API access first
-    echo "Testing GitHub API access..."
-    test_response=$(curl -w "%{http_code}" -s -H "Authorization: token ${THERMOSTATSUPERVISOR_PR}" https://api.github.com/user)
-    test_code="${test_response: -3}"
-    
-    if [[ ${test_code} -ne 200 ]]; then
-      echo "ERROR: GitHub API authentication failed (HTTP ${test_code})"
-      echo "The THERMOSTATSUPERVISOR_PR is invalid or expired"
-      echo ""
-      echo "🔧 TOKEN TROUBLESHOOTING:"
-      echo "1. Verify the token at: https://github.com/settings/tokens"
-      echo "2. Check if the token has expired"
-      echo "3. Ensure the token has 'repo' and 'workflow' scopes"
-      echo "4. The token must belong to a user with push access to the repository"
-      exit 1
-    fi
-    
-    echo "✅ GitHub API authentication successful"
-    
-    # Get the coverage gist ID from previous step (if available)
-    coverage_gist_id="$(uploadCoverage.coverageGistId)"
-    echo "Coverage gist ID: ${coverage_gist_id}"
-    
-    # Make the API request with detailed error handling
-    echo "Triggering repository dispatch event..."
-    response=$(curl -w "%{http_code}" -s -X POST \
-      -H "Accept: application/vnd.github.v3+json" \
-      -H "Authorization: token ${THERMOSTATSUPERVISOR_PR}" \
-      -H "User-Agent: Azure-DevOps-Pipeline" \
-      https://api.github.com/repos/cjkrolak/ThermostatSupervisor/dispatches \
-      -d "{\"event_type\":\"azure-pipeline-completed\",\"client_payload\":{\"result\":\"success\",\"run_id\":\"$(Build.BuildId)\",\"coverage_gist_id\":\"${coverage_gist_id}\"}}")
-    
-    # Extract HTTP status code (last 3 characters)
-    http_code="${response: -3}"
-    response_body="${response%???}"
-    
-    echo "HTTP Response Code: ${http_code}"
-    if [ -n "${response_body}" ]; then
-      echo "Response Body: ${response_body}"
-    fi
-    
-    # Check if the request was successful (2xx status codes)
-    if [[ ${http_code} -ge 200 && ${http_code} -lt 300 ]]; then
-      echo "✅ Successfully triggered SonarQube workflow"
-      exit 0
-    elif [[ ${http_code} -eq 401 ]]; then
-      echo "❌ ERROR: Authentication failed (HTTP 401)"
-      echo ""
-      echo "🔧 TOKEN PERMISSIONS ISSUE:"
-      echo "The THERMOSTATSUPERVISOR_PR lacks required permissions for workflow dispatches"
-      echo ""
-      echo "Required token scopes:"
-      echo "  - repo (for private repositories)"
-      echo "  - workflow (to trigger repository dispatch events)"
-      echo ""
-      echo "🔗 Update token at: https://github.com/settings/tokens"
-      echo "Response: ${response_body}"
-      exit 1
-    elif [[ ${http_code} -eq 403 ]]; then
-      echo "❌ ERROR: Forbidden (HTTP 403)"
-      echo "The token user lacks push access to the repository or token scopes insufficient"
-      echo ""
-      echo "Required:"
-      echo "  - Token owner must have push access to cjkrolak/ThermostatSupervisor"
-      echo "  - Token must have 'repo' and 'workflow' scopes"
-      echo "Response: ${response_body}"
-      exit 1
-    elif [[ ${http_code} -eq 404 ]]; then
-      echo "❌ ERROR: Repository not found (HTTP 404)"
-      echo "Check repository name or ensure token has access to the repository"
-      echo "Response: ${response_body}"
-      exit 1
-    else
-      echo "❌ ERROR: Failed to trigger SonarQube workflow. HTTP ${http_code}"
-      echo "Response: ${response_body}"
-      exit 1
-    fi
-  displayName: 'Trigger SonarQube Workflow'
-  condition: succeeded()
-  env:
-    THERMOSTATSUPERVISOR_PR: '$(THERMOSTATSUPERVISOR_PR)'  # Azure DevOps pipeline variable - must be Personal Access Token with 'repo' and 'workflow' scopes
+      # Then replace CONTENT_PLACEHOLDER with properly escaped coverage.xml content
+      # Use Python to properly escape JSON content to avoid shell quoting issues
+      python3 -c "
+
+      import json
+      import sys
+
+      # Read the coverage.xml content
+      with open('coverage.xml', 'r') as f:
+          coverage_content = f.read()
+
+      # Read the JSON template
+      with open('${temp_json}', 'r') as f:
+          json_template = f.read()
+
+      # Replace the content placeholder with properly escaped JSON string
+      escaped_content = json.dumps(coverage_content)
+      final_json = json_template.replace('\"CONTENT_PLACEHOLDER\"', escaped_content)
+
+      # Write the final JSON
+      with open('${temp_json}', 'w') as f:
+          f.write(final_json)
+      "
+
+      # Create the GitHub gist using the JSON file
+      response=$(curl -w "%{http_code}" -s -X POST \
+        -H "Accept: application/vnd.github.v3+json" \
+        -H "Authorization: token ${THERMOSTATSUPERVISOR_PR}" \
+        -H "User-Agent: Azure-DevOps-Pipeline" \
+        -H "Content-Type: application/json" \
+        https://api.github.com/gists \
+        --data-binary "@${temp_json}")
+
+      # Clean up temporary file
+      rm -f "${temp_json}"
+
+      # Extract HTTP status code and response body
+      http_code="${response: -3}"
+      response_body="${response%???}"
+
+      if [[ ${http_code} -ge 200 && ${http_code} -lt 300 ]]; then
+        # Extract gist ID from response
+        gist_id=$(echo "${response_body}" | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
+        echo "✅ Coverage uploaded successfully to gist: ${gist_id}"
+        echo "##vso[task.setvariable variable=coverageGistId;isOutput=true]${gist_id}"
+      else
+        echo "❌ Failed to upload coverage. HTTP ${http_code}"
+        echo "Response: ${response_body}"
+        exit 1
+      fi
+    name: 'uploadCoverage'
+    displayName: 'Upload Coverage Data'
+    condition: succeeded()
+    env:
+      THERMOSTATSUPERVISOR_PR: '$(THERMOSTATSUPERVISOR_PR)'
+  # trigger SonarQube workflow on successful completion
+  - script: |
+      set -e  # Exit on any error
+      echo "Triggering SonarQube workflow..."
+
+      # Validate token is present
+      if [ -z "${THERMOSTATSUPERVISOR_PR}" ]; then
+        echo "ERROR: THERMOSTATSUPERVISOR_PR is not set"
+        echo ""
+        echo "🔧 SETUP INSTRUCTIONS:"
+        echo "1. Go to Azure DevOps > Pipelines > Library > Variable groups"
+        echo "2. Create/edit the variable group used by this pipeline"
+        echo "3. Add variable: THERMOSTATSUPERVISOR_PR"
+        echo "4. Value should be a GitHub Personal Access Token (classic) with these scopes:"
+        echo "   - repo (for private repos) OR public_repo (for public repos)"
+        echo "   - workflow (to trigger workflow dispatches)"
+        echo "5. Mark the variable as secret in Azure DevOps"
+        echo ""
+        echo "🔗 Create token at: https://github.com/settings/tokens"
+        exit 1
+      fi
+
+      echo "THERMOSTATSUPERVISOR_PR is configured (${#THERMOSTATSUPERVISOR_PR} characters)"
+
+      # Test basic GitHub API access first
+      echo "Testing GitHub API access..."
+      test_response=$(curl -w "%{http_code}" -s -H "Authorization: token ${THERMOSTATSUPERVISOR_PR}" https://api.github.com/user)
+      test_code="${test_response: -3}"
+
+      if [[ ${test_code} -ne 200 ]]; then
+        echo "ERROR: GitHub API authentication failed (HTTP ${test_code})"
+        echo "The THERMOSTATSUPERVISOR_PR is invalid or expired"
+        echo ""
+        echo "🔧 TOKEN TROUBLESHOOTING:"
+        echo "1. Verify the token at: https://github.com/settings/tokens"
+        echo "2. Check if the token has expired"
+        echo "3. Ensure the token has 'repo' and 'workflow' scopes"
+        echo "4. The token must belong to a user with push access to the repository"
+        exit 1
+      fi
+
+      echo "✅ GitHub API authentication successful"
+
+      # Get the coverage gist ID from previous step (if available)
+      coverage_gist_id="$(uploadCoverage.coverageGistId)"
+      echo "Coverage gist ID: ${coverage_gist_id}"
+
+      # Make the API request with detailed error handling
+      echo "Triggering repository dispatch event..."
+      response=$(curl -w "%{http_code}" -s -X POST \
+        -H "Accept: application/vnd.github.v3+json" \
+        -H "Authorization: token ${THERMOSTATSUPERVISOR_PR}" \
+        -H "User-Agent: Azure-DevOps-Pipeline" \
+        https://api.github.com/repos/cjkrolak/ThermostatSupervisor/dispatches \
+        -d "{\"event_type\":\"azure-pipeline-completed\",\"client_payload\":{\"result\":\"success\",\"run_id\":\"$(Build.BuildId)\",\"coverage_gist_id\":\"${coverage_gist_id}\"}}")
+
+      # Extract HTTP status code (last 3 characters)
+      http_code="${response: -3}"
+      response_body="${response%???}"
+
+      echo "HTTP Response Code: ${http_code}"
+      if [ -n "${response_body}" ]; then
+        echo "Response Body: ${response_body}"
+      fi
+
+      # Check if the request was successful (2xx status codes)
+      if [[ ${http_code} -ge 200 && ${http_code} -lt 300 ]]; then
+        echo "✅ Successfully triggered SonarQube workflow"
+        exit 0
+      elif [[ ${http_code} -eq 401 ]]; then
+        echo "❌ ERROR: Authentication failed (HTTP 401)"
+        echo ""
+        echo "🔧 TOKEN PERMISSIONS ISSUE:"
+        echo "The THERMOSTATSUPERVISOR_PR lacks required permissions for workflow dispatches"
+        echo ""
+        echo "Required token scopes:"
+        echo "  - repo (for private repositories)"
+        echo "  - workflow (to trigger repository dispatch events)"
+        echo ""
+        echo "🔗 Update token at: https://github.com/settings/tokens"
+        echo "Response: ${response_body}"
+        exit 1
+      elif [[ ${http_code} -eq 403 ]]; then
+        echo "❌ ERROR: Forbidden (HTTP 403)"
+        echo "The token user lacks push access to the repository or token scopes insufficient"
+        echo ""
+        echo "Required:"
+        echo "  - Token owner must have push access to cjkrolak/ThermostatSupervisor"
+        echo "  - Token must have 'repo' and 'workflow' scopes"
+        echo "Response: ${response_body}"
+        exit 1
+      elif [[ ${http_code} -eq 404 ]]; then
+        echo "❌ ERROR: Repository not found (HTTP 404)"
+        echo "Check repository name or ensure token has access to the repository"
+        echo "Response: ${response_body}"
+        exit 1
+      else
+        echo "❌ ERROR: Failed to trigger SonarQube workflow. HTTP ${http_code}"
+        echo "Response: ${response_body}"
+        exit 1
+      fi
+    displayName: 'Trigger SonarQube Workflow'
+    condition: succeeded()
+    env:
+      THERMOSTATSUPERVISOR_PR: '$(THERMOSTATSUPERVISOR_PR)'  # Azure DevOps pipeline variable - must be Personal Access Token with 'repo' and 'workflow' scopes
