@@ -74,23 +74,23 @@ jobs:
             if [ $? -eq 0 ] && [ -s gist_response.json ]; then
               echo "Gist downloaded successfully, extracting coverage.xml..."
 
-              python3 -c "
-              import json
-              import sys
-              try:
-                  with open('gist_response.json', 'r') as f:
-                      data = json.load(f)
+              python3 -c "if 1:
+                              import json
+                              import sys
+                              try:
+                                  with open('gist_response.json', 'r') as f:
+                                      data = json.load(f)
 
-                  if 'files' in data and 'coverage.xml' in data['files']:
-                      with open('coverage.xml', 'w') as f:
-                          f.write(data['files']['coverage.xml']['content'])
-                          print('✅ Coverage data downloaded successfully')
-                  else:
-                      print('❌ coverage.xml not found in gist')
-                      sys.exit(1)
-              except Exception as e:
-                  print(f'❌ Error processing gist: {e}')
-                  sys.exit(1)
+                                          if 'files' in data and 'coverage.xml' in data['files']:
+                                              with open('coverage.xml', 'w') as f:
+                                                  f.write(data['files']['coverage.xml']['content'])
+                                                  print('✅ Coverage data downloaded successfully')
+                                          else:
+                                              print('❌ coverage.xml not found in gist')
+                                              sys.exit(1)
+                              except Exception as e:
+                                  print(f'❌ Error processing gist: {e}')
+                                  sys.exit(1)
               "
 
               # Cleanup: Delete the temporary gist (ignore errors)
