@@ -13,6 +13,10 @@ from thermostatsupervisor import utilities as util
 from tests import unit_test_common as utc
 
 
+@unittest.skipIf(
+    not utc.ENABLE_HONEYWELL_TESTS,
+    "Honeywell tests are disabled",
+)
 class IntegrationTest(utc.IntegrationTest):
     """
     Test functions in honeywell.py.
@@ -48,6 +52,10 @@ class IntegrationTest(utc.IntegrationTest):
         self.mod_config = honeywell_config
 
 
+@unittest.skipIf(
+    not utc.ENABLE_HONEYWELL_TESTS,
+    "Honeywell tests are disabled",
+)
 class FunctionalIntegrationTest(IntegrationTest, utc.FunctionalIntegrationTest):
     """
     Test functional performance of honeywell.py.
@@ -62,6 +70,10 @@ class FunctionalIntegrationTest(IntegrationTest, utc.FunctionalIntegrationTest):
         self.metadata_type = int
 
 
+@unittest.skipIf(
+    not utc.ENABLE_HONEYWELL_TESTS,
+    "Honeywell tests are disabled",
+)
 class SuperviseIntegrationTest(IntegrationTest, utc.SuperviseIntegrationTest):
     """
     Test supervise functionality of honeywell.py.
@@ -72,6 +84,10 @@ class SuperviseIntegrationTest(IntegrationTest, utc.SuperviseIntegrationTest):
         self.setUpIntTest()
 
 
+@unittest.skipIf(
+    not utc.ENABLE_HONEYWELL_TESTS,
+    "Honeywell tests are disabled",
+)
 class PerformanceIntegrationTest(IntegrationTest, utc.PerformanceIntegrationTest):
     """
     Test performance of honeywell.py.

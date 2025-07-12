@@ -15,6 +15,10 @@ from thermostatsupervisor import utilities as util
 from tests import unit_test_common as utc
 
 
+@unittest.skipIf(
+    not utc.ENABLE_HONEYWELL_TESTS,
+    "Honeywell tests are disabled",
+)
 class Test(utc.UnitTest):
     """Test functions in honeywell.py."""
 
