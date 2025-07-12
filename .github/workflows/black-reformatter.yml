@@ -15,7 +15,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.THERMOSTATSUPERVISOR_PR }}
           fetch-depth: 0
       - name: Check files using the black formatter
         uses: rickstaa/action-black@v1
