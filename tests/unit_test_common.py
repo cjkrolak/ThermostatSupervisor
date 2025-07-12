@@ -29,15 +29,19 @@ ENABLE_PERFORMANCE_INTEGRATION_TESTS = (
 )  # enable performance int tests
 ENABLE_SUPERVISE_INTEGRATION_TESTS = True  # enable supervise int tests
 ENABLE_FLASK_INTEGRATION_TESTS = True  # enable flask int tests
-ENABLE_KUMOLOCAL_TESTS = False  # Kumolocal is local net only
-ENABLE_KUMOCLOUD_TESTS = True  # Kumocloud via legacy API
-ENABLE_KUMOCLOUDV3_TESTS = True  # Kumocloud via v3 API
-ENABLE_MMM_TESTS = False  # mmm50 is local net only
-ENABLE_SHT31_TESTS = True  # sht31 tests now have robust diagnostics
+ENABLE_SITE1_TESTS = True  # site1 tests enabled
+ENABLE_SITE2_TESTS = False  # site2 is not available for testing
+ENABLE_HONEYWELL_TESTS = True and ENABLE_SITE1_TESTS  # Honeywell thermostat tests
+ENABLE_KUMOLOCAL_TESTS = False and ENABLE_SITE2_TESTS  # Kumolocal is local net only
+ENABLE_KUMOCLOUD_TESTS = True and ENABLE_SITE2_TESTS  # Kumocloud via legacy API
+ENABLE_KUMOCLOUDV3_TESTS = True and ENABLE_SITE2_TESTS  # Kumocloud via v3 API
+ENABLE_MMM_TESTS = False and ENABLE_SITE2_TESTS  # mmm50 is local net only
+ENABLE_SHT31_TESTS = True and ENABLE_SITE2_TESTS  # sht31 tests now have robust diag
 ENABLE_BLINK_TESTS = (
     False and not env.is_azure_environment()
 )  # Blink cameras, TODO #638
-ENABLE_NEST_TESTS = False and not env.is_azure_environment()  # nest thermostats
+# nest thermostats
+ENABLE_NEST_TESTS = False and ENABLE_SITE2_TESTS and not env.is_azure_environment()
 
 # generic argv list for unit testing
 unit_test_emulator = emulator_config.argv
