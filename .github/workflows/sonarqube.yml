@@ -45,6 +45,7 @@ jobs:
           python-version: '3.13'
 
       - name: Download coverage data from Azure DevOps
+        id: Download_coverage_data_from_Azure_DevOps
         run: |
           echo "Starting coverage data download process..."
           echo "Event type: ${{ github.event_name }}"
@@ -105,16 +106,7 @@ jobs:
           fi
         continue-on-error: true
         env:
-          GMAIL_USERNAME: ${{ secrets.GMAIL_USERNAME }}
-          GMAIL_PASSWORD: ${{ secrets.GMAIL_PASSWORD }}
-          TCC_USERNAME: ${{ secrets.TCC_USERNAME }}
-          TCC_PASSWORD: ${{ secrets.TCC_PASSWORD }}
-          SHT31_REMOTE_IP_ADDRESS_1: ${{ secrets.SHT31_REMOTE_IP_ADDRESS_1 }}
-          KUMO_USERNAME: ${{ secrets.KUMO_USERNAME }}
-          KUMO_PASSWORD: ${{ secrets.KUMO_PASSWORD }}
-          BLINK_USERNAME: ${{ secrets.BLINK_USERNAME }}
-          BLINK_PASSWORD: ${{ secrets.BLINK_PASSWORD }}
-          BLINK_2FA: ${{ secrets.BLINK_2FA }}
+          THERMOSTATSUPERVISOR_PR: '${{ secrets.THERMOSTATSUPERVISOR_PR }}'
 
       - name: Regenerate Coverage Data since it does not exist
         if: |
@@ -143,16 +135,16 @@ jobs:
           fi
         continue-on-error: true
         env:
-          GMAIL_USERNAME: ${{ secrets.GMAIL_USERNAME }}
-          GMAIL_PASSWORD: ${{ secrets.GMAIL_PASSWORD }}
-          TCC_USERNAME: ${{ secrets.TCC_USERNAME }}
-          TCC_PASSWORD: ${{ secrets.TCC_PASSWORD }}
-          SHT31_REMOTE_IP_ADDRESS_1: ${{ secrets.SHT31_REMOTE_IP_ADDRESS_1 }}
-          KUMO_USERNAME: ${{ secrets.KUMO_USERNAME }}
-          KUMO_PASSWORD: ${{ secrets.KUMO_PASSWORD }}
-          BLINK_USERNAME: ${{ secrets.BLINK_USERNAME }}
-          BLINK_PASSWORD: ${{ secrets.BLINK_PASSWORD }}
-          BLINK_2FA: ${{ secrets.BLINK_2FA }}
+          GMAIL_USERNAME: '${{ secrets.GMAIL_USERNAME }}'
+          GMAIL_PASSWORD: '${{ secrets.GMAIL_PASSWORD }}'
+          TCC_USERNAME: '${{ secrets.TCC_USERNAME }}'
+          TCC_PASSWORD: '${{ secrets.TCC_PASSWORD }}'
+          SHT31_REMOTE_IP_ADDRESS_1: '${{ secrets.SHT31_REMOTE_IP_ADDRESS_1 }}'
+          KUMO_USERNAME: '${{ secrets.KUMO_USERNAME }}'
+          KUMO_PASSWORD: '${{ secrets.KUMO_PASSWORD }}'
+          BLINK_USERNAME: '${{ secrets.BLINK_USERNAME }}'
+          BLINK_PASSWORD: '${{ secrets.BLINK_PASSWORD }}'
+          BLINK_2FA: '${{ secrets.BLINK_2FA }}'
 
       - name: Verify coverage file exists and validate content
         run: |
