@@ -67,7 +67,7 @@ jobs:
             # Download the gist content and extract coverage.xml directly
             echo "Fetching gist content..."
             curl -s -H "Authorization: token ${{ secrets.THERMOSTATSUPERVISOR_PR }}" \
-              "https://api.github.com/gists/${coverage_gist_id}" > gist_response.json
+            "https://api.github.com/gists/${coverage_gist_id}" > gist_response.json
 
             if [ $? -eq 0 ] && [ -s gist_response.json ]; then
               echo "Gist downloaded successfully, extracting coverage.xml..."
@@ -82,7 +82,7 @@ jobs:
                   if 'files' in data and 'coverage.xml' in data['files']:
                       with open('coverage.xml', 'w') as f:
                           f.write(data['files']['coverage.xml']['content'])
-                      print('✅ Coverage data downloaded successfully')
+                          print('✅ Coverage data downloaded successfully')
                   else:
                       print('❌ coverage.xml not found in gist')
                       sys.exit(1)
@@ -103,26 +103,44 @@ jobs:
               coverage_gist_id=""
             fi
           fi
+        continue-on-error: true
+        env:
+          GMAIL_USERNAME: ${{ secrets.GMAIL_USERNAME }}
+          GMAIL_PASSWORD: ${{ secrets.GMAIL_PASSWORD }}
+          TCC_USERNAME: ${{ secrets.TCC_USERNAME }}
+          TCC_PASSWORD: ${{ secrets.TCC_PASSWORD }}
+          SHT31_REMOTE_IP_ADDRESS_1: ${{ secrets.SHT31_REMOTE_IP_ADDRESS_1 }}
+          KUMO_USERNAME: ${{ secrets.KUMO_USERNAME }}
+          KUMO_PASSWORD: ${{ secrets.KUMO_PASSWORD }}
+          BLINK_USERNAME: ${{ secrets.BLINK_USERNAME }}
+          BLINK_PASSWORD: ${{ secrets.BLINK_PASSWORD }}
+          BLINK_2FA: ${{ secrets.BLINK_2FA }}
 
-          # Fallback: Generate coverage if no gist ID provided or download failed
-          if [ -z "${coverage_gist_id}" ] || [ "${coverage_gist_id}" = "null" ] || [ "${coverage_gist_id}" = "" ] || [ ! -f "coverage.xml" ]; then
-            echo "⚠️  No coverage gist ID provided or download failed, generating coverage data as fallback..."
+      - name: Regenerate Coverage Data since it does not exist
+        if: |
+          steps.Download_coverage_data_from_Azure_DevOps.outcome == 'success' &&
+          (
+            [ -z "${{ steps.Download_coverage_data_from_Azure_DevOps.outputs.coverage_gist_id }}" ] ||
+            [ "${{ steps.Download_coverage_data_from_Azure_DevOps.outputs.coverage_gist_id }}" = "null" ] ||
+            [ "${{ steps.Download_coverage_data_from_Azure_DevOps.outputs.coverage_gist_id }}" = "" ] ||
+            [ ! -f "coverage.xml" ]
+          )
+        run: |
+          echo "⚠️  No coverage gist ID provided or download failed, generating coverage data as fallback..."
 
-            # Install dependencies
-            echo "Installing dependencies..."
-            python -m pip install --upgrade pip
-            pip install -r requirements.txt
+          # Install dependencies
+          echo "Installing dependencies..."
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
 
-            # Generate coverage
-            echo "Running tests to generate coverage..."
-            python -m tests.unit_test_coverage
+          # Generate coverage
+          echo "Running tests to generate coverage..."
+          python -m tests.unit_test_coverage
 
-            if [ ! -f "coverage.xml" ]; then
-              echo "❌ Failed to generate coverage.xml"
-              exit 1
-            fi
+          if [ ! -f "coverage.xml" ]; then
+            echo "❌ Failed to generate coverage.xml"
+            exit 1
           fi
-        # Continue even if some tests fail, as coverage is still generated
         continue-on-error: true
         env:
           GMAIL_USERNAME: ${{ secrets.GMAIL_USERNAME }}
