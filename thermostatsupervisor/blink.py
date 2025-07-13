@@ -6,6 +6,7 @@ import pprint
 import sys
 import time
 import traceback
+from typing import Union
 from aiohttp import ClientSession
 
 # third party imports
@@ -642,7 +643,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         """
         return blink_config.metadata[self.zone_number]["zone_name"]
 
-    def get_display_humidity(self) -> (float, None):
+    def get_display_humidity(self) -> Union[float, None]:
         """
         Refresh the cached zone information and return IndoorHumidity.
 

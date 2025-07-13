@@ -422,23 +422,23 @@ class ThermostatZone(tc.ThermostatCommonZone):
         """Return 1 if actively cooling, else 0."""
         return 0  # not applicable
 
-    def is_drying(self):
+    def is_drying(self) -> int:
         """Return 1 if drying relay is active, else 0."""
         return 0  # not applicable
 
-    def is_auto(self):
+    def is_auto(self) -> int:
         """Return 1 if auto relay is active, else 0."""
         return 0  # not applicable
 
-    def is_eco(self):
+    def is_eco(self) -> int:
         """Return 1 if eco relay is active, else 0."""
         return 0  # not applicable
 
-    def is_fanning(self):
+    def is_fanning(self) -> int:
         """Return 1 if fan relay is active, else 0."""
         return 0  # not applicable
 
-    def is_power_on(self):
+    def is_power_on(self) -> int:
         """Return 1 if power relay is active, else 0."""
         return 1  # always on
 
@@ -446,11 +446,11 @@ class ThermostatZone(tc.ThermostatCommonZone):
         """Return 1 if fan relay is active, else 0."""
         return 0  # not applicable
 
-    def is_defrosting(self):
+    def is_defrosting(self) -> int:
         """Return 1 if defrosting is active, else 0."""
         return 0  # not applicable
 
-    def is_standby(self):
+    def is_standby(self) -> int:
         """Return 1 if standby is active, else 0."""
         return 0  # not applicable
 

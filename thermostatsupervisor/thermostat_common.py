@@ -8,6 +8,7 @@ import pprint
 import statistics
 import time
 import traceback
+from typing import Union
 
 # local imports
 from thermostatsupervisor import email_notification as eml
@@ -448,7 +449,7 @@ class ThermostatCommonZone:
             )
         return input_val
 
-    def warn_if_outside_global_limit(self, setpoint, limit_value, oper, label):
+    def warn_if_outside_global_limit(self, setpoint, limit_value, oper, label) -> bool:
         """
         Send warning email if setpoint is outside of global limits.
 
@@ -477,88 +478,88 @@ class ThermostatCommonZone:
         else:
             return False
 
-    def is_heat_mode(self):
-        """Return True if in heat mode."""
-        return (
+    def is_heat_mode(self) -> int:
+        """Return 1 if in heat mode."""
+        return int((
             self.get_system_switch_position()
             == self.system_switch_position[self.HEAT_MODE]
-        )
+        ))
 
-    def is_cool_mode(self):
-        """Return True if in cool mode."""
-        return (
+    def is_cool_mode(self) -> int:
+        """Return 1 if in cool mode."""
+        return int((
             self.get_system_switch_position()
             == self.system_switch_position[self.COOL_MODE]
-        )
+        ))
 
-    def is_dry_mode(self):
-        """Return True if in dry mode."""
-        return (
+    def is_dry_mode(self) -> int:
+        """Return 1 if in dry mode."""
+        return int((
             self.get_system_switch_position()
             == self.system_switch_position[self.DRY_MODE]
-        )
+        ))
 
-    def is_auto_mode(self):
-        """Return True if in auto mode."""
-        return (
+    def is_auto_mode(self) -> int:
+        """Return 1 if in auto mode."""
+        return int((
             self.get_system_switch_position()
             == self.system_switch_position[self.AUTO_MODE]
-        )
+        ))
 
-    def is_eco_mode(self):
-        """Return True if in eco mode."""
-        return (
+    def is_eco_mode(self) -> int:
+        """Return 1 if in eco mode."""
+        return int((
             self.get_system_switch_position()
             == self.system_switch_position[self.ECO_MODE]
-        )
+        ))
 
-    def is_fan_mode(self):
+    def is_fan_mode(self) -> int:
         """Return 1 if fan mode enabled, else 0."""
         return (
             self.get_system_switch_position()
             == self.system_switch_position[self.FAN_MODE]
         )
 
-    def is_off_mode(self):
+    def is_off_mode(self) -> int:
         """Return 1 if fan mode enabled, else 0."""
         return (
             self.get_system_switch_position()
             == self.system_switch_position[self.OFF_MODE]
         )
 
-    def is_controlled_mode(self):
+    def is_controlled_mode(self) -> int:
         """Return True if mode is being controlled."""
         return self.current_mode in self.controlled_modes
 
-    def is_heating(self):  # noqa R0201
+    def is_heating(self) -> int:  # noqa R0201
         """Return 1 if heating relay is active, else 0."""
         return util.BOGUS_INT
 
-    def is_cooling(self):  # noqa R0201
+    def is_cooling(self) -> int:  # noqa R0201
         """Return 1 if cooling relay is active, else 0."""
         return util.BOGUS_INT
 
-    def is_drying(self):  # noqa R0201
+    def is_drying(self) -> int:  # noqa R0201
         """Return 1 if drying relay is active, else 0."""
         return util.BOGUS_INT
 
-    def is_auto(self):  # noqa R0201
+    def is_auto(self) -> int:  # noqa R0201
         """Return 1 if auto relay is active, else 0."""
         return util.BOGUS_INT
 
-    def is_eco(self):  # noqa R0201
+    def is_eco(self) -> int:  # noqa R0201
         """Return 1 if eco relay is active, else 0."""
         return util.BOGUS_INT
 
-    def is_fanning(self):  # noqa R0201
+    def is_fanning(self) -> int:  # noqa R0201
         """Return 1 if fan relay is active, else 0."""
         return util.BOGUS_INT
 
-    def is_defrosting(self):  # noqa R0201
+    def is_defrosting(self) -> int:  # noqa R0201
         """Return 1 if defrosting relay is active, else 0."""
         return util.BOGUS_INT
 
-    def is_standby(self):  # noqa R0201
+    def is_standby(self) -> int:  # noqa R0201
         """Return 1 if standby relay is active, else 0."""
         return util.BOGUS_INT
 
@@ -598,7 +599,7 @@ class ThermostatCommonZone:
             func_name=1,
         )
 
-    def is_heat_deviation(self):
+    def is_heat_deviation(self) -> bool:
         """
         Return True if heat is deviated.
 
@@ -609,7 +610,7 @@ class ThermostatCommonZone:
         """
         return self.is_heat_mode() and self.is_temp_deviated_from_schedule()
 
-    def is_cool_deviation(self):
+    def is_cool_deviation(self) -> bool:
         """
         Return True if cool is deviated.
 
@@ -625,7 +626,7 @@ class ThermostatCommonZone:
         """Return the displayed temperature."""
         return float(util.BOGUS_INT)  # placeholder
 
-    def get_display_humidity(self) -> float:  # noqa R0201
+    def get_display_humidity(self) -> Union[float, None]:  # noqa R0201
         """Return the displayed humidity."""
         return float(util.BOGUS_INT)  # placeholder
 

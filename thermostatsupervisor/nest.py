@@ -625,21 +625,21 @@ class ThermostatZone(tc.ThermostatCommonZone):
             == self.system_switch_position[tc.ThermostatCommonZone.OFF_MODE]
         )
 
-    def is_heating(self):
+    def is_heating(self) -> int:
         """Return 1 if heating relay is active, else 0."""
         self.refresh_zone_info()
         return int(self.get_trait("ThermostatHvac")["status"] == "HEATING")
 
-    def is_cooling(self):
+    def is_cooling(self) -> int:
         """Return 1 if cooling relay is active, else 0."""
         self.refresh_zone_info()
         return int(self.get_trait("ThermostatHvac")["status"] == "COOLING")
 
-    def is_drying(self):
+    def is_drying(self) -> int:
         """Return 1 if drying relay is active, else 0."""
         return 0  # not applicable for nest
 
-    def is_auto(self):
+    def is_auto(self) -> int:
         """Return 1 if auto relay is active, else 0."""
         self.refresh_zone_info()
         return int(
@@ -647,7 +647,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
             and self.is_auto_mode()
         )
 
-    def is_eco(self):
+    def is_eco(self) -> int:
         """Return 1 if eco relay is active, else 0."""
         self.refresh_zone_info()
         return int(
@@ -655,17 +655,17 @@ class ThermostatZone(tc.ThermostatCommonZone):
             and self.is_eco_mode()
         )
 
-    def is_fanning(self):
+    def is_fanning(self) -> int:
         """Return 1 if fan relay is active, else 0."""
         self.refresh_zone_info()
         return int(self.get_trait("Fan")["timerMode"] == "ON")
 
-    def is_power_on(self):
+    def is_power_on(self) -> int:
         """Return 1 if power relay is active, else 0."""
         self.refresh_zone_info()
         return int(self.get_trait("Connectivity")["status"] == "ONLINE")
 
-    def is_fan_on(self):
+    def is_fan_on(self) -> int:
         """Return 1 if fan relay is active, else 0."""
         self.refresh_zone_info()
         return int(self.get_trait("Fan")["timerMode"] == "ON")

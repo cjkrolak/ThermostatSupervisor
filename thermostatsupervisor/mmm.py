@@ -279,7 +279,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         """
         return float(self.device_id.temp["raw"])
 
-    def get_display_humidity(self) -> (float, None):
+    def get_display_humidity(self) -> Union[float, None]:
         """
         Return Humidity.
 
