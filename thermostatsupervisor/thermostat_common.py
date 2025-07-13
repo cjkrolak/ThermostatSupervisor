@@ -480,38 +480,48 @@ class ThermostatCommonZone:
 
     def is_heat_mode(self) -> int:
         """Return 1 if in heat mode."""
-        return int((
-            self.get_system_switch_position()
-            == self.system_switch_position[self.HEAT_MODE]
-        ))
+        return int(
+            (
+                self.get_system_switch_position()
+                == self.system_switch_position[self.HEAT_MODE]
+            )
+        )
 
     def is_cool_mode(self) -> int:
         """Return 1 if in cool mode."""
-        return int((
-            self.get_system_switch_position()
-            == self.system_switch_position[self.COOL_MODE]
-        ))
+        return int(
+            (
+                self.get_system_switch_position()
+                == self.system_switch_position[self.COOL_MODE]
+            )
+        )
 
     def is_dry_mode(self) -> int:
         """Return 1 if in dry mode."""
-        return int((
-            self.get_system_switch_position()
-            == self.system_switch_position[self.DRY_MODE]
-        ))
+        return int(
+            (
+                self.get_system_switch_position()
+                == self.system_switch_position[self.DRY_MODE]
+            )
+        )
 
     def is_auto_mode(self) -> int:
         """Return 1 if in auto mode."""
-        return int((
-            self.get_system_switch_position()
-            == self.system_switch_position[self.AUTO_MODE]
-        ))
+        return int(
+            (
+                self.get_system_switch_position()
+                == self.system_switch_position[self.AUTO_MODE]
+            )
+        )
 
     def is_eco_mode(self) -> int:
         """Return 1 if in eco mode."""
-        return int((
-            self.get_system_switch_position()
-            == self.system_switch_position[self.ECO_MODE]
-        ))
+        return int(
+            (
+                self.get_system_switch_position()
+                == self.system_switch_position[self.ECO_MODE]
+            )
+        )
 
     def is_fan_mode(self) -> int:
         """Return 1 if fan mode enabled, else 0."""
