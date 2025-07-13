@@ -32,10 +32,10 @@ class ThermostatClass(tc.ThermostatCommon):
         self.KC_UNAME_KEY = "KUMO_USERNAME"
         self.KC_PASSWORD_KEY = "KUMO_PASSWORD"
         self.kc_uname = os.environ.get(
-            self.KC_UNAME_KEY, "<" + self.KC_UNAME_KEY + "_KEY_MISSING>"
+            self.KC_UNAME_KEY, "<" + self.KC_UNAME_KEY + api.KEY_MISSING_SUFFIX
         )
         self.kc_pwd = os.environ.get(
-            self.KC_PASSWORD_KEY, "<" + self.KC_PASSWORD_KEY + "_KEY_MISSING>"
+            self.KC_PASSWORD_KEY, "<" + self.KC_PASSWORD_KEY + api.KEY_MISSING_SUFFIX
         )
 
         # construct the superclass

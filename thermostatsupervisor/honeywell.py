@@ -82,10 +82,10 @@ class ThermostatClass(pyhtcc.PyHTCC, tc.ThermostatCommon):
         self.TCC_UNAME_KEY = "TCC_USERNAME"
         self.TCC_PASSWORD_KEY = "TCC_PASSWORD"
         self.tcc_uname = os.environ.get(
-            self.TCC_UNAME_KEY, "<" + self.TCC_UNAME_KEY + "_KEY_MISSING>"
+            self.TCC_UNAME_KEY, "<" + self.TCC_UNAME_KEY + api.KEY_MISSING_SUFFIX
         )
         self.tcc_pwd = os.environ.get(
-            self.TCC_PASSWORD_KEY, "<" + self.TCC_PASSWORD_KEY + "_KEY_MISSING>"
+            self.TCC_PASSWORD_KEY, "<" + self.TCC_PASSWORD_KEY + api.KEY_MISSING_SUFFIX
         )
 
         # construct the superclass

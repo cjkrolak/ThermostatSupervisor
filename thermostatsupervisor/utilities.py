@@ -303,23 +303,26 @@ def get_key_from_value(input_dict, val):
     returns:
         (str or int): dictionary key
     """
+    return_val = None
     for key, value in input_dict.items():
         if isinstance(value, (str, int, float)):
             # match value
             if val == value:
-                return key
+                return_val = key
         elif isinstance(value, dict):
             # match key of child dict
             if val in value.keys() or val in value.values():
-                return key
+                return_val = key
         elif isinstance(value, list):
             # match key to any value in child list
             if val in value:
-                return key
+                return_val = key
         else:
             raise TypeError(
                 f"type {type(value)} not yet supported in get_key_from_value"
             )
+        if return_val is not None:
+            return return_val
 
     # key not found
     raise KeyError(f"key not found in dict '{input_dict}' with value='{val}'")

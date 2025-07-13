@@ -415,7 +415,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         """
         return int(
             self._get_tmode() == self.system_switch_position[self.OFF_MODE]
-            and not self.device_id.fmode["raw"] == 2
+            and self.device_id.fmode["raw"] != 2
         )
 
     def is_heating(self):

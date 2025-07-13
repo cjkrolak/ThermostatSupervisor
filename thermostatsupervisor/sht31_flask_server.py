@@ -944,9 +944,6 @@ class Sensors:
 class Controller(Resource):
     """Production controller."""
 
-    def __init__(self):
-        pass
-
     def get(self):
         """Map the get method."""
         helper = Sensors()
@@ -955,9 +952,6 @@ class Controller(Resource):
 
 class ControllerUnit(Resource):
     """Unit test Controller."""
-
-    def __init__(self):
-        pass
 
     def get(self):
         """Map the get method."""
@@ -968,9 +962,6 @@ class ControllerUnit(Resource):
 class ReadFaultRegister(Resource):
     """Diagnostic Controller."""
 
-    def __init__(self):
-        pass
-
     def get(self):
         """Map the get method."""
         helper = Sensors()
@@ -979,9 +970,6 @@ class ReadFaultRegister(Resource):
 
 class ClearFaultRegister(Resource):
     """Clear Diagnostic Controller."""
-
-    def __init__(self):
-        pass
 
     def get(self):
         """Map the get method."""
@@ -992,9 +980,6 @@ class ClearFaultRegister(Resource):
 class EnableHeater(Resource):
     """Enable heater Controller."""
 
-    def __init__(self):
-        pass
-
     def get(self):
         """Map the get method."""
         helper = Sensors()
@@ -1003,9 +988,6 @@ class EnableHeater(Resource):
 
 class DisableHeater(Resource):
     """Disable heater Controller."""
-
-    def __init__(self):
-        pass
 
     def get(self):
         """Map the get method."""
@@ -1016,9 +998,6 @@ class DisableHeater(Resource):
 class SoftReset(Resource):
     """i2C soft reset."""
 
-    def __init__(self):
-        pass
-
     def get(self):
         """Map the get method."""
         helper = Sensors()
@@ -1027,9 +1006,6 @@ class SoftReset(Resource):
 
 class Reset(Resource):
     """i2C hard reset."""
-
-    def __init__(self):
-        pass
 
     def get(self):
         """Map the get method."""
@@ -1040,9 +1016,6 @@ class Reset(Resource):
 class I2CRecovery(Resource):
     """Issue i2c recovery sequence."""
 
-    def __init__(self):
-        pass
-
     def get(self):
         """Map the get method."""
         helper = Sensors()
@@ -1051,9 +1024,6 @@ class I2CRecovery(Resource):
 
 class I2CDetect(Resource):
     """Issue i2c detect on default bus."""
-
-    def __init__(self):
-        pass
 
     def get(self):
         """Map the get method."""
@@ -1064,9 +1034,6 @@ class I2CDetect(Resource):
 class I2CDetectBus0(Resource):
     """Issue i2c detect on bus 0."""
 
-    def __init__(self):
-        pass
-
     def get(self):
         """Map the get method."""
         helper = Sensors()
@@ -1075,9 +1042,6 @@ class I2CDetectBus0(Resource):
 
 class I2CDetectBus1(Resource):
     """Issue i2c detect on bus 1."""
-
-    def __init__(self):
-        pass
 
     def get(self):
         """Map the get method."""
@@ -1088,9 +1052,6 @@ class I2CDetectBus1(Resource):
 class I2CLogicLevels(Resource):
     """Read current i2c logic levels."""
 
-    def __init__(self):
-        pass
-
     def get(self):
         """Map the get method."""
         helper = Sensors()
@@ -1100,9 +1061,6 @@ class I2CLogicLevels(Resource):
 class I2CBusHealth(Resource):
     """Comprehensive i2c bus health check."""
 
-    def __init__(self):
-        pass
-
     def get(self):
         """Map the get method."""
         helper = Sensors()
@@ -1111,9 +1069,6 @@ class I2CBusHealth(Resource):
 
 class PrintIPBanBlockList(Resource):
     """Print IPBan block list to flask server console."""
-
-    def __init__(self):
-        pass
 
     def get(self):
         """Map the get method."""
@@ -1126,9 +1081,6 @@ class PrintIPBanBlockList(Resource):
 
 class ClearIPBanBlockList(Resource):
     """Clear IPBan block list to flask server console."""
-
-    def __init__(self):
-        pass
 
     def get(self):
         """Map the get method."""

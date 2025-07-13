@@ -24,6 +24,8 @@ from thermostatsupervisor import utilities as util
 DEFAULT_THERMOSTAT = emulator_config.ALIAS
 DEFAULT_ZONE_NAME = util.default_parent_key
 
+KEY_MISSING_SUFFIX = "_KEY_MISSING>"
+
 # list of thermostat config modules supported
 config_modules = [
     blink_config,
