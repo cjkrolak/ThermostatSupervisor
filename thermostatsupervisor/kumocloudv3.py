@@ -367,37 +367,11 @@ class ThermostatClass(tc.ThermostatCommon):
                 for zone_name, index in zone_name_to_index.items():
                     zone_name_lower = zone_name.lower()
 
-                    if any(
-                        pattern in zone_name_lower
-                        for pattern in [
-                            "main",
-                            "level",
-                            "living",
-                            "first floor",
-                            "1st floor",
-                        ]
-                    ):
-                        kumocloudv3_config.metadata[index] = {
-                            "zone_name": zone_name,
-                            "host_name": "tbd",
-                            "serial_number": None,
-                        }
-                    elif any(
-                        pattern in zone_name_lower
-                        for pattern in ["basement", "lower", "cellar", "downstairs"]
-                    ):
-                        kumocloudv3_config.metadata[index] = {
-                            "zone_name": zone_name,
-                            "host_name": "tbd",
-                            "serial_number": None,
-                        }
-                    else:
-                        # For any other zones, add them with actual names
-                        kumocloudv3_config.metadata[index] = {
-                            "zone_name": zone_name,
-                            "host_name": "tbd",
-                            "serial_number": None,
-                        }
+                    kumocloudv3_config.metadata[index] = {
+                        "zone_name": zone_name,
+                        "host_name": "tbd",
+                        "serial_number": None,
+                    }
 
             if self.verbose:
                 print(
