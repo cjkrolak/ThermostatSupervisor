@@ -644,7 +644,7 @@ class Sht31FlaskServerSensorUnit(utc.UnitTest):
         test_data = [100, 150, 0xFF, 250, 50, 0xFF]  # Wrong CRC values
 
         with patch("builtins.print") as mock_print:
-            temp, temp_c, temp_f, humidity = self.sensors.convert_data(test_data)
+            self.sensors.convert_data(test_data)
 
             # Should print CRC warnings
             self.assertTrue(mock_print.called)
