@@ -73,15 +73,15 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):
         self.BL_UNAME_KEY = "BLINK_USERNAME"
         self.BL_PASSWORD_KEY = "BLINK_PASSWORD"
         self.bl_uname = os.environ.get(
-            self.BL_UNAME_KEY, "<" + self.BL_UNAME_KEY + "_KEY_MISSING>"
+            self.BL_UNAME_KEY, "<" + self.BL_UNAME_KEY + api.KEY_MISSING_SUFFIX
         )
         self.bl_pwd = os.environ.get(
-            self.BL_PASSWORD_KEY, "<" + self.BL_PASSWORD_KEY + "_KEY_MISSING>"
+            self.BL_PASSWORD_KEY, "<" + self.BL_PASSWORD_KEY + api.KEY_MISSING_SUFFIX
         )
         self.auth_dict = {"username": self.bl_uname, "password": self.bl_pwd}
         self.BL_2FA_KEY = "BLINK_2FA"
         self.bl_2fa = os.environ.get(
-            self.BL_2FA_KEY, "<" + self.BL_2FA_KEY + "_KEY_MISSING>"
+            self.BL_2FA_KEY, "<" + self.BL_2FA_KEY + api.KEY_MISSING_SUFFIX
         )
         self.verbose = verbose
         self.zone_number = int(zone)
