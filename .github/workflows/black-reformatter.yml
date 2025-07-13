@@ -1,8 +1,10 @@
 name: black-action
 "on":
+  pull_request:
+    branches: 
+      - 'develop'
   push:
     branches: 
-      - develop
       - 'feature/*'
       - 'bugfix/*'
       - 'hotfix/*'
