@@ -1,9 +1,15 @@
-# Gunicorn configuration file for supervisor Flask server
-# Usage: gunicorn --config gunicorn.supervisor.conf.py \\
-#                 thermostatsupervisor.supervisor_wsgi:application
-
+""""
+Gunicorn configuration file for supervisor Flask server
+Usage: gunicorn --config gunicorn.supervisor.conf.py \\
+                thermostatsupervisor.supervisor_wsgi:application
+"""
+# built-in imports
 import multiprocessing
 import platform
+
+# Third-party imports
+
+# local imports
 
 # Server socket
 bind = "0.0.0.0:5001"

@@ -12,9 +12,9 @@ from aiohttp import ClientSession
 
 # local imports
 from thermostatsupervisor import blink_config
+from thermostatsupervisor import environment as env
 from thermostatsupervisor import thermostat_api as api
 from thermostatsupervisor import thermostat_common as tc
-from thermostatsupervisor import environment as env
 from thermostatsupervisor import utilities as util
 
 # Blink library

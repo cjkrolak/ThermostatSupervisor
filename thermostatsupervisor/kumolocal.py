@@ -227,6 +227,8 @@ class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
                         ip_address=local_address,
                         verbose=self.verbose,
                     )
+                    if self.verbose:
+                        print(f"is_available={is_available}, detected_ip={detected_ip}")
 
                     # Update metadata with detection results
                     zone_meta = kumolocal_config.metadata[zone_idx]

@@ -3,8 +3,12 @@ Unit test module for environment.py.
 """
 # built-in imports
 import os
+import shutil
 import sys
+import tempfile
 import unittest
+
+# third-party imports
 
 # local imports
 import thermostatsupervisor
@@ -45,9 +49,6 @@ class EnvironmentTests(utc.UnitTest):
         """
         Test get_env_variable() with supervisor-env.txt file.
         """
-        import tempfile
-        import shutil
-
         # Create temporary directory
         test_dir = tempfile.mkdtemp()
         original_cwd = os.getcwd()
@@ -65,7 +66,7 @@ TEST_PASSWORD=secret123
 
 EMPTY_LINE_ABOVE=yes
 """
-            with open("supervisor-env.txt", "w") as f:
+            with open("supervisor-env.txt", "w", encoding="utf-8") as f:
                 f.write(env_content)
 
             # Test reading from file
@@ -102,9 +103,6 @@ EMPTY_LINE_ABOVE=yes
         """
         Test the _read_supervisor_env_file() function directly.
         """
-        import tempfile
-        import shutil
-
         # Create temporary directory
         test_dir = tempfile.mkdtemp()
         original_cwd = os.getcwd()
@@ -127,7 +125,7 @@ KEY3=value3
 INVALID_LINE_NO_EQUALS
 KEY4=value4=with=equals
 """
-            with open("supervisor-env.txt", "w") as f:
+            with open("supervisor-env.txt", "w", encoding="utf-8") as f:
                 f.write(env_content)
 
             result = env._read_supervisor_env_file()
@@ -328,15 +326,12 @@ KEY4=value4=with=equals
         Verify dynamic_module_import() doesn't re-import local modules.
         """
         # Create a temporary module for testing
-        import tempfile
-        import shutil
-
         test_dir = tempfile.mkdtemp()
         test_module_path = os.path.join(test_dir, "test_reuse_module.py")
 
         try:
             # Create a test module file
-            with open(test_module_path, "w") as f:
+            with open(test_module_path, "w", encoding="utf-8") as f:
                 f.write(
                     '''"""Test module for import reuse."""
 __version__ = "1.0.0"

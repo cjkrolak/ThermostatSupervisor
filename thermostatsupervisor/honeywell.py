@@ -10,8 +10,10 @@ import logging
 import os
 import pprint
 import time
-import urllib3.exceptions
 from typing import Union
+
+# third-party imports
+import urllib3.exceptions
 
 # local imports
 from thermostatsupervisor import email_notification

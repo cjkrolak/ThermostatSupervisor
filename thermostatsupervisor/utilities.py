@@ -8,7 +8,13 @@ import inspect
 import os
 import socket
 import sys
+import time
+import traceback
 
+# third-party libraries
+import requests
+
+# local imports
 
 PACKAGE_NAME = "thermostatsupervisor"  # should match name in __init__.py
 
@@ -825,21 +831,16 @@ def execute_with_extended_retries(
     raises:
         Exception: if all retries are exhausted
     """
-    import datetime
-    import time
-    import traceback
-
     # Import thermostat_common to access connection_ok flag
+    # note this import will cause circular import issue of put at top of file.
     try:
-        from thermostatsupervisor import thermostat_common as tc
+        from thermostatsupervisor import thermostat_common as tc  # noqa: E402, C0415
     except ImportError:
         tc = None
 
     # Default exception types if not provided
     if exception_types is None:
         # Use generic exceptions that are common across all thermostat types
-        import requests
-
         exception_types = (
             requests.exceptions.ConnectionError,
             requests.exceptions.HTTPError,

@@ -6,11 +6,15 @@ Tests retry functionality with mocked exceptions.
 # built-in imports
 import http.client
 import unittest
-import urllib3.exceptions
 from unittest import mock
+
+# third-party imports
+import pyhtcc
+import urllib3.exceptions
 
 # local imports
 from thermostatsupervisor import honeywell
+import thermostatsupervisor.thermostat_common as tc
 from thermostatsupervisor import utilities as util
 from tests import unit_test_common as utc
 
@@ -82,8 +86,6 @@ class Test(utc.UnitTest):
                 nonlocal call_count
                 call_count += 1
                 if call_count < 2:  # Fail first time
-                    import pyhtcc
-
                     raise pyhtcc.requests.exceptions.ConnectionError(
                         "mock ConnectionError"
                     )
@@ -107,9 +109,6 @@ class Test(utc.UnitTest):
         Verify that TooManyAttemptsError is caught and the server_spamming_detected
         flag is set in thermostat_common.
         """
-        # Import required modules
-        import thermostatsupervisor.thermostat_common as tc
-        import pyhtcc
 
         # Reset the server_spamming_detected flag
         tc.server_spamming_detected = False

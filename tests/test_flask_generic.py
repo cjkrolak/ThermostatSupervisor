@@ -24,8 +24,8 @@ from thermostatsupervisor.flask_generic import (
     print_ipban_block_list_with_timestamp,
     schedule_ipban_block_list_report,
 )
-from tests import unit_test_common as utc
 from thermostatsupervisor import utilities as util
+from tests import unit_test_common as utc
 
 
 class TestFlaskGeneric(utc.UnitTest):

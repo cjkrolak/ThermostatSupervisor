@@ -13,7 +13,9 @@ from unittest.mock import patch, MagicMock
 
 # local imports
 from thermostatsupervisor import sht31_flask_server as sht31_fs
+from thermostatsupervisor import sht31_config
 from thermostatsupervisor import utilities as util
+from thermostatsupervisor.sht31_flask_server import app
 from tests import unit_test_common as utc
 
 
@@ -158,8 +160,6 @@ class Sht31FlaskServerSensorUnit(utc.UnitTest):
 
     def test_seed_value_functionality(self):
         """Test that seed parameter affects generated unit test data."""
-        # Import Flask app from sht31_flask_server module
-        from thermostatsupervisor.sht31_flask_server import app
 
         # Test different seed values to ensure they produce different results
         test_seeds = [0x7F, 0x50, 0xA0]  # Default seed, and two other values
@@ -297,7 +297,6 @@ class Sht31FlaskServerSensorUnit(utc.UnitTest):
                     self.assertIn(field, logic_data)
 
                 # Verify pin assignments
-                from thermostatsupervisor import sht31_config
 
                 self.assertEqual(logic_data["sda_pin"], sht31_config.SDA_PIN)
                 self.assertEqual(logic_data["scl_pin"], sht31_config.SCL_PIN)
@@ -623,7 +622,6 @@ class Sht31FlaskServerSensorUnit(utc.UnitTest):
     def test_get_unit_test_with_parameters(self):
         """Test unit test data generation with request parameters."""
         # Create a Flask app context for testing
-        from thermostatsupervisor.sht31_flask_server import app
 
         with app.test_request_context("/unit?measurements=5&seed=123"):
             with patch.object(
@@ -646,7 +644,7 @@ class Sht31FlaskServerSensorUnit(utc.UnitTest):
         test_data = [100, 150, 0xFF, 250, 50, 0xFF]  # Wrong CRC values
 
         with patch("builtins.print") as mock_print:
-            temp, temp_c, temp_f, humidity = self.sensors.convert_data(test_data)
+            self.sensors.convert_data(test_data)
 
             # Should print CRC warnings
             self.assertTrue(mock_print.called)

@@ -3,6 +3,8 @@ Flask server for displaying supervisor output on web page.
 """
 # built-in libraries
 import html
+import os
+import secrets
 from subprocess import Popen, PIPE, STDOUT, DEVNULL
 import sys
 import webbrowser
@@ -56,12 +58,9 @@ def create_app():
 
     # Set a secret key for CSRF protection
     # In production, this should be set via environment variable
-    import os
-
     secret_key = os.environ.get("SECRET_KEY")
     if not secret_key:
         # Generate a random secret key for development/testing
-        import secrets
 
         secret_key = secrets.token_hex(32)
     app_.config["SECRET_KEY"] = secret_key

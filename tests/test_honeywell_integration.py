@@ -9,6 +9,7 @@ import unittest
 # local imports
 from thermostatsupervisor import honeywell
 from thermostatsupervisor import honeywell_config
+from thermostatsupervisor import thermostat_common as tc
 from thermostatsupervisor import utilities as util
 from tests import unit_test_common as utc
 
@@ -25,8 +26,6 @@ class IntegrationTest(utc.IntegrationTest):
     def setUpIntTest(self):
         """Setup common to integration tests."""
         # Check for server spamming detection and skip if detected
-        from thermostatsupervisor import thermostat_common as tc
-
         if tc.server_spamming_detected:
             self.skipTest(
                 "Skipping Honeywell integration test due to detected "

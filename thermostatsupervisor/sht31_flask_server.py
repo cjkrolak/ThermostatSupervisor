@@ -5,7 +5,9 @@ example from http://www.pibits.net/code/raspberry-pi-sht31-sensor-example.php
 
 # built-in imports
 import logging
+import os
 import re
+import secrets
 import statistics
 import subprocess
 import sys
@@ -787,7 +789,7 @@ class Sensors:
             )
 
         cell_number_re = re.compile(
-            r"^Cell\s+(?P<cellnumber>.+)\s+-\s+Address:" r"\s(?P<mac>.+)$"
+            r"^Cell\s+(?P<cellnumber>.+)\s+-\s+Address:\s(?P<mac>.+)$"
         )
         regexps = [
             re.compile(r"^ESSID:\"(?P<essid>.*)\"$"),
@@ -1143,13 +1145,9 @@ def create_app():
 
     # Set a secret key for CSRF protection
     # In production, this should be set via environment variable
-    import os
-
     secret_key = os.environ.get("SECRET_KEY")
     if not secret_key:
         # Generate a random secret key for development/testing
-        import secrets
-
         secret_key = secrets.token_hex(32)
     app_.config["SECRET_KEY"] = secret_key
 
