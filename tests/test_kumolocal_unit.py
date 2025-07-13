@@ -49,6 +49,15 @@ class LocalNetworkDetectionUnitTest(utc.UnitTest):
 
         # Create a mock thermostat class to test the method exists
         class MockThermostat:
+            """
+            Mock class for simulating a Thermostat object in unit tests.
+            Attributes:
+                verbose (bool): Flag to enable verbose output.
+            Methods:
+                detect_local_network_availability():
+                    Mock implementation for testing local network availability
+                    detection.
+            """
             def __init__(self):
                 self.verbose = False
 
@@ -72,6 +81,17 @@ class LocalNetworkDetectionUnitTest(utc.UnitTest):
 
             # Create a mock thermostat class to test the method exists
             class MockThermostat:
+                """
+                MockThermostat is a mock class used for testing thermostat
+                functionality.
+                Attributes:
+                    zone_number (int): The zone number associated with the thermostat.
+                Methods:
+                    is_local_network_available(zone=None):
+                        Checks if the local network is available for the specified zone.
+                        If no zone is provided, uses the instance's zone_number.
+                        Returns True if the local network is available, False otherwise.
+                """
                 def __init__(self):
                     self.zone_number = 0
 
@@ -104,12 +124,39 @@ class LocalNetworkDetectionUnitTest(utc.UnitTest):
             captured_logs = []
 
             class MockUtil:
+                """
+                MockUtil is a mock utility class for logging messages during testing.
+                Attributes:
+                    DATA_LOG (int): Constant representing data log mode.
+                    STDERR_LOG (int): Constant representing standard error log mode.
+                    DEBUG_LOG (int): Constant representing debug log mode.
+                Methods:
+                    log_msg(msg, mode, func_name=None, file_name=None):
+                            func_name (str, optional): Name of the function where the
+                                                     log originated. Defaults to None.
+                            file_name (str, optional): Name of the file where the log
+                                                       originated. Defaults to None.
+                """
                 DATA_LOG = 1
                 STDERR_LOG = 2
                 DEBUG_LOG = 4
 
                 @staticmethod
                 def log_msg(msg, mode, func_name=None, file_name=None):
+                    """
+                    Logs a message with additional context information.
+
+                    Appends a dictionary containing the message, mode, function name,
+                    and file name to the captured_logs list.
+
+                    Args:
+                        msg (str): The log message to record.
+                        mode (str): The logging mode or level (e.g., 'info', 'error').
+                        func_name (str, optional): Name of the function where the log
+                                                   originated. Defaults to None.
+                        file_name (str, optional): Name of the file where the log
+                                                   originated. Defaults to None.
+                    """
                     captured_logs.append(
                         {
                             "msg": msg,

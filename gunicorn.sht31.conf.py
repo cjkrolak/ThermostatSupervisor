@@ -1,9 +1,15 @@
-# Gunicorn configuration file for SHT31 Flask server
-# Usage: gunicorn --config gunicorn.sht31.conf.py \\
-#                 thermostatsupervisor.sht31_wsgi:application
-
+"""
+Gunicorn configuration file for SHT31 Flask server
+Usage: gunicorn --config gunicorn.sht31.conf.py \\
+                thermostatsupervisor.sht31_wsgi:application
+"""
+# built-in imports
 import multiprocessing
 import platform
+
+# Third-party imports
+
+# local imports
 
 # Server socket
 bind = "0.0.0.0:5000"
