@@ -321,7 +321,8 @@ def get_key_from_value(input_dict, val):
             raise TypeError(
                 f"type {type(value)} not yet supported in get_key_from_value"
             )
-        return return_val
+        if return_val is not None:
+            return return_val
 
     # key not found
     raise KeyError(f"key not found in dict '{input_dict}' with value='{val}'")
