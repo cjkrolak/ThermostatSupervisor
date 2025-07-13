@@ -484,7 +484,7 @@ class UserInputs:
                 self.parse_named_arguments(argv_list=argv_list)
             else:
                 log_msg(
-                    f"parsing runtime parameters from user input list: " f"{argv_list}",
+                    f"parsing runtime parameters from user input list: {argv_list}",
                     mode=DEBUG_LOG + STDOUT_LOG,
                     func_name=1,
                 )
@@ -943,7 +943,7 @@ def execute_with_extended_retries(
         except Exception as ex:
             log_msg(traceback.format_exc(), mode=BOTH_LOG, func_name=1)
             log_msg(
-                f"ERROR: unhandled exception {ex} during " f"{get_function_name()}",
+                f"ERROR: unhandled exception {ex} during {get_function_name()}",
                 mode=BOTH_LOG,
                 func_name=1,
             )

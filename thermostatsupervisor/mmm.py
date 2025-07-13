@@ -446,23 +446,23 @@ class ThermostatZone(tc.ThermostatCommonZone):
         """Return 1 if eco relay is active, else 0."""
         return 0  # not applicable
 
-    def is_fanning(self):
+    def is_fanning(self) -> int:
         """Return 1 if fan relay is active, else 0."""
         return int(self.is_fan_on() and self.is_power_on())
 
-    def is_power_on(self):
+    def is_power_on(self) -> int:
         """Return 1 if power relay is active, else 0."""
         return int(self.device_id.power["raw"] > 0)
 
-    def is_fan_on(self):
+    def is_fan_on(self) -> int:
         """Return 1 if fan relay is active, else 0."""
-        return self.device_id.fstate["raw"]
+        return int(self.device_id.fstate["raw"])
 
-    def is_defrosting(self):
+    def is_defrosting(self) -> int:
         """Return 1 if defrosting is active, else 0."""
         return 0  # not applicable
 
-    def is_standby(self):
+    def is_standby(self) -> int:
         """Return 1 if standby is active, else 0."""
         return 0  # not applicable
 
@@ -567,7 +567,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         result = float(self.get_cool_setpoint())
         if not isinstance(result, (int, float)):
             raise TypeError(
-                f"cool setpoint raw is type {type(result)}, should be " f"(int, float)"
+                f"cool setpoint raw is type {type(result)}, should be (int, float)"
             )
         return result
 
@@ -600,7 +600,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         result = float(self.get_schedule_setpoint(self.device_id.program_heat))
         if not isinstance(result, float):
             raise TypeError(
-                f"schedule heat set point is type {type(result)}, " f"should be float"
+                f"schedule heat set point is type {type(result)}, should be float"
             )
         return result
 
@@ -633,7 +633,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         result = float(self.get_schedule_setpoint(self.device_id.program_cool))
         if not isinstance(result, float):
             raise TypeError(
-                f"schedule cool set point is type {type(result)}, " f"should be float"
+                f"schedule cool set point is type {type(result)}, should be float"
             )
         return result
 
@@ -649,7 +649,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         result = bool(self.device_id.hold["raw"])
         if not isinstance(result, bool):
             raise TypeError(
-                f"is_invacation_hold_mode is type {type(result)}, " f"should be bool"
+                f"is_invacation_hold_mode is type {type(result)}, should be bool"
             )
         return result
 
@@ -665,7 +665,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         result = bool(self.device_id.override["raw"])
         if not isinstance(result, bool):
             raise TypeError(
-                f"get_vacation_hold_mode is type {type(result)}, " f"should be bool"
+                f"get_vacation_hold_mode is type {type(result)}, should be bool"
             )
         return result
 
@@ -747,7 +747,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         result = self._get_tmode()
         if not isinstance(result, int):
             raise TypeError(
-                f"get_system_switch_position is type {type(result)}, " f"should be int"
+                f"get_system_switch_position is type {type(result)}, should be int"
             )
         return result
 

@@ -178,7 +178,7 @@ class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
         # print zone name the first time it is known
         if self.device_id is None and self.verbose:
             util.log_msg(
-                f"zone {zone} name='{self.zone_name}', " f"device_id={device_id}",
+                f"zone {zone} name='{self.zone_name}', device_id={device_id}",
                 mode=util.DEBUG_LOG + util.STDOUT_LOG,
                 func_name=1,
             )

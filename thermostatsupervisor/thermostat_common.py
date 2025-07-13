@@ -742,7 +742,7 @@ class ThermostatCommonZone:
         """
         # current temp as measured by thermostat
         util.log_msg(
-            f"display temp=" f"{util.temp_value_with_units(self.get_display_temp())}",
+            f"display temp={util.temp_value_with_units(self.get_display_temp())}",
             mode=util.BOTH_LOG,
             func_name=1,
         )
@@ -782,7 +782,7 @@ class ThermostatCommonZone:
             mode=util.BOTH_LOG,
         )
         util.log_msg(
-            f"temporary hold until time=" f"{self.get_temporary_hold_until_time()}",
+            f"temporary hold until time={self.get_temporary_hold_until_time()}",
             mode=util.BOTH_LOG,
         )
 
@@ -1008,12 +1008,12 @@ class ThermostatCommonZone:
             func_name=1,
         )
         util.log_msg(
-            f"heat set point=" f"{self.get_heat_setpoint()}",
+            f"heat set point={self.get_heat_setpoint()}",
             mode=mode,
             func_name=1,
         )
         util.log_msg(
-            f"cool set point=" f"{self.get_cool_setpoint()}",
+            f"cool set point={self.get_cool_setpoint()}",
             mode=mode,
             func_name=1,
         )
@@ -1052,22 +1052,22 @@ class ThermostatCommonZone:
             func_name=1,
         )
         util.log_msg(
-            f"dry mode={self.is_dry_mode()} " f"(actively drying={self.is_drying()})",
+            f"dry mode={self.is_dry_mode()} (actively drying={self.is_drying()})",
             mode=mode,
             func_name=1,
         )
         util.log_msg(
-            f"auto mode={self.is_auto_mode()} " f"(actively auto={self.is_auto()})",
+            f"auto mode={self.is_auto_mode()} (actively auto={self.is_auto()})",
             mode=mode,
             func_name=1,
         )
         util.log_msg(
-            f"eco mode={self.is_eco_mode()} " f"(actively eco={self.is_eco()})",
+            f"eco mode={self.is_eco_mode()} (actively eco={self.is_eco()})",
             mode=mode,
             func_name=1,
         )
         util.log_msg(
-            f"fan mode={self.is_fan_mode()} " f"(actively fanning={self.is_fanning()})",
+            f"fan mode={self.is_fan_mode()} (actively fanning={self.is_fanning()})",
             mode=mode,
             func_name=1,
         )
@@ -1424,14 +1424,14 @@ def print_select_data_from_all_zones(
         )
         # zone temperature
         display_temp = Zone.get_display_temp()
-        msg = f"zone: {zone}, name: {Zone.zone_name}, temp: " f"{display_temp:.1f} °F"
+        msg = f"zone: {zone}, name: {Zone.zone_name}, temp: {display_temp:.1f} °F"
 
         # zone wifi strength
         if display_wifi:
             wifi_strength = Zone.get_wifi_strength()
             wifi_status = Zone.get_wifi_status()
             wifi_status_display = get_wifi_status_display(wifi_status)
-            msg += f", wifi strength: {wifi_strength} dBm " f"({wifi_status_display})"
+            msg += f", wifi strength: {wifi_strength} dBm ({wifi_status_display})"
 
         # zone battery stats
         if display_battery:

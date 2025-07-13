@@ -316,7 +316,7 @@ class ThermostatClass(pyhtcc.PyHTCC, tc.ThermostatCommon):
             parameter
         )
         util.log_msg(
-            f"zone{zone} uiData parameter {parameter}: " f"{parameter_data}",
+            f"zone{zone} uiData parameter {parameter}: {parameter_data}",
             mode=util.DEBUG_LOG + util.STDOUT_LOG,
             func_name=1,
         )

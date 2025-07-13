@@ -171,7 +171,7 @@ KEY4=value4=with=equals
         print(f"env.is_azure_environment()={result}")
         self.assertTrue(
             isinstance(result, bool),
-            "env.is_azure_environment() returned type " f"{type(result)} expected bool",
+            f"env.is_azure_environment() returned type {type(result)} expected bool",
         )
 
     def test_is_windows_environment(self):
