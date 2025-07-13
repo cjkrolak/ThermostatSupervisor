@@ -65,7 +65,7 @@ TEST_PASSWORD=secret123
 
 EMPTY_LINE_ABOVE=yes
 """
-            with open("supervisor-env.txt", "w") as f:
+            with open("supervisor-env.txt", "w", encoding="utf-8") as f:
                 f.write(env_content)
 
             # Test reading from file
@@ -127,7 +127,7 @@ KEY3=value3
 INVALID_LINE_NO_EQUALS
 KEY4=value4=with=equals
 """
-            with open("supervisor-env.txt", "w") as f:
+            with open("supervisor-env.txt", "w", encoding="utf-8") as f:
                 f.write(env_content)
 
             result = env._read_supervisor_env_file()
@@ -336,7 +336,7 @@ KEY4=value4=with=equals
 
         try:
             # Create a test module file
-            with open(test_module_path, "w") as f:
+            with open(test_module_path, "w", encoding="utf-8") as f:
                 f.write(
                     '''"""Test module for import reuse."""
 __version__ = "1.0.0"
