@@ -611,16 +611,16 @@ class ThermostatZone(tc.ThermostatCommonZone):
             )
         )
 
-    def is_fanning(self):
+    def is_fanning(self) -> int:
         """Return 1 if fan relay is active, else 0."""
         return int(self.is_fan_on() and self.is_power_on())
 
-    def is_power_on(self):
+    def is_power_on(self) -> int:
         """Return 1 if power relay is active, else 0."""
         self.refresh_zone_info()
-        return self.get_parameter("power", "reportedCondition", default_val=0)
+        return int(self.get_parameter("power", "reportedCondition", default_val=0))
 
-    def is_fan_on(self):
+    def is_fan_on(self) -> int:
         """Return 1 if fan relay is active, else 0."""
         if self.is_power_on():
             fan_speed = self.get_parameter("fan_speed", "reportedCondition")
@@ -635,12 +635,12 @@ class ThermostatZone(tc.ThermostatCommonZone):
         else:
             return 0
 
-    def is_defrosting(self):
+    def is_defrosting(self) -> int:
         """Return 1 if defrosting is active, else 0."""
         self.refresh_zone_info()
         return int(self.get_parameter("defrost", "status_display", "reportedCondition"))
 
-    def is_standby(self):
+    def is_standby(self) -> int:
         """Return 1 if standby is active, else 0."""
         self.refresh_zone_info()
         return int(self.get_parameter("standby", "status_display", "reportedCondition"))

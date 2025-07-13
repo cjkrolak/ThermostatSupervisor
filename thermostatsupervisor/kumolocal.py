@@ -178,7 +178,7 @@ class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
         # print zone name the first time it is known
         if self.device_id is None and self.verbose:
             util.log_msg(
-                f"zone {zone} name='{self.zone_name}', " f"device_id={device_id}",
+                f"zone {zone} name='{self.zone_name}', device_id={device_id}",
                 mode=util.DEBUG_LOG + util.STDOUT_LOG,
                 func_name=1,
             )
@@ -677,7 +677,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
             )
         )
 
-    def is_fanning(self):
+    def is_fanning(self) -> int:
         """Return 1 if fan relay is active, else 0."""
         return int(self.is_fan_on() and self.is_power_on())
 
@@ -691,12 +691,12 @@ class ThermostatZone(tc.ThermostatCommonZone):
         self.refresh_zone_info()
         return int(self.device_id.get_fan_speed() != "off")
 
-    def is_defrosting(self):
+    def is_defrosting(self) -> int:
         """Return 1 if defrosting is active, else 0."""
         self.refresh_zone_info()
         return int(self.device_id.get_status("defrost") == "True")
 
-    def is_standby(self):
+    def is_standby(self) -> int:
         """Return 1 if standby is active, else 0."""
         self.refresh_zone_info()
         return int(self.device_id.get_standby())

@@ -315,7 +315,7 @@ class ThermostatClass(tc.ThermostatCommon):
                     zone_name_to_index[zone_name] = index
 
             if self.verbose:
-                print(f"Dynamic zone mapping discovered: " f"{zone_name_to_index}")
+                print(f"Dynamic zone mapping discovered: {zone_name_to_index}")
 
             # Update config module constants based on actual API response
             # Look for common zone name patterns
@@ -367,37 +367,11 @@ class ThermostatClass(tc.ThermostatCommon):
                 for zone_name, index in zone_name_to_index.items():
                     zone_name_lower = zone_name.lower()
 
-                    if any(
-                        pattern in zone_name_lower
-                        for pattern in [
-                            "main",
-                            "level",
-                            "living",
-                            "first floor",
-                            "1st floor",
-                        ]
-                    ):
-                        kumocloudv3_config.metadata[index] = {
-                            "zone_name": zone_name,
-                            "host_name": "tbd",
-                            "serial_number": None,
-                        }
-                    elif any(
-                        pattern in zone_name_lower
-                        for pattern in ["basement", "lower", "cellar", "downstairs"]
-                    ):
-                        kumocloudv3_config.metadata[index] = {
-                            "zone_name": zone_name,
-                            "host_name": "tbd",
-                            "serial_number": None,
-                        }
-                    else:
-                        # For any other zones, add them with actual names
-                        kumocloudv3_config.metadata[index] = {
-                            "zone_name": zone_name,
-                            "host_name": "tbd",
-                            "serial_number": None,
-                        }
+                    kumocloudv3_config.metadata[index] = {
+                        "zone_name": zone_name,
+                        "host_name": "tbd",
+                        "serial_number": None,
+                    }
 
             if self.verbose:
                 print(
@@ -1193,16 +1167,16 @@ class ThermostatZone(tc.ThermostatCommonZone):
             )
         )
 
-    def is_fanning(self):
+    def is_fanning(self) -> int:
         """Return 1 if fan relay is active, else 0."""
         return int(self.is_fan_on() and self.is_power_on())
 
-    def is_power_on(self):
+    def is_power_on(self) -> int:
         """Return 1 if power relay is active, else 0."""
         self.refresh_zone_info()
-        return self.get_parameter("power", "reportedCondition", default_val=0)
+        return int(self.get_parameter("power", "reportedCondition", default_val=0))
 
-    def is_fan_on(self):
+    def is_fan_on(self) -> int:
         """Return 1 if fan relay is active, else 0."""
         if self.is_power_on():
             fan_speed = self.get_parameter("fan_speed", "reportedCondition")
@@ -1217,12 +1191,12 @@ class ThermostatZone(tc.ThermostatCommonZone):
         else:
             return 0
 
-    def is_defrosting(self):
+    def is_defrosting(self) -> int:
         """Return 1 if defrosting is active, else 0."""
         self.refresh_zone_info()
         return int(self.get_parameter("defrost", "status_display", "reportedCondition"))
 
-    def is_standby(self):
+    def is_standby(self) -> int:
         """Return 1 if standby is active, else 0."""
         self.refresh_zone_info()
         return int(self.get_parameter("standby", "status_display", "reportedCondition"))

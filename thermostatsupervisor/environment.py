@@ -145,7 +145,7 @@ def set_env_variable(key, val):
         raise AttributeError("environment key cannot be none")
     elif not isinstance(key, str):
         raise AttributeError(
-            f"environment key '{key}' must be a string, " f"is type {type(key)}"
+            f"environment key '{key}' must be a string, is type {type(key)}"
         )
     os.environ[key] = str(val)
 
@@ -331,7 +331,7 @@ def dynamic_module_import(name, path=None, pkg=None, verbose=False):
             path = convert_to_absolute_path(path)
 
             # local file import from relative or abs path
-            print(f"WARNING: attempting local import of {name} from " f"path {path}...")
+            print(f"WARNING: attempting local import of {name} from path {path}...")
             if verbose:
                 print(f"target dir contents={os.listdir(path)}")
                 print(f"adding '{path}' to system path")
@@ -339,7 +339,7 @@ def dynamic_module_import(name, path=None, pkg=None, verbose=False):
             mod = importlib.import_module(name)
             if mod is None:
                 raise ModuleNotFoundError(
-                    f"module '{name}' could not " f"be found at {path}"
+                    f"module '{name}' could not be found at {path}"
                 )
         else:
             # installed package import

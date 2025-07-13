@@ -22,7 +22,7 @@ module_name = sys.modules[__name__]
 host_name = socket.gethostname()
 host_ip = socket.gethostbyname(host_name)
 email_trace = (
-    f"email sent from module '{module_name}' running on " f"{host_name} ({host_ip})"
+    f"email sent from module '{module_name}' running on {host_name} ({host_ip})"
 )
 
 
@@ -141,7 +141,7 @@ def send_email_alert(
     try:
         server.login(from_address, from_password)
         util.log_msg(
-            f"email account authorization for account {from_address}" f" successful",
+            f"email account authorization for account {from_address} successful",
             mode=util.DEBUG_LOG + util.STDOUT_LOG,
             func_name=1,
         )

@@ -316,7 +316,7 @@ class ThermostatClass(pyhtcc.PyHTCC, tc.ThermostatCommon):
             parameter
         )
         util.log_msg(
-            f"zone{zone} uiData parameter {parameter}: " f"{parameter_data}",
+            f"zone{zone} uiData parameter {parameter}: {parameter_data}",
             mode=util.DEBUG_LOG + util.STDOUT_LOG,
             func_name=1,
         )
@@ -631,34 +631,34 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
             )
         )
 
-    def is_fanning(self):
+    def is_fanning(self) -> int:
         """Return 1 if fan relay is active, else 0."""
         return int(
             (self.is_fan_on() or self.is_fan_circulate_mode()) and self.is_power_on()
         )
 
-    def is_fan_circulate_mode(self):
+    def is_fan_circulate_mode(self) -> int:
         """Return 1 if fan is in circulate mode, else 0."""
         self.refresh_zone_info()
         return int(self.zone_info["latestData"]["fanData"]["fanMode"] == 2)
 
-    def is_fan_auto_mode(self):
+    def is_fan_auto_mode(self) -> int:
         """Return 1 if fan is in auto mode, else 0."""
         self.refresh_zone_info()
         return int(self.zone_info["latestData"]["fanData"]["fanMode"] == 0)
 
-    def is_fan_on_mode(self):
+    def is_fan_on_mode(self) -> int:
         """Return 1 if fan is in always on mode, else 0."""
         self.refresh_zone_info()
         return int(self.zone_info["latestData"]["fanData"]["fanMode"] == 1)
 
-    def is_power_on(self):
+    def is_power_on(self) -> int:
         """Return 1 if power relay is active, else 0."""
         self.refresh_zone_info()
         # just a guess, not sure what position 0 is yet.
         return int(self.zone_info["latestData"]["uiData"]["SystemSwitchPosition"] > 0)
 
-    def is_fan_on(self):
+    def is_fan_on(self) -> int:
         """Return 1 if fan relay is active, else 0."""
         self.refresh_zone_info()
         return int(self.zone_info["latestData"]["fanData"]["fanIsRunning"])
@@ -737,7 +737,7 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
             (bool): True if vacation hold is set.
         """
         self.refresh_zone_info()
-        return int(self.zone_info["latestData"]["uiData"]["VacationHold"])
+        return bool(self.zone_info["latestData"]["uiData"]["VacationHold"])
 
     def get_vacation_hold_until_time(self) -> int:
         """
@@ -777,7 +777,7 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
             (bool): True if set point changes are allowed.
         """
         self.refresh_zone_info()
-        return int(self.zone_info["latestData"]["uiData"]["SetpointChangeAllowed"])
+        return bool(self.zone_info["latestData"]["uiData"]["SetpointChangeAllowed"])
 
     def get_system_switch_position(self) -> int:  # used
         """
