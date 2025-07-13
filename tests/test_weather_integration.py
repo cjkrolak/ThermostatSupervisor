@@ -1,10 +1,18 @@
 """
 Integration tests for weather functionality with thermostat reporting.
 """
+
+# built-in imports
+import inspect
 import unittest
 from unittest.mock import patch
-from thermostatsupervisor import thermostat_common as tc
+
+# third-party imports
+
+# local imports
 from thermostatsupervisor import emulator_config
+from thermostatsupervisor import thermostat_api as api
+from thermostatsupervisor import thermostat_common as tc
 from thermostatsupervisor import weather
 
 
@@ -13,7 +21,6 @@ class TestWeatherIntegration(unittest.TestCase):
 
     def test_print_select_data_from_all_zones_signature(self):
         """Test that the function signature includes outdoor weather parameter."""
-        import inspect
 
         sig = inspect.signature(tc.print_select_data_from_all_zones)
 
@@ -63,7 +70,6 @@ class TestWeatherIntegration(unittest.TestCase):
 
     def test_config_integration(self):
         """Test that thermostat configurations properly include zip codes."""
-        from thermostatsupervisor import thermostat_api as api
 
         # Check that our modified configs have zip codes
         emulator_config_api = api.SUPPORTED_THERMOSTATS.get("emulator", {})

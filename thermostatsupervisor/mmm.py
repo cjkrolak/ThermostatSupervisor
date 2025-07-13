@@ -8,14 +8,16 @@ import socket
 import time
 import traceback
 import urllib
-from dns.exception import DNSException
 from typing import Union
 
+# third-party imports
+from dns.exception import DNSException
+
 # local imports
+from thermostatsupervisor import environment as env
 from thermostatsupervisor import mmm_config
 from thermostatsupervisor import thermostat_api as api
 from thermostatsupervisor import thermostat_common as tc
-from thermostatsupervisor import environment as env
 from thermostatsupervisor import utilities as util
 
 # radiotherm import

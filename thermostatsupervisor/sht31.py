@@ -23,6 +23,7 @@ import requests
 # local imports
 from thermostatsupervisor import environment as env
 from thermostatsupervisor import sht31_config
+from thermostatsupervisor import sht31_flask_server as sht31_fs
 from thermostatsupervisor import thermostat_api as api
 from thermostatsupervisor import thermostat_common as tc
 from thermostatsupervisor import utilities as util
@@ -125,14 +126,6 @@ class ThermostatClass(tc.ThermostatCommon):
         inputs: None
         returns:
         """
-        # flask server used in unit test mode
-        # noqa E402, C0415
-        from thermostatsupervisor import (  # noqa E402, C0415
-            sht31_flask_server as sht31_fs,  # noqa E402, C0415
-        )  # noqa E402, C0415
-
-        # pylint: disable=import-outside-toplevel
-
         # setup flask runtime variables
         sht31_fs.uip = sht31_fs.UserInputs(
             [os.path.realpath(__file__), sht31_config.FLASK_DEBUG_MODE]

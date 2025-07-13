@@ -12,6 +12,7 @@ import unittest
 # local imports
 # thermostat_api is imported but not used to avoid a circular import
 from thermostatsupervisor import environment as env
+from thermostatsupervisor import flask_generic as flg
 from thermostatsupervisor import (
     thermostat_api as api,
 )  # noqa F401, pylint: disable=unused-import.
@@ -193,8 +194,6 @@ class TestSht31FlaskClientAzure(utc.UnitTest):
         self.client = self.app.test_client()
         self.app.config["TESTING"] = True
         # Initialize IP ban for testing
-        from thermostatsupervisor import flask_generic as flg
-
         self.ip_ban = flg.initialize_ipban(self.app)
 
     def test_sht31_flask_server_endpoints_response(self):
@@ -348,7 +347,6 @@ class TestSht31FlaskClientAzure(utc.UnitTest):
 
     def test_sht31_flask_server_ipban_recovery_workflow(self):
         """Test the complete IP ban and recovery workflow."""
-        from thermostatsupervisor import flask_generic as flg
 
         # Step 1: Clear the block list to ensure clean state
         clear_response = self.client.get("/clear_block_list")

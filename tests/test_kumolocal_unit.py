@@ -6,9 +6,11 @@ without requiring actual kumolocal devices.
 """
 # built-in imports
 import copy
+import logging
 import unittest
 
 # local imports
+from thermostatsupervisor import kumolocal
 from thermostatsupervisor import kumolocal_config
 from tests import unit_test_common as utc
 
@@ -67,7 +69,6 @@ class LocalNetworkDetectionUnitTest(utc.UnitTest):
         """Test that is_local_network_available method has correct signature."""
         # This tests the method signature without requiring actual kumolocal
         try:
-            from thermostatsupervisor import kumolocal  # noqa F401
 
             # Create a mock thermostat class to test the method exists
             class MockThermostat:
@@ -98,8 +99,6 @@ class LocalNetworkDetectionUnitTest(utc.UnitTest):
     def test_pykumo_logging_integration(self):
         """Test that pykumo logging integration can be initialized."""
         try:
-            import logging
-            from thermostatsupervisor import kumolocal
 
             # Mock the utilities module to capture log messages
             captured_logs = []

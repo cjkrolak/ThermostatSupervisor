@@ -3,8 +3,14 @@ Weather API module for outdoor temperature and humidity data.
 
 This module provides functions to fetch outdoor weather data using zip codes.
 """
-import requests
+# built-in imports
+import os
 from typing import Dict, Optional, Union
+
+# third-party imports
+import requests
+
+# local imports
 from thermostatsupervisor import utilities as util
 
 
@@ -97,8 +103,6 @@ def get_weather_api_key() -> Optional[str]:
     Returns:
         str or None: API key if found in environment variables
     """
-    import os
-
     return os.environ.get("WEATHER_API_KEY")
 
 

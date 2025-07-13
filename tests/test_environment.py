@@ -3,8 +3,12 @@ Unit test module for environment.py.
 """
 # built-in imports
 import os
+import shutil
 import sys
+import tempfile
 import unittest
+
+# third-party imports
 
 # local imports
 import thermostatsupervisor
@@ -45,9 +49,6 @@ class EnvironmentTests(utc.UnitTest):
         """
         Test get_env_variable() with supervisor-env.txt file.
         """
-        import tempfile
-        import shutil
-
         # Create temporary directory
         test_dir = tempfile.mkdtemp()
         original_cwd = os.getcwd()
@@ -102,9 +103,6 @@ EMPTY_LINE_ABOVE=yes
         """
         Test the _read_supervisor_env_file() function directly.
         """
-        import tempfile
-        import shutil
-
         # Create temporary directory
         test_dir = tempfile.mkdtemp()
         original_cwd = os.getcwd()
@@ -328,9 +326,6 @@ KEY4=value4=with=equals
         Verify dynamic_module_import() doesn't re-import local modules.
         """
         # Create a temporary module for testing
-        import tempfile
-        import shutil
-
         test_dir = tempfile.mkdtemp()
         test_module_path = os.path.join(test_dir, "test_reuse_module.py")
 
