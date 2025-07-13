@@ -12,12 +12,6 @@ name: SonarQube Scan
         description: 'Coverage gist ID (optional)'
         required: false
         default: ''
-  pull_request:
-    branches: [develop]
-    paths:
-      - '**/*.py'
-      - 'sonar-project.properties'
-      - '.github/workflows/sonarqube.yml'
 
 jobs:
   sonarqube:
