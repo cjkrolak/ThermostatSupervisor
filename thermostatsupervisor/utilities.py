@@ -15,11 +15,6 @@ import traceback
 import requests
 
 # local imports
-# Import thermostat_common to access connection_ok flag
-try:
-    from thermostatsupervisor import thermostat_common as tc
-except ImportError:
-    tc = None
 
 PACKAGE_NAME = "thermostatsupervisor"  # should match name in __init__.py
 
@@ -836,6 +831,13 @@ def execute_with_extended_retries(
     raises:
         Exception: if all retries are exhausted
     """
+    # Import thermostat_common to access connection_ok flag
+    # note this import will cause circular import issue of put at top of file.
+    try:
+        from thermostatsupervisor import thermostat_common as tc  # noqa: E402, C0415
+    except ImportError:
+        tc = None
+
     # Default exception types if not provided
     if exception_types is None:
         # Use generic exceptions that are common across all thermostat types
