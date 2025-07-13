@@ -302,9 +302,7 @@ class ThermostatClass(tc.ThermostatCommon):
             site_id = sites[0].get("id")
             if not site_id:
                 if self.verbose:
-                    print(
-                        "Warning: No site ID found, using default zone assignments"
-                    )
+                    print("Warning: No site ID found, using default zone assignments")
                 return
 
             zones = self._get_zones(site_id)

@@ -58,6 +58,7 @@ class LocalNetworkDetectionUnitTest(utc.UnitTest):
                     Mock implementation for testing local network availability
                     detection.
             """
+
             def __init__(self):
                 self.verbose = False
 
@@ -78,7 +79,6 @@ class LocalNetworkDetectionUnitTest(utc.UnitTest):
         """Test that is_local_network_available method has correct signature."""
         # This tests the method signature without requiring actual kumolocal
         try:
-
             # Create a mock thermostat class to test the method exists
             class MockThermostat:
                 """
@@ -92,6 +92,7 @@ class LocalNetworkDetectionUnitTest(utc.UnitTest):
                         If no zone is provided, uses the instance's zone_number.
                         Returns True if the local network is available, False otherwise.
                 """
+
                 def __init__(self):
                     self.zone_number = 0
 
@@ -119,7 +120,6 @@ class LocalNetworkDetectionUnitTest(utc.UnitTest):
     def test_pykumo_logging_integration(self):
         """Test that pykumo logging integration can be initialized."""
         try:
-
             # Mock the utilities module to capture log messages
             captured_logs = []
 
@@ -137,6 +137,7 @@ class LocalNetworkDetectionUnitTest(utc.UnitTest):
                             file_name (str, optional): Name of the file where the log
                                                        originated. Defaults to None.
                 """
+
                 DATA_LOG = 1
                 STDERR_LOG = 2
                 DEBUG_LOG = 4
