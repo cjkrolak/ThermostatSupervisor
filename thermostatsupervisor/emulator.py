@@ -614,7 +614,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
             None
         """
         deviation_data = {}
-        with open(self.deviation_file_path, "wb", encoding="utf-8") as handle:
+        with open(self.deviation_file_path, "wb") as handle:
             pickle.dump(deviation_data, handle)
         if self.verbose:
             util.log_msg(
@@ -646,7 +646,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         deviation_data[key] = value
 
         # Write back to file
-        with open(self.deviation_file_path, "wb", encoding="utf-8") as handle:
+        with open(self.deviation_file_path, "wb") as handle:
             pickle.dump(deviation_data, handle)
 
         if self.verbose:
