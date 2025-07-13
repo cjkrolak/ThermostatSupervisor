@@ -565,10 +565,6 @@ class ThermostatZone(tc.ThermostatCommonZone):
             (float): current raw cool set point in °F.
         """
         result = float(self.get_cool_setpoint())
-        if not isinstance(result, (int, float)):
-            raise TypeError(
-                f"cool setpoint raw is type {type(result)}, should be (int, float)"
-            )
         return result
 
     def get_schedule_program_heat(self) -> dict:
@@ -598,10 +594,6 @@ class ThermostatZone(tc.ThermostatCommonZone):
             (float): current scheduled heat set point in °F.
         """
         result = float(self.get_schedule_setpoint(self.device_id.program_heat))
-        if not isinstance(result, float):
-            raise TypeError(
-                f"schedule heat set point is type {type(result)}, should be float"
-            )
         return result
 
     def get_schedule_program_cool(self) -> dict:
@@ -631,10 +623,6 @@ class ThermostatZone(tc.ThermostatCommonZone):
             (float): current schedule cool set point in °F.
         """
         result = float(self.get_schedule_setpoint(self.device_id.program_cool))
-        if not isinstance(result, float):
-            raise TypeError(
-                f"schedule cool set point is type {type(result)}, should be float"
-            )
         return result
 
     def get_is_invacation_hold_mode(self) -> bool:
@@ -647,10 +635,6 @@ class ThermostatZone(tc.ThermostatCommonZone):
             (int): 0=Disabled, 1=Enabled
         """
         result = bool(self.device_id.hold["raw"])
-        if not isinstance(result, bool):
-            raise TypeError(
-                f"is_invacation_hold_mode is type {type(result)}, should be bool"
-            )
         return result
 
     def get_vacation_hold(self) -> bool:
@@ -663,10 +647,6 @@ class ThermostatZone(tc.ThermostatCommonZone):
             (int): 0=Disabled, 1=Enabled
         """
         result = bool(self.device_id.override["raw"])
-        if not isinstance(result, bool):
-            raise TypeError(
-                f"get_vacation_hold_mode is type {type(result)}, should be bool"
-            )
         return result
 
     def get_vacation_hold_until_time(self) -> int:
