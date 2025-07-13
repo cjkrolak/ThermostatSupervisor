@@ -789,7 +789,7 @@ class Sensors:
             )
 
         cell_number_re = re.compile(
-            r"^Cell\s+(?P<cellnumber>.+)\s+-\s+Address:" r"\s(?P<mac>.+)$"
+            r"^Cell\s+(?P<cellnumber>.+)\s+-\s+Address:\s(?P<mac>.+)$"
         )
         regexps = [
             re.compile(r"^ESSID:\"(?P<essid>.*)\"$"),
