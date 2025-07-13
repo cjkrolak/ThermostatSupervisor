@@ -637,7 +637,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         deviation_data = {}
         if os.path.exists(self.deviation_file_path):
             try:
-                with open(self.deviation_file_path, "rb", encoding="utf-8") as handle:
+                with open(self.deviation_file_path, "rb") as handle:
                     deviation_data = pickle.load(handle)
             except (pickle.PickleError, EOFError):
                 deviation_data = {}
@@ -670,7 +670,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
             return default_val
 
         try:
-            with open(self.deviation_file_path, "rb", encoding="utf-8") as handle:
+            with open(self.deviation_file_path, "rb") as handle:
                 deviation_data = pickle.load(handle)
                 return deviation_data.get(key, default_val)
         except (pickle.PickleError, EOFError):
@@ -693,7 +693,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
             return True
 
         try:
-            with open(self.deviation_file_path, "rb", encoding="utf-8") as handle:
+            with open(self.deviation_file_path, "rb") as handle:
                 deviation_data = pickle.load(handle)
                 return key in deviation_data
         except (pickle.PickleError, EOFError):
