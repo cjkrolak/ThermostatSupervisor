@@ -145,14 +145,15 @@ class ThermostatClass(tc.ThermostatCommon):
 
         inputs:
             zone(int): zone number
-            retry(bool): if True will retry once.
+            retry(bool): if True will retry with extended retry mechanism.
         returns:
             (list) of thermostat attributes.
         """
-        del retry  # not used
-        return self.get_meta_data_dict(zone)
+        return self.get_metadata(zone, retry=retry)
 
-    def get_metadata(self, zone, trait=None, parameter=None) -> Union[dict, str]:
+    def get_metadata(
+        self, zone, trait=None, parameter=None, retry=False
+    ) -> Union[dict, str]:
         """
         Get the current thermostat metadata settings.
 
@@ -160,15 +161,43 @@ class ThermostatClass(tc.ThermostatCommon):
           zone(str or int): zone name
           trait(str): trait or parent key, if None will assume a non-nested dict
           parameter(str): target parameter, None = all settings
+          retry(bool): if True will retry with extended retry mechanism
         returns:
           (dict) if parameter=None
           (str) if parameter != None
         """
         del trait  # not used on mmm
-        if parameter is None:
-            return self.get_meta_data_dict(zone)
+
+        def _get_metadata_internal():
+            if parameter is None:
+                return self.get_meta_data_dict(zone)
+            else:
+                return self.get_meta_data_dict(zone)[parameter]["raw"]
+
+        if retry:
+            # Use standardized extended retry mechanism
+            return util.execute_with_extended_retries(
+                func=_get_metadata_internal,
+                thermostat_type=self.thermostat_type,
+                zone_name=str(zone),
+                number_of_retries=5,
+                initial_retry_delay_sec=30,
+                exception_types=(
+                    urllib.error.URLError,
+                    socket.timeout,
+                    socket.error,
+                    ConnectionError,
+                    TimeoutError,
+                    DNSException,
+                    AttributeError,
+                    KeyError,
+                    TypeError,
+                ),
+                email_notification=None,  # MMM doesn't import email_notification
+            )
         else:
-            return self.get_meta_data_dict(zone)[parameter]["raw"]
+            # Single attempt without retry
+            return _get_metadata_internal()
 
     def get_latestdata(self, zone, debug=False) -> Union[dict, str]:
         """

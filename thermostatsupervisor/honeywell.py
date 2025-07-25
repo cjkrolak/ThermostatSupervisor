@@ -203,12 +203,11 @@ class ThermostatClass(pyhtcc.PyHTCC, tc.ThermostatCommon):
 
         inputs:
           zone(int): zone number, default=honeywell_config.default_zone
-          retry(bool): if True will retry once.
+          retry(bool): if True will retry with extended retry mechanism.
         returns:
           (dict) thermostat meta data.
         """
-        del retry  # not used
-        return_data = self.get_metadata(zone)
+        return_data = self.get_metadata(zone, retry=retry)
         util.log_msg(
             f"all meta data: {return_data}",
             mode=util.DEBUG_LOG + util.STDOUT_LOG,
@@ -217,7 +216,11 @@ class ThermostatClass(pyhtcc.PyHTCC, tc.ThermostatCommon):
         return return_data
 
     def get_metadata(
-        self, zone=honeywell_config.default_zone, trait=None, parameter=None
+        self,
+        zone=honeywell_config.default_zone,
+        trait=None,
+        parameter=None,
+        retry=False
     ) -> Union[dict, str]:
         """
         Return the current thermostat metadata settings.
@@ -227,42 +230,69 @@ class ThermostatClass(pyhtcc.PyHTCC, tc.ThermostatCommon):
           trait(str): trait or parent key, if None will assume a non-nested
                       dict
           parameter(str): target parameter, None = all settings
+          retry(bool): if True will retry with extended retry mechanism
         returns:
           (dict) if parameter=None
           (str) if parameter != None
         """
         del trait  # not used on Honeywell
-        zone_info_list = self.get_zones_info()
-        if parameter is None:
-            try:
-                return_data = zone_info_list[zone]
-            except IndexError:
-                print(
-                    f"ERROR: zone {zone} does not exist in zone_info_list: "
-                    f"{zone_info_list}"
+
+        def _get_metadata_internal():
+            zone_info_list = self.get_zones_info()
+            if parameter is None:
+                try:
+                    return_data = zone_info_list[zone]
+                except IndexError:
+                    print(
+                        f"ERROR: zone {zone} does not exist in zone_info_list: "
+                        f"{zone_info_list}"
+                    )
+                    raise
+                util.log_msg(
+                    f"zone {zone} info: {return_data}",
+                    mode=util.DEBUG_LOG + util.STDOUT_LOG,
+                    func_name=1,
                 )
-                raise
-            util.log_msg(
-                f"zone {zone} info: {return_data}",
-                mode=util.DEBUG_LOG + util.STDOUT_LOG,
-                func_name=1,
+                return return_data
+            else:
+                try:
+                    return_data = zone_info_list[zone].get(parameter)
+                except IndexError:
+                    print(
+                        f"ERROR: zone {zone} does not exist in zone_info_list: "
+                        f"{zone_info_list}"
+                    )
+                    raise
+                util.log_msg(
+                    f"zone {zone} parameter '{parameter}': {return_data}",
+                    mode=util.DEBUG_LOG + util.STDOUT_LOG,
+                    func_name=1,
+                )
+                return return_data
+
+        if retry:
+            # Use standardized extended retry mechanism
+            return util.execute_with_extended_retries(
+                func=_get_metadata_internal,
+                thermostat_type=self.thermostat_type,
+                zone_name=str(zone),
+                number_of_retries=5,
+                initial_retry_delay_sec=30,
+                exception_types=(
+                    http.client.HTTPException,
+                    urllib3.exceptions.HTTPError,
+                    urllib3.exceptions.ConnectionError,
+                    urllib3.exceptions.TimeoutError,
+                    ConnectionError,
+                    TimeoutError,
+                    IndexError,
+                    KeyError,
+                ),
+                email_notification=email_notification,
             )
-            return return_data
         else:
-            try:
-                return_data = zone_info_list[zone].get(parameter)
-            except IndexError:
-                print(
-                    f"ERROR: zone {zone} does not exist in zone_info_list: "
-                    f"{zone_info_list}"
-                )
-                raise
-            util.log_msg(
-                f"zone {zone} parameter '{parameter}': {return_data}",
-                mode=util.DEBUG_LOG + util.STDOUT_LOG,
-                func_name=1,
-            )
-            return return_data
+            # Single attempt without retry
+            return _get_metadata_internal()
 
     def get_latestdata(self, zone=honeywell_config.default_zone, debug=False) -> dict:
         """
