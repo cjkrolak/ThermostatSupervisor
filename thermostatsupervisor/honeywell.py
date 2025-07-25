@@ -220,7 +220,7 @@ class ThermostatClass(pyhtcc.PyHTCC, tc.ThermostatCommon):
         zone=honeywell_config.default_zone,
         trait=None,
         parameter=None,
-        retry=False
+        retry=False,
     ) -> Union[dict, str]:
         """
         Return the current thermostat metadata settings.
