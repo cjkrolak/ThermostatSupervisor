@@ -61,11 +61,14 @@ autodoc_default_options = {
 # Autosummary settings
 autosummary_generate = True
 
-# Intersphinx mapping
+# Intersphinx mapping with timeout for network requests
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3", None),
     "flask": ("https://flask.palletsprojects.com/en/2.3.x/", None),
 }
+
+# Intersphinx timeout (in seconds) to prevent hanging on network issues
+intersphinx_timeout = 5
 
 templates_path = ["_templates"]
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
