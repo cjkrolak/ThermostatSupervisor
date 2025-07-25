@@ -6,6 +6,9 @@ name: black-action
       - 'feature/*'
       - 'bugfix/*'
       - 'hotfix/*'
+  pull_request:
+    branches:
+      - develop
 permissions:
   contents: write
 jobs:
