@@ -3,6 +3,7 @@ Integration test module for nest.py.
 
 This test requires connection to nest thermostat.
 """
+
 # built-in imports
 import unittest
 

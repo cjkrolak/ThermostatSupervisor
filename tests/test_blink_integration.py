@@ -1,6 +1,7 @@
 """
 Integration test module for bink.py.
 """
+
 # built-in imports
 import unittest
 

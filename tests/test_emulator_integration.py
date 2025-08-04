@@ -3,6 +3,7 @@ Integration test module for emulator.py.
 
 This test requires connection to emulator thermostat.
 """
+
 # built-in imports
 import math
 import unittest

@@ -1,6 +1,7 @@
 """
 kumolocal config file.
 """
+
 ALIAS = "kumolocal"
 
 # thermostat zones

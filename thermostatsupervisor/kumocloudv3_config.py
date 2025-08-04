@@ -1,6 +1,7 @@
 """
 kumocloudv3 config file.
 """
+
 ALIAS = "kumocloudv3"
 
 # thermostat zones

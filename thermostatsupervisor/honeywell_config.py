@@ -1,6 +1,7 @@
 """
 Honeywell thermostat config file.
 """
+
 ALIAS = "honeywell"
 
 # constants

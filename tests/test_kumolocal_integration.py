@@ -3,6 +3,7 @@ Integration test module for kumolocal.py.
 
 This test requires connection to kumolocal thermostat.
 """
+
 # built-in imports
 import unittest
 

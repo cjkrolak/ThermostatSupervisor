@@ -1,4 +1,5 @@
 """KumoCloud integration using local API for data."""
+
 # built-in imports
 import logging
 import os

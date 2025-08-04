@@ -3,6 +3,7 @@ Integration test module for kumocloud.py.
 
 This test requires connection to Kumocloud thermostat.
 """
+
 # built-in imports
 import unittest
 

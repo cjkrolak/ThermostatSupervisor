@@ -3,6 +3,7 @@ Integration test module for honeywell.py.
 
 This test requires connection to Honeywell thermostat.
 """
+
 # built-in imports
 import unittest
 
