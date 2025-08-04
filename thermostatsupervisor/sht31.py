@@ -200,12 +200,15 @@ class ThermostatClass(tc.ThermostatCommon):
             # catch 403 web site response, no need to retry
             if "403 Forbidden" in response.text:
                 # Check if this is an ipban-related block
-                ipban_message = ("You don't have the permission to access the "
-                                 "requested resource. It is either read-protected "
-                                 "or not readable by the server.")
+                ipban_message = (
+                    "You don't have the permission to access the "
+                    "requested resource. It is either read-protected "
+                    "or not readable by the server."
+                )
                 if ipban_message in response.text:
                     # Extract client IP from the request URL or use a generic message
                     import socket
+
                     try:
                         # Get the local IP address used for the connection
                         hostname = socket.gethostname()
@@ -334,12 +337,15 @@ class ThermostatZone(tc.ThermostatCommonZone):
             # Handle 403 responses specifically for better error messages
             if response.status_code == 403:
                 # Check if this is an ipban-related block
-                ipban_message = ("You don't have the permission to access the "
-                                 "requested resource. It is either read-protected "
-                                 "or not readable by the server.")
+                ipban_message = (
+                    "You don't have the permission to access the "
+                    "requested resource. It is either read-protected "
+                    "or not readable by the server."
+                )
                 if ipban_message in response.text:
                     # Extract client IP from the request URL or use a generic message
                     import socket
+
                     try:
                         # Get the local IP address used for the connection
                         hostname = socket.gethostname()
