@@ -18,12 +18,6 @@ env_variables = {
     "KUMO_PASSWORD": None,
 }
 
-# min required env variables on all runs
-required_env_variables = {
-    "KUMO_USERNAME": None,
-    "KUMO_PASSWORD": None,
-}
-
 # supported thermostat configs
 supported_configs = {
     "module": "kumolocal",
