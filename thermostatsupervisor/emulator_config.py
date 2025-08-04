@@ -1,6 +1,7 @@
 """
 emulator thermostat config file.
 """
+
 ALIAS = "emulator"
 
 # constants

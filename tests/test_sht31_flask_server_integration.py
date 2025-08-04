@@ -4,6 +4,7 @@ Integration test module for sht31_flask_server.py.
 These tests require a working SHT31 endpoint and are controlled by the
 ENABLE_FLASK_INTEGRATION_TESTS flag.
 """
+
 # built-in imports
 import unittest
 

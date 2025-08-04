@@ -1,6 +1,7 @@
 """
 Unit tests for weather module.
 """
+
 import unittest
 from unittest.mock import patch, MagicMock
 from thermostatsupervisor import weather

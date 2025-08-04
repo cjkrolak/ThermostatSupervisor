@@ -1,6 +1,7 @@
 """
 Flask server for displaying supervisor output on web page.
 """
+
 # built-in libraries
 import html
 import os

@@ -5,6 +5,7 @@ pypi ref: https://pypi.org/project/python-google-nest/
 github ref: https://github.com/axlan/python-nest/
 API ref: https://developers.google.com/nest/device-access/traits
 """
+
 # built-in libraries
 import json
 import os

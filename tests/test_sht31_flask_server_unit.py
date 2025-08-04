@@ -4,6 +4,7 @@ Unit test module for sht31_flask_server.py.
 These tests do not require a working SHT31 endpoint and use mocking
 to simulate hardware interactions.
 """
+
 # built-in imports
 import os
 import unittest

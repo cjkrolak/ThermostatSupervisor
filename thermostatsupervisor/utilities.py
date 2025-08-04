@@ -488,9 +488,9 @@ class UserInputs:
             argvlist_flags = []
             for elem in argv_list:
                 elem_str = str(elem)
-                if elem_str.startswith('--'):
+                if elem_str.startswith("--"):
                     # For long flags, check the full flag (before any '=')
-                    flag_part = elem_str.split('=')[0]
+                    flag_part = elem_str.split("=")[0]
                     argvlist_flags.append(flag_part)
                 else:
                     # For short flags, check first 2 characters

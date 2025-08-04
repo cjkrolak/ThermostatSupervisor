@@ -3,6 +3,7 @@ Unit test module for honeywell.py.
 
 Tests retry functionality with mocked exceptions.
 """
+
 # built-in imports
 import http.client
 import unittest

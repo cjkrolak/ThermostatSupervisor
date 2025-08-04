@@ -1,6 +1,7 @@
 """
 Common functions used in multiple unit tests.
 """
+
 # global imports
 import argparse
 from io import TextIOWrapper
