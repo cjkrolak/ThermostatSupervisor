@@ -51,10 +51,16 @@ for config_module in config_modules:
 # dictionary of required env variables for each thermostat type
 thermostats = {}
 for config_module in config_modules:
+    # Use required_env_variables if explicitly defined, otherwise use env_variables
+    # This allows consolidation of duplicate env dicts while preserving special cases
+    required_env_vars = getattr(config_module, 'required_env_variables', None)
+    if required_env_vars is None:
+        required_env_vars = getattr(config_module, 'env_variables', {})
+
     thermostats.update(
         {
             config_module.ALIAS: {
-                "required_env_variables": config_module.required_env_variables
+                "required_env_variables": required_env_vars
             }
         }
     )

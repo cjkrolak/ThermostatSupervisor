@@ -23,13 +23,6 @@ env_variables = {
     "BLINK_2FA": None,
 }
 
-# min required env variables on all runs
-required_env_variables = {
-    "BLINK_USERNAME": None,
-    "BLINK_PASSWORD": None,
-    "BLINK_2FA": None,
-}
-
 # metadata dict
 # 'zone_name' is a placeholder, used at Thermostat class level.
 # update this list to match your zones as named in the blink app
