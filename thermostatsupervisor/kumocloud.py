@@ -1,4 +1,5 @@
 """KumoCloud integration"""
+
 # built-in imports
 import logging
 import os
@@ -343,24 +344,24 @@ class ThermostatZone(tc.ThermostatCommonZone):
         self.last_fetch_time = time.time() - 2 * self.fetch_interval_sec
 
         # switch config for this thermostat
-        self.system_switch_position[
-            tc.ThermostatCommonZone.HEAT_MODE
-        ] = 1  # "Heat" 0 0001
-        self.system_switch_position[
-            tc.ThermostatCommonZone.OFF_MODE
-        ] = 16  # "Off"  1 0000
-        self.system_switch_position[
-            tc.ThermostatCommonZone.FAN_MODE
-        ] = 7  # "Fan"   0 0111
-        self.system_switch_position[
-            tc.ThermostatCommonZone.DRY_MODE
-        ] = 2  # dry     0 0010
-        self.system_switch_position[
-            tc.ThermostatCommonZone.COOL_MODE
-        ] = 3  # cool   0 0011
-        self.system_switch_position[
-            tc.ThermostatCommonZone.AUTO_MODE
-        ] = 33  # auto   0 0101
+        self.system_switch_position[tc.ThermostatCommonZone.HEAT_MODE] = (
+            1  # "Heat" 0 0001
+        )
+        self.system_switch_position[tc.ThermostatCommonZone.OFF_MODE] = (
+            16  # "Off"  1 0000
+        )
+        self.system_switch_position[tc.ThermostatCommonZone.FAN_MODE] = (
+            7  # "Fan"   0 0111
+        )
+        self.system_switch_position[tc.ThermostatCommonZone.DRY_MODE] = (
+            2  # dry     0 0010
+        )
+        self.system_switch_position[tc.ThermostatCommonZone.COOL_MODE] = (
+            3  # cool   0 0011
+        )
+        self.system_switch_position[tc.ThermostatCommonZone.AUTO_MODE] = (
+            33  # auto   0 0101
+        )
 
         # zone info
         self.verbose = verbose

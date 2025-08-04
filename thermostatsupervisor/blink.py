@@ -1,4 +1,5 @@
 """Blink Camera."""
+
 # built-in imports
 import asyncio
 import os

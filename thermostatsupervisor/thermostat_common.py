@@ -1,6 +1,7 @@
 """
 Common Thermostat Class
 """
+
 # built-ins
 import datetime
 import operator

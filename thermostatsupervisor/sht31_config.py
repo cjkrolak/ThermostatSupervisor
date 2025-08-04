@@ -1,6 +1,7 @@
 """
 SHT31 config file.
 """
+
 # built-in imports
 import munch
 

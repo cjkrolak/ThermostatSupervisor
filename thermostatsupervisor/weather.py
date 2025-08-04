@@ -3,6 +3,7 @@ Weather API module for outdoor temperature and humidity data.
 
 This module provides functions to fetch outdoor weather data using zip codes.
 """
+
 # built-in imports
 import os
 from typing import Dict, Optional, Union

@@ -4,6 +4,7 @@ Unit test module for kumolocal.py local network detection functionality.
 This test module focuses on testing the local network detection logic
 without requiring actual kumolocal devices.
 """
+
 # built-in imports
 import copy
 import logging

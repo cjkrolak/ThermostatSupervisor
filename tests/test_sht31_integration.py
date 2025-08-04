@@ -3,6 +3,7 @@ Integration test module for sht31.py.
 
 This test requires connection to sht31 thermostat.
 """
+
 # built-in imports
 import unittest
 

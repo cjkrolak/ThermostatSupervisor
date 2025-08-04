@@ -4,6 +4,7 @@ Unit test module for supervise_flask_server.py.
 Flask server tests currently do not work on Azure pipelines
 because ports cannot be opened on shared pool.
 """
+
 # built-in imports
 import threading
 import time

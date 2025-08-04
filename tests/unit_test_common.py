@@ -1,6 +1,7 @@
 """
 Common functions used in multiple unit tests.
 """
+
 # global imports
 import argparse
 from io import TextIOWrapper
@@ -655,12 +656,17 @@ class RuntimeParameterTest(UnitTest):
         """
         parser = argparse.ArgumentParser()
         parser.add_argument("-a", type=int)
-        # argv = '-a 1'.split()  # or ['-a','1','foo']
-        # argv = ["-a 1", "--b 2"]  # double dash doesn't work yet.
+        parser.add_argument("--b", type=int)
+        # Test single flag with equals format
         argv = ["-a=1"]
         args = parser.parse_args(argv)
         assert args.a == 1
-        # assert(args.b == 2)
+
+        # Test double dash flags (now working)
+        argv = ["-a", "1", "--b", "2"]
+        args = parser.parse_args(argv)
+        assert args.a == 1
+        assert args.b == 2
 
     def test_parser_input_file(self):
         """
