@@ -1,6 +1,7 @@
 """
 blink config file.
 """
+
 ALIAS = "blink"
 
 # constants
@@ -18,13 +19,6 @@ API_BATTERY_STATUS = "battery"
 
 # all environment variables specific to this thermostat type
 env_variables = {
-    "BLINK_USERNAME": None,
-    "BLINK_PASSWORD": None,
-    "BLINK_2FA": None,
-}
-
-# min required env variables on all runs
-required_env_variables = {
     "BLINK_USERNAME": None,
     "BLINK_PASSWORD": None,
     "BLINK_2FA": None,

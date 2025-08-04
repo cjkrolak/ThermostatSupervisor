@@ -4,6 +4,7 @@ Thermostat API.
 This file should be updated for any new thermostats supported and
 any changes to thermostat configs.
 """
+
 # built ins
 import munch
 
@@ -51,12 +52,14 @@ for config_module in config_modules:
 # dictionary of required env variables for each thermostat type
 thermostats = {}
 for config_module in config_modules:
+    # Use required_env_variables if explicitly defined, otherwise use env_variables
+    # This allows consolidation of duplicate env dicts while preserving special cases
+    required_env_vars = getattr(config_module, "required_env_variables", None)
+    if required_env_vars is None:
+        required_env_vars = getattr(config_module, "env_variables", {})
+
     thermostats.update(
-        {
-            config_module.ALIAS: {
-                "required_env_variables": config_module.required_env_variables
-            }
-        }
+        {config_module.ALIAS: {"required_env_variables": required_env_vars}}
     )
 
 
@@ -261,9 +264,9 @@ class UserInputs(util.UserInputs):
                             print(f"exception in section={section}, fld={fld}")
                             raise
                         # cast original input value in user_inputs_file as well
-                        self.user_inputs_file[section][
-                            input_flds[fld]
-                        ] = self.user_inputs[section][fld]["value"]
+                        self.user_inputs_file[section][input_flds[fld]] = (
+                            self.user_inputs[section][fld]["value"]
+                        )
                     else:
                         # no casting, just read raw from list
                         self.user_inputs[section][fld]["value"] = self.user_inputs_file[
@@ -316,9 +319,9 @@ class UserInputs(util.UserInputs):
             if thermostat_type is None:
                 thermostat_type = self.thermostat_type
             try:
-                self.user_inputs[zone_name][input_flds.zone][
-                    "valid_range"
-                ] = SUPPORTED_THERMOSTATS[thermostat_type]["zones"]
+                self.user_inputs[zone_name][input_flds.zone]["valid_range"] = (
+                    SUPPORTED_THERMOSTATS[thermostat_type]["zones"]
+                )
             except KeyError:
                 print(
                     f"\nKeyError: one or more keys are invalid (zone_name="
@@ -327,9 +330,9 @@ class UserInputs(util.UserInputs):
                 )
                 raise
             try:
-                self.user_inputs[zone_name][input_flds.target_mode][
-                    "valid_range"
-                ] = SUPPORTED_THERMOSTATS[thermostat_type]["modes"]
+                self.user_inputs[zone_name][input_flds.target_mode]["valid_range"] = (
+                    SUPPORTED_THERMOSTATS[thermostat_type]["modes"]
+                )
             except KeyError:
                 print(
                     f"\nKeyError: one or more keys are invalid (zone_name="

@@ -1,6 +1,7 @@
 """
 Unit tes module for email_notification.py.
 """
+
 # built-in libraries
 import os
 import smtplib

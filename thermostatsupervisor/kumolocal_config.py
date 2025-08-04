@@ -1,6 +1,7 @@
 """
 kumolocal config file.
 """
+
 ALIAS = "kumolocal"
 
 # thermostat zones
@@ -13,12 +14,6 @@ MIN_COOL_SETPOINT = 70
 
 # all environment variables specific to this thermostat type
 env_variables = {
-    "KUMO_USERNAME": None,
-    "KUMO_PASSWORD": None,
-}
-
-# min required env variables on all runs
-required_env_variables = {
     "KUMO_USERNAME": None,
     "KUMO_PASSWORD": None,
 }

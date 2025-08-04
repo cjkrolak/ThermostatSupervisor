@@ -1,6 +1,7 @@
 """
 nest config file.
 """
+
 ALIAS = "nest"
 
 # thermostat zones

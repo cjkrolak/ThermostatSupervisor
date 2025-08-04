@@ -4,6 +4,7 @@ Unit test for SHT31 flask path selection logic.
 This test validates the fix for issue where SHT31 ThermostatClass
 was not using the correct path (/unit) during unit tests.
 """
+
 import unittest
 from unittest.mock import patch
 

@@ -1,6 +1,7 @@
 """
 mmm config file.
 """
+
 ALIAS = "mmm50"
 
 # 3m50 thermostat IP addresses (on local net)

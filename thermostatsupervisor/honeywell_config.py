@@ -1,18 +1,13 @@
 """
 Honeywell thermostat config file.
 """
+
 ALIAS = "honeywell"
 
 # constants
 
 # all environment variables specific to this thermostat type
 env_variables = {
-    "TCC_USERNAME": None,
-    "TCC_PASSWORD": None,
-}
-
-# min required env variables on all runs
-required_env_variables = {
     "TCC_USERNAME": None,
     "TCC_PASSWORD": None,
 }
