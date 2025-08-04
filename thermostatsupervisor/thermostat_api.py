@@ -264,9 +264,9 @@ class UserInputs(util.UserInputs):
                             print(f"exception in section={section}, fld={fld}")
                             raise
                         # cast original input value in user_inputs_file as well
-                        self.user_inputs_file[section][input_flds[fld]] = (
-                            self.user_inputs[section][fld]["value"]
-                        )
+                        self.user_inputs_file[section][
+                            input_flds[fld]
+                        ] = self.user_inputs[section][fld]["value"]
                     else:
                         # no casting, just read raw from list
                         self.user_inputs[section][fld]["value"] = self.user_inputs_file[
@@ -319,9 +319,9 @@ class UserInputs(util.UserInputs):
             if thermostat_type is None:
                 thermostat_type = self.thermostat_type
             try:
-                self.user_inputs[zone_name][input_flds.zone]["valid_range"] = (
-                    SUPPORTED_THERMOSTATS[thermostat_type]["zones"]
-                )
+                self.user_inputs[zone_name][input_flds.zone][
+                    "valid_range"
+                ] = SUPPORTED_THERMOSTATS[thermostat_type]["zones"]
             except KeyError:
                 print(
                     f"\nKeyError: one or more keys are invalid (zone_name="
@@ -330,9 +330,9 @@ class UserInputs(util.UserInputs):
                 )
                 raise
             try:
-                self.user_inputs[zone_name][input_flds.target_mode]["valid_range"] = (
-                    SUPPORTED_THERMOSTATS[thermostat_type]["modes"]
-                )
+                self.user_inputs[zone_name][input_flds.target_mode][
+                    "valid_range"
+                ] = SUPPORTED_THERMOSTATS[thermostat_type]["modes"]
             except KeyError:
                 print(
                     f"\nKeyError: one or more keys are invalid (zone_name="
