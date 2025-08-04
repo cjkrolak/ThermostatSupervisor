@@ -1,6 +1,7 @@
 """
 Common Thermostat Class
 """
+
 # built-ins
 import datetime
 import operator
@@ -467,8 +468,13 @@ class ThermostatCommonZone:
                             func_name=1,
                         )
 
-            elif target_mode in [self.AUTO_MODE, self.DRY_MODE, self.FAN_MODE,
-                                 self.OFF_MODE, self.ECO_MODE]:
+            elif target_mode in [
+                self.AUTO_MODE,
+                self.DRY_MODE,
+                self.FAN_MODE,
+                self.OFF_MODE,
+                self.ECO_MODE,
+            ]:
                 # These modes don't require setpoint changes or
                 # use thermostat-specific implementations
                 if self.verbose:

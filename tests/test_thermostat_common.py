@@ -1,6 +1,7 @@
 """
 Tests for thermostat_common.py
 """
+
 # built-in imports
 import operator
 import pprint
@@ -1117,57 +1118,60 @@ class Test(utc.UnitTest):
 
             # Test invalid mode
             result = self.Zone.set_mode("INVALID_MODE")
-            self.assertFalse(
-                result, "set_mode should return False for invalid mode"
-            )
+            self.assertFalse(result, "set_mode should return False for invalid mode")
 
             # Test HEAT_MODE - should return True and set heat setpoint
             heat_setpoint_called_with.clear()
             result = self.Zone.set_mode(self.Zone.HEAT_MODE)
-            self.assertTrue(
-                result, "set_mode should return True for HEAT_MODE"
+            self.assertTrue(result, "set_mode should return True for HEAT_MODE")
+            self.assertEqual(
+                len(heat_setpoint_called_with),
+                1,
+                "set_heat_setpoint should be called once",
             )
             self.assertEqual(
-                len(heat_setpoint_called_with), 1,
-                "set_heat_setpoint should be called once"
-            )
-            self.assertEqual(
-                heat_setpoint_called_with[0], int(test_heat_setpoint),
-                f"Heat setpoint should be {int(test_heat_setpoint)}"
+                heat_setpoint_called_with[0],
+                int(test_heat_setpoint),
+                f"Heat setpoint should be {int(test_heat_setpoint)}",
             )
 
             # Test COOL_MODE - should return True and set cool setpoint
             cool_setpoint_called_with.clear()
             result = self.Zone.set_mode(self.Zone.COOL_MODE)
-            self.assertTrue(
-                result, "set_mode should return True for COOL_MODE"
+            self.assertTrue(result, "set_mode should return True for COOL_MODE")
+            self.assertEqual(
+                len(cool_setpoint_called_with),
+                1,
+                "set_cool_setpoint should be called once",
             )
             self.assertEqual(
-                len(cool_setpoint_called_with), 1,
-                "set_cool_setpoint should be called once"
-            )
-            self.assertEqual(
-                cool_setpoint_called_with[0], int(test_cool_setpoint),
-                f"Cool setpoint should be {int(test_cool_setpoint)}"
+                cool_setpoint_called_with[0],
+                int(test_cool_setpoint),
+                f"Cool setpoint should be {int(test_cool_setpoint)}",
             )
 
             # Test other valid modes - should return True without setpoint changes
-            for mode in [self.Zone.AUTO_MODE, self.Zone.OFF_MODE,
-                         self.Zone.FAN_MODE, self.Zone.DRY_MODE,
-                         self.Zone.ECO_MODE, self.Zone.UNKNOWN_MODE]:
+            for mode in [
+                self.Zone.AUTO_MODE,
+                self.Zone.OFF_MODE,
+                self.Zone.FAN_MODE,
+                self.Zone.DRY_MODE,
+                self.Zone.ECO_MODE,
+                self.Zone.UNKNOWN_MODE,
+            ]:
                 heat_setpoint_called_with.clear()
                 cool_setpoint_called_with.clear()
                 result = self.Zone.set_mode(mode)
-                self.assertTrue(
-                    result, f"set_mode should return True for {mode}"
+                self.assertTrue(result, f"set_mode should return True for {mode}")
+                self.assertEqual(
+                    len(heat_setpoint_called_with),
+                    0,
+                    f"Heat setpoint should not be called for {mode}",
                 )
                 self.assertEqual(
-                    len(heat_setpoint_called_with), 0,
-                    f"Heat setpoint should not be called for {mode}"
-                )
-                self.assertEqual(
-                    len(cool_setpoint_called_with), 0,
-                    f"Cool setpoint should not be called for {mode}"
+                    len(cool_setpoint_called_with),
+                    0,
+                    f"Cool setpoint should not be called for {mode}",
                 )
 
             # Test with bogus scheduled setpoints (should still return True)
@@ -1188,8 +1192,9 @@ class Test(utc.UnitTest):
                 result, "set_mode should return True even with bogus heat SP"
             )
             self.assertEqual(
-                len(heat_setpoint_called_with), 0,
-                "Heat setpoint should not be called with bogus setpoint"
+                len(heat_setpoint_called_with),
+                0,
+                "Heat setpoint should not be called with bogus setpoint",
             )
 
             result = self.Zone.set_mode(self.Zone.COOL_MODE)
@@ -1197,8 +1202,9 @@ class Test(utc.UnitTest):
                 result, "set_mode should return True even with bogus cool SP"
             )
             self.assertEqual(
-                len(cool_setpoint_called_with), 0,
-                "Cool setpoint should not be called with bogus setpoint"
+                len(cool_setpoint_called_with),
+                0,
+                "Cool setpoint should not be called with bogus setpoint",
             )
 
         finally:
