@@ -32,4 +32,4 @@ jobs:
           git config --local user.name "GitHub Action"
           git add .
           git commit -m ":art: Format Python code with psf/black"
-          git push
+          git push origin HEAD:${{ github.head_ref || github.ref_name }}
