@@ -1,6 +1,7 @@
 """
 blink config file.
 """
+
 ALIAS = "blink"
 
 # constants

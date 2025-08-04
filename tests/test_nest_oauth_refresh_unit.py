@@ -95,7 +95,7 @@ class TestNestOAuthRefresh(utc.UnitTest):
         mock_response.ok = True
         mock_response.json.return_value = {
             "access_token": "ya29.a0AfB_byNEW_ACCESS_TOKEN",
-            "expires_in": 3600
+            "expires_in": 3600,
             # No refresh_token in response
         }
         mock_post.return_value = mock_response

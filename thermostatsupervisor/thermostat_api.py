@@ -4,6 +4,7 @@ Thermostat API.
 This file should be updated for any new thermostats supported and
 any changes to thermostat configs.
 """
+
 # built ins
 import munch
 

@@ -3,6 +3,7 @@ Integration test module for mmm.py.
 
 This test requires connection to mmm thermostat.
 """
+
 # built-in imports
 import unittest
 

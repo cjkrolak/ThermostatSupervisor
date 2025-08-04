@@ -1,4 +1,5 @@
 """KumoCloud v3 API integration"""
+
 # built-in imports
 import os
 import pprint

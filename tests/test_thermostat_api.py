@@ -1,6 +1,7 @@
 """
 Unit test module for thermostat_api.py.
 """
+
 # built-in imports
 import os
 import sys

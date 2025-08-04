@@ -10,6 +10,7 @@ data structure expected:
     "Humidity(%RH) std": 0.0
 }
 """
+
 # built-in imports
 import json
 import os

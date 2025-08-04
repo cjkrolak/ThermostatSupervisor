@@ -1,6 +1,7 @@
 """
 connection to 3m50 thermoststat on local net.
 """
+
 # built-in imports
 import datetime
 import pprint

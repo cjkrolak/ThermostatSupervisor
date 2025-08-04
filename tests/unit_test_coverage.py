@@ -13,6 +13,7 @@ coverage results:
 session window will contain high level coverage report
 open /htmlcov/index.html to see the html report index.
 """
+
 # built-in imports
 import coverage
 
