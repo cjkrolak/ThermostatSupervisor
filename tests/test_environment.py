@@ -1,6 +1,7 @@
 """
 Unit test module for environment.py.
 """
+
 # built-in imports
 import os
 import shutil
@@ -31,6 +32,51 @@ class EnvironmentTests(utc.UnitTest):
         """
         return_val = env.is_interactive_environment()
         self.assertIsInstance(return_val, bool, "return value is not a boolean")
+
+    def test_get_env_variable_with_default(self):
+        """
+        Test get_env_variable() with default value parameter.
+        """
+        # Test with missing variable and default value
+        result = env.get_env_variable("NONEXISTENT_VAR", default="default_value")
+        self.assertEqual(result["status"], util.NO_ERROR)
+        self.assertEqual(result["value"], "default_value")
+        self.assertEqual(result["key"], "NONEXISTENT_VAR")
+
+        # Test with missing variable and no default (should fail as before)
+        result = env.get_env_variable("NONEXISTENT_VAR")
+        self.assertEqual(result["status"], util.ENVIRONMENT_ERROR)
+        self.assertIsNone(result["value"])
+
+        # Test with missing password variable and default value
+        result = env.get_env_variable("MISSING_PASSWORD", default="secret123")
+        self.assertEqual(result["status"], util.NO_ERROR)
+        self.assertEqual(result["value"], "secret123")
+
+        # Test with existing environment variable (default should be ignored)
+        os.environ["TEST_EXISTING"] = "existing_value"
+        try:
+            result = env.get_env_variable("TEST_EXISTING", default="default_value")
+            self.assertEqual(result["status"], util.NO_ERROR)
+            self.assertEqual(result["value"], "existing_value")
+        finally:
+            del os.environ["TEST_EXISTING"]
+
+    def test_get_flask_limiter_storage_uri(self):
+        """
+        Test get_flask_limiter_storage_uri() with and without environment variable.
+        """
+        # Test with no environment variable (should use default)
+        result = env.get_flask_limiter_storage_uri()
+        self.assertEqual(result, "memory://")
+
+        # Test with environment variable set
+        os.environ["FLASK_LIMITER_STORAGE_URI"] = "redis://localhost:6379"
+        try:
+            result = env.get_flask_limiter_storage_uri()
+            self.assertEqual(result, "redis://localhost:6379")
+        finally:
+            del os.environ["FLASK_LIMITER_STORAGE_URI"]
 
     def test_get_env_variable(self):
         """
