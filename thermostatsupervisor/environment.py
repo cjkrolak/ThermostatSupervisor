@@ -76,7 +76,7 @@ def _read_supervisor_env_file():
     return env_dict
 
 
-def get_env_variable(env_key):
+def get_env_variable(env_key, default=None):
     """
     Get environment variable.
 
@@ -85,6 +85,7 @@ def get_env_variable(env_key):
 
     inputs:
        env_key(str): env variable of interest
+       default: default value to return if env variable is not found (optional)
     returns:
        (dict): {status, value, key}
     """
@@ -121,11 +122,24 @@ def get_env_variable(env_key):
 
         util.log_msg(f"{env_key}={value_shown}", mode=util.DEBUG_LOG)
     except KeyError:
-        util.log_msg(
-            f"FATAL ERROR: required environment variable '{env_key}'" " is missing.",
-            mode=util.STDOUT_LOG + util.DATA_LOG,
-        )
-        return_buffer["status"] = util.ENVIRONMENT_ERROR
+        if default is not None:
+            return_buffer["value"] = default
+            # mask off any password keys
+            if "PASSWORD" in return_buffer["key"]:
+                value_shown = "(hidden)"
+            else:
+                value_shown = return_buffer["value"]
+            util.log_msg(
+                f"{env_key}={value_shown} (using default value)",
+                mode=util.DEBUG_LOG
+            )
+        else:
+            util.log_msg(
+                f"FATAL ERROR: required environment variable '{env_key}'"
+                " is missing.",
+                mode=util.STDOUT_LOG + util.DATA_LOG,
+            )
+            return_buffer["status"] = util.ENVIRONMENT_ERROR
     return return_buffer
 
 
@@ -466,8 +480,7 @@ def get_flask_limiter_storage_uri():
     Returns:
         str: Storage URI for Flask-Limiter. Defaults to 'memory://' if not set.
     """
-    storage_uri = get_env_variable("FLASK_LIMITER_STORAGE_URI").get("value")
-    if storage_uri is None:
-        # Default to explicit memory storage to avoid warnings
-        storage_uri = "memory://"
+    storage_uri = get_env_variable(
+        "FLASK_LIMITER_STORAGE_URI", default="memory://"
+    )["value"]
     return storage_uri
