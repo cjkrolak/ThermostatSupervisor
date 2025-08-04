@@ -199,10 +199,34 @@ class ThermostatClass(tc.ThermostatCommon):
 
             # catch 403 web site response, no need to retry
             if "403 Forbidden" in response.text:
-                raise RuntimeError(
-                    f"FATAL ERROR 403: client is forbidden from accessing "
-                    f"route {self.url}"
-                )
+                # Check if this is an ipban-related block
+                ipban_message = ("You don't have the permission to access the "
+                                 "requested resource. It is either read-protected "
+                                 "or not readable by the server.")
+                if ipban_message in response.text:
+                    # Extract client IP from the request URL or use a generic message
+                    import socket
+                    try:
+                        # Get the local IP address used for the connection
+                        hostname = socket.gethostname()
+                        client_ip = socket.gethostbyname(hostname)
+                    except (socket.error, OSError):
+                        client_ip = "unknown"
+
+                    raise RuntimeError(
+                        f"FATAL ERROR 403: The client IP address {client_ip} has been "
+                        f"blocked due to suspicious activity (likely from previous "
+                        f"invalid requests). This is an IP ban protection mechanism. "
+                        f"To resolve: 1) Wait for the ban to expire, 2) Contact the "
+                        f"server administrator to clear the IP ban, or 3) Use the "
+                        f"clear_block_list endpoint if available. Route: {self.url}"
+                    )
+                else:
+                    # Generic 403 error (not ipban-related)
+                    raise RuntimeError(
+                        f"FATAL ERROR 403: client is forbidden from accessing "
+                        f"route {self.url}"
+                    )
 
             # parse the web site response
             try:
@@ -306,7 +330,39 @@ class ThermostatZone(tc.ThermostatCommonZone):
 
         def _get_metadata_internal():
             response = requests.get(self.url, timeout=util.HTTP_TIMEOUT)
-            # Raise HTTPError for bad responses (4xx or 5xx)
+
+            # Handle 403 responses specifically for better error messages
+            if response.status_code == 403:
+                # Check if this is an ipban-related block
+                ipban_message = ("You don't have the permission to access the "
+                                 "requested resource. It is either read-protected "
+                                 "or not readable by the server.")
+                if ipban_message in response.text:
+                    # Extract client IP from the request URL or use a generic message
+                    import socket
+                    try:
+                        # Get the local IP address used for the connection
+                        hostname = socket.gethostname()
+                        client_ip = socket.gethostbyname(hostname)
+                    except (socket.error, OSError):
+                        client_ip = "unknown"
+
+                    raise RuntimeError(
+                        f"FATAL ERROR 403: The client IP address {client_ip} has been "
+                        f"blocked due to suspicious activity (likely from previous "
+                        f"invalid requests). This is an IP ban protection mechanism. "
+                        f"To resolve: 1) Wait for the ban to expire, 2) Contact the "
+                        f"server administrator to clear the IP ban, or 3) Use the "
+                        f"clear_block_list endpoint if available. Route: {self.url}"
+                    )
+                else:
+                    # Generic 403 error (not ipban-related)
+                    raise RuntimeError(
+                        f"FATAL ERROR 403: client is forbidden from accessing "
+                        f"route {self.url}"
+                    )
+
+            # Raise HTTPError for other bad responses (4xx or 5xx)
             response.raise_for_status()
 
             try:
