@@ -456,6 +456,14 @@ class UserInputs:
                 valid_sflags.append(self.user_inputs[parent_key][child_key]["sflag"])
         return valid_sflags
 
+    def get_lflag_list(self):
+        """Return a list of all lflags."""
+        valid_lflags = []
+        for parent_key, child_dict in self.user_inputs.items():
+            for child_key, _ in child_dict.items():
+                valid_lflags.append(self.user_inputs[parent_key][child_key]["lflag"])
+        return valid_lflags
+
     def parse_runtime_parameters(self, argv_list=None):
         """
         Parse all runtime parameters from list, argv list or named
@@ -473,11 +481,21 @@ class UserInputs:
             raise ValueError("user_inputs cannot be None")
         parent_key = list(self.user_inputs.keys())[0]
         valid_sflags = self.get_sflag_list()
-        valid_sflags += ["-h", "--"]  # add help and double dash
+        valid_lflags = self.get_lflag_list()
+        valid_flags = valid_sflags + valid_lflags + ["-h", "--"]  # combine all flags
         if argv_list:
             # argument list input, support parsing list
-            argvlist_sflags = [str(elem)[:2] for elem in argv_list]
-            if any([flag in argvlist_sflags for flag in valid_sflags]):
+            argvlist_flags = []
+            for elem in argv_list:
+                elem_str = str(elem)
+                if elem_str.startswith('--'):
+                    # For long flags, check the full flag (before any '=')
+                    flag_part = elem_str.split('=')[0]
+                    argvlist_flags.append(flag_part)
+                else:
+                    # For short flags, check first 2 characters
+                    argvlist_flags.append(elem_str[:2])
+            if any([flag in argvlist_flags for flag in valid_flags]):
                 log_msg(
                     f"parsing named runtime parameters from user input list: "
                     f"{argv_list}",
@@ -492,7 +510,7 @@ class UserInputs:
                     func_name=1,
                 )
                 self.parse_argv_list(parent_key, argv_list)
-        elif any([flag in sysargv_sflags for flag in valid_sflags]):
+        elif any([flag in sysargv_sflags for flag in valid_flags]):
             # named arguments from sys.argv
             log_msg(
                 f"parsing named runtime parameters from sys.argv: {sys.argv}",
