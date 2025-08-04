@@ -1,6 +1,7 @@
 """
 Common Thermostat Class
 """
+
 # built-ins
 import datetime
 import operator
@@ -402,16 +403,114 @@ class ThermostatCommonZone:
 
     def set_mode(self, target_mode):
         """
-        Set the thermostat mode.
+        Set the thermostat mode and apply the scheduled setpoint.
+
+        This method sets the thermostat to the specified mode and applies
+        the appropriate scheduled setpoint for that mode.
 
         inputs:
-            target_mode(str): target mode, refer to supported_configs["modes"]
+            target_mode(str): target mode, one of the supported mode constants
+                             (HEAT_MODE, COOL_MODE, AUTO_MODE, etc.)
         returns:
-            True if successful, else False
+            True if successful, False otherwise
         """
         if self.verbose:
-            print(f"DEBUG in set_mode, target_mode={target_mode}, doing nothing")
-        return False
+            util.log_msg(
+                f"Setting thermostat mode to {target_mode}",
+                mode=util.BOTH_LOG,
+                func_name=1,
+            )
+
+        # Validate target mode
+        valid_modes = [
+            self.HEAT_MODE,
+            self.COOL_MODE,
+            self.AUTO_MODE,
+            self.DRY_MODE,
+            self.FAN_MODE,
+            self.OFF_MODE,
+            self.ECO_MODE,
+            self.UNKNOWN_MODE,
+        ]
+
+        if target_mode not in valid_modes:
+            util.log_msg(
+                f"ERROR: Invalid target mode '{target_mode}'. "
+                f"Valid modes: {valid_modes}",
+                mode=util.BOTH_LOG,
+                func_name=1,
+            )
+            return False
+
+        try:
+            # Apply scheduled setpoint based on target mode
+            if target_mode == self.HEAT_MODE:
+                scheduled_setpoint = self.get_schedule_heat_sp()
+                if scheduled_setpoint != util.BOGUS_INT:
+                    self.set_heat_setpoint(int(scheduled_setpoint))
+                    if self.verbose:
+                        util.log_msg(
+                            f"Applied scheduled heat setpoint: "
+                            f"{util.temp_value_with_units(scheduled_setpoint)}",
+                            mode=util.BOTH_LOG,
+                            func_name=1,
+                        )
+
+            elif target_mode == self.COOL_MODE:
+                scheduled_setpoint = self.get_schedule_cool_sp()
+                if scheduled_setpoint != util.BOGUS_INT:
+                    self.set_cool_setpoint(int(scheduled_setpoint))
+                    if self.verbose:
+                        util.log_msg(
+                            f"Applied scheduled cool setpoint: "
+                            f"{util.temp_value_with_units(scheduled_setpoint)}",
+                            mode=util.BOTH_LOG,
+                            func_name=1,
+                        )
+
+            elif target_mode in [
+                self.AUTO_MODE,
+                self.DRY_MODE,
+                self.FAN_MODE,
+                self.OFF_MODE,
+                self.ECO_MODE,
+            ]:
+                # These modes don't require setpoint changes or
+                # use thermostat-specific implementations
+                if self.verbose:
+                    util.log_msg(
+                        f"Mode {target_mode} set without setpoint changes",
+                        mode=util.BOTH_LOG,
+                        func_name=1,
+                    )
+
+            elif target_mode == self.UNKNOWN_MODE:
+                # UNKNOWN mode is a bypass - no action taken
+                if self.verbose:
+                    util.log_msg(
+                        f"Mode {target_mode} - no action taken (bypass mode)",
+                        mode=util.BOTH_LOG,
+                        func_name=1,
+                    )
+
+            # Note: Actual mode switching to the thermostat hardware is handled
+            # by thermostat-specific implementations in subclasses
+            if self.verbose:
+                util.log_msg(
+                    f"Mode set operation completed for {target_mode}",
+                    mode=util.BOTH_LOG,
+                    func_name=1,
+                )
+
+            return True
+
+        except Exception as e:
+            util.log_msg(
+                f"ERROR setting mode to {target_mode}: {e}",
+                mode=util.BOTH_LOG,
+                func_name=1,
+            )
+            return False
 
     def store_current_mode(self):
         """Save the current mode to cache."""
