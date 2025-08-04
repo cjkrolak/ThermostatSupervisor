@@ -8,17 +8,17 @@ feedback when IP addresses are blocked by ipban.
 import unittest
 from unittest.mock import patch, MagicMock
 import sys
-import os
 
 # Mock the RPi.GPIO import before importing sht31
+# This needs to be done before importing sht31 module
 sys.modules['RPi'] = MagicMock()
 sys.modules['RPi.GPIO'] = MagicMock()
 sys.modules['smbus2'] = MagicMock()
 
-# local imports
-from thermostatsupervisor import sht31
-from thermostatsupervisor import sht31_config
-from tests import unit_test_common as utc
+# local imports (must come after mocking)
+from thermostatsupervisor import sht31  # noqa: E402
+from thermostatsupervisor import sht31_config  # noqa: E402
+from tests import unit_test_common as utc  # noqa: E402
 
 
 @unittest.skipIf(False, "Test always enabled for 403 error validation")
