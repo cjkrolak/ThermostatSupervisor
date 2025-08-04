@@ -130,8 +130,7 @@ def get_env_variable(env_key, default=None):
             else:
                 value_shown = return_buffer["value"]
             util.log_msg(
-                f"{env_key}={value_shown} (using default value)",
-                mode=util.DEBUG_LOG
+                f"{env_key}={value_shown} (using default value)", mode=util.DEBUG_LOG
             )
         else:
             util.log_msg(
@@ -480,7 +479,7 @@ def get_flask_limiter_storage_uri():
     Returns:
         str: Storage URI for Flask-Limiter. Defaults to 'memory://' if not set.
     """
-    storage_uri = get_env_variable(
-        "FLASK_LIMITER_STORAGE_URI", default="memory://"
-    )["value"]
+    storage_uri = get_env_variable("FLASK_LIMITER_STORAGE_URI", default="memory://")[
+        "value"
+    ]
     return storage_uri
