@@ -55,6 +55,26 @@ docker run --rm -it --privileged --env-file 'envfile' 'username'/thermostatsuper
 * 'DOCKER_USERNAME' is your DockerHub username<br/>
 * 'DOCKER_PASSWORD' is your DockerHub password<br/>
 
+## CI/CD Secret Management Strategy:
+This project uses GitHub repository secrets as the primary source of truth to reduce secret duplication across CI/CD systems.
+
+**GitHub Secrets (Primary - Source of Truth):**
+- Location: Repository Settings > Secrets and variables > Actions
+- Used by: GitHub Actions workflows (SonarQube, Docker builds, etc.)
+- Required secrets for testing and integration:
+  - `GMAIL_USERNAME`, `GMAIL_PASSWORD` (email notification tests)
+  - `TCC_USERNAME`, `TCC_PASSWORD` (Honeywell thermostat integration tests)
+  - `SHT31_REMOTE_IP_ADDRESS_1` (SHT31 sensor tests)
+  - `KUMO_USERNAME`, `KUMO_PASSWORD` (Kumo cloud integration tests)
+  - `BLINK_USERNAME`, `BLINK_PASSWORD`, `BLINK_2FA` (Blink camera integration tests)
+  - `THERMOSTATSUPERVISOR_PR` (GitHub Personal Access Token for cross-workflow triggers)
+
+**Azure DevOps Pipeline Variables (Secondary - Mirror GitHub):**
+- Location: Azure DevOps > Pipelines > Library > Variable groups
+- Used by: Azure DevOps pipeline for independent execution capability
+- Should contain identical values to GitHub secrets listed above
+- This allows ADO pipeline to run independently when needed while maintaining GitHub as authoritative source
+
 # Execution Information:
 ## debug / diagnostics:
 1. ./data/ folder contains supervisor logs, including integrated pyhtcc logs

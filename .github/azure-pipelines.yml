@@ -2,6 +2,26 @@
 # Create and test a Python package on multiple Python versions.
 # Add steps that analyze code, save the dist with the build record, publish to a PyPI-compatible index, and more:
 # https://docs.microsoft.com/azure/devops/pipelines/languages/python
+#
+# SECRET MANAGEMENT STRATEGY:
+# This Azure DevOps pipeline uses GitHub secrets as the source of truth to reduce secret duplication.
+# ADO pipeline variables should be kept in sync with GitHub repository secrets.
+#
+# GitHub Secrets (Primary - Source of Truth):
+# Location: GitHub repository > Settings > Secrets and variables > Actions
+# Required secrets:
+#   - GMAIL_USERNAME, GMAIL_PASSWORD (for email notification tests)
+#   - TCC_USERNAME, TCC_PASSWORD (for Honeywell thermostat integration tests)  
+#   - SHT31_REMOTE_IP_ADDRESS_1 (for SHT31 sensor tests)
+#   - KUMO_USERNAME, KUMO_PASSWORD (for Kumo cloud integration tests)
+#   - BLINK_USERNAME, BLINK_PASSWORD, BLINK_2FA (for Blink camera integration tests)
+#   - THERMOSTATSUPERVISOR_PR (GitHub personal access token for API access)
+#
+# Azure DevOps Pipeline Variables (Secondary - Should Mirror GitHub):  
+# Location: Azure DevOps > Pipelines > Library > Variable groups
+# These variables should have identical values to their GitHub secret counterparts.
+# This allows the ADO pipeline to run independently when needed while maintaining
+# GitHub as the authoritative source for secret values.
 ---
 name: Azure Pipelines
 # disable CI trigger
@@ -57,21 +77,22 @@ steps:
       python -m tests.unit_test_coverage
     displayName: 'Unit Tests'
     # timeout after 30 minutes, nominal job time is 10 minutes
-
     timeoutInMinutes: "30"
     env:
-      GMAIL_USERNAME: '$(GMAIL_USERNAME)'  # used for some unit tests
-      GMAIL_PASSWORD: '$(GMAIL_PASSWORD)'  # used for some unit test
-      TCC_USERNAME: '$(TCC_USERNAME)'  # used for Honeywell int test
-      TCC_PASSWORD: '$(TCC_PASSWORD)'  # used for Honeywell int test
-      SHT31_REMOTE_IP_ADDRESS_1: '$(SHT31_REMOTE_IP_ADDRESS_1)'
+      # IMPORTANT: These ADO secrets should mirror the GitHub secrets to reduce duplication.
+      # GitHub secrets are the source of truth - ADO secrets should be kept in sync.
+      # See GitHub repository settings > Secrets and variables > Actions for the primary secrets.
+      GMAIL_USERNAME: '$(GMAIL_USERNAME)'  # used for some unit tests (sync with GitHub secret)
+      GMAIL_PASSWORD: '$(GMAIL_PASSWORD)'  # used for some unit test (sync with GitHub secret)
+      TCC_USERNAME: '$(TCC_USERNAME)'  # used for Honeywell int test (sync with GitHub secret)
+      TCC_PASSWORD: '$(TCC_PASSWORD)'  # used for Honeywell int test (sync with GitHub secret)
+      SHT31_REMOTE_IP_ADDRESS_1: '$(SHT31_REMOTE_IP_ADDRESS_1)'  # sync with GitHub secret
       # SHT31_REMOTE_IP_ADDRESS_99: '$(SHT31_REMOTE_IP_ADDRESS_99)'
-
-      KUMO_USERNAME: '$(KUMO_USERNAME)'  # used for kumocloud int test
-      KUMO_PASSWORD: '$(KUMO_PASSWORD)'  # used for kumocloud int test
-      BLINK_USERNAME: '$(BLINK_USERNAME)'  # used for blink int test
-      BLINK_PASSWORD: '$(BLINK_PASSWORD)'  # used for blink int test
-      BLINK_2FA: '$(BLINK_2FA)'  # used for blink int test
+      KUMO_USERNAME: '$(KUMO_USERNAME)'  # used for kumocloud int test (sync with GitHub secret)
+      KUMO_PASSWORD: '$(KUMO_PASSWORD)'  # used for kumocloud int test (sync with GitHub secret)
+      BLINK_USERNAME: '$(BLINK_USERNAME)'  # used for blink int test (sync with GitHub secret)
+      BLINK_PASSWORD: '$(BLINK_PASSWORD)'  # used for blink int test (sync with GitHub secret)
+      BLINK_2FA: '$(BLINK_2FA)'  # used for blink int test (sync with GitHub secret)
   # publish code coverage results to ADO pipeline
   - task: PublishCodeCoverageResults@2
     inputs:
@@ -179,13 +200,16 @@ steps:
         echo "ERROR: THERMOSTATSUPERVISOR_PR is not set"
         echo ""
         echo "🔧 SETUP INSTRUCTIONS:"
-        echo "1. Go to Azure DevOps > Pipelines > Library > Variable groups"
-        echo "2. Create/edit the variable group used by this pipeline"
-        echo "3. Add variable: THERMOSTATSUPERVISOR_PR"
-        echo "4. Value should be a GitHub Personal Access Token (classic) with these scopes:"
+        echo "1. Go to GitHub repository > Settings > Secrets and variables > Actions"
+        echo "2. Set THERMOSTATSUPERVISOR_PR with a Personal Access Token (classic)"
+        echo "3. Go to Azure DevOps > Pipelines > Library > Variable groups"
+        echo "4. Create/edit the variable group used by this pipeline"
+        echo "5. Add variable: THERMOSTATSUPERVISOR_PR with the SAME value as GitHub secret"
+        echo "6. Mark the variable as secret in Azure DevOps"
+        echo ""
+        echo "Token scopes required:"
         echo "   - repo (for private repos) OR public_repo (for public repos)"
         echo "   - workflow (to trigger workflow dispatches)"
-        echo "5. Mark the variable as secret in Azure DevOps"
         echo ""
         echo "🔗 Create token at: https://github.com/settings/tokens"
         exit 1
@@ -273,4 +297,4 @@ steps:
     displayName: 'Trigger SonarQube Workflow'
     condition: succeeded()
     env:
-      THERMOSTATSUPERVISOR_PR: '$(THERMOSTATSUPERVISOR_PR)'  # Azure DevOps pipeline variable - must be Personal Access Token with 'repo' and 'workflow' scopes
+      THERMOSTATSUPERVISOR_PR: '$(THERMOSTATSUPERVISOR_PR)'  # GitHub Personal Access Token - should match GitHub secret value
