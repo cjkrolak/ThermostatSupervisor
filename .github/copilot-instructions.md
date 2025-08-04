@@ -35,14 +35,21 @@
 - **MANDATORY**: All code changes MUST pass flake8 linting before committing.
 - **ALWAYS run** `flake8 --config=setup.cfg .` to verify code style compliance before any commit.
 - **ZERO linting errors policy**: Address ALL linting issues before committing code - no exceptions.
+- **MANDATORY**: Linting MUST pass before any GitHub Actions workflows are triggered.
 - Follow the existing flake8 configuration in `setup.cfg` which includes black compatibility settings.
 - Pay special attention to:
   - W293: blank line contains whitespace (ensure blank lines are completely empty)
   - W291: trailing whitespace (remove all trailing spaces)
   - E128: continuation line under-indented for visual indent (align with opening parenthesis)
   - E501: line too long (respect max-line-length = 88 from setup.cfg)
+  - F401: imported but unused (remove unused imports)
+  - E402: module level import not at top of file (use `# noqa: E402` only when necessary for proper module initialization)
 - Use `pylint $(git ls-files '*.py')` for additional code quality checks.
 - Run flake8 on the entire codebase (`flake8 --config=setup.cfg .`) not just modified files.
+- **Pre-commit validation**: Always validate code style before any automated processes:
+  1. Run `flake8 --config=setup.cfg .` on all modified files
+  2. Fix ALL linting errors before proceeding with commits
+  3. Ensure 100% linting compliance before GitHub Actions execution
 
 ### Code Coverage Requirements
 - Add unit and integration test code coverage on all new code.
