@@ -18,8 +18,11 @@ class TestYamlLintWorkflow(unittest.TestCase):
         """Set up test environment."""
         self.repo_root = Path(__file__).parent.parent
         self.yamllint_config = self.repo_root / ".yamllint"
-        self.workflow_file = (
+        self.yamllint_workflow = (
             self.repo_root / ".github" / "workflows" / "yamllint.yml"
+        )
+        self.yaml_formatter_workflow = (
+            self.repo_root / ".github" / "workflows" / "yaml-formatter.yml"
         )
 
     def test_yamllint_config_exists(self):
@@ -32,8 +35,15 @@ class TestYamlLintWorkflow(unittest.TestCase):
     def test_yamllint_workflow_exists(self):
         """Test that yamllint workflow file exists."""
         self.assertTrue(
-            self.workflow_file.exists(),
+            self.yamllint_workflow.exists(),
             "yamllint workflow file should exist"
+        )
+
+    def test_yaml_formatter_workflow_exists(self):
+        """Test that yaml-formatter workflow file exists."""
+        self.assertTrue(
+            self.yaml_formatter_workflow.exists(),
+            "yaml-formatter workflow file should exist"
         )
 
     def test_yamllint_config_is_valid(self):
@@ -54,7 +64,7 @@ class TestYamlLintWorkflow(unittest.TestCase):
         """Test that yamllint workflow file passes its own linting."""
         result = subprocess.run(
             ["yamllint", "--config-file", str(self.yamllint_config),
-             str(self.workflow_file)],
+             str(self.yamllint_workflow)],
             cwd=self.repo_root,
             capture_output=True,
             text=True
@@ -62,6 +72,20 @@ class TestYamlLintWorkflow(unittest.TestCase):
         self.assertEqual(
             result.returncode, 0,
             f"yamllint workflow should pass linting: {result.stderr}"
+        )
+
+    def test_yaml_formatter_workflow_is_valid(self):
+        """Test that yaml-formatter workflow file passes its own linting."""
+        result = subprocess.run(
+            ["yamllint", "--config-file", str(self.yamllint_config),
+             str(self.yaml_formatter_workflow)],
+            cwd=self.repo_root,
+            capture_output=True,
+            text=True
+        )
+        self.assertEqual(
+            result.returncode, 0,
+            f"yaml-formatter workflow should pass linting: {result.stderr}"
         )
 
     def test_yamllint_catches_common_issues(self):
@@ -95,17 +119,64 @@ class TestYamlLintWorkflow(unittest.TestCase):
         finally:
             os.unlink(temp_file)
 
-    def test_yamllint_command_available(self):
-        """Test that yamllint command is available."""
+    def test_yamlfix_command_available(self):
+        """Test that yamlfix command is available."""
         result = subprocess.run(
-            ["yamllint", "--version"],
+            ["yamlfix", "--version"],
             capture_output=True,
             text=True
         )
         self.assertEqual(
             result.returncode, 0,
-            "yamllint command should be available"
+            "yamlfix command should be available"
         )
+
+    def test_yamlfix_can_fix_issues(self):
+        """Test that yamlfix can fix common YAML formatting issues."""
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.yml',
+                                         delete=False) as f:
+            # Create a YAML file with issues that yamlfix can fix
+            f.write("version: 2\n")
+            f.write("jobs:\n")
+            f.write("  build:\n")
+            f.write("    runs-on: ubuntu-latest")  # missing newline
+            temp_file = f.name
+
+        try:
+            # Check that yamlfix detects issues
+            check_result = subprocess.run(
+                ["yamlfix", "--check", temp_file],
+                capture_output=True,
+                text=True
+            )
+            self.assertNotEqual(
+                check_result.returncode, 0,
+                "yamlfix should detect formatting issues"
+            )
+
+            # Apply fixes
+            fix_result = subprocess.run(
+                ["yamlfix", temp_file],
+                capture_output=True,
+                text=True
+            )
+            self.assertEqual(
+                fix_result.returncode, 0,
+                f"yamlfix should fix issues: {fix_result.stderr}"
+            )
+
+            # Verify file was fixed
+            verify_result = subprocess.run(
+                ["yamlfix", "--check", temp_file],
+                capture_output=True,
+                text=True
+            )
+            self.assertEqual(
+                verify_result.returncode, 0,
+                "yamlfix should report no issues after fixing"
+            )
+        finally:
+            os.unlink(temp_file)
 
 
 if __name__ == "__main__":
