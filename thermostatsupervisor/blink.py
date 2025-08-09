@@ -106,6 +106,65 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):
         self.device_id = self.get_target_zone_id(self.zone_number)
         self.serial_number = None  # will be populated when unit is queried.
 
+    def _handle_auth_retry(self, attempt, max_retries, retry_delay, error):
+        """Handle authentication retry logic."""
+        if attempt < max_retries - 1:
+            if self.verbose:
+                print(
+                    f"Authentication attempt {attempt + 1} failed: {str(error)}. "
+                    f"Retrying in {retry_delay} seconds..."
+                )
+            time.sleep(retry_delay)
+            return retry_delay * 2  # exponential backoff
+        else:
+            # Final attempt failed
+            error_msg = self._format_auth_error(error, "sync")
+            banner = "*" * len(error_msg)
+            print(banner)
+            print(error_msg)
+            print(banner)
+            sys.exit(1)
+
+    def _handle_setup_retry(self, attempt, max_retries, retry_delay):
+        """Handle setup post-verification retry logic."""
+        if attempt < max_retries - 1:
+            if self.verbose:
+                print(
+                    f"Post-verification setup failed, retrying in "
+                    f"{retry_delay} seconds... "
+                    f"(attempt {attempt + 1})"
+                )
+            time.sleep(retry_delay)
+            return True  # Continue retry loop
+        else:
+            raise RuntimeError(
+                "Blink post-verification setup failed after retries. "
+                "Camera list may not be available."
+            )
+
+    def _attempt_authentication(self):
+        """Attempt single authentication process."""
+        self.blink = blinkpy.Blink()
+        if self.blink is None:
+            raise RuntimeError(
+                "ERROR: Blink object failed to instantiate "
+                f"for zone {self.zone_number}"
+            )
+
+        self.blink.auth = auth.Auth(self.auth_dict, no_prompt=True)
+        self.blink.start()
+
+        # Send 2FA key with proper error checking
+        auth_success = self.blink.auth.send_auth_key(self.blink, self.bl_2fa)
+        if not auth_success:
+            raise ValueError(
+                "2FA verification failed. Please check your verification code."
+            )
+
+        # Check if setup_post_verify succeeds with retry
+        setup_success = self.blink.setup_post_verify()
+        return setup_success
+
     def auth_start(self):
         """
         blinkpy < 0.22.0-compatible start with improved error handling
@@ -123,40 +182,11 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):
 
         for attempt in range(max_retries):
             try:
-                self.blink = blinkpy.Blink()
-                if self.blink is None:
-                    raise RuntimeError(
-                        "ERROR: Blink object failed to instantiate "
-                        f"for zone {self.zone_number}"
-                    )
+                setup_success = self._attempt_authentication()
 
-                self.blink.auth = auth.Auth(self.auth_dict, no_prompt=True)
-                self.blink.start()
-
-                # Send 2FA key with proper error checking
-                auth_success = self.blink.auth.send_auth_key(self.blink, self.bl_2fa)
-                if not auth_success:
-                    raise ValueError(
-                        "2FA verification failed. Please check your verification code."
-                    )
-
-                # Check if setup_post_verify succeeds with retry
-                setup_success = self.blink.setup_post_verify()
                 if not setup_success:
-                    if attempt < max_retries - 1:
-                        if self.verbose:
-                            print(
-                                f"Post-verification setup failed, retrying in "
-                                f"{retry_delay} seconds... "
-                                f"(attempt {attempt + 1})"
-                            )
-                        time.sleep(retry_delay)
+                    if self._handle_setup_retry(attempt, max_retries, retry_delay):
                         continue
-                    else:
-                        raise RuntimeError(
-                            "Blink post-verification setup failed after retries. "
-                            "Camera list may not be available."
-                        )
 
                 # Success - break out of retry loop
                 break
@@ -170,23 +200,10 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):
                 ClientConnectionError,
                 ContentTypeError,
             ) as e:
-                if attempt < max_retries - 1:
-                    if self.verbose:
-                        print(
-                            f"Authentication attempt {attempt + 1} failed: {str(e)}. "
-                            f"Retrying in {retry_delay} seconds..."
-                        )
-                    time.sleep(retry_delay)
-                    retry_delay *= 2  # exponential backoff
-                    continue
-                else:
-                    # Final attempt failed
-                    error_msg = self._format_auth_error(e, "sync")
-                    banner = "*" * len(error_msg)
-                    print(banner)
-                    print(error_msg)
-                    print(banner)
-                    sys.exit(1)
+                retry_delay = self._handle_auth_retry(
+                    attempt, max_retries, retry_delay, e
+                )
+                continue
             except Exception as e:
                 # Unexpected error - don't retry
                 print(traceback.format_exc())
@@ -199,6 +216,69 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):
                 print(error_msg)
                 print(banner)
                 sys.exit(1)
+
+    async def _handle_async_auth_retry(self, attempt, max_retries, retry_delay, error):
+        """Handle async authentication retry logic."""
+        if attempt < max_retries - 1:
+            if self.verbose:
+                print(
+                    f"Authentication attempt {attempt + 1} failed: "
+                    f"{str(error)}. Retrying in {retry_delay} seconds..."
+                )
+            await asyncio.sleep(retry_delay)
+            return retry_delay * 2  # exponential backoff
+        else:
+            # Final attempt failed
+            error_msg = self._format_auth_error(error, "async")
+            banner = "*" * len(error_msg)
+            print(banner)
+            print(error_msg)
+            print(banner)
+            sys.exit(1)
+
+    async def _handle_async_setup_retry(self, attempt, max_retries, retry_delay):
+        """Handle async setup post-verification retry logic."""
+        if attempt < max_retries - 1:
+            if self.verbose:
+                print(
+                    f"Post-verification setup failed, retrying in "
+                    f"{retry_delay} seconds... (attempt {attempt + 1})"
+                )
+            await asyncio.sleep(retry_delay)
+            return True  # Continue retry loop
+        else:
+            raise RuntimeError(
+                "Blink post-verification setup failed after "
+                "retries. Camera list may not be available."
+            )
+
+    async def _attempt_async_authentication(self, session):
+        """Attempt single async authentication process."""
+        self.blink = blinkpy.Blink(session=session)
+        if self.blink is None:
+            raise RuntimeError(
+                "ERROR: Blink object failed to instantiate "
+                f"for zone {self.zone_number}"
+            )
+
+        self.blink.auth = auth.Auth(
+            self.auth_dict, no_prompt=True, session=session
+        )
+        await self.blink.start()
+
+        # Send 2FA key with proper error checking
+        auth_success = await self.blink.auth.send_auth_key(
+            self.blink, self.bl_2fa
+        )
+        if not auth_success:
+            raise ValueError(
+                "2FA verification failed. "
+                "Please check your verification code."
+            )
+
+        # Check if setup_post_verify succeeds with retry
+        setup_success = await self.blink.setup_post_verify()
+        return setup_success
 
     async def async_auth_start(self):
         """
@@ -220,44 +300,13 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):
 
             for attempt in range(max_retries):
                 try:
-                    self.blink = blinkpy.Blink(session=session)
-                    if self.blink is None:
-                        raise RuntimeError(
-                            "ERROR: Blink object failed to instantiate "
-                            f"for zone {self.zone_number}"
-                        )
+                    setup_success = await self._attempt_async_authentication(session)
 
-                    self.blink.auth = auth.Auth(
-                        self.auth_dict, no_prompt=True, session=session
-                    )
-                    await self.blink.start()
-
-                    # Send 2FA key with proper error checking
-                    auth_success = await self.blink.auth.send_auth_key(
-                        self.blink, self.bl_2fa
-                    )
-                    if not auth_success:
-                        raise ValueError(
-                            "2FA verification failed. "
-                            "Please check your verification code."
-                        )
-
-                    # Check if setup_post_verify succeeds with retry
-                    setup_success = await self.blink.setup_post_verify()
                     if not setup_success:
-                        if attempt < max_retries - 1:
-                            if self.verbose:
-                                print(
-                                    f"Post-verification setup failed, retrying in "
-                                    f"{retry_delay} seconds... (attempt {attempt + 1})"
-                                )
-                            await asyncio.sleep(retry_delay)
+                        if await self._handle_async_setup_retry(
+                            attempt, max_retries, retry_delay
+                        ):
                             continue
-                        else:
-                            raise RuntimeError(
-                                "Blink post-verification setup failed after "
-                                "retries. Camera list may not be available."
-                            )
 
                     # Success - break out of retry loop
                     break
@@ -271,23 +320,10 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):
                     ClientConnectionError,
                     ContentTypeError,
                 ) as e:
-                    if attempt < max_retries - 1:
-                        if self.verbose:
-                            print(
-                                f"Authentication attempt {attempt + 1} failed: "
-                                f"{str(e)}. Retrying in {retry_delay} seconds..."
-                            )
-                        await asyncio.sleep(retry_delay)
-                        retry_delay *= 2  # exponential backoff
-                        continue
-                    else:
-                        # Final attempt failed
-                        error_msg = self._format_auth_error(e, "async")
-                        banner = "*" * len(error_msg)
-                        print(banner)
-                        print(error_msg)
-                        print(banner)
-                        sys.exit(1)
+                    retry_delay = await self._handle_async_auth_retry(
+                        attempt, max_retries, retry_delay, e
+                    )
+                    continue
                 except Exception as e:
                     # Unexpected error - don't retry
                     print(traceback.format_exc())
@@ -418,6 +454,118 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):
         """
         return self.get_metadata(zone, retry=retry)
 
+    def _handle_empty_camera_list_async(self, zone_name):
+        """Handle empty camera list for async version of blinkpy."""
+        available_cameras = (
+            list(self.blink.cameras.keys()) if self.blink.cameras else []
+        )
+        error_msg = (
+            f"Camera list is empty when searching for camera "
+            f"'{zone_name}'. Available cameras: "
+            f"{available_cameras}. This may indicate "
+            f"authentication tokens have expired. Please restart "
+            f"the application to re-authenticate."
+        )
+        raise ValueError(error_msg)
+
+    def _handle_token_refresh_failure(self, zone_name, refresh_error):
+        """Handle token refresh failure with helpful error message."""
+        if self.verbose:
+            print(f"Token refresh failed: {str(refresh_error)}")
+
+        available_cameras = (
+            list(self.blink.cameras.keys()) if self.blink.cameras else []
+        )
+        error_msg = (
+            f"Camera list is empty when searching for "
+            f"camera '{zone_name}'. Available cameras: "
+            f"{available_cameras}. Authentication token "
+            f"refresh failed: {str(refresh_error)}. Please "
+            f"restart the application to re-authenticate."
+        )
+        raise ValueError(error_msg)
+
+    def _attempt_sync_token_refresh(self, zone_name):
+        """Attempt to refresh authentication token for sync version."""
+        try:
+            if self.verbose:
+                print("Attempting to refresh authentication token...")
+
+            self.blink.auth.refresh_token()
+
+            # Try to refresh camera list after token refresh
+            if hasattr(self.blink, "refresh"):
+                self.blink.refresh()
+            elif hasattr(self.blink, "setup_camera_list"):
+                self.blink.setup_camera_list()
+
+            # Update our local camera metadata cache
+            self.get_cameras()
+
+        except Exception as refresh_error:
+            self._handle_token_refresh_failure(zone_name, refresh_error)
+
+    def _refresh_camera_list_if_empty(self, zone_name):
+        """Refresh camera list if it's empty."""
+        if self.blink.cameras != {}:
+            return
+
+        if self.verbose:
+            print(
+                f"Camera list is empty, attempting to refresh authentication "
+                f"and camera list for zone {zone_name}"
+            )
+
+        try:
+            if not hasattr(self.blink.auth, "refresh_token"):
+                return
+
+            if env.get_package_version(blinkpy) >= (0, 22, 0):
+                self._handle_empty_camera_list_async(zone_name)
+            else:
+                self._attempt_sync_token_refresh(zone_name)
+
+            # Check if refresh worked
+            if self.blink.cameras == {}:
+                error_msg = (
+                    f"Camera list is still empty after refresh attempt "
+                    f"for camera '{zone_name}'. This may indicate "
+                    f"authentication failed or no cameras are available. "
+                    f"Please check your Blink credentials, 2FA code, and "
+                    f"ensure cameras are online in the Blink app."
+                )
+                raise ValueError(error_msg)
+
+        except Exception as e:
+            if "Camera list is empty when searching" in str(e):
+                raise
+            else:
+                raise ValueError(
+                    f"Camera list is empty when searching for camera "
+                    f"'{zone_name}'. Failed to refresh camera list: {str(e)}"
+                )
+
+    def _find_camera_by_name(self, zone_name, parameter):
+        """Find camera by name and return its attributes or specific parameter."""
+        for name, camera in self.blink.cameras.items():
+            if name == zone_name:
+                if self.verbose:
+                    print(f"found camera {name}: {camera.attributes}")
+                if parameter is None:
+                    return camera.attributes
+                else:
+                    return camera.attributes[parameter]
+
+        # Camera not found - provide helpful error
+        available_cameras = list(self.blink.cameras.keys())
+        error_msg = (
+            f"Camera zone '{zone_name}' was not found. "
+            f"Available cameras: {available_cameras}. "
+            f"Please check the zone name in blink_config.py matches "
+            f"your Blink app."
+        )
+        raise ValueError(error_msg)
+
     def get_metadata(self, zone=None, trait=None, parameter=None, retry=False):
         """Get thermostat meta data for device_id from local API.
 
@@ -434,113 +582,8 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):
 
         def _get_metadata_internal():
             zone_name = blink_config.metadata[self.zone_number]["zone_name"]
-
-            # If camera list is empty, try to refresh authentication and camera list
-            if self.blink.cameras == {}:
-                if self.verbose:
-                    print(
-                        f"Camera list is empty, attempting to refresh authentication "
-                        f"and camera list for zone {zone_name}"
-                    )
-                try:
-                    # Try to refresh authentication token
-                    if hasattr(self.blink.auth, "refresh_token"):
-                        if env.get_package_version(blinkpy) >= (0, 22, 0):
-                            # Async version - we can't easily call async refresh here
-                            # So we'll just provide a more helpful error message
-                            available_cameras = (
-                                list(self.blink.cameras.keys())
-                                if self.blink.cameras
-                                else []
-                            )
-                            error_msg = (
-                                f"Camera list is empty when searching for camera "
-                                f"'{zone_name}'. Available cameras: "
-                                f"{available_cameras}. This may indicate "
-                                f"authentication tokens have expired. Please restart "
-                                f"the application to re-authenticate."
-                            )
-                            raise ValueError(error_msg)
-                        else:
-                            # Sync version - try token refresh
-                            try:
-                                if self.verbose:
-                                    print(
-                                        "Attempting to refresh authentication "
-                                        "token..."
-                                    )
-                                self.blink.auth.refresh_token()
-                                # Try to refresh camera list after token refresh
-                                if hasattr(self.blink, "refresh"):
-                                    self.blink.refresh()
-                                elif hasattr(self.blink, "setup_camera_list"):
-                                    self.blink.setup_camera_list()
-                                # Update our local camera metadata cache
-                                self.get_cameras()
-                            except Exception as refresh_error:
-                                if self.verbose:
-                                    print(
-                                        f"Token refresh failed: "
-                                        f"{str(refresh_error)}"
-                                    )
-                                # If token refresh fails, still provide helpful error
-                                available_cameras = (
-                                    list(self.blink.cameras.keys())
-                                    if self.blink.cameras
-                                    else []
-                                )
-                                error_msg = (
-                                    f"Camera list is empty when searching for "
-                                    f"camera '{zone_name}'. Available cameras: "
-                                    f"{available_cameras}. Authentication token "
-                                    f"refresh failed: {str(refresh_error)}. Please "
-                                    f"restart the application to re-authenticate."
-                                )
-                                raise ValueError(error_msg)
-
-                    # Check if refresh worked
-                    if self.blink.cameras == {}:
-                        available_cameras = []
-                        error_msg = (
-                            f"Camera list is still empty after refresh attempt "
-                            f"for camera '{zone_name}'. This may indicate "
-                            f"authentication failed or no cameras are available. "
-                            f"Please check your Blink credentials, 2FA code, and "
-                            f"ensure cameras are online in the Blink app."
-                        )
-                        raise ValueError(error_msg)
-
-                except Exception as e:
-                    if "Camera list is empty when searching" in str(e):
-                        # Re-raise our formatted error
-                        raise
-                    else:
-                        # New error during refresh attempt
-                        raise ValueError(
-                            f"Camera list is empty when searching for camera "
-                            f"'{zone_name}'. Failed to refresh camera list: {str(e)}"
-                        )
-
-            # Now try to find the specific camera
-            for name, camera in self.blink.cameras.items():
-                # print(f"DEBUG: camera {name}: {camera.attributes}")
-                if name == zone_name:
-                    if self.verbose:
-                        print(f"found camera {name}: {camera.attributes}")
-                    if parameter is None:
-                        return camera.attributes
-                    else:
-                        return camera.attributes[parameter]
-
-            # Provide helpful error when camera name doesn't match
-            available_cameras = list(self.blink.cameras.keys())
-            error_msg = (
-                f"Camera zone {zone}('{zone_name}') was not found. "
-                f"Available cameras: {available_cameras}. "
-                f"Please check the zone name in blink_config.py matches "
-                f"your Blink app."
-            )
-            raise ValueError(error_msg)
+            self._refresh_camera_list_if_empty(zone_name)
+            return self._find_camera_by_name(zone_name, parameter)
 
         if retry:
             # Use standardized extended retry mechanism
