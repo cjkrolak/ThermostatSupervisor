@@ -1,4 +1,3 @@
----
 name: Azure Pipelines
 # disable CI trigger
 trigger: none

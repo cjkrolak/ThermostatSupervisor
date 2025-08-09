@@ -1,4 +1,3 @@
----
 name: Docker Image CI
 on:
   push:
@@ -21,45 +20,45 @@ jobs:
       # with sigstore/fulcio when running outside of PRs.
       id-token: write
     steps:
-    # checkout code
+      # checkout code
       - name: checkout code
         uses: actions/checkout@v4
 
-    # setup QEMU
-    # https://github.com/docker/setup-qemu-action
+      # setup QEMU
+      # https://github.com/docker/setup-qemu-action
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
 
-    # setup Buildx
-    # https://github.com/docker/setup-buildx-action
+      # setup Buildx
+      # https://github.com/docker/setup-buildx-action
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
         with:
           version: latest
 
-    # Install the cosign tool except on PR
-    # https://github.com/sigstore/cosign-installer
+      # Install the cosign tool except on PR
+      # https://github.com/sigstore/cosign-installer
       - name: Install cosign
         uses: sigstore/cosign-installer@v3
         with:
           cosign-release: v2.2.4
 
-    # log in to DockerHub
+      # log in to DockerHub
       - name: Log in to Docker Hub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-    # Extract metadata (tags, labels) for Docker
-    # https://github.com/docker/metadata-action
+      # Extract metadata (tags, labels) for Docker
+      # https://github.com/docker/metadata-action
       - name: Extract Docker metadata
         id: meta
         uses: docker/metadata-action@v5
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
 
-    # build and push the docker image
+      # build and push the docker image
       - name: Build and Push the multi-platform Docker image
         id: build-and-push
         uses: docker/build-push-action@v6
@@ -70,7 +69,7 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
 
-    # Docker Scout CVE scanning
+      # Docker Scout CVE scanning
       - name: Find CVEs on image with Docker Scout
         run: |
           # Install the Docker Scout CLI
@@ -83,18 +82,18 @@ jobs:
           ${{ secrets.DOCKER_USERNAME }}/thermostatsupervisor:develop \
           --exit-code --only-severity critical,high
 
-    # Sign the resulting Docker image digest except on PRs.
-    # This will only write to the public Rekor transparency log when the Docker
-    # repository is public to avoid leaking data.  If you would like to publish
-    # transparency data even for private images, pass --force to cosign below.
-    # https://github.com/sigstore/cosign
+      # Sign the resulting Docker image digest except on PRs.
+      # This will only write to the public Rekor transparency log when the Docker
+      # repository is public to avoid leaking data.  If you would like to publish
+      # transparency data even for private images, pass --force to cosign below.
+      # https://github.com/sigstore/cosign
       - name: Sign the published Docker image
         env:
-        # https://docs.github.com/en/actions/security-guides/security-hardening-for-github-actions#using-an-intermediate-environment-variable
+          # https://docs.github.com/en/actions/security-guides/security-hardening-for-github-actions#using-an-intermediate-environment-variable
           TAGS: ${{ steps.meta.outputs.tags }}
           DIGEST: ${{ steps.build-and-push.outputs.digest }}
-      # This step uses the identity token to provision an ephemeral certificate
-      # against the sigstore community Fulcio instance.
+        # This step uses the identity token to provision an ephemeral certificate
+        # against the sigstore community Fulcio instance.
         run: |-
           for tag in $(echo "${TAGS}" | tr ',' '\n'); do
             cosign sign --yes ${tag}@${DIGEST}

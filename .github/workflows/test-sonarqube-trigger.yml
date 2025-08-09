@@ -1,4 +1,3 @@
----
 name: Test SonarQube Trigger
 # This workflow tests the repository dispatch mechanism
 on:
