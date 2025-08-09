@@ -295,9 +295,7 @@ def _match_value_by_type(value, val):
     elif isinstance(value, list):
         return val in value
     else:
-        raise TypeError(
-            f"type {type(value)} not yet supported in get_key_from_value"
-        )
+        raise TypeError(f"type {type(value)} not yet supported in get_key_from_value")
 
 
 def get_key_from_value(input_dict, val):
@@ -665,8 +663,9 @@ class UserInputs:
             )
         attr["value"] = attr["default"]
 
-    def _handle_wrong_datatype(self, parent_key, child_key, attr,
-                               expected_type, proposed_type):
+    def _handle_wrong_datatype(
+        self, parent_key, child_key, attr, expected_type, proposed_type
+    ):
         """Handle case where attribute has wrong datatype."""
         if not self.suppress_warnings:
             log_msg(
@@ -874,8 +873,14 @@ def _handle_server_spamming_detection(tc, ex):
         )
 
 
-def _send_retry_email_alert(email_notification, thermostat_type, zone_name,
-                            trial_number, number_of_retries, time_now):
+def _send_retry_email_alert(
+    email_notification,
+    thermostat_type,
+    zone_name,
+    trial_number,
+    number_of_retries,
+    time_now,
+):
     """Send email alert for retry attempt."""
     if email_notification is None:
         return
@@ -900,8 +905,14 @@ def _send_retry_email_alert(email_notification, thermostat_type, zone_name,
         pass
 
 
-def _send_success_email_alert(email_notification, thermostat_type, zone_name,
-                              trial_number, number_of_retries, time_now):
+def _send_success_email_alert(
+    email_notification,
+    thermostat_type,
+    zone_name,
+    trial_number,
+    number_of_retries,
+    time_now,
+):
     """Send email alert for successful retry after failure."""
     if email_notification is None:
         return
@@ -925,9 +936,17 @@ def _send_success_email_alert(email_notification, thermostat_type, zone_name,
         pass
 
 
-def _handle_retry_exception(tc, ex, trial_number, number_of_retries,
-                            retry_delay_sec, time_now, email_notification,
-                            thermostat_type, zone_name):
+def _handle_retry_exception(
+    tc,
+    ex,
+    trial_number,
+    number_of_retries,
+    retry_delay_sec,
+    time_now,
+    email_notification,
+    thermostat_type,
+    zone_name,
+):
     """Handle exception during retry attempt."""
     # Set flag to force re-authentication if available
     if tc is not None:
@@ -960,8 +979,12 @@ def _handle_retry_exception(tc, ex, trial_number, number_of_retries,
 
     # Send warning email if email notification module is available
     _send_retry_email_alert(
-        email_notification, thermostat_type, zone_name,
-        trial_number, number_of_retries, time_now
+        email_notification,
+        thermostat_type,
+        zone_name,
+        trial_number,
+        number_of_retries,
+        time_now,
     )
 
     # Exhausted retries, raise exception
@@ -986,15 +1009,26 @@ def _handle_retry_delay(trial_number, number_of_retries, retry_delay_sec):
         time.sleep(retry_delay_sec)
 
 
-def _handle_successful_retry(tc, trial_number, initial_trial_number,
-                             email_notification, thermostat_type, zone_name,
-                             number_of_retries, time_now):
+def _handle_successful_retry(
+    tc,
+    trial_number,
+    initial_trial_number,
+    email_notification,
+    thermostat_type,
+    zone_name,
+    number_of_retries,
+    time_now,
+):
     """Handle successful function execution after retries."""
     # Log the mitigated failure if we had to retry
     if trial_number > initial_trial_number:
         _send_success_email_alert(
-            email_notification, thermostat_type, zone_name,
-            trial_number, number_of_retries, time_now
+            email_notification,
+            thermostat_type,
+            zone_name,
+            trial_number,
+            number_of_retries,
+            time_now,
         )
 
     # Reset connection status if available
@@ -1042,8 +1076,8 @@ def execute_with_extended_retries(
     if exception_types is None:
         exception_types = _get_default_exception_types()
 
-    initial_trial_number, trial_number, retry_delay_sec = (
-        _initialize_retry_parameters(initial_retry_delay_sec)
+    initial_trial_number, trial_number, retry_delay_sec = _initialize_retry_parameters(
+        initial_retry_delay_sec
     )
     return_val = None
 
@@ -1053,8 +1087,15 @@ def execute_with_extended_retries(
             return_val = func()
         except exception_types as ex:
             _handle_retry_exception(
-                tc, ex, trial_number, number_of_retries, retry_delay_sec,
-                time_now, email_notification, thermostat_type, zone_name
+                tc,
+                ex,
+                trial_number,
+                number_of_retries,
+                retry_delay_sec,
+                time_now,
+                email_notification,
+                thermostat_type,
+                zone_name,
             )
 
             # Delay between retries
@@ -1074,8 +1115,14 @@ def execute_with_extended_retries(
             raise ex
         else:  # Good response
             _handle_successful_retry(
-                tc, trial_number, initial_trial_number, email_notification,
-                thermostat_type, zone_name, number_of_retries, time_now
+                tc,
+                trial_number,
+                initial_trial_number,
+                email_notification,
+                thermostat_type,
+                zone_name,
+                number_of_retries,
+                time_now,
             )
             break  # Exit while loop on success
 

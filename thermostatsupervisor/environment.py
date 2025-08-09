@@ -337,9 +337,7 @@ def _import_from_path(name, path, verbose=False):
     sys.path.insert(1, path)
     mod = importlib.import_module(name)
     if mod is None:
-        raise ModuleNotFoundError(
-            f"module '{name}' could not be found at {path}"
-        )
+        raise ModuleNotFoundError(f"module '{name}' could not be found at {path}")
     return mod
 
 

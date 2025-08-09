@@ -358,8 +358,9 @@ class ThermostatClass(tc.ThermostatCommon):
             else:
                 kumocloudv3_config.supported_configs["zones"].append(basement_index)
 
-    def _rebuild_metadata_dict(self, zone_name_to_index,
-                               main_level_index, basement_index):
+    def _rebuild_metadata_dict(
+        self, zone_name_to_index, main_level_index, basement_index
+    ):
         """Rebuild metadata dict with discovered assignments."""
         if main_level_index is not None and basement_index is not None:
             # Clear existing metadata and rebuild with correct indices
