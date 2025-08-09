@@ -281,6 +281,107 @@ class ThermostatClass(tc.ThermostatCommon):
                 # Refresh token still valid, just refresh access token
                 self._refresh_auth_token()
 
+    def _get_sites_and_zones(self):
+        """Get sites and zones from API with validation."""
+        sites = self._get_sites()
+
+        if not sites:
+            if self.verbose:
+                print("Warning: No sites found, using default zone assignments")
+            return None, None
+
+        # Get zones for the first site (assuming single site setup)
+        site_id = sites[0].get("id")
+        if not site_id:
+            if self.verbose:
+                print("Warning: No site ID found, using default zone assignments")
+            return None, None
+
+        zones = self._get_zones(site_id)
+        return sites, zones
+
+    def _build_zone_name_mapping(self, zones):
+        """Build mapping of zone names to indices."""
+        zone_name_to_index = {}
+        for index, zone in enumerate(zones):
+            zone_name = zone.get("name", "").strip()
+            if zone_name:
+                zone_name_to_index[zone_name] = index
+
+        if self.verbose:
+            print(f"Dynamic zone mapping discovered: {zone_name_to_index}")
+
+        return zone_name_to_index
+
+    def _find_zone_indices_by_patterns(self, zone_name_to_index):
+        """Find main level and basement indices based on naming patterns."""
+        main_level_index = None
+        basement_index = None
+
+        # Check for various naming patterns
+        for zone_name, index in zone_name_to_index.items():
+            zone_name_lower = zone_name.lower()
+
+            # Check for main level patterns
+            if any(
+                pattern in zone_name_lower
+                for pattern in [
+                    "main",
+                    "level",
+                    "living",
+                    "first floor",
+                    "1st floor",
+                ]
+            ):
+                main_level_index = index
+
+            # Check for basement patterns
+            elif any(
+                pattern in zone_name_lower
+                for pattern in ["basement", "lower", "cellar", "downstairs"]
+            ):
+                basement_index = index
+
+        return main_level_index, basement_index
+
+    def _update_config_with_indices(self, main_level_index, basement_index):
+        """Update config module with discovered zone indices."""
+        # Update the config module with discovered assignments
+        if main_level_index is not None:
+            kumocloudv3_config.MAIN_LEVEL = main_level_index
+            kumocloudv3_config.supported_configs["zones"][0] = main_level_index
+
+        if basement_index is not None:
+            kumocloudv3_config.BASEMENT = basement_index
+            if len(kumocloudv3_config.supported_configs["zones"]) > 1:
+                kumocloudv3_config.supported_configs["zones"][1] = basement_index
+            else:
+                kumocloudv3_config.supported_configs["zones"].append(basement_index)
+
+    def _rebuild_metadata_dict(
+        self, zone_name_to_index, main_level_index, basement_index
+    ):
+        """Rebuild metadata dict with discovered assignments."""
+        if main_level_index is not None and basement_index is not None:
+            # Clear existing metadata and rebuild with correct indices
+            kumocloudv3_config.metadata.clear()
+
+            # Rebuild metadata with correct zone indices
+            for zone_name, index in zone_name_to_index.items():
+                kumocloudv3_config.metadata[index] = {
+                    "zone_name": zone_name,
+                    "host_name": "tbd",
+                    "serial_number": None,
+                }
+
+        if self.verbose:
+            print(
+                f"Updated zone assignments - MAIN_LEVEL: "
+                f"{kumocloudv3_config.MAIN_LEVEL}, "
+                f"BASEMENT: {kumocloudv3_config.BASEMENT}"
+            )
+            print(f"Updated metadata: {kumocloudv3_config.metadata}")
+
     def _update_zone_assignments(self) -> None:
         """
         Update zone assignments dynamically by querying the v3 API.
@@ -292,95 +393,25 @@ class ThermostatClass(tc.ThermostatCommon):
         """
         try:
             # Get sites and zones from API
-            sites = self._get_sites()
-
-            if not sites:
-                if self.verbose:
-                    print("Warning: No sites found, using default zone assignments")
+            sites, zones = self._get_sites_and_zones()
+            if sites is None or zones is None:
                 return
-
-            # Get zones for the first site (assuming single site setup)
-            site_id = sites[0].get("id")
-            if not site_id:
-                if self.verbose:
-                    print("Warning: No site ID found, using default zone assignments")
-                return
-
-            zones = self._get_zones(site_id)
 
             # Build mapping of zone names to indices
-            zone_name_to_index = {}
-            for index, zone in enumerate(zones):
-                zone_name = zone.get("name", "").strip()
-                if zone_name:
-                    zone_name_to_index[zone_name] = index
+            zone_name_to_index = self._build_zone_name_mapping(zones)
 
-            if self.verbose:
-                print(f"Dynamic zone mapping discovered: {zone_name_to_index}")
+            # Find zone indices by patterns
+            main_level_index, basement_index = self._find_zone_indices_by_patterns(
+                zone_name_to_index
+            )
 
-            # Update config module constants based on actual API response
-            # Look for common zone name patterns
-            main_level_index = None
-            basement_index = None
-
-            # Check for various naming patterns
-            for zone_name, index in zone_name_to_index.items():
-                zone_name_lower = zone_name.lower()
-
-                # Check for main level patterns
-                if any(
-                    pattern in zone_name_lower
-                    for pattern in [
-                        "main",
-                        "level",
-                        "living",
-                        "first floor",
-                        "1st floor",
-                    ]
-                ):
-                    main_level_index = index
-
-                # Check for basement patterns
-                elif any(
-                    pattern in zone_name_lower
-                    for pattern in ["basement", "lower", "cellar", "downstairs"]
-                ):
-                    basement_index = index
-
-            # Update the config module with discovered assignments
-            if main_level_index is not None:
-                kumocloudv3_config.MAIN_LEVEL = main_level_index
-                kumocloudv3_config.supported_configs["zones"][0] = main_level_index
-
-            if basement_index is not None:
-                kumocloudv3_config.BASEMENT = basement_index
-                if len(kumocloudv3_config.supported_configs["zones"]) > 1:
-                    kumocloudv3_config.supported_configs["zones"][1] = basement_index
-                else:
-                    kumocloudv3_config.supported_configs["zones"].append(basement_index)
+            # Update config with discovered indices
+            self._update_config_with_indices(main_level_index, basement_index)
 
             # Update metadata dict with discovered assignments
-            if main_level_index is not None and basement_index is not None:
-                # Clear existing metadata and rebuild with correct indices
-                kumocloudv3_config.metadata.clear()
-
-                # Rebuild metadata with correct zone indices
-                for zone_name, index in zone_name_to_index.items():
-                    zone_name_lower = zone_name.lower()
-
-                    kumocloudv3_config.metadata[index] = {
-                        "zone_name": zone_name,
-                        "host_name": "tbd",
-                        "serial_number": None,
-                    }
-
-            if self.verbose:
-                print(
-                    f"Updated zone assignments - MAIN_LEVEL: "
-                    f"{kumocloudv3_config.MAIN_LEVEL}, "
-                    f"BASEMENT: {kumocloudv3_config.BASEMENT}"
-                )
-                print(f"Updated metadata: {kumocloudv3_config.metadata}")
+            self._rebuild_metadata_dict(
+                zone_name_to_index, main_level_index, basement_index
+            )
 
         except Exception as e:
             if self.verbose:

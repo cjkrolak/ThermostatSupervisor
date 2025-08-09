@@ -304,6 +304,54 @@ def get_python_version(
     return (major_version, minor_version)
 
 
+def _add_package_to_path(pkg, verbose=False):
+    """Add package to sys.path if provided."""
+    if pkg is None:
+        return
+
+    pkg_path = get_parent_path(os.getcwd()) + "//" + pkg
+    print(f"adding package '{pkg_path}' to path...")
+    # add to front(0) of path to ensure that package folder is prioritized over
+    # local folder
+    sys.path.insert(0, pkg_path)
+    if verbose:
+        print(f"sys.path={sys.path}")
+
+
+def _import_from_path(name, path, verbose=False):
+    """Import module from specific path."""
+    # check if module is already imported to avoid re-importing
+    if name in sys.modules:
+        if verbose:
+            print(f"module '{name}' already imported, reusing existing module")
+        return sys.modules[name]
+
+    # convert to abs path
+    path = convert_to_absolute_path(path)
+
+    # local file import from relative or abs path
+    print(f"WARNING: attempting local import of {name} from path {path}...")
+    if verbose:
+        print(f"target dir contents={os.listdir(path)}")
+        print(f"adding '{path}' to system path")
+    sys.path.insert(1, path)
+    mod = importlib.import_module(name)
+    if mod is None:
+        raise ModuleNotFoundError(f"module '{name}' could not be found at {path}")
+    return mod
+
+
+def _import_from_installed_packages(name, path):
+    """Import module from installed packages."""
+    spec = importlib.util.find_spec(name, path)
+    if spec is None:
+        raise ModuleNotFoundError(f"module '{name}' could not be found")
+    mod = importlib.util.module_from_spec(spec)
+    sys.modules[name] = mod
+    spec.loader.exec_module(mod)
+    return mod
+
+
 def dynamic_module_import(name, path=None, pkg=None, verbose=False):
     """
     Find and load python module.
@@ -323,45 +371,13 @@ def dynamic_module_import(name, path=None, pkg=None, verbose=False):
         mod(module): module object
     """
     # add package to path
-    if pkg is not None:
-        pkg_path = get_parent_path(os.getcwd()) + "//" + pkg
-        print(f"adding package '{pkg_path}' to path...")
-        # add to front(0) of path to ensure that package folder is prioritized over
-        # local folder
-        sys.path.insert(0, pkg_path)
-        if verbose:
-            print(f"sys.path={sys.path}")
+    _add_package_to_path(pkg, verbose)
 
     try:
         if path:
-            # check if module is already imported to avoid re-importing
-            if name in sys.modules:
-                if verbose:
-                    print(f"module '{name}' already imported, reusing existing module")
-                return sys.modules[name]
-
-            # convert to abs path
-            path = convert_to_absolute_path(path)
-
-            # local file import from relative or abs path
-            print(f"WARNING: attempting local import of {name} from path {path}...")
-            if verbose:
-                print(f"target dir contents={os.listdir(path)}")
-                print(f"adding '{path}' to system path")
-            sys.path.insert(1, path)
-            mod = importlib.import_module(name)
-            if mod is None:
-                raise ModuleNotFoundError(
-                    f"module '{name}' could not be found at {path}"
-                )
+            mod = _import_from_path(name, path, verbose)
         else:
-            # installed package import
-            spec = importlib.util.find_spec(name, path)
-            if spec is None:
-                raise ModuleNotFoundError(f"module '{name}' could not be found")
-            mod = importlib.util.module_from_spec(spec)
-            sys.modules[name] = mod
-            spec.loader.exec_module(mod)
+            mod = _import_from_installed_packages(name, path)
     except Exception as ex:
         util.log_msg(traceback.format_exc(), mode=util.BOTH_LOG, func_name=1)
         util.log_msg("module load failed: " + name, mode=util.BOTH_LOG, func_name=1)
