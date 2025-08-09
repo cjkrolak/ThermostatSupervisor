@@ -1,3 +1,4 @@
+---
 name: Safety Scan
 on:
   pull_request:

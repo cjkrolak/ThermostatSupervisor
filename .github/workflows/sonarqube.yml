@@ -1,3 +1,4 @@
+---
 name: SonarQube Scan
 # run this workflow when triggered by Azure DevOps pipeline completion
 # or manually, or on pull requests to develop branch
