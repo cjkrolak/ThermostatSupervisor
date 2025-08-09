@@ -28,89 +28,99 @@ class TestYamlLintWorkflow(unittest.TestCase):
     def test_yamllint_config_exists(self):
         """Test that yamllint configuration file exists."""
         self.assertTrue(
-            self.yamllint_config.exists(),
-            "yamllint configuration file should exist"
+            self.yamllint_config.exists(), "yamllint configuration file should exist"
         )
 
     def test_yamllint_workflow_exists(self):
         """Test that yamllint workflow file exists."""
         self.assertTrue(
-            self.yamllint_workflow.exists(),
-            "yamllint workflow file should exist"
+            self.yamllint_workflow.exists(), "yamllint workflow file should exist"
         )
 
     def test_yaml_formatter_workflow_exists(self):
         """Test that yaml-formatter workflow file exists."""
         self.assertTrue(
             self.yaml_formatter_workflow.exists(),
-            "yaml-formatter workflow file should exist"
+            "yaml-formatter workflow file should exist",
         )
 
     def test_yamllint_config_is_valid(self):
         """Test that yamllint configuration is valid YAML."""
         result = subprocess.run(
-            ["yamllint", "--config-file", str(self.yamllint_config),
-             str(self.yamllint_config)],
+            [
+                "yamllint",
+                "--config-file",
+                str(self.yamllint_config),
+                str(self.yamllint_config),
+            ],
             cwd=self.repo_root,
             capture_output=True,
-            text=True
+            text=True,
         )
         self.assertEqual(
-            result.returncode, 0,
-            f"yamllint config should be valid: {result.stderr}"
+            result.returncode, 0, f"yamllint config should be valid: {result.stderr}"
         )
 
     def test_yamllint_workflow_is_valid(self):
         """Test that yamllint workflow file passes its own linting."""
         result = subprocess.run(
-            ["yamllint", "--config-file", str(self.yamllint_config),
-             str(self.yamllint_workflow)],
+            [
+                "yamllint",
+                "--config-file",
+                str(self.yamllint_config),
+                str(self.yamllint_workflow),
+            ],
             cwd=self.repo_root,
             capture_output=True,
-            text=True
+            text=True,
         )
         self.assertEqual(
-            result.returncode, 0,
-            f"yamllint workflow should pass linting: {result.stderr}"
+            result.returncode,
+            0,
+            f"yamllint workflow should pass linting: {result.stderr}",
         )
 
     def test_yaml_formatter_workflow_is_valid(self):
         """Test that yaml-formatter workflow file passes its own linting."""
         result = subprocess.run(
-            ["yamllint", "--config-file", str(self.yamllint_config),
-             str(self.yaml_formatter_workflow)],
+            [
+                "yamllint",
+                "--config-file",
+                str(self.yamllint_config),
+                str(self.yaml_formatter_workflow),
+            ],
             cwd=self.repo_root,
             capture_output=True,
-            text=True
+            text=True,
         )
         self.assertEqual(
-            result.returncode, 0,
-            f"yaml-formatter workflow should pass linting: {result.stderr}"
+            result.returncode,
+            0,
+            f"yaml-formatter workflow should pass linting: {result.stderr}",
         )
 
     def test_yamllint_catches_common_issues(self):
         """Test that yamllint catches common formatting issues."""
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.yml',
-                                         delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".yml", delete=False) as f:
             # Create a YAML file with intentional issues
             f.write("key: value with trailing spaces   \n")
-            f.write("another_key: very long line that exceeds the maximum "
-                    "line length configured in yamllint config which "
-                    "should trigger an error\n")
+            f.write(
+                "another_key: very long line that exceeds the maximum "
+                "line length configured in yamllint config which "
+                "should trigger an error\n"
+            )
             f.write("missing_newline_at_end: true")
             temp_file = f.name
 
         try:
             result = subprocess.run(
-                ["yamllint", "--config-file", str(self.yamllint_config),
-                 temp_file],
+                ["yamllint", "--config-file", str(self.yamllint_config), temp_file],
                 capture_output=True,
-                text=True
+                text=True,
             )
             # Should fail due to issues
             self.assertNotEqual(
-                result.returncode, 0,
-                "yamllint should catch formatting issues"
+                result.returncode, 0, "yamllint should catch formatting issues"
             )
             # Should report specific issues
             self.assertIn("trailing-spaces", result.stdout)
@@ -122,19 +132,13 @@ class TestYamlLintWorkflow(unittest.TestCase):
     def test_yamlfix_command_available(self):
         """Test that yamlfix command is available."""
         result = subprocess.run(
-            ["yamlfix", "--version"],
-            capture_output=True,
-            text=True
+            ["yamlfix", "--version"], capture_output=True, text=True
         )
-        self.assertEqual(
-            result.returncode, 0,
-            "yamlfix command should be available"
-        )
+        self.assertEqual(result.returncode, 0, "yamlfix command should be available")
 
     def test_yamlfix_can_fix_issues(self):
         """Test that yamlfix can fix common YAML formatting issues."""
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.yml',
-                                         delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".yml", delete=False) as f:
             # Create a YAML file with issues that yamlfix can fix
             f.write("version: 2\n")
             f.write("jobs:\n")
@@ -145,35 +149,30 @@ class TestYamlLintWorkflow(unittest.TestCase):
         try:
             # Check that yamlfix detects issues
             check_result = subprocess.run(
-                ["yamlfix", "--check", temp_file],
-                capture_output=True,
-                text=True
+                ["yamlfix", "--check", temp_file], capture_output=True, text=True
             )
             self.assertNotEqual(
-                check_result.returncode, 0,
-                "yamlfix should detect formatting issues"
+                check_result.returncode, 0, "yamlfix should detect formatting issues"
             )
 
             # Apply fixes
             fix_result = subprocess.run(
-                ["yamlfix", temp_file],
-                capture_output=True,
-                text=True
+                ["yamlfix", temp_file], capture_output=True, text=True
             )
             self.assertEqual(
-                fix_result.returncode, 0,
-                f"yamlfix should fix issues: {fix_result.stderr}"
+                fix_result.returncode,
+                0,
+                f"yamlfix should fix issues: {fix_result.stderr}",
             )
 
             # Verify file was fixed
             verify_result = subprocess.run(
-                ["yamlfix", "--check", temp_file],
-                capture_output=True,
-                text=True
+                ["yamlfix", "--check", temp_file], capture_output=True, text=True
             )
             self.assertEqual(
-                verify_result.returncode, 0,
-                "yamlfix should report no issues after fixing"
+                verify_result.returncode,
+                0,
+                "yamlfix should report no issues after fixing",
             )
         finally:
             os.unlink(temp_file)
