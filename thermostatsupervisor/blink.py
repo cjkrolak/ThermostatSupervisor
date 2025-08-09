@@ -261,19 +261,14 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):
                 f"for zone {self.zone_number}"
             )
 
-        self.blink.auth = auth.Auth(
-            self.auth_dict, no_prompt=True, session=session
-        )
+        self.blink.auth = auth.Auth(self.auth_dict, no_prompt=True, session=session)
         await self.blink.start()
 
         # Send 2FA key with proper error checking
-        auth_success = await self.blink.auth.send_auth_key(
-            self.blink, self.bl_2fa
-        )
+        auth_success = await self.blink.auth.send_auth_key(self.blink, self.bl_2fa)
         if not auth_success:
             raise ValueError(
-                "2FA verification failed. "
-                "Please check your verification code."
+                "2FA verification failed. " "Please check your verification code."
             )
 
         # Check if setup_post_verify succeeds with retry
