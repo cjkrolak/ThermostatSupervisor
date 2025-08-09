@@ -1,7 +1,8 @@
+---
 name: Safety Scan
 on:
-    pull_request:
-      branches: [ develop ]
+  pull_request:
+    branches: [develop]
 jobs:
   security:
     runs-on: ubuntu-latest
