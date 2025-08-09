@@ -26,7 +26,8 @@ jobs:
             echo "Run ID: ${{ github.event.client_payload.run_id }}"
           fi
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "Manual trigger with gist ID: ${{ github.event.inputs.test_coverage_gist_id }}"
+            echo "Manual trigger with gist ID:
+            ${{ github.event.inputs.test_coverage_gist_id }}"
           fi
       - name: Check if this is a PR
         run: |-

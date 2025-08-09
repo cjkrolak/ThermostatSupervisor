@@ -32,7 +32,8 @@ steps:
       versionSpec: $(python.version)
       # githubToken: $(THERMOSTATSUPERVISOR_PR)
     #  github token appears to enforce only supported python versions, ref  # 884
-    # v3.13 is not supported by ubuntu-latest, once it is, the github token can be enabled.
+    # v3.13 is not supported by ubuntu-latest, once it is,
+    # the github token can be enabled.
     displayName: Use Python $(python.version)
   - script: |
       python -m pip install --upgrade pip
@@ -47,7 +48,8 @@ steps:
   # python unit tests
   - script: |
       # python -m unittest discover -v
-      # discover process is not allowing argv override so calling unit_test_common instead.
+      # discover process is not allowing argv override so calling
+      # unit_test_common instead.
       python -m tests.unit_test_coverage
     displayName: Unit Tests
     # timeout after 30 minutes, nominal job time is 10 minutes
@@ -143,11 +145,12 @@ steps:
       response_body="${response%???}"
       if [[ ${http_code} -ge 200 && ${http_code} -lt 300 ]]; then
         # Extract gist ID from response
-        gist_id=$(echo "${response_body}" | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
-        echo "✅ Coverage uploaded successfully to gist: ${gist_id}"
+        gist_id=$(echo "${response_body}" | grep -o '"id":"[^"]*"' | head -1 |
+        cut -d'"' -f4)
+        echo "SUCCESS: Coverage uploaded successfully to gist: ${gist_id}"
         echo "##vso[task.setvariable variable=coverageGistId;isOutput=true]${gist_id}"
       else
-        echo "❌ Failed to upload coverage. HTTP ${http_code}"
+        echo "ERROR: Failed to upload coverage. HTTP ${http_code}"
         echo "Response: ${response_body}"
         exit 1
       fi
@@ -165,40 +168,47 @@ steps:
       if [ -z "${THERMOSTATSUPERVISOR_PR}" ]; then
         echo "ERROR: THERMOSTATSUPERVISOR_PR is not set"
         echo ""
-        echo "🔧 SETUP INSTRUCTIONS:"
+        echo "SETUP: SETUP INSTRUCTIONS:"
         echo "1. Go to Azure DevOps > Pipelines > Library > Variable groups"
         echo "2. Create/edit the variable group used by this pipeline"
         echo "3. Add variable: THERMOSTATSUPERVISOR_PR"
-        echo "4. Value should be a GitHub Personal Access Token (classic) with these scopes:"
+        echo "4. Value should be a GitHub Personal Access Token (classic)
+        with these scopes:"
         echo "   - repo (for private repos) OR public_repo (for public repos)"
         echo "   - workflow (to trigger workflow dispatches)"
         echo "5. Mark the variable as secret in Azure DevOps"
         echo ""
-        echo "🔗 Create token at: https://github.com/settings/tokens"
+        echo "LINK: Create token at: https://github.com/settings/tokens"
         exit 1
       fi
-      echo "THERMOSTATSUPERVISOR_PR is configured (${#THERMOSTATSUPERVISOR_PR} characters)"
+      echo "THERMOSTATSUPERVISOR_PR is configured
+      (${#THERMOSTATSUPERVISOR_PR} characters)"
 
       # Test basic GitHub API access first
       echo "Testing GitHub API access..."
-      test_response=$(curl -w "%{http_code}" -s -H "Authorization: token ${THERMOSTATSUPERVISOR_PR}" https://api.github.com/user)
+      test_response=$(curl -w "%{http_code}" -s \
+        -H "Authorization: token ${THERMOSTATSUPERVISOR_PR}" \
+        https://api.github.com/user)
       test_code="${test_response: -3}"
       if [[ ${test_code} -ne 200 ]]; then
         echo "ERROR: GitHub API authentication failed (HTTP ${test_code})"
         echo "The THERMOSTATSUPERVISOR_PR is invalid or expired"
         echo ""
-        echo "🔧 TOKEN TROUBLESHOOTING:"
+        echo "SETUP: TOKEN TROUBLESHOOTING:"
         echo "1. Verify the token at: https://github.com/settings/tokens"
         echo "2. Check if the token has expired"
         echo "3. Ensure the token has 'repo' and 'workflow' scopes"
         echo "4. The token must belong to a user with push access to the repository"
         exit 1
       fi
-      echo "✅ GitHub API authentication successful"
+      echo "SUCCESS: GitHub API authentication successful"
 
       # Get the coverage gist ID from previous step (if available)
       coverage_gist_id="$(uploadCoverage.coverageGistId)"
       echo "Coverage gist ID: ${coverage_gist_id}"
+
+      # Create JSON payload
+      json_payload='{"event_type":"azure-pipeline-completed","client_payload":{"result":"success","run_id":"'$(Build.BuildId)'","coverage_gist_id":"'${coverage_gist_id}'"}}'
 
       # Make the API request with detailed error handling
       echo "Triggering repository dispatch event..."
@@ -207,7 +217,7 @@ steps:
         -H "Authorization: token ${THERMOSTATSUPERVISOR_PR}" \
         -H "User-Agent: Azure-DevOps-Pipeline" \
         https://api.github.com/repos/cjkrolak/ThermostatSupervisor/dispatches \
-        -d "{\"event_type\":\"azure-pipeline-completed\",\"client_payload\":{\"result\":\"success\",\"run_id\":\"$(Build.BuildId)\",\"coverage_gist_id\":\"${coverage_gist_id}\"}}")
+        -d "${json_payload}")
 
       # Extract HTTP status code (last 3 characters)
       http_code="${response: -3}"
@@ -219,24 +229,26 @@ steps:
 
       # Check if the request was successful (2xx status codes)
       if [[ ${http_code} -ge 200 && ${http_code} -lt 300 ]]; then
-        echo "✅ Successfully triggered SonarQube workflow"
+        echo "SUCCESS: Successfully triggered SonarQube workflow"
         exit 0
       elif [[ ${http_code} -eq 401 ]]; then
-        echo "❌ ERROR: Authentication failed (HTTP 401)"
+        echo "ERROR: ERROR: Authentication failed (HTTP 401)"
         echo ""
-        echo "🔧 TOKEN PERMISSIONS ISSUE:"
-        echo "The THERMOSTATSUPERVISOR_PR lacks required permissions for workflow dispatches"
+        echo "SETUP: TOKEN PERMISSIONS ISSUE:"
+        echo "The THERMOSTATSUPERVISOR_PR lacks required permissions for
+        workflow dispatches"
         echo ""
         echo "Required token scopes:"
         echo "  - repo (for private repositories)"
         echo "  - workflow (to trigger repository dispatch events)"
         echo ""
-        echo "🔗 Update token at: https://github.com/settings/tokens"
+        echo "Update token at: https://github.com/settings/tokens"
         echo "Response: ${response_body}"
         exit 1
       elif [[ ${http_code} -eq 403 ]]; then
-        echo "❌ ERROR: Forbidden (HTTP 403)"
-        echo "The token user lacks push access to the repository or token scopes insufficient"
+        echo "ERROR: ERROR: Forbidden (HTTP 403)"
+        echo "The token user lacks push access to the repository or token
+        scopes insufficient"
         echo ""
         echo "Required:"
         echo "  - Token owner must have push access to cjkrolak/ThermostatSupervisor"
@@ -244,16 +256,18 @@ steps:
         echo "Response: ${response_body}"
         exit 1
       elif [[ ${http_code} -eq 404 ]]; then
-        echo "❌ ERROR: Repository not found (HTTP 404)"
+        echo "ERROR: ERROR: Repository not found (HTTP 404)"
         echo "Check repository name or ensure token has access to the repository"
         echo "Response: ${response_body}"
         exit 1
       else
-        echo "❌ ERROR: Failed to trigger SonarQube workflow. HTTP ${http_code}"
+        echo "ERROR: ERROR: Failed to trigger SonarQube workflow. HTTP ${http_code}"
         echo "Response: ${response_body}"
         exit 1
       fi
     displayName: Trigger SonarQube Workflow
     condition: succeeded()
     env:
-      THERMOSTATSUPERVISOR_PR: $(THERMOSTATSUPERVISOR_PR)  # Azure DevOps pipeline variable - must be Personal Access Token with 'repo' and 'workflow' scopes
+      THERMOSTATSUPERVISOR_PR: $(THERMOSTATSUPERVISOR_PR)
+      # Azure DevOps pipeline variable - must be Personal Access Token
+      # with 'repo' and 'workflow' scopes

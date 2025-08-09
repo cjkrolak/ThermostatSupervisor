@@ -29,13 +29,16 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # Execute Codacy Analysis CLI and generate a SARIF output with the security issues identified during the analysis
+      # Execute Codacy Analysis CLI and generate a SARIF output with the
+      # security issues identified during the analysis
       - name: Run Codacy Analysis CLI
         id: codacy
         uses: codacy/codacy-analysis-cli-action@v4
         with:
-          # Check https://github.com/codacy/codacy-analysis-cli#project-token to get your project token from your Codacy repository
-          # You can also omit the token and run the tools that support default configurations
+          # Check https://github.com/codacy/codacy-analysis-cli#project-token
+          # to get your project token from your Codacy repository
+          # You can also omit the token and run the tools that support
+          # default configurations
           project-token: ${{ secrets.CODACY_PROJECT_TOKEN }}
           verbose: true
           output: results.sarif
