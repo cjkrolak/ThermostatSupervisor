@@ -1,18 +1,16 @@
 ---
 name: SonarQube Scan
-
 # run this workflow when triggered by Azure DevOps pipeline completion
 # or manually, or on pull requests to develop branch
-"on":
+on:
   repository_dispatch:
     types: [azure-pipeline-completed]
   workflow_dispatch:
     inputs:
       coverage_gist_id:
-        description: 'Coverage gist ID (optional)'
+        description: Coverage gist ID (optional)
         required: false
         default: ''
-
 jobs:
   sonarqube:
     name: SonarQube
@@ -21,7 +19,8 @@ jobs:
     if: |
       github.event_name == 'workflow_dispatch' ||
       github.event_name == 'pull_request' ||
-      (github.event_name == 'repository_dispatch' && github.event.client_payload.result == 'success')
+      (github.event_name == 'repository_dispatch' &&
+       github.event.client_payload.result == 'success')
     permissions:
       # Grant permissions needed for the action
       contents: read
@@ -33,12 +32,10 @@ jobs:
         with:
           # Shallow clones should be disabled for better analysis relevancy
           fetch-depth: 0
-
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.13'
-
       - name: Download coverage data from Azure DevOps
         id: Download_coverage_data_from_Azure_DevOps
         run: |
@@ -54,31 +51,32 @@ jobs:
             echo "Using coverage gist ID from manual input: ${coverage_gist_id}"
           else
             coverage_gist_id=""
-            echo "No coverage gist ID available for event type: ${{ github.event_name }}"
+            echo "No coverage gist ID available for event type:
+            ${{ github.event_name }}"
           fi
-
-          if [ -n "${coverage_gist_id}" ] && [ "${coverage_gist_id}" != "null" ] && [ "${coverage_gist_id}" != "" ]; then
+          if [ -n "${coverage_gist_id}" ] && [ "${coverage_gist_id}" != "null" ] &&
+             [ "${coverage_gist_id}" != "" ]; then
             echo "📥 Downloading coverage data from gist: ${coverage_gist_id}"
 
             # Download the gist content and extract coverage.xml directly
             echo "Fetching gist content..."
             curl -s -H "Authorization: token ${{ secrets.THERMOSTATSUPERVISOR_PR }}" \
             "https://api.github.com/gists/${coverage_gist_id}" > gist_response.json
-
             if [ $? -eq 0 ] && [ -s gist_response.json ]; then
               echo "Gist downloaded successfully, extracting coverage.xml..."
-
               python3 -c "if 1:
                               import json
                               import sys
                               try:
                                   with open('gist_response.json', 'r') as f:
                                       data = json.load(f)
-
-                                      if 'files' in data and 'coverage.xml' in data['files']:
+                                      if 'files' in data and
+                                         'coverage.xml' in data['files']:
                                           with open('coverage.xml', 'w') as f:
-                                              f.write(data['files']['coverage.xml']['content'])
-                                              print('✅ Coverage data downloaded successfully')
+                                              f.write(data['files']['coverage.xml']
+                                                  ['content'])
+                                              print('✅ Coverage data downloaded '
+                                                    'successfully')
                                       else:
                                           print('❌ coverage.xml not found in gist')
                                           sys.exit(1)
@@ -89,9 +87,10 @@ jobs:
 
               # Cleanup: Delete the temporary gist (ignore errors)
               echo "Cleaning up temporary gist..."
-              curl -s -X DELETE -H "Authorization: token ${{ secrets.THERMOSTATSUPERVISOR_PR }}" \
-                "https://api.github.com/gists/${coverage_gist_id}" > /dev/null 2>&1 || echo "Note: Could not delete temporary gist"
-
+              curl -s -X DELETE \
+                -H "Authorization: token ${{ secrets.THERMOSTATSUPERVISOR_PR }}" \
+                "https://api.github.com/gists/${coverage_gist_id}" > /dev/null 2>&1 ||
+                echo "Note: Could not delete temporary gist"
               rm -f gist_response.json
             else
               echo "❌ Failed to download gist or gist is empty"
@@ -102,18 +101,24 @@ jobs:
         continue-on-error: true
         env:
           THERMOSTATSUPERVISOR_PR: ${{ secrets.THERMOSTATSUPERVISOR_PR }}
-
       - name: Regenerate Coverage Data since it does not exist
         if: |
           steps.Download_coverage_data_from_Azure_DevOps.outcome == 'success' &&
           (
-            [ -z "${{ steps.Download_coverage_data_from_Azure_DevOps.outputs.coverage_gist_id }}" ] ||
-            [ "${{ steps.Download_coverage_data_from_Azure_DevOps.outputs.coverage_gist_id }}" = "null" ] ||
-            [ "${{ steps.Download_coverage_data_from_Azure_DevOps.outputs.coverage_gist_id }}" = "" ] ||
+            [ -z "${{
+               steps.Download_coverage_data_from_Azure_DevOps.outputs.coverage_gist_id
+            }}" ] ||
+            [ "${{
+               steps.Download_coverage_data_from_Azure_DevOps.outputs.coverage_gist_id
+            }}" = "null" ] ||
+            [ "${{
+               steps.Download_coverage_data_from_Azure_DevOps.outputs.coverage_gist_id
+            }}" = "" ] ||
             [ ! -f "coverage.xml" ]
           )
         run: |
-          echo "⚠️  No coverage gist ID provided or download failed, generating coverage data as fallback..."
+          echo "⚠️  No coverage gist ID provided or download failed,
+          generating coverage data as fallback..."
 
           # Install dependencies
           echo "Installing dependencies..."
@@ -123,7 +128,6 @@ jobs:
           # Generate coverage
           echo "Running tests to generate coverage..."
           python -m tests.unit_test_coverage
-
           if [ ! -f "coverage.xml" ]; then
             echo "❌ Failed to generate coverage.xml"
             exit 1
@@ -140,11 +144,9 @@ jobs:
           BLINK_USERNAME: ${{ secrets.BLINK_USERNAME }}
           BLINK_PASSWORD: ${{ secrets.BLINK_PASSWORD }}
           BLINK_2FA: ${{ secrets.BLINK_2FA }}
-
       - name: Verify coverage file exists and validate content
         run: |
           echo "Verifying coverage file..."
-
           if [ -f "coverage.xml" ]; then
             echo "✅ coverage.xml found"
             ls -la coverage.xml
@@ -152,7 +154,6 @@ jobs:
             # Check file size
             file_size=$(wc -c < coverage.xml)
             echo "File size: ${file_size} bytes"
-
             if [ ${file_size} -eq 0 ]; then
               echo "❌ coverage.xml is empty"
               exit 1
@@ -170,15 +171,15 @@ jobs:
                                    if root.tag == 'coverage':
                                        lines_valid = root.get('lines-valid', '0')
                                        lines_covered = root.get('lines-covered', '0')
-                                       print(f'Lines valid: {lines_valid}, Lines covered: {lines_covered}')
-
+                                       print(f'Lines valid: {lines_valid}, '
+                                             f'Lines covered: {lines_covered}')
                                        if int(lines_valid) > 0:
-                                           print('✅ Coverage data contains valid metrics')
+                                           print('✅ Coverage data contains '
+                                                 'valid metrics')
                                        else:
                                            print('⚠️  Coverage data has no valid lines')
                                    else:
                                        print('⚠️  Root element is not coverage')
-
                                except Exception as e:
                                    print(f'❌ Invalid XML: {e}')
                                    exit(1)
@@ -188,7 +189,6 @@ jobs:
               echo "❌ Coverage file validation failed"
               exit 1
             fi
-
             echo "First 10 lines of coverage.xml:"
             head -10 coverage.xml
           else
@@ -197,14 +197,12 @@ jobs:
             ls -la
             exit 1
           fi
-
       - name: Debug information before SonarQube scan
         run: |
           echo "=== Debug Information ==="
           echo "Current working directory: $(pwd)"
           echo "Files in current directory:"
           ls -la
-
           echo "=== SonarQube Configuration ==="
           if [ -f "sonar-project.properties" ]; then
             echo "sonar-project.properties content:"
@@ -212,7 +210,6 @@ jobs:
           else
             echo "❌ sonar-project.properties not found"
           fi
-
           echo "=== Coverage File Status ==="
           if [ -f "coverage.xml" ]; then
             echo "✅ coverage.xml exists in working directory"
@@ -223,7 +220,6 @@ jobs:
             echo "Searching for coverage files..."
             find . -name "*.xml" -type f | head -10
           fi
-
       - name: SonarQube Scan
         uses: SonarSource/sonarqube-scan-action@v5
         env:

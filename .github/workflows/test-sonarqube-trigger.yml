@@ -1,17 +1,15 @@
 ---
 name: Test SonarQube Trigger
-
 # This workflow tests the repository dispatch mechanism
-"on":
+on:
   repository_dispatch:
     types: [test-trigger, azure-pipeline-completed]
   workflow_dispatch:
     inputs:
       test_coverage_gist_id:
-        description: 'Test coverage gist ID'
+        description: Test coverage gist ID
         required: false
         default: ''
-
 jobs:
   test-trigger:
     name: Test Trigger
@@ -22,19 +20,17 @@ jobs:
           echo "Workflow triggered successfully!"
           echo "Event type: ${{ github.event_name }}"
           echo "Event action: ${{ github.event.action }}"
-          
           if [ "${{ github.event_name }}" = "repository_dispatch" ]; then
             echo "Repository dispatch type: ${{ github.event.client_payload.result }}"
             echo "Coverage gist ID: ${{ github.event.client_payload.coverage_gist_id }}"
             echo "Run ID: ${{ github.event.client_payload.run_id }}"
           fi
-          
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "Manual trigger with gist ID: ${{ github.event.inputs.test_coverage_gist_id }}"
+            echo "Manual trigger with gist ID:
+            ${{ github.event.inputs.test_coverage_gist_id }}"
           fi
-          
       - name: Check if this is a PR
-        run: |
+        run: |-
           echo "GitHub ref: ${{ github.ref }}"
           echo "GitHub event: ${{ github.event_name }}"
           echo "GitHub actor: ${{ github.actor }}"

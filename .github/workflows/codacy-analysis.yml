@@ -1,3 +1,4 @@
+---
 # This workflow uses actions that are not certified by GitHub.
 # They are provided by a third-party and are governed by
 # separate terms of service, privacy policy, and support
@@ -10,18 +11,15 @@
 # https://github.com/codacy/codacy-analysis-cli-action.
 # For more information on Codacy Analysis CLI in general, see
 # https://github.com/codacy/codacy-analysis-cli.
-
 name: Codacy Security Scan
-
 on:
   push:
-    branches: [ develop ]
+    branches: [develop]
   pull_request:
     # The branches below must be a subset of the branches above
-    branches: [ develop ]
+    branches: [develop]
   schedule:
-    - cron: '35 22 * * 2'
-
+    - cron: 35 22 * * 2
 jobs:
   codacy-security-scan:
     name: Codacy Security Scan
@@ -31,13 +29,16 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # Execute Codacy Analysis CLI and generate a SARIF output with the security issues identified during the analysis
+      # Execute Codacy Analysis CLI and generate a SARIF output with the
+      # security issues identified during the analysis
       - name: Run Codacy Analysis CLI
         id: codacy
         uses: codacy/codacy-analysis-cli-action@v4
         with:
-          # Check https://github.com/codacy/codacy-analysis-cli#project-token to get your project token from your Codacy repository
-          # You can also omit the token and run the tools that support default configurations
+          # Check https://github.com/codacy/codacy-analysis-cli#project-token
+          # to get your project token from your Codacy repository
+          # You can also omit the token and run the tools that support
+          # default configurations
           project-token: ${{ secrets.CODACY_PROJECT_TOKEN }}
           verbose: true
           output: results.sarif
@@ -50,9 +51,9 @@ jobs:
       - name: Count number of issues in SARIF file
         id: sarif_size
         run: |
-            ISSUE_COUNT=$(jq '.runs[0].results | length' results.sarif)
-            echo "ISSUE_COUNT=$ISSUE_COUNT" >> $GITHUB_OUTPUT
-            echo "Issues count: ${{ steps.sarif_size.outputs.ISSUE_COUNT }}"
+          ISSUE_COUNT=$(jq '.runs[0].results | length' results.sarif)
+          echo "ISSUE_COUNT=$ISSUE_COUNT" >> $GITHUB_OUTPUT
+          echo "Issues count: ${{ steps.sarif_size.outputs.ISSUE_COUNT }}"
 
     # Upload the SARIF file generated in the previous step
       - name: Upload SARIF results file

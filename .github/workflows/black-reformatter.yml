@@ -1,14 +1,10 @@
+---
 name: black-action
-"on":
+on:
   push:
-    branches:
-      - develop
-      - 'feature/*'
-      - 'bugfix/*'
-      - 'hotfix/*'
+    branches: [develop, feature/*, bugfix/*, hotfix/*]
   pull_request:
-    branches:
-      - develop
+    branches: [develop]
 permissions:
   contents: write
 jobs:
@@ -24,10 +20,10 @@ jobs:
         uses: rickstaa/action-black@v1
         id: action_black
         with:
-          black_args: "."
+          black_args: .
       - name: Commit changes
         if: steps.action_black.outputs.is_formatted == 'true'
-        run: |
+        run: |-
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           git add .
