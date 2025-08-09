@@ -51,6 +51,27 @@
   2. Fix ALL linting errors before proceeding with commits
   3. Ensure 100% linting compliance before GitHub Actions execution
 
+### YAML Linting and Formatting Requirements
+- **MANDATORY**: All YAML changes MUST pass yamllint before committing.
+- **ALWAYS run** `yamllint --config-file .yamllint .github/` to verify YAML compliance before any commit.
+- **ZERO yamllint errors policy**: Address ALL yamllint errors before committing - no exceptions.
+- **MANDATORY**: YAML linting MUST pass before any other testing or GitHub Actions workflows are started.
+- Follow the existing yamllint configuration in `.yamllint` which includes:
+  - Line length limit of 88 characters (aligned with Python formatting)
+  - No document-start markers (`---`) at the beginning of files
+  - Consistent 2-space indentation for YAML structures
+  - No trailing whitespace
+  - Proper comment indentation aligned with content
+- Pay special attention to:
+  - Line length: Split long lines using YAML multiline syntax (`>-` or `|`)
+  - Comment indentation: Ensure comments are indented to match their content level
+  - Trailing spaces: Remove all trailing whitespace from lines
+  - Document structure: Do not use `---` document start markers
+- **Pre-commit validation for YAML**: Always validate YAML style before any automated processes:
+  1. Run `yamllint --config-file .yamllint .github/` on all modified YAML files
+  2. Fix ALL yamllint errors and warnings before proceeding with commits
+  3. Ensure 100% YAML compliance before any other testing begins
+
 ### Code Coverage Requirements
 - Add unit and integration test code coverage on all new code.
 - Verify code coverage on existing code where code changes are being made.
