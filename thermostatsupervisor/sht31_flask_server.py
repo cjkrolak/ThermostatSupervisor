@@ -232,6 +232,30 @@ class Sensors:
             raise exc
         time.sleep(0.5)
 
+    def _process_crc_bit_reverse(self, crc, poly):
+        """Process CRC bit with reverse direction."""
+        if crc & 0x01:
+            return (crc >> 1) ^ poly
+        else:
+            return crc >> 1
+
+    def _process_crc_bit_normal(self, crc, poly):
+        """Process CRC bit with normal direction."""
+        if crc & 0x80:
+            return (crc << 1) ^ poly  # polynomial = 0x31
+        else:
+            return crc << 1
+
+    def _process_crc_byte(self, crc, byte, poly, reverse):
+        """Process a single byte for CRC calculation."""
+        crc ^= byte
+        for _ in range(8, 0, -1):
+            if reverse:
+                crc = self._process_crc_bit_reverse(crc, poly)
+            else:
+                crc = self._process_crc_bit_normal(crc, poly)
+        return crc
+
     def calculate_crc(self, data, init=0xFF, poly=0x131, final_xor=0x00, reverse=False):
         """
         Calculate CRC checksum for SHT31 sensor data.
@@ -247,18 +271,7 @@ class Sensors:
         """
         crc = init  # Initialize CRC with 0xFF
         for byte in data:
-            crc ^= byte
-            for _ in range(8, 0, -1):
-                if reverse:
-                    if crc & 0x01:
-                        crc = (crc >> 1) ^ poly
-                    else:
-                        crc = crc >> 1
-                else:
-                    if crc & 0x80:
-                        crc = (crc << 1) ^ poly  # polynomial = 0x31
-                    else:
-                        crc = crc << 1
+            crc = self._process_crc_byte(crc, byte, poly, reverse)
         crc &= 0xFF  # Ensure result is 8-bit
         crc ^= final_xor
         return crc
