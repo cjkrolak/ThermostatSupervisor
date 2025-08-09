@@ -12,7 +12,7 @@
 # For more information on Codacy Analysis CLI in general, see
 # https://github.com/codacy/codacy-analysis-cli.
 name: Codacy Security Scan
-"on":
+on:
   push:
     branches: [develop]
   pull_request:
@@ -53,7 +53,6 @@ jobs:
         run: |
           python .github/scripts/split-sarif-by-category.py results.sarif sarif-output
           echo "SARIF files split by category to avoid duplicate uploads"
-
       - name: Count total issues across all SARIF files
         id: sarif_size
         run: |
@@ -70,26 +69,26 @@ jobs:
 
       # Upload each SARIF file separately to avoid category conflicts
       - name: Upload SARIF results - Semgrep
-        if: steps.sarif_size.outputs.ISSUE_COUNT < 21 && hashFiles('sarif-output/results-semgrep.sarif') != ''
+        if: steps.sarif_size.outputs.ISSUE_COUNT < 21 && hashFiles('sarif-output/results-semgrep.sarif')
+          != ''
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: sarif-output/results-semgrep.sarif
           category: codacy-semgrep
-
       - name: Upload SARIF results - Pylint
-        if: steps.sarif_size.outputs.ISSUE_COUNT < 21 && hashFiles('sarif-output/results-pylint.sarif') != ''
+        if: steps.sarif_size.outputs.ISSUE_COUNT < 21 && hashFiles('sarif-output/results-pylint.sarif')
+          != ''
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: sarif-output/results-pylint.sarif
           category: codacy-pylint
-
       - name: Upload SARIF results - Markdownlint
-        if: steps.sarif_size.outputs.ISSUE_COUNT < 21 && hashFiles('sarif-output/results-markdownlint.sarif') != ''
+        if: steps.sarif_size.outputs.ISSUE_COUNT < 21 && hashFiles('sarif-output/results-markdownlint.sarif')
+          != ''
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: sarif-output/results-markdownlint.sarif
           category: codacy-markdownlint
-
       - name: Upload SARIF results - Other tools
         if: steps.sarif_size.outputs.ISSUE_COUNT < 21
         shell: bash
