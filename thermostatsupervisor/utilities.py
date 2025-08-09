@@ -286,6 +286,20 @@ def humidity_value_with_units(raw, disp_unit=" RH", precision=0) -> str:
     return f"{formatted}%{disp_unit}"
 
 
+def _match_value_by_type(value, val):
+    """Check if val matches value based on value's type."""
+    if isinstance(value, (str, int, float)):
+        return val == value
+    elif isinstance(value, dict):
+        return val in value.keys() or val in value.values()
+    elif isinstance(value, list):
+        return val in value
+    else:
+        raise TypeError(
+            f"type {type(value)} not yet supported in get_key_from_value"
+        )
+
+
 def get_key_from_value(input_dict, val):
     """
     Return first key found in dict from value provided.
@@ -303,26 +317,9 @@ def get_key_from_value(input_dict, val):
     returns:
         (str or int): dictionary key
     """
-    return_val = None
     for key, value in input_dict.items():
-        if isinstance(value, (str, int, float)):
-            # match value
-            if val == value:
-                return_val = key
-        elif isinstance(value, dict):
-            # match key of child dict
-            if val in value.keys() or val in value.values():
-                return_val = key
-        elif isinstance(value, list):
-            # match key to any value in child list
-            if val in value:
-                return_val = key
-        else:
-            raise TypeError(
-                f"type {type(value)} not yet supported in get_key_from_value"
-            )
-        if return_val is not None:
-            return return_val
+        if _match_value_by_type(value, val):
+            return key
 
     # key not found
     raise KeyError(f"key not found in dict '{input_dict}' with value='{val}'")
@@ -643,6 +640,79 @@ class UserInputs:
         """Update user_inputs dict dynamically based on runtime parameters."""
         pass  # placeholder
 
+    def _determine_expected_type(self, attr):
+        """Determine the expected type for an attribute."""
+        if attr["type"] == bool:
+            raise TypeError(
+                "CODING ERROR: UserInput bool "
+                "typedefs don't work, use a lambda "
+                "function"
+            )
+        elif self.is_lambda_bool(attr["type"]):
+            return bool
+        else:
+            return attr["type"]
+
+    def _handle_missing_value(self, parent_key, child_key, attr):
+        """Handle case where attribute value is missing."""
+        if not self.suppress_warnings:
+            log_msg(
+                f"parent_key={parent_key}, child_key='{child_key}'"
+                f": argv parameter missing, using default "
+                f"value '{attr['default']}'",
+                mode=DEBUG_LOG + STDOUT_LOG,
+                func_name=1,
+            )
+        attr["value"] = attr["default"]
+
+    def _handle_wrong_datatype(self, parent_key, child_key, attr,
+                               expected_type, proposed_type):
+        """Handle case where attribute has wrong datatype."""
+        if not self.suppress_warnings:
+            log_msg(
+                f"parent_key={parent_key}, child_key='{child_key}'"
+                f": datatype error, expected="
+                f"{expected_type}, actual={proposed_type}, "
+                "using default value "
+                f"'{attr['default']}'",
+                mode=DEBUG_LOG + STDOUT_LOG,
+                func_name=1,
+            )
+        attr["value"] = attr["default"]
+
+    def _handle_out_of_range(self, parent_key, child_key, attr):
+        """Handle case where attribute value is out of valid range."""
+        if not self.suppress_warnings:
+            log_msg(
+                f"WARNING: '{attr['value']}' is not a valid "
+                f"choice parent_key='{parent_key}', child_key="
+                f"'{child_key}', using default '{attr['default']}'",
+                mode=BOTH_LOG,
+                func_name=1,
+            )
+        attr["value"] = attr["default"]
+
+    def _validate_single_attribute(self, parent_key, child_key, attr):
+        """Validate a single attribute and update if necessary."""
+        proposed_value = attr["value"]
+        proposed_type = type(proposed_value)
+        expected_type = self._determine_expected_type(attr)
+
+        # missing value check
+        if proposed_value is None:
+            self._handle_missing_value(parent_key, child_key, attr)
+        # wrong datatype check
+        elif proposed_type != expected_type:
+            self._handle_wrong_datatype(
+                parent_key, child_key, attr, expected_type, proposed_type
+            )
+        # out of range check
+        elif (
+            attr["valid_range"] is not None
+            and proposed_value not in attr["valid_range"]
+        ):
+            self._handle_out_of_range(parent_key, child_key, attr)
+
     def validate_argv_inputs(self, argv_dict):
         """
         Validate argv inputs and update reset to defaults if necessary.
@@ -666,61 +736,7 @@ class UserInputs:
         """
         for parent_key, child_dict in argv_dict.items():
             for child_key, attr in child_dict.items():
-                proposed_value = attr["value"]
-                default_value = attr["default"]
-                proposed_type = type(proposed_value)
-                # expected type lambda cast to bool
-                # should never get bool for attr["type"]
-                if attr["type"] == bool:
-                    raise TypeError(
-                        "CODING ERROR: UserInput bool "
-                        "typedefs don't work, use a lambda "
-                        "function"
-                    )
-                elif self.is_lambda_bool(attr["type"]):
-                    expected_type = bool
-                else:
-                    expected_type = attr["type"]
-                # missing value check
-                if proposed_value is None:
-                    if not self.suppress_warnings:
-                        log_msg(
-                            f"parent_key={parent_key}, child_key='{child_key}'"
-                            f": argv parameter missing, using default "
-                            f"value '{default_value}'",
-                            mode=DEBUG_LOG + STDOUT_LOG,
-                            func_name=1,
-                        )
-                    attr["value"] = attr["default"]
-
-                # wrong datatype check
-                elif proposed_type != expected_type:
-                    if not self.suppress_warnings:
-                        log_msg(
-                            f"parent_key={parent_key}, child_key='{child_key}'"
-                            f": datatype error, expected="
-                            f"{expected_type}, actual={proposed_type}, "
-                            "using default value "
-                            f"'{default_value}'",
-                            mode=DEBUG_LOG + STDOUT_LOG,
-                            func_name=1,
-                        )
-                    attr["value"] = attr["default"]
-
-                # out of range check
-                elif (
-                    attr["valid_range"] is not None
-                    and proposed_value not in attr["valid_range"]
-                ):
-                    if not self.suppress_warnings:
-                        log_msg(
-                            f"WARNING: '{proposed_value}' is not a valid "
-                            f"choice parent_key='{parent_key}', child_key="
-                            f"'{child_key}', using default '{default_value}'",
-                            mode=BOTH_LOG,
-                            func_name=1,
-                        )
-                    attr["value"] = attr["default"]
+                self._validate_single_attribute(parent_key, child_key, attr)
 
         return argv_dict
 
@@ -823,6 +839,169 @@ class UserInputs:
                 self.user_inputs_file[section][key] = config[section][key]
 
 
+def _get_default_exception_types():
+    """Get default exception types for retry mechanism."""
+    return (
+        requests.exceptions.ConnectionError,
+        requests.exceptions.HTTPError,
+        requests.exceptions.Timeout,
+        ConnectionError,
+        TimeoutError,
+    )
+
+
+def _initialize_retry_parameters(initial_retry_delay_sec):
+    """Initialize retry parameters."""
+    initial_trial_number = 1
+    trial_number = initial_trial_number
+    retry_delay_sec = initial_retry_delay_sec
+    return initial_trial_number, trial_number, retry_delay_sec
+
+
+def _handle_server_spamming_detection(tc, ex):
+    """Check for and handle server spamming detection."""
+    if tc is None:
+        return
+
+    # Check for TooManyAttemptsError to detect server spamming
+    if "TooManyAttemptsError" in str(type(ex)):
+        tc.server_spamming_detected = True
+        log_msg(
+            "CRITICAL: pyhtcc server spamming detected - "
+            "subsequent Honeywell integration tests will be skipped",
+            mode=BOTH_LOG,
+            func_name=1,
+        )
+
+
+def _send_retry_email_alert(email_notification, thermostat_type, zone_name,
+                            trial_number, number_of_retries, time_now):
+    """Send email alert for retry attempt."""
+    if email_notification is None:
+        return
+
+    try:
+        email_notification.send_email_alert(
+            subject=(
+                f"{thermostat_type} zone "
+                f"{zone_name}: "
+                "intermittent error during "
+                f"{get_function_name()}"
+            ),
+            body=(
+                f"{get_function_name()}: trial "
+                f"{trial_number} of "
+                f"{number_of_retries} at "
+                f"{time_now}\n{traceback.format_exc()}"
+            ),
+        )
+    except Exception:
+        # Don't let email failures prevent retry logic
+        pass
+
+
+def _send_success_email_alert(email_notification, thermostat_type, zone_name,
+                              trial_number, number_of_retries, time_now):
+    """Send email alert for successful retry after failure."""
+    if email_notification is None:
+        return
+
+    try:
+        email_notification.send_email_alert(
+            subject=(
+                f"{thermostat_type} zone "
+                f"{zone_name}: "
+                "(mitigated) intermittent connection error "
+                f"during {get_function_name()}"
+            ),
+            body=(
+                f"{get_function_name()}: trial "
+                f"{trial_number} of {number_of_retries} at "
+                f"{time_now}"
+            ),
+        )
+    except Exception:
+        # Don't let email failures affect the successful result
+        pass
+
+
+def _handle_retry_exception(tc, ex, trial_number, number_of_retries,
+                            retry_delay_sec, time_now, email_notification,
+                            thermostat_type, zone_name):
+    """Handle exception during retry attempt."""
+    # Set flag to force re-authentication if available
+    if tc is not None:
+        tc.connection_ok = False
+
+    _handle_server_spamming_detection(tc, ex)
+
+    log_msg(
+        f"WARNING: exception on trial {trial_number}",
+        mode=BOTH_LOG,
+        func_name=1,
+    )
+    log_msg(traceback.format_exc(), mode=BOTH_LOG, func_name=1)
+
+    msg_suffix = [
+        "",
+        f" waiting {retry_delay_sec} seconds and then retrying...",
+    ][trial_number < number_of_retries]
+
+    log_msg(
+        f"{time_now}: exception during "
+        f"{get_function_name()}"
+        f", on trial {trial_number} of "
+        f"{number_of_retries}, probably a"
+        " connection issue"
+        f"{msg_suffix}",
+        mode=BOTH_LOG,
+        func_name=1,
+    )
+
+    # Send warning email if email notification module is available
+    _send_retry_email_alert(
+        email_notification, thermostat_type, zone_name,
+        trial_number, number_of_retries, time_now
+    )
+
+    # Exhausted retries, raise exception
+    if trial_number >= number_of_retries:
+        log_msg(
+            f"ERROR: exhausted {number_of_retries} "
+            f"retries during {get_function_name()}",
+            mode=BOTH_LOG,
+            func_name=1,
+        )
+        raise ex
+
+
+def _handle_retry_delay(trial_number, number_of_retries, retry_delay_sec):
+    """Handle delay between retry attempts."""
+    if trial_number < number_of_retries:
+        log_msg(
+            f"Delaying {retry_delay_sec} prior to retry...",
+            mode=BOTH_LOG,
+            func_name=1,
+        )
+        time.sleep(retry_delay_sec)
+
+
+def _handle_successful_retry(tc, trial_number, initial_trial_number,
+                             email_notification, thermostat_type, zone_name,
+                             number_of_retries, time_now):
+    """Handle successful function execution after retries."""
+    # Log the mitigated failure if we had to retry
+    if trial_number > initial_trial_number:
+        _send_success_email_alert(
+            email_notification, thermostat_type, zone_name,
+            trial_number, number_of_retries, time_now
+        )
+
+    # Reset connection status if available
+    if tc is not None:
+        tc.connection_ok = True
+
+
 def execute_with_extended_retries(
     func,
     thermostat_type: str,
@@ -861,18 +1040,11 @@ def execute_with_extended_retries(
 
     # Default exception types if not provided
     if exception_types is None:
-        # Use generic exceptions that are common across all thermostat types
-        exception_types = (
-            requests.exceptions.ConnectionError,
-            requests.exceptions.HTTPError,
-            requests.exceptions.Timeout,
-            ConnectionError,
-            TimeoutError,
-        )
+        exception_types = _get_default_exception_types()
 
-    initial_trial_number = 1
-    trial_number = initial_trial_number
-    retry_delay_sec = initial_retry_delay_sec
+    initial_trial_number, trial_number, retry_delay_sec = (
+        _initialize_retry_parameters(initial_retry_delay_sec)
+    )
     return_val = None
 
     while trial_number <= number_of_retries:
@@ -880,82 +1052,13 @@ def execute_with_extended_retries(
         try:
             return_val = func()
         except exception_types as ex:
-            # Set flag to force re-authentication if available
-            if tc is not None:
-                tc.connection_ok = False
-
-                # Check for TooManyAttemptsError to detect server spamming
-                if "TooManyAttemptsError" in str(type(ex)):
-                    tc.server_spamming_detected = True
-                    log_msg(
-                        "CRITICAL: pyhtcc server spamming detected - "
-                        "subsequent Honeywell integration tests will be skipped",
-                        mode=BOTH_LOG,
-                        func_name=1,
-                    )
-
-            log_msg(
-                f"WARNING: exception on trial {trial_number}",
-                mode=BOTH_LOG,
-                func_name=1,
+            _handle_retry_exception(
+                tc, ex, trial_number, number_of_retries, retry_delay_sec,
+                time_now, email_notification, thermostat_type, zone_name
             )
-            log_msg(traceback.format_exc(), mode=BOTH_LOG, func_name=1)
-
-            msg_suffix = [
-                "",
-                f" waiting {retry_delay_sec} seconds and then retrying...",
-            ][trial_number < number_of_retries]
-
-            log_msg(
-                f"{time_now}: exception during "
-                f"{get_function_name()}"
-                f", on trial {trial_number} of "
-                f"{number_of_retries}, probably a"
-                " connection issue"
-                f"{msg_suffix}",
-                mode=BOTH_LOG,
-                func_name=1,
-            )
-
-            # Send warning email if email notification module is available
-            if email_notification is not None:
-                try:
-                    email_notification.send_email_alert(
-                        subject=(
-                            f"{thermostat_type} zone "
-                            f"{zone_name}: "
-                            "intermittent error during "
-                            f"{get_function_name()}"
-                        ),
-                        body=(
-                            f"{get_function_name()}: trial "
-                            f"{trial_number} of "
-                            f"{number_of_retries} at "
-                            f"{time_now}\n{traceback.format_exc()}"
-                        ),
-                    )
-                except Exception:
-                    # Don't let email failures prevent retry logic
-                    pass
-
-            # Exhausted retries, raise exception
-            if trial_number >= number_of_retries:
-                log_msg(
-                    f"ERROR: exhausted {number_of_retries} "
-                    f"retries during {get_function_name()}",
-                    mode=BOTH_LOG,
-                    func_name=1,
-                )
-                raise ex
 
             # Delay between retries
-            if trial_number < number_of_retries:
-                log_msg(
-                    f"Delaying {retry_delay_sec} prior to retry...",
-                    mode=BOTH_LOG,
-                    func_name=1,
-                )
-                time.sleep(retry_delay_sec)
+            _handle_retry_delay(trial_number, number_of_retries, retry_delay_sec)
 
             # Increment retry parameters
             trial_number += 1
@@ -970,30 +1073,10 @@ def execute_with_extended_retries(
             )
             raise ex
         else:  # Good response
-            # Log the mitigated failure if we had to retry
-            if trial_number > initial_trial_number and email_notification is not None:
-                try:
-                    email_notification.send_email_alert(
-                        subject=(
-                            f"{thermostat_type} zone "
-                            f"{zone_name}: "
-                            "(mitigated) intermittent connection error "
-                            f"during {get_function_name()}"
-                        ),
-                        body=(
-                            f"{get_function_name()}: trial "
-                            f"{trial_number} of {number_of_retries} at "
-                            f"{time_now}"
-                        ),
-                    )
-                except Exception:
-                    # Don't let email failures affect the successful result
-                    pass
-
-            # Reset connection status if available
-            if tc is not None:
-                tc.connection_ok = True
-
+            _handle_successful_retry(
+                tc, trial_number, initial_trial_number, email_notification,
+                thermostat_type, zone_name, number_of_retries, time_now
+            )
             break  # Exit while loop on success
 
     return return_val

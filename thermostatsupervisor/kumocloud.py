@@ -205,6 +205,73 @@ class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
         """
         return self.get_metadata(zone, retry=retry)
 
+    def _get_serial_number_list(self):
+        """Get indoor unit serial numbers with retry logic."""
+        try:
+            serial_num_lst = list(self.get_indoor_units())  # will query unit
+        except UnboundLocalError:  # patch for issue #205
+            util.log_msg(
+                "WARNING: Kumocloud refresh failed due to timeout",
+                mode=util.BOTH_LOG,
+                func_name=1,
+            )
+            time.sleep(30)
+            serial_num_lst = list(self.get_indoor_units())  # retry
+
+        if self.verbose:
+            util.log_msg(
+                f"indoor unit serial numbers: {str(serial_num_lst)}",
+                mode=util.DEBUG_LOG + util.STDOUT_LOG,
+                func_name=1,
+            )
+
+        return serial_num_lst
+
+    def _validate_and_populate_metadata(self, serial_num_lst):
+        """Validate serial number list and populate metadata."""
+        if not serial_num_lst:
+            raise tc.AuthenticationError(
+                "pykumo meta data is blank, probably"
+                " due to an Authentication Error,"
+                " check your credentials."
+            )
+
+        for idx, serial_number in enumerate(serial_num_lst):
+            # populate meta data dict
+            if self.verbose:
+                print(f"zone index={idx}, serial_number={serial_number}")
+            kumocloud_config.metadata[idx]["serial_number"] = serial_number
+
+    def _get_zone_data(self, zone, serial_num_lst):
+        """Get zone data based on zone parameter."""
+        # raw_json list:
+        # [0]: token, username, device fields
+        # [1]: lastupdate date
+        # [2]: zone meta data
+        # [3]: device token
+        if zone is None:
+            # returned cached raw data for all zones
+            return self.get_raw_json()[2]  # does not fetch results,
+        else:
+            # if zone name input, find zone index
+            if not isinstance(zone, int):
+                self.zone_name = zone
+                zone_index = self.get_zone_index_from_name()
+            else:
+                zone_index = zone
+            # return cached raw data for specified zone, will be a dict
+            try:
+                self.serial_number = serial_num_lst[zone_index]
+            except IndexError as exc:
+                raise IndexError(
+                    f"ERROR: Invalid Zone, index ({zone_index}) does "
+                    "not exist in serial number list "
+                    f"({serial_num_lst})"
+                ) from exc
+            return self.get_raw_json()[2]["children"][0]["zoneTable"][
+                serial_num_lst[zone_index]
+            ]
+
     def get_metadata(self, zone=None, trait=None, parameter=None, retry=False):
         """Get all thermostat meta data for zone from kumocloud.
 
@@ -220,64 +287,9 @@ class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
         del trait  # not needed on Kumocloud
 
         def _get_metadata_internal():
-            try:
-                serial_num_lst = list(self.get_indoor_units())  # will query unit
-            except UnboundLocalError:  # patch for issue #205
-                util.log_msg(
-                    "WARNING: Kumocloud refresh failed due to timeout",
-                    mode=util.BOTH_LOG,
-                    func_name=1,
-                )
-                time.sleep(30)
-                serial_num_lst = list(self.get_indoor_units())  # retry
-            if self.verbose:
-                util.log_msg(
-                    f"indoor unit serial numbers: {str(serial_num_lst)}",
-                    mode=util.DEBUG_LOG + util.STDOUT_LOG,
-                    func_name=1,
-                )
-
-            # validate serial number list
-            if not serial_num_lst:
-                raise tc.AuthenticationError(
-                    "pykumo meta data is blank, probably"
-                    " due to an Authentication Error,"
-                    " check your credentials."
-                )
-
-            for idx, serial_number in enumerate(serial_num_lst):
-                # populate meta data dict
-                if self.verbose:
-                    print(f"zone index={idx}, serial_number={serial_number}")
-                kumocloud_config.metadata[idx]["serial_number"] = serial_number
-
-            # raw_json list:
-            # [0]: token, username, device fields
-            # [1]: lastupdate date
-            # [2]: zone meta data
-            # [3]: device token
-            if zone is None:
-                # returned cached raw data for all zones
-                raw_json = self.get_raw_json()[2]  # does not fetch results,
-            else:
-                # if zone name input, find zone index
-                if not isinstance(zone, int):
-                    self.zone_name = zone
-                    zone_index = self.get_zone_index_from_name()
-                else:
-                    zone_index = zone
-                # return cached raw data for specified zone, will be a dict
-                try:
-                    self.serial_number = serial_num_lst[zone_index]
-                except IndexError as exc:
-                    raise IndexError(
-                        f"ERROR: Invalid Zone, index ({zone_index}) does "
-                        "not exist in serial number list "
-                        f"({serial_num_lst})"
-                    ) from exc
-                raw_json = self.get_raw_json()[2]["children"][0]["zoneTable"][
-                    serial_num_lst[zone_index]
-                ]
+            serial_num_lst = self._get_serial_number_list()
+            self._validate_and_populate_metadata(serial_num_lst)
+            raw_json = self._get_zone_data(zone, serial_num_lst)
 
             if parameter is None:
                 return raw_json
