@@ -17,7 +17,7 @@ from typing import Dict, Any
 def load_sarif_file(filepath: str) -> Dict[str, Any]:
     """Load and parse SARIF file."""
     try:
-        with open(filepath, 'r') as f:
+        with open(filepath, "r") as f:
             return json.load(f)
     except FileNotFoundError:
         print(f"Error: SARIF file '{filepath}' not found.")
@@ -29,54 +29,58 @@ def load_sarif_file(filepath: str) -> Dict[str, Any]:
 
 def get_tool_name(run: Dict[str, Any]) -> str:
     """Extract tool name from a SARIF run."""
-    tool = run.get('tool', {})
-    driver = tool.get('driver', {})
-    return driver.get('name', 'unknown')
+    tool = run.get("tool", {})
+    driver = tool.get("driver", {})
+    return driver.get("name", "unknown")
 
 
 def split_sarif_by_category(sarif_data: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:
     """Split SARIF data by tool category."""
     runs_by_tool = {}
 
-    for run in sarif_data.get('runs', []):
+    for run in sarif_data.get("runs", []):
         tool_name = get_tool_name(run)
 
         if tool_name not in runs_by_tool:
             # Create a new SARIF document for this tool
             runs_by_tool[tool_name] = {
-                "$schema": sarif_data.get('$schema', ''),
-                "version": sarif_data.get('version', '2.1.0'),
-                "runs": []
+                "$schema": sarif_data.get("$schema", ""),
+                "version": sarif_data.get("version", "2.1.0"),
+                "runs": [],
             }
 
-        runs_by_tool[tool_name]['runs'].append(run)
+        runs_by_tool[tool_name]["runs"].append(run)
 
     return runs_by_tool
 
 
-def save_sarif_files(runs_by_tool: Dict[str, Dict[str, Any]], output_dir: str = '.'):
+def save_sarif_files(runs_by_tool: Dict[str, Dict[str, Any]], output_dir: str = "."):
     """Save separate SARIF files for each tool."""
     output_files = []
 
     for tool_name, sarif_data in runs_by_tool.items():
         # Sanitize tool name for filename
-        safe_tool_name = tool_name.replace('/', '_').replace(' ', '_')
+        safe_tool_name = tool_name.replace("/", "_").replace(" ", "_")
         filename = f"results-{safe_tool_name}.sarif"
         filepath = os.path.join(output_dir, filename)
 
-        with open(filepath, 'w') as f:
+        with open(filepath, "w") as f:
             json.dump(sarif_data, f, indent=2)
 
-        output_files.append({
-            'tool': tool_name,
-            'file': filepath,
-            'results_count': sum(
-                len(run.get('results', [])) for run in sarif_data['runs']
-            )
-        })
+        output_files.append(
+            {
+                "tool": tool_name,
+                "file": filepath,
+                "results_count": sum(
+                    len(run.get("results", [])) for run in sarif_data["runs"]
+                ),
+            }
+        )
 
-        print(f"Created {filepath} with {output_files[-1]['results_count']} "
-              f"results for {tool_name}")
+        print(
+            f"Created {filepath} with {output_files[-1]['results_count']} "
+            f"results for {tool_name}"
+        )
 
     return output_files
 
@@ -88,7 +92,7 @@ def main():
         sys.exit(1)
 
     sarif_file = sys.argv[1]
-    output_dir = sys.argv[2] if len(sys.argv) > 2 else '.'
+    output_dir = sys.argv[2] if len(sys.argv) > 2 else "."
 
     # Create output directory if it doesn't exist
     Path(output_dir).mkdir(parents=True, exist_ok=True)
@@ -114,7 +118,7 @@ def main():
     print("::endgroup::")
 
     # Set output for GitHub Actions
-    files_json = json.dumps([f['file'] for f in output_files])
+    files_json = json.dumps([f["file"] for f in output_files])
     print(f"::set-output name=sarif_files::{files_json}")
 
 
