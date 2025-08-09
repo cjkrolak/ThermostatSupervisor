@@ -73,7 +73,6 @@ This project uses GitHub repository secrets as the primary source of truth to re
 - Location: Azure DevOps > Pipelines > Library > Variable groups
 - Used by: Azure DevOps pipeline for independent execution capability
 - Should contain identical values to GitHub secrets listed above
-- This allows ADO pipeline to run independently when needed while maintaining GitHub as authoritative source
 
 # Execution Information:
 ## debug / diagnostics:
