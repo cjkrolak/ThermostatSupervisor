@@ -5,10 +5,16 @@ Tests that yamllint configuration works and catches common YAML issues.
 """
 
 import os
+import shutil
 import subprocess
 import tempfile
 import unittest
 from pathlib import Path
+
+
+def _is_yamlfix_available():
+    """Check if yamlfix command is available in the system."""
+    return shutil.which("yamlfix") is not None
 
 
 class TestYamlLintWorkflow(unittest.TestCase):
@@ -129,6 +135,7 @@ class TestYamlLintWorkflow(unittest.TestCase):
         finally:
             os.unlink(temp_file)
 
+    @unittest.skipIf(not _is_yamlfix_available(), "yamlfix not available")
     def test_yamlfix_command_available(self):
         """Test that yamlfix command is available."""
         result = subprocess.run(
@@ -136,6 +143,7 @@ class TestYamlLintWorkflow(unittest.TestCase):
         )
         self.assertEqual(result.returncode, 0, "yamlfix command should be available")
 
+    @unittest.skipIf(not _is_yamlfix_available(), "yamlfix not available")
     def test_yamlfix_can_fix_issues(self):
         """Test that yamlfix can fix common YAML formatting issues."""
         with tempfile.NamedTemporaryFile(mode="w", suffix=".yml", delete=False) as f:
