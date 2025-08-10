@@ -169,53 +169,88 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):
         """
         blinkpy < 0.22.0-compatible start with improved error handling
         """
-        # construct the superclass
-        # call both parent class __init__
-        self.args = [self.bl_uname, self.bl_pwd]
+        self._setup_auth_parameters()
+        self._execute_auth_with_retry()
 
-        # set tstat type and debug flag
+    def _setup_auth_parameters(self):
+        """Setup authentication parameters."""
+        self.args = [self.bl_uname, self.bl_pwd]
         self.thermostat_type = blink_config.ALIAS
 
-        # establish connection with retry logic
+    def _execute_auth_with_retry(self):
+        """Execute authentication with retry logic."""
         max_retries = 3
         retry_delay = 5  # seconds
+        expected_exceptions = (
+            AttributeError,
+            ValueError,
+            KeyError,
+            LoginError,
+            UnauthorizedError,
+            ClientConnectionError,
+            ContentTypeError,
+        )
 
         for attempt in range(max_retries):
             try:
                 setup_success = self._attempt_authentication()
-
                 if not setup_success:
                     if self._handle_setup_retry(attempt, max_retries, retry_delay):
                         continue
-
-                # Success - break out of retry loop
                 break
 
-            except (
-                AttributeError,
-                ValueError,
-                KeyError,
-                LoginError,
-                UnauthorizedError,
-                ClientConnectionError,
-                ContentTypeError,
-            ) as e:
+            except expected_exceptions as e:
                 retry_delay = self._handle_auth_retry(
                     attempt, max_retries, retry_delay, e
                 )
                 continue
             except Exception as e:
-                # Unexpected error - don't retry
-                print(traceback.format_exc())
-                error_msg = (
-                    f"ERROR: Unexpected error during Blink authentication for zone "
-                    f"{self.zone_number}: {str(e)}"
+                self._handle_unexpected_error(e)
+
+    async def _execute_async_auth_with_retry(self, session):
+        """Execute async authentication with retry logic."""
+        max_retries = 3
+        retry_delay = 5  # seconds
+        expected_exceptions = (
+            AttributeError,
+            ValueError,
+            KeyError,
+            LoginError,
+            UnauthorizedError,
+            ClientConnectionError,
+            ContentTypeError,
+        )
+
+        for attempt in range(max_retries):
+            try:
+                setup_success = await self._attempt_async_authentication(session)
+                if not setup_success:
+                    if await self._handle_async_setup_retry(
+                        attempt, max_retries, retry_delay
+                    ):
+                        continue
+                break
+
+            except expected_exceptions as e:
+                retry_delay = await self._handle_async_auth_retry(
+                    attempt, max_retries, retry_delay, e
                 )
-                banner = "*" * len(error_msg)
-                print(banner)
-                print(error_msg)
-                print(banner)
-                sys.exit(1)
+                continue
+            except Exception as e:
+                self._handle_unexpected_error(e)
+
+    def _handle_unexpected_error(self, error):
+        """Handle unexpected errors during authentication."""
+        print(traceback.format_exc())
+        error_msg = (
+            f"ERROR: Unexpected error during Blink authentication for zone "
+            f"{self.zone_number}: {str(error)}"
+        )
+        banner = "*" * len(error_msg)
+        print(banner)
+        print(error_msg)
+        print(banner)
+        sys.exit(1)
 
     async def _handle_async_auth_retry(self, attempt, max_retries, retry_delay, error):
         """Handle async authentication retry logic."""
@@ -281,56 +316,8 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):
         auth_start function with improved error handling and retry logic.
         """
         async with ClientSession() as session:
-            # construct the superclass
-            # call both parent class __init__
-            self.args = [self.bl_uname, self.bl_pwd]
-            # blinkpy.Blink.__init__(self, *self.args)
-
-            # set tstat type and debug flag
-            self.thermostat_type = blink_config.ALIAS
-
-            # establish connection with retry logic
-            max_retries = 3
-            retry_delay = 5  # seconds
-
-            for attempt in range(max_retries):
-                try:
-                    setup_success = await self._attempt_async_authentication(session)
-
-                    if not setup_success:
-                        if await self._handle_async_setup_retry(
-                            attempt, max_retries, retry_delay
-                        ):
-                            continue
-
-                    # Success - break out of retry loop
-                    break
-
-                except (
-                    AttributeError,
-                    ValueError,
-                    KeyError,
-                    LoginError,
-                    UnauthorizedError,
-                    ClientConnectionError,
-                    ContentTypeError,
-                ) as e:
-                    retry_delay = await self._handle_async_auth_retry(
-                        attempt, max_retries, retry_delay, e
-                    )
-                    continue
-                except Exception as e:
-                    # Unexpected error - don't retry
-                    print(traceback.format_exc())
-                    error_msg = (
-                        f"ERROR: Unexpected error during Blink authentication for zone "
-                        f"{self.zone_number}: {str(e)}"
-                    )
-                    banner = "*" * len(error_msg)
-                    print(banner)
-                    print(error_msg)
-                    print(banner)
-                    sys.exit(1)
+            self._setup_auth_parameters()
+            await self._execute_async_auth_with_retry(session)
 
     def _format_auth_error(self, error, auth_type="sync"):
         """
@@ -345,51 +332,81 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):
         error_type = type(error).__name__
         error_str = str(error)
 
-        if isinstance(error, LoginError):
-            return (
-                f"ERROR: Blink login failed for zone {self.zone_number} "
-                f"({auth_type} mode). Please check your username and password. "
-                f"The Blink server may also be down or experiencing issues. "
-                f"Error: {error_str}"
-            )
-        elif isinstance(error, UnauthorizedError):
-            return (
-                f"ERROR: Blink authorization failed for zone {self.zone_number} "
-                f"({auth_type} mode). Your account may be locked or credentials "
-                f"may be invalid. Error: {error_str}"
-            )
-        elif isinstance(error, ClientConnectionError):
-            return (
-                f"ERROR: Network connection to Blink servers failed for zone "
-                f"{self.zone_number} ({auth_type} mode). Please check your "
-                f"internet connection and try again. Error: {error_str}"
-            )
-        elif isinstance(error, ContentTypeError):
-            return (
-                f"ERROR: Received invalid response from Blink servers for zone "
-                f"{self.zone_number} ({auth_type} mode). The server may be "
-                f"experiencing issues. Error: {error_str}"
-            )
-        elif isinstance(error, ValueError) and "2FA verification failed" in error_str:
+        error_handlers = {
+            LoginError: self._format_login_error,
+            UnauthorizedError: self._format_unauthorized_error,
+            ClientConnectionError: self._format_connection_error,
+            ContentTypeError: self._format_content_error,
+            ValueError: self._format_value_error,
+            AttributeError: self._format_attribute_error,
+        }
+
+        handler = error_handlers.get(type(error))
+        if handler:
+            return handler(error_str, auth_type)
+
+        return self._format_generic_error(error_type, error_str, auth_type)
+
+    def _format_login_error(self, error_str, auth_type):
+        """Format login error message."""
+        return (
+            f"ERROR: Blink login failed for zone {self.zone_number} "
+            f"({auth_type} mode). Please check your username and password. "
+            f"The Blink server may also be down or experiencing issues. "
+            f"Error: {error_str}"
+        )
+
+    def _format_unauthorized_error(self, error_str, auth_type):
+        """Format unauthorized error message."""
+        return (
+            f"ERROR: Blink authorization failed for zone {self.zone_number} "
+            f"({auth_type} mode). Your account may be locked or credentials "
+            f"may be invalid. Error: {error_str}"
+        )
+
+    def _format_connection_error(self, error_str, auth_type):
+        """Format connection error message."""
+        return (
+            f"ERROR: Network connection to Blink servers failed for zone "
+            f"{self.zone_number} ({auth_type} mode). Please check your "
+            f"internet connection and try again. Error: {error_str}"
+        )
+
+    def _format_content_error(self, error_str, auth_type):
+        """Format content type error message."""
+        return (
+            f"ERROR: Received invalid response from Blink servers for zone "
+            f"{self.zone_number} ({auth_type} mode). The server may be "
+            f"experiencing issues. Error: {error_str}"
+        )
+
+    def _format_value_error(self, error_str, auth_type):
+        """Format value error message."""
+        if "2FA verification failed" in error_str:
             return (
                 f"ERROR: Invalid 2FA verification code for zone "
                 f"{self.zone_number} ({auth_type} mode). Please check that "
                 f"you're using a fresh code from your authenticator app. "
                 f"Error: {error_str}"
             )
-        elif isinstance(error, AttributeError):
-            return (
-                f"ERROR: Blink authentication state error for zone "
-                f"{self.zone_number} ({auth_type} mode). This may occur if the "
-                f"initial login failed. Please verify your credentials and try "
-                f"again. Error: {error_str}"
-            )
-        else:
-            return (
-                f"ERROR: Blink authentication failed for zone "
-                f"{self.zone_number} ({auth_type} mode). Error type: "
-                f"{error_type}. Error details: {error_str}"
-            )
+        return self._format_generic_error("ValueError", error_str, auth_type)
+
+    def _format_attribute_error(self, error_str, auth_type):
+        """Format attribute error message."""
+        return (
+            f"ERROR: Blink authentication state error for zone "
+            f"{self.zone_number} ({auth_type} mode). This may occur if the "
+            f"initial login failed. Please verify your credentials and try "
+            f"again. Error: {error_str}"
+        )
+
+    def _format_generic_error(self, error_type, error_str, auth_type):
+        """Format generic error message."""
+        return (
+            f"ERROR: Blink authentication failed for zone "
+            f"{self.zone_number} ({auth_type} mode). Error type: "
+            f"{error_type}. Error details: {error_str}"
+        )
 
     def get_zone_name(self):
         """
@@ -483,62 +500,79 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):
     def _attempt_sync_token_refresh(self, zone_name):
         """Attempt to refresh authentication token for sync version."""
         try:
-            if self.verbose:
-                print("Attempting to refresh authentication token...")
-
-            self.blink.auth.refresh_token()
-
-            # Try to refresh camera list after token refresh
-            if hasattr(self.blink, "refresh"):
-                self.blink.refresh()
-            elif hasattr(self.blink, "setup_camera_list"):
-                self.blink.setup_camera_list()
-
-            # Update our local camera metadata cache
-            self.get_cameras()
-
+            self._perform_token_refresh()
+            self._refresh_camera_data()
         except Exception as refresh_error:
             self._handle_token_refresh_failure(zone_name, refresh_error)
+
+    def _perform_token_refresh(self):
+        """Perform the actual token refresh."""
+        if self.verbose:
+            print("Attempting to refresh authentication token...")
+        self.blink.auth.refresh_token()
+
+    def _refresh_camera_data(self):
+        """Refresh camera data after token refresh."""
+        if hasattr(self.blink, "refresh"):
+            self.blink.refresh()
+        elif hasattr(self.blink, "setup_camera_list"):
+            self.blink.setup_camera_list()
+
+        # Update our local camera metadata cache
+        self.get_cameras()
 
     def _refresh_camera_list_if_empty(self, zone_name):
         """Refresh camera list if it's empty."""
         if self.blink.cameras != {}:
             return
 
+        self._log_camera_refresh_attempt(zone_name)
+
+        if not hasattr(self.blink.auth, "refresh_token"):
+            return
+
+        try:
+            self._attempt_camera_refresh(zone_name)
+            self._validate_camera_refresh_success(zone_name)
+        except Exception as e:
+            self._handle_camera_refresh_error(e, zone_name)
+
+    def _log_camera_refresh_attempt(self, zone_name):
+        """Log camera refresh attempt."""
         if self.verbose:
             print(
                 f"Camera list is empty, attempting to refresh authentication "
                 f"and camera list for zone {zone_name}"
             )
 
-        try:
-            if not hasattr(self.blink.auth, "refresh_token"):
-                return
+    def _attempt_camera_refresh(self, zone_name):
+        """Attempt to refresh camera list based on blinkpy version."""
+        if env.get_package_version(blinkpy) >= (0, 22, 0):
+            self._handle_empty_camera_list_async(zone_name)
+        else:
+            self._attempt_sync_token_refresh(zone_name)
 
-            if env.get_package_version(blinkpy) >= (0, 22, 0):
-                self._handle_empty_camera_list_async(zone_name)
-            else:
-                self._attempt_sync_token_refresh(zone_name)
+    def _validate_camera_refresh_success(self, zone_name):
+        """Validate that camera refresh was successful."""
+        if self.blink.cameras == {}:
+            error_msg = (
+                f"Camera list is still empty after refresh attempt "
+                f"for camera '{zone_name}'. This may indicate "
+                f"authentication failed or no cameras are available. "
+                f"Please check your Blink credentials, 2FA code, and "
+                f"ensure cameras are online in the Blink app."
+            )
+            raise ValueError(error_msg)
 
-            # Check if refresh worked
-            if self.blink.cameras == {}:
-                error_msg = (
-                    f"Camera list is still empty after refresh attempt "
-                    f"for camera '{zone_name}'. This may indicate "
-                    f"authentication failed or no cameras are available. "
-                    f"Please check your Blink credentials, 2FA code, and "
-                    f"ensure cameras are online in the Blink app."
-                )
-                raise ValueError(error_msg)
-
-        except Exception as e:
-            if "Camera list is empty when searching" in str(e):
-                raise
-            else:
-                raise ValueError(
-                    f"Camera list is empty when searching for camera "
-                    f"'{zone_name}'. Failed to refresh camera list: {str(e)}"
-                )
+    def _handle_camera_refresh_error(self, error, zone_name):
+        """Handle camera refresh errors."""
+        if "Camera list is empty when searching" in str(error):
+            raise
+        else:
+            raise ValueError(
+                f"Camera list is empty when searching for camera "
+                f"'{zone_name}'. Failed to refresh camera list: {str(error)}"
+            )
 
     def _find_camera_by_name(self, zone_name, parameter):
         """Find camera by name and return its attributes or specific parameter."""
