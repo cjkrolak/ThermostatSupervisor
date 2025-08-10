@@ -370,21 +370,29 @@ def dynamic_module_import(name, path=None, pkg=None, verbose=False):
     returns:
         mod(module): module object
     """
-    # add package to path
     _add_package_to_path(pkg, verbose)
 
     try:
-        if path:
-            mod = _import_from_path(name, path, verbose)
-        else:
-            mod = _import_from_installed_packages(name, path)
-    except Exception as ex:
-        util.log_msg(traceback.format_exc(), mode=util.BOTH_LOG, func_name=1)
-        util.log_msg("module load failed: " + name, mode=util.BOTH_LOG, func_name=1)
-        raise ex
-    else:
+        mod = _import_module_by_path(name, path, verbose)
         show_package_version(mod)
         return mod
+    except Exception as ex:
+        _handle_import_error(ex, name)
+
+
+def _import_module_by_path(name, path, verbose):
+    """Import module based on whether path is provided."""
+    if path:
+        return _import_from_path(name, path, verbose)
+    else:
+        return _import_from_installed_packages(name, path)
+
+
+def _handle_import_error(exception, module_name):
+    """Handle module import errors."""
+    util.log_msg(traceback.format_exc(), mode=util.BOTH_LOG, func_name=1)
+    util.log_msg("module load failed: " + module_name, mode=util.BOTH_LOG, func_name=1)
+    raise exception
 
 
 def convert_to_absolute_path(relative_path):

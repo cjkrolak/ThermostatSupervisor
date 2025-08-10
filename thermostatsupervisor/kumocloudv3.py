@@ -705,159 +705,184 @@ class ThermostatClass(tc.ThermostatCommon):
         del trait  # not needed on Kumocloud
 
         def _get_metadata_internal():
-            try:
-                serial_num_lst = list(self.get_indoor_units())  # will query unit
-            except tc.AuthenticationError as exc:
-                # Authentication failed, likely in test environment
-                util.log_msg(
-                    f"WARNING: Kumocloud v3 authentication failed: {exc}",
-                    mode=util.BOTH_LOG,
-                    func_name=1,
-                )
-                # Return empty list instead of retrying to avoid long delays in tests
-                serial_num_lst = []
-            except Exception as exc:
-                util.log_msg(
-                    f"WARNING: Kumocloud v3 refresh failed: {exc}",
-                    mode=util.BOTH_LOG,
-                    func_name=1,
-                )
-                time.sleep(30)
-                try:
-                    serial_num_lst = list(self.get_indoor_units())  # retry
-                except tc.AuthenticationError:
-                    # Still authentication error after retry, give up
-                    serial_num_lst = []
-
-            if self.verbose:
-                util.log_msg(
-                    f"indoor unit serial numbers: {str(serial_num_lst)}",
-                    mode=util.DEBUG_LOG + util.STDOUT_LOG,
-                    func_name=1,
-                )
-
-            # validate serial number list
-            if not serial_num_lst:
-                if not self._authenticated:
-                    # Authentication failed, return minimal metadata for testing
-                    util.log_msg(
-                        "kumocloud v3 authentication failed, "
-                        "returning minimal metadata for testing",
-                        mode=util.BOTH_LOG,
-                        func_name=1,
-                    )
-                    return {"authentication_status": "failed", "zones": []}
-                else:
-                    # Authenticated but no data, this is an error
-                    raise tc.AuthenticationError(
-                        "kumocloud v3 meta data is blank, probably"
-                        " due to an Authentication Error,"
-                        " check your credentials."
-                    )
-
-            for idx, serial_number in enumerate(serial_num_lst):
-                # populate meta data dict
-                if self.verbose:
-                    print(f"zone index={idx}, serial_number={serial_number}")
-                kumocloudv3_config.metadata[idx]["serial_number"] = serial_number
-
-            # raw_json list:
-            # [0]: token, username, device fields
-            # [1]: lastupdate date
-            # [2]: zone meta data
-            # [3]: device token
-            if zone is None:
-                # returned cached raw data for all zones
-                raw_json = self.get_raw_json()[2]  # does not fetch results,
-            else:
-                # if zone name input, find zone index
-                if not isinstance(zone, int):
-                    self.zone_name = zone
-                    zone_index = self.get_zone_index_from_name()
-                else:
-                    zone_index = zone
-                # return cached raw data for specified zone, will be a dict
-                try:
-                    self.serial_number = serial_num_lst[zone_index]
-                except IndexError as exc:
-                    raise IndexError(
-                        f"ERROR: Invalid Zone, index ({zone_index}) does "
-                        "not exist in serial number list "
-                        f"({serial_num_lst})"
-                    ) from exc
-                raw_json = self.get_raw_json()[2]["children"][0]["zoneTable"][
-                    serial_num_lst[zone_index]
-                ]
-
-            # Check if authentication failed
-            if (
-                isinstance(raw_json, dict)
-                and raw_json.get("authentication_status") == "failed"
-            ):
-                if parameter is None:
-                    return raw_json
-                else:
-                    # Return a mock value for the specific parameter
-                    if parameter == "address":
-                        return "127.0.0.1"  # Mock IP address
-                    elif "temp" in parameter.lower():
-                        return util.BOGUS_INT
-                    elif "humidity" in parameter.lower():
-                        return util.BOGUS_INT
-                    elif "zone" in parameter.lower() or "name" in parameter.lower():
-                        return f"Zone_{zone or 0}"
-                    elif "serial" in parameter.lower():
-                        return f"MOCK_SERIAL_{zone or 0}"
-                    else:
-                        return f"mock_{parameter}"
-
-            if parameter is None:
-                return raw_json
-            else:
-                return raw_json[parameter]
+            serial_num_lst = self._get_serial_numbers_with_retry()
+            raw_json = self._get_zone_raw_data(zone, serial_num_lst)
+            return self._process_raw_data(raw_json, parameter, zone)
 
         if retry:
-            # Use standardized extended retry mechanism
-            result = util.execute_with_extended_retries(
-                func=_get_metadata_internal,
-                thermostat_type=getattr(self, "thermostat_type", "KumoCloudv3"),
-                zone_name=str(getattr(self, "zone_name", str(zone))),
-                number_of_retries=5,
-                initial_retry_delay_sec=60,
-                exception_types=(
-                    tc.AuthenticationError,
-                    IndexError,
-                    KeyError,
-                    ConnectionError,
-                    TimeoutError,
-                    requests.exceptions.RequestException,
-                ),
-                email_notification=None,  # KumoCloud doesn't import email_notification
-            )
+            result = self._execute_with_extended_retry(_get_metadata_internal, zone)
         else:
-            # Single attempt without retry
             result = _get_metadata_internal()
 
-        # Post-process result to handle authentication failure with specific parameters
+        # Post-process result for authentication failures
+        return self._post_process_result(result, parameter, zone)
+
+    def _get_serial_numbers_with_retry(self):
+        """Get indoor unit serial numbers with retry logic."""
+        try:
+            return self._attempt_get_indoor_units()
+        except tc.AuthenticationError as exc:
+            return self._handle_auth_error(exc)
+        except Exception as exc:
+            return self._handle_general_error(exc)
+
+    def _attempt_get_indoor_units(self):
+        """Attempt to get indoor units."""
+        serial_num_lst = list(self.get_indoor_units())
+        if self.verbose:
+            util.log_msg(
+                f"indoor unit serial numbers: {str(serial_num_lst)}",
+                mode=util.DEBUG_LOG + util.STDOUT_LOG,
+                func_name=1,
+            )
+        return serial_num_lst
+
+    def _handle_auth_error(self, exc):
+        """Handle authentication error."""
+        util.log_msg(
+            f"WARNING: Kumocloud v3 authentication failed: {exc}",
+            mode=util.BOTH_LOG,
+            func_name=1,
+        )
+        return []
+
+    def _handle_general_error(self, exc):
+        """Handle general errors with retry."""
+        util.log_msg(
+            f"WARNING: Kumocloud v3 refresh failed: {exc}",
+            mode=util.BOTH_LOG,
+            func_name=1,
+        )
+        time.sleep(30)
+        try:
+            return list(self.get_indoor_units())
+        except tc.AuthenticationError:
+            return []
+
+    def _get_zone_raw_data(self, zone, serial_num_lst):
+        """Get raw data for zone."""
+        self._validate_serial_numbers(serial_num_lst)
+        self._populate_metadata(serial_num_lst)
+
+        if zone is None:
+            return self.get_raw_json()[2]
+        else:
+            return self._get_specific_zone_data(zone, serial_num_lst)
+
+    def _validate_serial_numbers(self, serial_num_lst):
+        """Validate serial number list."""
+        if not serial_num_lst:
+            if not self._authenticated:
+                util.log_msg(
+                    "kumocloud v3 authentication failed, "
+                    "returning minimal metadata for testing",
+                    mode=util.BOTH_LOG,
+                    func_name=1,
+                )
+                return {"authentication_status": "failed", "zones": []}
+            else:
+                raise tc.AuthenticationError(
+                    "kumocloud v3 meta data is blank, probably"
+                    " due to an Authentication Error,"
+                    " check your credentials."
+                )
+
+    def _populate_metadata(self, serial_num_lst):
+        """Populate metadata with serial numbers."""
+        for idx, serial_number in enumerate(serial_num_lst):
+            if self.verbose:
+                print(f"zone index={idx}, serial_number={serial_number}")
+            kumocloudv3_config.metadata[idx]["serial_number"] = serial_number
+
+    def _get_specific_zone_data(self, zone, serial_num_lst):
+        """Get data for specific zone."""
+        if not isinstance(zone, int):
+            self.zone_name = zone
+            zone_index = self.get_zone_index_from_name()
+        else:
+            zone_index = zone
+
+        try:
+            self.serial_number = serial_num_lst[zone_index]
+        except IndexError as exc:
+            raise IndexError(
+                f"ERROR: Invalid Zone, index ({zone_index}) does "
+                "not exist in serial number list "
+                f"({serial_num_lst})"
+            ) from exc
+
+        return self.get_raw_json()[2]["children"][0]["zoneTable"][
+            serial_num_lst[zone_index]
+        ]
+
+    def _process_raw_data(self, raw_json, parameter, zone):
+        """Process raw JSON data."""
+        if self._is_auth_failed(raw_json):
+            return self._handle_auth_failed_data(raw_json, parameter, zone)
+
+        if parameter is None:
+            return raw_json
+        else:
+            return raw_json[parameter]
+
+    def _is_auth_failed(self, raw_json):
+        """Check if authentication failed."""
+        return (
+            isinstance(raw_json, dict)
+            and raw_json.get("authentication_status") == "failed"
+        )
+
+    def _handle_auth_failed_data(self, raw_json, parameter, zone):
+        """Handle data when authentication failed."""
+        if parameter is None:
+            return raw_json
+        else:
+            return self._get_mock_parameter_value(parameter, zone)
+
+    def _get_mock_parameter_value(self, parameter, zone):
+        """Get mock value for parameter when authentication failed."""
+        mock_values = {
+            "address": "127.0.0.1",
+            "temp": util.BOGUS_INT,
+            "humidity": util.BOGUS_INT,
+            "zone": f"Zone_{zone or 0}",
+            "name": f"Zone_{zone or 0}",
+            "serial": f"MOCK_SERIAL_{zone or 0}",
+        }
+
+        for key, value in mock_values.items():
+            if key in parameter.lower():
+                return value
+
+        return f"mock_{parameter}"
+
+    def _execute_with_extended_retry(self, func, zone):
+        """Execute function with extended retry mechanism."""
+        return util.execute_with_extended_retries(
+            func=func,
+            thermostat_type=getattr(self, "thermostat_type", "KumoCloudv3"),
+            zone_name=str(getattr(self, "zone_name", str(zone))),
+            number_of_retries=5,
+            initial_retry_delay_sec=60,
+            exception_types=(
+                tc.AuthenticationError,
+                IndexError,
+                KeyError,
+                ConnectionError,
+                TimeoutError,
+                requests.exceptions.RequestException,
+            ),
+            email_notification=None,
+        )
+
+    def _post_process_result(self, result, parameter, zone):
+        """Post-process result to handle authentication failure."""
         if (
             isinstance(result, dict)
             and result.get("authentication_status") == "failed"
             and parameter is not None
         ):
-            # Return a mock value for the specific parameter
-            if parameter == "address":
-                return "127.0.0.1"  # Mock IP address
-            elif "temp" in parameter.lower():
-                return util.BOGUS_INT
-            elif "humidity" in parameter.lower():
-                return util.BOGUS_INT
-            elif "zone" in parameter.lower() or "name" in parameter.lower():
-                return f"Zone_{zone or 0}"
-            elif "serial" in parameter.lower():
-                return f"MOCK_SERIAL_{zone or 0}"
-            else:
-                return f"mock_{parameter}"
-
+            return self._get_mock_parameter_value(parameter, zone)
         return result
 
     def print_all_thermostat_metadata(self, zone):
@@ -938,61 +963,76 @@ class ThermostatZone(tc.ThermostatCommonZone):
             grandparent_key(str): second level dict key
             default_val(str, int, float): default value on key errors
         """
-        return_val = default_val
-
-        # Check if authentication failed
-        if (
-            isinstance(self.zone_info, dict)
-            and self.zone_info.get("authentication_status") == "failed"
-        ):
-            # Authentication failed, return default or mock values
-            if key == "label":
-                return f"Zone_{self.zone_number}"  # Mock zone name
-            elif default_val is not None:
-                return default_val
-            else:
-                # Return reasonable defaults based on the key name and expected type
-                if "temp" in key.lower():
-                    return util.BOGUS_INT
-                elif "humidity" in key.lower():
-                    return util.BOGUS_INT
-                elif "energy_save" in key.lower() or "mode" in key.lower():
-                    return 0  # Boolean/mode values as integers
-                elif "setpoint" in key.lower() or "set_point" in key.lower():
-                    if "heat" in key.lower():
-                        return 68  # Default heat setpoint
-                    elif "cool" in key.lower():
-                        return 70  # Default cool setpoint
-                    else:
-                        return 70  # Generic setpoint
-                elif "schedule" in key.lower() or "program" in key.lower():
-                    return {}  # Empty dict for schedules
-                elif "speed" in key.lower():
-                    return 0  # Fan speed
-                else:
-                    return 0  # Default to 0 for unknown numeric fields
+        if self._is_authentication_failed():
+            return self._get_mock_value_for_failed_auth(key, default_val)
 
         try:
-            if grandparent_key is not None:
-                grandparent_dict = self.zone_info[grandparent_key]
-                parent_dict = grandparent_dict[parent_key]
-                return_val = parent_dict[key]
-            elif parent_key is not None:
-                parent_dict = self.zone_info[parent_key]
-                return_val = parent_dict[key]
-            else:
-                return_val = self.zone_info[key]
+            return self._extract_parameter_value(key, parent_key, grandparent_key)
         except (KeyError, TypeError):
-            if default_val is None:
-                # if no default val, then display detailed key error
-                util.log_msg(traceback.format_exc(), mode=util.BOTH_LOG, func_name=1)
-                util.log_msg(
-                    f"target key={key}, raw zone_info dict:",
-                    mode=util.BOTH_LOG,
-                    func_name=1,
-                )
-                raise
-        return return_val
+            return self._handle_parameter_error(key, default_val)
+
+    def _is_authentication_failed(self):
+        """Check if authentication failed."""
+        return (
+            isinstance(self.zone_info, dict)
+            and self.zone_info.get("authentication_status") == "failed"
+        )
+
+    def _get_mock_value_for_failed_auth(self, key, default_val):
+        """Get mock value when authentication failed."""
+        if key == "label":
+            return f"Zone_{self.zone_number}"
+        elif default_val is not None:
+            return default_val
+        else:
+            return self._get_default_value_by_key_type(key)
+
+    def _get_default_value_by_key_type(self, key):
+        """Get default value based on key type."""
+        key_lower = key.lower()
+
+        if "temp" in key_lower or "humidity" in key_lower:
+            return util.BOGUS_INT
+        elif "energy_save" in key_lower or "mode" in key_lower:
+            return 0
+        elif "setpoint" in key_lower or "set_point" in key_lower:
+            return self._get_setpoint_default(key_lower)
+        elif "schedule" in key_lower or "program" in key_lower:
+            return {}
+        elif "speed" in key_lower:
+            return 0
+        else:
+            return 0
+
+    def _get_setpoint_default(self, key_lower):
+        """Get default setpoint value."""
+        if "heat" in key_lower:
+            return 68
+        elif "cool" in key_lower:
+            return 70
+        else:
+            return 70
+
+    def _extract_parameter_value(self, key, parent_key, grandparent_key):
+        """Extract parameter value from zone info."""
+        if grandparent_key is not None:
+            return self.zone_info[grandparent_key][parent_key][key]
+        elif parent_key is not None:
+            return self.zone_info[parent_key][key]
+        else:
+            return self.zone_info[key]
+
+    def _handle_parameter_error(self, key, default_val):
+        """Handle parameter extraction errors."""
+        if default_val is None:
+            util.log_msg(traceback.format_exc(), mode=util.BOTH_LOG, func_name=1)
+            util.log_msg(
+                f"target key={key}, raw zone_info dict:",
+                mode=util.BOTH_LOG,
+                func_name=1,
+            )
+            raise
+        return default_val
 
     def get_zone_name(self):
         """
