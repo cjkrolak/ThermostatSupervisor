@@ -73,17 +73,17 @@ jobs:
         env:
           # IMPORTANT: These GitHub secrets are the source of truth for all CI/CD secrets.
           # No need to maintain duplicates in other platforms.
-          GMAIL_USERNAME: ${{ secrets.GMAIL_USERNAME }}  # used for some unit tests
-          GMAIL_PASSWORD: ${{ secrets.GMAIL_PASSWORD }}  # used for some unit test
-          TCC_USERNAME: ${{ secrets.TCC_USERNAME }}  # used for Honeywell int test
-          TCC_PASSWORD: ${{ secrets.TCC_PASSWORD }}  # used for Honeywell int test
-          SHT31_REMOTE_IP_ADDRESS_1: ${{ secrets.SHT31_REMOTE_IP_ADDRESS_1 }}
-          # SHT31_REMOTE_IP_ADDRESS_99: ${{ secrets.SHT31_REMOTE_IP_ADDRESS_99 }}
-          KUMO_USERNAME: ${{ secrets.KUMO_USERNAME }}  # used for kumocloud int test
-          KUMO_PASSWORD: ${{ secrets.KUMO_PASSWORD }}  # used for kumocloud int test
-          BLINK_USERNAME: ${{ secrets.BLINK_USERNAME }}  # used for blink int test
-          BLINK_PASSWORD: ${{ secrets.BLINK_PASSWORD }}  # used for blink int test
-          BLINK_2FA: ${{ secrets.BLINK_2FA }}  # used for blink int test
+          GMAIL_USERNAME: '${{ secrets.GMAIL_USERNAME }}'  # used for some unit tests
+          GMAIL_PASSWORD: '${{ secrets.GMAIL_PASSWORD }}'  # used for some unit test
+          TCC_USERNAME: '${{ secrets.TCC_USERNAME }}'  # used for Honeywell int test
+          TCC_PASSWORD: '${{ secrets.TCC_PASSWORD }}'  # used for Honeywell int test
+          SHT31_REMOTE_IP_ADDRESS_1: '${{ secrets.SHT31_REMOTE_IP_ADDRESS_1 }}'
+          # SHT31_REMOTE_IP_ADDRESS_99: '${{ secrets.SHT31_REMOTE_IP_ADDRESS_99 }}'
+          KUMO_USERNAME: '${{ secrets.KUMO_USERNAME }}'  # used for kumocloud int test
+          KUMO_PASSWORD: '${{ secrets.KUMO_PASSWORD }}'  # used for kumocloud int test
+          BLINK_USERNAME: '${{ secrets.BLINK_USERNAME }}'  # used for blink int test
+          BLINK_PASSWORD: '${{ secrets.BLINK_PASSWORD }}'  # used for blink int test
+          BLINK_2FA: '${{ secrets.BLINK_2FA }}'  # used for blink int test
       # Upload coverage results
       - name: Upload Coverage to Codecov
         uses: codecov/codecov-action@v4
@@ -99,7 +99,7 @@ jobs:
           echo "Uploading coverage.xml as GitHub artifact..."
 
           # Validate token and file exist
-          if [ -z "${{ secrets.THERMOSTATSUPERVISOR_PR }}" ]; then
+          if [ -z '${{ secrets.THERMOSTATSUPERVISOR_PR }}' ]; then
             echo "ERROR: THERMOSTATSUPERVISOR_PR is not set"
             exit 1
           fi
@@ -157,7 +157,7 @@ jobs:
           # Create the GitHub gist using the JSON file
           response=$(curl -w "%{http_code}" -s -X POST \
             -H "Accept: application/vnd.github.v3+json" \
-            -H "Authorization: token ${{ secrets.THERMOSTATSUPERVISOR_PR }}" \
+            -H "Authorization: token '${{ secrets.THERMOSTATSUPERVISOR_PR }}'" \
             -H "User-Agent: GitHub-Actions-Pipeline" \
             -H "Content-Type: application/json" \
             https://api.github.com/gists \
@@ -189,7 +189,7 @@ jobs:
           echo "Triggering SonarQube workflow..."
 
           # Validate token is present
-          if [ -z "${{ secrets.THERMOSTATSUPERVISOR_PR }}" ]; then
+          if [ -z '${{ secrets.THERMOSTATSUPERVISOR_PR }}' ]; then
             echo "ERROR: THERMOSTATSUPERVISOR_PR is not set"
             echo ""
             echo "🔧 SETUP INSTRUCTIONS:"
@@ -208,7 +208,7 @@ jobs:
 
           # Test basic GitHub API access first
           echo "Testing GitHub API access..."
-          test_response=$(curl -w "%{http_code}" -s -H "Authorization: token ${{ secrets.THERMOSTATSUPERVISOR_PR }}" https://api.github.com/user)
+          test_response=$(curl -w "%{http_code}" -s -H "Authorization: token '${{ secrets.THERMOSTATSUPERVISOR_PR }}'" https://api.github.com/user)
           test_code="${test_response: -3}"
 
           if [[ ${test_code} -ne 200 ]]; then
@@ -233,7 +233,7 @@ jobs:
           echo "Triggering repository dispatch event..."
           response=$(curl -w "%{http_code}" -s -X POST \
             -H "Accept: application/vnd.github.v3+json" \
-            -H "Authorization: token ${{ secrets.THERMOSTATSUPERVISOR_PR }}" \
+            -H "Authorization: token '${{ secrets.THERMOSTATSUPERVISOR_PR }}'" \
             -H "User-Agent: GitHub-Actions-Pipeline" \
             https://api.github.com/repos/cjkrolak/ThermostatSupervisor/dispatches \
             -d "{\"event_type\":\"azure-pipeline-completed\",\"client_payload\":{\"result\":\"success\",\"run_id\":\"${{ github.run_id }}\",\"coverage_gist_id\":\"${coverage_gist_id}\"}}")
@@ -285,5 +285,5 @@ jobs:
           fi
         if: success()
         env:
-          THERMOSTATSUPERVISOR_PR: ${{ secrets.THERMOSTATSUPERVISOR_PR }}  # GitHub Personal Access Token
+          THERMOSTATSUPERVISOR_PR: '${{ secrets.THERMOSTATSUPERVISOR_PR }}'  # GitHub Personal Access Token
 
