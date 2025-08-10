@@ -236,6 +236,7 @@ class ThermostatClass(tc.ThermostatCommon):
     def _get_client_ip(self):
         """Get client IP address for error messages."""
         import socket
+
         try:
             hostname = socket.gethostname()
             return socket.gethostbyname(hostname)
@@ -250,9 +251,7 @@ class ThermostatClass(tc.ThermostatCommon):
             else:
                 return response.json()[parameter]
         except json.decoder.JSONDecodeError as ex:
-            raise RuntimeError(
-                "FATAL ERROR: SHT31 server is not responding"
-            ) from ex
+            raise RuntimeError("FATAL ERROR: SHT31 server is not responding") from ex
 
     def _execute_with_retry(self, func):
         """Execute function with standardized retry mechanism."""
@@ -383,6 +382,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
     def _get_zone_client_ip(self):
         """Get client IP address for zone error messages."""
         import socket
+
         try:
             hostname = socket.gethostname()
             return socket.gethostbyname(hostname)
@@ -394,9 +394,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         try:
             json_response = response.json()
         except json.decoder.JSONDecodeError as ex:
-            raise RuntimeError(
-                "FATAL ERROR: SHT31 server is not responding"
-            ) from ex
+            raise RuntimeError("FATAL ERROR: SHT31 server is not responding") from ex
 
         if parameter is None:
             return json_response

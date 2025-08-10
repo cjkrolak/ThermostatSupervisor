@@ -247,9 +247,7 @@ class UserInputs(util.UserInputs):
 
     def _get_input_file(self):
         """Get input file from user inputs if specified."""
-        return self.get_user_inputs(
-            self.default_parent_key, input_flds.input_file
-        )
+        return self.get_user_inputs(self.default_parent_key, input_flds.input_file)
 
     def _process_input_file(self, input_file):
         """Process input file and populate user inputs from file."""
@@ -287,9 +285,9 @@ class UserInputs(util.UserInputs):
 
     def _read_raw_field_value(self, section, fld):
         """Read raw value without casting from file."""
-        self.user_inputs[section][fld]["value"] = self.user_inputs_file[
-            section
-        ].get(input_flds[fld])
+        self.user_inputs[section][fld]["value"] = self.user_inputs_file[section].get(
+            input_flds[fld]
+        )
 
     def _has_populated_user_inputs(self):
         """Check if user_inputs has already been populated."""
@@ -304,9 +302,7 @@ class UserInputs(util.UserInputs):
         """Process argv inputs (only currently supporting 1 zone)."""
         current_keys = list(self.user_inputs.keys())
         if len(current_keys) != 1:
-            raise KeyError(
-                f"user_input keys={current_keys}, expected only 1 key"
-            )
+            raise KeyError(f"user_input keys={current_keys}, expected only 1 key")
 
         current_key = current_keys[0]
         new_key = self._build_zone_key(current_key)
@@ -340,9 +336,7 @@ class UserInputs(util.UserInputs):
 
     def _get_thermostat_type(self, zone_name):
         """Get thermostat type for zone, defaulting if not set."""
-        thermostat_type = self.get_user_inputs(
-            zone_name, input_flds.thermostat_type
-        )
+        thermostat_type = self.get_user_inputs(zone_name, input_flds.thermostat_type)
         return thermostat_type if thermostat_type is not None else self.thermostat_type
 
     def _configure_zone_ranges(self, zone_name, thermostat_type):
