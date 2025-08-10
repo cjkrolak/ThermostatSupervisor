@@ -57,7 +57,6 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip list
-
       # line length and extend-ignore options added for compatibility with black
       - name: Run lint tests
         run: |
@@ -85,7 +84,6 @@ jobs:
           BLINK_USERNAME: ${{ secrets.BLINK_USERNAME }}  # used for blink int test
           BLINK_PASSWORD: ${{ secrets.BLINK_PASSWORD }}  # used for blink int test
           BLINK_2FA: ${{ secrets.BLINK_2FA }}  # used for blink int test
-
       # Upload coverage results
       - name: Upload Coverage to Codecov
         uses: codecov/codecov-action@v4
@@ -288,3 +286,4 @@ jobs:
         if: success()
         env:
           THERMOSTATSUPERVISOR_PR: ${{ secrets.THERMOSTATSUPERVISOR_PR }}  # GitHub Personal Access Token
+
