@@ -182,8 +182,13 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):
         max_retries = 3
         retry_delay = 5  # seconds
         expected_exceptions = (
-            AttributeError, ValueError, KeyError, LoginError,
-            UnauthorizedError, ClientConnectionError, ContentTypeError,
+            AttributeError,
+            ValueError,
+            KeyError,
+            LoginError,
+            UnauthorizedError,
+            ClientConnectionError,
+            ContentTypeError,
         )
 
         for attempt in range(max_retries):
@@ -207,8 +212,13 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):
         max_retries = 3
         retry_delay = 5  # seconds
         expected_exceptions = (
-            AttributeError, ValueError, KeyError, LoginError,
-            UnauthorizedError, ClientConnectionError, ContentTypeError,
+            AttributeError,
+            ValueError,
+            KeyError,
+            LoginError,
+            UnauthorizedError,
+            ClientConnectionError,
+            ContentTypeError,
         )
 
         for attempt in range(max_retries):
