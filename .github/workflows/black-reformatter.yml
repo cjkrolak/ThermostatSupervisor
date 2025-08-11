@@ -1,5 +1,6 @@
 ---
 name: black-action
+
 on:
   push:
     branches: [develop, feature/*, bugfix/*, hotfix/*]
@@ -29,3 +30,7 @@ jobs:
           git add .
           git commit -m ":art: Format Python code with psf/black"
           git push origin HEAD:${{ github.head_ref || github.ref_name }}
+        run: exit 1
+      - name: pass action if pull request is not created
+        if: steps.action_black.outputs.is_formatted == 'false'
+        run: exit 0
