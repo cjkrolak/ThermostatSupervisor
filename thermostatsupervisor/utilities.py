@@ -39,6 +39,8 @@ DATA_LOG = 0b0010  # print to data log
 BOTH_LOG = 0b0011  # log to both console and data logs
 DEBUG_LOG = 0b0100  # print only if debug mode is on
 STDERR_LOG = 0b1000  # print to stderr
+QUIET_LOG = 0b10000  # reduced verbosity for console, full logging to file
+DUAL_STREAM_LOG = 0b10010  # quiet console + full file logging
 
 # unique log modes (excluding combinations)
 log_modes = {
@@ -46,10 +48,14 @@ log_modes = {
     DATA_LOG: "data log",
     DEBUG_LOG: "print only if debug mode enabled",
     STDERR_LOG: "stderr log",
+    QUIET_LOG: "reduced verbosity console",
+    DUAL_STREAM_LOG: "quiet console + full file logging",
 }
 
 FILE_PATH = ".//data"
 MAX_LOG_SIZE_BYTES = 2**20  # logs rotate at this max size
+STDOUT_CAPTURE_HOURS = 24  # hours of stdout to capture in dual stream mode
+STDOUT_CAPTURE_FILE = "stdout_capture.txt"  # filename for captured stdout
 HTTP_TIMEOUT = 60  # timeout in seconds
 MIN_WIFI_DBM = -70.0  # min viable WIFI signal strength
 
@@ -130,11 +136,122 @@ def log_msg(msg, mode, func_name=-1, file_name=None):
     if (mode & STDERR_LOG) and not filter_debug_msg:
         print(msg, file=sys.stderr)
 
+    # handle dual stream logging (quiet console + full file + stdout capture)
+    if (mode & DUAL_STREAM_LOG) and not filter_debug_msg:
+        # Capture full message to stdout capture file
+        manage_stdout_capture_file(msg)
+
+        # Print only summary/reduced message to console for certain verbose cases
+        if _is_verbose_retry_message(msg):
+            summary_msg = _create_summary_message(msg)
+            print(summary_msg)
+        else:
+            # Print full message for non-verbose cases
+            print(msg)
+
+    # handle quiet logging (reduced verbosity)
+    if (mode & QUIET_LOG) and not filter_debug_msg and not (mode & DUAL_STREAM_LOG):
+        if _is_verbose_retry_message(msg):
+            summary_msg = _create_summary_message(msg)
+            print(summary_msg)
+        else:
+            print(msg)
+
     return return_buffer
 
 
 # global default log file name if none is specified
 log_msg.file_name = "default_log.txt"
+
+
+def _is_verbose_retry_message(msg):
+    """
+    Determine if a message is a verbose retry-related message that should be
+    summarized for console output.
+
+    inputs:
+        msg(str): message to check
+    returns:
+        (bool): True if message should be summarized for console
+    """
+    verbose_indicators = [
+        "Traceback (most recent call last):",
+        "pyhtcc.pyhtcc.UnauthorizedError:",
+        "Got unauthorized response from server",
+        "WARNING: exception on trial",
+        "execute_with_extended_retries:",
+        "Delaying",
+        "prior to retry",
+        "ERROR: exhausted",
+        "retries during",
+        "<html",  # HTML error responses
+        "<!DOCTYPE html",
+    ]
+    return any(indicator in msg for indicator in verbose_indicators)
+
+
+def _create_summary_message(msg):
+    """
+    Create a summary message for verbose retry errors.
+
+    inputs:
+        msg(str): original verbose message
+    returns:
+        (str): summarized message for console output
+    """
+    if "WARNING: exception on trial" in msg:
+        # Extract trial information
+        parts = msg.split()
+        trial_info = ""
+        for i, part in enumerate(parts):
+            if part == "trial" and i + 1 < len(parts):
+                trial_info = f" (trial {parts[i + 1]})"
+                break
+        return f"[Retry] Connection error{trial_info} - details in log file"
+
+    elif "Traceback" in msg:
+        return "[Error] Exception occurred - full traceback in log file"
+
+    elif "pyhtcc.pyhtcc.UnauthorizedError" in msg:
+        return "[Auth] Authorization error - retrying..."
+
+    elif "execute_with_extended_retries" in msg:
+        if "starting" in msg:
+            return "[Retry] Starting retry sequence - progress tracked in log file"
+        elif "trial" in msg:
+            # Extract trial info for progress tracking
+            parts = msg.split()
+            trial_info = ""
+            for i, part in enumerate(parts):
+                if part == "trial" and i + 2 < len(parts):
+                    trial_info = f" {parts[i + 1]} of {parts[i + 3]}"
+                    break
+            return f"[Retry] Progress{trial_info} - details in log file"
+        else:
+            return "[Retry] Operation in progress - details in log file"
+
+    elif "Delaying" in msg and "prior to retry" in msg:
+        # Extract delay time
+        parts = msg.split()
+        delay_time = ""
+        for i, part in enumerate(parts):
+            if part == "Delaying" and i + 1 < len(parts):
+                delay_time = parts[i + 1]
+                break
+        return f"[Retry] Waiting {delay_time}s before next attempt..."
+
+    elif "ERROR: exhausted" in msg and "retries" in msg:
+        return "[Error] All retry attempts failed - check log for details"
+
+    elif "<html" in msg or "<!DOCTYPE html" in msg:
+        return "[Response] HTML error response received - details in log file"
+
+    else:
+        # For other verbose messages, show first line only
+        first_line = msg.split('\n')[0]
+        if len(first_line) > 80:
+            return first_line[:77] + "..."
+        return first_line
 
 
 def get_file_size_bytes(full_path):
@@ -171,6 +288,73 @@ def log_rotate_file(full_path, file_size_bytes, max_size_bytes):
         os.rename(full_path, full_path[:-4] + "-" + str(current_date) + ".txt")
         file_size_bytes = 0
     return file_size_bytes
+
+
+def log_rotate_file_by_time(full_path, max_age_hours):
+    """
+    Rotate log file based on age to prevent files from getting too old.
+
+    inputs:
+        full_path(str): full file name and path.
+        max_age_hours(int): maximum age in hours before rotation
+    returns:
+        file_rotated(bool): True if file was rotated
+    """
+    try:
+        # Get file modification time
+        file_mod_time = os.path.getmtime(full_path)
+        current_time = time.time()
+        age_hours = (current_time - file_mod_time) / 3600
+
+        if age_hours > max_age_hours:
+            # Rotate log file with timestamp
+            current_date = datetime.datetime.fromtimestamp(
+                file_mod_time
+            ).strftime("%d-%b-%Y-%H-%M-%S")
+            backup_path = full_path[:-4] + "-" + str(current_date) + ".txt"
+            os.rename(full_path, backup_path)
+            return True
+    except FileNotFoundError:
+        # File does not exist, no rotation needed
+        pass
+    except OSError:
+        # Handle permission or other OS errors gracefully
+        pass
+    return False
+
+
+def manage_stdout_capture_file(msg):
+    """
+    Manage stdout capture file with 24-hour retention.
+
+    inputs:
+        msg(str): message to write to stdout capture file
+    returns:
+        (bool): True if message was written successfully
+    """
+    try:
+        full_path = get_full_file_path(STDOUT_CAPTURE_FILE)
+
+        # Create directory if needed
+        if not os.path.exists(FILE_PATH):
+            os.makedirs(FILE_PATH)
+
+        # Rotate file if older than 24 hours
+        log_rotate_file_by_time(full_path, STDOUT_CAPTURE_HOURS)
+
+        # Write message with timestamp
+        timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        timestamped_msg = f"[{timestamp}] {msg}"
+
+        # Determine write mode
+        write_mode = "a" if os.path.exists(full_path) else "w"
+
+        with open(full_path, write_mode, encoding="utf8") as file_handle:
+            file_handle.write(timestamped_msg + "\n")
+        return True
+    except (OSError, IOError):
+        # Handle file system errors gracefully
+        return False
 
 
 def write_to_file(full_path, file_size_bytes, msg):
@@ -954,12 +1138,13 @@ def _handle_retry_exception(
 
     _handle_server_spamming_detection(tc, ex)
 
+    # Use dual stream logging for verbose retry messages
     log_msg(
         f"WARNING: exception on trial {trial_number}",
-        mode=BOTH_LOG,
+        mode=DUAL_STREAM_LOG,
         func_name=1,
     )
-    log_msg(traceback.format_exc(), mode=BOTH_LOG, func_name=1)
+    log_msg(traceback.format_exc(), mode=DUAL_STREAM_LOG, func_name=1)
 
     msg_suffix = [
         "",
@@ -973,7 +1158,7 @@ def _handle_retry_exception(
         f"{number_of_retries}, probably a"
         " connection issue"
         f"{msg_suffix}",
-        mode=BOTH_LOG,
+        mode=DUAL_STREAM_LOG,
         func_name=1,
     )
 
@@ -992,7 +1177,7 @@ def _handle_retry_exception(
         log_msg(
             f"ERROR: exhausted {number_of_retries} "
             f"retries during {get_function_name()}",
-            mode=BOTH_LOG,
+            mode=DUAL_STREAM_LOG,
             func_name=1,
         )
         raise ex
@@ -1003,7 +1188,7 @@ def _handle_retry_delay(trial_number, number_of_retries, retry_delay_sec):
     if trial_number < number_of_retries:
         log_msg(
             f"Delaying {retry_delay_sec} prior to retry...",
-            mode=BOTH_LOG,
+            mode=DUAL_STREAM_LOG,
             func_name=1,
         )
         time.sleep(retry_delay_sec)
@@ -1083,6 +1268,24 @@ def execute_with_extended_retries(
 
     while trial_number <= number_of_retries:
         time_now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+        # Log trial start for debugging
+        # (using dual stream for reduced console verbosity)
+        if trial_number == 1:
+            log_msg(
+                f"execute_with_extended_retries: starting {thermostat_type} "
+                f"operation for zone {zone_name}",
+                mode=DUAL_STREAM_LOG,
+                func_name=1,
+            )
+
+        log_msg(
+            f"execute_with_extended_retries: trial {trial_number} of "
+            f"{number_of_retries} at {time_now}",
+            mode=DUAL_STREAM_LOG,
+            func_name=1,
+        )
+
         try:
             return_val = func()
         except exception_types as ex:
@@ -1106,10 +1309,10 @@ def execute_with_extended_retries(
             retry_delay_sec += 30  # Linear backoff: add 30 seconds each time
 
         except Exception as ex:
-            log_msg(traceback.format_exc(), mode=BOTH_LOG, func_name=1)
+            log_msg(traceback.format_exc(), mode=DUAL_STREAM_LOG, func_name=1)
             log_msg(
                 f"ERROR: unhandled exception {ex} during {get_function_name()}",
-                mode=BOTH_LOG,
+                mode=DUAL_STREAM_LOG,
                 func_name=1,
             )
             raise ex
