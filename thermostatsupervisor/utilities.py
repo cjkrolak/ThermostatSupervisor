@@ -248,7 +248,7 @@ def _create_summary_message(msg):
 
     else:
         # For other verbose messages, show first line only
-        first_line = msg.split('\n')[0]
+        first_line = msg.split("\n")[0]
         if len(first_line) > 80:
             return first_line[:77] + "..."
         return first_line
@@ -308,9 +308,9 @@ def log_rotate_file_by_time(full_path, max_age_hours):
 
         if age_hours > max_age_hours:
             # Rotate log file with timestamp
-            current_date = datetime.datetime.fromtimestamp(
-                file_mod_time
-            ).strftime("%d-%b-%Y-%H-%M-%S")
+            current_date = datetime.datetime.fromtimestamp(file_mod_time).strftime(
+                "%d-%b-%Y-%H-%M-%S"
+            )
             backup_path = full_path[:-4] + "-" + str(current_date) + ".txt"
             os.rename(full_path, backup_path)
             return True
