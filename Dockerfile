@@ -4,8 +4,8 @@ FROM python:3.12-slim
 # display python version
 RUN python --version
 
-# install timezone data and configure timezone
-RUN apt-get update && apt-get install -y tzdata && rm -rf /var/lib/apt/lists/*
+# install timezone data, build tools for psutil, and configure timezone
+RUN apt-get update && apt-get install -y tzdata gcc python3-dev && rm -rf /var/lib/apt/lists/*
 COPY timezone /tmp/timezone
 RUN TZ=$(cat /tmp/timezone) && \
     ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && \
@@ -25,6 +25,9 @@ RUN pip list
 # install dependencies
 COPY requirements.txt requirements.txt
 RUN pip install -r requirements.txt
+
+# remove build tools to minimize image size
+RUN apt-get remove -y gcc python3-dev && apt-get autoremove -y
 
 # list python packages after install
 RUN pip list
