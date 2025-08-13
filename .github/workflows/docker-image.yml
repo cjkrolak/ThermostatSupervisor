@@ -79,8 +79,11 @@ jobs:
           sh -s --
           # Get a CVE report for the built image and fail the pipeline when
           # critical or high CVEs are detected
+          # Use the first tag from the build metadata
+          IMAGE_TAG=$(echo "${{ steps.meta.outputs.tags }}" | head -n1)
+          echo "Scanning image: $IMAGE_TAG"
           docker scout cves \
-          ${{ secrets.DOCKER_USERNAME }}/thermostatsupervisor:develop \
+          "$IMAGE_TAG" \
           --exit-code --only-severity critical,high
 
       # Sign the resulting Docker image digest except on PRs.

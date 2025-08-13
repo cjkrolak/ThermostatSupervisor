@@ -1,5 +1,5 @@
 # set python image
-FROM python:3.13
+FROM python:3.12-slim
 
 # display python version
 RUN python --version
