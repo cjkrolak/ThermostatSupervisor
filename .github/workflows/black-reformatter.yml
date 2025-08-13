@@ -1,6 +1,5 @@
 ---
 name: black-action
-
 on:
   push:
     branches: [develop, feature/*, bugfix/*, hotfix/*]
