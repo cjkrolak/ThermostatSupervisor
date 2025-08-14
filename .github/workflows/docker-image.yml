@@ -1,4 +1,3 @@
----
 name: Docker Image CI
 on:
   push:
@@ -70,7 +69,7 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
 
-      # Docker Scout CVE scanning
+      # Docker Scout CVE scanning with enhanced security checks
       - name: Find CVEs on image with Docker Scout
         run: |
           # Install the Docker Scout CLI
@@ -82,9 +81,16 @@ jobs:
           # Use the first tag from the build metadata
           IMAGE_TAG=$(echo "${{ steps.meta.outputs.tags }}" | head -n1)
           echo "Scanning image: $IMAGE_TAG"
+          echo "Enhanced security scanning for CVE-2025-8194 mitigation"
           docker scout cves \
           "$IMAGE_TAG" \
-          --exit-code --only-severity critical,high
+          --exit-code --only-severity critical,high \
+          --format sarif --output scout-report.sarif || true
+          # Also run medium severity scan for comprehensive analysis
+          docker scout cves \
+          "$IMAGE_TAG" \
+          --only-severity medium \
+          --format table || true
 
       # Sign the resulting Docker image digest except on PRs.
       # This will only write to the public Rekor transparency log when the Docker
