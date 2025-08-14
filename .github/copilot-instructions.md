@@ -105,6 +105,20 @@
 - Document any changes to function signatures, parameters, or return values.
 - Maintain consistency with existing documentation style throughout the codebase.
 
+### Git Workflow and Rebasing Instructions
+- **Default Rebasing Strategy**: When rebasing feature branches, always rebase from the original base branch that the feature branch was created from.
+- **GitFlow Integration**: Following the project's GitFlow process, most feature branches are created from `develop`, so rebasing should typically be done from the latest `develop` branch.
+- **Base Branch Identification**: Before rebasing, identify the original base branch (usually `develop` for feature branches, `main` for hotfixes).
+- **Override Option**: If the user explicitly specifies a source branch in the rebase request, use that branch instead of the default base branch.
+- **Example Commands**:
+  - For a feature branch created from `develop`: `git rebase develop` or `git rebase origin/develop`
+  - For a hotfix branch created from `main`: `git rebase main` or `git rebase origin/main`
+- **Best Practices**:
+  - Always fetch the latest changes before rebasing: `git fetch origin`
+  - Ensure the target base branch is up to date before rebasing
+  - Handle merge conflicts carefully during interactive rebasing
+  - Verify that rebased code still passes all tests and linting checks
+
 ### Sphinx API Documentation System
 - The project uses Sphinx for comprehensive API documentation deployed to GitHub Pages at https://cjkrolak.github.io/ThermostatSupervisor/
 - When making changes to API classes or methods, ensure corresponding documentation is updated:
