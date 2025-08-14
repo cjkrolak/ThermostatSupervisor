@@ -201,7 +201,7 @@ class TestFlaskGeneric(utc.UnitTest):
         # Setup mock with multiple IPs
         self.mock_ip_ban.get_block_list.return_value = {
             "192.168.1.1": {"count": 3},
-            "192.168.1.2": {"count": 5}
+            "192.168.1.2": {"count": 5},
         }
         self.mock_ip_ban.remove.return_value = True
 
@@ -237,8 +237,7 @@ class TestFlaskGeneric(utc.UnitTest):
 
         # Verify warning message was printed
         warning_calls = [
-            call for call in mock_print.call_args_list
-            if "WARNING" in str(call)
+            call for call in mock_print.call_args_list if "WARNING" in str(call)
         ]
         self.assertTrue(len(warning_calls) > 0)
 
@@ -250,9 +249,7 @@ class TestFlaskGeneric(utc.UnitTest):
 
         print_ipban_block_list(self.mock_ip_ban)
 
-        mock_print.assert_called_once_with(
-            f"ip_ban block list: {expected_block_list}"
-        )
+        mock_print.assert_called_once_with(f"ip_ban block list: {expected_block_list}")
 
     @patch("thermostatsupervisor.flask_generic.IpBan")
     @patch("builtins.print")
@@ -296,7 +293,7 @@ class TestFlaskGeneric(utc.UnitTest):
         # Verify both print statements were called
         expected_calls = [
             unittest.mock.call("flask config:"),
-            unittest.mock.call(f"{test_config}")
+            unittest.mock.call(f"{test_config}"),
         ]
         mock_print.assert_has_calls(expected_calls)
 

@@ -157,6 +157,7 @@ class Test(utc.UnitTest):
         """Test load_user_inputs() function."""
         # Mock a config module
         from unittest.mock import MagicMock
+
         mock_config = MagicMock()
         mock_config.default_zone_name = "test_zone"
         mock_config.argv = ["test_script", "emulator", "0"]

@@ -234,7 +234,7 @@ class EmulatorUnitTest(utc.UnitTest):
         from unittest.mock import patch
 
         # Test when dry mode is enabled
-        with patch.object(self.zone, 'get_system_switch_position') as mock_switch:
+        with patch.object(self.zone, "get_system_switch_position") as mock_switch:
             mock_switch.return_value = self.zone.system_switch_position[
                 self.zone.DRY_MODE
             ]
@@ -242,7 +242,7 @@ class EmulatorUnitTest(utc.UnitTest):
             self.assertEqual(result, 1)
 
         # Test when dry mode is disabled
-        with patch.object(self.zone, 'get_system_switch_position') as mock_switch:
+        with patch.object(self.zone, "get_system_switch_position") as mock_switch:
             mock_switch.return_value = self.zone.system_switch_position[
                 self.zone.HEAT_MODE
             ]
@@ -254,15 +254,17 @@ class EmulatorUnitTest(utc.UnitTest):
         from unittest.mock import patch
 
         # Test when defrosting is active
-        with patch.object(self.zone, 'refresh_zone_info'), \
-             patch.object(self.zone, 'get_parameter') as mock_param:
+        with patch.object(self.zone, "refresh_zone_info"), patch.object(
+            self.zone, "get_parameter"
+        ) as mock_param:
             mock_param.return_value = True
             result = self.zone.is_defrosting()
             self.assertEqual(result, 1)
 
         # Test when defrosting is not active
-        with patch.object(self.zone, 'refresh_zone_info'), \
-             patch.object(self.zone, 'get_parameter') as mock_param:
+        with patch.object(self.zone, "refresh_zone_info"), patch.object(
+            self.zone, "get_parameter"
+        ) as mock_param:
             mock_param.return_value = False
             result = self.zone.is_defrosting()
             self.assertEqual(result, 0)

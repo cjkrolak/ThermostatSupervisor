@@ -1224,22 +1224,14 @@ class Test(utc.UnitTest):
         self.Zone.function_not_supported = Mock()
 
         # Setup attributes that should be set
-        original_mode = getattr(self.Zone, 'current_mode', None)
-        original_setpoint = getattr(self.Zone, 'current_setpoint', None)
-        original_schedule_setpoint = getattr(
-            self.Zone, 'schedule_setpoint', None
-        )
-        original_tolerance_sign = getattr(
-            self.Zone, 'tolerance_sign', None
-        )
-        original_global_limit = getattr(self.Zone, 'global_limit', None)
-        original_global_operator = getattr(
-            self.Zone, 'global_operator', None
-        )
-        original_revert_func = getattr(
-            self.Zone, 'revert_setpoint_func', None
-        )
-        original_get_func = getattr(self.Zone, 'get_setpoint_func', None)
+        original_mode = getattr(self.Zone, "current_mode", None)
+        original_setpoint = getattr(self.Zone, "current_setpoint", None)
+        original_schedule_setpoint = getattr(self.Zone, "schedule_setpoint", None)
+        original_tolerance_sign = getattr(self.Zone, "tolerance_sign", None)
+        original_global_limit = getattr(self.Zone, "global_limit", None)
+        original_global_operator = getattr(self.Zone, "global_operator", None)
+        original_revert_func = getattr(self.Zone, "revert_setpoint_func", None)
+        original_get_func = getattr(self.Zone, "get_setpoint_func", None)
 
         try:
             # Call the method
