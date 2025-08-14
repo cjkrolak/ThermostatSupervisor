@@ -7,12 +7,15 @@ __pycache__
 # python distribution files
 dist
 build
+_build
 *.egg-info
 
 # python testing files
 htmlcov
 .tox
 .coverage
+.coverage.*
+coverage.xml
 
 # python virtual environment files
 .venv
@@ -21,11 +24,6 @@ env
 
 # python logs
 *.log
-
-# python test coverage files
-.coverage
-.coverage.*
-htmlcov
 
 # project files
 .project

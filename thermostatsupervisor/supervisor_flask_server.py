@@ -1,14 +1,19 @@
 """
 Flask server for displaying supervisor output on web page.
 """
+
 # built-in libraries
 import html
+import os
+import secrets
 from subprocess import Popen, PIPE, STDOUT, DEVNULL
 import sys
 import webbrowser
 
 # third party imports
 from flask import Flask, Response
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 from flask_wtf.csrf import CSRFProtect
 
 # local imports
@@ -51,6 +56,19 @@ argv = []  # supervisor runtime args list
 def create_app():
     """Create the flask object."""
     app_ = Flask(__name__)
+
+    # Set a secret key for CSRF protection
+    # In production, this should be set via environment variable
+    secret_key = os.environ.get("SECRET_KEY")
+    if not secret_key:
+        # Generate a random secret key for development/testing
+
+        secret_key = secrets.token_hex(32)
+    app_.config["SECRET_KEY"] = secret_key
+
+    # override JSONEncoder
+    app_.json_encoder = flg.CustomJSONEncoder
+
     # api = Api(app)
 
     # api.add_resource(Controller, "/")
@@ -59,8 +77,15 @@ def create_app():
 
 # create the flask app
 app = create_app()
+# Initialize rate limiter
+limiter = Limiter(
+    get_remote_address,
+    app=app,
+    default_limits=["200 per day", "60 per hour"],
+    storage_uri=env.get_flask_limiter_storage_uri(),
+)
 csrf = CSRFProtect(app)  # enable CSRF protection
-ip_ban = flg.initialize_ipban(app)  # hacker blacklisting agent
+ip_ban = flg.initialize_ipban(app)  # hacker BlockListing agent
 flg.set_flask_cookie_config(app)
 flg.print_flask_config(app)
 
@@ -71,7 +96,8 @@ def favicon():
     return app.send_static_file("honeywell.ico")
 
 
-@app.route("/")
+@app.route("/data")
+@limiter.limit("1 per minute")
 def index():
     """index route"""
 

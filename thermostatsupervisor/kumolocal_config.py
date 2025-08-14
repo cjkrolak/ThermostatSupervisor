@@ -1,6 +1,7 @@
 """
 kumolocal config file.
 """
+
 ALIAS = "kumolocal"
 
 # thermostat zones
@@ -13,12 +14,6 @@ MIN_COOL_SETPOINT = 70
 
 # all environment variables specific to this thermostat type
 env_variables = {
-    "KUMO_USERNAME": None,
-    "KUMO_PASSWORD": None,
-}
-
-# min required env variables on all runs
-required_env_variables = {
     "KUMO_USERNAME": None,
     "KUMO_PASSWORD": None,
 }
@@ -36,6 +31,7 @@ supported_configs = {
         "AUTO_MODE",
         "UNKNOWN_MODE",
     ],
+    "zip_code": "55760",  # Zip code for outdoor weather data
 }
 
 # metadata dict
@@ -43,16 +39,19 @@ supported_configs = {
 # 'zone_name' is updated by device memory via Zone.get_zone_name()
 # 'host_name' is used for DNS lookup to determine if device
 # 'ip_address' is just for reference.
+# 'local_net_available' is set by local network detection
 metadata = {
     MAIN_LEVEL: {
         "ip_address": "192.168.86.229",  # local IP, for ref only.
         "zone_name": "Main Level",  # customize for your site.
         "host_name": "tbd",  # used for DNS lookup
+        "local_net_available": None,  # updated by local network detection
     },
     BASEMENT: {
         "ip_address": "192.168.86.236",  # local IP, for ref only.
         "zone_name": "Basement",  # customize for your site.
         "host_name": "tbd",  # used for DNS lookup
+        "local_net_available": None,  # updated by local network detection
     },
 }
 

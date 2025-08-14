@@ -1,6 +1,7 @@
 """
 Unit test module for thermostat_api.py.
 """
+
 # built-in imports
 import os
 import sys
@@ -58,7 +59,7 @@ class Test(utc.UnitTest):
         try:
             self.assertFalse(
                 api.verify_required_env_variables(self.thermostat_type, "0"),
-                f"test passed with missing key '{missing_key}', " f"should have failed",
+                f"test passed with missing key '{missing_key}', should have failed",
             )
         except KeyError:
             print("KeyError raised as expected for missing key")
@@ -161,7 +162,7 @@ class RuntimeParameterTest(utc.RuntimeParameterTest):
     script = os.path.realpath(__file__)
     thermostat_type = thermostat_type
     # parent_key = zone_name  # aka zone_name in this context
-    zone = 0
+    zone_number = 0
     poll_time_sec = 9
     connection_time_sec = 90
     tolerance = 3
@@ -174,7 +175,7 @@ class RuntimeParameterTest(utc.RuntimeParameterTest):
     test_fields = [
         (script, os.path.realpath(__file__)),
         (thermostat_type, api.input_flds.thermostat_type),
-        (zone, api.input_flds.zone),
+        (zone_number, api.input_flds.zone),
         (poll_time_sec, api.input_flds.poll_time),
         (connection_time_sec, api.input_flds.connection_time),
         (tolerance, api.input_flds.tolerance),
@@ -185,7 +186,7 @@ class RuntimeParameterTest(utc.RuntimeParameterTest):
     test_fields_with_file = [
         (script, os.path.realpath(__file__)),
         (thermostat_type, api.input_flds.thermostat_type),
-        (zone, api.input_flds.zone),
+        (zone_number, api.input_flds.zone),
         (poll_time_sec, api.input_flds.poll_time),
         (connection_time_sec, api.input_flds.connection_time),
         (tolerance, api.input_flds.tolerance),

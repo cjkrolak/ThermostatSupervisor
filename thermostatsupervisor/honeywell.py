@@ -4,12 +4,17 @@ using pyhtcc library.
 
 https://pypi.org/project/pyhtcc/
 """
+
 # built-in imports
-import datetime
+import http.client
+import logging
 import os
 import pprint
 import time
-import traceback
+from typing import Union
+
+# third-party imports
+import urllib3.exceptions
 
 # local imports
 from thermostatsupervisor import email_notification
@@ -30,6 +35,41 @@ else:
     import pyhtcc  # noqa E402, from path / site packages
 
 
+class SupervisorLogHandler(logging.Handler):
+    """Custom logging handler to redirect pyhtcc logs to supervisor logging."""
+
+    def emit(self, record):
+        """
+        Emit a log record through the supervisor's log_msg function.
+
+        inputs:
+            record(LogRecord): The logging record to emit
+        """
+        try:
+            # Format the message
+            msg = self.format(record)
+
+            # Map logging levels to supervisor log modes
+            level_mapping = {
+                logging.DEBUG: util.DEBUG_LOG + util.DATA_LOG,
+                logging.INFO: util.DATA_LOG,
+                logging.WARNING: util.DATA_LOG,
+                logging.ERROR: util.DATA_LOG + util.STDERR_LOG,
+                logging.CRITICAL: util.DATA_LOG + util.STDERR_LOG,
+            }
+
+            # Get the appropriate log mode, default to DATA_LOG for unknown levels
+            log_mode = level_mapping.get(record.levelno, util.DATA_LOG)
+
+            # Log through supervisor's logging system
+            util.log_msg(
+                f"[pyhtcc] {msg}", mode=log_mode, file_name="honeywell_log.txt"
+            )
+        except Exception:
+            # Fallback to avoid breaking logging completely
+            self.handleError(record)
+
+
 class ThermostatClass(pyhtcc.PyHTCC, tc.ThermostatCommon):
     """Extend the PyHTCC class with additional methods."""
 
@@ -43,10 +83,10 @@ class ThermostatClass(pyhtcc.PyHTCC, tc.ThermostatCommon):
         self.TCC_UNAME_KEY = "TCC_USERNAME"
         self.TCC_PASSWORD_KEY = "TCC_PASSWORD"
         self.tcc_uname = os.environ.get(
-            self.TCC_UNAME_KEY, "<" + self.TCC_UNAME_KEY + "_KEY_MISSING>"
+            self.TCC_UNAME_KEY, "<" + self.TCC_UNAME_KEY + api.KEY_MISSING_SUFFIX
         )
         self.tcc_pwd = os.environ.get(
-            self.TCC_PASSWORD_KEY, "<" + self.TCC_PASSWORD_KEY + "_KEY_MISSING>"
+            self.TCC_PASSWORD_KEY, "<" + self.TCC_PASSWORD_KEY + api.KEY_MISSING_SUFFIX
         )
 
         # construct the superclass
@@ -54,6 +94,9 @@ class ThermostatClass(pyhtcc.PyHTCC, tc.ThermostatCommon):
         self.args = [self.tcc_uname, self.tcc_pwd]
         pyhtcc.PyHTCC.__init__(self, *self.args)
         tc.ThermostatCommon.__init__(self)
+
+        # integrate pyhtcc logger with supervisor logging system
+        self._setup_pyhtcc_logging()
 
         # set tstat type and debug flag
         self.thermostat_type = honeywell_config.ALIAS
@@ -63,9 +106,48 @@ class ThermostatClass(pyhtcc.PyHTCC, tc.ThermostatCommon):
         self.zone_name = int(zone)
         self.device_id = self.get_target_zone_id(self.zone_name)
 
+    def close(self):
+        """Explicitly close the session created in pyhtcc."""
+        if hasattr(self, "session") and self.session is not None:
+            self.session.close()
+            self.session = None
+
     def __del__(self):
-        """Clean-up session created in pyhtcc."""
-        self.session.close()
+        """Clean-up session created in pyhtcc (fallback)."""
+        try:
+            self.close()
+        except (AttributeError, TypeError):
+            # Handle cases where session doesn't exist or other cleanup issues
+            pass
+
+    def _setup_pyhtcc_logging(self):
+        """
+        Configure pyhtcc logger to use supervisor logging system.
+
+        This method sets up a custom handler that redirects pyhtcc log messages
+        to the supervisor's log_msg function, ensuring all logging goes to the
+        same destination.
+        """
+        # Get the pyhtcc logger
+        pyhtcc_logger = pyhtcc.logger
+
+        # Remove any existing handlers to avoid duplicate logging
+        for handler in pyhtcc_logger.handlers[:]:
+            pyhtcc_logger.removeHandler(handler)
+
+        # Add our custom handler
+        supervisor_handler = SupervisorLogHandler()
+        supervisor_handler.setLevel(logging.DEBUG)
+
+        # Set a simple formatter
+        formatter = logging.Formatter("%(name)s - %(levelname)s - %(message)s")
+        supervisor_handler.setFormatter(formatter)
+
+        pyhtcc_logger.addHandler(supervisor_handler)
+        pyhtcc_logger.setLevel(logging.DEBUG)
+
+        # Prevent propagation to avoid duplicate messages
+        pyhtcc_logger.propagate = False
 
     def _get_zone_device_ids(self) -> list:
         """
@@ -122,12 +204,11 @@ class ThermostatClass(pyhtcc.PyHTCC, tc.ThermostatCommon):
 
         inputs:
           zone(int): zone number, default=honeywell_config.default_zone
-          retry(bool): if True will retry once.
+          retry(bool): if True will retry with extended retry mechanism.
         returns:
           (dict) thermostat meta data.
         """
-        del retry  # not used
-        return_data = self.get_metadata(zone)
+        return_data = self.get_metadata(zone, retry=retry)
         util.log_msg(
             f"all meta data: {return_data}",
             mode=util.DEBUG_LOG + util.STDOUT_LOG,
@@ -136,8 +217,12 @@ class ThermostatClass(pyhtcc.PyHTCC, tc.ThermostatCommon):
         return return_data
 
     def get_metadata(
-        self, zone=honeywell_config.default_zone, trait=None, parameter=None
-    ) -> (dict, str):
+        self,
+        zone=honeywell_config.default_zone,
+        trait=None,
+        parameter=None,
+        retry=False,
+    ) -> Union[dict, str]:
         """
         Return the current thermostat metadata settings.
 
@@ -146,42 +231,71 @@ class ThermostatClass(pyhtcc.PyHTCC, tc.ThermostatCommon):
           trait(str): trait or parent key, if None will assume a non-nested
                       dict
           parameter(str): target parameter, None = all settings
+          retry(bool): if True will retry with extended retry mechanism
         returns:
           (dict) if parameter=None
           (str) if parameter != None
         """
         del trait  # not used on Honeywell
-        zone_info_list = self.get_zones_info()
-        if parameter is None:
-            try:
-                return_data = zone_info_list[zone]
-            except IndexError:
-                print(
-                    f"ERROR: zone {zone} does not exist in zone_info_list: "
-                    f"{zone_info_list}"
+
+        def _get_metadata_internal():
+            zone_info_list = self.get_zones_info()
+            if parameter is None:
+                try:
+                    return_data = zone_info_list[zone]
+                except IndexError:
+                    print(
+                        f"ERROR: zone {zone} does not exist in zone_info_list: "
+                        f"{zone_info_list}"
+                    )
+                    raise
+                util.log_msg(
+                    f"zone {zone} info: {return_data}",
+                    mode=util.DEBUG_LOG + util.STDOUT_LOG,
+                    func_name=1,
                 )
-                raise
-            util.log_msg(
-                f"zone {zone} info: {return_data}",
-                mode=util.DEBUG_LOG + util.STDOUT_LOG,
-                func_name=1,
+                return return_data
+            else:
+                try:
+                    return_data = zone_info_list[zone].get(parameter)
+                except IndexError:
+                    print(
+                        f"ERROR: zone {zone} does not exist in zone_info_list: "
+                        f"{zone_info_list}"
+                    )
+                    raise
+                util.log_msg(
+                    f"zone {zone} parameter '{parameter}': {return_data}",
+                    mode=util.DEBUG_LOG + util.STDOUT_LOG,
+                    func_name=1,
+                )
+                return return_data
+
+        if retry:
+            # Use standardized extended retry mechanism
+            return util.execute_with_extended_retries(
+                func=_get_metadata_internal,
+                thermostat_type=self.thermostat_type,
+                zone_name=str(zone),
+                number_of_retries=5,
+                initial_retry_delay_sec=30,
+                exception_types=(
+                    pyhtcc.requests.exceptions.ConnectionError,
+                    pyhtcc.pyhtcc.UnexpectedError,
+                    pyhtcc.pyhtcc.NoZonesFoundError,
+                    pyhtcc.pyhtcc.UnauthorizedError,
+                    pyhtcc.pyhtcc.TooManyAttemptsError,
+                    ConnectionError,
+                    TimeoutError,
+                    IndexError,
+                    KeyError,
+                    AttributeError,
+                ),
+                email_notification=email_notification,
             )
-            return return_data
         else:
-            try:
-                return_data = zone_info_list[zone].get(parameter)
-            except IndexError:
-                print(
-                    f"ERROR: zone {zone} does not exist in zone_info_list: "
-                    f"{zone_info_list}"
-                )
-                raise
-            util.log_msg(
-                f"zone {zone} parameter '{parameter}': {return_data}",
-                mode=util.DEBUG_LOG + util.STDOUT_LOG,
-                func_name=1,
-            )
-            return return_data
+            # Single attempt without retry
+            return _get_metadata_internal()
 
     def get_latestdata(self, zone=honeywell_config.default_zone, debug=False) -> dict:
         """
@@ -235,7 +349,7 @@ class ThermostatClass(pyhtcc.PyHTCC, tc.ThermostatCommon):
             parameter
         )
         util.log_msg(
-            f"zone{zone} uiData parameter {parameter}: " f"{parameter_data}",
+            f"zone{zone} uiData parameter {parameter}: {parameter_data}",
             mode=util.DEBUG_LOG + util.STDOUT_LOG,
             func_name=1,
         )
@@ -269,117 +383,29 @@ def get_zones_info_with_retries(func, thermostat_type, zone_name) -> list:
     returns:
         list of zone info.
     """
-    initial_trial_number = 1
-    trial_number = initial_trial_number
-    number_of_retries = 5
-    retry_delay_sec = 60
-    return_val = []
-    while trial_number < number_of_retries:
-        time_now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        try:
-            return_val = func()
-        except (
-            pyhtcc.requests.exceptions.ConnectionError,
-            pyhtcc.pyhtcc.UnexpectedError,
-            pyhtcc.pyhtcc.NoZonesFoundError,
-            pyhtcc.pyhtcc.UnauthorizedError,
-            pyhtcc.requests.exceptions.HTTPError,
-        ) as ex:
-            # set flag to force re-authentication
-            tc.connection_ok = False
 
-            util.log_msg(
-                f"WARNING: exception on trial {trial_number}",
-                mode=util.BOTH_LOG,
-                func_name=1,
-            )
-            util.log_msg(traceback.format_exc(), mode=util.BOTH_LOG, func_name=1)
-            msg_suffix = [
-                "",
-                f" waiting {retry_delay_sec} seconds and then " + "retrying...",
-            ][trial_number < number_of_retries]
-            util.log_msg(
-                f"{time_now}: exception during "
-                f"{util.get_function_name()}"
-                f", on trial {trial_number} of "
-                f"{number_of_retries}, probably a"
-                " connection issue"
-                f"{msg_suffix}",
-                mode=util.BOTH_LOG,
-                func_name=1,
-            )
+    # Define Honeywell-specific exception types
+    honeywell_exceptions = (
+        pyhtcc.requests.exceptions.ConnectionError,
+        pyhtcc.pyhtcc.UnexpectedError,
+        pyhtcc.pyhtcc.NoZonesFoundError,
+        pyhtcc.pyhtcc.UnauthorizedError,
+        pyhtcc.pyhtcc.TooManyAttemptsError,
+        pyhtcc.requests.exceptions.HTTPError,
+        urllib3.exceptions.ProtocolError,
+        http.client.RemoteDisconnected,
+    )
 
-            # warning email
-            email_notification.send_email_alert(
-                subject=(
-                    f"{thermostat_type} zone "
-                    f"{zone_name}: "
-                    "intermittent error during "
-                    f"{util.get_function_name()}"
-                ),
-                body=(
-                    f"{util.get_function_name()}: trial "
-                    f"{trial_number} of "
-                    f"{number_of_retries} at "
-                    f"{time_now}\n{traceback.format_exc()}"
-                ),
-            )
-
-            # exhausted retries, raise exception
-            if trial_number > number_of_retries:
-                util.log_msg(
-                    f"ERRROR: exhausted {number_of_retries} "
-                    f"retries during {util.get_function_name()}",
-                    mode=util.BOTH_LOG,
-                    func_name=1,
-                )
-                raise ex
-
-            # delay in between retries
-            if trial_number <= number_of_retries:
-                util.log_msg(
-                    f"Delaying {retry_delay_sec} prior to retry...",
-                    mode=util.BOTH_LOG,
-                    func_name=1,
-                )
-                time.sleep(retry_delay_sec)
-
-            # increment retry parameters
-            trial_number += 1
-            retry_delay_sec *= 2  # double each time.
-
-        except Exception as ex:
-            util.log_msg(traceback.format_exc(), mode=util.BOTH_LOG, func_name=1)
-            util.log_msg(
-                f"ERROR: unhandled exception {ex} during "
-                f"{util.get_function_name()}",
-                mode=util.BOTH_LOG,
-                func_name=1,
-            )
-            raise ex
-        else:  # good response
-            # log the mitigated failure
-            if trial_number > initial_trial_number:
-                email_notification.send_email_alert(
-                    subject=(
-                        f"{thermostat_type} zone "
-                        f"{zone_name}: "
-                        "(mitigated) intermittent connection error "
-                        f"during {util.get_function_name()}"
-                    ),
-                    body=(
-                        f"{util.get_function_name()}: trial "
-                        f"{trial_number} of {number_of_retries} at "
-                        f"{time_now}"
-                    ),
-                )
-
-            # reset retry parameters
-            tc.connection_ok = True
-
-            break  # exit while loop
-
-    return return_val
+    # Use the common retry utility
+    return util.execute_with_extended_retries(
+        func=func,
+        thermostat_type=thermostat_type,
+        zone_name=zone_name,
+        number_of_retries=5,
+        initial_retry_delay_sec=60,
+        exception_types=honeywell_exceptions,
+        email_notification=email_notification,
+    )
 
 
 class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
@@ -459,7 +485,7 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
         """
         return float(self.get_indoor_temperature_raw())
 
-    def get_display_humidity(self) -> (float, None):
+    def get_display_humidity(self) -> Union[float, None]:
         """
         Refresh the cached zone information then return IndoorHumidity.
 
@@ -566,6 +592,20 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
             == self.system_switch_position[tc.ThermostatCommonZone.AUTO_MODE]
         )
 
+    def is_eco_mode(self) -> int:
+        """
+        Return the eco mode.
+
+        inputs:
+            None
+        returns:
+            (int): 1 if auto mode, else 0
+        """
+        return int(
+            self.get_system_switch_position()
+            == self.system_switch_position[tc.ThermostatCommonZone.ECO_MODE]
+        )
+
     def is_heating(self) -> int:
         """
         Refresh the cached zone information and return the heat active mode.
@@ -613,34 +653,45 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
             )
         )
 
-    def is_fanning(self):
+    def is_eco(self):
+        """Return 1 if eco relay is active, else 0."""
+        return int(
+            self.is_eco_mode()
+            and self.is_power_on()
+            and (
+                self.get_cool_setpoint_raw() < self.get_display_temp()
+                or self.get_heat_setpoint_raw() > self.get_display_temp()
+            )
+        )
+
+    def is_fanning(self) -> int:
         """Return 1 if fan relay is active, else 0."""
         return int(
             (self.is_fan_on() or self.is_fan_circulate_mode()) and self.is_power_on()
         )
 
-    def is_fan_circulate_mode(self):
+    def is_fan_circulate_mode(self) -> int:
         """Return 1 if fan is in circulate mode, else 0."""
         self.refresh_zone_info()
         return int(self.zone_info["latestData"]["fanData"]["fanMode"] == 2)
 
-    def is_fan_auto_mode(self):
+    def is_fan_auto_mode(self) -> int:
         """Return 1 if fan is in auto mode, else 0."""
         self.refresh_zone_info()
         return int(self.zone_info["latestData"]["fanData"]["fanMode"] == 0)
 
-    def is_fan_on_mode(self):
+    def is_fan_on_mode(self) -> int:
         """Return 1 if fan is in always on mode, else 0."""
         self.refresh_zone_info()
         return int(self.zone_info["latestData"]["fanData"]["fanMode"] == 1)
 
-    def is_power_on(self):
+    def is_power_on(self) -> int:
         """Return 1 if power relay is active, else 0."""
         self.refresh_zone_info()
         # just a guess, not sure what position 0 is yet.
         return int(self.zone_info["latestData"]["uiData"]["SystemSwitchPosition"] > 0)
 
-    def is_fan_on(self):
+    def is_fan_on(self) -> int:
         """Return 1 if fan relay is active, else 0."""
         self.refresh_zone_info()
         return int(self.zone_info["latestData"]["fanData"]["fanIsRunning"])
@@ -719,7 +770,7 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
             (bool): True if vacation hold is set.
         """
         self.refresh_zone_info()
-        return int(self.zone_info["latestData"]["uiData"]["VacationHold"])
+        return bool(self.zone_info["latestData"]["uiData"]["VacationHold"])
 
     def get_vacation_hold_until_time(self) -> int:
         """
@@ -759,7 +810,7 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
             (bool): True if set point changes are allowed.
         """
         self.refresh_zone_info()
-        return int(self.zone_info["latestData"]["uiData"]["SetpointChangeAllowed"])
+        return bool(self.zone_info["latestData"]["uiData"]["SetpointChangeAllowed"])
 
     def get_system_switch_position(self) -> int:  # used
         """

@@ -30,7 +30,7 @@ def read(rel_path):
     print(f"relative path={rel_path}")
     dir_list = os.listdir(here)
     print(f"files in base path: {dir_list}")
-    with codecs.open(os.path.join(here, rel_path), "r") as fp:
+    with codecs.open(os.path.join(here, rel_path), "r", encoding="utf-8") as fp:
         return fp.read()
 
 

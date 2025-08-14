@@ -3,16 +3,22 @@ Integration test module for honeywell.py.
 
 This test requires connection to Honeywell thermostat.
 """
+
 # built-in imports
 import unittest
 
 # local imports
 from thermostatsupervisor import honeywell
 from thermostatsupervisor import honeywell_config
+from thermostatsupervisor import thermostat_common as tc
 from thermostatsupervisor import utilities as util
 from tests import unit_test_common as utc
 
 
+@unittest.skipIf(
+    not utc.ENABLE_HONEYWELL_TESTS,
+    "Honeywell tests are disabled",
+)
 class IntegrationTest(utc.IntegrationTest):
     """
     Test functions in honeywell.py.
@@ -20,6 +26,13 @@ class IntegrationTest(utc.IntegrationTest):
 
     def setUpIntTest(self):
         """Setup common to integration tests."""
+        # Check for server spamming detection and skip if detected
+        if tc.server_spamming_detected:
+            self.skipTest(
+                "Skipping Honeywell integration test due to detected "
+                "pyhtcc server spamming (TooManyAttemptsError)"
+            )
+
         self.setup_common()
         self.print_test_name()
 
@@ -39,6 +52,10 @@ class IntegrationTest(utc.IntegrationTest):
         self.mod_config = honeywell_config
 
 
+@unittest.skipIf(
+    not utc.ENABLE_HONEYWELL_TESTS,
+    "Honeywell tests are disabled",
+)
 class FunctionalIntegrationTest(IntegrationTest, utc.FunctionalIntegrationTest):
     """
     Test functional performance of honeywell.py.
@@ -53,6 +70,10 @@ class FunctionalIntegrationTest(IntegrationTest, utc.FunctionalIntegrationTest):
         self.metadata_type = int
 
 
+@unittest.skipIf(
+    not utc.ENABLE_HONEYWELL_TESTS,
+    "Honeywell tests are disabled",
+)
 class SuperviseIntegrationTest(IntegrationTest, utc.SuperviseIntegrationTest):
     """
     Test supervise functionality of honeywell.py.
@@ -63,6 +84,10 @@ class SuperviseIntegrationTest(IntegrationTest, utc.SuperviseIntegrationTest):
         self.setUpIntTest()
 
 
+@unittest.skipIf(
+    not utc.ENABLE_HONEYWELL_TESTS,
+    "Honeywell tests are disabled",
+)
 class PerformanceIntegrationTest(IntegrationTest, utc.PerformanceIntegrationTest):
     """
     Test performance of honeywell.py.

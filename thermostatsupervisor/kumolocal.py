@@ -1,8 +1,11 @@
 """KumoCloud integration using local API for data."""
+
 # built-in imports
+import logging
 import os
 import pprint
 import time
+from typing import Union
 
 # third party imports
 
@@ -24,6 +27,39 @@ else:
     import pykumo  # noqa E402, from path / site packages
 
 
+class SupervisorLogHandler(logging.Handler):
+    """Custom logging handler to redirect pykumo logs to supervisor logging."""
+
+    def emit(self, record):
+        """
+        Emit a log record through the supervisor's log_msg function.
+
+        inputs:
+            record(LogRecord): The logging record to emit
+        """
+        try:
+            # Format the message
+            msg = self.format(record)
+
+            # Map logging levels to supervisor log modes
+            level_mapping = {
+                logging.DEBUG: util.DEBUG_LOG + util.DATA_LOG,
+                logging.INFO: util.DATA_LOG,
+                logging.WARNING: util.DATA_LOG,
+                logging.ERROR: util.DATA_LOG + util.STDERR_LOG,
+                logging.CRITICAL: util.DATA_LOG + util.STDERR_LOG,
+            }
+
+            # Get the appropriate log mode, default to DATA_LOG for unknown levels
+            log_mode = level_mapping.get(record.levelno, util.DATA_LOG)
+
+            # Log through supervisor's logging system
+            util.log_msg(f"[pykumo] {msg}", mode=log_mode, file_name="kumo_log.txt")
+        except Exception:
+            # Fallback to avoid breaking logging completely
+            self.handleError(record)
+
+
 class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
     """KumoCloud thermostat functions."""
 
@@ -39,10 +75,10 @@ class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
         self.KC_UNAME_KEY = "KUMO_USERNAME"
         self.KC_PASSWORD_KEY = "KUMO_PASSWORD"
         self.kc_uname = os.environ.get(
-            self.KC_UNAME_KEY, "<" + self.KC_UNAME_KEY + "_KEY_MISSING>"
+            self.KC_UNAME_KEY, "<" + self.KC_UNAME_KEY + api.KEY_MISSING_SUFFIX
         )
         self.kc_pwd = os.environ.get(
-            self.KC_PASSWORD_KEY, "<" + self.KC_PASSWORD_KEY + "_KEY_MISSING>"
+            self.KC_PASSWORD_KEY, "<" + self.KC_PASSWORD_KEY + api.KEY_MISSING_SUFFIX
         )
 
         # construct the superclass
@@ -51,6 +87,9 @@ class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
         # kumocloud account init sets the self._url
         pykumo.KumoCloudAccount.__init__(self, *self.args)
         tc.ThermostatCommon.__init__(self)
+
+        # integrate pykumo logger with supervisor logging system
+        self._setup_pykumo_logging()
 
         # set tstat type and debug flag
         self.thermostat_type = kumolocal_config.ALIAS
@@ -62,6 +101,56 @@ class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
         self.device_id = None  # initialize
         self.device_id = self.get_target_zone_id(self.zone_number)
         self.serial_number = None  # will be populated when unit is queried.
+
+        # detect local network availability for this zone
+        self.detect_local_network_availability()
+
+    def _setup_pykumo_logging(self):
+        """
+        Configure pykumo loggers to use supervisor logging system.
+
+        This method sets up a custom handler that redirects pykumo log messages
+        to the supervisor's log_msg function, ensuring all logging goes to the
+        same destination.
+        """
+        # List of pykumo modules that have loggers
+        pykumo_modules = [
+            "pykumo.py_kumo_cloud_account",
+            "pykumo.py_kumo",
+            "pykumo.py_kumo_base",
+            "pykumo.py_kumo_station",
+        ]
+
+        for module_name in pykumo_modules:
+            try:
+                # Get the logger for each pykumo module
+                pykumo_logger = logging.getLogger(module_name)
+
+                # Remove any existing handlers to avoid duplicate logging
+                for handler in pykumo_logger.handlers[:]:
+                    pykumo_logger.removeHandler(handler)
+
+                # Add our custom handler
+                supervisor_handler = SupervisorLogHandler()
+                supervisor_handler.setLevel(logging.DEBUG)
+
+                # Set a simple formatter
+                formatter = logging.Formatter("%(name)s - %(levelname)s - %(message)s")
+                supervisor_handler.setFormatter(formatter)
+
+                pykumo_logger.addHandler(supervisor_handler)
+                pykumo_logger.setLevel(logging.DEBUG)
+
+                # Prevent propagation to avoid duplicate messages
+                pykumo_logger.propagate = False
+
+            except Exception as exc:
+                # Log setup failure but don't break initialization
+                util.log_msg(
+                    f"Failed to setup logging for {module_name}: {exc}",
+                    mode=util.DATA_LOG + util.STDERR_LOG,
+                    func_name=1,
+                )
 
     def get_zone_name(self):
         """
@@ -90,7 +179,7 @@ class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
         # print zone name the first time it is known
         if self.device_id is None and self.verbose:
             util.log_msg(
-                f"zone {zone} name='{self.zone_name}', " f"device_id={device_id}",
+                f"zone {zone} name='{self.zone_name}', device_id={device_id}",
                 mode=util.DEBUG_LOG + util.STDOUT_LOG,
                 func_name=1,
             )
@@ -99,79 +188,210 @@ class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
         # return the target zone object
         return self.device_id
 
-    def get_kumocloud_thermostat_metadata(self, zone=None, debug=False):
+    def detect_local_network_availability(self):
+        """
+        Detect if kumolocal devices are available on the local network.
+
+        Updates kumolocal_config.metadata with detected network information.
+
+        inputs:
+            None
+        returns:
+            None (updates metadata dict)
+        """
+        try:
+            serial_num_lst = self._get_indoor_units_list()
+            if not serial_num_lst:
+                return
+
+            self._check_zones_availability(serial_num_lst)
+
+        except Exception as exc:
+            self._handle_detection_error(exc)
+
+    def _get_indoor_units_list(self):
+        """Get list of indoor units."""
+        serial_num_lst = list(self.get_indoor_units())
+
+        if not serial_num_lst and self.verbose:
+            util.log_msg(
+                "No kumolocal units found in kumocloud account",
+                mode=util.DEBUG_LOG + util.STDOUT_LOG,
+                func_name=1,
+            )
+
+        return serial_num_lst
+
+    def _check_zones_availability(self, serial_num_lst):
+        """Check availability for each zone."""
+        for zone_idx, serial_number in enumerate(serial_num_lst):
+            if zone_idx not in kumolocal_config.metadata:
+                continue
+
+            self._process_zone_availability(zone_idx, serial_number)
+
+    def _process_zone_availability(self, zone_idx, serial_number):
+        """Process availability check for a single zone."""
+        local_address = self.get_address(serial_number)
+        device_name = self.get_name(serial_number)
+
+        if self._has_valid_local_address(local_address):
+            self._check_and_update_available_zone(zone_idx, device_name, local_address)
+        else:
+            self._update_unavailable_zone(zone_idx, device_name)
+
+    def _has_valid_local_address(self, local_address):
+        """Check if local address is valid."""
+        return local_address and local_address != "0.0.0.0"
+
+    def _check_and_update_available_zone(self, zone_idx, device_name, local_address):
+        """Check and update zone with valid local address."""
+        is_available, detected_ip = util.is_host_on_local_net(
+            host_name=device_name,
+            ip_address=local_address,
+            verbose=self.verbose,
+        )
+
+        if self.verbose:
+            print(f"is_available={is_available}, detected_ip={detected_ip}")
+
+        self._update_zone_metadata(zone_idx, device_name, local_address, is_available)
+
+    def _update_zone_metadata(self, zone_idx, device_name, local_address, is_available):
+        """Update zone metadata with detection results."""
+        zone_meta = kumolocal_config.metadata[zone_idx]
+        zone_meta["ip_address"] = local_address
+        zone_meta["host_name"] = device_name
+        zone_meta["local_net_available"] = is_available
+
+        if self.verbose:
+            status = "available" if is_available else "not available"
+            util.log_msg(
+                f"Zone {zone_idx} ({device_name}): "
+                f"local network {status} at {local_address}",
+                mode=util.DEBUG_LOG + util.STDOUT_LOG,
+                func_name=1,
+            )
+
+    def _update_unavailable_zone(self, zone_idx, device_name):
+        """Update zone metadata for unavailable zone."""
+        zone_meta = kumolocal_config.metadata[zone_idx]
+        zone_meta["local_net_available"] = False
+
+        if self.verbose:
+            util.log_msg(
+                f"Zone {zone_idx} ({device_name}): "
+                f"no local address available from kumocloud",
+                mode=util.DEBUG_LOG + util.STDOUT_LOG,
+                func_name=1,
+            )
+
+    def _handle_detection_error(self, exc):
+        """Handle detection errors."""
+        if self.verbose:
+            util.log_msg(
+                f"Warning: local network detection failed: {exc}",
+                mode=util.DEBUG_LOG + util.STDOUT_LOG,
+                func_name=1,
+            )
+
+    def get_kumocloud_thermostat_metadata(self, zone=None, debug=False, retry=False):
         """Get all thermostat meta data for zone from kumocloud.
 
         inputs:
             zone(): specified zone, if None will print all zones.
             debug(bool): debug flag.
+            retry(bool): if True will retry with extended retry mechanism
         returns:
             (dict): JSON dict
         """
         del debug  # unused
-        try:
-            serial_num_lst = list(self.get_indoor_units())  # will query unit
-        except UnboundLocalError:  # patch for issue #205
-            util.log_msg(
-                "WARNING: Kumocloud refresh failed due to timeout",
-                mode=util.BOTH_LOG,
-                func_name=1,
-            )
-            time.sleep(10)
-            serial_num_lst = list(self.get_indoor_units())  # retry
-        util.log_msg(
-            f"indoor unit serial numbers: {str(serial_num_lst)}",
-            mode=util.DEBUG_LOG + util.STDOUT_LOG,
-            func_name=1,
-        )
 
-        # validate serial number list
-        if not serial_num_lst:
-            raise tc.AuthenticationError(
-                "pykumo meta data is blank, probably"
-                " due to an Authentication Error,"
-                " check your credentials."
-            )
-
-        for serial_number in serial_num_lst:
+        def _get_metadata_internal():
+            try:
+                serial_num_lst = list(self.get_indoor_units())  # will query unit
+            except UnboundLocalError:  # patch for issue #205
+                util.log_msg(
+                    "WARNING: Kumocloud refresh failed due to timeout",
+                    mode=util.BOTH_LOG,
+                    func_name=1,
+                )
+                time.sleep(10)
+                serial_num_lst = list(self.get_indoor_units())  # retry
             util.log_msg(
-                f"Unit {self.get_name(serial_number)}: address: "
-                f"{self.get_address(serial_number)} credentials: "
-                f"{self.get_credentials(serial_number)}",
+                f"indoor unit serial numbers: {str(serial_num_lst)}",
                 mode=util.DEBUG_LOG + util.STDOUT_LOG,
                 func_name=1,
             )
-        if zone is None:
-            # returned cached raw data for all zones
-            raw_json = self.get_raw_json()  # does not fetch results,
+
+            # validate serial number list
+            if not serial_num_lst:
+                raise tc.AuthenticationError(
+                    "pykumo meta data is blank, probably"
+                    " due to an Authentication Error,"
+                    " check your credentials."
+                )
+
+            for serial_number in serial_num_lst:
+                util.log_msg(
+                    f"Unit {self.get_name(serial_number)}: address: "
+                    f"{self.get_address(serial_number)} credentials: "
+                    f"{self.get_credentials(serial_number)}",
+                    mode=util.DEBUG_LOG + util.STDOUT_LOG,
+                    func_name=1,
+                )
+            if zone is None:
+                # returned cached raw data for all zones
+                raw_json = self.get_raw_json()  # does not fetch results,
+            else:
+                # return cached raw data for specified zone
+                try:
+                    self.serial_number = serial_num_lst[zone]
+                except IndexError as exc:
+                    raise IndexError(
+                        f"ERROR: Invalid Zone, index ({zone}) does "
+                        "not exist in serial number list "
+                        f"({serial_num_lst})"
+                    ) from exc
+                raw_json = self.get_raw_json()[2]["children"][0]["zoneTable"][
+                    serial_num_lst[zone]
+                ]
+            return raw_json
+
+        if retry:
+            # Use standardized extended retry mechanism
+            return util.execute_with_extended_retries(
+                func=_get_metadata_internal,
+                thermostat_type=getattr(self, "thermostat_type", "KumoLocal"),
+                zone_name=str(getattr(self, "zone_name", zone)),
+                number_of_retries=5,
+                initial_retry_delay_sec=60,
+                exception_types=(
+                    UnboundLocalError,
+                    tc.AuthenticationError,
+                    IndexError,
+                    KeyError,
+                    ConnectionError,
+                    TimeoutError,
+                ),
+                email_notification=None,  # KumoLocal doesn't import email_notification
+            )
         else:
-            # return cached raw data for specified zone
-            try:
-                self.serial_number = serial_num_lst[zone]
-            except IndexError as exc:
-                raise IndexError(
-                    f"ERROR: Invalid Zone, index ({zone}) does "
-                    "not exist in serial number list "
-                    f"({serial_num_lst})"
-                ) from exc
-            raw_json = self.get_raw_json()[2]["children"][0]["zoneTable"][
-                serial_num_lst[zone]
-            ]
-        return raw_json
+            # Single attempt without retry
+            return _get_metadata_internal()
 
     def get_all_metadata(self, zone=None, retry=False):
         """Get all thermostat meta data for device_id from local API.
 
         inputs:
             zone(): specified zone
-            retry(bool): if True will retry once.
+            retry(bool): if True will retry with extended retry mechanism.
         returns:
             (dict): dictionary of meta data.
         """
-        del retry  # not used
-        return self.get_metadata(zone)
+        return self.get_metadata(zone, retry=retry)
 
-    def get_metadata(self, zone=None, trait=None, parameter=None):
+    def get_metadata(self, zone=None, trait=None, parameter=None, retry=False):
         """Get thermostat meta data for device_id from local API.
 
         inputs:
@@ -179,25 +399,46 @@ class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
             trait(str): trait or parent key, if None will assume a non-nested
                         dict
             parameter(str): target parameter, if None will return all.
-            debug(bool): debug flag.
+            retry(bool): if True will retry with extended retry mechanism
         returns:
             (dict): dictionary of meta data.
         """
         del trait  # not used on Kumolocal
         del zone  # unused
 
-        # refresh device status
-        self.device_id.update_status()
-        meta_data = {}
-        meta_data["status"] = self.device_id.get_status()
-        # pylint: disable=protected-access
-        meta_data["sensors"] = self.device_id._sensors
-        # pylint: disable=protected-access
-        meta_data["profile"] = self.device_id._profile
-        if parameter is None:
-            return meta_data
+        def _get_metadata_internal():
+            # refresh device status
+            self.device_id.update_status()
+            meta_data = {}
+            meta_data["status"] = self.device_id.get_status()
+            # pylint: disable=protected-access
+            meta_data["sensors"] = self.device_id._sensors
+            # pylint: disable=protected-access
+            meta_data["profile"] = self.device_id._profile
+            if parameter is None:
+                return meta_data
+            else:
+                return meta_data[parameter]
+
+        if retry:
+            # Use standardized extended retry mechanism
+            return util.execute_with_extended_retries(
+                func=_get_metadata_internal,
+                thermostat_type="KumoLocal",
+                zone_name=str(getattr(self, "zone_name", "unknown")),
+                number_of_retries=5,
+                initial_retry_delay_sec=60,
+                exception_types=(
+                    KeyError,
+                    AttributeError,
+                    ConnectionError,
+                    TimeoutError,
+                ),
+                email_notification=None,  # KumoLocal doesn't import email_notification
+            )
         else:
-            return meta_data[parameter]
+            # Single attempt without retry
+            return _get_metadata_internal()
 
     def print_all_thermostat_metadata(self, zone):
         """Print all metadata for zone to the screen.
@@ -208,6 +449,24 @@ class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
             None, prints result to screen
         """
         self.exec_print_all_thermostat_metadata(self.get_all_metadata, [zone])
+
+    def is_local_network_available(self, zone=None):
+        """
+        Check if kumolocal device is available on local network.
+
+        inputs:
+            zone(int): zone number, defaults to self.zone_number
+        returns:
+            bool: True if device is available on local network, False otherwise
+        """
+        zone_number = zone if zone is not None else self.zone_number
+        if zone_number in kumolocal_config.metadata:
+            value = kumolocal_config.metadata[zone_number].get(
+                "local_net_available", False
+            )
+            # Handle case where value is None (not yet detected)
+            return value if value is not None else False
+        return False
 
 
 class ThermostatZone(tc.ThermostatCommonZone):
@@ -280,7 +539,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         self.refresh_zone_info()
         return util.c_to_f(self.device_id.get_current_temperature())
 
-    def get_display_humidity(self) -> (float, None):
+    def get_display_humidity(self) -> Union[float, None]:
         """
         Refresh the cached zone information and return IndoorHumidity.
 
@@ -378,6 +637,17 @@ class ThermostatZone(tc.ThermostatCommonZone):
             == self.system_switch_position[tc.ThermostatCommonZone.AUTO_MODE]
         )
 
+    def is_eco_mode(self) -> int:
+        """
+        Refresh the cached zone information and return the eco mode.
+
+        inputs:
+            None
+        returns:
+            (int): eco mode, 1=enabled, 0=disabled.
+        """
+        return int(0)  # not supported
+
     def is_off_mode(self) -> int:
         """
         Refresh the cached zone information and return the off mode.
@@ -427,7 +697,18 @@ class ThermostatZone(tc.ThermostatCommonZone):
             )
         )
 
-    def is_fanning(self):
+    def is_eco(self):
+        """Return 1 if eco relay is active, else 0."""
+        return int(
+            self.is_eco_mode()
+            and self.is_power_on()
+            and (
+                self.get_cool_setpoint_raw() < self.get_display_temp()
+                or self.get_heat_setpoint_raw() > self.get_display_temp()
+            )
+        )
+
+    def is_fanning(self) -> int:
         """Return 1 if fan relay is active, else 0."""
         return int(self.is_fan_on() and self.is_power_on())
 
@@ -441,12 +722,12 @@ class ThermostatZone(tc.ThermostatCommonZone):
         self.refresh_zone_info()
         return int(self.device_id.get_fan_speed() != "off")
 
-    def is_defrosting(self):
+    def is_defrosting(self) -> int:
         """Return 1 if defrosting is active, else 0."""
         self.refresh_zone_info()
         return int(self.device_id.get_status("defrost") == "True")
 
-    def is_standby(self):
+    def is_standby(self) -> int:
         """Return 1 if standby is active, else 0."""
         self.refresh_zone_info()
         return int(self.device_id.get_standby())

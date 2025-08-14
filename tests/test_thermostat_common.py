@@ -1,11 +1,13 @@
 """
 Tests for thermostat_common.py
 """
+
 # built-in imports
 import operator
 import pprint
 import random
 import unittest
+import unittest.mock
 
 # local imports
 from thermostatsupervisor import thermostat_api as api
@@ -69,6 +71,7 @@ class Test(utc.UnitTest):
             ["is_auto_mode", self.Zone.AUTO_MODE],
             ["is_fan_mode", self.Zone.FAN_MODE],
             ["is_off_mode", self.Zone.OFF_MODE],
+            ["is_eco_mode", self.Zone.ECO_MODE],
         ]
 
         print(f"thermostat_type={self.Zone.thermostat_type}")
@@ -172,8 +175,23 @@ class Test(utc.UnitTest):
                 "args": None,
                 "return_type": int,
             },
+            "is_eco_mode": {
+                "key": self.Zone.is_eco_mode,
+                "args": None,
+                "return_type": int,
+            },
             "is_fan_mode": {
                 "key": self.Zone.is_fan_mode,
+                "args": None,
+                "return_type": int,
+            },
+            "is_defrosting": {
+                "key": self.Zone.is_defrosting,
+                "args": None,
+                "return_type": int,
+            },
+            "is_standby": {
+                "key": self.Zone.is_standby,
                 "args": None,
                 "return_type": int,
             },
@@ -387,7 +405,7 @@ class Test(utc.UnitTest):
                 expected_mode = self.Zone.OFF_MODE
             else:
                 expected_mode = test_case
-            print(f"reverting to '{test_case}' mode, " f"expected mode={expected_mode}")
+            print(f"reverting to '{test_case}' mode, expected mode={expected_mode}")
             new_mode = self.Zone.revert_thermostat_mode(test_case)
             self.assertEqual(
                 new_mode,
@@ -412,7 +430,7 @@ class Test(utc.UnitTest):
         ppp.pprint(meas_data)
         self.assertTrue(
             isinstance(meas_data, dict),
-            f"return data is type({type(meas_data)}), " f"expected a dict",
+            f"return data is type({type(meas_data)}), expected a dict",
         )
         self.assertEqual(
             meas_data["measurements"],
@@ -506,6 +524,24 @@ class Test(utc.UnitTest):
                 "cool_deviation": True,
                 "hold_mode": True,
             },
+            "auto mode": {
+                "mode": self.Zone.AUTO_MODE,
+                "humidity": False,
+                "heat_mode": False,
+                "cool_mode": False,
+                "heat_deviation": False,
+                "cool_deviation": False,
+                "hold_mode": True,  # AUTO_MODE is controlled and has deviated setpoints
+            },
+            "fan mode": {
+                "mode": self.Zone.FAN_MODE,
+                "humidity": False,
+                "heat_mode": False,
+                "cool_mode": False,
+                "heat_deviation": False,
+                "cool_deviation": False,
+                "hold_mode": False,  # FAN_MODE is not controlled
+            },
         }
 
         self.backup_functions()
@@ -548,6 +584,181 @@ class Test(utc.UnitTest):
         finally:
             self.restore_functions()
 
+    def test_query_thermostat_zone_flag_all_deviations(self):
+        """
+        Test query_thermostat_zone function with flag_all_deviations enabled.
+
+        This tests the specific logic where flag_all_deviations=True changes
+        the operator and tolerance behavior for heat and cool modes.
+        """
+        test_cases = {
+            "heat mode with flag_all_deviations": {
+                "mode": self.Zone.HEAT_MODE,
+                "flag_all_deviations": True,
+                "expected_operator": operator.ne,
+                "expected_tolerance": 0,
+            },
+            "heat mode without flag_all_deviations": {
+                "mode": self.Zone.HEAT_MODE,
+                "flag_all_deviations": False,
+                "expected_operator": operator.gt,
+                "expected_tolerance": self.Zone.tolerance_degrees_default,
+            },
+            "cool mode with flag_all_deviations": {
+                "mode": self.Zone.COOL_MODE,
+                "flag_all_deviations": True,
+                "expected_operator": operator.ne,
+                "expected_tolerance": 0,
+            },
+            "cool mode without flag_all_deviations": {
+                "mode": self.Zone.COOL_MODE,
+                "flag_all_deviations": False,
+                "expected_operator": operator.lt,
+                "expected_tolerance": self.Zone.tolerance_degrees_default,
+            },
+        }
+
+        self.backup_functions()
+        try:
+            for test_case_name, test_case in test_cases.items():
+                print(f"Testing: {test_case_name}")
+
+                # Mock the mode
+                self.mock_set_mode(test_case["mode"])
+
+                # Reset tolerance_degrees to default before each test
+                self.Zone.tolerance_degrees = self.Zone.tolerance_degrees_default
+
+                # Set flag_all_deviations and call query_thermostat_zone directly
+                self.Zone.flag_all_deviations = test_case["flag_all_deviations"]
+                self.Zone.query_thermostat_zone()
+
+                # Verify the operator was set correctly
+                self.assertEqual(
+                    self.Zone.operator,
+                    test_case["expected_operator"],
+                    f"Test case '{test_case_name}': operator mismatch. "
+                    f"Expected {test_case['expected_operator']}, "
+                    f"got {self.Zone.operator}",
+                )
+
+                # Verify tolerance was set correctly
+                self.assertEqual(
+                    self.Zone.tolerance_degrees,
+                    test_case["expected_tolerance"],
+                    f"Test case '{test_case_name}': tolerance_degrees mismatch. "
+                    f"Expected {test_case['expected_tolerance']}, "
+                    f"got {self.Zone.tolerance_degrees}",
+                )
+
+                # Verify the current_mode was set correctly
+                self.assertEqual(
+                    self.Zone.current_mode,
+                    test_case["mode"],
+                    f"Test case '{test_case_name}': current_mode mismatch. "
+                    f"Expected {test_case['mode']}, "
+                    f"got {self.Zone.current_mode}",
+                )
+
+        finally:
+            self.restore_functions()
+
+    def test_query_thermostat_zone_auto_and_fan_modes(self):
+        """
+        Test query_thermostat_zone function specifically for AUTO_MODE and FAN_MODE.
+
+        These modes have specific parameter settings that need to be verified.
+        """
+        test_cases = {
+            self.Zone.AUTO_MODE: {
+                "expected_current_setpoint": util.BOGUS_INT,
+                "expected_schedule_setpoint": util.BOGUS_INT,
+                "expected_tolerance_sign": 1,
+                "expected_operator": operator.ne,
+                "expected_global_limit": util.BOGUS_INT,
+                "expected_global_operator": operator.ne,
+                "expected_revert_func": self.Zone.function_not_supported,
+                "expected_get_func": self.Zone.function_not_supported,
+            },
+            self.Zone.FAN_MODE: {
+                "expected_current_setpoint": util.BOGUS_INT,
+                "expected_schedule_setpoint": util.BOGUS_INT,
+                "expected_tolerance_sign": 1,
+                "expected_operator": operator.ne,
+                "expected_global_limit": util.BOGUS_INT,
+                "expected_global_operator": operator.ne,
+                "expected_revert_func": self.Zone.function_not_supported,
+                "expected_get_func": self.Zone.function_not_supported,
+            },
+        }
+
+        self.backup_functions()
+        try:
+            for mode, expected_values in test_cases.items():
+                print(f"Testing query_thermostat_zone for {mode}")
+
+                # Mock the mode
+                self.mock_set_mode(mode)
+
+                # Call query_thermostat_zone
+                self.Zone.query_thermostat_zone()
+
+                # Verify all expected parameter values
+                self.assertEqual(
+                    self.Zone.current_mode, mode, f"Mode {mode}: current_mode mismatch"
+                )
+
+                self.assertEqual(
+                    self.Zone.current_setpoint,
+                    expected_values["expected_current_setpoint"],
+                    f"Mode {mode}: current_setpoint mismatch",
+                )
+
+                self.assertEqual(
+                    self.Zone.schedule_setpoint,
+                    expected_values["expected_schedule_setpoint"],
+                    f"Mode {mode}: schedule_setpoint mismatch",
+                )
+
+                self.assertEqual(
+                    self.Zone.tolerance_sign,
+                    expected_values["expected_tolerance_sign"],
+                    f"Mode {mode}: tolerance_sign mismatch",
+                )
+
+                self.assertEqual(
+                    self.Zone.operator,
+                    expected_values["expected_operator"],
+                    f"Mode {mode}: operator mismatch",
+                )
+
+                self.assertEqual(
+                    self.Zone.global_limit,
+                    expected_values["expected_global_limit"],
+                    f"Mode {mode}: global_limit mismatch",
+                )
+
+                self.assertEqual(
+                    self.Zone.global_operator,
+                    expected_values["expected_global_operator"],
+                    f"Mode {mode}: global_operator mismatch",
+                )
+
+                self.assertEqual(
+                    self.Zone.revert_setpoint_func,
+                    expected_values["expected_revert_func"],
+                    f"Mode {mode}: revert_setpoint_func mismatch",
+                )
+
+                self.assertEqual(
+                    self.Zone.get_setpoint_func,
+                    expected_values["expected_get_func"],
+                    f"Mode {mode}: get_setpoint_func mismatch",
+                )
+
+        finally:
+            self.restore_functions()
+
     def mock_set_mode(self, mock_mode):
         """
         Mock heat setting by overriding switch position function.
@@ -565,6 +776,7 @@ class Test(utc.UnitTest):
             self.Zone.is_auto_mode = lambda *_, **__: False
             self.Zone.is_fan_mode = lambda *_, **__: False
             self.Zone.is_off_mode = lambda *_, **__: False
+            self.Zone.is_eco_mode = lambda *_, **__: False
             self.Zone.current_mode = self.Zone.HEAT_MODE
         elif mock_mode == self.Zone.COOL_MODE:
             self.Zone.is_heat_mode = lambda *_, **__: False
@@ -573,6 +785,7 @@ class Test(utc.UnitTest):
             self.Zone.is_auto_mode = lambda *_, **__: False
             self.Zone.is_fan_mode = lambda *_, **__: False
             self.Zone.is_off_mode = lambda *_, **__: False
+            self.Zone.is_eco_mode = lambda *_, **__: False
             self.Zone.current_mode = self.Zone.COOL_MODE
         elif mock_mode == self.Zone.DRY_MODE:
             self.Zone.is_heat_mode = lambda *_, **__: False
@@ -581,6 +794,7 @@ class Test(utc.UnitTest):
             self.Zone.is_auto_mode = lambda *_, **__: False
             self.Zone.is_fan_mode = lambda *_, **__: False
             self.Zone.is_off_mode = lambda *_, **__: False
+            self.Zone.is_eco_mode = lambda *_, **__: False
             self.Zone.current_mode = self.Zone.DRY_MODE
         elif mock_mode == self.Zone.AUTO_MODE:
             self.Zone.is_heat_mode = lambda *_, **__: False
@@ -589,6 +803,7 @@ class Test(utc.UnitTest):
             self.Zone.is_auto_mode = lambda *_, **__: True
             self.Zone.is_fan_mode = lambda *_, **__: False
             self.Zone.is_off_mode = lambda *_, **__: False
+            self.Zone.is_eco_mode = lambda *_, **__: False
             self.Zone.current_mode = self.Zone.AUTO_MODE
         elif mock_mode == self.Zone.FAN_MODE:
             self.Zone.is_heat_mode = lambda *_, **__: False
@@ -597,6 +812,7 @@ class Test(utc.UnitTest):
             self.Zone.is_auto_mode = lambda *_, **__: False
             self.Zone.is_fan_mode = lambda *_, **__: True
             self.Zone.is_off_mode = lambda *_, **__: False
+            self.Zone.is_eco_mode = lambda *_, **__: False
             self.Zone.current_mode = self.Zone.FAN_MODE
         elif mock_mode == self.Zone.OFF_MODE:
             self.Zone.is_heat_mode = lambda *_, **__: False
@@ -605,7 +821,17 @@ class Test(utc.UnitTest):
             self.Zone.is_auto_mode = lambda *_, **__: False
             self.Zone.is_fan_mode = lambda *_, **__: False
             self.Zone.is_off_mode = lambda *_, **__: True
+            self.Zone.is_eco_mode = lambda *_, **__: False
             self.Zone.current_mode = self.Zone.OFF_MODE
+        elif mock_mode == self.Zone.ECO_MODE:
+            self.Zone.is_heat_mode = lambda *_, **__: False
+            self.Zone.is_cool_mode = lambda *_, **__: False
+            self.Zone.is_dry_mode = lambda *_, **__: False
+            self.Zone.is_auto_mode = lambda *_, **__: False
+            self.Zone.is_fan_mode = lambda *_, **__: False
+            self.Zone.is_off_mode = lambda *_, **__: False
+            self.Zone.is_eco_mode = lambda *_, **__: True
+            self.Zone.current_mode = self.Zone.ECO_MODE
         else:
             self.fail(f"mock mode '{mock_mode}' is not supported")
 
@@ -680,7 +906,6 @@ class Test(utc.UnitTest):
         finally:
             self.Zone.get_system_switch_position = self.switch_position_backup
 
-    @unittest.skipIf(not utc.ENABLE_SHT31_TESTS, "sht31 tests are disabled")
     def test_thermostat_basic_checkout(self):
         """Verify thermostat_basic_checkout()."""
 
@@ -700,15 +925,23 @@ class Test(utc.UnitTest):
                 api.uip.zone_name, api.input_flds.zone
             )
             mod = api.load_hardware_library(thermostat_type)
-            thermostat, zone = tc.thermostat_basic_checkout(
-                thermostat_type, zone_number, mod.ThermostatClass, mod.ThermostatZone
-            )
+
+            # Mock the environment variable verification to avoid requiring credentials
+            # for this unit test which should be truly loopback
+            with unittest.mock.patch.object(
+                api, "verify_required_env_variables", return_value=True
+            ):
+                thermostat, zone_number = tc.thermostat_basic_checkout(
+                    thermostat_type,
+                    zone_number,
+                    mod.ThermostatClass,
+                    mod.ThermostatZone,
+                )
             print(f"thermotat={type(thermostat)}")
-            print(f"thermotat={type(zone)}")
+            print(f"thermotat={type(zone_number)}")
         finally:
             self.Zone.get_system_switch_position = self.switch_position_backup
 
-    @unittest.skipIf(not utc.ENABLE_SHT31_TESTS, "sht31 tests are disabled")
     def test_print_select_data_from_all_zones(self):
         """Verify print_select_data_from_all_zones()."""
 
@@ -728,14 +961,20 @@ class Test(utc.UnitTest):
                 api.uip.zone_name, api.input_flds.zone
             )
             mod = api.load_hardware_library(thermostat_type)
-            tc.print_select_data_from_all_zones(
-                thermostat_type,
-                [zone_number],
-                mod.ThermostatClass,
-                mod.ThermostatZone,
-                display_wifi=True,
-                display_battery=True,
-            )
+
+            # Mock the environment variable verification to avoid requiring credentials
+            # for this unit test which should be truly loopback
+            with unittest.mock.patch.object(
+                api, "verify_required_env_variables", return_value=True
+            ):
+                tc.print_select_data_from_all_zones(
+                    thermostat_type,
+                    [zone_number],
+                    mod.ThermostatClass,
+                    mod.ThermostatZone,
+                    display_wifi=True,
+                    display_battery=True,
+                )
         finally:
             self.Zone.get_system_switch_position = self.switch_position_backup
 
@@ -834,6 +1073,146 @@ class Test(utc.UnitTest):
         """Verify update_runtime_parameters()."""
         # TODDO - set and verify runtime parameter overrides
         self.Zone.update_runtime_parameters()
+
+    def test_set_mode_enhanced_functionality(self):
+        """
+        Test the enhanced set_mode method functionality.
+
+        Verify that set_mode:
+        1. Returns True for valid modes
+        2. Returns False for invalid modes
+        3. Applies scheduled setpoints for HEAT_MODE and COOL_MODE
+        4. Handles other modes appropriately
+        """
+        # Mock scheduled setpoint functions to return specific values
+        test_heat_setpoint = 70.0
+        test_cool_setpoint = 75.0
+
+        original_get_schedule_heat_sp = self.Zone.get_schedule_heat_sp
+        original_get_schedule_cool_sp = self.Zone.get_schedule_cool_sp
+        original_set_heat_setpoint = self.Zone.set_heat_setpoint
+        original_set_cool_setpoint = self.Zone.set_cool_setpoint
+
+        # Track setpoint calls
+        heat_setpoint_called_with = []
+        cool_setpoint_called_with = []
+
+        def mock_get_schedule_heat_sp():
+            return test_heat_setpoint
+
+        def mock_get_schedule_cool_sp():
+            return test_cool_setpoint
+
+        def mock_set_heat_setpoint(temp):
+            heat_setpoint_called_with.append(temp)
+
+        def mock_set_cool_setpoint(temp):
+            cool_setpoint_called_with.append(temp)
+
+        try:
+            # Replace methods with mocks
+            self.Zone.get_schedule_heat_sp = mock_get_schedule_heat_sp
+            self.Zone.get_schedule_cool_sp = mock_get_schedule_cool_sp
+            self.Zone.set_heat_setpoint = mock_set_heat_setpoint
+            self.Zone.set_cool_setpoint = mock_set_cool_setpoint
+
+            # Test invalid mode
+            result = self.Zone.set_mode("INVALID_MODE")
+            self.assertFalse(result, "set_mode should return False for invalid mode")
+
+            # Test HEAT_MODE - should return True and set heat setpoint
+            heat_setpoint_called_with.clear()
+            result = self.Zone.set_mode(self.Zone.HEAT_MODE)
+            self.assertTrue(result, "set_mode should return True for HEAT_MODE")
+            self.assertEqual(
+                len(heat_setpoint_called_with),
+                1,
+                "set_heat_setpoint should be called once",
+            )
+            self.assertEqual(
+                heat_setpoint_called_with[0],
+                int(test_heat_setpoint),
+                f"Heat setpoint should be {int(test_heat_setpoint)}",
+            )
+
+            # Test COOL_MODE - should return True and set cool setpoint
+            cool_setpoint_called_with.clear()
+            result = self.Zone.set_mode(self.Zone.COOL_MODE)
+            self.assertTrue(result, "set_mode should return True for COOL_MODE")
+            self.assertEqual(
+                len(cool_setpoint_called_with),
+                1,
+                "set_cool_setpoint should be called once",
+            )
+            self.assertEqual(
+                cool_setpoint_called_with[0],
+                int(test_cool_setpoint),
+                f"Cool setpoint should be {int(test_cool_setpoint)}",
+            )
+
+            # Test other valid modes - should return True without setpoint changes
+            for mode in [
+                self.Zone.AUTO_MODE,
+                self.Zone.OFF_MODE,
+                self.Zone.FAN_MODE,
+                self.Zone.DRY_MODE,
+                self.Zone.ECO_MODE,
+                self.Zone.UNKNOWN_MODE,
+            ]:
+                heat_setpoint_called_with.clear()
+                cool_setpoint_called_with.clear()
+                result = self.Zone.set_mode(mode)
+                self.assertTrue(result, f"set_mode should return True for {mode}")
+                self.assertEqual(
+                    len(heat_setpoint_called_with),
+                    0,
+                    f"Heat setpoint should not be called for {mode}",
+                )
+                self.assertEqual(
+                    len(cool_setpoint_called_with),
+                    0,
+                    f"Cool setpoint should not be called for {mode}",
+                )
+
+            # Test with bogus scheduled setpoints (should still return True)
+            def mock_get_bogus_heat_sp():
+                return util.BOGUS_INT
+
+            def mock_get_bogus_cool_sp():
+                return util.BOGUS_INT
+
+            self.Zone.get_schedule_heat_sp = mock_get_bogus_heat_sp
+            self.Zone.get_schedule_cool_sp = mock_get_bogus_cool_sp
+
+            heat_setpoint_called_with.clear()
+            cool_setpoint_called_with.clear()
+
+            result = self.Zone.set_mode(self.Zone.HEAT_MODE)
+            self.assertTrue(
+                result, "set_mode should return True even with bogus heat SP"
+            )
+            self.assertEqual(
+                len(heat_setpoint_called_with),
+                0,
+                "Heat setpoint should not be called with bogus setpoint",
+            )
+
+            result = self.Zone.set_mode(self.Zone.COOL_MODE)
+            self.assertTrue(
+                result, "set_mode should return True even with bogus cool SP"
+            )
+            self.assertEqual(
+                len(cool_setpoint_called_with),
+                0,
+                "Cool setpoint should not be called with bogus setpoint",
+            )
+
+        finally:
+            # Restore original methods
+            self.Zone.get_schedule_heat_sp = original_get_schedule_heat_sp
+            self.Zone.get_schedule_cool_sp = original_get_schedule_cool_sp
+            self.Zone.set_heat_setpoint = original_set_heat_setpoint
+            self.Zone.set_cool_setpoint = original_set_cool_setpoint
 
 
 if __name__ == "__main__":

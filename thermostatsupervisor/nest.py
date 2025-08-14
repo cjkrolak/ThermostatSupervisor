@@ -5,6 +5,7 @@ pypi ref: https://pypi.org/project/python-google-nest/
 github ref: https://github.com/axlan/python-nest/
 API ref: https://developers.google.com/nest/device-access/traits
 """
+
 # built-in libraries
 import json
 import os
@@ -38,7 +39,7 @@ else:
 
 
 class ThermostatClass(tc.ThermostatCommon):
-    """Nest thermostat functions."""
+    """Nest Thermostat class."""
 
     def __init__(self, zone, verbose=True):
         """
@@ -83,6 +84,9 @@ class ThermostatClass(tc.ThermostatCommon):
                 # project_id is the project id UUID
                 self.project_id = data["web"]["dac_project_id"]
 
+        # check if token cache should be auto-generated from environment variables
+        self._create_token_cache_from_env_if_needed()
+
         # establish thermostat object
         self.thermostat_obj = nest.Nest(
             project_id=self.project_id,
@@ -106,6 +110,65 @@ class ThermostatClass(tc.ThermostatCommon):
         self.device_id = self.get_target_zone_id(self.zone_number)
         self.serial_number = None  # will be populated when unit is queried.
 
+    def _create_token_cache_from_env_if_needed(self):
+        """
+        Create token cache file from environment variables if it doesn't exist
+        and all required token environment variables are present.
+
+        This allows automation of initial authorization by pre-seeding
+        the token cache from environment variables, eliminating the need
+        for manual URL authorization prompts.
+        """
+        # Check if token cache file already exists
+        if os.path.exists(self.access_token_cache_file):
+            if self.verbose:
+                print(
+                    f"Token cache file already exists: "
+                    f"{self.access_token_cache_file}"
+                )
+            return
+
+        # Get token data from environment variables
+        access_token = os.environ.get("NEST_ACCESS_TOKEN")
+        refresh_token = os.environ.get("NEST_REFRESH_TOKEN")
+        expires_in = os.environ.get("NEST_TOKEN_EXPIRES_IN")
+
+        # Check if all required token environment variables are present
+        if not (access_token and refresh_token):
+            if self.verbose:
+                print(
+                    "Token cache file not found and token environment "
+                    "variables not available"
+                )
+                print("Manual authorization will be required on first run")
+            return
+
+        # Create token data structure
+        token_data = {
+            "access_token": access_token,
+            "refresh_token": refresh_token,
+            "expires_in": int(expires_in) if expires_in else 3600,
+            "scope": ["https://www.googleapis.com/auth/sdm.service"],
+            "token_type": "Bearer",
+        }
+
+        # Calculate and add expires_at timestamp
+        # Set to current time + expires_in seconds (allowing immediate refresh
+        # if needed)
+        token_data["expires_at"] = time.time() + token_data["expires_in"]
+
+        try:
+            # Create token cache file
+            with open(self.access_token_cache_file, "w", encoding="utf-8") as f:
+                json.dump(token_data, f, indent=4)
+            print(
+                f"Created token cache file from environment variables: "
+                f"{self.access_token_cache_file}"
+            )
+        except Exception as e:
+            print(f"ERROR: Failed to create token cache file: {e}")
+            # Don't raise exception - fall back to manual authorization
+
     def get_device_data(self):
         """
         get device data from network.
@@ -126,7 +189,6 @@ class ThermostatClass(tc.ThermostatCommon):
             print(traceback.format_exc())
             raise
         # TODO is there a chance that meta data changes?
-        print(f"DEBUG: nest devices: {self.devices}, type={type(self.devices)}")
         return self.devices
 
     def refresh_oauth_token(self):
@@ -162,11 +224,25 @@ class ThermostatClass(tc.ThermostatCommon):
         r = requests.post(authorization_url, data=params, timeout=10)
 
         if r.ok:
-            self.refresh_token = r.json()["access_token"]
+            response_data = r.json()
+
+            # Update access_token (this should be used for API calls)
+            self.refresh_token = response_data["access_token"]
 
             # update the token file
             print("updating access token file...")
-            data["refresh_token"] = r.json()["access_token"]
+            # Store the new access_token
+            data["access_token"] = response_data["access_token"]
+
+            # Only update refresh_token if a new one is provided in the response
+            # Google typically doesn't provide a new refresh_token on every refresh
+            if "refresh_token" in response_data:
+                data["refresh_token"] = response_data["refresh_token"]
+                print("received new refresh token, updating cache...")
+
+            # Update expiration time if provided
+            if "expires_in" in response_data:
+                data["expires_in"] = response_data["expires_in"]
 
             # Write JSON back to file
             with open(self.access_token_cache_file, "w", encoding="utf-8") as f:
@@ -225,14 +301,13 @@ class ThermostatClass(tc.ThermostatCommon):
 
         inputs:
             zone(): specified zone
-            retry(bool): retry flag
+            retry(bool): if True will retry with extended retry mechanism
         returns:
             (dict): dictionary of meta data.
         """
-        del retry  # not used
-        return self.get_metadata(zone)
+        return self.get_metadata(zone, retry=retry)
 
-    def get_metadata(self, zone=None, trait=None, parameter=None):
+    def get_metadata(self, zone=None, trait=None, parameter=None, retry=False):
         """Get thermostat meta data for zone.
 
         inputs:
@@ -240,41 +315,66 @@ class ThermostatClass(tc.ThermostatCommon):
             trait(str): trait or parent key, if None will assume a non-nested
                         dict.
             parameter(str): target parameter, if None will return all.
+            retry(bool): if True will retry with extended retry mechanism
         returns:
             (dict): dictionary of meta data.
         """
-        # if zone input is str assume it is zone name, convert to zone_num.
-        if isinstance(zone, str):
-            zone_num = util.get_key_from_value(nest_config.metadata, zone)
-        elif isinstance(zone, int):
-            zone_num = zone
-        else:
-            raise TypeError(
-                f"type {type(zone)} not supported for zone input"
-                "parmaeter in get_metadata function"
-            )
 
-        try:
-            meta_data = self.devices[zone_num].traits
-        except IndexError:
-            raise IndexError(
-                f"zone {zone_num} not found in nest device list, "
-                f"device list={self.devices}"
-            )
-        # return all meta data for zone
-        if parameter is None:
-            return meta_data
+        def _get_metadata_internal():
+            # if zone input is str assume it is zone name, convert to zone_num.
+            if isinstance(zone, str):
+                zone_num = util.get_key_from_value(nest_config.metadata, zone)
+            elif isinstance(zone, int):
+                zone_num = zone
+            else:
+                raise TypeError(
+                    f"type {type(zone)} not supported for zone input"
+                    "parmaeter in get_metadata function"
+                )
 
-        # trait must be specified if parameter is specified.
-        if trait is None:
-            raise NotImplementedError(
-                "nest get_metadata() requires a trait "
-                f"parameter along when querying "
-                f"parameter='{parameter}'"
+            try:
+                meta_data = self.devices[zone_num].traits
+            except IndexError as exc:
+                raise IndexError(
+                    f"zone {zone_num} not found in nest device list, "
+                    f"device list={self.devices}"
+                ) from exc
+            # return all meta data for zone
+            if parameter is None:
+                return meta_data
+
+            # trait must be specified if parameter is specified.
+            if trait is None:
+                raise NotImplementedError(
+                    "nest get_metadata() requires a trait "
+                    f"parameter along when querying "
+                    f"parameter='{parameter}'"
+                )
+            else:
+                # return parameter
+                return meta_data[trait][parameter]
+
+        if retry:
+            # Use standardized extended retry mechanism
+            return util.execute_with_extended_retries(
+                func=_get_metadata_internal,
+                thermostat_type="Nest",
+                zone_name=str(zone),
+                number_of_retries=5,
+                initial_retry_delay_sec=60,
+                exception_types=(
+                    TypeError,
+                    IndexError,
+                    KeyError,
+                    NotImplementedError,
+                    ConnectionError,
+                    TimeoutError,
+                ),
+                email_notification=None,  # Nest doesn't import email_notification
             )
         else:
-            # return parameter
-            return meta_data[trait][parameter]
+            # Single attempt without retry
+            return _get_metadata_internal()
 
     def print_all_thermostat_metadata(self, zone):
         """Print all metadata for zone to the screen.
@@ -288,11 +388,7 @@ class ThermostatClass(tc.ThermostatCommon):
 
 
 class ThermostatZone(tc.ThermostatCommonZone):
-    """
-    KumoCloud single zone on local network.
-
-    Class needs to be updated for multi-zone support.
-    """
+    """Nest Thermostat Zone class."""
 
     def __init__(self, Thermostat_obj, verbose=True):
         """
@@ -319,6 +415,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         self.system_switch_position[tc.ThermostatCommonZone.OFF_MODE] = "OFF"
         self.system_switch_position[tc.ThermostatCommonZone.DRY_MODE] = "not supported"
         self.system_switch_position[tc.ThermostatCommonZone.AUTO_MODE] = "HEATCOOL"
+        self.system_switch_position[tc.ThermostatCommonZone.ECO_MODE] = "MANUAL_ECO"
 
         # zone info
         self.verbose = verbose
@@ -499,6 +596,21 @@ class ThermostatZone(tc.ThermostatCommonZone):
             == self.system_switch_position[tc.ThermostatCommonZone.AUTO_MODE]
         )
 
+    def is_eco_mode(self) -> int:
+        """
+        Refresh the cached zone information and return the eco mode.
+
+        inputs:
+            None
+        returns:
+            (int): auto mode, 1=enabled, 0=disabled.
+        """
+        self.refresh_zone_info()
+        return int(
+            self.get_trait("ThermostatEco")["mode"]
+            == self.system_switch_position[tc.ThermostatCommonZone.ECO_MODE]
+        )
+
     def is_off_mode(self) -> int:
         """
         Refresh the cached zone information and return the off mode.
@@ -514,21 +626,21 @@ class ThermostatZone(tc.ThermostatCommonZone):
             == self.system_switch_position[tc.ThermostatCommonZone.OFF_MODE]
         )
 
-    def is_heating(self):
+    def is_heating(self) -> int:
         """Return 1 if heating relay is active, else 0."""
         self.refresh_zone_info()
-        return int(self.get_trait("ThermostatHvac")["status"] == "HEATTING")
+        return int(self.get_trait("ThermostatHvac")["status"] == "HEATING")
 
-    def is_cooling(self):
+    def is_cooling(self) -> int:
         """Return 1 if cooling relay is active, else 0."""
         self.refresh_zone_info()
         return int(self.get_trait("ThermostatHvac")["status"] == "COOLING")
 
-    def is_drying(self):
+    def is_drying(self) -> int:
         """Return 1 if drying relay is active, else 0."""
         return 0  # not applicable for nest
 
-    def is_auto(self):
+    def is_auto(self) -> int:
         """Return 1 if auto relay is active, else 0."""
         self.refresh_zone_info()
         return int(
@@ -536,17 +648,25 @@ class ThermostatZone(tc.ThermostatCommonZone):
             and self.is_auto_mode()
         )
 
-    def is_fanning(self):
+    def is_eco(self) -> int:
+        """Return 1 if eco relay is active, else 0."""
+        self.refresh_zone_info()
+        return int(
+            self.get_trait("ThermostatMode")["mode"] in ("HEAT", "COOL", "HEATCOOL")
+            and self.is_eco_mode()
+        )
+
+    def is_fanning(self) -> int:
         """Return 1 if fan relay is active, else 0."""
         self.refresh_zone_info()
         return int(self.get_trait("Fan")["timerMode"] == "ON")
 
-    def is_power_on(self):
+    def is_power_on(self) -> int:
         """Return 1 if power relay is active, else 0."""
         self.refresh_zone_info()
         return int(self.get_trait("Connectivity")["status"] == "ONLINE")
 
-    def is_fan_on(self):
+    def is_fan_on(self) -> int:
         """Return 1 if fan relay is active, else 0."""
         self.refresh_zone_info()
         return int(self.get_trait("Fan")["timerMode"] == "ON")
@@ -649,14 +769,23 @@ class ThermostatZone(tc.ThermostatCommonZone):
         """
         Get the safety temperature setting.
 
+        Since Google Nest API does not expose safety temperature settings,
+        this method returns configured safety temperature values from
+        nest_config.py. Users should adjust these values in the config
+        based on their comfort and safety requirements.
+
         inputs:
             None
         returns:
-            (int): cooling set point in °F.
+            (int): safety temperature in °F. Returns heat safety temperature
+                   when in heat/auto mode, cool safety temperature otherwise.
         """
-        return NotImplementedError(
-            "Safety Temperature is not yet available through nest API"
-        )
+        # Return appropriate safety temperature based on current mode
+        if self.is_heat_mode() or self.is_auto_mode():
+            return int(nest_config.SAFETY_HEAT_TEMPERATURE)
+        else:
+            # Default to cool safety temperature for cool/off/dry modes
+            return int(nest_config.SAFETY_COOL_TEMPERATURE)
 
     def get_is_invacation_hold_mode(self) -> bool:  # used
         """

@@ -4,6 +4,7 @@ Thermostat API.
 This file should be updated for any new thermostats supported and
 any changes to thermostat configs.
 """
+
 # built ins
 import munch
 
@@ -12,6 +13,7 @@ from thermostatsupervisor import blink_config
 from thermostatsupervisor import emulator_config
 from thermostatsupervisor import honeywell_config
 from thermostatsupervisor import kumocloud_config
+from thermostatsupervisor import kumocloudv3_config
 from thermostatsupervisor import kumolocal_config
 from thermostatsupervisor import mmm_config
 from thermostatsupervisor import nest_config
@@ -23,12 +25,15 @@ from thermostatsupervisor import utilities as util
 DEFAULT_THERMOSTAT = emulator_config.ALIAS
 DEFAULT_ZONE_NAME = util.default_parent_key
 
+KEY_MISSING_SUFFIX = "_KEY_MISSING>"
+
 # list of thermostat config modules supported
 config_modules = [
     blink_config,
     emulator_config,
     honeywell_config,
     kumocloud_config,
+    kumocloudv3_config,
     kumolocal_config,
     mmm_config,
     nest_config,
@@ -47,12 +52,14 @@ for config_module in config_modules:
 # dictionary of required env variables for each thermostat type
 thermostats = {}
 for config_module in config_modules:
+    # Use required_env_variables if explicitly defined, otherwise use env_variables
+    # This allows consolidation of duplicate env dicts while preserving special cases
+    required_env_vars = getattr(config_module, "required_env_variables", None)
+    if required_env_vars is None:
+        required_env_vars = getattr(config_module, "env_variables", {})
+
     thermostats.update(
-        {
-            config_module.ALIAS: {
-                "required_env_variables": config_module.required_env_variables
-            }
-        }
+        {config_module.ALIAS: {"required_env_variables": required_env_vars}}
     )
 
 
@@ -84,15 +91,18 @@ class UserInputs(util.UserInputs):
         thermostat_type=DEFAULT_THERMOSTAT,
         zone_name=DEFAULT_ZONE_NAME,
     ):
-        """
-        UserInputs constructor for thermostat_api.
+        """Initialize UserInputs for thermostat_api.
 
-        inputs:
-            argv_list(list): override runtime values.
-            help_description(str): description field for help text.
-            suppress_warnings(bool): True to suppress warning msgs.
-            thermostat_type(str): thermostat type.
-            zone_name(str): thermostat zone name (e.g. 'living room')
+        Args:
+            argv_list (list, optional): Override runtime values. Defaults to None.
+            help_description (str, optional): Description field for help text.
+                Defaults to None.
+            suppress_warnings (bool, optional): True to suppress warning messages.
+                Defaults to False.
+            thermostat_type (str, optional): Thermostat type alias.
+                Defaults to DEFAULT_THERMOSTAT.
+            zone_name (str, optional): Thermostat zone name (e.g. 'living room').
+                Defaults to DEFAULT_ZONE_NAME.
         """
         self.argv_list = argv_list
         self.help_description = help_description
@@ -104,11 +114,11 @@ class UserInputs(util.UserInputs):
         super().__init__(argv_list, help_description, suppress_warnings, zone_name)
 
     def initialize_user_inputs(self, parent_keys=None):
-        """
-        Populate user_inputs dict.
+        """Populate user_inputs dictionary with thermostat-specific parameters.
 
-        inputs:
-            parent_keys(list): list of parent keys
+        Args:
+            parent_keys (list, optional): List of parent keys to initialize.
+                Defaults to [self.default_parent_key].
         """
         if parent_keys is None:
             parent_keys = [self.default_parent_key]
@@ -219,117 +229,148 @@ class UserInputs(util.UserInputs):
         This function expands each input parameter list to match
         the length of the thermostat parameter field.
         """
-        # initializ section list to single item list of one thermostat
-        self.parent_keys = [self.default_parent_key]  # initialize
+        self._initialize_parent_keys()
+        input_file = self._get_input_file()
 
-        # file input will override any type of individual inputs
-        input_file = self.get_user_inputs(
-            self.default_parent_key, input_flds.input_file
-        )
         if input_file is not None:
-            # aise Exception("dynamic_update_user_inputs found")
-            self.using_input_file = True
-            self.parse_input_file(input_file)
-            # scan all sections in INI file in reversed order so that
-            # user_inputs contains the first key after casting.
-            # section = list(self.user_inputs_file.keys())[0]  # use first key
-            self.parent_keys = list(self.user_inputs_file.keys())
-            # reinit user_inputs dict based on INI file structure
-            self.initialize_user_inputs(self.parent_keys)
-            # populate user_inputs from user_inputs_file
-            for section in self.parent_keys:
-                for fld in input_flds:
-                    if fld == input_flds.input_file:
-                        # input file field will not be in the file
-                        continue
-                    if self.user_inputs[section][fld]["type"] in [int, float, str]:
-                        # cast data type when reading value
-                        try:
-                            self.user_inputs[section][fld]["value"] = self.user_inputs[
-                                section
-                            ][fld]["type"](
-                                self.user_inputs_file[section].get(input_flds[fld])
-                            )
-                        except Exception:
-                            print(f"exception in section={section}, fld={fld}")
-                            raise
-                        # cast original input value in user_inputs_file as well
-                        self.user_inputs_file[section][
-                            input_flds[fld]
-                        ] = self.user_inputs[section][fld]["value"]
-                    else:
-                        # no casting, just read raw from list
-                        self.user_inputs[section][fld]["value"] = self.user_inputs_file[
-                            section
-                        ].get(input_flds[fld])
-            # for now set zone name to first zone in file
-            self.zone_name = self.parent_keys[0]
+            self._process_input_file(input_file)
+        elif self._has_populated_user_inputs():
+            self._process_argv_inputs()
+        else:
+            self._handle_unpopulated_inputs()
 
-        # update user_inputs parent_key with zone_name
-        # if user_inputs has already been populated
-        elif (
+        self._finalize_thermostat_configuration()
+
+    def _initialize_parent_keys(self):
+        """Initialize section list to single item list of one thermostat."""
+        self.parent_keys = [self.default_parent_key]
+
+    def _get_input_file(self):
+        """Get input file from user inputs if specified."""
+        return self.get_user_inputs(self.default_parent_key, input_flds.input_file)
+
+    def _process_input_file(self, input_file):
+        """Process input file and populate user inputs from file."""
+        self.using_input_file = True
+        self.parse_input_file(input_file)
+        self.parent_keys = list(self.user_inputs_file.keys())
+        self.initialize_user_inputs(self.parent_keys)
+        self._populate_from_file()
+        self.zone_name = self.parent_keys[0]
+
+    def _populate_from_file(self):
+        """Populate user_inputs from user_inputs_file."""
+        for section in self.parent_keys:
+            for fld in input_flds:
+                if fld == input_flds.input_file:
+                    continue  # input file field will not be in the file
+
+                if self.user_inputs[section][fld]["type"] in [int, float, str]:
+                    self._cast_field_value(section, fld)
+                else:
+                    self._read_raw_field_value(section, fld)
+
+    def _cast_field_value(self, section, fld):
+        """Cast data type when reading value from file."""
+        try:
+            cast_value = self.user_inputs[section][fld]["type"](
+                self.user_inputs_file[section].get(input_flds[fld])
+            )
+            self.user_inputs[section][fld]["value"] = cast_value
+            # cast original input value in user_inputs_file as well
+            self.user_inputs_file[section][input_flds[fld]] = cast_value
+        except Exception:
+            print(f"exception in section={section}, fld={fld}")
+            raise
+
+    def _read_raw_field_value(self, section, fld):
+        """Read raw value without casting from file."""
+        self.user_inputs[section][fld]["value"] = self.user_inputs_file[section].get(
+            input_flds[fld]
+        )
+
+    def _has_populated_user_inputs(self):
+        """Check if user_inputs has already been populated."""
+        return (
             self.get_user_inputs(
                 list(self.user_inputs.keys())[0], input_flds.thermostat_type
             )
             is not None
-        ):
-            # argv inputs, only currenty supporting 1 zone
-            # verify only 1 parent key exists
-            current_keys = list(self.user_inputs.keys())
-            if len(current_keys) != 1:
-                raise KeyError(
-                    f"user_input keys={current_keys}, expected only" " 1 key"
-                )
+        )
 
-            # update parent key to be <zone_name>_<zone_number>
-            current_key = current_keys[0]
-            new_key = (
-                self.get_user_inputs(current_key, input_flds.thermostat_type)
-                + "_"
-                + str(self.get_user_inputs(current_key, input_flds.zone))
-            )
-            self.user_inputs[new_key] = self.user_inputs.pop(current_key)
+    def _process_argv_inputs(self):
+        """Process argv inputs (only currently supporting 1 zone)."""
+        current_keys = list(self.user_inputs.keys())
+        if len(current_keys) != 1:
+            raise KeyError(f"user_input keys={current_keys}, expected only 1 key")
 
-            # update paremeters for new parent keys
-            self.zone_name = new_key  # set Zone name
-            self.default_parent_key = new_key
-            self.parent_keys = list(self.user_inputs.keys())
-        else:
-            runtime_args = self.get_user_inputs(
-                list(self.user_inputs.keys())[0], input_flds.thermostat_type
-            )
-            print(f"runtime args: {runtime_args}")
+        current_key = current_keys[0]
+        new_key = self._build_zone_key(current_key)
+        self.user_inputs[new_key] = self.user_inputs.pop(current_key)
+        self._update_zone_parameters(new_key)
 
-        # if thermostat is not set yet, default it based on module
-        # TODO - code block needs update for multi-zone
+    def _build_zone_key(self, current_key):
+        """Build new zone key as <zone_name>_<zone_number>."""
+        thermostat_type = self.get_user_inputs(current_key, input_flds.thermostat_type)
+        zone_number = self.get_user_inputs(current_key, input_flds.zone)
+        return f"{thermostat_type}_{zone_number}"
+
+    def _update_zone_parameters(self, new_key):
+        """Update parameters for new parent keys."""
+        self.zone_name = new_key
+        self.default_parent_key = new_key
+        self.parent_keys = list(self.user_inputs.keys())
+
+    def _handle_unpopulated_inputs(self):
+        """Handle case where inputs haven't been populated yet."""
+        runtime_args = self.get_user_inputs(
+            list(self.user_inputs.keys())[0], input_flds.thermostat_type
+        )
+        print(f"runtime args: {runtime_args}")
+
+    def _finalize_thermostat_configuration(self):
+        """Set up thermostat configuration for all zones."""
         for zone_name in self.parent_keys:
-            thermostat_type = self.get_user_inputs(
-                zone_name, input_flds.thermostat_type
+            thermostat_type = self._get_thermostat_type(zone_name)
+            self._configure_zone_ranges(zone_name, thermostat_type)
+
+    def _get_thermostat_type(self, zone_name):
+        """Get thermostat type for zone, defaulting if not set."""
+        thermostat_type = self.get_user_inputs(zone_name, input_flds.thermostat_type)
+        return thermostat_type if thermostat_type is not None else self.thermostat_type
+
+    def _configure_zone_ranges(self, zone_name, thermostat_type):
+        """Configure valid ranges for zone and target mode fields."""
+        self._set_zone_valid_range(zone_name, thermostat_type)
+        self._set_target_mode_valid_range(zone_name, thermostat_type)
+
+    def _set_zone_valid_range(self, zone_name, thermostat_type):
+        """Set valid range for zone field."""
+        try:
+            self.user_inputs[zone_name][input_flds.zone][
+                "valid_range"
+            ] = SUPPORTED_THERMOSTATS[thermostat_type]["zones"]
+        except KeyError:
+            print(
+                f"\nKeyError: one or more keys are invalid (zone_name="
+                f"{zone_name}, zone_number={input_flds.zone}, "
+                f"thermostat_type={thermostat_type})\n"
             )
-            if thermostat_type is None:
-                thermostat_type = self.thermostat_type
-            try:
-                self.user_inputs[zone_name][input_flds.zone][
-                    "valid_range"
-                ] = SUPPORTED_THERMOSTATS[thermostat_type]["zones"]
-            except KeyError:
-                print(
-                    f"\nKeyError: one or more keys are invalid (zone_name="
-                    f"{zone_name}, zone_number={input_flds.zone}, "
-                    f"thermostat_type={thermostat_type})\n"
-                )
-                raise
-            try:
-                self.user_inputs[zone_name][input_flds.target_mode][
-                    "valid_range"
-                ] = SUPPORTED_THERMOSTATS[thermostat_type]["modes"]
-            except KeyError:
-                print(
-                    f"\nKeyError: one or more keys are invalid (zone_name="
-                    f"{zone_name}, target_mode={input_flds.target_mode}, "
-                    f"thermostat_type={thermostat_type})\n"
-                )
-                raise
+            raise
+
+    def _set_target_mode_valid_range(self, zone_name, thermostat_type):
+        """Set valid range for target mode field."""
+        try:
+            self.user_inputs[zone_name][input_flds.target_mode][
+                "valid_range"
+            ] = SUPPORTED_THERMOSTATS[thermostat_type]["modes"]
+        except KeyError:
+            print(
+                f"\nKeyError: one or more keys are invalid (zone_name="
+                f"{zone_name}, target_mode={input_flds.target_mode}, "
+                f"thermostat_type={thermostat_type})\n"
+            )
+            raise
 
     def max_measurement_count_exceeded(self, measurement):
         """
@@ -350,16 +391,22 @@ class UserInputs(util.UserInputs):
 
 
 def verify_required_env_variables(tstat, zone_str, verbose=True):
-    """
-    Verify all required env variables are present for thermostat
-    configuration in use.
+    """Verify all required environment variables are present for thermostat config.
 
-    inputs:
-        tstat(int) thermostat type mapping to thermostat_api
-        zone_str(str): zone input as a string
-        verbose(bool): debug flag.
-    returns:
-        (bool): True if all keys are present, else False
+    Checks that all required environment variables for the specified thermostat type
+    are present in the environment. Some environment variables may require
+    zone-specific suffixes (indicated by trailing underscore).
+
+    Args:
+        tstat (str): Thermostat type alias (e.g., 'honeywell', 'emulator')
+        zone_str (str): Zone identifier as string
+        verbose (bool, optional): Enable debug output. Defaults to True.
+
+    Returns:
+        bool: True if all required environment variables are present
+
+    Raises:
+        KeyError: If required environment variables are missing
     """
     if verbose:
         print("\nchecking required environment variables:")
@@ -389,13 +436,22 @@ def verify_required_env_variables(tstat, zone_str, verbose=True):
 
 
 def load_hardware_library(thermostat_type):
-    """
-    Dynamic load 3rd party library for requested hardware type.
+    """Dynamically load appropriate hardware library for the thermostat type.
 
-    inputs:
-        thermostat_type(str): thermostat alias string
-    returns:
-        (obj): loaded python module
+    Imports the hardware-specific module for the given thermostat type using dynamic
+    module loading. This allows the system to support multiple thermostat brands
+    without static imports.
+
+    Args:
+        thermostat_type (str): Thermostat type alias (e.g., 'honeywell',
+            'emulator')
+
+    Returns:
+        module: Loaded Python module for the thermostat type
+
+    Raises:
+        ImportError: If the thermostat type module cannot be loaded
+        KeyError: If the thermostat type is not supported
     """
     pkg_name = (
         util.PACKAGE_NAME + "." + SUPPORTED_THERMOSTATS[thermostat_type]["module"]

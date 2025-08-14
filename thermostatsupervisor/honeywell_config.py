@@ -1,6 +1,7 @@
 """
 Honeywell thermostat config file.
 """
+
 ALIAS = "honeywell"
 
 # constants
@@ -11,18 +12,13 @@ env_variables = {
     "TCC_PASSWORD": None,
 }
 
-# min required env variables on all runs
-required_env_variables = {
-    "TCC_USERNAME": None,
-    "TCC_PASSWORD": None,
-}
-
 # supported thermostat configs
 supported_configs = {
     "module": "honeywell",
     "type": 1,
     "zones": [0],
     "modes": ["OFF_MODE", "HEAT_MODE", "COOL_MODE", "UNKNOWN_MODE"],
+    "zip_code": "55378",  # Zip code for outdoor weather data
 }
 
 

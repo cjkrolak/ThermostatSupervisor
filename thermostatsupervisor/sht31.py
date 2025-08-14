@@ -10,12 +10,13 @@ data structure expected:
     "Humidity(%RH) std": 0.0
 }
 """
+
 # built-in imports
 import json
 import os
 import threading
 import time
-import traceback
+from typing import Union
 
 # third party imports
 import requests
@@ -23,6 +24,7 @@ import requests
 # local imports
 from thermostatsupervisor import environment as env
 from thermostatsupervisor import sht31_config
+from thermostatsupervisor import sht31_flask_server as sht31_fs
 from thermostatsupervisor import thermostat_api as api
 from thermostatsupervisor import thermostat_common as tc
 from thermostatsupervisor import utilities as util
@@ -57,9 +59,8 @@ class ThermostatClass(tc.ThermostatCommon):
         # URL and port configuration
         self.port = str(sht31_config.FLASK_PORT)  # Flask server port on host
         if (
-            self.zone_name == sht31_config.UNIT_TEST_ZONE
-            and self.path == sht31_config.flask_folder.production
-        ):
+            self.zone_name == sht31_config.UNIT_TEST_ZONE or util.unit_test_mode
+        ) and self.path == sht31_config.flask_folder.production:
             self.path = sht31_config.flask_folder.unit_test
             self.unit_test_seed = "?seed=" + str(sht31_config.UNIT_TEST_SEED)
         else:
@@ -126,14 +127,6 @@ class ThermostatClass(tc.ThermostatCommon):
         inputs: None
         returns:
         """
-        # flask server used in unit test mode
-        # noqa E402, C0415
-        from thermostatsupervisor import (  # noqa E402, C0415
-            sht31_flask_server as sht31_fs,  # noqa E402, C0415
-        )  # noqa E402, C0415
-
-        # pylint: disable=import-outside-toplevel
-
         # setup flask runtime variables
         sht31_fs.uip = sht31_fs.UserInputs(
             [os.path.realpath(__file__), sht31_config.FLASK_DEBUG_MODE]
@@ -190,41 +183,94 @@ class ThermostatClass(tc.ThermostatCommon):
             trait(str): trait or parent key, if None will assume a non-nested
                         dict
             parameter(str): target parameter, if None will fetch all.
-            retry(bool): if True will retry once.
+            retry(bool): if True will retry with extended retry mechanism.
         returns:
             (dict) empty dict.
         """
         del trait  # not needed for sht31
-        try:
+
+        def _get_metadata_internal():
             response = requests.get(self.url, timeout=util.HTTP_TIMEOUT)
-        except requests.exceptions.ConnectionError as ex:
-            util.log_msg(
-                f"FATAL ERROR: unable to connect to sht31 thermometer at url "
-                f"'{self.url}'",
-                mode=util.BOTH_LOG,
-                func_name=1,
+            self._handle_http_errors(response)
+            return self._parse_response(response, parameter)
+
+        if retry:
+            return self._execute_with_retry(_get_metadata_internal)
+        else:
+            return _get_metadata_internal()
+
+    def _handle_http_errors(self, response):
+        """Handle HTTP error responses."""
+        if "404 Not Found" in response.text:
+            raise RuntimeError(
+                f"FATAL ERROR 404: sht31 server does not support route {self.url}"
             )
-            raise ex
+
+        if "403 Forbidden" in response.text:
+            self._handle_403_error(response)
+
+    def _handle_403_error(self, response):
+        """Handle 403 Forbidden errors."""
+        ipban_message = (
+            "You don't have the permission to access the "
+            "requested resource. It is either read-protected "
+            "or not readable by the server."
+        )
+
+        if ipban_message in response.text:
+            client_ip = self._get_client_ip()
+            raise RuntimeError(
+                f"FATAL ERROR 403: The client IP address {client_ip} has been "
+                f"blocked due to suspicious activity (likely from previous "
+                f"invalid requests). This is an IP ban protection mechanism. "
+                f"To resolve: 1) Wait for the ban to expire, 2) Contact the "
+                f"server administrator to clear the IP ban, or 3) Use the "
+                f"clear_block_list endpoint if available. Route: {self.url}"
+            )
+        else:
+            raise RuntimeError(
+                f"FATAL ERROR 403: client is forbidden from accessing "
+                f"route {self.url}"
+            )
+
+    def _get_client_ip(self):
+        """Get client IP address for error messages."""
+        import socket
+
+        try:
+            hostname = socket.gethostname()
+            return socket.gethostbyname(hostname)
+        except (socket.error, OSError):
+            return "unknown"
+
+    def _parse_response(self, response, parameter):
+        """Parse JSON response and extract parameter if specified."""
         try:
             if parameter is None:
                 return response.json()
             else:
                 return response.json()[parameter]
         except json.decoder.JSONDecodeError as ex:
-            util.log_msg(traceback.format_exc(), mode=util.BOTH_LOG, func_name=1)
-            if retry:
-                util.log_msg(
-                    f"waiting {self.retry_delay} seconds and retrying SHT31 "
-                    f"measurement one time...",
-                    mode=util.BOTH_LOG,
-                    func_name=1,
-                )
-                time.sleep(self.retry_delay)
-                self.get_metadata(zone, parameter=parameter, retry=False)
-            else:
-                raise RuntimeError(
-                    "FATAL ERROR: SHT31 server is not responding"
-                ) from ex
+            raise RuntimeError("FATAL ERROR: SHT31 server is not responding") from ex
+
+    def _execute_with_retry(self, func):
+        """Execute function with standardized retry mechanism."""
+        return util.execute_with_extended_retries(
+            func=func,
+            thermostat_type=self.thermostat_type,
+            zone_name=str(self.zone_name),
+            number_of_retries=5,
+            initial_retry_delay_sec=self.retry_delay,
+            exception_types=(
+                requests.exceptions.ConnectionError,
+                requests.exceptions.HTTPError,
+                requests.exceptions.Timeout,
+                requests.exceptions.RequestException,
+                json.decoder.JSONDecodeError,
+                RuntimeError,
+            ),
+            email_notification=None,  # SHT31 doesn't import email_notification
+        )
 
 
 class ThermostatZone(tc.ThermostatCommonZone):
@@ -286,81 +332,106 @@ class ThermostatZone(tc.ThermostatCommonZone):
           parameter(str): target parameter, None = all settings
           trait(str): trait or parent key, if None will assume a non-nested
                       dict
-          retry(bool): if True, will retry on Exception
+          retry(bool): if True, will retry with extended retry mechanism
         returns:
           (dict) if parameter=None
           (str) if parameter != None
         """
         del trait  # not needed for sht31
-        try:
+
+        def _get_metadata_internal():
             response = requests.get(self.url, timeout=util.HTTP_TIMEOUT)
-        except requests.exceptions.ConnectionError as ex:
-            util.log_msg(
-                f"FATAL ERROR: unable to connect to sht31 thermometer at url "
-                f"'{self.url}'",
-                mode=util.BOTH_LOG,
-                func_name=1,
-            )
-            raise ex
-        if parameter is None:
-            try:
-                return response.json()
-            except json.decoder.JSONDecodeError as ex:
-                util.log_msg(traceback.format_exc(), mode=util.BOTH_LOG, func_name=1)
-                if retry:
-                    util.log_msg(
-                        f"waiting {self.retry_delay} seconds and retrying "
-                        f"SHT31 measurement one time...",
-                        mode=util.BOTH_LOG,
-                        func_name=1,
-                    )
-                    time.sleep(self.retry_delay)
-                    self.get_metadata(parameter=None, retry=False)
-                else:
-                    raise RuntimeError(
-                        "FATAL ERROR: SHT31 server is not responding"
-                    ) from ex
+            self._handle_zone_http_errors(response)
+            return self._parse_zone_response(response, parameter)
+
+        if retry:
+            return self._execute_zone_with_retry(_get_metadata_internal)
         else:
-            try:
-                return response.json()[parameter]
-            except json.decoder.JSONDecodeError as ex:
-                util.log_msg(traceback.format_exc(), mode=util.BOTH_LOG, func_name=1)
-                if retry:
-                    util.log_msg(
-                        f"waiting {self.retry_delay} seconds and retrying "
-                        f"SHT31 measurement one time...",
-                        mode=util.BOTH_LOG,
-                        func_name=1,
-                    )
-                    time.sleep(self.retry_delay)
-                    self.get_metadata(parameter=parameter, retry=False)
-                else:
-                    raise RuntimeError(
-                        "FATAL ERROR: SHT31 server is not responding"
-                    ) from ex
-            except KeyError as ex:
-                util.log_msg(traceback.format_exc(), mode=util.BOTH_LOG, func_name=1)
-                if "message" in response.json():
-                    util.log_msg(
-                        f"WARNING in Flask response: "
-                        f"'{response.json()['message']}'",
-                        mode=util.BOTH_LOG,
-                        func_name=1,
-                    )
-                if retry:
-                    util.log_msg(
-                        f"waiting {self.retry_delay} seconds and retrying "
-                        f"SHT31 measurement one time...",
-                        mode=util.BOTH_LOG,
-                        func_name=1,
-                    )
-                    time.sleep(self.retry_delay)
-                    self.get_metadata(parameter=parameter, retry=False)
-                else:
-                    raise KeyError(
-                        f"FATAL ERROR: SHT31 server response did not contain "
-                        f"key '{parameter}', raw response={response.json()}"
-                    ) from ex
+            return _get_metadata_internal()
+
+    def _handle_zone_http_errors(self, response):
+        """Handle HTTP error responses for zone requests."""
+        if response.status_code == 403:
+            self._handle_zone_403_error(response)
+        response.raise_for_status()
+
+    def _handle_zone_403_error(self, response):
+        """Handle 403 Forbidden errors for zone requests."""
+        ipban_message = (
+            "You don't have the permission to access the "
+            "requested resource. It is either read-protected "
+            "or not readable by the server."
+        )
+
+        if ipban_message in response.text:
+            client_ip = self._get_zone_client_ip()
+            raise RuntimeError(
+                f"FATAL ERROR 403: The client IP address {client_ip} has been "
+                f"blocked due to suspicious activity (likely from previous "
+                f"invalid requests). This is an IP ban protection mechanism. "
+                f"To resolve: 1) Wait for the ban to expire, 2) Contact the "
+                f"server administrator to clear the IP ban, or 3) Use the "
+                f"clear_block_list endpoint if available. Route: {self.url}"
+            )
+        else:
+            raise RuntimeError(
+                f"FATAL ERROR 403: client is forbidden from accessing "
+                f"route {self.url}"
+            )
+
+    def _get_zone_client_ip(self):
+        """Get client IP address for zone error messages."""
+        import socket
+
+        try:
+            hostname = socket.gethostname()
+            return socket.gethostbyname(hostname)
+        except (socket.error, OSError):
+            return "unknown"
+
+    def _parse_zone_response(self, response, parameter):
+        """Parse JSON response and extract parameter for zone requests."""
+        try:
+            json_response = response.json()
+        except json.decoder.JSONDecodeError as ex:
+            raise RuntimeError("FATAL ERROR: SHT31 server is not responding") from ex
+
+        if parameter is None:
+            return json_response
+
+        try:
+            return json_response[parameter]
+        except KeyError as ex:
+            if "message" in json_response:
+                util.log_msg(
+                    f"WARNING in Flask response: '{json_response['message']}'",
+                    mode=util.BOTH_LOG,
+                    func_name=1,
+                )
+            raise KeyError(
+                f"FATAL ERROR: SHT31 server response did not contain key "
+                f"'{parameter}', raw response={json_response}"
+            ) from ex
+
+    def _execute_zone_with_retry(self, func):
+        """Execute zone function with standardized retry mechanism."""
+        return util.execute_with_extended_retries(
+            func=func,
+            thermostat_type="SHT31",
+            zone_name=str(getattr(self, "zone_name", "unknown")),
+            number_of_retries=5,
+            initial_retry_delay_sec=self.retry_delay,
+            exception_types=(
+                requests.exceptions.RequestException,
+                requests.exceptions.ConnectionError,
+                requests.exceptions.HTTPError,
+                requests.exceptions.Timeout,
+                json.decoder.JSONDecodeError,
+                KeyError,
+                RuntimeError,
+            ),
+            email_notification=None,  # SHT31 doesn't import email_notification
+        )
 
     def get_display_temp(self) -> float:
         """
@@ -373,7 +444,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         """
         return float(self.get_metadata(parameter=self.tempfield))
 
-    def get_display_humidity(self) -> (float, None):
+    def get_display_humidity(self) -> Union[float, None]:
         """
         Return Humidity.
 
@@ -408,6 +479,10 @@ class ThermostatZone(tc.ThermostatCommonZone):
         """Return the auto mode."""
         return 0  # not applicable
 
+    def is_eco_mode(self) -> int:
+        """Return the eco mode."""
+        return 0  # not applicable
+
     def is_fan_mode(self) -> int:
         """Return the fan mode."""
         return 0  # not applicable
@@ -424,19 +499,23 @@ class ThermostatZone(tc.ThermostatCommonZone):
         """Return 1 if actively cooling, else 0."""
         return 0  # not applicable
 
-    def is_drying(self):
+    def is_drying(self) -> int:
         """Return 1 if drying relay is active, else 0."""
         return 0  # not applicable
 
-    def is_auto(self):
+    def is_auto(self) -> int:
         """Return 1 if auto relay is active, else 0."""
         return 0  # not applicable
 
-    def is_fanning(self):
+    def is_eco(self) -> int:
+        """Return 1 if eco relay is active, else 0."""
+        return 0  # not applicable
+
+    def is_fanning(self) -> int:
         """Return 1 if fan relay is active, else 0."""
         return 0  # not applicable
 
-    def is_power_on(self):
+    def is_power_on(self) -> int:
         """Return 1 if power relay is active, else 0."""
         return 1  # always on
 
@@ -444,11 +523,11 @@ class ThermostatZone(tc.ThermostatCommonZone):
         """Return 1 if fan relay is active, else 0."""
         return 0  # not applicable
 
-    def is_defrosting(self):
+    def is_defrosting(self) -> int:
         """Return 1 if defrosting is active, else 0."""
         return 0  # not applicable
 
-    def is_standby(self):
+    def is_standby(self) -> int:
         """Return 1 if standby is active, else 0."""
         return 0  # not applicable
 

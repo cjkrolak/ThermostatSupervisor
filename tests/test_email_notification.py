@@ -1,6 +1,7 @@
 """
 Unit tes module for email_notification.py.
 """
+
 # built-in libraries
 import os
 import smtplib
@@ -37,11 +38,12 @@ class Test(utc.UnitTest):
                 _ = os.environ[env_key]
                 print(f"environment variable key {env_key} was found (PASS)")
             except KeyError:
-                fail_msg = (
-                    f"{env_key} environment variable missing from " f"environment"
-                )
+                fail_msg = f"{env_key} environment variable missing from environment"
                 self.fail(fail_msg)
 
+    @mock.patch.dict(
+        os.environ, {"GMAIL_USERNAME": "test@gmail.com", "GMAIL_PASSWORD": "testpass"}
+    )
     def test_send_email_alerts(self):
         """Test send_email_alerts() functionality."""
 
@@ -62,9 +64,17 @@ class Test(utc.UnitTest):
             "this is a test of the email notification alert with bad "
             "SMTP port input, should fail."
         )
-        return_status, return_status_msg = eml.send_email_alert(
-            server_port=13, subject="test email alert (bad port)", body=body
-        )
+        # Mock SMTP_SSL to raise an OSError for bad port
+        with mock.patch("smtplib.SMTP_SSL", side_effect=OSError("Connection refused")):
+            # Temporarily disable unit test mode to test connection error
+            original_unit_test_mode = util.unit_test_mode
+            util.unit_test_mode = False
+            try:
+                return_status, return_status_msg = eml.send_email_alert(
+                    server_port=13, subject="test email alert (bad port)", body=body
+                )
+            finally:
+                util.unit_test_mode = original_unit_test_mode
         fail_msg = (
             f"send email with bad server port failed for status code: "
             f"{return_status}: {return_status_msg}"
@@ -77,13 +87,24 @@ class Test(utc.UnitTest):
             "this is a test of the email notification alert with bad "
             "sender email address, should fail."
         )
-        return_status, return_status_msg = eml.send_email_alert(
-            from_address="bogus@gmail.com",
-            subject="test email alert (bad from address)",
-            body=body,
+        # Mock SMTP_SSL and login to raise an SMTPAuthenticationError
+        mock_server = mock.Mock()
+        mock_server.login.side_effect = smtplib.SMTPAuthenticationError(
+            535, "Authentication failed"
         )
+        with mock.patch("smtplib.SMTP_SSL", return_value=mock_server):
+            # Temporarily disable unit test mode to test authorization error
+            original_unit_test_mode = util.unit_test_mode
+            util.unit_test_mode = False
+            try:
+                return_status, return_status_msg = eml.send_email_alert(
+                    subject="test email alert (bad auth)", body=body
+                )
+            finally:
+                util.unit_test_mode = original_unit_test_mode
+
         fail_msg = (
-            f"send email with bad from addresss failed for status "
+            f"send email with bad from address failed for status "
             f"code: {return_status}: {return_status_msg}"
         )
         self.assertEqual(return_status, util.AUTHORIZATION_ERROR, fail_msg)
@@ -111,23 +132,35 @@ class Test(utc.UnitTest):
                     f"this is a test of the email notification alert with "
                     f"env var {name_to_omit} omitted."
                 )
-                with mock.patch.dict(
-                    os.environ, modified_environ, clear=True
-                ):  # noqa e501, pylint:disable=undefined-variable
-                    return_status, return_status_msg = eml.send_email_alert(
-                        to_address=to_address,
-                        subject=f"test email alert with "
-                        f"env key {name_to_omit} missing",
-                        body=body,
+
+                # Temporarily disable unit_test_mode to test environment error
+                # conditions
+                original_unit_test_mode = util.unit_test_mode
+                util.unit_test_mode = False
+                try:
+                    with mock.patch.dict(
+                        os.environ, modified_environ, clear=True
+                    ):  # noqa e501, pylint:disable=undefined-variable
+                        return_status, return_status_msg = eml.send_email_alert(
+                            to_address=to_address,
+                            subject=f"test email alert with "
+                            f"env key {name_to_omit} missing",
+                            body=body,
+                        )
+
+                    fail_msg = (
+                        f"send email with no email env key failed for "
+                        f"status code: {return_status}: "
+                        f"{return_status_msg}"
                     )
+                    self.assertEqual(return_status, util.ENVIRONMENT_ERROR, fail_msg)
+                finally:
+                    # Restore original unit_test_mode
+                    util.unit_test_mode = original_unit_test_mode
 
-                fail_msg = (
-                    f"send email with no email env key failed for "
-                    f"status code: {return_status}: "
-                    f"{return_status_msg}"
-                )
-                self.assertEqual(return_status, util.ENVIRONMENT_ERROR, fail_msg)
-
+    @mock.patch.dict(
+        os.environ, {"GMAIL_USERNAME": "test@gmail.com", "GMAIL_PASSWORD": "testpass"}
+    )
     def test_send_email_alert_smtp_exceptions(self):
         """
         Test send_email_alerts() functionality with mocked exceptions.
@@ -148,31 +181,38 @@ class Test(utc.UnitTest):
         ]
         for exception, exception_args in sendmail_exceptions:
             print(f"testing mocked '{str(exception)} exception...")
+
             # mock the exception case
             side_effect = lambda *_, **__: utc.mock_exception(  # noqa E731, C3001
                 exception, exception_args
             )  # noqa E731, C3001
-            with mock.patch.object(
-                smtplib.SMTP_SSL,
-                "sendmail",  # noqa e501, pylint:disable=undefined-variable
-                side_effect=side_effect,
-            ):
+
+            # Mock SMTP_SSL and setup to reach the sendmail logic
+            mock_server = mock.Mock()
+            mock_server.sendmail.side_effect = side_effect
+
+            with mock.patch("smtplib.SMTP_SSL", return_value=mock_server):
                 # send message with no inputs, UTIL.NO_ERROR expected
                 body = (
                     "this is a test of the email notification alert for exception "
                     f"type {str(exception)}."
                 )
-                return_status, return_status_msg = eml.send_email_alert(
-                    subject=f"test email alert (mocked {str(exception)} exception)",
-                    body=body,
+                # Temporarily disable unit test mode to test SMTP exceptions
+                original_unit_test_mode = util.unit_test_mode
+                util.unit_test_mode = False
+                try:
+                    return_status, return_status_msg = eml.send_email_alert(
+                        subject=f"test email alert (mocked {str(exception)} exception)",
+                        body=body,
+                    )
+                finally:
+                    util.unit_test_mode = original_unit_test_mode
+                fail_msg = (
+                    f"send email with mocked SMTP exception returned "
+                    f"status code: {return_status}: "
+                    f"{return_status_msg}"
                 )
-
-            fail_msg = (
-                f"send email with mocked SMTP exception returned "
-                f"status code: {return_status}: "
-                f"{return_status_msg}"
-            )
-            self.assertEqual(return_status, util.EMAIL_SEND_ERROR, fail_msg)
+                self.assertEqual(return_status, util.EMAIL_SEND_ERROR, fail_msg)
 
 
 if __name__ == "__main__":

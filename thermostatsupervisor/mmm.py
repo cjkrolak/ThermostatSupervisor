@@ -1,6 +1,7 @@
 """
 connection to 3m50 thermoststat on local net.
 """
+
 # built-in imports
 import datetime
 import pprint
@@ -8,13 +9,16 @@ import socket
 import time
 import traceback
 import urllib
+from typing import Union
+
+# third-party imports
 from dns.exception import DNSException
 
 # local imports
+from thermostatsupervisor import environment as env
 from thermostatsupervisor import mmm_config
 from thermostatsupervisor import thermostat_api as api
 from thermostatsupervisor import thermostat_common as tc
-from thermostatsupervisor import environment as env
 from thermostatsupervisor import utilities as util
 
 # radiotherm import
@@ -142,14 +146,15 @@ class ThermostatClass(tc.ThermostatCommon):
 
         inputs:
             zone(int): zone number
-            retry(bool): if True will retry once.
+            retry(bool): if True will retry with extended retry mechanism.
         returns:
             (list) of thermostat attributes.
         """
-        del retry  # not used
-        return self.get_meta_data_dict(zone)
+        return self.get_metadata(zone, retry=retry)
 
-    def get_metadata(self, zone, trait=None, parameter=None) -> (dict, str):
+    def get_metadata(
+        self, zone, trait=None, parameter=None, retry=False
+    ) -> Union[dict, str]:
         """
         Get the current thermostat metadata settings.
 
@@ -157,17 +162,45 @@ class ThermostatClass(tc.ThermostatCommon):
           zone(str or int): zone name
           trait(str): trait or parent key, if None will assume a non-nested dict
           parameter(str): target parameter, None = all settings
+          retry(bool): if True will retry with extended retry mechanism
         returns:
           (dict) if parameter=None
           (str) if parameter != None
         """
         del trait  # not used on mmm
-        if parameter is None:
-            return self.get_meta_data_dict(zone)
-        else:
-            return self.get_meta_data_dict(zone)[parameter]["raw"]
 
-    def get_latestdata(self, zone, debug=False) -> (dict, str):
+        def _get_metadata_internal():
+            if parameter is None:
+                return self.get_meta_data_dict(zone)
+            else:
+                return self.get_meta_data_dict(zone)[parameter]["raw"]
+
+        if retry:
+            # Use standardized extended retry mechanism
+            return util.execute_with_extended_retries(
+                func=_get_metadata_internal,
+                thermostat_type=self.thermostat_type,
+                zone_name=str(zone),
+                number_of_retries=5,
+                initial_retry_delay_sec=30,
+                exception_types=(
+                    urllib.error.URLError,
+                    socket.timeout,
+                    socket.error,
+                    ConnectionError,
+                    TimeoutError,
+                    DNSException,
+                    AttributeError,
+                    KeyError,
+                    TypeError,
+                ),
+                email_notification=None,  # MMM doesn't import email_notification
+            )
+        else:
+            # Single attempt without retry
+            return _get_metadata_internal()
+
+    def get_latestdata(self, zone, debug=False) -> Union[dict, str]:
         """
         Get the current thermostat latest data.
 
@@ -276,7 +309,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         """
         return float(self.device_id.temp["raw"])
 
-    def get_display_humidity(self) -> (float, None):
+    def get_display_humidity(self) -> Union[float, None]:
         """
         Return Humidity.
 
@@ -342,24 +375,52 @@ class ThermostatZone(tc.ThermostatCommonZone):
         """
         return int(self._get_tmode() == self.system_switch_position[self.AUTO_MODE])
 
+    def is_eco_mode(self) -> int:
+        """
+        Return the eco mode.
+
+        inputs:
+            None
+        returns:
+            (int): 1=eco mode enabled, 0=disabled.
+        """
+        return int(self._get_tmode() == self.system_switch_position[self.ECO_MODE])
+
     def _get_tmode(self, retries=1):
         """
         Get tmode from device, retry on Attribute error.
         """
+
+        def _get_tmode_internal():
+            return self.device_id.tmode["raw"]
+
+        # Use standardized extended retry for more robust error handling
         try:
-            tmode = self.device_id.tmode["raw"]
-        except AttributeError as ex:
-            if retries > 0:
-                print(traceback.format_exc())
-                print(
-                    "WARNING: AttributeError while querying tstat.tmode, "
-                    "retrying after brief delay..."
-                )
-                time.sleep(10)
-                tmode = self._get_tmode(retries - 1)
-            else:
-                raise ex
-        return tmode
+            return util.execute_with_extended_retries(
+                func=_get_tmode_internal,
+                thermostat_type=self.thermostat_type,
+                zone_name=str(self.zone_name),
+                number_of_retries=5,
+                initial_retry_delay_sec=60,
+                exception_types=(AttributeError, ConnectionError, TimeoutError),
+                email_notification=None,  # MMM doesn't import email_notification
+            )
+        except Exception:
+            # Fallback to original simple retry for backward compatibility
+            try:
+                tmode = self.device_id.tmode["raw"]
+            except AttributeError as ex:
+                if retries > 0:
+                    print(traceback.format_exc())
+                    print(
+                        "WARNING: AttributeError while querying tstat.tmode, "
+                        "retrying after brief delay..."
+                    )
+                    time.sleep(10)
+                    tmode = self._get_tmode(retries - 1)
+                else:
+                    raise ex
+            return tmode
 
     def is_fan_mode(self) -> int:
         """
@@ -384,7 +445,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         """
         return int(
             self._get_tmode() == self.system_switch_position[self.OFF_MODE]
-            and not self.device_id.fmode["raw"] == 2
+            and self.device_id.fmode["raw"] != 2
         )
 
     def is_heating(self):
@@ -411,23 +472,27 @@ class ThermostatZone(tc.ThermostatCommonZone):
         """Return 1 if auto relay is active, else 0."""
         return 0  # not applicable
 
-    def is_fanning(self):
+    def is_eco(self):
+        """Return 1 if eco relay is active, else 0."""
+        return 0  # not applicable
+
+    def is_fanning(self) -> int:
         """Return 1 if fan relay is active, else 0."""
         return int(self.is_fan_on() and self.is_power_on())
 
-    def is_power_on(self):
+    def is_power_on(self) -> int:
         """Return 1 if power relay is active, else 0."""
         return int(self.device_id.power["raw"] > 0)
 
-    def is_fan_on(self):
+    def is_fan_on(self) -> int:
         """Return 1 if fan relay is active, else 0."""
-        return self.device_id.fstate["raw"]
+        return int(self.device_id.fstate["raw"])
 
-    def is_defrosting(self):
+    def is_defrosting(self) -> int:
         """Return 1 if defrosting is active, else 0."""
         return 0  # not applicable
 
-    def is_standby(self):
+    def is_standby(self) -> int:
         """Return 1 if standby is active, else 0."""
         return 0  # not applicable
 
@@ -530,10 +595,6 @@ class ThermostatZone(tc.ThermostatCommonZone):
             (float): current raw cool set point in °F.
         """
         result = float(self.get_cool_setpoint())
-        if not isinstance(result, (int, float)):
-            raise TypeError(
-                f"cool setpoint raw is type {type(result)}, should be " f"(int, float)"
-            )
         return result
 
     def get_schedule_program_heat(self) -> dict:
@@ -563,10 +624,6 @@ class ThermostatZone(tc.ThermostatCommonZone):
             (float): current scheduled heat set point in °F.
         """
         result = float(self.get_schedule_setpoint(self.device_id.program_heat))
-        if not isinstance(result, float):
-            raise TypeError(
-                f"schedule heat set point is type {type(result)}, " f"should be float"
-            )
         return result
 
     def get_schedule_program_cool(self) -> dict:
@@ -596,10 +653,6 @@ class ThermostatZone(tc.ThermostatCommonZone):
             (float): current schedule cool set point in °F.
         """
         result = float(self.get_schedule_setpoint(self.device_id.program_cool))
-        if not isinstance(result, float):
-            raise TypeError(
-                f"schedule cool set point is type {type(result)}, " f"should be float"
-            )
         return result
 
     def get_is_invacation_hold_mode(self) -> bool:
@@ -612,10 +665,6 @@ class ThermostatZone(tc.ThermostatCommonZone):
             (int): 0=Disabled, 1=Enabled
         """
         result = bool(self.device_id.hold["raw"])
-        if not isinstance(result, bool):
-            raise TypeError(
-                f"is_invacation_hold_mode is type {type(result)}, " f"should be bool"
-            )
         return result
 
     def get_vacation_hold(self) -> bool:
@@ -628,10 +677,6 @@ class ThermostatZone(tc.ThermostatCommonZone):
             (int): 0=Disabled, 1=Enabled
         """
         result = bool(self.device_id.override["raw"])
-        if not isinstance(result, bool):
-            raise TypeError(
-                f"get_vacation_hold_mode is type {type(result)}, " f"should be bool"
-            )
         return result
 
     def get_vacation_hold_until_time(self) -> int:
@@ -712,7 +757,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         result = self._get_tmode()
         if not isinstance(result, int):
             raise TypeError(
-                f"get_system_switch_position is type {type(result)}, " f"should be int"
+                f"get_system_switch_position is type {type(result)}, should be int"
             )
         return result
 

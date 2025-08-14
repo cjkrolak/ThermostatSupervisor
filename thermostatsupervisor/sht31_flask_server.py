@@ -1,10 +1,13 @@
-""""
+""" "
 flask API for raspberry pi
 example from http://www.pibits.net/code/raspberry-pi-sht31-sensor-example.php
 """
 
 # built-in imports
+import logging
+import os
 import re
+import secrets
 import statistics
 import subprocess
 import sys
@@ -25,9 +28,13 @@ except ImportError as ex:
         "this is expected in unittest mode"
     )
     pi_library_exception = ex  # unsuccessful
+    # Create a placeholder GPIO for testing
+    GPIO = None
 
 # third party imports
-from flask import Flask, request
+from flask import Flask, jsonify, request
+from flask_limiter import Limiter  # noqa F405
+from flask_limiter.util import get_remote_address  # noqa F405
 from flask_restful import Resource, Api  # noqa F405
 from flask_wtf.csrf import CSRFProtect
 import munch
@@ -38,6 +45,11 @@ from thermostatsupervisor import environment as env
 from thermostatsupervisor import flask_generic as flg
 from thermostatsupervisor import sht31_config
 from thermostatsupervisor import utilities as util
+
+# enable logging
+limiter_logger = logging.getLogger("flask_limiter")
+limiter_logger.setLevel(logging.DEBUG)
+limiter_logger.addHandler(logging.StreamHandler(sys.stdout))
 
 # runtime override fields
 input_flds = munch.Munch()
@@ -85,6 +97,8 @@ disable_heater = (0x30, [0x66])
 clear_status_register = (0x30, [0x41])
 read_status_register = (0xF3, [0x2D])
 
+i2c_data_length = 0x06  # 6 bytes of data
+
 
 class Sensors:
     """Sensor data."""
@@ -104,7 +118,40 @@ class Sensors:
             temp_c(float): temp on °C
             temp_f(float): temp in °F
             humidity(float): humidity in %RH
+        data structure:
+        0 = temp MSB
+        1 = temp LSB
+        2 = temp CRC
+        3 = humidity MSB
+        4 = humidity LSB
+        5 = humidity CRC
         """
+
+        if len(data) != i2c_data_length:
+            raise ValueError(
+                f"ERROR: {util.get_function_name()} expects "
+                f"{i2c_data_length} bytes of data, "
+                f"received {len(data)}, raw data: {data}"
+            )
+
+        # verify data CRC
+        if not self.validate_crc(data[0:2], data[2]):
+            print(
+                f"WARNING: CRC validation failed for temperature data: {data[0:2]}, "
+                f"Expected CRC: {data[2]}, "
+                f"Calculated CRC: {self.calculate_crc(data[0:2])}"
+            )
+        elif self.verbose:
+            print(f"temperature raw: {data[0:2]}, CRC: {data[2]}")
+        if not self.validate_crc(data[3:5], data[5]):
+            print(
+                f"WARNING: CRC validation failed for humidity data: {data[3:5]}, "
+                f"Expected CRC: {data[5]}, "
+                f"Calculated CRC: {self.calculate_crc(data[3:5])}"
+            )
+        elif self.verbose:
+            print(f"humidity raw: {data[3:5]}, CRC: {data[5]}")
+
         # convert the data
         temp = data[0] * 256 + data[1]
         temp_c = -45 + (175 * temp / 65535.0)
@@ -140,10 +187,15 @@ class Sensors:
         """
         Set the address for the sht31.
 
+        NOTE: This explains the i2cdetect vs configured address discrepancy.
+        The SHT31 sensor defaults to address 0x44 on power-up. When i2cdetect
+        runs before this method, it will show 0x44. This method configures
+        ADDR_PIN to switch the sensor to the desired address (typically 0x45).
+
         inputs:
-            i2c_addr(int): bus address of SHT31.
-            addr_pin(int):
-            alert_pin(int):
+            i2c_addr(int): bus address of SHT31 (0x44 or 0x45).
+            addr_pin(int): GPIO pin number controlling SHT31 address selection.
+            alert_pin(int): GPIO pin number for SHT31 alert functionality.
         returns:
             None
         """
@@ -151,10 +203,11 @@ class Sensors:
         GPIO.setmode(GPIO.BCM)  # broadcom pin numbering
         GPIO.setup(addr_pin, GPIO.OUT)  # address pin set as output
         GPIO.setup(alert_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+        # Configure SHT31 address: 0x45 requires ADDR_PIN HIGH, 0x44 uses LOW
         if i2c_addr == 0x45:
-            GPIO.output(addr_pin, GPIO.HIGH)
+            GPIO.output(addr_pin, GPIO.HIGH)  # Switch to address 0x45
         else:
-            GPIO.output(addr_pin, GPIO.LOW)
+            GPIO.output(addr_pin, GPIO.LOW)  # Use default address 0x44
 
     def send_i2c_cmd(self, bus, i2c_addr, i2c_command):
         """
@@ -179,9 +232,65 @@ class Sensors:
             raise exc
         time.sleep(0.5)
 
-    def read_i2c_data(self, bus, i2c_addr, register=0x00, length=0x06):
+    def _process_crc_bit_reverse(self, crc, poly):
+        """Process CRC bit with reverse direction."""
+        if crc & 0x01:
+            return (crc >> 1) ^ poly
+        else:
+            return crc >> 1
+
+    def _process_crc_bit_normal(self, crc, poly):
+        """Process CRC bit with normal direction."""
+        if crc & 0x80:
+            return (crc << 1) ^ poly  # polynomial = 0x31
+        else:
+            return crc << 1
+
+    def _process_crc_byte(self, crc, byte, poly, reverse):
+        """Process a single byte for CRC calculation."""
+        crc ^= byte
+        for _ in range(8, 0, -1):
+            if reverse:
+                crc = self._process_crc_bit_reverse(crc, poly)
+            else:
+                crc = self._process_crc_bit_normal(crc, poly)
+        return crc
+
+    def calculate_crc(self, data, init=0xFF, poly=0x131, final_xor=0x00, reverse=False):
         """
-        Read i2c data.
+        Calculate CRC checksum for SHT31 sensor data.
+
+        inputs:
+            data(bytes): 2 bytes of data to check
+            init(int): initial CRC value
+            poly(int): polynomial value, 0x131=x^8+x^5+x^4+1=100110001 for unsigned int
+            final_xor(int): final XOR value
+            reverse(bool): reverse the bits
+        returns:
+            (int): calculated CRC value
+        """
+        crc = init  # Initialize CRC with 0xFF
+        for byte in data:
+            crc = self._process_crc_byte(crc, byte, poly, reverse)
+        crc &= 0xFF  # Ensure result is 8-bit
+        crc ^= final_xor
+        return crc
+
+    def validate_crc(self, data, checksum):
+        """
+        Validate CRC checksum from SHT31 sensor.
+
+        inputs:
+            data(bytes): 2 bytes of data to check
+            checksum(int): CRC value to verify against
+        returns:
+            (bool): True if checksum matches calculated CRC
+        """
+        return self.calculate_crc(data) == checksum
+
+    def read_i2c_data(self, bus, i2c_addr, register=0x00, length=i2c_data_length):
+        """
+        Read i2c data with retry logic for intermittent i2c failures.
 
         inputs:
             bus(class 'SMBus'): i2c bus object
@@ -191,19 +300,40 @@ class Sensors:
         returns:
             response(class 'list'): raw data structure
         """
-        # Temp MSB, temp LSB, temp CRC, humidity MSB,
-        # humidity LSB, humidity CRC
+        # 0=Temp MSB, 1=temp LSB, 2=temp CRC,
+        # 3=humidity MSB, 4=humidity LSB, 5=humidity CRC
         # read_i2c_block_data(i2c_addr, register, length,
         #                     force=None)
-        try:
-            response = bus.read_i2c_block_data(i2c_addr, register, length)
-        except OSError as exc:
-            print(
-                f"FATAL ERROR({util.get_function_name()}): i2c device at "
-                f"address {hex(i2c_addr)} is not responding"
-            )
-            raise exc
-        return response
+
+        def _perform_i2c_read():
+            """Internal function to perform the actual i2c read operation."""
+            try:
+                response = bus.read_i2c_block_data(i2c_addr, register, length)
+            except OSError as exc:
+                print(
+                    f"WARNING({util.get_function_name()}): i2c device at "
+                    f"address {hex(i2c_addr)} is not responding, retrying..."
+                )
+                raise exc
+
+            if len(response) != length:
+                raise ValueError(
+                    f"ERROR: i2c data read error, expected {length} "
+                    f"bytes, actual {len(response)}"
+                )
+
+            return response
+
+        # Use retry logic for i2c operations with shorter delays
+        return util.execute_with_extended_retries(
+            _perform_i2c_read,
+            thermostat_type="sht31",
+            zone_name="sensor",
+            number_of_retries=3,
+            initial_retry_delay_sec=1,
+            exception_types=(OSError,),
+            email_notification=None,
+        )
 
     def parse_fault_register_data(self, data):
         """
@@ -270,7 +400,13 @@ class Sensors:
         # loop for n measurements
         for measurement in range(measurements):
             # fabricated data for unit testing
-            data = [seed + measurement % 2] * 5  # almost mid range
+            data = [seed + measurement % 2] * i2c_data_length  # almost mid range
+
+            # update CRC in fabricated data
+            data[2] = self.calculate_crc(data[0:2])
+            data[5] = self.calculate_crc(data[3:5])
+
+            # print(f"DEBUG data: {data}, len: {len(data)}")
 
             # convert the data
             _, temp_c, temp_f, humidity = self.convert_data(data)
@@ -320,7 +456,7 @@ class Sensors:
 
                 # read the measurement data
                 data = self.read_i2c_data(
-                    bus, sht31_config.I2C_ADDRESS, register=0x00, length=0x06
+                    bus, sht31_config.I2C_ADDRESS, register=0x00, length=i2c_data_length
                 )
 
                 # convert the data
@@ -468,6 +604,187 @@ class Sensors:
         parsed_device_dict["i2c_detect"]["bus_" + str(bus)] = bus_dict
         return parsed_device_dict
 
+    def i2c_read_logic_levels(self):
+        """
+        Read current logic levels of i2c SDA and SCL pins.
+
+        inputs:
+            None
+        returns:
+            (dict): current logic levels of SDA and SCL pins
+        """
+        if pi_library_exception:
+            return {
+                "i2c_logic_levels": {
+                    "error": "GPIO library not available in test environment",
+                    "sda_pin": sht31_config.SDA_PIN,
+                    "scl_pin": sht31_config.SCL_PIN,
+                    "sda_level": None,
+                    "scl_level": None,
+                    "sda_state": "UNKNOWN",
+                    "scl_state": "UNKNOWN",
+                    "timestamp": time.time(),
+                }
+            }
+
+        try:
+            # set GPIO mode and configure pins as inputs
+            GPIO.setmode(GPIO.BCM)  # broadcom pin numbering
+            GPIO.setup(sht31_config.SDA_PIN, GPIO.IN)
+            GPIO.setup(sht31_config.SCL_PIN, GPIO.IN)
+
+            # read current pin states
+            sda_level = GPIO.input(sht31_config.SDA_PIN)
+            scl_level = GPIO.input(sht31_config.SCL_PIN)
+
+            # create response dictionary
+            logic_levels = {
+                "sda_pin": sht31_config.SDA_PIN,
+                "scl_pin": sht31_config.SCL_PIN,
+                "sda_level": sda_level,
+                "scl_level": scl_level,
+                "sda_state": "HIGH" if sda_level else "LOW",
+                "scl_state": "HIGH" if scl_level else "LOW",
+                "timestamp": time.time(),
+            }
+
+            return {"i2c_logic_levels": logic_levels}
+        finally:
+            GPIO.cleanup()  # clean up GPIO
+
+    def i2c_bus_health_check(self):
+        """
+        Comprehensive i2c bus health diagnostic.
+
+        Checks for stuck bus conditions by monitoring pin states and
+        combining with device detection results.
+
+        inputs:
+            None
+        returns:
+            (dict): comprehensive bus health status
+        """
+        try:
+            # get current logic levels
+            logic_data = self.i2c_read_logic_levels()
+            logic_levels = logic_data["i2c_logic_levels"]
+
+            # get device detection results
+            detect_data = self.i2c_detect()
+
+            # handle test environment where GPIO is not available
+            if "error" in logic_levels:
+                return {
+                    "i2c_bus_health": {
+                        "bus_status": "TEST_MODE",
+                        "overall_health": "UNKNOWN",
+                        "health_issues": ["GPIO not available in test environment"],
+                        "logic_levels": logic_levels,
+                        "device_detection": detect_data,
+                        "timestamp": time.time(),
+                        "recommendations": [
+                            "Run on actual hardware for GPIO diagnostics"
+                        ],
+                    }
+                }
+
+            # analyze bus health
+            sda_level = logic_levels["sda_level"]
+            scl_level = logic_levels["scl_level"]
+
+            # determine bus status
+            bus_status = "UNKNOWN"
+            health_issues = []
+
+            if sda_level == 0 and scl_level == 0:
+                bus_status = "STUCK_LOW"
+                health_issues.append("Both SDA and SCL pins stuck LOW")
+            elif sda_level == 0:
+                bus_status = "SDA_STUCK_LOW"
+                health_issues.append("SDA pin stuck LOW")
+            elif scl_level == 0:
+                bus_status = "SCL_STUCK_LOW"
+                health_issues.append("SCL pin stuck LOW")
+            elif sda_level == 1 and scl_level == 1:
+                bus_status = "IDLE"
+                health_issues.append("Bus appears idle (both pins HIGH)")
+
+            # check for device detection errors
+            if "error" in str(detect_data):
+                health_issues.append("Device detection reported errors")
+                if bus_status == "IDLE":
+                    bus_status = "ERROR_WITH_DETECTION"
+
+            # determine overall health
+            if not health_issues:
+                overall_health = "HEALTHY"
+            elif bus_status in ["STUCK_LOW", "SDA_STUCK_LOW", "SCL_STUCK_LOW"]:
+                overall_health = "CRITICAL"
+            else:
+                overall_health = "WARNING"
+
+            # create comprehensive response
+            health_check = {
+                "bus_status": bus_status,
+                "overall_health": overall_health,
+                "health_issues": health_issues,
+                "logic_levels": logic_levels,
+                "device_detection": detect_data,
+                "timestamp": time.time(),
+                "recommendations": self._get_health_recommendations(bus_status),
+            }
+
+            return {"i2c_bus_health": health_check}
+        except Exception as exc:
+            return {
+                "i2c_bus_health": {
+                    "bus_status": "ERROR",
+                    "overall_health": "CRITICAL",
+                    "error": str(exc),
+                    "timestamp": time.time(),
+                }
+            }
+
+    def _get_health_recommendations(self, bus_status):
+        """
+        Get recommendations based on bus health status.
+
+        inputs:
+            bus_status(str): current bus status
+        returns:
+            (list): list of recommended actions
+        """
+        recommendations = []
+
+        if bus_status in ["STUCK_LOW", "SDA_STUCK_LOW", "SCL_STUCK_LOW"]:
+            recommendations.extend(
+                [
+                    "Bus appears stuck - try i2c recovery sequence",
+                    "Check physical connections to SHT31 sensor",
+                    "Consider power cycling the system",
+                    "Verify no short circuits on i2c lines",
+                ]
+            )
+        elif bus_status == "ERROR_WITH_DETECTION":
+            recommendations.extend(
+                [
+                    "Device detection failed - check sensor connection",
+                    "Verify sensor power supply",
+                    "Try i2c bus recovery if issues persist",
+                ]
+            )
+        elif bus_status == "IDLE":
+            recommendations.extend(
+                [
+                    "Bus appears idle - this is normal when not communicating",
+                    "Run device detection to verify sensor connectivity",
+                ]
+            )
+        else:
+            recommendations.append("Monitor bus status for any changes")
+
+        return recommendations
+
     def get_iwlist_wifi_strength(self, cell=0) -> float:  # noqa R0201
         """
         Return the Raspberry pi wifi signal strength in dBm from iwlist.
@@ -485,7 +802,7 @@ class Sensors:
             )
 
         cell_number_re = re.compile(
-            r"^Cell\s+(?P<cellnumber>.+)\s+-\s+Address:" r"\s(?P<mac>.+)$"
+            r"^Cell\s+(?P<cellnumber>.+)\s+-\s+Address:\s(?P<mac>.+)$"
         )
         regexps = [
             re.compile(r"^ESSID:\"(?P<essid>.*)\"$"),
@@ -502,7 +819,7 @@ class Sensors:
                 r"\s+Signal level=(?P<signal_level_dBm>.+) d.+$"
             ),
             re.compile(
-                r"^Signal level=(?P<signal_quality>\d+)/" r"(?P<signal_total>\d+).*$"
+                r"^Signal level=(?P<signal_quality>\d+)/(?P<signal_total>\d+).*$"
             ),
         ]
 
@@ -640,9 +957,6 @@ class Sensors:
 class Controller(Resource):
     """Production controller."""
 
-    def __init__(self):
-        pass
-
     def get(self):
         """Map the get method."""
         helper = Sensors()
@@ -651,9 +965,6 @@ class Controller(Resource):
 
 class ControllerUnit(Resource):
     """Unit test Controller."""
-
-    def __init__(self):
-        pass
 
     def get(self):
         """Map the get method."""
@@ -664,9 +975,6 @@ class ControllerUnit(Resource):
 class ReadFaultRegister(Resource):
     """Diagnostic Controller."""
 
-    def __init__(self):
-        pass
-
     def get(self):
         """Map the get method."""
         helper = Sensors()
@@ -675,9 +983,6 @@ class ReadFaultRegister(Resource):
 
 class ClearFaultRegister(Resource):
     """Clear Diagnostic Controller."""
-
-    def __init__(self):
-        pass
 
     def get(self):
         """Map the get method."""
@@ -688,9 +993,6 @@ class ClearFaultRegister(Resource):
 class EnableHeater(Resource):
     """Enable heater Controller."""
 
-    def __init__(self):
-        pass
-
     def get(self):
         """Map the get method."""
         helper = Sensors()
@@ -699,9 +1001,6 @@ class EnableHeater(Resource):
 
 class DisableHeater(Resource):
     """Disable heater Controller."""
-
-    def __init__(self):
-        pass
 
     def get(self):
         """Map the get method."""
@@ -712,9 +1011,6 @@ class DisableHeater(Resource):
 class SoftReset(Resource):
     """i2C soft reset."""
 
-    def __init__(self):
-        pass
-
     def get(self):
         """Map the get method."""
         helper = Sensors()
@@ -723,9 +1019,6 @@ class SoftReset(Resource):
 
 class Reset(Resource):
     """i2C hard reset."""
-
-    def __init__(self):
-        pass
 
     def get(self):
         """Map the get method."""
@@ -736,9 +1029,6 @@ class Reset(Resource):
 class I2CRecovery(Resource):
     """Issue i2c recovery sequence."""
 
-    def __init__(self):
-        pass
-
     def get(self):
         """Map the get method."""
         helper = Sensors()
@@ -747,9 +1037,6 @@ class I2CRecovery(Resource):
 
 class I2CDetect(Resource):
     """Issue i2c detect on default bus."""
-
-    def __init__(self):
-        pass
 
     def get(self):
         """Map the get method."""
@@ -760,9 +1047,6 @@ class I2CDetect(Resource):
 class I2CDetectBus0(Resource):
     """Issue i2c detect on bus 0."""
 
-    def __init__(self):
-        pass
-
     def get(self):
         """Map the get method."""
         helper = Sensors()
@@ -772,22 +1056,82 @@ class I2CDetectBus0(Resource):
 class I2CDetectBus1(Resource):
     """Issue i2c detect on bus 1."""
 
-    def __init__(self):
-        pass
-
     def get(self):
         """Map the get method."""
         helper = Sensors()
         return helper.i2c_detect(1)
 
 
+class I2CLogicLevels(Resource):
+    """Read current i2c logic levels."""
+
+    def get(self):
+        """Map the get method."""
+        helper = Sensors()
+        return helper.i2c_read_logic_levels()
+
+
+class I2CBusHealth(Resource):
+    """Comprehensive i2c bus health check."""
+
+    def get(self):
+        """Map the get method."""
+        helper = Sensors()
+        return helper.i2c_bus_health_check()
+
+
+class PrintIPBanBlockList(Resource):
+    """Print IPBan block list to flask server console."""
+
+    def get(self):
+        """Map the get method."""
+        # print block list to server console
+        flg.print_ipban_block_list_with_timestamp(ip_ban)
+        # return block list to API
+        return jsonify(ip_ban.get_block_list())
+        # return {"ipban_block_list": jsonify(ip_ban.get_block_list())}
+
+
+class ClearIPBanBlockList(Resource):
+    """Clear IPBan block list to flask server console."""
+
+    def get(self):
+        """Map the get method."""
+        # clear block list
+        flg.clear_ipban_block_list(ip_ban)
+        # return block list to API
+        return jsonify(ip_ban.get_block_list())
+        # return {"ipban_block_list": jsonify(ip_ban.get_block_list())}
+
+
 def create_app():
     """Create the api object."""
     app_ = Flask(__name__)
 
+    # Set a secret key for CSRF protection
+    # In production, this should be set via environment variable
+    secret_key = os.environ.get("SECRET_KEY")
+    if not secret_key:
+        # Generate a random secret key for development/testing
+        secret_key = secrets.token_hex(32)
+    app_.config["SECRET_KEY"] = secret_key
+
+    # override JSONEncoder
+    app_.json_encoder = flg.CustomJSONEncoder
+
     # add API routes
     api = Api(app_)
-    api.add_resource(Controller, "/")
+
+    # Initialize rate limiter
+    Limiter(
+        get_remote_address,
+        app=app_,
+        default_limits=["200 per day", "60 per hour"],
+        storage_uri=env.get_flask_limiter_storage_uri(),
+    )
+
+    # add API functions
+    api.add_resource(Controller, sht31_config.flask_folder.production)
     api.add_resource(ControllerUnit, sht31_config.flask_folder.unit_test)
     api.add_resource(ReadFaultRegister, sht31_config.flask_folder.diag)
     api.add_resource(ClearFaultRegister, sht31_config.flask_folder.clear_diag)
@@ -799,13 +1143,18 @@ def create_app():
     api.add_resource(I2CDetect, sht31_config.flask_folder.i2c_detect)
     api.add_resource(I2CDetectBus0, sht31_config.flask_folder.i2c_detect_0)
     api.add_resource(I2CDetectBus1, sht31_config.flask_folder.i2c_detect_1)
+    api.add_resource(I2CLogicLevels, sht31_config.flask_folder.i2c_logic_levels)
+    api.add_resource(I2CBusHealth, sht31_config.flask_folder.i2c_bus_health)
+    api.add_resource(PrintIPBanBlockList, sht31_config.flask_folder.print_block_list)
+    api.add_resource(ClearIPBanBlockList, sht31_config.flask_folder.clear_block_list)
+
     return app_
 
 
 # create the flask app
 app = create_app()
 csrf = CSRFProtect(app)  # enable CSRF protection
-ip_ban = flg.initialize_ipban(app)  # hacker blacklisting agent
+ip_ban = flg.initialize_ipban(app)  # hacker BlockListing agent
 flg.set_flask_cookie_config(app)
 flg.print_flask_config(app)
 

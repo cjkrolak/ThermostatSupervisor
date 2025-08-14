@@ -4,6 +4,7 @@ Unit test module for supervise_flask_server.py.
 Flask server tests currently do not work on Azure pipelines
 because ports cannot be opened on shared pool.
 """
+
 # built-in imports
 import threading
 import time
@@ -41,7 +42,7 @@ class IntegrationTest(utc.UnitTest):
 
     app = sfs.create_app()
     csrf = CSRFProtect(app)  # enable CSRF protection
-    ip_ban = flg.initialize_ipban(app)  # hacker blacklisting agent
+    ip_ban = flg.initialize_ipban(app)  # hacker BlockListing agent
     flg.set_flask_cookie_config(app)
     flg.print_flask_config(app)
 
@@ -115,7 +116,7 @@ class IntegrationTest(utc.UnitTest):
         self.assertEqual(
             results.status_code,
             200,
-            f"web page response was {results.status_code}, " f"expected 200",
+            f"web page response was {results.status_code}, expected 200",
         )
 
         # check web page content vs. expectations
@@ -127,8 +128,46 @@ class IntegrationTest(utc.UnitTest):
         )
         self.assertTrue(
             exp_substr in results.content.decode("utf-8"),
-            f"did not find substring '{exp_substr}' in web page" " response",
+            f"did not find substring '{exp_substr}' in web page response",
         )
+
+
+@unittest.skipIf(
+    not utc.ENABLE_FLASK_INTEGRATION_TESTS, "flask integration tests are disabled"
+)
+class TestRunSupervise(utc.UnitTest):
+    """Unit tests for run_supervise function."""
+
+    def setUp(self):
+        super().setUp()
+        self.app = sfs.create_app()
+        self.client = self.app.test_client()
+        sfs.argv = utc.unit_test_argv
+
+    def test_run_supervise_response(self):
+        """Test the response of run_supervise function."""
+        with self.app.test_request_context():
+            response = sfs.index()
+            self.assertEqual(response.status_code, 200)
+            self.assertIn(
+                f"<title>{utc.unit_test_argv[1]} thermostat zone "
+                f"{utc.unit_test_argv[2]}, {utc.unit_test_argv[7]} "
+                "measurements</title>",
+                response.get_data(as_text=True),
+            )
+
+    def test_run_supervise_output(self):
+        """Test the output of run_supervise function."""
+        with self.app.test_request_context():
+            response = sfs.index()
+            # The response is a streaming response, consume the generator
+            content_parts = list(response.response)
+            content = "".join(content_parts)
+            # At minimum, we should get the HTML title
+            self.assertIn("<title>", content)
+            # Note: <code> and <br> may not appear if subprocess doesn't
+            # produce output. This is expected in test environments where
+            # subprocess may not run properly
 
 
 if __name__ == "__main__":

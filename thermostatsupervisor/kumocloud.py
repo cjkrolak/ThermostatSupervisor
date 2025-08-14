@@ -1,9 +1,12 @@
 """KumoCloud integration"""
+
 # built-in imports
+import logging
 import os
 import pprint
 import time
 import traceback
+from typing import Union
 
 # third party imports
 
@@ -25,6 +28,39 @@ else:
     import pykumo  # noqa E402, from path / site packages
 
 
+class SupervisorLogHandler(logging.Handler):
+    """Custom logging handler to redirect pykumo logs to supervisor logging."""
+
+    def emit(self, record):
+        """
+        Emit a log record through the supervisor's log_msg function.
+
+        inputs:
+            record(LogRecord): The logging record to emit
+        """
+        try:
+            # Format the message
+            msg = self.format(record)
+
+            # Map logging levels to supervisor log modes
+            level_mapping = {
+                logging.DEBUG: util.DEBUG_LOG + util.DATA_LOG,
+                logging.INFO: util.DATA_LOG,
+                logging.WARNING: util.DATA_LOG,
+                logging.ERROR: util.DATA_LOG + util.STDERR_LOG,
+                logging.CRITICAL: util.DATA_LOG + util.STDERR_LOG,
+            }
+
+            # Get the appropriate log mode, default to DATA_LOG for unknown levels
+            log_mode = level_mapping.get(record.levelno, util.DATA_LOG)
+
+            # Log through supervisor's logging system
+            util.log_msg(f"[pykumo] {msg}", mode=log_mode, file_name="kumo_log.txt")
+        except Exception:
+            # Fallback to avoid breaking logging completely
+            self.handleError(record)
+
+
 class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
     """KumoCloud thermostat functions."""
 
@@ -40,10 +76,10 @@ class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
         self.KC_UNAME_KEY = "KUMO_USERNAME"
         self.KC_PASSWORD_KEY = "KUMO_PASSWORD"
         self.kc_uname = os.environ.get(
-            self.KC_UNAME_KEY, "<" + self.KC_UNAME_KEY + "_KEY_MISSING>"
+            self.KC_UNAME_KEY, "<" + self.KC_UNAME_KEY + api.KEY_MISSING_SUFFIX
         )
         self.kc_pwd = os.environ.get(
-            self.KC_PASSWORD_KEY, "<" + self.KC_PASSWORD_KEY + "_KEY_MISSING>"
+            self.KC_PASSWORD_KEY, "<" + self.KC_PASSWORD_KEY + api.KEY_MISSING_SUFFIX
         )
 
         # construct the superclass
@@ -53,6 +89,9 @@ class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
         # kumocloud account init sets the self._url
         pykumo.KumoCloudAccount.__init__(self, *self.args)
         tc.ThermostatCommon.__init__(self)
+
+        # integrate pykumo logger with supervisor logging system
+        self._setup_pykumo_logging()
 
         # set tstat type and debug flag
         self.thermostat_type = kumocloud_config.ALIAS
@@ -64,6 +103,53 @@ class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
         self.device_id = self.get_target_zone_id(self.zone_name)
         self.serial_number = None  # will be populated when unit is queried.
         self.zone_info = {}
+
+    def _setup_pykumo_logging(self):
+        """
+        Configure pykumo loggers to use supervisor logging system.
+
+        This method sets up a custom handler that redirects pykumo log messages
+        to the supervisor's log_msg function, ensuring all logging goes to the
+        same destination.
+        """
+        # List of pykumo modules that have loggers
+        pykumo_modules = [
+            "pykumo.py_kumo_cloud_account",
+            "pykumo.py_kumo",
+            "pykumo.py_kumo_base",
+            "pykumo.py_kumo_station",
+        ]
+
+        for module_name in pykumo_modules:
+            try:
+                # Get the logger for each pykumo module
+                pykumo_logger = logging.getLogger(module_name)
+
+                # Remove any existing handlers to avoid duplicate logging
+                for handler in pykumo_logger.handlers[:]:
+                    pykumo_logger.removeHandler(handler)
+
+                # Add our custom handler
+                supervisor_handler = SupervisorLogHandler()
+                supervisor_handler.setLevel(logging.DEBUG)
+
+                # Set a simple formatter
+                formatter = logging.Formatter("%(name)s - %(levelname)s - %(message)s")
+                supervisor_handler.setFormatter(formatter)
+
+                pykumo_logger.addHandler(supervisor_handler)
+                pykumo_logger.setLevel(logging.DEBUG)
+
+                # Prevent propagation to avoid duplicate messages
+                pykumo_logger.propagate = False
+
+            except Exception as exc:
+                # Log setup failure but don't break initialization
+                util.log_msg(
+                    f"Failed to setup logging for {module_name}: {exc}",
+                    mode=util.DATA_LOG + util.STDERR_LOG,
+                    func_name=1,
+                )
 
     def get_target_zone_id(self, zone=0):
         """
@@ -95,11 +181,17 @@ class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
                 if kumocloud_config.metadata[i]["zone_name"] == self.zone_name
             ][0]
         except IndexError:
-            print(
-                f"ERROR: zone_name={self.zone_name} not present in meta data"
-                f" dict, valid values are {kumocloud_config.metadata.keys()}"
+            # Create a helpful error message with valid zone names
+            valid_zone_names = [
+                kumocloud_config.metadata[i]["zone_name"]
+                for i in kumocloud_config.metadata
+            ]
+            error_msg = (
+                f"zone_name='{self.zone_name}' not found in kumocloud metadata. "
+                f"Valid zone names are: {valid_zone_names}. "
+                f"Available zone indices are: {list(kumocloud_config.metadata.keys())}"
             )
-            raise
+            raise ValueError(error_msg) from None
         return zone_index
 
     def get_all_metadata(self, zone=None, retry=False):
@@ -107,25 +199,14 @@ class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
 
         inputs:
             zone(int): specified zone, if None will print all zones.
-            retry(bool): if True will retry once.
+            retry(bool): if True will retry with extended retry mechanism.
         returns:
             (dict): JSON dict
         """
-        del retry  # not used
-        return self.get_metadata(zone)
+        return self.get_metadata(zone, retry=retry)
 
-    def get_metadata(self, zone=None, trait=None, parameter=None):
-        """Get all thermostat meta data for zone from kumocloud.
-
-        inputs:
-            zone(int): specified zone, if None will print all zones.
-            trait(str): trait or parent key, if None will assume a non-nested
-                        dict
-            parameter(str): target parameter, if None will return all.
-        returns:
-            (int, float, str, dict): depends on parameter
-        """
-        del trait  # not neded on Kumocloud
+    def _get_serial_number_list(self):
+        """Get indoor unit serial numbers with retry logic."""
         try:
             serial_num_lst = list(self.get_indoor_units())  # will query unit
         except UnboundLocalError:  # patch for issue #205
@@ -136,6 +217,7 @@ class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
             )
             time.sleep(30)
             serial_num_lst = list(self.get_indoor_units())  # retry
+
         if self.verbose:
             util.log_msg(
                 f"indoor unit serial numbers: {str(serial_num_lst)}",
@@ -143,7 +225,10 @@ class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
                 func_name=1,
             )
 
-        # validate serial number list
+        return serial_num_lst
+
+    def _validate_and_populate_metadata(self, serial_num_lst):
+        """Validate serial number list and populate metadata."""
         if not serial_num_lst:
             raise tc.AuthenticationError(
                 "pykumo meta data is blank, probably"
@@ -152,19 +237,13 @@ class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
             )
 
         for idx, serial_number in enumerate(serial_num_lst):
-            # if self.verbose:
-            # util.log_msg(
-            #     f"Unit {self.get_name(serial_number)}: address: "
-            #     f"{self.get_address(serial_number)} credentials: "
-            #     f"{self.get_credentials(serial_number)}",
-            #     mode=util.DEBUG_LOG + util.STDOUT_LOG,
-            #     func_name=1,
-            # )
             # populate meta data dict
             if self.verbose:
                 print(f"zone index={idx}, serial_number={serial_number}")
             kumocloud_config.metadata[idx]["serial_number"] = serial_number
 
+    def _get_zone_data(self, zone, serial_num_lst):
+        """Get zone data based on zone parameter."""
         # raw_json list:
         # [0]: token, username, device fields
         # [1]: lastupdate date
@@ -172,28 +251,72 @@ class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
         # [3]: device token
         if zone is None:
             # returned cached raw data for all zones
-            raw_json = self.get_raw_json()[2]  # does not fetch results,
+            return self.get_raw_json()[2]  # does not fetch results,
         else:
             # if zone name input, find zone index
             if not isinstance(zone, int):
-                zone = self.get_zone_index_from_name()
+                self.zone_name = zone
+                zone_index = self.get_zone_index_from_name()
+            else:
+                zone_index = zone
             # return cached raw data for specified zone, will be a dict
             try:
-                self.serial_number = serial_num_lst[zone]
+                self.serial_number = serial_num_lst[zone_index]
             except IndexError as exc:
                 raise IndexError(
-                    f"ERROR: Invalid Zone, index ({zone}) does "
+                    f"ERROR: Invalid Zone, index ({zone_index}) does "
                     "not exist in serial number list "
                     f"({serial_num_lst})"
                 ) from exc
-            raw_json = self.get_raw_json()[2]["children"][0]["zoneTable"][
-                serial_num_lst[zone]
+            return self.get_raw_json()[2]["children"][0]["zoneTable"][
+                serial_num_lst[zone_index]
             ]
 
-        if parameter is None:
-            return raw_json
+    def get_metadata(self, zone=None, trait=None, parameter=None, retry=False):
+        """Get all thermostat meta data for zone from kumocloud.
+
+        inputs:
+            zone(int): specified zone, if None will print all zones.
+            trait(str): trait or parent key, if None will assume a non-nested
+                        dict
+            parameter(str): target parameter, if None will return all.
+            retry(bool): if True will retry with extended retry mechanism
+        returns:
+            (int, float, str, dict): depends on parameter
+        """
+        del trait  # not needed on Kumocloud
+
+        def _get_metadata_internal():
+            serial_num_lst = self._get_serial_number_list()
+            self._validate_and_populate_metadata(serial_num_lst)
+            raw_json = self._get_zone_data(zone, serial_num_lst)
+
+            if parameter is None:
+                return raw_json
+            else:
+                return raw_json[parameter]
+
+        if retry:
+            # Use standardized extended retry mechanism
+            return util.execute_with_extended_retries(
+                func=_get_metadata_internal,
+                thermostat_type=getattr(self, "thermostat_type", "KumoCloud"),
+                zone_name=str(getattr(self, "zone_name", str(zone))),
+                number_of_retries=5,
+                initial_retry_delay_sec=60,
+                exception_types=(
+                    UnboundLocalError,
+                    tc.AuthenticationError,
+                    IndexError,
+                    KeyError,
+                    ConnectionError,
+                    TimeoutError,
+                ),
+                email_notification=None,  # KumoCloud doesn't import email_notification
+            )
         else:
-            return raw_json[parameter]
+            # Single attempt without retry
+            return _get_metadata_internal()
 
     def print_all_thermostat_metadata(self, zone):
         """Print all metadata for zone to the screen.
@@ -274,56 +397,26 @@ class ThermostatZone(tc.ThermostatCommonZone):
             default_val(str, int, float): default value on key errors
         """
         return_val = default_val
-        if grandparent_key is not None:
-            try:
-                # check parent keys
+        try:
+            if grandparent_key is not None:
                 grandparent_dict = self.zone_info[grandparent_key]
                 parent_dict = grandparent_dict[parent_key]
                 return_val = parent_dict[key]
-            except KeyError:
-                if default_val is None:
-                    # if no default val, then display detailed key error
-                    util.log_msg(
-                        traceback.format_exc(), mode=util.BOTH_LOG, func_name=1
-                    )
-                    util.log_msg("raw zone_info dict:", mode=util.BOTH_LOG, func_name=1)
-                    util.log_msg(
-                        pprint.pprint(self.zone_info), mode=util.BOTH_LOG, func_name=1
-                    )
-                    raise
-        elif parent_key is not None:
-            try:
+            elif parent_key is not None:
                 parent_dict = self.zone_info[parent_key]
                 return_val = parent_dict[key]
-            except KeyError:
-                if default_val is None:
-                    # if no default val, then display detailed key error
-                    util.log_msg(
-                        traceback.format_exc(), mode=util.BOTH_LOG, func_name=1
-                    )
-                    util.log_msg("raw zone_info dict:", mode=util.BOTH_LOG, func_name=1)
-                    util.log_msg(
-                        pprint.pprint(self.zone_info), mode=util.BOTH_LOG, func_name=1
-                    )
-                    raise
-        else:
-            try:
+            else:
                 return_val = self.zone_info[key]
-            except (KeyError, TypeError):
-                if default_val is None:
-                    # if no default val, then display detailed key error
-                    util.log_msg(
-                        traceback.format_exc(), mode=util.BOTH_LOG, func_name=1
-                    )
-                    util.log_msg(
-                        f"target key={key}, raw zone_info dict:",
-                        mode=util.BOTH_LOG,
-                        func_name=1,
-                    )
-                    util.log_msg(
-                        pprint.pprint(self.zone_info), mode=util.BOTH_LOG, func_name=1
-                    )
-                    raise
+        except (KeyError, TypeError):
+            if default_val is None:
+                # if no default val, then display detailed key error
+                util.log_msg(traceback.format_exc(), mode=util.BOTH_LOG, func_name=1)
+                util.log_msg(
+                    f"target key={key}, raw zone_info dict:",
+                    mode=util.BOTH_LOG,
+                    func_name=1,
+                )
+                raise
         return return_val
 
     def get_zone_name(self):
@@ -357,7 +450,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
             )
         )
 
-    def get_display_humidity(self) -> (float, None):
+    def get_display_humidity(self) -> Union[float, None]:
         """
         Refresh the cached zone information and return IndoorHumidity.
 
@@ -460,6 +553,17 @@ class ThermostatZone(tc.ThermostatCommonZone):
             == self.system_switch_position[tc.ThermostatCommonZone.AUTO_MODE]
         )
 
+    def is_eco_mode(self) -> int:
+        """
+        Refresh the cached zone information and return the eco mode.
+
+        inputs:
+            None
+        returns:
+            (int): eco mode, 1=enabled, 0=disabled.
+        """
+        return int(self.get_parameter("energy_save", "reportedInitialSettings"))
+
     def is_off_mode(self) -> int:
         """
         Refresh the cached zone information and return the off mode.
@@ -509,16 +613,27 @@ class ThermostatZone(tc.ThermostatCommonZone):
             )
         )
 
-    def is_fanning(self):
+    def is_eco(self):
+        """Return 1 if eco relay is active, else 0."""
+        return int(
+            self.is_eco_mode()
+            and self.is_power_on()
+            and (
+                self.get_cool_setpoint_raw() < self.get_display_temp()
+                or self.get_heat_setpoint_raw() > self.get_display_temp()
+            )
+        )
+
+    def is_fanning(self) -> int:
         """Return 1 if fan relay is active, else 0."""
         return int(self.is_fan_on() and self.is_power_on())
 
-    def is_power_on(self):
+    def is_power_on(self) -> int:
         """Return 1 if power relay is active, else 0."""
         self.refresh_zone_info()
-        return self.get_parameter("power", "reportedCondition", default_val=0)
+        return int(self.get_parameter("power", "reportedCondition", default_val=0))
 
-    def is_fan_on(self):
+    def is_fan_on(self) -> int:
         """Return 1 if fan relay is active, else 0."""
         if self.is_power_on():
             fan_speed = self.get_parameter("fan_speed", "reportedCondition")
@@ -533,12 +648,12 @@ class ThermostatZone(tc.ThermostatCommonZone):
         else:
             return 0
 
-    def is_defrosting(self):
+    def is_defrosting(self) -> int:
         """Return 1 if defrosting is active, else 0."""
         self.refresh_zone_info()
         return int(self.get_parameter("defrost", "status_display", "reportedCondition"))
 
-    def is_standby(self):
+    def is_standby(self) -> int:
         """Return 1 if standby is active, else 0."""
         self.refresh_zone_info()
         return int(self.get_parameter("standby", "status_display", "reportedCondition"))

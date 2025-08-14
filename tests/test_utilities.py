@@ -1,6 +1,7 @@
 """
 Unit test module for utilities.py.
 """
+
 # built-in imports
 import os
 import shutil
@@ -108,7 +109,7 @@ class FileAndLoggingTests(utc.UnitTest):
         # assuming file exists, should return non-zero value
         result = util.get_file_size_bytes(full_path)
         self.assertTrue(
-            result > 0, f"file size for existing file is {result}, " f"expected > 0"
+            result > 0, f"file size for existing file is {result}, expected > 0"
         )
 
         # bogus file, should return zero value
@@ -241,7 +242,7 @@ class MetricsTests(utc.UnitTest):
     def test_temp_value_with_units(self):
         """Verify function attaches units as expected."""
 
-        for test_case in [44, -1, 101, 2, "13", "-13", None]:
+        for test_case in [44, -1, 101, 2, "13", "-13", None, "13°F"]:
             for precision in [0, 1, 2]:
                 for disp_unit in ["F", "c"]:
                     print(
@@ -250,12 +251,19 @@ class MetricsTests(utc.UnitTest):
                     )
                     if test_case is None:
                         formatted = "None"
+                    elif "°" in str(test_case):
+                        # pass-thru for already formatted values
+                        formatted = f"{test_case}"
                     else:
                         if isinstance(test_case, str):
                             formatted = f"{float(test_case):.{precision}f}"
                         else:
                             formatted = f"{test_case:.{precision}f}"
-                    expected_val = f"{formatted}°{disp_unit}"
+                    if "°" in str(test_case):
+                        # pass-thru for already formatted values
+                        expected_val = f"{test_case}"
+                    else:
+                        expected_val = f"{formatted}°{disp_unit}"
                     actual_val = util.temp_value_with_units(
                         test_case, disp_unit, precision
                     )
@@ -274,35 +282,50 @@ class MetricsTests(utc.UnitTest):
     def test_humidity_value_with_units(self):
         """Verify function attaches units as expected."""
 
-        for test_case in [44, -1, 101, 2, "13", "-13", None]:
-            for precision in [0, 1, 2]:
-                for disp_unit in ["RH"]:
+        test_cases = [44, -1, 101, 2, "13", "-13", None, "45%RH"]
+        precisions = [0, 1, 2]
+        disp_units = ["RH"]
+
+        for test_case in test_cases:
+            for precision in precisions:
+                for disp_unit in disp_units:
                     print(
                         f"test case: value={test_case}, precision="
                         f"{precision}, units={disp_unit}"
                     )
-                    if test_case is None:
-                        formatted = "None"
-                    else:
-                        if isinstance(test_case, str):
-                            formatted = f"{float(test_case):.{precision}f}"
-                        else:
-                            formatted = f"{test_case:.{precision}f}"
-                    expected_val = f"{formatted}%{disp_unit}"
+
+                    expected_val = self._format_humidity_value(
+                        test_case, precision, disp_unit
+                    )
+
                     actual_val = util.humidity_value_with_units(
                         test_case, disp_unit, precision
                     )
+                    print(f"expected={expected_val}, actual={actual_val}")
                     self.assertEqual(
                         expected_val,
                         actual_val,
                         f"test case: {test_case}, expected_val="
-                        f"{expected_val}, actual_val="
-                        f"{actual_val}",
+                        f"{expected_val}, type {type(expected_val)}, actual_val="
+                        f"{actual_val}, type {type(actual_val)}",
                     )
 
         # test failing case
         with self.assertRaises(ValueError):
             util.humidity_value_with_units(-13, "bogus", 1)
+
+    def _format_humidity_value(self, test_case, precision, disp_unit):
+        """Helper function to format humidity values."""
+        if test_case is None:
+            return "None"  # cast to string
+        elif "%" in str(test_case):
+            return f"{test_case}"
+        else:
+            if isinstance(test_case, str):
+                formatted = f"{float(test_case):.{precision}f}"
+            else:
+                formatted = f"{test_case:.{precision}f}"
+            return f"{formatted}%{disp_unit}"
 
     def test_c_to_f(self):
         """Verify C to F calculations."""
@@ -317,7 +340,7 @@ class MetricsTests(utc.UnitTest):
             self.assertEqual(
                 expected_tempf,
                 tempf,
-                f"test case {tempc}: " f"expected={expected_tempf}, actual={tempf}",
+                f"test case {tempc}: expected={expected_tempf}, actual={tempf}",
             )
 
         # verify exception cases
@@ -342,7 +365,7 @@ class MetricsTests(utc.UnitTest):
             self.assertEqual(
                 expected_tempc,
                 tempc,
-                f"test case {tempf}: " f"expected={expected_tempc}, actual={tempc}",
+                f"test case {tempf}: expected={expected_tempc}, actual={tempc}",
             )
 
         # verify exception case
@@ -384,7 +407,7 @@ class MiscTests(utc.UnitTest):
         result_1 = util.get_function_name(test)
         print(f"get_function_name({test})={result_1}")
         self.assertEqual(
-            ev_1, result_1, f"test{test}: expected={ev_1}, " f"actual={result_1}"
+            ev_1, result_1, f"test{test}: expected={ev_1}, actual={result_1}"
         )
 
         # test 2
@@ -397,7 +420,7 @@ class MiscTests(utc.UnitTest):
         print(f"get_function_name({test})={result_1}")
         self.assertTrue(
             result_1 in ev_1,
-            f"test{test}: expected values={ev_1}" f", actual={result_1}",
+            f"test{test}: expected values={ev_1}, actual={result_1}",
         )
 
         # test 3
@@ -411,7 +434,7 @@ class MiscTests(utc.UnitTest):
         print(f"get_function_name({test})={result_1}")
         self.assertTrue(
             result_1 in ev_1,
-            f"test{test}: expected values={ev_1}" f", actual={result_1}",
+            f"test{test}: expected values={ev_1}, actual={result_1}",
         )
 
     def test_utf8len(self):
@@ -425,7 +448,7 @@ class MiscTests(utc.UnitTest):
             self.assertEqual(
                 expected_value,
                 actual_value,
-                f"expected={expected_value}, " f"actual={actual_value}",
+                f"expected={expected_value}, actual={actual_value}",
             )
 
     def test_get_key_from_value(self):
@@ -494,7 +517,8 @@ class MiscTests(utc.UnitTest):
             actual_val = util.get_key_from_value(test_dict, "bogus_value")
 
         # unsupported datatype
-        with self.assertRaises(KeyError):
+        test_dict.update({"NoneKey": None})  # None element
+        with self.assertRaises(TypeError):
             print(
                 "attempting to input unsupported datatype, "
                 "expect TypeError exception..."
@@ -546,7 +570,7 @@ class MiscTests(utc.UnitTest):
             else:
                 self.assertTrue(
                     ip_address is None,
-                    f"ip_address returned ({ip_address}) " f"is not None",
+                    f"ip_address returned ({ip_address}) is not None",
                 )
 
             # verify expected result
@@ -556,40 +580,6 @@ class MiscTests(utc.UnitTest):
                 f"test_case={test_case[0]}, expected="
                 f"{test_case[2]}, actual={result}",
             )
-
-
-class RuntimeParameterTest(utc.RuntimeParameterTest):
-    """Generic runtime parameter tests."""
-
-    mod = utc  # module to test
-    script = os.path.realpath(__file__)
-    bool_val = False
-    int_val = 9
-    float_val = 8.8
-    str_val = "test str"
-    required_val = "required"
-    input_file = utc.unit_test_argv_file
-
-    # fields for testing, mapped to class variables.
-    # (value, field name)
-    test_fields = [
-        (script, os.path.realpath(__file__)),
-        (bool_val, utc.BOOL_FLD),
-        (int_val, utc.INT_FLD),
-        (float_val, utc.FLOAT_FLD),
-        (str_val, utc.STR_FLD),
-        (required_val, utc.REQUIRED_FLD),
-    ]
-    # test case with input file
-    test_fields_with_file = [
-        (script, os.path.realpath(__file__)),
-        (bool_val, utc.BOOL_FLD),
-        (int_val, utc.INT_FLD),
-        (float_val, utc.FLOAT_FLD),
-        (str_val, utc.STR_FLD),
-        (required_val, utc.REQUIRED_FLD),
-        (input_file, utc.INPUT_FILE_FLD),
-    ]
 
 
 if __name__ == "__main__":

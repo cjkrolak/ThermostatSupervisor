@@ -20,6 +20,7 @@ from thermostatsupervisor import honeywell_config
 from thermostatsupervisor import kumocloud_config
 from thermostatsupervisor import kumolocal_config
 from thermostatsupervisor import mmm_config
+from thermostatsupervisor import nest_config
 from thermostatsupervisor import sht31_config
 
 MIN_PYTHON_MAJOR_VERSION = 3  # minimum python major version required
@@ -29,23 +30,62 @@ MIN_PYTHON_MINOR_VERSION = 7  # minimum python minor version required
 env_variables = {
     "GMAIL_USERNAME": None,
     "GMAIL_PASSWORD": None,
+    "FLASK_LIMITER_STORAGE_URI": None,
 }
 env_variables.update(honeywell_config.env_variables)
 env_variables.update(kumocloud_config.env_variables)
 env_variables.update(kumolocal_config.env_variables)
 env_variables.update(mmm_config.env_variables)
+env_variables.update(nest_config.env_variables)
 env_variables.update(sht31_config.env_variables)
 
 
-def get_env_variable(env_key):
+def _read_supervisor_env_file():
+    """
+    Read environment variables from supervisor-env.txt file.
+
+    Returns:
+        dict: Dictionary of environment variables from file, empty if file
+              doesn't exist or can't be read.
+    """
+    env_dict = {}
+    try:
+        # Look for supervisor-env.txt in the current working directory
+        env_file_path = os.path.join(os.getcwd(), "supervisor-env.txt")
+        if os.path.exists(env_file_path):
+            with open(env_file_path, "r", encoding="utf-8") as f:
+                for line_num, line in enumerate(f, 1):
+                    line = line.strip()
+                    # Skip empty lines and comments
+                    if not line or line.startswith("#"):
+                        continue
+                    # Parse KEY=VALUE format
+                    if "=" in line:
+                        key, value = line.split("=", 1)
+                        env_dict[key.strip()] = value.strip()
+                    else:
+                        util.log_msg(
+                            f"Invalid format in supervisor-env.txt line "
+                            f"{line_num}: {line}",
+                            mode=util.DEBUG_LOG,
+                        )
+    except Exception as ex:
+        util.log_msg(
+            f"Error reading supervisor-env.txt: {str(ex)}", mode=util.DEBUG_LOG
+        )
+    return env_dict
+
+
+def get_env_variable(env_key, default=None):
     """
     Get environment variable.
 
-    Results will be logged but passwords will be masked off.
+    First attempts to read from supervisor-env.txt file, then falls back
+    to environment variables. Results will be logged but passwords will be masked off.
 
     inputs:
        env_key(str): env variable of interest
-       debug(bool): verbose debugging
+       default: default value to return if env variable is not found (optional)
     returns:
        (dict): {status, value, key}
     """
@@ -61,7 +101,18 @@ def get_env_variable(env_key):
         if env_key == sht31_config.UNIT_TEST_ENV_KEY:
             return_buffer["value"] = get_local_ip()
         else:
-            return_buffer["value"] = os.environ[env_key]
+            # First try to get from supervisor-env.txt file
+            file_env_vars = _read_supervisor_env_file()
+            if env_key in file_env_vars:
+                return_buffer["value"] = file_env_vars[env_key]
+                util.log_msg(
+                    f"Environment variable '{env_key}' loaded from "
+                    "supervisor-env.txt",
+                    mode=util.DEBUG_LOG,
+                )
+            else:
+                # Fall back to system environment variables
+                return_buffer["value"] = os.environ[env_key]
 
         # mask off any password keys
         if "PASSWORD" in return_buffer["key"]:
@@ -71,11 +122,23 @@ def get_env_variable(env_key):
 
         util.log_msg(f"{env_key}={value_shown}", mode=util.DEBUG_LOG)
     except KeyError:
-        util.log_msg(
-            f"FATAL ERROR: required environment variable '{env_key}'" " is missing.",
-            mode=util.STDOUT_LOG + util.DATA_LOG,
-        )
-        return_buffer["status"] = util.ENVIRONMENT_ERROR
+        if default is not None:
+            return_buffer["value"] = default
+            # mask off any password keys
+            if "PASSWORD" in return_buffer["key"]:
+                value_shown = "(hidden)"
+            else:
+                value_shown = return_buffer["value"]
+            util.log_msg(
+                f"{env_key}={value_shown} (using default value)", mode=util.DEBUG_LOG
+            )
+        else:
+            util.log_msg(
+                f"FATAL ERROR: required environment variable '{env_key}'"
+                " is missing.",
+                mode=util.STDOUT_LOG + util.DATA_LOG,
+            )
+            return_buffer["status"] = util.ENVIRONMENT_ERROR
     return return_buffer
 
 
@@ -95,7 +158,7 @@ def set_env_variable(key, val):
         raise AttributeError("environment key cannot be none")
     elif not isinstance(key, str):
         raise AttributeError(
-            f"environment key '{key}' must be a string, " f"is type {type(key)}"
+            f"environment key '{key}' must be a string, is type {type(key)}"
         )
     os.environ[key] = str(val)
 
@@ -241,6 +304,54 @@ def get_python_version(
     return (major_version, minor_version)
 
 
+def _add_package_to_path(pkg, verbose=False):
+    """Add package to sys.path if provided."""
+    if pkg is None:
+        return
+
+    pkg_path = get_parent_path(os.getcwd()) + "//" + pkg
+    print(f"adding package '{pkg_path}' to path...")
+    # add to front(0) of path to ensure that package folder is prioritized over
+    # local folder
+    sys.path.insert(0, pkg_path)
+    if verbose:
+        print(f"sys.path={sys.path}")
+
+
+def _import_from_path(name, path, verbose=False):
+    """Import module from specific path."""
+    # check if module is already imported to avoid re-importing
+    if name in sys.modules:
+        if verbose:
+            print(f"module '{name}' already imported, reusing existing module")
+        return sys.modules[name]
+
+    # convert to abs path
+    path = convert_to_absolute_path(path)
+
+    # local file import from relative or abs path
+    print(f"WARNING: attempting local import of {name} from path {path}...")
+    if verbose:
+        print(f"target dir contents={os.listdir(path)}")
+        print(f"adding '{path}' to system path")
+    sys.path.insert(1, path)
+    mod = importlib.import_module(name)
+    if mod is None:
+        raise ModuleNotFoundError(f"module '{name}' could not be found at {path}")
+    return mod
+
+
+def _import_from_installed_packages(name, path):
+    """Import module from installed packages."""
+    spec = importlib.util.find_spec(name, path)
+    if spec is None:
+        raise ModuleNotFoundError(f"module '{name}' could not be found")
+    mod = importlib.util.module_from_spec(spec)
+    sys.modules[name] = mod
+    spec.loader.exec_module(mod)
+    return mod
+
+
 def dynamic_module_import(name, path=None, pkg=None, verbose=False):
     """
     Find and load python module.
@@ -259,47 +370,29 @@ def dynamic_module_import(name, path=None, pkg=None, verbose=False):
     returns:
         mod(module): module object
     """
-    # add package to path
-    if pkg is not None:
-        pkg_path = get_parent_path(os.getcwd()) + "//" + pkg
-        print(f"adding package '{pkg_path}' to path...")
-        # add to front(0) of path to ensure that package folder is prioritized over
-        # local folder
-        sys.path.insert(0, pkg_path)
-        if verbose:
-            print(f"sys.path={sys.path}")
+    _add_package_to_path(pkg, verbose)
 
     try:
-        if path:
-            # convert to abs path
-            path = convert_to_absolute_path(path)
-
-            # local file import from relative or abs path
-            print(f"WARNING: attempting local import of {name} from " f"path {path}...")
-            if verbose:
-                print(f"target dir contents={os.listdir(path)}")
-                print(f"adding '{path}' to system path")
-            sys.path.insert(1, path)
-            mod = importlib.import_module(name)
-            if mod is None:
-                raise ModuleNotFoundError(
-                    f"module '{name}' could not " f"be found at {path}"
-                )
-        else:
-            # installed package import
-            spec = importlib.util.find_spec(name, path)
-            if spec is None:
-                raise ModuleNotFoundError(f"module '{name}' could not be found")
-            mod = importlib.util.module_from_spec(spec)
-            sys.modules[name] = mod
-            spec.loader.exec_module(mod)
-    except Exception as ex:
-        util.log_msg(traceback.format_exc(), mode=util.BOTH_LOG, func_name=1)
-        util.log_msg("module load failed: " + name, mode=util.BOTH_LOG, func_name=1)
-        raise ex
-    else:
+        mod = _import_module_by_path(name, path, verbose)
         show_package_version(mod)
         return mod
+    except Exception as ex:
+        _handle_import_error(ex, name)
+
+
+def _import_module_by_path(name, path, verbose):
+    """Import module based on whether path is provided."""
+    if path:
+        return _import_from_path(name, path, verbose)
+    else:
+        return _import_from_installed_packages(name, path)
+
+
+def _handle_import_error(exception, module_name):
+    """Handle module import errors."""
+    util.log_msg(traceback.format_exc(), mode=util.BOTH_LOG, func_name=1)
+    util.log_msg("module load failed: " + module_name, mode=util.BOTH_LOG, func_name=1)
+    raise exception
 
 
 def convert_to_absolute_path(relative_path):
@@ -401,3 +494,16 @@ def get_package_path(module):
         (str): path to installed package.
     """
     return module.__dict__["__file__"]
+
+
+def get_flask_limiter_storage_uri():
+    """
+    Get Flask-Limiter storage URI from environment or default.
+
+    Returns:
+        str: Storage URI for Flask-Limiter. Defaults to 'memory://' if not set.
+    """
+    storage_uri = get_env_variable("FLASK_LIMITER_STORAGE_URI", default="memory://")[
+        "value"
+    ]
+    return storage_uri

@@ -1,6 +1,7 @@
 """
 mmm config file.
 """
+
 ALIAS = "mmm50"
 
 # 3m50 thermostat IP addresses (on local net)
@@ -20,6 +21,7 @@ supported_configs = {
     "type": 2,
     "zones": [0, 1],
     "modes": ["OFF_MODE", "HEAT_MODE", "COOL_MODE", "UNKNOWN_MODE"],
+    "zip_code": "55760",  # Zip code for outdoor weather data
 }
 
 # metadata dict

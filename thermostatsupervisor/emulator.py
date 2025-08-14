@@ -1,7 +1,11 @@
 """emulator integration"""
+
+import os
+import pickle
 import random
 import time
 import traceback
+from typing import Union
 
 # local imports
 from thermostatsupervisor import emulator_config
@@ -54,17 +58,18 @@ class ThermostatClass(tc.ThermostatCommon):
         """
         return zone
 
-    def get_all_metadata(self, zone=None):
-        """Get all thermostat meta data for zone from kumocloud.
+    def get_all_metadata(self, zone=None, retry=False):
+        """Get all thermostat meta data for zone from emulator.
 
         inputs:
             zone(int): specified zone, if None will print all zones.
+            retry(bool): if True will retry with extended retry mechanism.
         returns:
             (dict): JSON dict
         """
-        return self.get_metadata(zone)
+        return self.get_metadata(zone, retry=retry)
 
-    def get_metadata(self, zone=None, trait=None, parameter=None):
+    def get_metadata(self, zone=None, trait=None, parameter=None, retry=False):
         """Get all thermostat meta data for zone from emulator.
 
         inputs:
@@ -72,28 +77,49 @@ class ThermostatClass(tc.ThermostatCommon):
             trait(str): trait or parent key, if None will assume a non-nested
             dict
             parameter(str): target parameter, if None will return all.
-            debug(bool): if True will print unit details.
+            retry(bool): if True will retry with extended retry mechanism
         returns:
             (int, float, str, dict): depends on parameter
         """
         del trait  # unused on emulator
-        if zone is None:
-            # returned cached raw data for all zones
-            meta_data_dict = self.meta_data_dict
+
+        def _get_metadata_internal():
+            if zone is None:
+                # returned cached raw data for all zones
+                meta_data_dict = self.meta_data_dict
+            else:
+                # return cached raw data for specified zone
+                meta_data_dict = self.meta_data_dict[zone]
+            if parameter is None:
+                return meta_data_dict
+            else:
+                try:
+                    return meta_data_dict[parameter]
+                except KeyError:
+                    print(
+                        f"ERROR: parameter {parameter} does not exist in "
+                        f"meta_data_dict: {meta_data_dict}"
+                    )
+                    raise
+
+        if retry:
+            # Use standardized extended retry mechanism
+            return util.execute_with_extended_retries(
+                func=_get_metadata_internal,
+                thermostat_type="Emulator",
+                zone_name=str(zone) if zone is not None else "all",
+                number_of_retries=5,
+                initial_retry_delay_sec=60,
+                exception_types=(
+                    KeyError,
+                    AttributeError,
+                    ValueError,
+                ),
+                email_notification=None,  # Emulator doesn't import email_notification
+            )
         else:
-            # return cached raw data for specified zone
-            meta_data_dict = self.meta_data_dict[zone]
-        if parameter is None:
-            return meta_data_dict
-        else:
-            try:
-                return meta_data_dict[parameter]
-            except KeyError:
-                print(
-                    f"ERROR: parameter {parameter} does not exist in "
-                    f"meta_data_dict: {meta_data_dict}"
-                )
-                raise
+            # Single attempt without retry
+            return _get_metadata_internal()
 
     def print_all_thermostat_metadata(self, zone):
         """Print all metadata for zone to the screen.
@@ -107,11 +133,7 @@ class ThermostatClass(tc.ThermostatCommon):
 
 
 class ThermostatZone(tc.ThermostatCommonZone):
-    """
-    KumoCloud single zone from kumocloud.
-
-    Class needs to be updated for multi-zone support.
-    """
+    """Emulator thermostat zone functions."""
 
     def __init__(self, Thermostat_obj, verbose=True):
         """
@@ -148,6 +170,12 @@ class ThermostatZone(tc.ThermostatCommonZone):
         self.zone_name = Thermostat_obj.zone_name
         self.zone_info = Thermostat_obj.get_all_metadata(Thermostat_obj.zone_name)
         self.zone_name = self.get_zone_name()
+
+        # deviation file support for testing
+        self.deviation_file_path = util.get_full_file_path(
+            f"emulator_deviation_zone_{self.device_id}.pkl"
+        )
+
         self.initialize_meta_data_dict()
 
     def initialize_meta_data_dict(self):
@@ -213,13 +241,19 @@ class ThermostatZone(tc.ThermostatCommonZone):
         returns:
             (float): indoor temp in °F.
         """
+        # Check for deviation data first
+        deviation_temp = self.get_deviation_value("display_temp")
+        if deviation_temp is not None:
+            return float(deviation_temp)
+
+        # Normal behavior if no deviation data
         self.refresh_zone_info()
         return self.get_parameter("display_temp") + random.uniform(
             -emulator_config.NORMAL_TEMP_VARIATION,
             emulator_config.NORMAL_TEMP_VARIATION,
         )
 
-    def get_display_humidity(self) -> (float, None):
+    def get_display_humidity(self) -> Union[float, None]:
         """
         Refresh the cached zone information and return IndoorHumidity
         with random +/-1% noise value.
@@ -231,11 +265,17 @@ class ThermostatZone(tc.ThermostatCommonZone):
         """
         if not self.get_is_humidity_supported():
             return None
-        else:
-            return self.get_parameter("display_humidity") + random.uniform(
-                -emulator_config.NORMAL_HUMIDITY_VARIATION,
-                emulator_config.NORMAL_HUMIDITY_VARIATION,
-            )
+
+        # Check for deviation data first
+        deviation_humidity = self.get_deviation_value("display_humidity")
+        if deviation_humidity is not None:
+            return float(deviation_humidity)
+
+        # Normal behavior if no deviation data
+        return self.get_parameter("display_humidity") + random.uniform(
+            -emulator_config.NORMAL_HUMIDITY_VARIATION,
+            emulator_config.NORMAL_HUMIDITY_VARIATION,
+        )
 
     def get_is_humidity_supported(self) -> bool:  # used
         """
@@ -336,6 +376,20 @@ class ThermostatZone(tc.ThermostatCommonZone):
             == self.system_switch_position[tc.ThermostatCommonZone.AUTO_MODE]
         )
 
+    def is_eco_mode(self) -> int:
+        """
+        Refresh the cached zone information and return the eco mode.
+
+        inputs:
+            None
+        returns:
+            (int): eco mode, 1=enabled, 0=disabled.
+        """
+        return int(
+            self.get_system_switch_position()
+            == self.system_switch_position[tc.ThermostatCommonZone.ECO_MODE]
+        )
+
     def is_off_mode(self) -> int:
         """
         Refresh the cached zone information and return the off mode.
@@ -385,7 +439,18 @@ class ThermostatZone(tc.ThermostatCommonZone):
             )
         )
 
-    def is_fanning(self):
+    def is_eco(self):
+        """Return 1 if eco relay is active, else 0."""
+        return int(
+            self.is_eco_mode()
+            and self.is_power_on()
+            and (
+                self.get_cool_setpoint_raw() < self.get_display_temp()
+                or self.get_heat_setpoint_raw() > self.get_display_temp()
+            )
+        )
+
+    def is_fanning(self) -> int:
         """Return 1 if fan relay is active, else 0."""
         return int(self.is_fan_on() and self.is_power_on())
 
@@ -418,6 +483,12 @@ class ThermostatZone(tc.ThermostatCommonZone):
         returns:
             (float): heating set point in °F.
         """
+        # Check for deviation data first
+        deviation_setpoint = self.get_deviation_value("heat_setpoint")
+        if deviation_setpoint is not None:
+            return float(deviation_setpoint)
+
+        # Normal behavior if no deviation data
         self.refresh_zone_info()
         return float(self.get_parameter("heat_setpoint"))
 
@@ -456,6 +527,12 @@ class ThermostatZone(tc.ThermostatCommonZone):
         returns:
             (float): cooling set point in °F.
         """
+        # Check for deviation data first
+        deviation_setpoint = self.get_deviation_value("cool_setpoint")
+        if deviation_setpoint is not None:
+            return float(deviation_setpoint)
+
+        # Normal behavior if no deviation data
         self.refresh_zone_info()
         return float(self.get_parameter("cool_setpoint"))
 
@@ -528,15 +605,128 @@ class ThermostatZone(tc.ThermostatCommonZone):
         """
         self.set_parameter("cool_setpoint", temp)
 
-    def refresh_zone_info(self, force_refresh=False):
+    def create_deviation_file(self) -> None:
         """
-        Refresh zone info from KumoCloud.
+        Create an empty deviation file for this thermostat zone.
 
         inputs:
-            force_refresh(bool): if True, ignore expiration timer.
+            None
         returns:
-            None, zone_data is refreshed.
+            None
         """
+        deviation_data = {}
+        with open(self.deviation_file_path, "wb") as handle:
+            pickle.dump(deviation_data, handle)
+        if self.verbose:
+            util.log_msg(
+                f"Created deviation file: {self.deviation_file_path}",
+                mode=util.BOTH_LOG,
+                func_name=1,
+            )
+
+    def set_deviation_value(self, key: str, value) -> None:
+        """
+        Set a deviation value for a specific parameter.
+
+        inputs:
+            key(str): parameter name (e.g., 'display_temp', 'display_humidity')
+            value: deviation value to set
+        returns:
+            None
+        """
+        # Read existing deviation data or create empty dict
+        deviation_data = {}
+        if os.path.exists(self.deviation_file_path):
+            try:
+                with open(self.deviation_file_path, "rb") as handle:
+                    deviation_data = pickle.load(handle)
+            except (pickle.PickleError, EOFError):
+                deviation_data = {}
+
+        # Update the value
+        deviation_data[key] = value
+
+        # Write back to file
+        with open(self.deviation_file_path, "wb") as handle:
+            pickle.dump(deviation_data, handle)
+
+        if self.verbose:
+            util.log_msg(
+                f"Set deviation value {key}={value} in {self.deviation_file_path}",
+                mode=util.BOTH_LOG,
+                func_name=1,
+            )
+
+    def get_deviation_value(self, key: str, default_val=None):
+        """
+        Get a deviation value for a specific parameter.
+
+        inputs:
+            key(str): parameter name
+            default_val: default value if key not found or file doesn't exist
+        returns:
+            deviation value or default_val
+        """
+        if not os.path.exists(self.deviation_file_path):
+            return default_val
+
+        try:
+            with open(self.deviation_file_path, "rb") as handle:
+                deviation_data = pickle.load(handle)
+                return deviation_data.get(key, default_val)
+        except (pickle.PickleError, EOFError):
+            return default_val
+
+    def has_deviation_data(self, key: str = None) -> bool:
+        """
+        Check if deviation data exists.
+
+        inputs:
+            key(str): if provided, check for specific key,
+                otherwise check if file exists
+        returns:
+            (bool): True if deviation data exists
+        """
+        if not os.path.exists(self.deviation_file_path):
+            return False
+
+        if key is None:
+            return True
+
+        try:
+            with open(self.deviation_file_path, "rb") as handle:
+                deviation_data = pickle.load(handle)
+                return key in deviation_data
+        except (pickle.PickleError, EOFError):
+            return False
+
+    def clear_deviation_data(self) -> None:
+        """
+        Clear all deviation data by removing the deviation file.
+
+        inputs:
+            None
+        returns:
+            None
+        """
+        if os.path.exists(self.deviation_file_path):
+            os.remove(self.deviation_file_path)
+            if self.verbose:
+                util.log_msg(
+                    f"Cleared deviation file: {self.deviation_file_path}",
+                    mode=util.BOTH_LOG,
+                    func_name=1,
+                )
+
+    def refresh_zone_info(self, force_refresh=False):
+        """
+        Refreshes the zone information if the current time exceeds the fetch interval
+        or if the force_refresh flag is set to True.
+        Args:
+            force_refresh (bool): If True, forces the refresh of zone information
+                                  regardless of the fetch interval. Default is False.
+        """
+
         now_time = time.time()
         # refresh if past expiration date or force_refresh option
         if force_refresh or (

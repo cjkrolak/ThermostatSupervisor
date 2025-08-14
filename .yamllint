@@ -1,0 +1,57 @@
+# yamllint configuration for ThermostatSupervisor
+# Aligned with project's Python formatting standards (setup.cfg)
+
+extends: default
+
+rules:
+  # Align line length with project's flake8/black configuration (88 chars)
+  line-length:
+    max: 88
+    level: error
+
+  # Be more permissive with comments to match existing workflow style
+  comments:
+    min-spaces-from-content: 1
+    level: warning
+
+  # Document start is not required for all YAML files
+  document-start:
+    present: false
+    level: warning
+
+  # Allow truthy values commonly used in GitHub Actions
+  truthy:
+    allowed-values: ['true', 'false', 'on', 'off', 'yes', 'no']
+    check-keys: true
+    level: warning
+
+  # Indentation should be consistent
+  indentation:
+    spaces: 2
+    indent-sequences: true
+    check-multi-line-strings: false
+
+  # Brackets spacing to be less strict for GitHub Actions syntax
+  brackets:
+    min-spaces-inside: 0
+    max-spaces-inside: 1
+    level: warning
+
+  # Enforce newline at end of file
+  new-line-at-end-of-file:
+    level: error
+
+  # Remove trailing spaces
+  trailing-spaces:
+    level: error
+
+# Ignore generated or external files
+ignore: |
+  .git/
+  __pycache__/
+  *.pyc
+  .coverage
+  htmlcov/
+  dist/
+  build/
+  *.egg-info/
