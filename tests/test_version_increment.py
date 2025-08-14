@@ -11,24 +11,23 @@ from unittest.mock import mock_open, patch
 import sys
 
 # Add the scripts directory to the path to import our module
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '.github',
-                                'scripts'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".github", "scripts"))
 
 try:
     import version_increment
 except ImportError:
     # Create a mock module if it doesn't exist yet during development
     class MockVersionIncrement:
-
         def get_version_from_file(self, file_path):
             return "1.0.12"
 
         def parse_version(self, version_str):
-            return tuple(map(int, version_str.split('.')))
+            return tuple(map(int, version_str.split(".")))
 
         def increment_patch_version(self, version_str):
             major, minor, patch = self.parse_version(version_str)
             return f"{major}.{minor}.{patch + 1}"
+
     version_increment = MockVersionIncrement()
 
 
@@ -83,11 +82,11 @@ name = "Thermostatsupervisor"
     def test_parse_version_invalid(self):
         """Test parsing invalid version strings."""
         invalid_versions = [
-            "1.0",           # Too few parts
-            "1.0.12.1",      # Too many parts
-            "1.0.abc",       # Non-numeric
-            "x.y.z",         # All non-numeric
-            "",              # Empty string
+            "1.0",  # Too few parts
+            "1.0.12.1",  # Too many parts
+            "1.0.abc",  # Non-numeric
+            "x.y.z",  # All non-numeric
+            "",  # Empty string
         ]
 
         for invalid_version in invalid_versions:
@@ -116,13 +115,12 @@ name = "Thermostatsupervisor"
             '__version__ = "1.0.12"', '__version__ = "1.0.13"'
         )
 
-        with patch("builtins.open",
-                   mock_open(read_data=original_content)) as mock_file:
+        with patch("builtins.open", mock_open(read_data=original_content)) as mock_file:
             version_increment.update_version_in_file("dummy_path", "1.0.13")
 
             # Verify file was opened for reading and writing
-            mock_file.assert_any_call("dummy_path", 'r', encoding='utf-8')
-            mock_file.assert_any_call("dummy_path", 'w', encoding='utf-8')
+            mock_file.assert_any_call("dummy_path", "r", encoding="utf-8")
+            mock_file.assert_any_call("dummy_path", "w", encoding="utf-8")
 
             # Get the written content
             written_content = "".join(
@@ -143,13 +141,10 @@ name = "Thermostatsupervisor"
             expected = f'"""Package identifier file"""\n{expected_line}\n'
 
             with self.subTest(original=original_line):
-                with patch("builtins.open",
-                           mock_open(read_data=content)) as mock_file:
-                    version_increment.update_version_in_file("dummy_path",
-                                                             "1.0.13")
+                with patch("builtins.open", mock_open(read_data=content)) as mock_file:
+                    version_increment.update_version_in_file("dummy_path", "1.0.13")
                     written_content = "".join(
-                        call.args[0] for call in
-                        mock_file().write.call_args_list
+                        call.args[0] for call in mock_file().write.call_args_list
                     )
                     self.assertEqual(written_content, expected)
 
@@ -169,8 +164,9 @@ name = "Thermostatsupervisor"
 __version__ = "1.0.12"
 '''
 
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.py',
-                                         delete=False) as temp_file:
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".py", delete=False
+        ) as temp_file:
             temp_file.write(test_content)
             temp_file_path = temp_file.name
 
@@ -183,13 +179,11 @@ __version__ = "1.0.12"
             version_increment.update_version_in_file(temp_file_path, "1.0.13")
 
             # Verify update
-            updated_version = version_increment.get_version_from_file(
-                temp_file_path
-            )
+            updated_version = version_increment.get_version_from_file(temp_file_path)
             self.assertEqual(updated_version, "1.0.13")
 
             # Verify file content
-            with open(temp_file_path, 'r') as f:
+            with open(temp_file_path, "r") as f:
                 updated_content = f.read()
                 self.assertIn('__version__ = "1.0.13"', updated_content)
                 self.assertNotIn('__version__ = "1.0.12"', updated_content)
@@ -199,5 +193,5 @@ __version__ = "1.0.12"
             os.unlink(temp_file_path)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

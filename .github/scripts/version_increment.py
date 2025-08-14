@@ -29,15 +29,13 @@ def get_version_from_file(file_path: str) -> str:
         FileNotFoundError: If file doesn't exist
     """
     try:
-        with open(file_path, 'r', encoding='utf-8') as f:
+        with open(file_path, "r", encoding="utf-8") as f:
             content = f.read()
     except FileNotFoundError:
         raise FileNotFoundError(f"Version file not found: {file_path}")
 
     # Match __version__ = "x.y.z" pattern
-    version_match = re.search(
-        r'__version__\s*=\s*["\']([^"\']+)["\']', content
-    )
+    version_match = re.search(r'__version__\s*=\s*["\']([^"\']+)["\']', content)
     if not version_match:
         raise RuntimeError(f"No __version__ found in {file_path}")
 
@@ -57,7 +55,7 @@ def parse_version(version_str: str) -> Tuple[int, int, int]:
     Raises:
         ValueError: If version format is invalid
     """
-    parts = version_str.split('.')
+    parts = version_str.split(".")
     if len(parts) != 3:
         raise ValueError(f"Invalid version format: {version_str}")
 
@@ -89,17 +87,17 @@ def update_version_in_file(file_path: str, new_version: str) -> None:
         file_path: Path to the __init__.py file
         new_version: New version string to set
     """
-    with open(file_path, 'r', encoding='utf-8') as f:
+    with open(file_path, "r", encoding="utf-8") as f:
         content = f.read()
 
     # Replace the version string, preserving the original format
     new_content = re.sub(
         r'(__version__\s*=\s*["\'])([^"\']+)(["\'])',
-        rf'\g<1>{new_version}\g<3>',
-        content
+        rf"\g<1>{new_version}\g<3>",
+        content,
     )
 
-    with open(file_path, 'w', encoding='utf-8') as f:
+    with open(file_path, "w", encoding="utf-8") as f:
         f.write(new_content)
 
     print(f"Updated version in {file_path} to {new_version}")
@@ -119,31 +117,33 @@ def get_main_branch_version(init_file_path: str) -> str:
         subprocess.CalledProcessError: If git command fails
     """
     # Try different ways to reference main branch
-    main_refs = ['origin/main', 'main']
+    main_refs = ["origin/main", "main"]
 
     for main_ref in main_refs:
         try:
             # First try fetching main branch if not available
-            if main_ref == 'origin/main':
+            if main_ref == "origin/main":
                 try:
-                    subprocess.run(['git', 'fetch', 'origin', 'main'],
-                                   capture_output=True, text=True, check=True)
+                    subprocess.run(
+                        ["git", "fetch", "origin", "main"],
+                        capture_output=True,
+                        text=True,
+                        check=True,
+                    )
                 except subprocess.CalledProcessError:
                     pass  # Might already be available
 
             # Get file content from main branch
             result = subprocess.run(
-                ['git', 'show', f'{main_ref}:{init_file_path}'],
+                ["git", "show", f"{main_ref}:{init_file_path}"],
                 capture_output=True,
                 text=True,
-                check=True
+                check=True,
             )
             content = result.stdout
 
             # Extract version from content
-            version_match = re.search(
-                r'__version__\s*=\s*["\']([^"\']+)["\']', content
-            )
+            version_match = re.search(r'__version__\s*=\s*["\']([^"\']+)["\']', content)
             if not version_match:
                 raise RuntimeError(
                     f"No __version__ found in main branch {init_file_path}"
@@ -184,28 +184,26 @@ def run_git_command(cmd: list) -> subprocess.CompletedProcess:
 def main():
     """Main function to handle version increment logic."""
     parser = argparse.ArgumentParser(
-        description='Automatically increment version if identical to main'
+        description="Automatically increment version if identical to main"
     )
     parser.add_argument(
-        '--init-file',
-        default='thermostatsupervisor/__init__.py',
-        help='Path to __init__.py file'
+        "--init-file",
+        default="thermostatsupervisor/__init__.py",
+        help="Path to __init__.py file",
     )
     parser.add_argument(
-        '--commit',
-        action='store_true',
-        help='Commit and push the version change'
+        "--commit", action="store_true", help="Commit and push the version change"
     )
     parser.add_argument(
-        '--dry-run',
-        action='store_true',
-        help='Show what would be done without making changes'
+        "--dry-run",
+        action="store_true",
+        help="Show what would be done without making changes",
     )
 
     args = parser.parse_args()
 
     # Ensure we're in a git repository
-    if not os.path.exists('.git'):
+    if not os.path.exists(".git"):
         print("Error: Not in a git repository")
         sys.exit(1)
 
@@ -237,15 +235,18 @@ def main():
 
             if args.commit:
                 # Configure git user for GitHub Actions
-                run_git_command(['git', 'config', '--local', 'user.email',
-                                'action@github.com'])
-                run_git_command(['git', 'config', '--local', 'user.name',
-                                'GitHub Action'])
+                run_git_command(
+                    ["git", "config", "--local", "user.email", "action@github.com"]
+                )
+                run_git_command(
+                    ["git", "config", "--local", "user.name", "GitHub Action"]
+                )
 
                 # Stage and commit the change
-                run_git_command(['git', 'add', args.init_file])
-                run_git_command(['git', 'commit', '-m',
-                                f'Auto-increment version to {new_version}'])
+                run_git_command(["git", "add", args.init_file])
+                run_git_command(
+                    ["git", "commit", "-m", f"Auto-increment version to {new_version}"]
+                )
 
                 print(f"Committed version increment to {new_version}")
 
@@ -269,5 +270,5 @@ def main():
         sys.exit(1)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
