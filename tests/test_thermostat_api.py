@@ -26,6 +26,8 @@ class Test(utc.UnitTest):
     def setUp(self):
         super().setUp()
         self.setup_mock_thermostat_zone()
+        # Save original thermostat configuration
+        self.original_thermostat_config = api.thermostats[self.thermostat_type].copy()
         api.thermostats[self.thermostat_type] = {  # dummy unit test thermostat
             "required_env_variables": {
                 "GMAIL_USERNAME": None,
@@ -34,6 +36,8 @@ class Test(utc.UnitTest):
         }
 
     def tearDown(self):
+        # Restore original thermostat configuration
+        api.thermostats[self.thermostat_type] = self.original_thermostat_config
         self.teardown_mock_thermostat_zone()
         super().tearDown()
 
@@ -42,14 +46,22 @@ class Test(utc.UnitTest):
         Verify verify_required_env_variables() passes in nominal
         condition and fails with missing key.
         """
+        from unittest.mock import patch
         missing_key = "agrfg_"  # bogus key should be missing
+
+        # Mock environment variables for testing
+        mock_env = {
+            "GMAIL_USERNAME": "test@example.com",
+            "GMAIL_PASSWORD": "test_password"
+        }
 
         # nominal condition, should pass
         print("testing nominal condition, will pass if gmail keys are present")
-        self.assertTrue(
-            api.verify_required_env_variables(self.thermostat_type, "0"),
-            "test failed because one or more gmail keys are missing",
-        )
+        with patch.dict('os.environ', mock_env):
+            self.assertTrue(
+                api.verify_required_env_variables(self.thermostat_type, "0"),
+                "test failed because one or more gmail keys are missing",
+            )
 
         # missing key, should raise exception
         print("testing for with missing key 'unit_test', should fail")
@@ -57,10 +69,11 @@ class Test(utc.UnitTest):
             missing_key
         ] = "bogus_value"
         try:
-            self.assertFalse(
-                api.verify_required_env_variables(self.thermostat_type, "0"),
-                f"test passed with missing key '{missing_key}', should have failed",
-            )
+            with patch.dict('os.environ', mock_env):
+                self.assertFalse(
+                    api.verify_required_env_variables(self.thermostat_type, "0"),
+                    f"test passed with missing key '{missing_key}', should have failed",
+                )
         except KeyError:
             print("KeyError raised as expected for missing key")
         else:
@@ -152,6 +165,28 @@ class Test(utc.UnitTest):
             api.uip.set_user_inputs(
                 api.uip.zone_name, api.input_flds.measurements, max_measurement_bkup
             )
+
+    def test_load_user_inputs(self):
+        """Test load_user_inputs() function."""
+        # Mock a config module
+        from unittest.mock import MagicMock
+
+        mock_config = MagicMock()
+        mock_config.default_zone_name = "test_zone"
+        mock_config.argv = ["test_script", "emulator", "0"]
+        mock_config.ALIAS = "emulator"
+
+        # Call load_user_inputs
+        zone_number = api.load_user_inputs(mock_config)
+
+        # Verify that the UserInputs was created and zone number returned
+        self.assertIsInstance(zone_number, int)
+        self.assertEqual(zone_number, 0)
+
+        # Verify global uip was set
+        self.assertIsNotNone(api.uip)
+        # The zone_name gets modified to include thermostat type and zone number
+        self.assertTrue(api.uip.zone_name.startswith("emulator"))
 
 
 class RuntimeParameterTest(utc.RuntimeParameterTest):
