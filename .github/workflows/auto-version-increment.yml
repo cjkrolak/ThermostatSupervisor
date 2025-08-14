@@ -1,3 +1,4 @@
+---
 name: Auto Version Increment
 on:
   pull_request:
@@ -17,26 +18,22 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           fetch-depth: 0
           ref: ${{ github.head_ref }}
-
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.x"
-
+          python-version: 3.x
       - name: Fetch main branch
         run: |
           git fetch origin main:main
-
       - name: Check and increment version
         id: version_check
         run: |
           python .github/scripts/version_increment.py \
             --init-file thermostatsupervisor/__init__.py \
             --commit
-
       - name: Push version increment
         if: success()
-        run: |
+        run: |-
           # Check if there are any changes to push
           if git diff --quiet HEAD~1 HEAD; then
             echo "No version changes to push"
