@@ -1,3 +1,4 @@
+---
 name: black-action
 on:
   push:
