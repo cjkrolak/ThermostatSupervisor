@@ -1217,40 +1217,54 @@ class Test(utc.UnitTest):
     def test_configure_dry_mode(self):
         """Test _configure_dry_mode() method."""
         from unittest.mock import Mock
-        
+
         # Setup mock methods
         self.Zone.get_cool_setpoint_raw = Mock(return_value=72.0)
         self.Zone.get_schedule_cool_sp = Mock(return_value=74.0)
         self.Zone.function_not_supported = Mock()
-        
+
         # Setup attributes that should be set
         original_mode = getattr(self.Zone, 'current_mode', None)
         original_setpoint = getattr(self.Zone, 'current_setpoint', None)
-        original_schedule_setpoint = getattr(self.Zone, 'schedule_setpoint', None)
-        original_tolerance_sign = getattr(self.Zone, 'tolerance_sign', None)
+        original_schedule_setpoint = getattr(
+            self.Zone, 'schedule_setpoint', None
+        )
+        original_tolerance_sign = getattr(
+            self.Zone, 'tolerance_sign', None
+        )
         original_global_limit = getattr(self.Zone, 'global_limit', None)
-        original_global_operator = getattr(self.Zone, 'global_operator', None)
-        original_revert_func = getattr(self.Zone, 'revert_setpoint_func', None)
+        original_global_operator = getattr(
+            self.Zone, 'global_operator', None
+        )
+        original_revert_func = getattr(
+            self.Zone, 'revert_setpoint_func', None
+        )
         original_get_func = getattr(self.Zone, 'get_setpoint_func', None)
-        
+
         try:
             # Call the method
             self.Zone._configure_dry_mode()
-            
+
             # Verify the configuration was set correctly
             self.assertEqual(self.Zone.current_mode, self.Zone.DRY_MODE)
             self.assertEqual(self.Zone.current_setpoint, 72.0)
             self.assertEqual(self.Zone.schedule_setpoint, 74.0)
             self.assertEqual(self.Zone.tolerance_sign, -1)
-            self.assertEqual(self.Zone.global_limit, self.Zone.min_scheduled_cool_allowed)
+            self.assertEqual(
+                self.Zone.global_limit, self.Zone.min_scheduled_cool_allowed
+            )
             self.assertEqual(self.Zone.global_operator, operator.lt)
-            self.assertEqual(self.Zone.revert_setpoint_func, self.Zone.function_not_supported)
-            self.assertEqual(self.Zone.get_setpoint_func, self.Zone.function_not_supported)
-            
+            self.assertEqual(
+                self.Zone.revert_setpoint_func, self.Zone.function_not_supported
+            )
+            self.assertEqual(
+                self.Zone.get_setpoint_func, self.Zone.function_not_supported
+            )
+
             # Verify the mock methods were called
             self.Zone.get_cool_setpoint_raw.assert_called_once()
             self.Zone.get_schedule_cool_sp.assert_called_once()
-            
+
         finally:
             # Restore original values if they existed
             if original_mode is not None:

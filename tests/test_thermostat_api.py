@@ -161,14 +161,14 @@ class Test(utc.UnitTest):
         mock_config.default_zone_name = "test_zone"
         mock_config.argv = ["test_script", "emulator", "0"]
         mock_config.ALIAS = "emulator"
-        
+
         # Call load_user_inputs
         zone_number = api.load_user_inputs(mock_config)
-        
+
         # Verify that the UserInputs was created and zone number returned
         self.assertIsInstance(zone_number, int)
         self.assertEqual(zone_number, 0)
-        
+
         # Verify global uip was set
         self.assertIsNotNone(api.uip)
         # The zone_name gets modified to include thermostat type and zone number

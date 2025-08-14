@@ -215,47 +215,51 @@ class PerformanceIntegrationTest(IntegrationTest, utc.PerformanceIntegrationTest
 
 class EmulatorUnitTest(utc.UnitTest):
     """Unit tests for specific emulator methods."""
-    
+
     def setUp(self):
         super().setUp()
         self.setup_mock_thermostat_zone()
-        
+
         # Create emulator instance
         self.thermostat = emulator.ThermostatClass(zone="0", verbose=False)
         self.zone = emulator.ThermostatZone(self.thermostat, verbose=False)
         self.zone.update_runtime_parameters()
-    
+
     def tearDown(self):
         self.teardown_mock_thermostat_zone()
         super().tearDown()
-    
+
     def test_is_dry_mode(self):
         """Test is_dry_mode() method."""
         from unittest.mock import patch
-        
+
         # Test when dry mode is enabled
         with patch.object(self.zone, 'get_system_switch_position') as mock_switch:
-            mock_switch.return_value = self.zone.system_switch_position[self.zone.DRY_MODE]
+            mock_switch.return_value = self.zone.system_switch_position[
+                self.zone.DRY_MODE
+            ]
             result = self.zone.is_dry_mode()
             self.assertEqual(result, 1)
-        
+
         # Test when dry mode is disabled
         with patch.object(self.zone, 'get_system_switch_position') as mock_switch:
-            mock_switch.return_value = self.zone.system_switch_position[self.zone.HEAT_MODE]
+            mock_switch.return_value = self.zone.system_switch_position[
+                self.zone.HEAT_MODE
+            ]
             result = self.zone.is_dry_mode()
             self.assertEqual(result, 0)
-    
+
     def test_is_defrosting(self):
         """Test is_defrosting() method."""
         from unittest.mock import patch
-        
+
         # Test when defrosting is active
         with patch.object(self.zone, 'refresh_zone_info'), \
              patch.object(self.zone, 'get_parameter') as mock_param:
             mock_param.return_value = True
             result = self.zone.is_defrosting()
             self.assertEqual(result, 1)
-        
+
         # Test when defrosting is not active
         with patch.object(self.zone, 'refresh_zone_info'), \
              patch.object(self.zone, 'get_parameter') as mock_param:
