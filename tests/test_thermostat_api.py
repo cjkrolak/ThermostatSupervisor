@@ -153,6 +153,27 @@ class Test(utc.UnitTest):
                 api.uip.zone_name, api.input_flds.measurements, max_measurement_bkup
             )
 
+    def test_load_user_inputs(self):
+        """Test load_user_inputs() function."""
+        # Mock a config module
+        from unittest.mock import MagicMock
+        mock_config = MagicMock()
+        mock_config.default_zone_name = "test_zone"
+        mock_config.argv = ["test_script", "emulator", "0"]
+        mock_config.ALIAS = "emulator"
+        
+        # Call load_user_inputs
+        zone_number = api.load_user_inputs(mock_config)
+        
+        # Verify that the UserInputs was created and zone number returned
+        self.assertIsInstance(zone_number, int)
+        self.assertEqual(zone_number, 0)
+        
+        # Verify global uip was set
+        self.assertIsNotNone(api.uip)
+        # The zone_name gets modified to include thermostat type and zone number
+        self.assertTrue(api.uip.zone_name.startswith("emulator"))
+
 
 class RuntimeParameterTest(utc.RuntimeParameterTest):
     """API Runtime parameter tests."""

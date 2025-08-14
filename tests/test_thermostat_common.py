@@ -1214,6 +1214,62 @@ class Test(utc.UnitTest):
             self.Zone.set_heat_setpoint = original_set_heat_setpoint
             self.Zone.set_cool_setpoint = original_set_cool_setpoint
 
+    def test_configure_dry_mode(self):
+        """Test _configure_dry_mode() method."""
+        from unittest.mock import Mock
+        
+        # Setup mock methods
+        self.Zone.get_cool_setpoint_raw = Mock(return_value=72.0)
+        self.Zone.get_schedule_cool_sp = Mock(return_value=74.0)
+        self.Zone.function_not_supported = Mock()
+        
+        # Setup attributes that should be set
+        original_mode = getattr(self.Zone, 'current_mode', None)
+        original_setpoint = getattr(self.Zone, 'current_setpoint', None)
+        original_schedule_setpoint = getattr(self.Zone, 'schedule_setpoint', None)
+        original_tolerance_sign = getattr(self.Zone, 'tolerance_sign', None)
+        original_global_limit = getattr(self.Zone, 'global_limit', None)
+        original_global_operator = getattr(self.Zone, 'global_operator', None)
+        original_revert_func = getattr(self.Zone, 'revert_setpoint_func', None)
+        original_get_func = getattr(self.Zone, 'get_setpoint_func', None)
+        
+        try:
+            # Call the method
+            self.Zone._configure_dry_mode()
+            
+            # Verify the configuration was set correctly
+            self.assertEqual(self.Zone.current_mode, self.Zone.DRY_MODE)
+            self.assertEqual(self.Zone.current_setpoint, 72.0)
+            self.assertEqual(self.Zone.schedule_setpoint, 74.0)
+            self.assertEqual(self.Zone.tolerance_sign, -1)
+            self.assertEqual(self.Zone.global_limit, self.Zone.min_scheduled_cool_allowed)
+            self.assertEqual(self.Zone.global_operator, operator.lt)
+            self.assertEqual(self.Zone.revert_setpoint_func, self.Zone.function_not_supported)
+            self.assertEqual(self.Zone.get_setpoint_func, self.Zone.function_not_supported)
+            
+            # Verify the mock methods were called
+            self.Zone.get_cool_setpoint_raw.assert_called_once()
+            self.Zone.get_schedule_cool_sp.assert_called_once()
+            
+        finally:
+            # Restore original values if they existed
+            if original_mode is not None:
+                self.Zone.current_mode = original_mode
+            if original_setpoint is not None:
+                self.Zone.current_setpoint = original_setpoint
+            if original_schedule_setpoint is not None:
+                self.Zone.schedule_setpoint = original_schedule_setpoint
+            if original_tolerance_sign is not None:
+                self.Zone.tolerance_sign = original_tolerance_sign
+            if original_global_limit is not None:
+                self.Zone.global_limit = original_global_limit
+            if original_global_operator is not None:
+                self.Zone.global_operator = original_global_operator
+            if original_revert_func is not None:
+                self.Zone.revert_setpoint_func = original_revert_func
+            if original_get_func is not None:
+                self.Zone.get_setpoint_func = original_get_func
+
 
 if __name__ == "__main__":
     util.log_msg.debug = True

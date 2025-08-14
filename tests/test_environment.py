@@ -8,6 +8,7 @@ import shutil
 import sys
 import tempfile
 import unittest
+import unittest.mock
 
 # third-party imports
 
@@ -448,6 +449,72 @@ def get_import_count():
         # Test with a non-string input
         with self.assertRaises(TypeError):
             env.convert_to_absolute_path(123)
+
+    def test_set_env_variable(self):
+        """Test set_env_variable() function."""
+        # Test valid cases
+        test_key = "TEST_SET_ENV_VAR"
+        test_value = "test_value"
+        
+        try:
+            env.set_env_variable(test_key, test_value)
+            self.assertEqual(os.environ[test_key], test_value)
+            
+            # Test with integer value
+            env.set_env_variable(test_key, 123)
+            self.assertEqual(os.environ[test_key], "123")
+            
+            # Test with boolean value
+            env.set_env_variable(test_key, True)
+            self.assertEqual(os.environ[test_key], "True")
+            
+        finally:
+            if test_key in os.environ:
+                del os.environ[test_key]
+        
+        # Test error cases
+        with self.assertRaises(AttributeError):
+            env.set_env_variable(None, "value")
+        
+        with self.assertRaises(AttributeError):
+            env.set_env_variable("key", None)
+        
+        with self.assertRaises(AttributeError):
+            env.set_env_variable(123, "value")
+
+    def test_add_package_to_path(self):
+        """Test _add_package_to_path() function."""
+        import sys
+        
+        # Store original sys.path
+        original_path = sys.path.copy()
+        
+        try:
+            # Test with None package (should do nothing)
+            env._add_package_to_path(None)
+            self.assertEqual(sys.path, original_path)
+            
+            # Test with valid package name
+            test_pkg = "test_package"
+            expected_path = env.get_parent_path(os.getcwd()) + "//" + test_pkg
+            
+            with unittest.mock.patch("builtins.print") as mock_print:
+                env._add_package_to_path(test_pkg)
+                
+                # Verify package path was added to front of sys.path
+                self.assertEqual(sys.path[0], expected_path)
+                mock_print.assert_called_with(f"adding package '{expected_path}' to path...")
+            
+            # Test with verbose=True
+            with unittest.mock.patch("builtins.print") as mock_print:
+                env._add_package_to_path(test_pkg, verbose=True)
+                
+                # Should print twice - the adding message and the sys.path
+                self.assertEqual(mock_print.call_count, 2)
+                
+        finally:
+            # Restore original sys.path
+            sys.path[:] = original_path
 
 
 if __name__ == "__main__":
