@@ -47,17 +47,18 @@ class Test(utc.UnitTest):
         condition and fails with missing key.
         """
         from unittest.mock import patch
+
         missing_key = "agrfg_"  # bogus key should be missing
 
         # Mock environment variables for testing
         mock_env = {
             "GMAIL_USERNAME": "test@example.com",
-            "GMAIL_PASSWORD": "test_password"
+            "GMAIL_PASSWORD": "test_password",
         }
 
         # nominal condition, should pass
         print("testing nominal condition, will pass if gmail keys are present")
-        with patch.dict('os.environ', mock_env):
+        with patch.dict("os.environ", mock_env):
             self.assertTrue(
                 api.verify_required_env_variables(self.thermostat_type, "0"),
                 "test failed because one or more gmail keys are missing",
@@ -69,7 +70,7 @@ class Test(utc.UnitTest):
             missing_key
         ] = "bogus_value"
         try:
-            with patch.dict('os.environ', mock_env):
+            with patch.dict("os.environ", mock_env):
                 self.assertFalse(
                     api.verify_required_env_variables(self.thermostat_type, "0"),
                     f"test passed with missing key '{missing_key}', should have failed",
