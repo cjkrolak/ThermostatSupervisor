@@ -6,6 +6,8 @@ This document outlines the complete process for building and releasing new versi
 
 ThermostatSupervisor follows GitFlow branching strategy with automated CI/CD pipelines. The project uses semantic versioning and publishes to both PyPI and Docker Hub.
 
+**New Feature**: The repository now includes **automatic version increment** functionality that prevents version conflicts when merging to main. See [Auto Version Increment Documentation](docs/auto-version-increment.md) for details.
+
 ## Prerequisites
 
 - Git access to the repository with push permissions to `develop` and `main` branches
@@ -109,6 +111,7 @@ Ensure all GitHub Actions security workflows pass:
    - Ensure all CI/CD checks pass on develop branch
    - Create pull request: `develop` → `main`
    - Include release notes in PR description
+   - **Automatic version increment**: If the develop branch version matches main branch version, the system will automatically increment the patch version
    - Wait for all automated checks to pass
    - Merge the PR (use merge commit, not squash)
 
