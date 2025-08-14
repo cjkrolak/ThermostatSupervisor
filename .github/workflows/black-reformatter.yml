@@ -23,13 +23,12 @@ jobs:
           black_args: .
       - name: Commit changes
         if: steps.action_black.outputs.is_formatted == 'true'
-        run: |-
+        run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           git add .
           git commit -m ":art: Format Python code with psf/black"
           git push origin HEAD:${{ github.head_ref || github.ref_name }}
-          exit 1
-      - name: pass action if pull request is not created
-        if: steps.action_black.outputs.is_formatted == 'false'
-        run: exit 0
+      - name: Fail workflow if formatting was applied
+        if: steps.action_black.outputs.is_formatted == 'true'
+        run: exit 1
