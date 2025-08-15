@@ -28,9 +28,9 @@ class Test(utc.UnitTest):
         # Save original thermostat configuration before any modifications
         self.original_thermostat_config = None
         if self.thermostat_type in api.thermostats:
-            self.original_thermostat_config = (
-                api.thermostats[self.thermostat_type].copy()
-            )
+            self.original_thermostat_config = api.thermostats[
+                self.thermostat_type
+            ].copy()
 
         # Set up mock configuration without using setup_mock_thermostat_zone
         # since that conflicts with our save/restore logic
@@ -48,14 +48,13 @@ class Test(utc.UnitTest):
     def tearDown(self):
         try:
             # Restore original thermostat configuration
-            if (self.original_thermostat_config is not None and
-                    hasattr(self, 'original_thermostat_config')):
-                api.thermostats[self.thermostat_type] = (
-                    self.original_thermostat_config
-                )
+            if self.original_thermostat_config is not None and hasattr(
+                self, "original_thermostat_config"
+            ):
+                api.thermostats[self.thermostat_type] = self.original_thermostat_config
 
             # Restore user inputs backup
-            if hasattr(self, 'user_inputs_backup') and api.uip:
+            if hasattr(self, "user_inputs_backup") and api.uip:
                 api.uip.user_inputs = self.user_inputs_backup
         finally:
             super().tearDown()
