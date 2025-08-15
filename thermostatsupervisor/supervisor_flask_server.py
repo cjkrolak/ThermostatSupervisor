@@ -18,6 +18,7 @@ from flask_wtf.csrf import CSRFProtect
 
 # local imports
 from thermostatsupervisor import environment as env
+from thermostatsupervisor import ssl_certificate
 from thermostatsupervisor import flask_generic as flg
 from thermostatsupervisor import supervise as sup
 from thermostatsupervisor import thermostat_api as api
@@ -41,11 +42,16 @@ else:
 FLASK_PORT = 5001  # note: ports below 1024 require root access on Linux
 FLASK_USE_HTTPS = False  # HTTPS requires a cert to be installed.
 if FLASK_USE_HTTPS:
-    FLASK_SSL_CERT = "adhoc"  # adhoc
+    # Try to use generated SSL certificate, fallback to adhoc if needed
+    FLASK_SSL_CERT = ssl_certificate.get_ssl_context(
+        cert_file="supervisor_server.crt",
+        key_file="supervisor_server.key",
+        fallback_to_adhoc=True
+    )
     flask_kwargs = {"ssl_context": FLASK_SSL_CERT}
     FLASK_URL_PREFIX = "https://"
 else:
-    FLASK_SSL_CERT = None  # adhoc
+    FLASK_SSL_CERT = None
     flask_kwargs = {}
     FLASK_URL_PREFIX = "http://"
 flask_url = FLASK_URL_PREFIX + flask_ip_address + ":" + str(FLASK_PORT)

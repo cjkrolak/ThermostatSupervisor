@@ -38,3 +38,6 @@ doc
 *.ini
 *.json
 supervisor-env.txt
+
+# SSL certificates (auto-generated)
+ssl/

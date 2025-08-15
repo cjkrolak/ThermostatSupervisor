@@ -80,6 +80,36 @@ Both configurations include:
 2. **Firewall**: Configure firewall to allow only necessary ports
 3. **Reverse Proxy**: Consider using Nginx or Apache as a reverse proxy
 4. **SSL/TLS**: Configure HTTPS certificates for production
+
+### SSL Certificate Configuration
+
+The application supports both HTTP and HTTPS modes. To enable HTTPS:
+
+1. **Enable HTTPS in Configuration**: Set `FLASK_USE_HTTPS = True` in:
+   - `thermostatsupervisor/supervisor_flask_server.py` for the supervisor server
+   - `thermostatsupervisor/sht31_config.py` for the SHT31 server
+
+2. **Automatic Certificate Generation**: When HTTPS is enabled, the application automatically:
+   - Generates self-signed SSL certificates using OpenSSL
+   - Stores certificates in the `ssl/` directory
+   - Creates separate certificates for each server (`supervisor_server.crt/key`, `sht31_server.crt/key`)
+   - Reuses existing certificates if they are still valid (within 30 days of expiry)
+
+3. **Certificate Management**:
+   ```bash
+   # Certificates are stored in:
+   ssl/supervisor_server.crt  # Supervisor server certificate
+   ssl/supervisor_server.key  # Supervisor server private key
+   ssl/sht31_server.crt       # SHT31 server certificate
+   ssl/sht31_server.key       # SHT31 server private key
+   ```
+
+4. **Requirements**: OpenSSL must be installed on the system for certificate generation
+
+5. **Fallback Behavior**: If certificate generation fails, the application falls back to Flask's 'adhoc' SSL mode
+
+6. **Production Certificates**: For production deployments, consider replacing the self-signed certificates with certificates from a trusted Certificate Authority
+
 5. **Rate Limiting Storage**: For production deployments with multiple workers or servers, configure external storage for rate limiting:
    ```bash
    # Redis storage (recommended for production)
