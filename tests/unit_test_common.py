@@ -140,6 +140,13 @@ class UnitTest(unittest.TestCase, metaclass=PatchMeta):
 
     def setup_mock_thermostat_zone(self):
         """Setup mock thermostat settings."""
+        # Save original thermostat configuration
+        self.original_thermostat_config = None
+        if self.thermostat_type in api.thermostats:
+            self.original_thermostat_config = api.thermostats[
+                self.thermostat_type
+            ].copy()
+
         api.thermostats[self.thermostat_type] = {  # dummy unit test thermostat
             "required_env_variables": {
                 "GMAIL_USERNAME": None,
@@ -160,7 +167,12 @@ class UnitTest(unittest.TestCase, metaclass=PatchMeta):
 
     def teardown_mock_thermostat_zone(self):
         """Tear down the mock thermostat settings."""
-        del api.thermostats[self.thermostat_type]
+        # Restore original thermostat configuration instead of deleting
+        if (
+            hasattr(self, "original_thermostat_config")
+            and self.original_thermostat_config is not None
+        ):
+            api.thermostats[self.thermostat_type] = self.original_thermostat_config
         api.uip.user_inputs = self.user_inputs_backup
         self.Zone.is_off_mode = self.is_off_mode_bckup
 

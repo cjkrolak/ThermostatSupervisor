@@ -581,6 +581,73 @@ class MiscTests(utc.UnitTest):
                 f"{test_case[2]}, actual={result}",
             )
 
+    def test_is_host_on_local_net_additional_coverage(self):
+        """Additional tests for is_host_on_local_net to improve coverage."""
+        import socket
+        from unittest.mock import patch
+
+        # Test socket.herror exception path when IP is provided
+        with patch("socket.gethostbyaddr") as mock_gethostbyaddr:
+            mock_gethostbyaddr.side_effect = socket.herror("DNS name not set")
+
+            result, ip = util.is_host_on_local_net("test_host", "192.168.1.1")
+            self.assertFalse(result)
+            self.assertIsNone(ip)
+
+        # Test successful hostname to IP resolution with verbose output
+        with patch("socket.gethostbyname") as mock_gethostbyname:
+            with patch("builtins.print") as mock_print:
+                mock_gethostbyname.return_value = "192.168.1.1"
+
+                result, ip = util.is_host_on_local_net("test_host", verbose=True)
+
+                self.assertTrue(result)
+                self.assertEqual(ip, "192.168.1.1")
+                mock_print.assert_called_with(
+                    "host test_host found at 192.168.1.1 on local net"
+                )
+
+        # Test hostname resolution failure with verbose output
+        with patch("socket.gethostbyname") as mock_gethostbyname:
+            with patch("builtins.print") as mock_print:
+                mock_gethostbyname.side_effect = socket.gaierror(
+                    "Name resolution failed"
+                )
+
+                result, ip = util.is_host_on_local_net("bogus_host", verbose=True)
+
+                self.assertFalse(result)
+                self.assertIsNone(ip)
+
+        # Test successful IP and hostname match
+        with patch("socket.gethostbyaddr") as mock_gethostbyaddr:
+            mock_gethostbyaddr.return_value = ("test_host", [], ["192.168.1.1"])
+
+            result, ip = util.is_host_on_local_net("test_host", "192.168.1.1")
+
+            self.assertTrue(result)
+            self.assertEqual(ip, "192.168.1.1")
+
+        # Test hostname mismatch with IP lookup
+        with patch("socket.gethostbyaddr") as mock_gethostbyaddr:
+            with patch("builtins.print") as mock_print:
+                mock_gethostbyaddr.return_value = (
+                    "different_host",
+                    [],
+                    ["192.168.1.1"],
+                )
+
+                result, ip = util.is_host_on_local_net("expected_host", "192.168.1.1")
+
+                self.assertFalse(result)
+                self.assertIsNone(ip)
+                expected_msg = (
+                    "DEBUG: expected host=expected_host, "
+                    "actual host=('different_host', [], "
+                    "['192.168.1.1'])"
+                )
+                mock_print.assert_called_with(expected_msg)
+
 
 if __name__ == "__main__":
     util.log_msg.debug = True
