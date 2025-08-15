@@ -25,9 +25,15 @@ class Test(utc.UnitTest):
 
     def setUp(self):
         super().setUp()
-        self.setup_mock_thermostat_zone()
-        # Save original thermostat configuration
-        self.original_thermostat_config = api.thermostats[self.thermostat_type].copy()
+        # Save original thermostat configuration before any modifications
+        self.original_thermostat_config = None
+        if self.thermostat_type in api.thermostats:
+            self.original_thermostat_config = (
+                api.thermostats[self.thermostat_type].copy()
+            )
+
+        # Set up mock configuration without using setup_mock_thermostat_zone
+        # since that conflicts with our save/restore logic
         api.thermostats[self.thermostat_type] = {  # dummy unit test thermostat
             "required_env_variables": {
                 "GMAIL_USERNAME": None,
@@ -35,11 +41,24 @@ class Test(utc.UnitTest):
             },
         }
 
+        # Set up user inputs manually to avoid calling setup_mock_thermostat_zone
+        self.unit_test_argv = ["supervise.py", self.thermostat_type, "0"]
+        self.user_inputs_backup = getattr(api.uip, "user_inputs", None)
+
     def tearDown(self):
-        # Restore original thermostat configuration
-        api.thermostats[self.thermostat_type] = self.original_thermostat_config
-        self.teardown_mock_thermostat_zone()
-        super().tearDown()
+        try:
+            # Restore original thermostat configuration
+            if (self.original_thermostat_config is not None and
+                    hasattr(self, 'original_thermostat_config')):
+                api.thermostats[self.thermostat_type] = (
+                    self.original_thermostat_config
+                )
+
+            # Restore user inputs backup
+            if hasattr(self, 'user_inputs_backup') and api.uip:
+                api.uip.user_inputs = self.user_inputs_backup
+        finally:
+            super().tearDown()
 
     def test_verify_required_env_variables(self):
         """
