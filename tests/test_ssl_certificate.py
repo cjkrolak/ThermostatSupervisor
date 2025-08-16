@@ -44,9 +44,7 @@ class TestSSLCertificate(unittest.TestCase):
     def test_generate_self_signed_certificate(self):
         """Test self-signed certificate generation."""
         cert_path, key_path = ssl_certificate.generate_self_signed_certificate(
-            cert_file="test.crt",
-            key_file="test.key",
-            common_name="test.localhost"
+            cert_file="test.crt", key_file="test.key", common_name="test.localhost"
         )
 
         # Check that files were created
@@ -67,7 +65,7 @@ class TestSSLCertificate(unittest.TestCase):
         ssl_context = ssl_certificate.get_ssl_context(
             cert_file="context_test.crt",
             key_file="context_test.key",
-            fallback_to_adhoc=False
+            fallback_to_adhoc=False,
         )
 
         # Should return a tuple of file paths
@@ -93,7 +91,7 @@ class TestSSLCertificate(unittest.TestCase):
             ssl_context = ssl_certificate.get_ssl_context(
                 cert_file="fallback_test.crt",
                 key_file="fallback_test.key",
-                fallback_to_adhoc=True
+                fallback_to_adhoc=True,
             )
 
             # Should fallback to 'adhoc'
@@ -107,8 +105,7 @@ class TestSSLCertificate(unittest.TestCase):
         """Test that existing recent certificates are reused."""
         # Generate first certificate
         cert_path1, key_path1 = ssl_certificate.generate_self_signed_certificate(
-            cert_file="reuse_test.crt",
-            key_file="reuse_test.key"
+            cert_file="reuse_test.crt", key_file="reuse_test.key"
         )
 
         # Get modification time
@@ -116,8 +113,7 @@ class TestSSLCertificate(unittest.TestCase):
 
         # Generate again - should reuse existing
         cert_path2, key_path2 = ssl_certificate.generate_self_signed_certificate(
-            cert_file="reuse_test.crt",
-            key_file="reuse_test.key"
+            cert_file="reuse_test.crt", key_file="reuse_test.key"
         )
 
         # Should be the same files

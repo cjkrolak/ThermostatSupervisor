@@ -32,7 +32,7 @@ def generate_self_signed_certificate(
     cert_file: str = "server.crt",
     key_file: str = "server.key",
     days: int = 365,
-    common_name: str = "localhost"
+    common_name: str = "localhost",
 ) -> Tuple[pathlib.Path, pathlib.Path]:
     """Generate a self-signed SSL certificate using OpenSSL.
 
@@ -55,44 +55,40 @@ def generate_self_signed_certificate(
     # Check if certificates already exist and are recent
     if cert_path.exists() and key_path.exists():
         # Check if certificate is still valid (created within last 30 days)
-        cert_age_days = (
-            time.time() - cert_path.stat().st_mtime
-        ) / (24 * 3600)
+        cert_age_days = (time.time() - cert_path.stat().st_mtime) / (24 * 3600)
         if cert_age_days < (days - 30):  # Regenerate 30 days before expiry
             util.log_msg(
-                f"Using existing SSL certificate: {cert_path}",
-                mode=util.DEBUG_LOG
+                f"Using existing SSL certificate: {cert_path}", mode=util.DEBUG_LOG
             )
             return cert_path, key_path
 
-    util.log_msg(
-        f"Generating new SSL certificate: {cert_path}",
-        mode=util.STDOUT_LOG
-    )
+    util.log_msg(f"Generating new SSL certificate: {cert_path}", mode=util.STDOUT_LOG)
 
     # OpenSSL command to generate self-signed certificate
     openssl_cmd = [
-        "openssl", "req", "-x509", "-newkey", "rsa:4096", "-nodes",
-        "-out", str(cert_path),
-        "-keyout", str(key_path),
-        "-days", str(days),
-        "-subj", f"/C=US/ST=State/L=City/O=Organization/CN={common_name}"
+        "openssl",
+        "req",
+        "-x509",
+        "-newkey",
+        "rsa:4096",
+        "-nodes",
+        "-out",
+        str(cert_path),
+        "-keyout",
+        str(key_path),
+        "-days",
+        str(days),
+        "-subj",
+        f"/C=US/ST=State/L=City/O=Organization/CN={common_name}",
     ]
 
     try:
         # Run OpenSSL command
         subprocess.run(
-            openssl_cmd,
-            capture_output=True,
-            text=True,
-            check=True,
-            timeout=30
+            openssl_cmd, capture_output=True, text=True, check=True, timeout=30
         )
 
-        util.log_msg(
-            "SSL certificate generated successfully",
-            mode=util.STDOUT_LOG
-        )
+        util.log_msg("SSL certificate generated successfully", mode=util.STDOUT_LOG)
 
         # Verify files were created
         if not cert_path.exists() or not key_path.exists():
@@ -116,8 +112,7 @@ def generate_self_signed_certificate(
 
     except FileNotFoundError as e:
         error_msg = (
-            "OpenSSL not found. Please install OpenSSL to generate "
-            "SSL certificates"
+            "OpenSSL not found. Please install OpenSSL to generate " "SSL certificates"
         )
         util.log_msg(error_msg, mode=util.STDERR_LOG)
         raise RuntimeError(error_msg) from e
@@ -126,7 +121,7 @@ def generate_self_signed_certificate(
 def get_ssl_context(
     cert_file: str = "server.crt",
     key_file: str = "server.key",
-    fallback_to_adhoc: bool = True
+    fallback_to_adhoc: bool = True,
 ) -> Optional[str]:
     """Get SSL context for Flask application.
 
@@ -140,21 +135,16 @@ def get_ssl_context(
     """
     try:
         cert_path, key_path = generate_self_signed_certificate(
-            cert_file=cert_file,
-            key_file=key_file
+            cert_file=cert_file, key_file=key_file
         )
         return (str(cert_path), str(key_path))
 
     except RuntimeError as e:
-        util.log_msg(
-            f"Failed to generate SSL certificate: {e}",
-            mode=util.STDERR_LOG
-        )
+        util.log_msg(f"Failed to generate SSL certificate: {e}", mode=util.STDERR_LOG)
 
         if fallback_to_adhoc:
             util.log_msg(
-                "Falling back to Flask 'adhoc' SSL certificate",
-                mode=util.STDOUT_LOG
+                "Falling back to Flask 'adhoc' SSL certificate", mode=util.STDOUT_LOG
             )
             return "adhoc"
         else:
@@ -180,10 +170,13 @@ def validate_ssl_certificate(cert_path: pathlib.Path) -> bool:
             capture_output=True,
             text=True,
             check=True,
-            timeout=10
+            timeout=10,
         )
         return True
 
-    except (subprocess.CalledProcessError, subprocess.TimeoutExpired,
-            FileNotFoundError):
+    except (
+        subprocess.CalledProcessError,
+        subprocess.TimeoutExpired,
+        FileNotFoundError,
+    ):
         return False

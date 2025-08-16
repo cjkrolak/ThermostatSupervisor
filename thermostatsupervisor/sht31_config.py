@@ -29,7 +29,7 @@ if FLASK_USE_HTTPS:
     FLASK_SSL_CERT = ssl_certificate.get_ssl_context(
         cert_file="sht31_server.crt",
         key_file="sht31_server.key",
-        fallback_to_adhoc=True
+        fallback_to_adhoc=True,
     )
     FLASK_KWARGS = {"ssl_context": FLASK_SSL_CERT}
     FLASK_URL_PREFIX = "https://"
