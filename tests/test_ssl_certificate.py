@@ -130,7 +130,7 @@ class TestSSLCertificate(unittest.TestCase):
         nonexistent_path = pathlib.Path(self.test_dir) / "nonexistent.crt"
         self.assertFalse(ssl_certificate.validate_ssl_certificate(nonexistent_path))
 
-    @patch('thermostatsupervisor.ssl_certificate.subprocess.run')
+    @patch("thermostatsupervisor.ssl_certificate.subprocess.run")
     def test_download_ssl_certificate(self, mock_subprocess):
         """Test SSL certificate download functionality."""
         # Mock successful openssl s_client output
@@ -159,12 +159,12 @@ MQswCQYDVQQGEwJBVTETMBEGA1UECAwKU29tZS1TdGF0ZTEhMB8GA1UECgwYSW50
         self.assertEqual(cert_path.name, "test.example.com_443.crt")
 
         # Check file content contains the certificate
-        with open(cert_path, 'r') as f:
+        with open(cert_path, "r") as f:
             content = f.read()
             self.assertIn("-----BEGIN CERTIFICATE-----", content)
             self.assertIn("-----END CERTIFICATE-----", content)
 
-    @patch('thermostatsupervisor.ssl_certificate.subprocess.run')
+    @patch("thermostatsupervisor.ssl_certificate.subprocess.run")
     def test_download_ssl_certificate_failure(self, mock_subprocess):
         """Test SSL certificate download failure handling."""
         # Mock failed openssl command
@@ -176,8 +176,8 @@ MQswCQYDVQQGEwJBVTETMBEGA1UECAwKU29tZS1TdGF0ZTEhMB8GA1UECgwYSW50
 
         self.assertIn("OpenSSL command failed", str(context.exception))
 
-    @patch('thermostatsupervisor.ssl_certificate.platform.system')
-    @patch('thermostatsupervisor.ssl_certificate.subprocess.run')
+    @patch("thermostatsupervisor.ssl_certificate.platform.system")
+    @patch("thermostatsupervisor.ssl_certificate.subprocess.run")
     def test_import_ssl_certificate_linux(self, mock_subprocess, mock_platform):
         """Test SSL certificate import on Linux."""
         mock_platform.return_value = "Linux"
@@ -190,21 +190,17 @@ MQswCQYDVQQGEwJBVTETMBEGA1UECAwKU29tZS1TdGF0ZTEhMB8GA1UECgwYSW50
         )
 
         # Mock that /usr/local/share/ca-certificates/ exists
-        with patch('pathlib.Path.exists') as mock_exists:
+        with patch("pathlib.Path.exists") as mock_exists:
             mock_exists.return_value = True
-            with patch('pathlib.Path.is_dir') as mock_is_dir:
+            with patch("pathlib.Path.is_dir") as mock_is_dir:
                 mock_is_dir.return_value = True
 
-                result = ssl_certificate.import_ssl_certificate_to_system(
-                    cert_path
-                )
+                result = ssl_certificate.import_ssl_certificate_to_system(cert_path)
                 self.assertTrue(result)
 
-    @patch('thermostatsupervisor.ssl_certificate.platform.system')
-    @patch('thermostatsupervisor.ssl_certificate.subprocess.run')
-    def test_import_ssl_certificate_windows(
-        self, mock_subprocess, mock_platform
-    ):
+    @patch("thermostatsupervisor.ssl_certificate.platform.system")
+    @patch("thermostatsupervisor.ssl_certificate.subprocess.run")
+    def test_import_ssl_certificate_windows(self, mock_subprocess, mock_platform):
         """Test SSL certificate import on Windows."""
         mock_platform.return_value = "Windows"
         mock_subprocess.return_value.returncode = 0
@@ -224,10 +220,10 @@ MQswCQYDVQQGEwJBVTETMBEGA1UECAwKU29tZS1TdGF0ZTEhMB8GA1UECgwYSW50
             check=True,
             capture_output=True,
             text=True,
-            timeout=60
+            timeout=60,
         )
 
-    @patch('thermostatsupervisor.ssl_certificate.platform.system')
+    @patch("thermostatsupervisor.ssl_certificate.platform.system")
     def test_import_ssl_certificate_unsupported_os(self, mock_platform):
         """Test SSL certificate import on unsupported OS."""
         mock_platform.return_value = "Darwin"  # macOS
@@ -241,11 +237,9 @@ MQswCQYDVQQGEwJBVTETMBEGA1UECAwKU29tZS1TdGF0ZTEhMB8GA1UECgwYSW50
         result = ssl_certificate.import_ssl_certificate_to_system(cert_path)
         self.assertFalse(result)
 
-    @patch('thermostatsupervisor.ssl_certificate.download_ssl_certificate')
-    @patch('thermostatsupervisor.ssl_certificate.import_ssl_certificate_to_system')
-    def test_download_and_import_ssl_certificates(
-        self, mock_import, mock_download
-    ):
+    @patch("thermostatsupervisor.ssl_certificate.download_ssl_certificate")
+    @patch("thermostatsupervisor.ssl_certificate.import_ssl_certificate_to_system")
+    def test_download_and_import_ssl_certificates(self, mock_import, mock_download):
         """Test downloading and importing multiple SSL certificates."""
         # Mock successful operations
         mock_cert_path = pathlib.Path(self.test_dir) / "test.crt"
@@ -259,17 +253,15 @@ MQswCQYDVQQGEwJBVTETMBEGA1UECAwKU29tZS1TdGF0ZTEhMB8GA1UECgwYSW50
         self.assertEqual(mock_download.call_count, 2)
         self.assertEqual(mock_import.call_count, 2)
 
-    @patch('thermostatsupervisor.ssl_certificate.download_ssl_certificate')
-    @patch('thermostatsupervisor.ssl_certificate.import_ssl_certificate_to_system')
+    @patch("thermostatsupervisor.ssl_certificate.download_ssl_certificate")
+    @patch("thermostatsupervisor.ssl_certificate.import_ssl_certificate_to_system")
     def test_download_and_import_ssl_certificates_partial_failure(
         self, mock_import, mock_download
     ):
         """Test downloading and importing certificates with partial failure."""
         # Mock mixed success/failure
         mock_cert_path = pathlib.Path(self.test_dir) / "test.crt"
-        mock_download.side_effect = [
-            mock_cert_path, RuntimeError("Download failed")
-        ]
+        mock_download.side_effect = [mock_cert_path, RuntimeError("Download failed")]
         mock_import.return_value = True
 
         servers = [("example.com", 443), ("invalid.com", 443)]

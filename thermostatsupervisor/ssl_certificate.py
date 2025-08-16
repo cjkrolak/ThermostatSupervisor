@@ -201,24 +201,24 @@ def download_ssl_certificate(hostname: str, port: int = 443) -> pathlib.Path:
     cert_path = ssl_dir / cert_filename
 
     util.log_msg(
-        f"Downloading SSL certificate from {hostname}:{port}",
-        mode=util.STDOUT_LOG
+        f"Downloading SSL certificate from {hostname}:{port}", mode=util.STDOUT_LOG
     )
 
     try:
         # Use openssl command to get the certificate
         openssl_cmd = [
-            "openssl", "s_client", "-connect", f"{hostname}:{port}",
-            "-servername", hostname, "-showcerts"
+            "openssl",
+            "s_client",
+            "-connect",
+            f"{hostname}:{port}",
+            "-servername",
+            hostname,
+            "-showcerts",
         ]
 
         # Run openssl command
         result = subprocess.run(
-            openssl_cmd,
-            input="",
-            capture_output=True,
-            text=True,
-            timeout=30
+            openssl_cmd, input="", capture_output=True, text=True, timeout=30
         )
 
         if result.returncode != 0:
@@ -227,9 +227,8 @@ def download_ssl_certificate(hostname: str, port: int = 443) -> pathlib.Path:
         # Extract the certificate from the output
         output = result.stdout
         cert_start = output.find("-----BEGIN CERTIFICATE-----")
-        cert_end = (
-            output.find("-----END CERTIFICATE-----") +
-            len("-----END CERTIFICATE-----")
+        cert_end = output.find("-----END CERTIFICATE-----") + len(
+            "-----END CERTIFICATE-----"
         )
 
         if cert_start == -1 or cert_end == -1:
@@ -238,16 +237,13 @@ def download_ssl_certificate(hostname: str, port: int = 443) -> pathlib.Path:
         cert_pem = output[cert_start:cert_end]
 
         # Write certificate to file
-        with open(cert_path, 'w', encoding='utf-8') as f:
+        with open(cert_path, "w", encoding="utf-8") as f:
             f.write(cert_pem)
 
         # Set proper permissions
         cert_path.chmod(0o644)
 
-        util.log_msg(
-            f"SSL certificate downloaded to {cert_path}",
-            mode=util.STDOUT_LOG
-        )
+        util.log_msg(f"SSL certificate downloaded to {cert_path}", mode=util.STDOUT_LOG)
         return cert_path
 
     except subprocess.TimeoutExpired:
@@ -270,10 +266,7 @@ def import_ssl_certificate_to_system(cert_path: pathlib.Path) -> bool:
         True if import was successful, False otherwise
     """
     if not cert_path.exists():
-        util.log_msg(
-            f"Certificate file not found: {cert_path}",
-            mode=util.STDERR_LOG
-        )
+        util.log_msg(f"Certificate file not found: {cert_path}", mode=util.STDERR_LOG)
         return False
 
     system = platform.system().lower()
@@ -285,16 +278,12 @@ def import_ssl_certificate_to_system(cert_path: pathlib.Path) -> bool:
             return _import_cert_windows(cert_path)
         else:
             util.log_msg(
-                f"Unsupported operating system: {system}",
-                mode=util.STDERR_LOG
+                f"Unsupported operating system: {system}", mode=util.STDERR_LOG
             )
             return False
 
     except Exception as e:
-        util.log_msg(
-            f"Failed to import SSL certificate: {e}",
-            mode=util.STDERR_LOG
-        )
+        util.log_msg(f"Failed to import SSL certificate: {e}", mode=util.STDERR_LOG)
         return False
 
 
@@ -317,23 +306,34 @@ def _import_cert_linux(cert_path: pathlib.Path) -> bool:
                 target_path = cert_dir_path / cert_name
 
                 # Copy certificate to system directory
-                subprocess.run([
-                    "sudo", "cp", str(cert_path), str(target_path)
-                ], check=True, capture_output=True, text=True, timeout=30)
+                subprocess.run(
+                    ["sudo", "cp", str(cert_path), str(target_path)],
+                    check=True,
+                    capture_output=True,
+                    text=True,
+                    timeout=30,
+                )
 
                 # Update certificate store
                 if cert_dir == "/usr/local/share/ca-certificates/":
-                    subprocess.run([
-                        "sudo", "update-ca-certificates"
-                    ], check=True, capture_output=True, text=True, timeout=60)
+                    subprocess.run(
+                        ["sudo", "update-ca-certificates"],
+                        check=True,
+                        capture_output=True,
+                        text=True,
+                        timeout=60,
+                    )
                 elif cert_dir == "/etc/pki/ca-trust/source/anchors/":
-                    subprocess.run([
-                        "sudo", "update-ca-trust"
-                    ], check=True, capture_output=True, text=True, timeout=60)
+                    subprocess.run(
+                        ["sudo", "update-ca-trust"],
+                        check=True,
+                        capture_output=True,
+                        text=True,
+                        timeout=60,
+                    )
 
                 util.log_msg(
-                    f"Certificate imported to {target_path}",
-                    mode=util.STDOUT_LOG
+                    f"Certificate imported to {target_path}", mode=util.STDOUT_LOG
                 )
                 imported = True
                 break
@@ -345,9 +345,8 @@ def _import_cert_linux(cert_path: pathlib.Path) -> bool:
     if not imported:
         # Fallback: set environment variable
         util.log_msg(
-            "Could not import to system store, using environment variable "
-            "fallback",
-            mode=util.STDOUT_LOG
+            "Could not import to system store, using environment variable " "fallback",
+            mode=util.STDOUT_LOG,
         )
         # This would typically be set by the calling script
         # os.environ['REQUESTS_CA_BUNDLE'] = str(cert_path)
@@ -360,20 +359,23 @@ def _import_cert_windows(cert_path: pathlib.Path) -> bool:
     """Import certificate on Windows systems."""
     try:
         # Use certutil to import the certificate
-        subprocess.run([
-            "certutil", "-addstore", "Root", str(cert_path)
-        ], check=True, capture_output=True, text=True, timeout=60)
+        subprocess.run(
+            ["certutil", "-addstore", "Root", str(cert_path)],
+            check=True,
+            capture_output=True,
+            text=True,
+            timeout=60,
+        )
 
         util.log_msg(
-            "Certificate imported to Windows certificate store",
-            mode=util.STDOUT_LOG
+            "Certificate imported to Windows certificate store", mode=util.STDOUT_LOG
         )
         return True
 
     except subprocess.CalledProcessError as e:
         util.log_msg(
             f"Failed to import certificate with certutil: {e.stderr}",
-            mode=util.STDERR_LOG
+            mode=util.STDERR_LOG,
         )
         return False
 
@@ -398,14 +400,13 @@ def download_and_import_ssl_certificates(servers: List[Tuple[str, int]]) -> bool
             if not import_ssl_certificate_to_system(cert_path):
                 util.log_msg(
                     f"Failed to import certificate for {hostname}:{port}",
-                    mode=util.STDERR_LOG
+                    mode=util.STDERR_LOG,
                 )
                 success = False
 
         except Exception as e:
             util.log_msg(
-                f"Error processing {hostname}:{port}: {e}",
-                mode=util.STDERR_LOG
+                f"Error processing {hostname}:{port}: {e}", mode=util.STDERR_LOG
             )
             success = False
 

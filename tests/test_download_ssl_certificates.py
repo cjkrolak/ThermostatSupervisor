@@ -25,18 +25,14 @@ class TestDownloadSSLCertificatesScript(unittest.TestCase):
         # Test JSON array with string objects
         servers_json = '["example.com:443", "test.com:8443", "default.com"]'
         result = parse_servers(servers_json)
-        expected = [
-            ("example.com", 443), ("test.com", 8443), ("default.com", 443)
-        ]
+        expected = [("example.com", 443), ("test.com", 8443), ("default.com", 443)]
         self.assertEqual(result, expected)
 
     def test_parse_servers_comma_separated(self):
         """Test parsing servers from comma-separated format."""
         servers_str = "example.com:443,test.com:8443,default.com"
         result = parse_servers(servers_str)
-        expected = [
-            ("example.com", 443), ("test.com", 8443), ("default.com", 443)
-        ]
+        expected = [("example.com", 443), ("test.com", 8443), ("default.com", 443)]
         self.assertEqual(result, expected)
 
     def test_parse_servers_invalid_port(self):
@@ -54,24 +50,25 @@ class TestDownloadSSLCertificatesScript(unittest.TestCase):
         result = parse_servers("[]")
         self.assertEqual(result, [])
 
-    @patch('download_ssl_certificates.download_and_import_ssl_certificates')
-    @patch('sys.argv', [
-        'download_ssl_certificates.py', 'example.com:443,test.com:8443'
-    ])
+    @patch("download_ssl_certificates.download_and_import_ssl_certificates")
+    @patch(
+        "sys.argv", ["download_ssl_certificates.py", "example.com:443,test.com:8443"]
+    )
     def test_main_download_and_import(self, mock_download_import):
         """Test main function with download and import."""
         mock_download_import.return_value = True
 
         result = main()
         self.assertEqual(result, 0)
-        mock_download_import.assert_called_once_with([
-            ("example.com", 443), ("test.com", 8443)
-        ])
+        mock_download_import.assert_called_once_with(
+            [("example.com", 443), ("test.com", 8443)]
+        )
 
-    @patch('thermostatsupervisor.ssl_certificate.download_ssl_certificate')
-    @patch('sys.argv', [
-        'download_ssl_certificates.py', 'example.com:443', '--download-only'
-    ])
+    @patch("thermostatsupervisor.ssl_certificate.download_ssl_certificate")
+    @patch(
+        "sys.argv",
+        ["download_ssl_certificates.py", "example.com:443", "--download-only"],
+    )
     def test_main_download_only(self, mock_download):
         """Test main function with download-only flag."""
         mock_download.return_value = "test_cert_path"
@@ -80,8 +77,8 @@ class TestDownloadSSLCertificatesScript(unittest.TestCase):
         self.assertEqual(result, 0)
         mock_download.assert_called_once_with("example.com", 443)
 
-    @patch('download_ssl_certificates.download_and_import_ssl_certificates')
-    @patch('sys.argv', ['download_ssl_certificates.py', 'invalid_format'])
+    @patch("download_ssl_certificates.download_and_import_ssl_certificates")
+    @patch("sys.argv", ["download_ssl_certificates.py", "invalid_format"])
     def test_main_with_invalid_servers(self, mock_download_import):
         """Test main function with invalid server format."""
         # When parse_servers returns empty list, but it actually
@@ -92,8 +89,8 @@ class TestDownloadSSLCertificatesScript(unittest.TestCase):
         # This will actually succeed since "invalid_format" becomes a hostname
         self.assertEqual(result, 0)
 
-    @patch('download_ssl_certificates.download_and_import_ssl_certificates')
-    @patch('sys.argv', ['download_ssl_certificates.py', 'example.com:443'])
+    @patch("download_ssl_certificates.download_and_import_ssl_certificates")
+    @patch("sys.argv", ["download_ssl_certificates.py", "example.com:443"])
     def test_main_with_failure(self, mock_download_import):
         """Test main function when certificate processing fails."""
         mock_download_import.return_value = False
@@ -101,18 +98,19 @@ class TestDownloadSSLCertificatesScript(unittest.TestCase):
         result = main()
         self.assertEqual(result, 1)  # Should return error code
 
-    @patch('thermostatsupervisor.ssl_certificate.download_ssl_certificate')
-    @patch('sys.argv', [
-        'download_ssl_certificates.py',
-        'example.com:443,test.com:8443',
-        '--download-only'
-    ])
+    @patch("thermostatsupervisor.ssl_certificate.download_ssl_certificate")
+    @patch(
+        "sys.argv",
+        [
+            "download_ssl_certificates.py",
+            "example.com:443,test.com:8443",
+            "--download-only",
+        ],
+    )
     def test_main_download_only_partial_failure(self, mock_download):
         """Test main function with download-only and partial failure."""
         # First download succeeds, second fails
-        mock_download.side_effect = [
-            "test_cert_path", RuntimeError("Download failed")
-        ]
+        mock_download.side_effect = ["test_cert_path", RuntimeError("Download failed")]
 
         result = main()
         # Should return error code due to partial failure

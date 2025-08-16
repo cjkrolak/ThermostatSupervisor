@@ -39,14 +39,14 @@ def parse_servers(servers_str: str) -> List[Tuple[str, int]]:
         if isinstance(servers_data, list):
             for server in servers_data:
                 if isinstance(server, dict):
-                    hostname = server.get('hostname')
-                    port = server.get('port', 443)
+                    hostname = server.get("hostname")
+                    port = server.get("port", 443)
                     if hostname:
                         servers.append((hostname, port))
                 elif isinstance(server, str):
                     # Handle "hostname:port" format
-                    if ':' in server:
-                        hostname, port_str = server.split(':', 1)
+                    if ":" in server:
+                        hostname, port_str = server.split(":", 1)
                         port = int(port_str)
                     else:
                         hostname = server
@@ -57,11 +57,11 @@ def parse_servers(servers_str: str) -> List[Tuple[str, int]]:
         pass
 
     # Parse as comma-separated list
-    server_parts = servers_str.split(',')
+    server_parts = servers_str.split(",")
     for server_part in server_parts:
         server_part = server_part.strip()
-        if ':' in server_part:
-            hostname, port_str = server_part.split(':', 1)
+        if ":" in server_part:
+            hostname, port_str = server_part.split(":", 1)
             try:
                 port = int(port_str)
             except ValueError:
@@ -82,20 +82,16 @@ def main():
         description="Download and import SSL certificates from servers"
     )
     parser.add_argument(
-        'servers',
-        help='Servers to download certificates from. Can be JSON list or '
-             'comma-separated "hostname:port" pairs (default port: 443)'
+        "servers",
+        help="Servers to download certificates from. Can be JSON list or "
+        'comma-separated "hostname:port" pairs (default port: 443)',
     )
     parser.add_argument(
-        '--download-only',
-        action='store_true',
-        help='Only download certificates, do not import to system store'
+        "--download-only",
+        action="store_true",
+        help="Only download certificates, do not import to system store",
     )
-    parser.add_argument(
-        '--verbose',
-        action='store_true',
-        help='Enable verbose logging'
-    )
+    parser.add_argument("--verbose", action="store_true", help="Enable verbose logging")
 
     args = parser.parse_args()
 
@@ -111,28 +107,25 @@ def main():
             return 1
 
         util.log_msg(
-            f"Processing {len(servers)} server(s): {servers}",
-            mode=util.STDOUT_LOG
+            f"Processing {len(servers)} server(s): {servers}", mode=util.STDOUT_LOG
         )
 
         if args.download_only:
             # Import individual functions for download-only mode
-            from thermostatsupervisor.ssl_certificate import (
-                download_ssl_certificate
-            )
+            from thermostatsupervisor.ssl_certificate import download_ssl_certificate
+
             success = True
             for hostname, port in servers:
                 try:
                     cert_path = download_ssl_certificate(hostname, port)
                     util.log_msg(
-                        f"Downloaded certificate to {cert_path}",
-                        mode=util.STDOUT_LOG
+                        f"Downloaded certificate to {cert_path}", mode=util.STDOUT_LOG
                     )
                 except Exception as e:
                     util.log_msg(
                         f"Failed to download certificate from "
                         f"{hostname}:{port}: {e}",
-                        mode=util.STDERR_LOG
+                        mode=util.STDERR_LOG,
                     )
                     success = False
         else:
@@ -141,15 +134,11 @@ def main():
 
         if success:
             util.log_msg(
-                "All certificates processed successfully",
-                mode=util.STDOUT_LOG
+                "All certificates processed successfully", mode=util.STDOUT_LOG
             )
             return 0
         else:
-            util.log_msg(
-                "Some certificates failed to process",
-                mode=util.STDERR_LOG
-            )
+            util.log_msg("Some certificates failed to process", mode=util.STDERR_LOG)
             return 1
 
     except Exception as e:
