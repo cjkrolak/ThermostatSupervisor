@@ -668,8 +668,8 @@ class ThermostatZone(tc.ThermostatCommonZone):
         self.poll_time_sec = 10 * 60  # default to 10 minutes
         self.connection_time_sec = 8 * 60 * 60  # default to 8 hours
 
-        # server data cache expiration parameters
-        self.fetch_interval_sec = 10  # age of server data before refresh
+        # server data cache expiration parameters to mitigate spam detection
+        self.fetch_interval_sec = 60  # age of server data before refresh (seconds)
         self.last_fetch_time = time.time() - 2 * self.fetch_interval_sec
 
         # switch config for this thermostat
@@ -698,6 +698,9 @@ class ThermostatZone(tc.ThermostatCommonZone):
         returns:
             (float): indoor temp in °F.
         """
+        # Refresh zone metadata if needed (respects cache timeout)
+        self.refresh_zone_info()
+
         raw_temp = self.zone_metadata.get(blink_config.API_TEMPF_MEAN)
         if isinstance(raw_temp, (str, float, int)):
             raw_temp = float(raw_temp)
@@ -811,6 +814,9 @@ class ThermostatZone(tc.ThermostatCommonZone):
 
     def get_wifi_strength(self) -> float:  # noqa R0201
         """Return the wifi signal strength in dBm."""
+        # Refresh zone metadata if needed (respects cache timeout)
+        self.refresh_zone_info()
+
         raw_wifi = self.zone_metadata.get(blink_config.API_WIFI_STRENGTH)
         if isinstance(raw_wifi, (str, float, int)):
             return float(raw_wifi)
@@ -827,6 +833,9 @@ class ThermostatZone(tc.ThermostatCommonZone):
 
     def get_battery_voltage(self) -> float:  # noqa R0201
         """Return the battery voltage in volts."""
+        # Refresh zone metadata if needed (respects cache timeout)
+        self.refresh_zone_info()
+
         raw_voltage = self.zone_metadata.get(blink_config.API_BATTERY_VOLTAGE)
         if isinstance(raw_voltage, (str, float, int)):
             return float(raw_voltage) / 100.0
@@ -835,10 +844,69 @@ class ThermostatZone(tc.ThermostatCommonZone):
 
     def get_battery_status(self) -> bool:  # noqa R0201
         """Return the battery status."""
+        # Refresh zone metadata if needed (respects cache timeout)
+        self.refresh_zone_info()
+
         raw_status = self.zone_metadata.get(blink_config.API_BATTERY_STATUS)
         if isinstance(raw_status, str):
             raw_status = raw_status == "ok"
         return raw_status
+
+    def refresh_zone_info(self, force_refresh=False) -> None:
+        """
+        Refresh zone metadata from blink server with spam mitigation.
+
+        This method overrides the base class to properly refresh blink camera
+        data while respecting cache intervals to prevent server spam detection.
+
+        inputs:
+            force_refresh(bool): if True, ignore expiration timer and refresh
+        returns:
+            None, updates self.zone_metadata with fresh data from server
+        """
+        now_time = time.time()
+        # refresh if past expiration date or force_refresh option
+        if force_refresh or (
+            now_time >= (self.last_fetch_time + self.fetch_interval_sec)
+        ):
+            if self.verbose:
+                util.log_msg(
+                    f"Refreshing zone metadata for {self.zone_name} "
+                    f"(last refresh: {now_time - self.last_fetch_time:.1f}s ago)",
+                    mode=util.STDOUT_LOG,
+                    func_name=1,
+                )
+
+            # Get fresh metadata from blink server
+            try:
+                self.zone_metadata = self.Thermostat.get_metadata(zone=self.zone_number)
+                self.last_fetch_time = now_time
+                if self.verbose:
+                    util.log_msg(
+                        f"Zone metadata refreshed successfully for {self.zone_name}",
+                        mode=util.STDOUT_LOG,
+                        func_name=1,
+                    )
+            except Exception as e:
+                if self.verbose:
+                    util.log_msg(
+                        f"Failed to refresh zone metadata for {self.zone_name}: {e}",
+                        mode=util.STDOUT_LOG,
+                        func_name=1,
+                    )
+                # Don't update last_fetch_time on failure to retry sooner
+                raise
+        else:
+            if self.verbose:
+                time_until_refresh = (
+                    self.last_fetch_time + self.fetch_interval_sec - now_time
+                )
+                util.log_msg(
+                    f"Using cached data for {self.zone_name} "
+                    f"(refresh in {time_until_refresh:.1f}s)",
+                    mode=util.STDOUT_LOG,
+                    func_name=1,
+                )
 
 
 if __name__ == "__main__":
