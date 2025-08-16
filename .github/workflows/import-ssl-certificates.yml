@@ -1,0 +1,58 @@
+name: Import SSL Certificates
+on:
+  workflow_call:
+    inputs:
+      servers:
+        description: 'JSON list of servers to download certificates from'
+        required: false
+        type: string
+        default: '[]'
+  workflow_dispatch:
+    inputs:
+      servers:
+        description: 'JSON list of servers to download certificates from'
+        required: false
+        type: string
+        default: '[]'
+
+jobs:
+  import-ssl-certificates:
+    runs-on: ubuntu-latest
+    name: Import SSL Certificates
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Install OpenSSL
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y openssl ca-certificates
+
+      - name: Download SSL certificates
+        if: inputs.servers != '[]' && inputs.servers != ''
+        run: |
+          echo "Downloading SSL certificates from servers: ${{ inputs.servers }}"
+          python download_ssl_certificates.py '${{ inputs.servers }}' --verbose
+
+      - name: Verify certificate download
+        if: inputs.servers != '[]' && inputs.servers != ''
+        run: |
+          echo "Checking downloaded certificates..."
+          if [ -d "ssl" ]; then
+            ls -la ssl/
+            echo "Downloaded certificates:"
+            find ssl/ -name "*.crt" -exec echo "  {}" \;
+          else
+            echo "No certificates downloaded (ssl directory not found)"
+          fi
