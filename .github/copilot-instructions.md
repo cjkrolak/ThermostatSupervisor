@@ -9,7 +9,8 @@
 ### General Instructions
 - Always prioritize readability and clarity.
 - For algorithm-related code, include explanations of the approach used.
-- Write code with good maintainability practices, including comments on why certain design decisions were made.
+- Write code with good maintainability practices, including comments on why 
+  certain design decisions were made.
 - Handle edge cases and write clear exception handling.
 - For libraries or external dependencies, mention their usage and purpose in comments.
 - Use consistent naming conventions and follow language-specific best practices.
@@ -18,7 +19,8 @@
 ### Code Style and Formatting
 - Follow the [PEP 8](https://peps.python.org/pep-0008/) style guide for Python.
 - Maintain proper indentation (use 4 spaces for each level of indentation).
-- **Ensure lines do not exceed 88 characters** (as configured in setup.cfg for black compatibility).
+- **Ensure lines do not exceed 88 characters** (as configured in setup.cfg for 
+  black compatibility).
 - Place function and class docstrings immediately after the `def` or `class` keyword.
 - Use blank lines to separate functions, classes, and code blocks where appropriate.
 - **Ensure blank lines are completely empty** - no trailing whitespace or spaces.
@@ -27,9 +29,11 @@
 
 ### Edge Cases and Testing
 - Always include test cases for critical paths of the application.
-- Account for common edge cases like empty inputs, invalid data types, and large datasets.
+- Account for common edge cases like empty inputs, invalid data types, and 
+  large datasets.
 - Include comments for edge cases and the expected behavior in those cases.
-- Write unit tests for functions and document them with docstrings explaining the test cases.
+- Write unit tests for functions and document them with docstrings explaining 
+  the test cases.
 
 ### Linting and Code Quality
 - **MANDATORY**: All code changes MUST pass flake8 linting before committing.
@@ -135,4 +139,83 @@
 - The GitHub Actions workflow `.github/workflows/sphinx.yml` automatically builds and deploys documentation on main branch pushes
 - Follow Napoleon extension conventions for Google/NumPy style docstrings to ensure proper parsing
 - Maintain intersphinx cross-references to Python and Flask documentation where applicable
-```
+
+### Security and Dependency Management Requirements
+- **MANDATORY**: All dependency changes MUST pass security scanning before 
+  committing.
+- **ALWAYS run** security scans using `safety check` to verify no known 
+  vulnerabilities in dependencies.
+- **ZERO security vulnerabilities policy**: Address ALL security issues before 
+  committing - no exceptions.
+- **MANDATORY**: Security scanning MUST pass before any GitHub Actions workflows 
+  proceed.
+- Follow the existing security workflows:
+  - `.github/workflows/safety-scan.yml` - Dependency vulnerability scanning
+  - `.github/workflows/dependency-review.yml` - Dependency review for PRs
+  - `.github/workflows/codacy-analysis.yml` - Code security analysis
+  - `.github/workflows/codeql-analysis.yml` - Advanced code security scanning
+- Pay special attention to:
+  - Never commit secrets, API keys, or credentials to source code
+  - Use environment variables for sensitive configuration
+  - Regularly update dependencies to address security vulnerabilities
+  - Review dependency licenses for compliance requirements
+- **Pre-commit security validation**: Always validate security before any 
+  automated processes:
+  1. Run `safety check` on all dependencies
+  2. Verify no secrets are being committed using `git diff`
+  3. Ensure environment variables are properly documented in 
+     `supervisor-env.txt.example`
+
+### Docker and Containerization Best Practices
+- **MANDATORY**: All Docker changes MUST follow security best practices defined 
+  in `DOCKER_SECURITY.md`.
+- **ALWAYS run** `security_test.sh` to validate Docker security configurations 
+  before committing.
+- Follow the existing secure Docker configurations:
+  - Use `Dockerfile.secure` for production deployments with non-root user
+  - Implement health checks for container monitoring
+  - Minimize container attack surface by using minimal base images
+  - Keep container dependencies up to date for security patches
+- Pay special attention to:
+  - Never run containers as root user in production
+  - Implement proper secrets management for container deployments
+  - Use multi-stage builds to reduce final image size
+  - Scan container images for vulnerabilities before deployment
+- **Pre-commit Docker validation**: Always validate Docker configurations before 
+  committing:
+  1. Run `security_test.sh` to verify security configurations
+  2. Test container builds locally with both standard and secure Dockerfiles
+  3. Verify health check endpoints are functional
+
+### Error Handling and Logging Standards
+- **Implement consistent error handling patterns** across all modules:
+  - Use try-catch blocks for external API calls and file operations
+  - Log errors with appropriate severity levels (DEBUG, INFO, WARNING, ERROR, 
+    CRITICAL)
+  - Include context information in error messages for debugging
+  - Handle network timeouts and connection failures gracefully
+- **Follow logging best practices**:
+  - Use structured logging with consistent format across modules
+  - Log to files in `./data/` directory as configured in existing modules
+  - Include timestamps, module names, and function names in log entries
+  - Avoid logging sensitive information (passwords, API keys, personal data)
+- **Exception handling requirements**:
+  - Never use bare `except:` clauses - always specify exception types
+  - Re-raise exceptions after logging when appropriate
+  - Provide meaningful error messages to users while logging technical details
+  - Implement circuit breaker patterns for external service dependencies
+
+### Pre-commit Hooks and Automation
+- **RECOMMENDED**: Set up pre-commit hooks to automate code quality checks:
+  - Install pre-commit: `pip install pre-commit`
+  - Configure hooks for flake8, yamllint, safety, and black formatting
+  - Run `pre-commit install` to enable automatic checks on commits
+- **Automated formatting**: Use black formatter for consistent code style:
+  - Configure with `max-line-length = 88` to match project settings
+  - Run `.github/workflows/black-reformatter.yml` for automated formatting
+- **Git commit message standards**:
+  - Use descriptive commit messages that explain the "why" not just the "what"
+  - Reference issue numbers when applicable (e.g., "Fix #123: Update API 
+    timeout handling")
+  - Use conventional commit format when possible (feat:, fix:, docs:, test:, 
+    refactor:)
