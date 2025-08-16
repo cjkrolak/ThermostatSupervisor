@@ -879,9 +879,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
 
             # Get fresh metadata from blink server
             try:
-                self.zone_metadata = self.Thermostat.get_metadata(
-                    zone=self.zone_number
-                )
+                self.zone_metadata = self.Thermostat.get_metadata(zone=self.zone_number)
                 self.last_fetch_time = now_time
                 if self.verbose:
                     util.log_msg(

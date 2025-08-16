@@ -112,27 +112,29 @@ class BlinkSpamMitigationTest(unittest.TestCase):
             blink_config.API_TEMPF_MEAN: 72.5,
             blink_config.API_WIFI_STRENGTH: -45,
             blink_config.API_BATTERY_VOLTAGE: 350,
-            blink_config.API_BATTERY_STATUS: "ok"
+            blink_config.API_BATTERY_STATUS: "ok",
         }
         self.mock_thermostat.zone_number = 0
         self.mock_thermostat.device_id = 0
 
-    @patch('thermostatsupervisor.blink.time.time')
-    @patch('thermostatsupervisor.blink.util.log_msg')
+    @patch("thermostatsupervisor.blink.time.time")
+    @patch("thermostatsupervisor.blink.util.log_msg")
     def test_refresh_zone_info_caching(self, mock_log, mock_time):
         """Test that refresh_zone_info respects cache timeout."""
         # Setup time progression
         start_time = 1000.0
         mock_time.side_effect = [
             start_time - 120,  # Constructor time (force initial refresh)
-            start_time,        # First refresh check
-            start_time + 30,   # Second refresh check (within cache time)
-            start_time + 70,   # Third refresh check (past cache time)
+            start_time,  # First refresh check
+            start_time + 30,  # Second refresh check (within cache time)
+            start_time + 70,  # Third refresh check (past cache time)
         ]
 
         # Create zone instance
-        with patch('thermostatsupervisor.thermostat_common.time.time',
-                   return_value=start_time - 120):
+        with patch(
+            "thermostatsupervisor.thermostat_common.time.time",
+            return_value=start_time - 120,
+        ):
             zone = blink.ThermostatZone(self.mock_thermostat, verbose=False)
 
         # Reset the get_metadata call count
@@ -150,19 +152,21 @@ class BlinkSpamMitigationTest(unittest.TestCase):
         zone.refresh_zone_info()
         self.assertEqual(self.mock_thermostat.get_metadata.call_count, 2)
 
-    @patch('thermostatsupervisor.blink.time.time')
+    @patch("thermostatsupervisor.blink.time.time")
     def test_refresh_zone_info_force_refresh(self, mock_time):
         """Test that force_refresh=True bypasses cache."""
         start_time = 1000.0
         mock_time.side_effect = [
             start_time - 120,  # Constructor time
-            start_time,        # First refresh
-            start_time + 10,   # Force refresh (within cache time)
+            start_time,  # First refresh
+            start_time + 10,  # Force refresh (within cache time)
         ]
 
         # Create zone instance
-        with patch('thermostatsupervisor.thermostat_common.time.time',
-                   return_value=start_time - 120):
+        with patch(
+            "thermostatsupervisor.thermostat_common.time.time",
+            return_value=start_time - 120,
+        ):
             zone = blink.ThermostatZone(self.mock_thermostat, verbose=False)
 
         # Reset the get_metadata call count
@@ -180,7 +184,7 @@ class BlinkSpamMitigationTest(unittest.TestCase):
         """Test that get_display_temp calls refresh_zone_info."""
         zone = blink.ThermostatZone(self.mock_thermostat, verbose=False)
 
-        with patch.object(zone, 'refresh_zone_info') as mock_refresh:
+        with patch.object(zone, "refresh_zone_info") as mock_refresh:
             temp = zone.get_display_temp()
             mock_refresh.assert_called_once()
             self.assertEqual(temp, 72.5)
