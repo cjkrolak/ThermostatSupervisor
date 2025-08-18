@@ -23,7 +23,7 @@ jobs:
     steps:
       # checkout code
       - name: checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       # setup QEMU
       # https://github.com/docker/setup-qemu-action
