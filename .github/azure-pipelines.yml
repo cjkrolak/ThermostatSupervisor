@@ -3,6 +3,8 @@ name: Azure Pipelines
 # disable CI trigger
 trigger: none
 # trigger on PR to dev branch only for relevant file changes
+# Pipeline will check that GitHub Actions pass and code review is complete
+# before running
 pr:
   branches:
     include: [develop]
@@ -35,6 +37,121 @@ steps:
     # v3.13 is not supported by ubuntu-latest, once it is,
     # the github token can be enabled.
     displayName: Use Python $(python.version)
+  # Check that required GitHub Actions have passed and PR has been reviewed
+  - script: |
+      set -e
+      echo "Checking GitHub Actions status and code review requirements..."
+
+      # Check if this is a PR build
+      if [ -z "${SYSTEM_PULLREQUEST_PULLREQUESTNUMBER}" ]; then
+        echo "Not a PR build, skipping checks"
+        exit 0
+      fi
+
+      PR_NUMBER="${SYSTEM_PULLREQUEST_PULLREQUESTNUMBER}"
+      echo "Checking PR #${PR_NUMBER}"
+
+      # Validate GitHub token
+      if [ -z "${THERMOSTATSUPERVISOR_PR}" ]; then
+        echo "ERROR: THERMOSTATSUPERVISOR_PR token not configured"
+        echo "This pipeline now requires GitHub Actions to pass first"
+        echo "Please configure the GitHub token to check PR status"
+        exit 1
+      fi
+
+      # Check required GitHub Actions status
+      echo "Checking status of required GitHub Actions..."
+      REQUIRED_CHECKS="Pylint,YAML Lint,CodeQL,Codacy Security Scan,OSSAR"
+
+      # Get PR details and check status
+      PR_DATA=$(curl -s -H "Authorization: token ${THERMOSTATSUPERVISOR_PR}" \
+        "https://api.github.com/repos/cjkrolak/ThermostatSupervisor/pulls/${PR_NUMBER}")
+
+      if [ $? -ne 0 ]; then
+        echo "Failed to fetch PR data"
+        exit 1
+      fi
+
+      # Get the latest commit SHA
+      HEAD_SHA=$(echo "${PR_DATA}" | python3 -c \
+        "import json,sys; data=json.load(sys.stdin); print(data['head']['sha'])")
+      echo "Latest commit SHA: ${HEAD_SHA}"
+
+      # Check status of required checks
+      echo "Fetching check runs for commit ${HEAD_SHA}..."
+      CHECK_RUNS=$(curl -s -H "Authorization: token ${THERMOSTATSUPERVISOR_PR}" \
+        "https://api.github.com/repos/cjkrolak/ThermostatSupervisor/commits/${HEAD_SHA}/check-runs")
+
+      if [ $? -ne 0 ]; then
+        echo "Failed to fetch check runs"
+        exit 1
+      fi
+
+      # Parse and verify check status
+      python3 << 'EOF'
+      import json
+      import sys
+      import os
+
+      required_checks = os.environ.get('REQUIRED_CHECKS', '').split(',')
+      required_checks = [check.strip() for check in required_checks if check.strip()]
+
+      try:
+          with open('/dev/stdin') as f:
+              check_data = json.load(f)
+
+          print(f"Found {check_data['total_count']} check runs")
+
+          successful_checks = []
+          failed_checks = []
+          pending_checks = []
+
+          for check in check_data['check_runs']:
+              name = check['name']
+              status = check['status']
+              conclusion = check['conclusion']
+
+              print(f"  {name}: {status} - {conclusion}")
+
+              if status == 'completed':
+                  if conclusion == 'success':
+                      successful_checks.append(name)
+                  else:
+                      failed_checks.append(name)
+              else:
+                  pending_checks.append(name)
+
+          print(f"\nSuccessful checks: {len(successful_checks)}")
+          print(f"Failed checks: {len(failed_checks)}")
+          print(f"Pending checks: {len(pending_checks)}")
+
+          if failed_checks:
+              failed_list = ', '.join(failed_checks)
+              print(f"\nFAILED: The following checks have failed: {failed_list}")
+              print("Azure DevOps pipeline will not run until all GitHub Actions pass")
+              sys.exit(1)
+
+          if pending_checks:
+              pending_list = ', '.join(pending_checks)
+              print(f"\nPENDING: The following checks are still running:")
+              print(f"{pending_list}")
+              print("Azure DevOps pipeline will wait for GitHub Actions to complete")
+              sys.exit(1)
+
+          print(f"\n✅ All GitHub Actions have completed successfully")
+          print("Proceeding with Azure DevOps pipeline...")
+
+      except Exception as e:
+          print(f"Error checking GitHub Actions status: {e}")
+          print("Proceeding with caution...")
+      EOF <<< "${CHECK_RUNS}"
+
+      echo "GitHub Actions status check completed"
+    displayName: Check GitHub Actions Status
+    condition: always()
+    env:
+      THERMOSTATSUPERVISOR_PR: $(THERMOSTATSUPERVISOR_PR)
+      REQUIRED_CHECKS: "Pylint,YAML Lint,CodeQL,Codacy Security Scan,OSSAR"
   - script: |
       python -m pip install --upgrade pip
       pip install -r requirements.txt
