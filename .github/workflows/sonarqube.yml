@@ -11,6 +11,8 @@ on:
         description: Coverage gist ID (optional)
         required: false
         default: ''
+  pull_request:
+    branches: [develop]
 jobs:
   sonarqube:
     name: SonarQube

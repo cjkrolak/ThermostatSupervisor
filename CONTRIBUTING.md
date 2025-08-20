@@ -6,7 +6,7 @@ I created this project primarily to provide a function that I needed (thermostat
 * client/server capability via flask
 * unit and integration test structure
 * code coverage measurement capability
-* continuous integration via Azure pipelines and GitHub actions
+* continuous integration via GitHub actions and selective Azure pipeline usage
 * docker containerization.
 * IoT applcation with raspberry pi
 
