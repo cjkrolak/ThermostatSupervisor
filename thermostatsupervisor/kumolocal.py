@@ -353,9 +353,69 @@ class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
                         "not exist in serial number list "
                         f"({serial_num_lst})"
                     ) from exc
-                raw_json = self.get_raw_json()[2]["children"][0]["zoneTable"][
-                    serial_num_lst[zone]
-                ]
+
+                # Safely access nested raw JSON structure with detailed error reporting
+                try:
+                    raw_data = self.get_raw_json()
+                    if raw_data is None:
+                        raise KeyError(
+                            "Raw JSON data is None - likely authentication "
+                            "or connection issue"
+                        )
+
+                    if len(raw_data) <= 2:
+                        raise KeyError(
+                            f"Raw JSON data structure invalid - expected "
+                            f"at least 3 elements, got {len(raw_data)}"
+                        )
+
+                    level_2_data = raw_data[2]
+                    if "children" not in level_2_data:
+                        raise KeyError(
+                            "Missing 'children' key in raw JSON data at level 2"
+                        )
+
+                    children_data = level_2_data["children"]
+                    if not children_data or len(children_data) == 0:
+                        raise KeyError("Empty 'children' array in raw JSON data")
+
+                    first_child = children_data[0]
+                    if "zoneTable" not in first_child:
+                        raise KeyError(
+                            "Missing 'zoneTable' key in first child of "
+                            "raw JSON data"
+                        )
+
+                    zone_table = first_child["zoneTable"]
+                    zone_serial = serial_num_lst[zone]
+                    if zone_serial not in zone_table:
+                        available_zones = list(zone_table.keys())
+                        raise KeyError(
+                            f"Zone serial number '{zone_serial}' not found "
+                            f"in zoneTable. Available zones: {available_zones}"
+                        )
+
+                    raw_json = zone_table[zone_serial]
+
+                except KeyError as exc:
+                    # Re-raise with more context about when this error occurred
+                    serial_info = (
+                        serial_num_lst[zone] if zone < len(serial_num_lst)
+                        else 'unknown'
+                    )
+                    error_msg = (
+                        f"KeyError during metadata retrieval for zone {zone} "
+                        f"(serial: {serial_info}): {str(exc)}. This often "
+                        "occurs immediately after setting temperature when "
+                        "the thermostat metadata structure is temporarily "
+                        "inconsistent."
+                    )
+                    util.log_msg(
+                        f"ERROR: {error_msg}",
+                        mode=util.BOTH_LOG,
+                        func_name=1,
+                    )
+                    raise KeyError(error_msg) from exc
             return raw_json
 
         if retry:
