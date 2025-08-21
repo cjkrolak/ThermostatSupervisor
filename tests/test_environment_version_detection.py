@@ -35,7 +35,7 @@ class TestPackageVersionDetection(utc.UnitTest):
         del mock_module.__version__  # Remove __version__ attribute
 
         # Mock importlib.metadata to return a known version
-        with patch('importlib.metadata.version') as mock_version:
+        with patch("importlib.metadata.version") as mock_version:
             mock_version.return_value = "0.23.0"
             version = env.get_package_version(mock_module)
             self.assertEqual(version, (0, 23, 0))
@@ -49,8 +49,9 @@ class TestPackageVersionDetection(utc.UnitTest):
         del mock_module.__version__
 
         # Mock importlib.metadata to raise PackageNotFoundError
-        with patch('importlib.metadata.version') as mock_version:
+        with patch("importlib.metadata.version") as mock_version:
             import importlib.metadata
+
             mock_version.side_effect = importlib.metadata.PackageNotFoundError()
             version = env.get_package_version(mock_module)
             self.assertEqual(version, (0, 0, 0))
@@ -91,6 +92,7 @@ class TestPackageVersionDetection(utc.UnitTest):
         # This test requires blinkpy to be installed
         try:
             import blinkpy
+
             version = env.get_package_version(blinkpy)
 
             # Version should be a tuple of three integers
@@ -100,8 +102,9 @@ class TestPackageVersionDetection(utc.UnitTest):
 
             # Version should be >= (0, 22, 0) for modern blinkpy
             self.assertGreaterEqual(
-                version, (0, 22, 0),
-                "blinkpy version should be >= 0.22.0 for async authentication"
+                version,
+                (0, 22, 0),
+                "blinkpy version should be >= 0.22.0 for async authentication",
             )
 
         except ImportError:

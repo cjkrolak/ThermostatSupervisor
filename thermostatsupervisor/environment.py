@@ -449,6 +449,7 @@ def get_package_version(module, element=None, verbose=False):
         # __version__ attribute not available, try importlib.metadata
         try:
             import importlib.metadata
+
             module_version = ".".join(
                 importlib.metadata.version(module.__name__).split(".")[:3]
             )
