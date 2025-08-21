@@ -100,9 +100,7 @@ class TestADOReduction(unittest.TestCase):
             content,
             "Pipeline should use GitHub token for checks",
         )
-        self.assertIn(
-            "check-runs", content, "Pipeline should check GitHub check runs"
-        )
+        self.assertIn("check-runs", content, "Pipeline should check GitHub check runs")
 
     def test_azure_pipeline_has_proper_pr_comment(self):
         """Test that Azure pipeline has updated comments about the changes."""
