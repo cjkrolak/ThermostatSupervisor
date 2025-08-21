@@ -369,6 +369,11 @@ class ThermostatClass(tc.ThermostatCommon):
                     NotImplementedError,
                     ConnectionError,
                     TimeoutError,
+                    requests.exceptions.RequestException,
+                    requests.exceptions.HTTPError,
+                    requests.exceptions.ConnectionError,
+                    requests.exceptions.Timeout,
+                    oauthlib.oauth2.rfc6749.errors.OAuth2Error,
                 ),
                 email_notification=None,  # Nest doesn't import email_notification
             )
@@ -406,7 +411,8 @@ class ThermostatZone(tc.ThermostatCommonZone):
         self.connection_time_sec = 8 * 60 * 60  # default to 8 hours
 
         # server data cache expiration parameters
-        self.fetch_interval_sec = 60  # age of server data before refresh
+        # Use cache period from config to avoid spamming nest server
+        self.fetch_interval_sec = nest_config.cache_period_sec
         self.last_fetch_time = time.time() - 2 * self.fetch_interval_sec
 
         # switch config for this thermostat
@@ -854,10 +860,14 @@ class ThermostatZone(tc.ThermostatCommonZone):
 
     def refresh_zone_info(self, force_refresh=False):
         """
-        Refresh zone info from Nest server.
+        Refresh zone info from Nest server with spam mitigation.
+
+        This method implements robust caching to prevent triggering Nest's
+        rate limiting (5 queries/min or 100 queries/hour). It respects the
+        fetch_interval_sec timer unless force_refresh is True.
 
         inputs:
-            force_refresh(bool): if True, ignore expiration timer.
+            force_refresh(bool): if True, ignore expiration timer and refresh
         returns:
             None, device object is refreshed.
         """
@@ -866,8 +876,44 @@ class ThermostatZone(tc.ThermostatCommonZone):
         if force_refresh or (
             now_time >= (self.last_fetch_time + self.fetch_interval_sec)
         ):
-            self.Thermostat.get_device_data()
-            self.last_fetch_time = now_time
+            if self.verbose:
+                util.log_msg(
+                    f"Refreshing zone data for {self.zone_name} "
+                    f"(last refresh: {now_time - self.last_fetch_time:.1f}s ago)",
+                    mode=util.STDOUT_LOG,
+                    func_name=1,
+                )
+
+            # Get fresh data from Nest server
+            try:
+                self.Thermostat.get_device_data()
+                self.last_fetch_time = now_time
+                if self.verbose:
+                    util.log_msg(
+                        f"Zone data refreshed successfully for {self.zone_name}",
+                        mode=util.STDOUT_LOG,
+                        func_name=1,
+                    )
+            except Exception as e:
+                if self.verbose:
+                    util.log_msg(
+                        f"Failed to refresh zone data for {self.zone_name}: {e}",
+                        mode=util.STDOUT_LOG,
+                        func_name=1,
+                    )
+                # Don't update last_fetch_time on failure to retry sooner
+                raise
+        else:
+            if self.verbose:
+                time_until_refresh = (
+                    self.last_fetch_time + self.fetch_interval_sec - now_time
+                )
+                util.log_msg(
+                    f"Using cached data for {self.zone_name} "
+                    f"(refresh in {time_until_refresh:.1f}s)",
+                    mode=util.STDOUT_LOG,
+                    func_name=1,
+                )
 
 
 if __name__ == "__main__":
