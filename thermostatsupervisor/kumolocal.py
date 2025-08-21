@@ -382,8 +382,7 @@ class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
                     first_child = children_data[0]
                     if "zoneTable" not in first_child:
                         raise KeyError(
-                            "Missing 'zoneTable' key in first child of "
-                            "raw JSON data"
+                            "Missing 'zoneTable' key in first child of " "raw JSON data"
                         )
 
                     zone_table = first_child["zoneTable"]
@@ -400,8 +399,9 @@ class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
                 except KeyError as exc:
                     # Re-raise with more context about when this error occurred
                     serial_info = (
-                        serial_num_lst[zone] if zone < len(serial_num_lst)
-                        else 'unknown'
+                        serial_num_lst[zone]
+                        if zone < len(serial_num_lst)
+                        else "unknown"
                     )
                     error_msg = (
                         f"KeyError during metadata retrieval for zone {zone} "

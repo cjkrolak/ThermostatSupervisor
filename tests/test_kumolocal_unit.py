@@ -222,42 +222,39 @@ class KeyErrorHandlingUnitTest(utc.UnitTest):
             {
                 "name": "Raw JSON data is None",
                 "raw_data": None,
-                "serial_list": ['test_serial'],
-                "expected_msg": "Raw JSON data is None"
+                "serial_list": ["test_serial"],
+                "expected_msg": "Raw JSON data is None",
             },
             {
                 "name": "Insufficient data length",
                 "raw_data": [1, 2],
-                "serial_list": ['test_serial'],
-                "expected_msg": "expected at least 3 elements, got 2"
+                "serial_list": ["test_serial"],
+                "expected_msg": "expected at least 3 elements, got 2",
             },
             {
                 "name": "Missing children key",
                 "raw_data": [1, 2, {"no_children": True}],
-                "serial_list": ['test_serial'],
-                "expected_msg": "Missing 'children' key"
+                "serial_list": ["test_serial"],
+                "expected_msg": "Missing 'children' key",
             },
             {
                 "name": "Empty children array",
                 "raw_data": [1, 2, {"children": []}],
-                "serial_list": ['test_serial'],
-                "expected_msg": "Empty 'children' array"
+                "serial_list": ["test_serial"],
+                "expected_msg": "Empty 'children' array",
             },
             {
                 "name": "Missing zoneTable key",
                 "raw_data": [1, 2, {"children": [{"no_zonetable": True}]}],
-                "serial_list": ['test_serial'],
-                "expected_msg": "Missing 'zoneTable' key"
+                "serial_list": ["test_serial"],
+                "expected_msg": "Missing 'zoneTable' key",
             },
             {
                 "name": "Missing zone serial",
-                "raw_data": [
-                    1, 2,
-                    {"children": [{"zoneTable": {"other_serial": {}}}]}
-                ],
-                "serial_list": ['test_serial'],
-                "expected_msg": "Zone serial number 'test_serial' not found"
-            }
+                "raw_data": [1, 2, {"children": [{"zoneTable": {"other_serial": {}}}]}],
+                "serial_list": ["test_serial"],
+                "expected_msg": "Zone serial number 'test_serial' not found",
+            },
         ]
 
         # For each test case, verify the error handling logic would work
@@ -267,14 +264,13 @@ class KeyErrorHandlingUnitTest(utc.UnitTest):
                     self._would_generate_expected_error(
                         test_case["raw_data"],
                         test_case["serial_list"],
-                        test_case["expected_msg"]
+                        test_case["expected_msg"],
                     ),
                     f"Test case '{test_case['name']}' should generate "
-                    "expected error message"
+                    "expected error message",
                 )
 
-    def _would_generate_expected_error(self, raw_data, serial_list,
-                                       expected_msg):
+    def _would_generate_expected_error(self, raw_data, serial_list, expected_msg):
         """
         Simulate the error handling logic to test expected error generation.
 
@@ -300,9 +296,7 @@ class KeyErrorHandlingUnitTest(utc.UnitTest):
 
             level_2_data = raw_data[2]
             if "children" not in level_2_data:
-                raise KeyError(
-                    "Missing 'children' key in raw JSON data at level 2"
-                )
+                raise KeyError("Missing 'children' key in raw JSON data at level 2")
 
             children_data = level_2_data["children"]
             if not children_data or len(children_data) == 0:
