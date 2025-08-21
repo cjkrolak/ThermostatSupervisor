@@ -446,8 +446,15 @@ def get_package_version(module, element=None, verbose=False):
     try:
         module_version = ".".join(module.__version__.split(".")[:3])
     except AttributeError:
-        # __version__ attribute not available for pkg use dummy verison.
-        module_version = "0.0.0"
+        # __version__ attribute not available, try importlib.metadata
+        try:
+            import importlib.metadata
+            module_version = ".".join(
+                importlib.metadata.version(module.__name__).split(".")[:3]
+            )
+        except (ImportError, importlib.metadata.PackageNotFoundError):
+            # fallback to dummy version
+            module_version = "0.0.0"
 
     # parse the version string into a tuple of ints
     ver_tuple = tuple(map(int, module_version.split(".")))
