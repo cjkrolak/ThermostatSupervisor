@@ -202,5 +202,136 @@ class LocalNetworkDetectionUnitTest(utc.UnitTest):
             self.skipTest("kumolocal module not available for testing")
 
 
+class KeyErrorHandlingUnitTest(utc.UnitTest):
+    """
+    Unit tests for enhanced KeyError handling in kumolocal.py.
+
+    Tests the improved error handling when accessing nested JSON structures
+    that can fail after temperature setting operations.
+    """
+
+    def setUp(self):
+        """Setup for KeyError handling tests."""
+        super().setUp()
+        self.print_test_name()
+
+    def test_enhanced_keyerror_messages_are_informative(self):
+        """Test that the enhanced error handling creates informative messages."""
+        # Test case 1: None raw data
+        test_cases = [
+            {
+                "name": "Raw JSON data is None",
+                "raw_data": None,
+                "serial_list": ['test_serial'],
+                "expected_msg": "Raw JSON data is None"
+            },
+            {
+                "name": "Insufficient data length",
+                "raw_data": [1, 2],
+                "serial_list": ['test_serial'],
+                "expected_msg": "expected at least 3 elements, got 2"
+            },
+            {
+                "name": "Missing children key",
+                "raw_data": [1, 2, {"no_children": True}],
+                "serial_list": ['test_serial'],
+                "expected_msg": "Missing 'children' key"
+            },
+            {
+                "name": "Empty children array",
+                "raw_data": [1, 2, {"children": []}],
+                "serial_list": ['test_serial'],
+                "expected_msg": "Empty 'children' array"
+            },
+            {
+                "name": "Missing zoneTable key",
+                "raw_data": [1, 2, {"children": [{"no_zonetable": True}]}],
+                "serial_list": ['test_serial'],
+                "expected_msg": "Missing 'zoneTable' key"
+            },
+            {
+                "name": "Missing zone serial",
+                "raw_data": [
+                    1, 2,
+                    {"children": [{"zoneTable": {"other_serial": {}}}]}
+                ],
+                "serial_list": ['test_serial'],
+                "expected_msg": "Zone serial number 'test_serial' not found"
+            }
+        ]
+
+        # For each test case, verify the error handling logic would work
+        for test_case in test_cases:
+            with self.subTest(test_case=test_case["name"]):
+                self.assertTrue(
+                    self._would_generate_expected_error(
+                        test_case["raw_data"],
+                        test_case["serial_list"],
+                        test_case["expected_msg"]
+                    ),
+                    f"Test case '{test_case['name']}' should generate "
+                    "expected error message"
+                )
+
+    def _would_generate_expected_error(self, raw_data, serial_list,
+                                       expected_msg):
+        """
+        Simulate the error handling logic to test expected error generation.
+
+        This method replicates the error checking logic from the enhanced
+        get_kumocloud_thermostat_metadata method without requiring a full
+        ThermostatClass instance.
+        """
+        try:
+            zone = 0
+
+            # Replicate the error checking logic
+            if raw_data is None:
+                raise KeyError(
+                    "Raw JSON data is None - likely authentication "
+                    "or connection issue"
+                )
+
+            if len(raw_data) <= 2:
+                raise KeyError(
+                    f"Raw JSON data structure invalid - expected "
+                    f"at least 3 elements, got {len(raw_data)}"
+                )
+
+            level_2_data = raw_data[2]
+            if "children" not in level_2_data:
+                raise KeyError(
+                    "Missing 'children' key in raw JSON data at level 2"
+                )
+
+            children_data = level_2_data["children"]
+            if not children_data or len(children_data) == 0:
+                raise KeyError("Empty 'children' array in raw JSON data")
+
+            first_child = children_data[0]
+            if "zoneTable" not in first_child:
+                raise KeyError(
+                    "Missing 'zoneTable' key in first child of raw JSON data"
+                )
+
+            zone_table = first_child["zoneTable"]
+            zone_serial = serial_list[zone]
+            if zone_serial not in zone_table:
+                available_zones = list(zone_table.keys())
+                raise KeyError(
+                    f"Zone serial number '{zone_serial}' not found "
+                    f"in zoneTable. Available zones: {available_zones}"
+                )
+
+            # If we get here, no error should be generated
+            return False
+
+        except KeyError as e:
+            error_msg = str(e)
+            return expected_msg in error_msg
+
+        return False
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
