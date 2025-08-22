@@ -1,4 +1,3 @@
----
 name: GitHub Native Unit Tests
 # Conditional trigger based on repository variable
 # This workflow will only run if repository variable USE_GITHUB_UNIT_TESTS
