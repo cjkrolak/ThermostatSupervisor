@@ -1,0 +1,215 @@
+name: GitHub Native Unit Tests
+# Conditional trigger based on repository variable
+# This workflow will only run if repository variable USE_GITHUB_UNIT_TESTS
+# is set to 'true'
+on:
+  pull_request:
+    branches: [develop]
+    paths:
+      - '**/*.py'
+      - .github/workflows/github-unit-tests.yml
+      - .github/workflows/sonarqube.yml
+  workflow_dispatch:  # Allow manual triggering
+# Cancel in-progress runs for the same PR
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  check-toggle:
+    name: Check Unit Test Toggle
+    runs-on: ubuntu-latest
+    outputs:
+      should-run: ${{ steps.check.outputs.should-run }}
+    steps:
+      - name: Check if GitHub unit tests should run
+        id: check
+        run: |
+          # Check if repository variable USE_GITHUB_UNIT_TESTS is 'true'
+          USE_GITHUB_TESTS="${{ vars.USE_GITHUB_UNIT_TESTS }}"
+          echo "Repository variable USE_GITHUB_UNIT_TESTS: ${USE_GITHUB_TESTS}"
+          if [[ "${USE_GITHUB_TESTS}" == "true" ]]; then
+            echo "should-run=true" >> $GITHUB_OUTPUT
+            echo "✅ GitHub unit tests are ENABLED"
+          else
+            echo "should-run=false" >> $GITHUB_OUTPUT
+            echo "❌ GitHub unit tests are DISABLED"
+            echo "   Current value: '${USE_GITHUB_TESTS}'"
+            echo "   To enable: Set repository variable USE_GITHUB_UNIT_TESTS"
+            echo "   to 'true'"
+          fi
+  unit-tests:
+    name: Python ${{ matrix.python-version }} Unit Tests
+    runs-on: ubuntu-latest
+    needs: check-toggle
+    if: needs.check-toggle.outputs.should-run == 'true'
+    strategy:
+      matrix:
+        # Match Azure pipeline Python version strategy
+        python-version: ['3.13']
+      fail-fast: false
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip list
+      - name: Run lint tests
+        run: |
+          python -m pip install flake8 --upgrade
+          flake8 --config=setup.cfg .
+      - name: Run unit tests with coverage
+        timeout-minutes: 30
+        env:
+          # Integration test environment variables (same as Azure pipeline)
+          GMAIL_USERNAME: ${{ secrets.GMAIL_USERNAME }}
+          GMAIL_PASSWORD: ${{ secrets.GMAIL_PASSWORD }}
+          TCC_USERNAME: ${{ secrets.TCC_USERNAME }}
+          TCC_PASSWORD: ${{ secrets.TCC_PASSWORD }}
+          SHT31_REMOTE_IP_ADDRESS_1: ${{ secrets.SHT31_REMOTE_IP_ADDRESS_1 }}
+          KUMO_USERNAME: ${{ secrets.KUMO_USERNAME }}
+          KUMO_PASSWORD: ${{ secrets.KUMO_PASSWORD }}
+          BLINK_USERNAME: ${{ secrets.BLINK_USERNAME }}
+          BLINK_PASSWORD: ${{ secrets.BLINK_PASSWORD }}
+          BLINK_2FA: ${{ secrets.BLINK_2FA }}
+        run: |
+          # Run unit tests with coverage (matches Azure pipeline approach)
+          python -m tests.unit_test_coverage
+      - name: Upload coverage reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-reports-${{ matrix.python-version }}
+          path: |
+            coverage.xml
+            htmlcov/
+          retention-days: 30
+      - name: Upload coverage to GitHub
+        if: success()
+        env:
+          THERMOSTATSUPERVISOR_PR: ${{ secrets.THERMOSTATSUPERVISOR_PR }}
+        run: |
+          set -e
+          echo "📊 Uploading coverage data for SonarQube integration..."
+
+          # Validate coverage file exists
+          if [ ! -f "coverage.xml" ]; then
+            echo "❌ ERROR: coverage.xml not found"
+            exit 1
+          fi
+          echo "✅ Coverage file size: $(wc -c < coverage.xml) bytes"
+
+          # Create gist with coverage data for SonarQube workflow
+          temp_json=$(mktemp)
+          build_id="${{ github.run_id }}"
+          cat > "${temp_json}" << EOF
+          {
+            "description": "Coverage for SonarQube - GitHub Actions ${build_id}",
+            "public": false,
+            "files": {
+              "coverage.xml": {
+                "content": "CONTENT_PLACEHOLDER"
+              }
+            }
+          }
+          EOF
+
+          # Use Python to properly escape JSON content
+          python3 -c "
+          import json
+          import sys
+
+          # Read the coverage.xml content
+          with open('coverage.xml', 'r') as f:
+              coverage_content = f.read()
+
+          # Read the JSON template
+          with open('${temp_json}', 'r') as f:
+              json_template = f.read()
+
+          # Replace content placeholder with properly escaped JSON string
+          escaped_content = json.dumps(coverage_content)
+          final_json = json_template.replace(
+              '\"CONTENT_PLACEHOLDER\"', escaped_content)
+
+          # Write the final JSON
+          with open('${temp_json}', 'w') as f:
+              f.write(final_json)
+          "
+
+          # Create the GitHub gist
+          response=$(curl -w "%{http_code}" -s -X POST \
+            -H "Accept: application/vnd.github.v3+json" \
+            -H "Authorization: token ${THERMOSTATSUPERVISOR_PR}" \
+            -H "User-Agent: GitHub-Actions" \
+            -H "Content-Type: application/json" \
+            https://api.github.com/gists \
+            --data-binary "@${temp_json}")
+
+          # Clean up temporary file
+          rm -f "${temp_json}"
+
+          # Extract HTTP status code and response body
+          http_code="${response: -3}"
+          response_body="${response%???}"
+          if [[ ${http_code} -ge 200 && ${http_code} -lt 300 ]]; then
+            # Extract gist ID from response
+            gist_id=$(echo "${response_body}" | \
+              grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4)
+            echo "✅ SUCCESS: Coverage uploaded to gist: ${gist_id}"
+            echo "COVERAGE_GIST_ID=${gist_id}" >> $GITHUB_ENV
+          else
+            echo "❌ ERROR: Failed to upload coverage. HTTP ${http_code}"
+            echo "Response: ${response_body}"
+            exit 1
+          fi
+      - name: Trigger SonarQube workflow
+        if: success()
+        env:
+          THERMOSTATSUPERVISOR_PR: ${{ secrets.THERMOSTATSUPERVISOR_PR }}
+        run: |-
+          set -e
+          echo "🚀 Triggering SonarQube workflow..."
+
+          # Get the coverage gist ID from previous step
+          coverage_gist_id="${COVERAGE_GIST_ID:-}"
+          echo "📊 Coverage gist ID: ${coverage_gist_id}"
+
+          # Create JSON payload for repository dispatch
+          json_payload=$(cat << EOF
+          {
+            "event_type": "github-actions-completed",
+            "client_payload": {
+              "result": "success",
+              "run_id": "${{ github.run_id }}",
+              "coverage_gist_id": "${coverage_gist_id}",
+              "source": "github-actions"
+            }
+          }
+          EOF
+          )
+
+          # Trigger repository dispatch event
+          response=$(curl -w "%{http_code}" -s -X POST \
+            -H "Accept: application/vnd.github.v3+json" \
+            -H "Authorization: token ${THERMOSTATSUPERVISOR_PR}" \
+            -H "User-Agent: GitHub-Actions" \
+            https://api.github.com/repos/${{ github.repository }}/dispatches \
+            -d "${json_payload}")
+
+          # Extract HTTP status code
+          http_code="${response: -3}"
+          response_body="${response%???}"
+          if [[ ${http_code} -ge 200 && ${http_code} -lt 300 ]]; then
+            echo "✅ SUCCESS: SonarQube workflow triggered successfully"
+          else
+            echo "❌ ERROR: Failed to trigger SonarQube workflow."
+            echo "HTTP ${http_code}"
+            echo "Response: ${response_body}"
+            exit 1
+          fi
