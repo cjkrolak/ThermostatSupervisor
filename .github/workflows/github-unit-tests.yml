@@ -1,5 +1,5 @@
+---
 name: GitHub Native Unit Tests
-
 # Conditional trigger based on repository variable
 # This workflow will only run if repository variable USE_GITHUB_UNIT_TESTS
 # is set to 'true'
@@ -11,12 +11,10 @@ on:
       - .github/workflows/github-unit-tests.yml
       - .github/workflows/sonarqube.yml
   workflow_dispatch:  # Allow manual triggering
-
 # Cancel in-progress runs for the same PR
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
-
 jobs:
   check-toggle:
     name: Check Unit Test Toggle
@@ -30,7 +28,6 @@ jobs:
           # Check if repository variable USE_GITHUB_UNIT_TESTS is 'true'
           USE_GITHUB_TESTS="${{ vars.USE_GITHUB_UNIT_TESTS }}"
           echo "Repository variable USE_GITHUB_UNIT_TESTS: ${USE_GITHUB_TESTS}"
-
           if [[ "${USE_GITHUB_TESTS}" == "true" ]]; then
             echo "should-run=true" >> $GITHUB_OUTPUT
             echo "✅ GitHub unit tests are ENABLED"
@@ -41,7 +38,6 @@ jobs:
             echo "   To enable: Set repository variable USE_GITHUB_UNIT_TESTS"
             echo "   to 'true'"
           fi
-
   unit-tests:
     name: Python ${{ matrix.python-version }} Unit Tests
     runs-on: ubuntu-latest
@@ -52,27 +48,22 @@ jobs:
         # Match Azure pipeline Python version strategy
         python-version: ['3.13']
       fail-fast: false
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip list
-
       - name: Run lint tests
         run: |
           python -m pip install flake8 --upgrade
           flake8 --config=setup.cfg .
-
       - name: Run unit tests with coverage
         timeout-minutes: 30
         env:
@@ -90,7 +81,6 @@ jobs:
         run: |
           # Run unit tests with coverage (matches Azure pipeline approach)
           python -m tests.unit_test_coverage
-
       - name: Upload coverage reports
         uses: actions/upload-artifact@v4
         if: always()
@@ -100,7 +90,6 @@ jobs:
             coverage.xml
             htmlcov/
           retention-days: 30
-
       - name: Upload coverage to GitHub
         if: success()
         env:
@@ -169,7 +158,6 @@ jobs:
           # Extract HTTP status code and response body
           http_code="${response: -3}"
           response_body="${response%???}"
-
           if [[ ${http_code} -ge 200 && ${http_code} -lt 300 ]]; then
             # Extract gist ID from response
             gist_id=$(echo "${response_body}" | \
@@ -181,12 +169,11 @@ jobs:
             echo "Response: ${response_body}"
             exit 1
           fi
-
       - name: Trigger SonarQube workflow
         if: success()
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
+        run: |-
           set -e
           echo "🚀 Triggering SonarQube workflow..."
 
@@ -219,7 +206,6 @@ jobs:
           # Extract HTTP status code
           http_code="${response: -3}"
           response_body="${response%???}"
-
           if [[ ${http_code} -ge 200 && ${http_code} -lt 300 ]]; then
             echo "✅ SUCCESS: SonarQube workflow triggered successfully"
           else
