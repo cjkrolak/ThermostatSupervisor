@@ -129,7 +129,7 @@ def log_msg(msg, mode, func_name=-1, file_name=None):
         write_to_file(full_path, file_size_bytes, msg)
 
     # print to console
-    if (mode & STDOUT_LOG) and not filter_debug_msg:
+    if (mode & STDOUT_LOG) and not filter_debug_msg and not (mode & DUAL_STREAM_LOG):
         print(msg)
 
     # print to error stream
