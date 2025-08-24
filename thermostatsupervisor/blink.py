@@ -671,6 +671,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         # server data cache expiration parameters to mitigate spam detection
         self.fetch_interval_sec = 60  # age of server data before refresh (seconds)
         self.last_fetch_time = time.time() - 2 * self.fetch_interval_sec
+        self.last_printed_refresh_time = None  # track last printed cache message time
 
         # switch config for this thermostat
         self.system_switch_position[tc.ThermostatCommonZone.COOL_MODE] = "cool"
@@ -901,12 +902,18 @@ class ThermostatZone(tc.ThermostatCommonZone):
                 time_until_refresh = (
                     self.last_fetch_time + self.fetch_interval_sec - now_time
                 )
-                util.log_msg(
-                    f"Using cached data for {self.zone_name} "
-                    f"(refresh in {time_until_refresh:.1f}s)",
-                    mode=util.STDOUT_LOG,
-                    func_name=1,
-                )
+                # Only log if refresh time has changed significantly from last print
+                rounded_refresh_time = round(time_until_refresh)
+                if (self.last_printed_refresh_time is None or
+                        abs(rounded_refresh_time -
+                            self.last_printed_refresh_time) >= 1):
+                    util.log_msg(
+                        f"Using cached data for {self.zone_name} "
+                        f"(refresh in {time_until_refresh:.1f}s)",
+                        mode=util.STDOUT_LOG,
+                        func_name=1,
+                    )
+                    self.last_printed_refresh_time = rounded_refresh_time
 
 
 if __name__ == "__main__":

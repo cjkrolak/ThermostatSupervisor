@@ -174,6 +174,53 @@ class NestSpamMitigationTest(unittest.TestCase):
         self.assertIn(ConnectionError, exception_types)
         self.assertIn(TimeoutError, exception_types)
 
+    @patch("thermostatsupervisor.nest.time.time")
+    @patch("thermostatsupervisor.nest.util.log_msg")
+    def test_cached_data_message_reduction(self, mock_log, mock_time):
+        """Test that cached data messages are only printed when refresh time changes."""
+        # Setup time progression for repeated cache access with similar refresh times
+        start_time = 1000.0
+        mock_time.side_effect = [
+            start_time - 120,  # Constructor time (force initial refresh)
+            start_time,  # First cache access
+            start_time + 0.5,  # Second cache access (should not log)
+            start_time + 1.0,  # Third cache access (should log)
+            start_time + 1.5,  # Fourth cache access (should not log)
+            start_time + 2.0,  # Fifth cache access (should log)
+        ]
+
+        # Setup proper device access for constructor
+        self.mock_thermostat.devices = [self.mock_thermostat.devices[0]]
+
+        # Create zone instance with verbose=True
+        with patch(
+            "thermostatsupervisor.nest.nest.Device.filter_for_trait",
+            return_value=self.mock_thermostat.devices,
+        ), patch(
+            "thermostatsupervisor.thermostat_common.time.time",
+            return_value=start_time - 120,
+        ):
+            zone = nest.ThermostatZone(self.mock_thermostat, verbose=True)
+
+        # Reset mock call count
+        mock_log.reset_mock()
+
+        # Multiple cache accesses within cache period
+        zone.refresh_zone_info()  # First access - should log
+        zone.refresh_zone_info()  # Second access - should NOT log (same rounded time)
+        zone.refresh_zone_info()  # Third access - should log (different rounded time)
+        zone.refresh_zone_info()  # Fourth access - should NOT log (same rounded time)
+        zone.refresh_zone_info()  # Fifth access - should log (different rounded time)
+
+        # Count calls that contain "Using cached data"
+        cached_data_calls = [
+            call for call in mock_log.call_args_list
+            if len(call[0]) > 0 and "Using cached data" in call[0][0]
+        ]
+
+        # Should only have 3 cached data messages (first, third, and fifth calls)
+        self.assertEqual(len(cached_data_calls), 3)
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

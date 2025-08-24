@@ -194,6 +194,47 @@ class BlinkSpamMitigationTest(unittest.TestCase):
         zone = blink.ThermostatZone(self.mock_thermostat, verbose=False)
         self.assertEqual(zone.fetch_interval_sec, 60)
 
+    @patch("thermostatsupervisor.blink.time.time")
+    @patch("thermostatsupervisor.blink.util.log_msg")
+    def test_cached_data_message_reduction(self, mock_log, mock_time):
+        """Test that cached data messages are only printed when refresh time changes."""
+        # Setup time progression for repeated cache access with similar refresh times
+        start_time = 1000.0
+        mock_time.side_effect = [
+            start_time - 120,  # Constructor time (force initial refresh)
+            start_time,  # First cache access (60s refresh time)
+            start_time + 0.5,  # Second cache access (59.5s - should not log)
+            start_time + 1.0,  # Third cache access (59s - should log)
+            start_time + 1.5,  # Fourth cache access (58.5s - should not log)
+            start_time + 2.0,  # Fifth cache access (58s - should log)
+        ]
+
+        # Create zone instance with verbose=True
+        with patch(
+            "thermostatsupervisor.thermostat_common.time.time",
+            return_value=start_time - 120,
+        ):
+            zone = blink.ThermostatZone(self.mock_thermostat, verbose=True)
+
+        # Reset mock call count
+        mock_log.reset_mock()
+
+        # Multiple cache accesses within cache period
+        zone.refresh_zone_info()  # First access - should log
+        zone.refresh_zone_info()  # Second access - should NOT log (same rounded time)
+        zone.refresh_zone_info()  # Third access - should log (different rounded time)
+        zone.refresh_zone_info()  # Fourth access - should NOT log (same rounded time)
+        zone.refresh_zone_info()  # Fifth access - should log (different rounded time)
+
+        # Count calls that contain "Using cached data"
+        cached_data_calls = [
+            call for call in mock_log.call_args_list
+            if len(call[0]) > 0 and "Using cached data" in call[0][0]
+        ]
+
+        # Should only have 3 cached data messages (first, third, and fifth calls)
+        self.assertEqual(len(cached_data_calls), 3)
+
 
 if __name__ == "__main__":
     util.log_msg.debug = True
