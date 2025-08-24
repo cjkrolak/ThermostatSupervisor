@@ -98,8 +98,13 @@ def log_msg(msg, mode, func_name=-1, file_name=None):
     filter_debug_msg = debug_msg and not debug_enabled
 
     # cast STDOUT_LOG to STDERR_LOG in flask server mode
-    if log_stdout_to_stderr and (mode & STDOUT_LOG) and not (mode & STDERR_LOG):
-        mode = mode + STDERR_LOG - STDOUT_LOG
+    if log_stdout_to_stderr and (mode & STDOUT_LOG):
+        if not (mode & STDERR_LOG):
+            # Convert STDOUT to STDERR when not already present
+            mode = mode + STDERR_LOG - STDOUT_LOG
+        else:
+            # Remove STDOUT when STDERR is already present to avoid duplicates
+            mode = mode - STDOUT_LOG
 
     # define filename
     if file_name is not None:
@@ -113,7 +118,8 @@ def log_msg(msg, mode, func_name=-1, file_name=None):
     if (mode & DATA_LOG) and not filter_debug_msg:
         # create directory if needed
         if not os.path.exists(FILE_PATH):
-            print(f"data folder '{FILE_PATH}' created.")
+            # Log directory creation to stderr to avoid polluting stdout
+            print(f"data folder '{FILE_PATH}' created.", file=sys.stderr)
             os.makedirs(FILE_PATH)
 
         # build full file name
