@@ -118,7 +118,17 @@ class ThermostatClass(tc.ThermostatCommon):
         returns:
             (str):  IP address
         """
-        return env.get_env_variable(env_key)["value"]
+        env_result = env.get_env_variable(env_key)
+        if env_result["value"] is None and util.unit_test_mode:
+            # In unit test mode, provide localhost as fallback when env var is missing
+            util.log_msg(
+                f"Unit test mode: using localhost fallback for missing "
+                f"env var '{env_key}'",
+                mode=util.DEBUG_LOG,
+                func_name=1,
+            )
+            return "127.0.0.1"
+        return env_result["value"]
 
     def spawn_flask_server(self):
         """
