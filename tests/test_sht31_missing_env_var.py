@@ -5,6 +5,7 @@ This test validates the fix for issue where SHT31 ThermostatClass
 was failing when environment variables are missing in unit test mode.
 """
 
+import os
 import unittest
 from unittest.mock import patch
 
@@ -36,16 +37,16 @@ class TestSHT31MissingEnvVar(utc.UnitTest):
         This reproduces and fixes the exact error scenario:
         - Zone 1 (regular zone, not unit test zone 99)
         - Unit test mode enabled
-        - Environment variable SHT31_REMOTE_IP_ADDRESS_1 is missing
-        - Should fall back to 127.0.0.1 instead of None
+        - Environment variable SHT31_REMOTE_IP_ADDRESS_1 is missing or placeholder
+        - Should fall back to 127.0.0.1 instead of None or placeholder
         """
         mock_spawn.return_value = None
         util.unit_test_mode = True
 
-        # This should NOT fail even if env var is missing
+        # This should NOT fail even if env var is missing or has placeholder
         tstat = sht31.ThermostatClass(1, verbose=False)
 
-        # Verify the IP address fallback
+        # Verify the IP address fallback works for both missing and placeholder values
         self.assertEqual(tstat.ip_address, "127.0.0.1")
 
         # Verify the URL is properly formed
@@ -65,8 +66,8 @@ class TestSHT31MissingEnvVar(utc.UnitTest):
     @patch.object(sht31.ThermostatClass, "spawn_flask_server")
     def test_missing_env_var_fails_in_non_unit_test_mode(self, mock_spawn):
         """
-        Test that missing environment variables still fail in non-unit test
-        mode.
+        Test that missing environment variables still cause TypeError in
+        non-unit test mode.
 
         This ensures the fallback behavior is only active in unit test mode.
         """
@@ -79,6 +80,68 @@ class TestSHT31MissingEnvVar(utc.UnitTest):
 
         # Should get the concatenation error because ip_address is None
         self.assertIn("can only concatenate str", str(context.exception))
+
+    @patch.object(sht31.ThermostatClass, "spawn_flask_server")
+    def test_placeholder_value_preserved_in_non_unit_test_mode(self, mock_spawn):
+        """
+        Test that placeholder values are preserved in non-unit-test mode.
+
+        This ensures that in production, placeholder values don't get replaced.
+        """
+        mock_spawn.return_value = None
+        util.unit_test_mode = False
+
+        # Create a temporary supervisor-env.txt with placeholder value
+        import tempfile
+
+        original_cwd = os.getcwd()
+        try:
+            with tempfile.TemporaryDirectory() as temp_dir:
+                os.chdir(temp_dir)
+
+                # Create supervisor-env.txt with placeholder value
+                with open("supervisor-env.txt", "w") as f:
+                    f.write("SHT31_REMOTE_IP_ADDRESS_1=***\n")
+
+                # Test that placeholder value is NOT replaced in non-unit-test
+                # mode
+                tstat = sht31.ThermostatClass(1, verbose=False)
+                self.assertEqual(tstat.ip_address, "***")
+
+        finally:
+            os.chdir(original_cwd)
+
+    @patch.object(sht31.ThermostatClass, "spawn_flask_server")
+    @patch.dict(os.environ, {}, clear=True)  # Clear environment variables
+    def test_placeholder_value_fallback_in_unit_test_mode(self, mock_spawn):
+        """
+        Test that placeholder values (like '***') fall back to localhost in
+        unit test mode.
+
+        This handles the specific CI scenario where supervisor-env.txt has
+        placeholder values.
+        """
+        mock_spawn.return_value = None
+        util.unit_test_mode = True
+
+        # Create a temporary supervisor-env.txt with placeholder value
+        import tempfile
+
+        original_cwd = os.getcwd()
+        try:
+            with tempfile.TemporaryDirectory() as temp_dir:
+                os.chdir(temp_dir)
+
+                # Create supervisor-env.txt with placeholder value
+                with open("supervisor-env.txt", "w") as f:
+                    f.write("SHT31_REMOTE_IP_ADDRESS_1=***\n")
+
+                # Test that placeholder value gets replaced with localhost
+                tstat = sht31.ThermostatClass(1, verbose=False)
+                self.assertEqual(tstat.ip_address, "127.0.0.1")
+
+        finally:
+            os.chdir(original_cwd)
 
     @patch.object(sht31.ThermostatClass, "spawn_flask_server")
     def test_unit_test_zone_still_works(self, mock_spawn):
