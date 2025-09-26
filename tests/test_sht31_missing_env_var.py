@@ -41,27 +41,45 @@ class TestSHT31MissingEnvVar(utc.UnitTest):
         - Should fall back to 127.0.0.1 instead of None or placeholder
         """
         mock_spawn.return_value = None
+        # Ensure unit test mode is set
+        original_mode = util.unit_test_mode
         util.unit_test_mode = True
 
-        # This should NOT fail even if env var is missing or has placeholder
-        tstat = sht31.ThermostatClass(1, verbose=False)
+        try:
+            # This should NOT fail even if env var is missing or has placeholder
+            tstat = sht31.ThermostatClass(1, verbose=False)
 
-        # Verify the IP address fallback works for both missing and placeholder values
-        self.assertEqual(tstat.ip_address, "127.0.0.1")
+            # Debug information to help diagnose failures
+            if tstat.ip_address != "127.0.0.1":
+                from thermostatsupervisor import environment as env
+                env_result = env.get_env_variable('SHT31_REMOTE_IP_ADDRESS_1')
+                self.fail(
+                    f"Expected IP address '127.0.0.1' but got "
+                    f"'{tstat.ip_address}'. "
+                    f"util.unit_test_mode={util.unit_test_mode}, "
+                    f"env_result={env_result}"
+                )
 
-        # Verify the URL is properly formed
-        expected_components = [
-            "http://127.0.0.1:5000",
-            "/unit",
-            "measurements=10",
-            "seed=127"
-        ]
-        for component in expected_components:
-            self.assertIn(component, tstat.url)
+            # Verify the IP address fallback works for both missing and
+            # placeholder values
+            self.assertEqual(tstat.ip_address, "127.0.0.1")
 
-        # Verify URL does NOT contain None or empty host
-        self.assertNotIn("http://:5000", tstat.url)
-        self.assertNotIn("None", tstat.url)
+            # Verify the URL is properly formed
+            expected_components = [
+                "http://127.0.0.1:5000",
+                "/unit",
+                "measurements=10",
+                "seed=127"
+            ]
+            for component in expected_components:
+                self.assertIn(component, tstat.url)
+
+            # Verify URL does NOT contain None or empty host
+            self.assertNotIn("http://:5000", tstat.url)
+            self.assertNotIn("None", tstat.url)
+        finally:
+            # Restore original mode
+            util.unit_test_mode = original_mode
 
     @patch.object(sht31.ThermostatClass, "spawn_flask_server")
     def test_missing_env_var_fails_in_non_unit_test_mode(self, mock_spawn):
@@ -72,14 +90,40 @@ class TestSHT31MissingEnvVar(utc.UnitTest):
         This ensures the fallback behavior is only active in unit test mode.
         """
         mock_spawn.return_value = None
+        # Ensure unit test mode is disabled
+        original_mode = util.unit_test_mode
         util.unit_test_mode = False
 
-        # This should fail when env var is missing and not in unit test mode
-        with self.assertRaises(TypeError) as context:
-            sht31.ThermostatClass(1, verbose=False)
+        try:
+            # Create temporary environment where the env var is truly missing
+            # by temporarily moving any supervisor-env.txt file
+            import tempfile
+            import shutil
 
-        # Should get the concatenation error because ip_address is None
-        self.assertIn("can only concatenate str", str(context.exception))
+            supervisor_env_path = "supervisor-env.txt"
+            backup_path = None
+
+            if os.path.exists(supervisor_env_path):
+                backup_path = tempfile.mktemp()
+                shutil.move(supervisor_env_path, backup_path)
+
+            try:
+                # This should fail when env var is missing and not in unit
+                # test mode
+                with self.assertRaises(TypeError) as context:
+                    sht31.ThermostatClass(1, verbose=False)
+
+                # Should get the concatenation error because ip_address is None
+                self.assertIn("can only concatenate str", str(context.exception))
+
+            finally:
+                # Restore supervisor-env.txt if it existed
+                if backup_path and os.path.exists(backup_path):
+                    shutil.move(backup_path, supervisor_env_path)
+
+        finally:
+            # Restore original mode
+            util.unit_test_mode = original_mode
 
     @patch.object(sht31.ThermostatClass, "spawn_flask_server")
     def test_placeholder_value_preserved_in_non_unit_test_mode(self, mock_spawn):
