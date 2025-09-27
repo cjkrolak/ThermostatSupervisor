@@ -41,11 +41,18 @@ class TestSHT31MissingEnvVar(utc.UnitTest):
         - Should fall back to 127.0.0.1 instead of None or placeholder
         """
         mock_spawn.return_value = None
-        # Ensure unit test mode is set
+
+        # Save original state
         original_mode = util.unit_test_mode
-        util.unit_test_mode = True
 
         try:
+            # Explicitly set unit test mode
+            util.unit_test_mode = True
+
+            # Verify unit test mode is actually set
+            self.assertTrue(util.unit_test_mode,
+                            "unit_test_mode should be True for this test")
+
             # This should NOT fail even if env var is missing or has placeholder
             tstat = sht31.ThermostatClass(1, verbose=False)
 
@@ -57,7 +64,8 @@ class TestSHT31MissingEnvVar(utc.UnitTest):
                     f"Expected IP address '127.0.0.1' but got "
                     f"'{tstat.ip_address}'. "
                     f"util.unit_test_mode={util.unit_test_mode}, "
-                    f"env_result={env_result}"
+                    f"env_result={env_result}, "
+                    f"util module id={id(util)}"
                 )
 
             # Verify the IP address fallback works for both missing and
@@ -78,7 +86,7 @@ class TestSHT31MissingEnvVar(utc.UnitTest):
             self.assertNotIn("http://:5000", tstat.url)
             self.assertNotIn("None", tstat.url)
         finally:
-            # Restore original mode
+            # Always restore original mode
             util.unit_test_mode = original_mode
 
     @patch.object(sht31.ThermostatClass, "spawn_flask_server")
@@ -90,11 +98,18 @@ class TestSHT31MissingEnvVar(utc.UnitTest):
         This ensures the fallback behavior is only active in unit test mode.
         """
         mock_spawn.return_value = None
-        # Ensure unit test mode is disabled
+
+        # Save original state
         original_mode = util.unit_test_mode
-        util.unit_test_mode = False
 
         try:
+            # Explicitly disable unit test mode
+            util.unit_test_mode = False
+
+            # Verify unit test mode is actually disabled
+            self.assertFalse(util.unit_test_mode,
+                             "unit_test_mode should be False for this test")
+
             # Create temporary environment where the env var is truly missing
             # by temporarily moving any supervisor-env.txt file
             import tempfile
@@ -124,7 +139,7 @@ class TestSHT31MissingEnvVar(utc.UnitTest):
                     shutil.move(backup_path, supervisor_env_path)
 
         finally:
-            # Restore original mode
+            # Always restore original mode
             util.unit_test_mode = original_mode
 
     @patch.object(sht31.ThermostatClass, "spawn_flask_server")
