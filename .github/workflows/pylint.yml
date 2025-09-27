@@ -7,7 +7,7 @@ jobs:
     outputs:
       certificates-imported: ${{ steps.check-https.outputs.has-https }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Check for HTTPS servers in configuration
         id: check-https
         run: |
