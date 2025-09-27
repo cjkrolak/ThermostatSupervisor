@@ -33,7 +33,7 @@ jobs:
           # Shallow clones should be disabled for better analysis relevancy
           fetch-depth: 0
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: '3.13'
       - name: Download coverage data from Azure DevOps
