@@ -65,7 +65,7 @@ def generate_self_signed_certificate(
 
     util.log_msg(f"Generating new SSL certificate: {cert_path}", mode=util.STDOUT_LOG)
 
-    # OpenSSL command to generate self-signed certificate
+    # Build OpenSSL command with platform-specific configuration
     openssl_cmd = [
         "openssl",
         "req",
@@ -82,6 +82,12 @@ def generate_self_signed_certificate(
         "-subj",
         f"/C=US/ST=State/L=City/O=Organization/CN={common_name}",
     ]
+
+    # Windows-specific configuration to avoid config file issues
+    if platform.system().lower() == "windows":
+        # Add -config flag to bypass default config file loading on Windows
+        # This prevents the "Unable to load config info" error on Windows
+        openssl_cmd.extend(["-config", "nul"])
 
     try:
         # Run OpenSSL command
@@ -165,9 +171,17 @@ def validate_ssl_certificate(cert_path: pathlib.Path) -> bool:
         return False
 
     try:
+        # Build OpenSSL validation command
+        openssl_cmd = ["openssl", "x509", "-in", str(cert_path), "-noout", "-text"]
+
+        # Windows-specific configuration to avoid config file issues
+        if platform.system().lower() == "windows":
+            # Add -config flag to bypass default config file loading on Windows
+            openssl_cmd.extend(["-config", "nul"])
+
         # Use OpenSSL to verify the certificate
         subprocess.run(
-            ["openssl", "x509", "-in", str(cert_path), "-noout", "-text"],
+            openssl_cmd,
             capture_output=True,
             text=True,
             check=True,
@@ -215,6 +229,11 @@ def download_ssl_certificate(hostname: str, port: int = 443) -> pathlib.Path:
             hostname,
             "-showcerts",
         ]
+
+        # Windows-specific configuration to avoid config file issues
+        if platform.system().lower() == "windows":
+            # Add -config flag to bypass default config file loading on Windows
+            openssl_cmd.extend(["-config", "nul"])
 
         # Run openssl command
         result = subprocess.run(
