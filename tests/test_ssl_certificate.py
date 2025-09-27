@@ -237,6 +237,110 @@ MQswCQYDVQQGEwJBVTETMBEGA1UECAwKU29tZS1TdGF0ZTEhMB8GA1UECgwYSW50
         result = ssl_certificate.import_ssl_certificate_to_system(cert_path)
         self.assertFalse(result)
 
+    @patch("thermostatsupervisor.ssl_certificate.platform.system")
+    @patch("thermostatsupervisor.ssl_certificate.subprocess.run")
+    def test_generate_self_signed_certificate_windows(
+        self, mock_subprocess, mock_platform
+    ):
+        """Test self-signed certificate generation on Windows."""
+        mock_platform.return_value = "Windows"
+        mock_subprocess.return_value.returncode = 0
+
+        # Don't create the files beforehand - let the function create them
+        cert_path = pathlib.Path(self.test_dir) / "windows_test.crt"
+        key_path = pathlib.Path(self.test_dir) / "windows_test.key"
+
+        # Mock the file creation side effect
+        def create_files(*args, **kwargs):
+            cert_path.write_text(
+                "-----BEGIN CERTIFICATE-----\ntest cert\n-----END CERTIFICATE-----"
+            )
+            key_path.write_text(
+                "-----BEGIN PRIVATE KEY-----\ntest key\n-----END PRIVATE KEY-----"
+            )
+            return mock_subprocess.return_value
+
+        mock_subprocess.side_effect = create_files
+
+        result_cert, result_key = ssl_certificate.generate_self_signed_certificate(
+            cert_file="windows_test.crt",
+            key_file="windows_test.key",
+            common_name="windows.test"
+        )
+
+        # Verify the OpenSSL command was called with Windows-specific config
+        expected_cmd = [
+            "openssl", "req", "-x509", "-newkey", "rsa:4096", "-nodes",
+            "-out", str(cert_path), "-keyout", str(key_path),
+            "-days", "365",
+            "-subj", "/C=US/ST=State/L=City/O=Organization/CN=windows.test",
+            "-config", "nul"
+        ]
+        mock_subprocess.assert_called_once()
+        args, kwargs = mock_subprocess.call_args
+        self.assertEqual(args[0], expected_cmd)
+
+        # Verify return values
+        self.assertEqual(result_cert, cert_path)
+        self.assertEqual(result_key, key_path)
+
+    @patch("thermostatsupervisor.ssl_certificate.platform.system")
+    @patch("thermostatsupervisor.ssl_certificate.subprocess.run")
+    def test_download_ssl_certificate_windows(
+        self, mock_subprocess, mock_platform
+    ):
+        """Test SSL certificate download on Windows."""
+        mock_platform.return_value = "Windows"
+
+        # Mock successful openssl s_client output
+        mock_cert_output = """
+CONNECTED(00000003)
+-----BEGIN CERTIFICATE-----
+MIIDXTCCAkWgAwIBAgIJAKuK0VGDJJhjMA0GCSqGSIb3DQEBCwUAMEUxCzAJBgNV
+-----END CERTIFICATE-----
+"""
+        mock_subprocess.return_value.returncode = 0
+        mock_subprocess.return_value.stdout = mock_cert_output
+        mock_subprocess.return_value.stderr = ""
+
+        ssl_certificate.download_ssl_certificate("windows.test.com", 443)
+
+        # Verify the OpenSSL command was called with Windows-specific config
+        expected_cmd = [
+            "openssl", "s_client", "-connect", "windows.test.com:443",
+            "-servername", "windows.test.com", "-showcerts", "-config", "nul"
+        ]
+        mock_subprocess.assert_called_once()
+        args, kwargs = mock_subprocess.call_args
+        self.assertEqual(args[0], expected_cmd)
+
+    @patch("thermostatsupervisor.ssl_certificate.platform.system")
+    @patch("thermostatsupervisor.ssl_certificate.subprocess.run")
+    def test_validate_ssl_certificate_windows(
+        self, mock_subprocess, mock_platform
+    ):
+        """Test SSL certificate validation on Windows."""
+        mock_platform.return_value = "Windows"
+        mock_subprocess.return_value.returncode = 0
+
+        # Create a mock certificate file
+        cert_path = pathlib.Path(self.test_dir) / "windows_validate.crt"
+        cert_path.write_text(
+            "-----BEGIN CERTIFICATE-----\ntest cert\n-----END CERTIFICATE-----"
+        )
+
+        result = ssl_certificate.validate_ssl_certificate(cert_path)
+        self.assertTrue(result)
+
+        # Verify the OpenSSL command was called with Windows-specific config
+        expected_cmd = [
+            "openssl", "x509", "-in", str(cert_path), "-noout", "-text",
+            "-config", "nul"
+        ]
+        mock_subprocess.assert_called_once()
+        args, kwargs = mock_subprocess.call_args
+        self.assertEqual(args[0], expected_cmd)
+
     @patch("thermostatsupervisor.ssl_certificate.download_ssl_certificate")
     @patch("thermostatsupervisor.ssl_certificate.import_ssl_certificate_to_system")
     def test_download_and_import_ssl_certificates(self, mock_import, mock_download):
