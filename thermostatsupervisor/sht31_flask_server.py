@@ -569,37 +569,51 @@ class Sensors:
         returns:
             (dict): parsed device dictionary.
         """
-        # send command
-        with subprocess.Popen(
-            ["sudo", "i2cdetect", "-y", str(bus)],
-            stdout=subprocess.PIPE,
-        ) as p:
-            # cmdout = str(p.communicate())
+        # Check if running on Windows - i2c operations are Linux-specific
+        if env.is_windows_environment():
+            return {
+                "i2c_detect": {
+                    "bus_" + str(bus): {
+                        "i2c_detect": {
+                            "error": "i2c detection is not supported on Windows"
+                        }
+                    }
+                }
+            }
 
-            # read in raw data
-            parsed_device_dict = {"i2c_detect": {}}
-            bus_dict = {}
-            for _ in range(0, 9):
-                line = str(p.stdout.readline())
-                addr_base = line[2:4]
-                addr_payload = line[5:]
+        # send command using shell_cmd method for better testability
+        scan_result = self.shell_cmd(["sudo", "i2cdetect", "-y", str(bus)])
 
-                # catch error condition
-                if "Error" in line:
-                    bus_dict["i2c_detect"]["error"] = line
-                else:
-                    # find devices on bus
-                    device = 0
-                    device_dict = {}
-                    for match in re.finditer("[0-9][0-9]", addr_payload):
-                        if match:
-                            device_addr = match.group(0)
-                            print(match.group(0))
-                            device_dict["dev_" + str(device) + "_addr"] = str(
-                                device_addr
-                            )
-                            bus_dict["addr_base_" + str(addr_base)] = device_dict
-                            device += 1
+        # read in raw data
+        parsed_device_dict = {"i2c_detect": {}}
+        bus_dict = {}
+        lines = scan_result.split('\n')
+
+        for line in lines[:9]:  # limit to first 9 lines as original code
+            line = str(line)
+            if len(line) < 5:
+                continue
+            addr_base = line[2:4] if len(line) >= 4 else ""
+            addr_payload = line[5:] if len(line) > 5 else ""
+
+            # catch error condition
+            if "Error" in line:
+                if "i2c_detect" not in bus_dict:
+                    bus_dict["i2c_detect"] = {}
+                bus_dict["i2c_detect"]["error"] = line
+            else:
+                # find devices on bus
+                device = 0
+                device_dict = {}
+                for match in re.finditer("[0-9][0-9]", addr_payload):
+                    if match:
+                        device_addr = match.group(0)
+                        print(match.group(0))
+                        device_dict["dev_" + str(device) + "_addr"] = str(
+                            device_addr
+                        )
+                        bus_dict["addr_base_" + str(addr_base)] = device_dict
+                        device += 1
 
         parsed_device_dict["i2c_detect"]["bus_" + str(bus)] = bus_dict
         return parsed_device_dict
