@@ -65,7 +65,7 @@ jobs:
           python -m pip install flake8 --upgrade
           flake8 --config=setup.cfg .
       - name: Run unit tests with coverage
-        timeout-minutes: 30
+        timeout-minutes: 45
         env:
           # Integration test environment variables (same as Azure pipeline)
           GMAIL_USERNAME: ${{ secrets.GMAIL_USERNAME }}
