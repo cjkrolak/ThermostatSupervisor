@@ -104,7 +104,9 @@ class TestSHT31MissingEnvVar(utc.UnitTest):
             backup_path = None
 
             if os.path.exists(supervisor_env_path):
-                backup_path = tempfile.mktemp()
+                # Use secure temporary file creation
+                with tempfile.NamedTemporaryFile(delete=False) as temp_file:
+                    backup_path = temp_file.name
                 shutil.move(supervisor_env_path, backup_path)
 
             try:
