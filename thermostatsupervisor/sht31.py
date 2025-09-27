@@ -124,10 +124,10 @@ class ThermostatClass(tc.ThermostatCommon):
         # missing or contains placeholder values
         if util.unit_test_mode:
             value = env_result["value"]
-            if (value is None or 
-                value == "" or 
+            if (value is None or
+                value == "" or
                 value == "***" or
-                (value and value.strip() == "***")):
+                    (value and value.strip() == "***")):
                 util.log_msg(
                     f"Unit test mode: using localhost fallback for missing "
                     f"or placeholder env var '{env_key}' "
