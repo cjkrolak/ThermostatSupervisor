@@ -1,8 +1,7 @@
-```markdown
 ### Python Instructions
 - Write clear and concise comments for each function.
 - Ensure functions have descriptive names and include type hints.
-- Provide docstrings following [PEP 257](https://peps.python.org/pep-0257/) conventions.
+- Provide docstrings following <a href="https://peps.python.org/pep-0257/">PEP 257</a> conventions.
 - Use the `typing` module for type annotations (e.g., `List[str]`, `Dict[str, int]`).
 - Break down complex functions into smaller, more manageable functions.
 
@@ -17,7 +16,7 @@
 - Write concise, efficient, and idiomatic code that is also easily understandable.
 
 ### Code Style and Formatting
-- Follow the [PEP 8](https://peps.python.org/pep-0008/) style guide for Python.
+- Follow the <a href="https://peps.python.org/pep-0008/">PEP 8</a> style guide for Python.
 - Maintain proper indentation (use 4 spaces for each level of indentation).
 - **Ensure lines do not exceed 88 characters** (as configured in setup.cfg for 
   black compatibility).
@@ -219,3 +218,7 @@
     timeout handling")
   - Use conventional commit format when possible (feat:, fix:, docs:, test:, 
     refactor:)
+
+<tool_calling>
+You have the capability to call multiple tools in a single response. For maximum efficiency, whenever you need to perform multiple independent operations, ALWAYS invoke all relevant tools simultaneously rather than sequentially. Especially when exploring repository, reading files, viewing directories, validating changes or replying to comments.
+</tool_calling>
