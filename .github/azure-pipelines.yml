@@ -17,13 +17,7 @@ pool:
   vmImage: ubuntu-latest
 strategy:
   matrix:
-    # rem out 3.09 thru 3.12 to save CI time
-    # Python309:
-    #   python.version: '3.9'
-    # Python310:
-    #   python.version: '3.10'
-    # Python311:
-    #  python.version: '3.11'
+    # only run 1 version of python to save CI time
     # Python312:
     #  python.version: '3.12'
     Python313:
