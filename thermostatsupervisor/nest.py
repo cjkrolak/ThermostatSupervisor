@@ -182,14 +182,43 @@ class ThermostatClass(tc.ThermostatCommon):
             self.devices = self.thermostat_obj.get_devices()
         except oauthlib.oauth2.rfc6749.errors.InvalidGrantError as e:
             print(f"ERROR: {e}")
-            print("access token has expired, attempting to refresh the access token...")
+            print(
+                "access token has expired, attempting to refresh the "
+                "access token..."
+            )
             self.refresh_oauth_token()
-            # raise e
+            # After successful refresh, reload token and retry
+            self._reload_token_from_cache()
+            print("Retrying get_devices() with refreshed token...")
+            self.devices = self.thermostat_obj.get_devices()
         except Exception:
             print(traceback.format_exc())
             raise
         # TODO is there a chance that meta data changes?
         return self.devices
+
+    def _reload_token_from_cache(self):
+        """
+        Reload OAuth token from cache file into the thermostat client.
+
+        This is needed after refresh_oauth_token() updates the cache file
+        to ensure the in-memory client uses the refreshed token.
+
+        Args:
+            None
+        Returns:
+            None
+        """
+        if not os.path.exists(self.access_token_cache_file):
+            raise FileNotFoundError(
+                f"Token cache file not found: {self.access_token_cache_file}"
+            )
+        with open(self.access_token_cache_file, "r", encoding="utf-8") as f:
+            token_data = json.load(f)
+        # Update the OAuth2Session token in-memory
+        if self.thermostat_obj._client:
+            self.thermostat_obj._client.token = token_data
+            print("Reloaded token from cache into thermostat client")
 
     def refresh_oauth_token(self):
         """
