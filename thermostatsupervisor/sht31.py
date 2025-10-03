@@ -119,11 +119,11 @@ class ThermostatClass(tc.ThermostatCommon):
             (str):  IP address
         """
         env_result = env.get_env_variable(env_key)
+        value = env_result["value"]
 
         # In unit test mode, provide localhost as fallback when env var is
         # missing or contains placeholder values
         if util.unit_test_mode:
-            value = env_result["value"]
             if (value is None or
                 value == "" or
                 value == "***" or
@@ -137,7 +137,21 @@ class ThermostatClass(tc.ThermostatCommon):
                 )
                 return "127.0.0.1"
 
-        return env_result["value"]
+        # Validate that the IP address is not empty or invalid
+        if value is None or value == "":
+            error_msg = (
+                f"FATAL ERROR: Environment variable '{env_key}' is "
+                f"empty or missing. Server IP address cannot be blank. "
+                f"Please set '{env_key}' in supervisor-env.txt or as an "
+                f"environment variable."
+            )
+            util.log_msg(
+                error_msg,
+                mode=util.STDOUT_LOG + util.DATA_LOG,
+            )
+            raise ValueError(error_msg)
+
+        return value
 
     def spawn_flask_server(self):
         """
