@@ -141,6 +141,9 @@ class ThermostatClass(tc.ThermostatCommon):
             env_key(str): env var key.
         returns:
             (str):  IP address
+        Raises:
+            ValueError: when the environment variable is missing or blank
+                (including whitespace-only) outside unit test mode.
         """
         env_result = env.get_env_variable(env_key)
         value = env_result.get("value")
@@ -148,9 +151,10 @@ class ThermostatClass(tc.ThermostatCommon):
         # In unit test mode, provide localhost as fallback when env var is
         # missing or contains placeholder values
         if util.unit_test_mode:
-            # Check for various placeholder and missing value conditions
-            # This handles None, empty strings, and common placeholder patterns
-            if self._should_use_fallback(value):
+            if (value is None or
+                value == "" or
+                value == "***" or
+                    (value and value.strip() == "***")):
                 util.log_msg(
                     f"Unit test mode: using localhost fallback for missing "
                     f"or placeholder env var '{env_key}' "
@@ -160,8 +164,20 @@ class ThermostatClass(tc.ThermostatCommon):
                 )
                 return "127.0.0.1"
 
-        # Return the original value (could be None, which will cause TypeError
-        # during string concatenation if not handled properly by caller)
+        # Validate that the IP address is not empty or invalid
+        if value is None or value == "":
+            error_msg = (
+                f"FATAL ERROR: Environment variable '{env_key}' is "
+                f"empty or missing. Server IP address cannot be blank. "
+                f"Please set '{env_key}' in supervisor-env.txt or as an "
+                f"environment variable."
+            )
+            util.log_msg(
+                error_msg,
+                mode=util.STDOUT_LOG + util.DATA_LOG,
+            )
+            raise ValueError(error_msg)
+
         return value
 
     def spawn_flask_server(self):
