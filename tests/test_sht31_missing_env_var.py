@@ -93,7 +93,7 @@ class TestSHT31MissingEnvVar(utc.UnitTest):
     @patch.dict(os.environ, {}, clear=False)
     def test_missing_env_var_fails_in_non_unit_test_mode(self, mock_spawn):
         """
-        Test that missing environment variables still cause TypeError in
+        Test that missing environment variables still cause ValueError in
         non-unit test mode.
 
         This ensures the fallback behavior is only active in unit test mode.
@@ -132,11 +132,13 @@ class TestSHT31MissingEnvVar(utc.UnitTest):
             try:
                 # This should fail when env var is missing and not in unit
                 # test mode
-                with self.assertRaises(TypeError) as context:
+                with self.assertRaises(ValueError) as context:
                     sht31.ThermostatClass(1, verbose=False)
 
-                # Should get the concatenation error because ip_address is None
-                self.assertIn("can only concatenate str", str(context.exception))
+                # Should get a clear error message about the missing IP address
+                error_msg = str(context.exception)
+                self.assertIn("SHT31_REMOTE_IP_ADDRESS_1", error_msg)
+                self.assertIn("empty or missing", error_msg)
 
             finally:
                 # Restore supervisor-env.txt if it existed
