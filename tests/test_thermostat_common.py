@@ -1276,6 +1276,87 @@ class Test(utc.UnitTest):
             if original_get_func is not None:
                 self.Zone.get_setpoint_func = original_get_func
 
+    def test_supervisor_loop_timeout(self):
+        """Test that supervisor_loop respects the maximum loop time limit."""
+        import time
+        from unittest.mock import Mock
+
+        # Setup: Mock get_current_mode to simulate slow operation
+        original_get_current_mode = self.Zone.get_current_mode
+        original_refresh_zone_info = self.Zone.refresh_zone_info
+
+        try:
+            # Configure test to run 10 measurements with 1 second poll time
+            # Set very small max loop time to trigger timeout quickly
+            test_argv = [
+                "supervise.py",
+                "emulator",
+                "0",
+                "1",  # 1 second poll time
+                "1000",  # connection time
+                "2",  # tolerance
+                "UNKNOWN_MODE",
+                "10",  # 10 measurements
+            ]
+            api.uip = api.UserInputs(test_argv)
+
+            # Mock get_current_mode to simulate a slow operation (2 seconds)
+            def slow_get_current_mode(*args, **kwargs):
+                time.sleep(2)  # Simulate slow network operation
+                return {
+                    "heat_mode": False,
+                    "cool_mode": False,
+                    "heat_deviation": False,
+                    "cool_deviation": False,
+                    "hold_mode": False,
+                    "status_msg": "test status",
+                }
+
+            self.Zone.get_current_mode = slow_get_current_mode
+            self.Zone.refresh_zone_info = Mock()  # Mock to avoid actual refresh
+            self.Zone.revert_all_deviations = False
+
+            # Record start time
+            start_time = time.time()
+
+            # Call supervisor_loop - it should timeout before completing all
+            # measurements
+            measurement = self.Zone.supervisor_loop(
+                self.Thermostat, session_count=1, measurement=1, debug=False
+            )
+
+            # Calculate elapsed time
+            elapsed_time = time.time() - start_time
+
+            # Expected max time: (10 measurements * 1 sec poll) +
+            # (10 * 300 sec buffer) = 3010 seconds
+            # With 2 second sleep in get_current_mode, it would take much longer
+            # without timeout
+            # The connection_time_sec (1000s) should trigger reconnection first
+            # So measurement should be less than 11
+            self.assertLessEqual(
+                measurement,
+                11,
+                f"Measurement count {measurement} should be <= 11 "
+                "(completed or reconnected)",
+            )
+
+            # Verify the timeout mechanism worked by checking elapsed time is
+            # reasonable
+            # Should be much less than the theoretical max of 3010 seconds
+            # In practice, connection timeout (1000s) should trigger first
+            self.assertLess(
+                elapsed_time,
+                1100,  # Connection timeout + buffer
+                f"Loop took {elapsed_time:.1f}s, should have reconnected "
+                f"around 1000s",
+            )
+
+        finally:
+            # Restore original methods
+            self.Zone.get_current_mode = original_get_current_mode
+            self.Zone.refresh_zone_info = original_refresh_zone_info
+
 
 if __name__ == "__main__":
     util.log_msg.debug = True

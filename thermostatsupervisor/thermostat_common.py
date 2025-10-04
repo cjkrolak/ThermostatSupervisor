@@ -1330,14 +1330,93 @@ class ThermostatCommonZone:
         poll_count = 1
         previous_mode_dict = {}
 
+        # Calculate maximum loop time based on expected measurements
+        # Allow enough time for all measurements plus network operations
+        max_measurements = api.uip.get_user_inputs(
+            api.uip.zone_name, api.input_flds.measurements
+        )
+        if max_measurements:
+            # Calculate max time: (measurements * poll_time) + generous buffer
+            # for network operations and retries
+            max_loop_time_sec = (max_measurements * self.poll_time_sec) + (
+                max_measurements * 300
+            )  # 5 min buffer per measurement
+            loop_start_time = time.time()
+            util.log_msg(
+                f"supervisor_loop: max_loop_time={max_loop_time_sec}s "
+                f"for {max_measurements} measurements",
+                mode=util.DUAL_STREAM_LOG,
+                func_name=1,
+            )
+        else:
+            max_loop_time_sec = None
+            loop_start_time = None
+
         # poll thermostat settings
         while not api.uip.max_measurement_count_exceeded(measurement):
+            # Check for overall loop timeout to prevent indefinite hanging
+            # This check must happen BEFORE potentially blocking operations
+            if max_loop_time_sec and loop_start_time:
+                elapsed_time = time.time() - loop_start_time
+                if elapsed_time > max_loop_time_sec:
+                    util.log_msg(
+                        f"supervisor_loop: exceeded max loop time "
+                        f"({elapsed_time:.1f}s > {max_loop_time_sec}s), "
+                        f"exiting loop at measurement {measurement}",
+                        mode=util.BOTH_LOG,
+                        func_name=1,
+                    )
+                    # Set measurement to exceed max to exit outer loop in
+                    # supervise.py The outer loop will terminate when
+                    # measurement > max_measurements
+                    measurement = max_measurements + 1
+                    break
+
             # query thermostat for current settings and set points
-            current_mode_dict = self.get_current_mode(
-                session_count,
-                poll_count,
-                flag_all_deviations=self.revert_all_deviations,
-            )
+            # Record start time for this iteration
+            iteration_start_time = time.time()
+            # Wrap in try/except to catch any unexpected hangs/exceptions
+            try:
+                current_mode_dict = self.get_current_mode(
+                    session_count,
+                    poll_count,
+                    flag_all_deviations=self.revert_all_deviations,
+                )
+            except Exception as e:
+                util.log_msg(
+                    f"supervisor_loop: exception in get_current_mode: {e}",
+                    mode=util.BOTH_LOG,
+                    func_name=1,
+                )
+                # Check if we've exceeded max time due to retries
+                if max_loop_time_sec and loop_start_time:
+                    elapsed_time = time.time() - loop_start_time
+                    if elapsed_time > max_loop_time_sec:
+                        util.log_msg(
+                            f"supervisor_loop: exceeded max loop time after "
+                            f"exception ({elapsed_time:.1f}s > "
+                            f"{max_loop_time_sec}s), exiting loop",
+                            mode=util.BOTH_LOG,
+                            func_name=1,
+                        )
+                        # Set measurement to exceed max to exit outer loop
+                        measurement = max_measurements + 1
+                        break
+                # Re-raise to maintain existing error handling behavior
+                raise
+
+            # Check if get_current_mode took too long
+            iteration_elapsed = time.time() - iteration_start_time
+            if max_loop_time_sec and iteration_elapsed > (
+                max_loop_time_sec / max_measurements
+            ):
+                util.log_msg(
+                    f"supervisor_loop: single iteration took {iteration_elapsed:.1f}s "
+                    f"(exceeds {max_loop_time_sec / max_measurements:.1f}s threshold), "
+                    "may indicate network issues",
+                    mode=util.BOTH_LOG,
+                    func_name=1,
+                )
 
             # debug data on change from previous poll
             # note this check is probably hyper-sensitive, since status msg
