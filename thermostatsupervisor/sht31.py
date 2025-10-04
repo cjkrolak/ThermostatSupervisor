@@ -109,6 +109,30 @@ class ThermostatClass(tc.ThermostatCommon):
         """
         return "SHT31_REMOTE_IP_ADDRESS" + "_" + str(zone_str)
 
+    def _should_use_fallback(self, value):
+        """
+        Determine if we should use localhost fallback for the given value.
+
+        Args:
+            value: The environment variable value to check
+
+        Returns:
+            bool: True if fallback should be used
+        """
+        if value is None:
+            return True
+
+        if not isinstance(value, str):
+            return False
+
+        # Check for empty strings and placeholder patterns
+        return (value == "" or
+                value.strip() == "" or
+                value == "***" or
+                value.strip() == "***" or
+                # Handle potential encoding issues or invisible characters
+                "".join(value.split()) == "***")
+
     def get_ip_address(self, env_key):
         """
         Return IP address from env key and cache value in dict.
@@ -119,7 +143,7 @@ class ThermostatClass(tc.ThermostatCommon):
             (str):  IP address
         """
         env_result = env.get_env_variable(env_key)
-        value = env_result["value"]
+        value = env_result.get("value")
 
         # In unit test mode, provide localhost as fallback when env var is
         # missing or contains placeholder values
@@ -131,7 +155,7 @@ class ThermostatClass(tc.ThermostatCommon):
                 util.log_msg(
                     f"Unit test mode: using localhost fallback for missing "
                     f"or placeholder env var '{env_key}' "
-                    f"(value: {value})",
+                    f"(value: {repr(value)})",
                     mode=util.DEBUG_LOG,
                     func_name=1,
                 )
