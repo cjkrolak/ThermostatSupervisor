@@ -11,6 +11,9 @@ import tempfile
 import unittest
 from unittest.mock import Mock, patch
 
+# third party imports
+import oauthlib.oauth2.rfc6749.errors
+
 # local imports
 from thermostatsupervisor import nest
 from tests import unit_test_common as utc
@@ -158,6 +161,60 @@ class TestNestOAuthRefresh(utc.UnitTest):
 
         # Data should be unchanged
         self.assertEqual(unchanged_data, self.initial_token_data)
+
+    @patch("thermostatsupervisor.nest.requests.post")
+    def test_get_device_data_with_invalid_grant_retry(self, mock_post):
+        """
+        Test get_device_data retries after token refresh on InvalidGrantError.
+        """
+        # Mock successful refresh response
+        mock_response = Mock()
+        mock_response.ok = True
+        mock_response.json.return_value = {
+            "access_token": "ya29.a0AfB_byNEW_REFRESHED_ACCESS_TOKEN",
+            "expires_in": 3600,
+        }
+        mock_post.return_value = mock_response
+
+        # Create a minimal thermostat instance
+        thermostat = nest.ThermostatClass.__new__(nest.ThermostatClass)
+        thermostat.access_token_cache_file = self.cache_file_path
+        thermostat.client_id = "test_client_id"
+        thermostat.client_secret = "test_client_secret"
+        thermostat.devices = []
+
+        # Mock thermostat_obj with _client that needs token reload
+        mock_tstat_obj = Mock()
+        mock_client = Mock()
+        mock_client.token = self.initial_token_data
+        mock_tstat_obj._client = mock_client
+
+        # First call raises InvalidGrantError, second succeeds
+        mock_devices = [{"name": "test_device"}]
+        mock_tstat_obj.get_devices.side_effect = [
+            oauthlib.oauth2.rfc6749.errors.InvalidGrantError("invalid_grant"),
+            mock_devices,
+        ]
+        thermostat.thermostat_obj = mock_tstat_obj
+
+        # Call get_device_data - should catch error, refresh, and retry
+        result = thermostat.get_device_data()
+
+        # Verify refresh was called
+        mock_post.assert_called_once()
+
+        # Verify get_devices was called twice (initial + retry)
+        self.assertEqual(mock_tstat_obj.get_devices.call_count, 2)
+
+        # Verify token was reloaded into client
+        self.assertIsNotNone(mock_client.token)
+        self.assertEqual(
+            mock_client.token["access_token"],
+            "ya29.a0AfB_byNEW_REFRESHED_ACCESS_TOKEN",
+        )
+
+        # Verify devices were returned from retry
+        self.assertEqual(result, mock_devices)
 
 
 if __name__ == "__main__":
