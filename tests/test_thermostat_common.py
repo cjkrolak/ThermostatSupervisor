@@ -1357,6 +1357,98 @@ class Test(utc.UnitTest):
             self.Zone.get_current_mode = original_get_current_mode
             self.Zone.refresh_zone_info = original_refresh_zone_info
 
+    def test_supervisor_loop_timeout_on_first_iteration(self):
+        """
+        Test that supervisor_loop times out even if first iteration hangs.
+
+        This simulates the GitHub Actions scenario where get_current_mode hangs
+        on the very first call.
+        """
+        import time
+        from unittest.mock import Mock
+
+        original_get_current_mode = self.Zone.get_current_mode
+        original_refresh_zone_info = self.Zone.refresh_zone_info
+
+        try:
+            # Configure test with small measurement count and short poll time
+            # but very small max loop time to trigger timeout quickly
+            test_argv = [
+                "supervise.py",
+                "emulator",
+                "0",
+                "5",  # 5 second poll time
+                "100",  # 100 second connection time
+                "2",  # tolerance
+                "UNKNOWN_MODE",
+                "3",  # 3 measurements
+            ]
+            api.uip = api.UserInputs(test_argv)
+
+            # Track how many times get_current_mode is called
+            call_count = [0]
+
+            # Mock get_current_mode to simulate a slow first operation
+            def very_slow_get_current_mode(*args, **kwargs):
+                call_count[0] += 1
+                if call_count[0] == 1:
+                    # First call: sleep longer than connection timeout
+                    # Connection time is 100s, so sleep for 110s
+                    # This simulates a hanging network operation
+                    time.sleep(110)
+                return {
+                    "heat_mode": False,
+                    "cool_mode": False,
+                    "heat_deviation": False,
+                    "cool_deviation": False,
+                    "hold_mode": False,
+                    "status_msg": "test status",
+                }
+
+            self.Zone.get_current_mode = very_slow_get_current_mode
+            self.Zone.refresh_zone_info = Mock()
+            self.Zone.revert_all_deviations = False
+
+            start_time = time.time()
+
+            # Call supervisor_loop - should timeout/reconnect before completing
+            measurement = self.Zone.supervisor_loop(
+                self.Thermostat, session_count=1, measurement=1, debug=False
+            )
+
+            elapsed_time = time.time() - start_time
+
+            # Should have hit connection timeout (100s) or loop timeout
+            # Allow for 110s sleep + overhead for cleanup
+            self.assertLess(
+                elapsed_time,
+                140,
+                f"Loop took {elapsed_time:.1f}s, should have completed "
+                f"110s sleep plus overhead",
+            )
+
+            # Verify measurement count indicates early exit
+            # Should be less than expected 4 (1 + 3 measurements)
+            self.assertLess(
+                measurement,
+                4,
+                f"Measurement count {measurement} indicates loop may not have "
+                "timed out properly",
+            )
+
+            # Should have been called at most once since it hung
+            self.assertLessEqual(
+                call_count[0],
+                2,
+                f"get_current_mode called {call_count[0]} times, "
+                "expected <= 2 (may have started second iteration)",
+            )
+
+        finally:
+            # Restore original methods
+            self.Zone.get_current_mode = original_get_current_mode
+            self.Zone.refresh_zone_info = original_refresh_zone_info
+
 
 if __name__ == "__main__":
     util.log_msg.debug = True
