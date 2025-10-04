@@ -142,7 +142,8 @@ class ThermostatClass(tc.ThermostatCommon):
         returns:
             (str):  IP address
         Raises:
-            ValueError: when the environment variable is missing or blank (including whitespace-only) outside unit test mode.
+            ValueError: when the environment variable is missing or blank
+                (including whitespace-only) outside unit test mode.
         """
         env_result = env.get_env_variable(env_key)
         value = env_result.get("value")
