@@ -39,8 +39,48 @@ def supervisor(thermostat_type, zone_str):
     session_count = 1
     measurement = 1
 
+    # Calculate maximum total time for entire supervisor run
+    # This is a safety limit to prevent infinite loops
+    max_measurements = api.uip.get_user_inputs(
+        api.uip.parent_keys[0], api.input_flds.measurements
+    )
+    if max_measurements:
+        poll_time = api.uip.get_user_inputs(
+            api.uip.parent_keys[0], api.input_flds.poll_time
+        )
+        # Allow generous time: (measurements * poll_time * 2) +
+        # (measurements * 600s buffer) Max of 2 sessions
+        max_total_time_sec = (max_measurements * poll_time * 2) + (
+            max_measurements * 600
+        )
+        max_total_time_sec = min(
+            max_total_time_sec, 7200
+        )  # Cap at 2 hours max
+        supervisor_start_time = time.time()
+        util.log_msg(
+            f"supervisor: max_total_time={max_total_time_sec}s "
+            f"for {max_measurements} measurements",
+            mode=util.DUAL_STREAM_LOG,
+            func_name=1,
+        )
+    else:
+        max_total_time_sec = None
+        supervisor_start_time = None
+
     # outer loop: sessions
     while not api.uip.max_measurement_count_exceeded(measurement):
+        # Check for overall supervisor timeout
+        if max_total_time_sec and supervisor_start_time:
+            elapsed_time = time.time() - supervisor_start_time
+            if elapsed_time > max_total_time_sec:
+                util.log_msg(
+                    f"supervisor: exceeded max total time "
+                    f"({elapsed_time:.1f}s > {max_total_time_sec}s), "
+                    f"exiting at measurement {measurement}, session {session_count}",
+                    mode=util.BOTH_LOG,
+                    func_name=1,
+                )
+                break
         # make connection to thermostat
         zone_num = api.uip.get_user_inputs(api.uip.zone_name, api.input_flds.zone)
         util.log_msg(
