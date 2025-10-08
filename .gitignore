@@ -30,6 +30,10 @@ env
 .pydevproject
 .settings
 
+# AI agent generated files and artifacts
+=*
+[0-9]*.[0-9]*.[0-9]*
+
 # data and environmental files
 **/data
 data
@@ -38,3 +42,6 @@ doc
 *.ini
 *.json
 supervisor-env.txt
+
+# SSL certificates (auto-generated)
+ssl/

@@ -83,8 +83,8 @@ argv = [
     "supervise.py",  # module
     ALIAS,  # thermostat
     str(default_zone),  # zone
-    "16",  # poll time in sec
-    "356",  # reconnect time in sec
+    "300",  # poll time in sec (5 minutes to reduce server load)
+    "7200",  # reconnect time in sec (2 hours)
     "4",  # tolerance
     "OFF_MODE",  # thermostat mode
     "2",  # number of measurements

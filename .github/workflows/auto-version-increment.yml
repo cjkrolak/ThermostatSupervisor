@@ -1,0 +1,43 @@
+---
+name: Auto Version Increment
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+permissions:
+  contents: write
+  pull-requests: write
+jobs:
+  version-check:
+    name: Check and increment version
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source branch
+        uses: actions/checkout@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+          ref: ${{ github.head_ref }}
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: 3.x
+      - name: Fetch main branch
+        run: |
+          git fetch origin main:main
+      - name: Check and increment version
+        id: version_check
+        run: |
+          python .github/scripts/version_increment.py \
+            --init-file thermostatsupervisor/__init__.py \
+            --commit
+      - name: Push version increment
+        if: success()
+        run: |-
+          # Check if there are any changes to push
+          if git diff --quiet HEAD~1 HEAD; then
+            echo "No version changes to push"
+          else
+            echo "Pushing version increment"
+            git push origin ${{ github.head_ref }}
+          fi

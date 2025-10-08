@@ -62,7 +62,7 @@ class ThermostatClass(tc.ThermostatCommon):
             self.zone_name == sht31_config.UNIT_TEST_ZONE or util.unit_test_mode
         ) and self.path == sht31_config.flask_folder.production:
             self.path = sht31_config.flask_folder.unit_test
-            self.unit_test_seed = "?seed=" + str(sht31_config.UNIT_TEST_SEED)
+            self.unit_test_seed = "&seed=" + str(sht31_config.UNIT_TEST_SEED)
         else:
             # self.path = ""
             self.unit_test_seed = ""
@@ -109,6 +109,39 @@ class ThermostatClass(tc.ThermostatCommon):
         """
         return "SHT31_REMOTE_IP_ADDRESS" + "_" + str(zone_str)
 
+    def _should_use_fallback(self, value):
+        """
+        Determine if we should use localhost fallback for the given value.
+
+        In unit test mode, this checks for empty/None/placeholder values.
+        In production mode, only None and empty strings are considered invalid.
+
+        Args:
+            value: The environment variable value to check
+
+        Returns:
+            bool: True if fallback should be used
+        """
+        if value is None:
+            return True
+
+        if not isinstance(value, str):
+            return False
+
+        # Empty strings are always invalid
+        if value == "" or value.strip() == "":
+            return True
+
+        # In unit test mode, placeholder patterns should use fallback
+        # In production, placeholders are preserved as-is
+        if util.unit_test_mode:
+            return (value == "***" or
+                    value.strip() == "***" or
+                    # Handle potential encoding issues or invisible characters
+                    "".join(value.split()) == "***")
+
+        return False
+
     def get_ip_address(self, env_key):
         """
         Return IP address from env key and cache value in dict.
@@ -117,8 +150,45 @@ class ThermostatClass(tc.ThermostatCommon):
             env_key(str): env var key.
         returns:
             (str):  IP address
+        Raises:
+            ValueError: when the environment variable is missing or blank
+                (including whitespace-only) outside unit test mode.
         """
-        return env.get_env_variable(env_key)["value"]
+        env_result = env.get_env_variable(env_key)
+        value = env_result.get("value")
+
+        # In unit test mode, use localhost fallback for missing, empty,
+        # or placeholder values. Valid IP addresses are preserved.
+        # The special unit test zone (99) is handled separately in
+        # environment.py and uses get_local_ip()
+        if (util.unit_test_mode and
+                env_key != sht31_config.UNIT_TEST_ENV_KEY and
+                self._should_use_fallback(value)):
+            util.log_msg(
+                f"Unit test mode: using localhost fallback for "
+                f"missing or placeholder env var '{env_key}' "
+                f"(value: {value})",
+                mode=util.DEBUG_LOG,
+                func_name=1,
+            )
+            return "127.0.0.1"
+
+        # Validate that the IP address is not empty or invalid
+        # in non-unit test mode
+        if not util.unit_test_mode and self._should_use_fallback(value):
+            error_msg = (
+                f"FATAL ERROR: Environment variable '{env_key}' is "
+                f"empty or missing. Server IP address cannot be blank. "
+                f"Please set '{env_key}' in supervisor-env.txt or as an "
+                f"environment variable."
+            )
+            util.log_msg(
+                error_msg,
+                mode=util.STDOUT_LOG + util.DATA_LOG,
+            )
+            raise ValueError(error_msg)
+
+        return value
 
     def spawn_flask_server(self):
         """

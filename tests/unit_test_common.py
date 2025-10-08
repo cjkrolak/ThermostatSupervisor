@@ -4,14 +4,17 @@ Common functions used in multiple unit tests.
 
 # global imports
 import argparse
+from datetime import datetime
 from io import TextIOWrapper
 import os
 import pprint
 import sys
+import time
 import unittest
 from unittest.mock import patch
 
 # third party imports
+import pytz
 from str2bool import str2bool
 
 # local imports
@@ -64,6 +67,92 @@ unit_test_argv = unit_test_emulator
 unit_test_argv_file = ".//tests//unit_test_argv.txt"
 
 
+class TestMetricsTracker:
+    """Tracks and reports cumulative test metrics during test suite execution."""
+
+    def __init__(self):
+        """Initialize the test metrics tracker."""
+        self.suite_start_time = None
+        self.previous_test_name = None
+        self.previous_test_start_time = None
+        self.total_tests_completed = 0
+        self.total_tests_passed = 0
+        self.total_tests_failed = 0
+        self.failed_tests = []
+        self.central_tz = pytz.timezone('US/Central')
+
+    def start_suite(self):
+        """Mark the start of the test suite."""
+        self.suite_start_time = time.time()
+
+    def start_test(self, test_name):
+        """Mark the start of a test."""
+        if self.suite_start_time is None:
+            self.start_suite()
+        self.previous_test_start_time = time.time()
+
+    def complete_test(self, test_name, test_passed, error_message=None):
+        """
+        Complete a test and update metrics.
+
+        Args:
+            test_name (str): Name of the completed test
+            test_passed (bool): Whether the test passed
+            error_message (str): Error message if test failed
+        """
+        self.total_tests_completed += 1
+        if test_passed:
+            self.total_tests_passed += 1
+        else:
+            self.total_tests_failed += 1
+            self.failed_tests.append({
+                'name': test_name,
+                'error': error_message or 'Test failed'
+            })
+
+        # Print metrics after each test completion
+        self.print_test_metrics(test_name)
+        self.previous_test_name = test_name
+
+    def print_test_metrics(self, current_test_name):
+        """Print cumulative test metrics and previous test information."""
+        if self.suite_start_time is None:
+            return
+
+        # Calculate elapsed time for entire suite
+        suite_elapsed_seconds = time.time() - self.suite_start_time
+        suite_elapsed_minutes = suite_elapsed_seconds / 60.0
+
+        # Get Central US timestamp
+        central_time = datetime.now(self.central_tz)
+        timestamp_str = central_time.strftime('%Y-%m-%d %H:%M:%S %Z')
+
+        # Print cumulative metrics in one row
+        print(f"\n{timestamp_str} | Suite: {suite_elapsed_minutes:.1f}min | "
+              f"Completed: {self.total_tests_completed} | "
+              f"Passed: {self.total_tests_passed} | "
+              f"Failed: {self.total_tests_failed}")
+
+        # Print previous test info if available
+        if (self.previous_test_name is not None and
+                self.previous_test_start_time is not None):
+            prev_test_elapsed = time.time() - self.previous_test_start_time
+            print(f"Previous test: {self.previous_test_name} | "
+                  f"Time: {prev_test_elapsed:.3f}s")
+
+        # Print failing tests if any
+        if self.failed_tests:
+            print(f"Failed tests ({len(self.failed_tests)}):")
+            for failed_test in self.failed_tests:
+                print(f"  - {failed_test['name']}: {failed_test['error']}")
+
+        print("-" * 80)
+
+
+# Global test metrics tracker instance
+_test_metrics_tracker = TestMetricsTracker()
+
+
 class PatchMeta(type):
     """A metaclass to patch all inherited classes."""
 
@@ -95,6 +184,8 @@ class UnitTest(unittest.TestCase, metaclass=PatchMeta):
     def setUp(self):
         """Default setup method."""
         self.print_test_name()
+        # Start tracking this test
+        _test_metrics_tracker.start_test(self.id())
         self.unit_test_argv = unit_test_argv
         self.thermostat_type = unit_test_argv[1]
         self.zone_number = unit_test_argv[2]
@@ -102,7 +193,14 @@ class UnitTest(unittest.TestCase, metaclass=PatchMeta):
 
     def tearDown(self):
         """Default teardown method."""
+        # Capture test result before printing
+        test_passed = self._get_test_result()
+        error_message = self._get_error_message() if not test_passed else None
+
         self.print_test_result()
+
+        # Complete the test tracking with metrics
+        _test_metrics_tracker.complete_test(self.id(), test_passed, error_message)
 
     def setup_thermostat_zone(self):
         """
@@ -140,6 +238,13 @@ class UnitTest(unittest.TestCase, metaclass=PatchMeta):
 
     def setup_mock_thermostat_zone(self):
         """Setup mock thermostat settings."""
+        # Save original thermostat configuration
+        self.original_thermostat_config = None
+        if self.thermostat_type in api.thermostats:
+            self.original_thermostat_config = api.thermostats[
+                self.thermostat_type
+            ].copy()
+
         api.thermostats[self.thermostat_type] = {  # dummy unit test thermostat
             "required_env_variables": {
                 "GMAIL_USERNAME": None,
@@ -160,7 +265,12 @@ class UnitTest(unittest.TestCase, metaclass=PatchMeta):
 
     def teardown_mock_thermostat_zone(self):
         """Tear down the mock thermostat settings."""
-        del api.thermostats[self.thermostat_type]
+        # Restore original thermostat configuration instead of deleting
+        if (
+            hasattr(self, "original_thermostat_config")
+            and self.original_thermostat_config is not None
+        ):
+            api.thermostats[self.thermostat_type] = self.original_thermostat_config
         api.uip.user_inputs = self.user_inputs_backup
         self.Zone.is_off_mode = self.is_off_mode_bckup
 
@@ -200,6 +310,57 @@ class UnitTest(unittest.TestCase, metaclass=PatchMeta):
         print("-" * 60)
         print(f"testing '{self.id()}'")  # util.get_function_name(2))
         print("-" * 60)
+
+    def _get_test_result(self):
+        """
+        Get the test result (pass/fail) for the current test.
+
+        Returns:
+            bool: True if test passed, False otherwise
+        """
+        try:
+            if hasattr(self._outcome, "errors"):  # Python 3.4 - 3.10
+                result = self.defaultTestResult()
+                self._feedErrorsToResult(result, self._outcome.errors)
+            elif hasattr(self._outcome, "result"):  # python 3.11
+                result = self._outcome.result
+            else:  # Python 3.2 - 3.3 or 3.0 - 3.1 and 2.7
+                return True  # Assume pass if we can't determine
+
+            error = self.list2reason(result.errors)
+            failure = self.list2reason(result.failures)
+            return not (error or failure)
+        except AttributeError:
+            # If we can't determine result, assume pass
+            return True
+
+    def _get_error_message(self):
+        """
+        Get error message for the current test if it failed.
+
+        Returns:
+            str: Error message or None if test passed
+        """
+        try:
+            if hasattr(self._outcome, "errors"):  # Python 3.4 - 3.10
+                result = self.defaultTestResult()
+                self._feedErrorsToResult(result, self._outcome.errors)
+            elif hasattr(self._outcome, "result"):  # python 3.11
+                result = self._outcome.result
+            else:  # Python 3.2 - 3.3 or 3.0 - 3.1 and 2.7
+                return None
+
+            error = self.list2reason(result.errors)
+            failure = self.list2reason(result.failures)
+
+            if error:
+                return f"ERROR: {error}"
+            elif failure:
+                return f"FAIL: {failure}"
+            else:
+                return None
+        except AttributeError:
+            return None
 
 
 class IntegrationTest(UnitTest):

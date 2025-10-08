@@ -54,8 +54,8 @@ class SupervisorLogHandler(logging.Handler):
                 logging.DEBUG: util.DEBUG_LOG + util.DATA_LOG,
                 logging.INFO: util.DATA_LOG,
                 logging.WARNING: util.DATA_LOG,
-                logging.ERROR: util.DATA_LOG + util.STDERR_LOG,
-                logging.CRITICAL: util.DATA_LOG + util.STDERR_LOG,
+                logging.ERROR: util.DUAL_STREAM_LOG,  # Use dual stream for errors
+                logging.CRITICAL: util.DUAL_STREAM_LOG,  # Use dual stream for critical
             }
 
             # Get the appropriate log mode, default to DATA_LOG for unknown levels

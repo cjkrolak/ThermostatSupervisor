@@ -12,24 +12,73 @@ jobs:
     name: runner / black
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           token: ${{ secrets.THERMOSTATSUPERVISOR_PR }}
           fetch-depth: 0
-      - name: Check files using the black formatter
-        uses: rickstaa/action-black@v1
-        id: action_black
+      - name: Set up Python
+        uses: actions/setup-python@v6
         with:
-          black_args: .
-      - name: Commit changes
-        if: steps.action_black.outputs.is_formatted == 'true'
-        run: |-
+          python-version: 3.x
+      - name: Install black with Jupyter support
+        run: pip install "black[jupyter]"
+      - name: Check Python files with black
+        run: |
+          black --check --diff --color .
+          BLACK_EXIT_CODE=$?
+          if [ $BLACK_EXIT_CODE -ne 0 ]; then
+            echo "formatted=true" >> $GITHUB_ENV
+          else
+            echo "formatted=false" >> $GITHUB_ENV
+          fi
+          exit $BLACK_EXIT_CODE
+        continue-on-error: true
+      - name: Check Jupyter notebooks with black
+        run: |
+          if find . -name "*.ipynb" -type f | head -1 | grep -q .; then
+            echo "Found Jupyter notebooks, checking formatting..."
+            black --check --diff --include="\.ipynb$" .
+          else
+            echo "No Jupyter notebooks found, skipping..."
+          fi
+        continue-on-error: true
+      - name: Format Python files and Jupyter notebooks
+        if: env.formatted == 'true'
+        run: |
+          black .
+          black --include="\.ipynb$" .
+      - name: Commit changes for non-develop branches
+        if: env.formatted == 'true' && github.ref != 'refs/heads/develop'
+        run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           git add .
-          git commit -m ":art: Format Python code with psf/black"
-          git push origin HEAD:${{ github.head_ref || github.ref_name }}
-          exit 1
-      - name: pass action if pull request is not created
-        if: steps.action_black.outputs.is_formatted == 'false'
-        run: exit 0
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m ":art: Format Python code with psf/black"
+            git push origin HEAD:${{ github.head_ref || github.ref_name }}
+          fi
+      - name: Create pull request for develop branch
+        if: env.formatted == 'true' && github.ref == 'refs/heads/develop'
+        run: |
+          BRANCH_NAME="black-format-${{ github.run_number }}"
+          git checkout -b $BRANCH_NAME
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add .
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m ":art: Format Python code with psf/black"
+            git push origin $BRANCH_NAME
+            # Create PR using GitHub CLI if available, otherwise just push
+            if command -v gh &> /dev/null; then
+              BODY="Auto-format Python code using black formatter"
+              gh pr create --title "Auto-format code with black" \
+                --body "$BODY" \
+                --base develop --head $BRANCH_NAME
+            fi
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.THERMOSTATSUPERVISOR_PR }}
