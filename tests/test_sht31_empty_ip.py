@@ -115,6 +115,7 @@ class TestSHT31EmptyIP(utc.UnitTest):
             self.assertIn("http://192.168.1.100:5000", tstat.url)
 
     @patch.object(sht31.ThermostatClass, "spawn_flask_server")
+    @patch.dict(os.environ, {}, clear=False)
     def test_none_ip_address_raises_error_in_non_unit_test_mode(
         self, mock_spawn
     ):
@@ -123,6 +124,11 @@ class TestSHT31EmptyIP(utc.UnitTest):
         """
         mock_spawn.return_value = None
         util.unit_test_mode = False
+
+        # Clear the env var from OS environment if it exists
+        # to simulate missing environment variable scenario
+        if 'SHT31_REMOTE_IP_ADDRESS_1' in os.environ:
+            del os.environ['SHT31_REMOTE_IP_ADDRESS_1']
 
         with tempfile.TemporaryDirectory() as temp_dir:
             os.chdir(temp_dir)

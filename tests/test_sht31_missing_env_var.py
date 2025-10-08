@@ -29,6 +29,7 @@ class TestSHT31MissingEnvVar(utc.UnitTest):
         super().tearDown()
 
     @patch.object(sht31.ThermostatClass, "spawn_flask_server")
+    @patch.dict(os.environ, {}, clear=False)
     def test_missing_env_var_fallback_in_unit_test_mode(self, mock_spawn):
         """
         Test that missing environment variables fall back to localhost in unit
@@ -52,6 +53,11 @@ class TestSHT31MissingEnvVar(utc.UnitTest):
             # Verify unit test mode is actually set
             self.assertTrue(util.unit_test_mode,
                             "unit_test_mode should be True for this test")
+
+            # Clear the env var from OS environment if it exists
+            # to simulate missing environment variable scenario
+            if 'SHT31_REMOTE_IP_ADDRESS_1' in os.environ:
+                del os.environ['SHT31_REMOTE_IP_ADDRESS_1']
 
             # This should NOT fail even if env var is missing or has placeholder
             tstat = sht31.ThermostatClass(1, verbose=False)
@@ -90,6 +96,7 @@ class TestSHT31MissingEnvVar(utc.UnitTest):
             util.unit_test_mode = original_mode
 
     @patch.object(sht31.ThermostatClass, "spawn_flask_server")
+    @patch.dict(os.environ, {}, clear=False)
     def test_missing_env_var_fails_in_non_unit_test_mode(self, mock_spawn):
         """
         Test that missing environment variables still cause ValueError in
@@ -109,6 +116,10 @@ class TestSHT31MissingEnvVar(utc.UnitTest):
             # Verify unit test mode is actually disabled
             self.assertFalse(util.unit_test_mode,
                              "unit_test_mode should be False for this test")
+
+            # Clear the env var from OS environment if it exists
+            if 'SHT31_REMOTE_IP_ADDRESS_1' in os.environ:
+                del os.environ['SHT31_REMOTE_IP_ADDRESS_1']
 
             # Create temporary environment where the env var is truly missing
             # by temporarily moving any supervisor-env.txt file
