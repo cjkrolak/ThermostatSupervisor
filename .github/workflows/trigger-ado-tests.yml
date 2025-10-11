@@ -107,7 +107,6 @@ jobs:
           # Extract HTTP status code (last line) and response body
           http_code=$(echo "${http_response}" | tail -n 1)
           response_body=$(echo "${http_response}" | sed '$d')
-
           echo "HTTP Status Code: ${http_code}"
 
           # Check if the request was successful
