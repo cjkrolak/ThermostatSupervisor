@@ -18,8 +18,9 @@ class TestSHT31ImportIsolation(utc.UnitTest):
     def test_flask_not_loaded_on_module_import(self):
         """Test that Flask is not loaded when importing sht31 module."""
         # Remove sht31 module if already loaded
+        # Use list() to create a snapshot to avoid RuntimeError in Python 3.13+
         modules_to_remove = [
-            key for key in sys.modules.keys()
+            key for key in list(sys.modules.keys())
             if 'sht31' in key or 'flask' in key.lower()
         ]
         for module in modules_to_remove:
@@ -44,8 +45,9 @@ class TestSHT31ImportIsolation(utc.UnitTest):
     def test_flask_not_loaded_for_regular_zone(self):
         """Test that Flask is not loaded when creating a regular zone."""
         # Remove modules to get a clean state
+        # Use list() to create a snapshot to avoid RuntimeError in Python 3.13+
         modules_to_remove = [
-            key for key in sys.modules.keys()
+            key for key in list(sys.modules.keys())
             if 'sht31_flask_server' in key or 'flask' in key.lower()
         ]
         for module in modules_to_remove:
@@ -84,8 +86,9 @@ class TestSHT31ImportIsolation(utc.UnitTest):
     def test_flask_loaded_only_for_unit_test_zone(self):
         """Test that Flask IS loaded when creating unit test zone."""
         # Remove modules to get a clean state
+        # Use list() to create a snapshot to avoid RuntimeError in Python 3.13+
         modules_to_remove = [
-            key for key in sys.modules.keys()
+            key for key in list(sys.modules.keys())
             if 'sht31_flask_server' in key or 'flask' in key.lower()
         ]
         for module in modules_to_remove:
