@@ -28,8 +28,11 @@ jobs:
         id: check
         run: |
           # Check if repository variable USE_ADO_UNIT_TESTS is 'true'
+          # Use bash parameter expansion to default to 'false' if unset/empty
           USE_ADO_TESTS="${{ vars.USE_ADO_UNIT_TESTS }}"
-          echo "Repository variable USE_ADO_UNIT_TESTS: ${USE_ADO_TESTS}"
+          USE_ADO_TESTS="${USE_ADO_TESTS:-false}"
+          echo "Repository variable USE_ADO_UNIT_TESTS: '${USE_ADO_TESTS}'"
+          echo "Raw value from vars context: '${{ vars.USE_ADO_UNIT_TESTS }}'"
           if [[ "${USE_ADO_TESTS}" == "true" ]]; then
             echo "should-run=true" >> $GITHUB_OUTPUT
             echo "✅ ADO unit tests are ENABLED"
@@ -93,20 +96,61 @@ jobs:
           ado_url="https://dev.azure.com/${ADO_ORG}/${ADO_PROJECT}"
           ado_url="${ado_url}/_apis/pipelines/${ADO_PIPELINE_ID}/runs"
           ado_url="${ado_url}?api-version=7.0"
-          response=$(curl -w "%{http_code}" -s -X POST \
+
+          echo "🔗 API URL: ${ado_url}"
+
+          # Prepare authorization header
+          auth_header="Authorization: Basic $(echo -n :${AZURE_DEVOPS_PAT} | base64)"
+
+          # Make the API call - disable set -e for curl to capture exit code
+          set +e
+          http_response=$(curl -w "\n%{http_code}" -s -X POST \
             -H "Content-Type: application/json" \
-            -H "Authorization: Basic $(echo -n :${AZURE_DEVOPS_PAT} | base64)" \
+            -H "${auth_header}" \
             "${ado_url}" \
-            -d "${json_payload}")
-          # Extract HTTP status code
-          http_code="${response: -3}"
-          response_body="${response%???}"
-          if [[ ${http_code} -ge 200 && ${http_code} -lt 300 ]]; then
+            -d "${json_payload}" 2>&1)
+          curl_exit_code=$?
+          set -e
+
+          # Check if curl command succeeded
+          if [ ${curl_exit_code} -ne 0 ]; then
+            echo "❌ ERROR: curl command failed with exit code ${curl_exit_code}"
+            echo "Response: ${http_response}"
+            echo ""
+            echo "Common curl exit codes:"
+            echo "  6  - Could not resolve host"
+            echo "  7  - Failed to connect to host"
+            echo "  22 - HTTP error (non-2xx status)"
+            echo "  28 - Timeout"
+            echo "  35 - SSL connect error"
+            echo "  43 - Internal error"
+            echo ""
+            echo "Troubleshooting:"
+            echo "1. Check network connectivity to dev.azure.com"
+            echo "2. Verify AZURE_DEVOPS_PAT is valid and not expired"
+            echo "3. Confirm organization name: ${ADO_ORG}"
+            echo "4. Confirm project name: ${ADO_PROJECT}"
+            echo "5. Verify pipeline ID: ${ADO_PIPELINE_ID}"
+            exit 1
+          fi
+
+          # Extract HTTP status code (last line) and response body
+          http_code=$(echo "${http_response}" | tail -n 1)
+          response_body=$(echo "${http_response}" | sed '$d')
+          echo "📊 HTTP Status Code: ${http_code}"
+
+          # Check if the request was successful
+          if [[ "${http_code}" -ge 200 && "${http_code}" -lt 300 ]]; then
             echo "✅ SUCCESS: ADO pipeline triggered successfully"
             echo "Response: ${response_body}"
           else
             echo "❌ ERROR: Failed to trigger ADO pipeline"
-            echo "HTTP ${http_code}"
-            echo "Response: ${response_body}"
+            echo "HTTP Status: ${http_code}"
+            echo "Response Body: ${response_body}"
+            echo ""
+            echo "Common HTTP errors:"
+            echo "  401 - Authentication failed (check PAT)"
+            echo "  403 - Forbidden (check PAT permissions)"
+            echo "  404 - Not found (check org/project/pipeline ID)"
             exit 1
           fi

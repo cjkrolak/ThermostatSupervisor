@@ -24,7 +24,6 @@ import requests
 # local imports
 from thermostatsupervisor import environment as env
 from thermostatsupervisor import sht31_config
-from thermostatsupervisor import sht31_flask_server as sht31_fs
 from thermostatsupervisor import thermostat_api as api
 from thermostatsupervisor import thermostat_common as tc
 from thermostatsupervisor import utilities as util
@@ -197,6 +196,10 @@ class ThermostatClass(tc.ThermostatCommon):
         inputs: None
         returns:
         """
+        # Import flask server module only when needed for unit testing
+        # This avoids loading server dependencies in production client code
+        from thermostatsupervisor import sht31_flask_server as sht31_fs
+
         # setup flask runtime variables
         sht31_fs.uip = sht31_fs.UserInputs(
             [os.path.realpath(__file__), sht31_config.FLASK_DEBUG_MODE]
