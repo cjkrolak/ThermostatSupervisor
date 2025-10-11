@@ -30,6 +30,9 @@ class TestYamlLintWorkflow(unittest.TestCase):
         self.yaml_formatter_workflow = (
             self.repo_root / ".github" / "workflows" / "yaml-formatter.yml"
         )
+        self.trigger_ado_workflow = (
+            self.repo_root / ".github" / "workflows" / "trigger-ado-tests.yml"
+        )
 
     def test_yamllint_config_exists(self):
         """Test that yamllint configuration file exists."""
@@ -103,6 +106,32 @@ class TestYamlLintWorkflow(unittest.TestCase):
             result.returncode,
             0,
             f"yaml-formatter workflow should pass linting: {result.stderr}",
+        )
+
+    def test_trigger_ado_workflow_exists(self):
+        """Test that trigger-ado-tests workflow file exists."""
+        self.assertTrue(
+            self.trigger_ado_workflow.exists(),
+            "trigger-ado-tests workflow file should exist",
+        )
+
+    def test_trigger_ado_workflow_is_valid(self):
+        """Test that trigger-ado-tests workflow file passes linting."""
+        result = subprocess.run(
+            [
+                "yamllint",
+                "--config-file",
+                str(self.yamllint_config),
+                str(self.trigger_ado_workflow),
+            ],
+            cwd=self.repo_root,
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(
+            result.returncode,
+            0,
+            f"trigger-ado-tests workflow should pass linting: {result.stderr}",
         )
 
     def test_yamllint_catches_common_issues(self):

@@ -1,0 +1,111 @@
+name: Trigger Azure DevOps Tests
+# This workflow checks if ADO tests should run and triggers the ADO pipeline
+# if USE_ADO_UNIT_TESTS is set to 'true'. This prevents ADO pipeline from
+# starting automatically and potentially failing due to account limits before
+# the environment variable check can occur.
+on:
+  pull_request:
+    branches: [develop]
+    paths:
+      - '**/*.py'
+      - .github/azure-pipelines.yml
+      - .github/workflows/trigger-ado-tests.yml
+      - .github/workflows/sonarqube.yml
+  workflow_dispatch:  # Allow manual triggering
+# Cancel in-progress runs for the same PR
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  check-ado-toggle:
+    name: Check ADO Test Toggle
+    runs-on: ubuntu-latest
+    outputs:
+      should-run: ${{ steps.check.outputs.should-run }}
+    steps:
+      - name: Check if ADO tests should run
+        id: check
+        run: |
+          # Check if repository variable USE_ADO_UNIT_TESTS is 'true'
+          USE_ADO_TESTS="${{ vars.USE_ADO_UNIT_TESTS }}"
+          echo "Repository variable USE_ADO_UNIT_TESTS: ${USE_ADO_TESTS}"
+          if [[ "${USE_ADO_TESTS}" == "true" ]]; then
+            echo "should-run=true" >> $GITHUB_OUTPUT
+            echo "✅ ADO unit tests are ENABLED"
+          else
+            echo "should-run=false" >> $GITHUB_OUTPUT
+            echo "❌ ADO unit tests are DISABLED"
+            echo "   Current value: '${USE_ADO_TESTS}'"
+            echo "   To enable: Set repository variable USE_ADO_UNIT_TESTS"
+            echo "   to 'true' in GitHub Settings"
+          fi
+  trigger-ado-pipeline:
+    name: Trigger Azure DevOps Pipeline
+    runs-on: ubuntu-latest
+    needs: check-ado-toggle
+    if: needs.check-ado-toggle.outputs.should-run == 'true'
+    steps:
+      - name: Trigger ADO Pipeline
+        env:
+          AZURE_DEVOPS_PAT: ${{ secrets.AZURE_DEVOPS_PAT }}
+          ADO_ORG: cjkrolak
+          ADO_PROJECT: ThermostatSupervisor
+          ADO_PIPELINE_ID: 3
+        run: |
+          set -e
+          echo "🚀 Triggering Azure DevOps pipeline..."
+          # Validate AZURE_DEVOPS_PAT is present
+          if [ -z "${AZURE_DEVOPS_PAT}" ]; then
+            echo "❌ ERROR: AZURE_DEVOPS_PAT secret is not set"
+            echo ""
+            echo "SETUP INSTRUCTIONS:"
+            echo "1. Go to Azure DevOps > User Settings > Personal"
+            echo "   Access Tokens"
+            echo "2. Create a new token with 'Build (Read & Execute)' scope"
+            echo "3. Go to GitHub Settings > Secrets and variables > Actions"
+            echo "4. Add a new secret named 'AZURE_DEVOPS_PAT' with the"
+            echo "   token value"
+            echo ""
+            exit 1
+          fi
+          echo "✅ AZURE_DEVOPS_PAT is configured"
+          # Get PR information
+          PR_NUMBER="${{ github.event.pull_request.number }}"
+          PR_BRANCH="${{ github.head_ref }}"
+          PR_COMMIT="${{ github.event.pull_request.head.sha }}"
+          echo "📋 PR #${PR_NUMBER} - Branch: ${PR_BRANCH}"
+          echo "📋 Commit: ${PR_COMMIT}"
+          # Create JSON payload for ADO pipeline trigger
+          json_payload=$(cat << EOF
+          {
+            "resources": {
+              "repositories": {
+                "self": {
+                  "refName": "refs/pull/${PR_NUMBER}/merge"
+                }
+              }
+            }
+          }
+          EOF
+          )
+          # Trigger the ADO pipeline
+          ado_url="https://dev.azure.com/${ADO_ORG}/${ADO_PROJECT}"
+          ado_url="${ado_url}/_apis/pipelines/${ADO_PIPELINE_ID}/runs"
+          ado_url="${ado_url}?api-version=7.0"
+          response=$(curl -w "%{http_code}" -s -X POST \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Basic $(echo -n :${AZURE_DEVOPS_PAT} | base64)" \
+            "${ado_url}" \
+            -d "${json_payload}")
+          # Extract HTTP status code
+          http_code="${response: -3}"
+          response_body="${response%???}"
+          if [[ ${http_code} -ge 200 && ${http_code} -lt 300 ]]; then
+            echo "✅ SUCCESS: ADO pipeline triggered successfully"
+            echo "Response: ${response_body}"
+          else
+            echo "❌ ERROR: Failed to trigger ADO pipeline"
+            echo "HTTP ${http_code}"
+            echo "Response: ${response_body}"
+            exit 1
+          fi
