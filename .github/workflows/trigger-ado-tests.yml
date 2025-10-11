@@ -96,20 +96,33 @@ jobs:
           ado_url="https://dev.azure.com/${ADO_ORG}/${ADO_PROJECT}"
           ado_url="${ado_url}/_apis/pipelines/${ADO_PIPELINE_ID}/runs"
           ado_url="${ado_url}?api-version=7.0"
-          response=$(curl -w "%{http_code}" -s -X POST \
+
+          # Make the API call and capture response with status code
+          http_response=$(curl -w "\n%{http_code}" -s -X POST \
             -H "Content-Type: application/json" \
             -H "Authorization: Basic $(echo -n :${AZURE_DEVOPS_PAT} | base64)" \
             "${ado_url}" \
             -d "${json_payload}")
-          # Extract HTTP status code
-          http_code="${response: -3}"
-          response_body="${response%???}"
-          if [[ ${http_code} -ge 200 && ${http_code} -lt 300 ]]; then
+
+          # Extract HTTP status code (last line) and response body
+          http_code=$(echo "${http_response}" | tail -n 1)
+          response_body=$(echo "${http_response}" | sed '$d')
+
+          echo "HTTP Status Code: ${http_code}"
+
+          # Check if the request was successful
+          if [[ "${http_code}" -ge 200 && "${http_code}" -lt 300 ]]; then
             echo "✅ SUCCESS: ADO pipeline triggered successfully"
             echo "Response: ${response_body}"
           else
             echo "❌ ERROR: Failed to trigger ADO pipeline"
-            echo "HTTP ${http_code}"
-            echo "Response: ${response_body}"
+            echo "HTTP Status: ${http_code}"
+            echo "Response Body: ${response_body}"
+            echo ""
+            echo "Troubleshooting tips:"
+            echo "1. Verify AZURE_DEVOPS_PAT has correct permissions"
+            echo "2. Check ADO_PIPELINE_ID (${ADO_PIPELINE_ID}) is correct"
+            echo "3. Verify organization and project names"
+            echo "4. Check if pipeline is enabled in Azure DevOps"
             exit 1
           fi
