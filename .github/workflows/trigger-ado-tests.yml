@@ -98,14 +98,11 @@ jobs:
           ado_url="${ado_url}?api-version=7.0"
           echo "🔗 API URL: ${ado_url}"
 
-          # Prepare authorization header
-          auth_header="Authorization: Basic $(echo -n :${AZURE_DEVOPS_PAT} | base64)"
-
           # Make the API call - disable set -e for curl to capture exit code
           set +e
           http_response=$(curl -w "\n%{http_code}" -s -X POST \
             -H "Content-Type: application/json" \
-            -H "${auth_header}" \
+            -H "Authorization: Basic $(echo -n :${AZURE_DEVOPS_PAT} | base64)" \
             "${ado_url}" \
             -d "${json_payload}" 2>&1)
           curl_exit_code=$?
