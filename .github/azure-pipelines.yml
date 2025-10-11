@@ -2,17 +2,12 @@
 name: Azure Pipelines
 # disable CI trigger
 trigger: none
-# trigger on PR to dev branch only for relevant file changes
-# NOTE: This pipeline will only run if repository variable USE_GITHUB_UNIT_TESTS
-# is NOT set to 'true'
-pr:
-  branches:
-    include: [develop]
-  paths:
-    include:
-      - '**/*.py'
-      - .github/azure-pipelines.yml
-      - .github/workflows/sonarqube.yml
+# disable automatic PR triggers - pipeline is now triggered by GitHub workflow
+# NOTE: This pipeline is triggered by .github/workflows/trigger-ado-tests.yml
+# which checks the USE_ADO_UNIT_TESTS repository variable before starting this
+# pipeline. This prevents the pipeline from starting and failing due to ADO
+# account limits before the environment variable can be checked.
+pr: none
 pool:
   vmImage: ubuntu-latest
 strategy:
@@ -23,15 +18,12 @@ strategy:
     Python313:
       python.version: '3.13'
 steps:
-  # Check if GitHub unit tests are enabled, if so, skip Azure pipeline
+  # This pipeline is now triggered by GitHub workflow trigger-ado-tests.yml
   - script: |
-      echo "Checking repository variable USE_GITHUB_UNIT_TESTS..."
-      # Note: In Azure DevOps, we cannot directly access GitHub repository variables
-      # This pipeline will be manually disabled when GitHub Actions are enabled
-      # by setting the pipeline trigger to 'none' or using branch policies
-      echo "Azure Pipeline is running (GitHub Actions unit tests should be disabled)"
-      echo "If GitHub Actions unit tests are enabled, this pipeline should be disabled"
-    displayName: Check Test Method Toggle
+      echo "Azure Pipeline triggered by GitHub Actions workflow"
+      echo "The USE_ADO_UNIT_TESTS variable was checked before starting"
+      echo "this pipeline to prevent account limit failures"
+    displayName: ADO Pipeline Status
   - task: UsePythonVersion@0
     inputs:
       versionSpec: $(python.version)
