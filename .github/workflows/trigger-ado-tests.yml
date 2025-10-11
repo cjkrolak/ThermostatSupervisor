@@ -28,8 +28,11 @@ jobs:
         id: check
         run: |
           # Check if repository variable USE_ADO_UNIT_TESTS is 'true'
+          # Use bash parameter expansion to default to 'false' if unset/empty
           USE_ADO_TESTS="${{ vars.USE_ADO_UNIT_TESTS }}"
-          echo "Repository variable USE_ADO_UNIT_TESTS: ${USE_ADO_TESTS}"
+          USE_ADO_TESTS="${USE_ADO_TESTS:-false}"
+          echo "Repository variable USE_ADO_UNIT_TESTS: '${USE_ADO_TESTS}'"
+          echo "Raw value from vars context: '${{ vars.USE_ADO_UNIT_TESTS }}'"
           if [[ "${USE_ADO_TESTS}" == "true" ]]; then
             echo "should-run=true" >> $GITHUB_OUTPUT
             echo "✅ ADO unit tests are ENABLED"
