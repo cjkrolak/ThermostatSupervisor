@@ -44,7 +44,7 @@ Set in: **Settings** → **Secrets and variables** → **Actions** →
 
 Set in: **Settings** → **Secrets and variables** → **Actions** → **Secrets**
 
-- **Secret Name**: `ADO_PAT`
+- **Secret Name**: `AZURE_DEVOPS_PAT`
 - **Value**: Azure DevOps Personal Access Token
 - **Required Scope**: `Build (Read & Execute)`
 
@@ -55,7 +55,7 @@ Set in: **Settings** → **Secrets and variables** → **Actions** → **Secrets
 3. Set appropriate expiration date
 4. Select scope: `Build (Read & Execute)`
 5. Copy the generated token
-6. Add it to GitHub as secret `ADO_PAT`
+6. Add it to GitHub as secret `AZURE_DEVOPS_PAT`
 
 ## Files Modified
 
@@ -107,15 +107,15 @@ The tests verify that:
 ### ADO Pipeline Not Triggering
 
 1. Check that `USE_ADO_UNIT_TESTS` is set to `true` in repository variables
-2. Verify `ADO_PAT` secret is configured with valid token
-3. Check ADO PAT has `Build (Read & Execute)` scope
-4. Ensure ADO PAT has not expired
+2. Verify `AZURE_DEVOPS_PAT` secret is configured with valid token
+3. Check Azure DevOps PAT has `Build (Read & Execute)` scope
+4. Ensure Azure DevOps PAT has not expired
 
 ### Authentication Errors
 
 If you see authentication errors in the workflow logs:
 
-1. Verify the `ADO_PAT` secret is set correctly
+1. Verify the `AZURE_DEVOPS_PAT` secret is set correctly
 2. Check that the token has appropriate permissions
 3. Ensure the token belongs to a user with access to the ADO project
 4. Regenerate the token if it has expired

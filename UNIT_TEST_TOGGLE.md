@@ -27,7 +27,7 @@ When this variable is set to `true`, the GitHub Actions workflow will run unit t
    - **Value**: `true`
 4. Navigate to **Secrets and variables** → **Actions** → **Secrets**
 5. Add a new secret:
-   - **Name**: `ADO_PAT`
+   - **Name**: `AZURE_DEVOPS_PAT`
    - **Value**: Azure DevOps Personal Access Token with 'Build (Read &
      Execute)' scope
 

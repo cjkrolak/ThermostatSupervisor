@@ -47,27 +47,28 @@ jobs:
     steps:
       - name: Trigger ADO Pipeline
         env:
-          ADO_PAT: ${{ secrets.ADO_PAT }}
+          AZURE_DEVOPS_PAT: ${{ secrets.AZURE_DEVOPS_PAT }}
           ADO_ORG: cjkrolak
           ADO_PROJECT: ThermostatSupervisor
           ADO_PIPELINE_ID: 3
         run: |
           set -e
           echo "🚀 Triggering Azure DevOps pipeline..."
-          # Validate ADO_PAT is present
-          if [ -z "${ADO_PAT}" ]; then
-            echo "❌ ERROR: ADO_PAT secret is not set"
+          # Validate AZURE_DEVOPS_PAT is present
+          if [ -z "${AZURE_DEVOPS_PAT}" ]; then
+            echo "❌ ERROR: AZURE_DEVOPS_PAT secret is not set"
             echo ""
             echo "SETUP INSTRUCTIONS:"
             echo "1. Go to Azure DevOps > User Settings > Personal"
             echo "   Access Tokens"
             echo "2. Create a new token with 'Build (Read & Execute)' scope"
             echo "3. Go to GitHub Settings > Secrets and variables > Actions"
-            echo "4. Add a new secret named 'ADO_PAT' with the token value"
+            echo "4. Add a new secret named 'AZURE_DEVOPS_PAT' with the"
+            echo "   token value"
             echo ""
             exit 1
           fi
-          echo "✅ ADO_PAT is configured"
+          echo "✅ AZURE_DEVOPS_PAT is configured"
           # Get PR information
           PR_NUMBER="${{ github.event.pull_request.number }}"
           PR_BRANCH="${{ github.head_ref }}"
@@ -93,7 +94,7 @@ jobs:
           ado_url="${ado_url}?api-version=7.0"
           response=$(curl -w "%{http_code}" -s -X POST \
             -H "Content-Type: application/json" \
-            -H "Authorization: Basic $(echo -n :${ADO_PAT} | base64)" \
+            -H "Authorization: Basic $(echo -n :${AZURE_DEVOPS_PAT} | base64)" \
             "${ado_url}" \
             -d "${json_payload}")
           # Extract HTTP status code
