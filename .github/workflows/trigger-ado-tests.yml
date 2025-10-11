@@ -96,7 +96,6 @@ jobs:
           ado_url="https://dev.azure.com/${ADO_ORG}/${ADO_PROJECT}"
           ado_url="${ado_url}/_apis/pipelines/${ADO_PIPELINE_ID}/runs"
           ado_url="${ado_url}?api-version=7.0"
-
           echo "🔗 API URL: ${ado_url}"
 
           # Prepare authorization header
