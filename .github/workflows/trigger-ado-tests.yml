@@ -79,30 +79,25 @@ jobs:
           PR_COMMIT="${{ github.event.pull_request.head.sha }}"
           echo "📋 PR #${PR_NUMBER} - Branch: ${PR_BRANCH}"
           echo "📋 Commit: ${PR_COMMIT}"
-          # Create JSON payload for ADO pipeline trigger
-          json_payload=$(cat << EOF
-          {
-            "resources": {
-              "repositories": {
-                "self": {
-                  "refName": "refs/pull/${PR_NUMBER}/merge"
-                }
-              }
-            }
-          }
-          EOF
-          )
           # Trigger the ADO pipeline
           ado_url="https://dev.azure.com/${ADO_ORG}/${ADO_PROJECT}"
           ado_url="${ado_url}/_apis/pipelines/${ADO_PIPELINE_ID}/runs"
           ado_url="${ado_url}?api-version=7.0"
           echo "🔗 API URL: ${ado_url}"
 
+          # Create JSON payload for ADO pipeline trigger
+          json_payload='{"resources":{"repositories":{"self":{"refName":"refs/pull/'
+          json_payload="${json_payload}${PR_NUMBER}"
+          json_payload="${json_payload}/merge"}}}}"
+
+          # Pre-compute base64 auth to avoid command substitution in curl
+          auth_value=$(echo -n ":${AZURE_DEVOPS_PAT}" | base64)
+
           # Make the API call - disable set -e for curl to capture exit code
           set +e
           http_response=$(curl -w "\n%{http_code}" -s -X POST \
             -H "Content-Type: application/json" \
-            -H "Authorization: Basic $(echo -n :${AZURE_DEVOPS_PAT} | base64)" \
+            -H "Authorization: Basic ${auth_value}" \
             "${ado_url}" \
             -d "${json_payload}" 2>&1)
           curl_exit_code=$?
