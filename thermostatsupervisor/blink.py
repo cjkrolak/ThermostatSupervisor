@@ -2,7 +2,6 @@
 
 # built-in imports
 import asyncio
-import os
 import pprint
 import sys
 import time
@@ -73,17 +72,31 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):
         # Blink server auth credentials from env vars
         self.BL_UNAME_KEY = "BLINK_USERNAME"
         self.BL_PASSWORD_KEY = "BLINK_PASSWORD"
-        self.bl_uname = os.environ.get(
-            self.BL_UNAME_KEY, "<" + self.BL_UNAME_KEY + api.KEY_MISSING_SUFFIX
-        )
-        self.bl_pwd = os.environ.get(
-            self.BL_PASSWORD_KEY, "<" + self.BL_PASSWORD_KEY + api.KEY_MISSING_SUFFIX
-        )
-        self.auth_dict = {"username": self.bl_uname, "password": self.bl_pwd}
         self.BL_2FA_KEY = "BLINK_2FA"
-        self.bl_2fa = os.environ.get(
-            self.BL_2FA_KEY, "<" + self.BL_2FA_KEY + api.KEY_MISSING_SUFFIX
+
+        # Get username
+        uname_result = env.get_env_variable(
+            self.BL_UNAME_KEY,
+            default="<" + self.BL_UNAME_KEY + api.KEY_MISSING_SUFFIX
         )
+        self.bl_uname = uname_result["value"]
+
+        # Get password
+        pwd_result = env.get_env_variable(
+            self.BL_PASSWORD_KEY,
+            default="<" + self.BL_PASSWORD_KEY + api.KEY_MISSING_SUFFIX
+        )
+        self.bl_pwd = pwd_result["value"]
+
+        # Get 2FA with detailed logging
+        twofa_result = env.get_env_variable(
+            self.BL_2FA_KEY,
+            default="<" + self.BL_2FA_KEY + api.KEY_MISSING_SUFFIX
+        )
+        self.bl_2fa = twofa_result["value"]
+        self._log_2fa_source(twofa_result)
+
+        self.auth_dict = {"username": self.bl_uname, "password": self.bl_pwd}
         self.verbose = verbose
         self.zone_number = int(zone)
 
@@ -105,6 +118,46 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):
         self.device_id = None  # initialize
         self.device_id = self.get_target_zone_id(self.zone_number)
         self.serial_number = None  # will be populated when unit is queried.
+
+    def _log_2fa_source(self, twofa_result):
+        """
+        Log the source of the 2FA code with appropriate masking.
+
+        inputs:
+            twofa_result(dict): result from get_env_variable with source info
+        returns:
+            None
+        """
+        source = twofa_result.get("source", "unknown")
+        value = twofa_result.get("value", "")
+
+        # Create source message
+        if source == "supervisor-env.txt":
+            source_msg = "using stored 2FA from supervisor-env.txt"
+        elif source == "environment_variable":
+            source_msg = "using stored 2FA from environment variable"
+        elif source == "default":
+            source_msg = "using default 2FA value (missing)"
+        else:
+            source_msg = f"using 2FA from {source}"
+
+        # Mask or show 2FA based on debug mode
+        debug_enabled = getattr(util.log_msg, "debug", False)
+        if debug_enabled:
+            # Show actual 2FA in debug mode
+            twofa_display = f"2FA code: {value}"
+        else:
+            # Mask 2FA in non-debug mode
+            if value and not value.startswith("<"):
+                twofa_display = "2FA code: ******"
+            else:
+                twofa_display = f"2FA code: {value}"
+
+        # Log the information
+        util.log_msg(
+            f"Blink zone {self.zone_number}: {source_msg}, {twofa_display}",
+            mode=util.STDOUT_LOG + util.DATA_LOG,
+        )
 
     def _handle_auth_retry(self, attempt, max_retries, retry_delay, error):
         """Handle authentication retry logic."""
@@ -242,10 +295,29 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):
     def _handle_unexpected_error(self, error):
         """Handle unexpected errors during authentication."""
         print(traceback.format_exc())
-        error_msg = (
-            f"ERROR: Unexpected error during Blink authentication for zone "
-            f"{self.zone_number}: {str(error)}"
-        )
+
+        # Check for specific error patterns
+        error_str = str(error)
+        if (
+            "homescreen" in error_str.lower()
+            or "token refresh" in error_str.lower()
+        ):
+            error_msg = (
+                f"ERROR: Blink authentication failed for zone "
+                f"{self.zone_number}. The server rejected the request after "
+                f"token refresh, likely due to an invalid or expired 2FA code. "
+                f"2FA codes from authenticator apps expire after 30-60 seconds. "
+                f"Please update your {self.BL_2FA_KEY} environment variable or "
+                f"supervisor-env.txt file with a fresh code from your "
+                f"authenticator app and restart the application. "
+                f"Error: {error_str}"
+            )
+        else:
+            error_msg = (
+                f"ERROR: Unexpected error during Blink authentication for zone "
+                f"{self.zone_number}: {error_str}"
+            )
+
         banner = "*" * len(error_msg)
         print(banner)
         print(error_msg)
@@ -382,11 +454,18 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):
 
     def _format_value_error(self, error_str, auth_type):
         """Format value error message."""
-        if "2FA verification failed" in error_str:
+        if (
+            "2FA verification failed" in error_str
+            or "Invalid Verification Code" in error_str
+        ):
             return (
                 f"ERROR: Invalid 2FA verification code for zone "
-                f"{self.zone_number} ({auth_type} mode). Please check that "
-                f"you're using a fresh code from your authenticator app. "
+                f"{self.zone_number} ({auth_type} mode). The 2FA code may "
+                f"be expired or incorrect. 2FA codes from authenticator apps "
+                f"expire after 30-60 seconds. Please update your "
+                f"{self.BL_2FA_KEY} environment variable or "
+                f"supervisor-env.txt file with a fresh code from your "
+                f"authenticator app and restart the application. "
                 f"Error: {error_str}"
             )
         return self._format_generic_error("ValueError", error_str, auth_type)
