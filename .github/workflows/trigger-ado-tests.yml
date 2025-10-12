@@ -86,9 +86,7 @@ jobs:
           echo "🔗 API URL: ${ado_url}"
 
           # Create JSON payload for ADO pipeline trigger
-          json_payload='{"resources":{"repositories":{"self":{"refName":"refs/pull/'
-          json_payload="${json_payload}${PR_NUMBER}"
-          json_payload="${json_payload}/merge"}}}}"
+          json_payload="{\"resources\":{\"repositories\":{\"self\":{\"refName\":\"refs/pull/${PR_NUMBER}/merge\"}}}}"
 
           # Pre-compute base64 auth to avoid command substitution in curl
           auth_value=$(echo -n ":${AZURE_DEVOPS_PAT}" | base64)
