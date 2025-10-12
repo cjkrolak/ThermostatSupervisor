@@ -86,18 +86,31 @@ jobs:
           echo "🔗 API URL: ${ado_url}"
 
           # Create JSON payload for ADO pipeline trigger
-          json_payload="{\"resources\":{\"repositories\":{\"self\":{\"refName\":\"refs/pull/${PR_NUMBER}/merge\"}}}}"
+          cat > /tmp/ado_payload.json << 'JSONEOF'
+          {
+            "resources": {
+              "repositories": {
+                "self": {
+                  "refName": "refs/pull/PR_NUM_PLACEHOLDER/merge"
+                }
+              }
+            }
+          }
+          JSONEOF
 
-          # Pre-compute base64 auth to avoid command substitution in curl
-          auth_value=$(echo -n ":${AZURE_DEVOPS_PAT}" | base64)
+          # Replace placeholder with actual PR number
+          sed -i "s/PR_NUM_PLACEHOLDER/${PR_NUMBER}/g" /tmp/ado_payload.json
+
+          echo "JSON Payload:"
+          cat /tmp/ado_payload.json
 
           # Make the API call - disable set -e for curl to capture exit code
           set +e
           http_response=$(curl -w "\n%{http_code}" -s -X POST \
             -H "Content-Type: application/json" \
-            -H "Authorization: Basic ${auth_value}" \
+            -u ":${AZURE_DEVOPS_PAT}" \
             "${ado_url}" \
-            -d "${json_payload}" 2>&1)
+            -d @/tmp/ado_payload.json 2>&1)
           curl_exit_code=$?
           set -e
 
