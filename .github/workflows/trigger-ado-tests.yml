@@ -100,7 +100,6 @@ jobs:
 
           # Replace placeholder with actual PR number
           sed -i "s/PR_NUM_PLACEHOLDER/${PR_NUMBER}/g" /tmp/ado_payload.json
-
           echo "JSON Payload:"
           cat /tmp/ado_payload.json
 
