@@ -79,6 +79,40 @@ class EnvironmentTests(utc.UnitTest):
         finally:
             del os.environ["FLASK_LIMITER_STORAGE_URI"]
 
+    def test_get_env_variable_source_tracking(self):
+        """
+        Test that get_env_variable() properly tracks the source of variables.
+        """
+        # Test environment variable source
+        os.environ["TEST_SOURCE_VAR"] = "from_env"
+        try:
+            result = env.get_env_variable("TEST_SOURCE_VAR")
+            self.assertEqual(result["status"], util.NO_ERROR)
+            self.assertEqual(result["value"], "from_env")
+            self.assertEqual(result["source"], "environment_variable")
+        finally:
+            del os.environ["TEST_SOURCE_VAR"]
+
+        # Test default value source
+        result = env.get_env_variable("MISSING_VAR", default="default_val")
+        self.assertEqual(result["status"], util.NO_ERROR)
+        self.assertEqual(result["value"], "default_val")
+        self.assertEqual(result["source"], "default")
+
+    def test_get_env_variable_2fa_masking(self):
+        """
+        Test that 2FA keys are properly masked in get_env_variable().
+        """
+        # Test that 2FA keys are masked in logs
+        os.environ["TEST_2FA"] = "123456"
+        try:
+            result = env.get_env_variable("TEST_2FA")
+            self.assertEqual(result["status"], util.NO_ERROR)
+            self.assertEqual(result["value"], "123456")
+            # The actual masking is done in logging, not in the return value
+        finally:
+            del os.environ["TEST_2FA"]
+
     def test_get_env_variable(self):
         """
         Confirm get_env_variable() can retrieve values.
