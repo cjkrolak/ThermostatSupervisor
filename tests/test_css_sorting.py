@@ -113,6 +113,37 @@ class TestCSSPropertySorting(unittest.TestCase):
         self.assertIn("/* Comment */", result)
         self.assertEqual(result.count('\n'), css_content.count('\n'))
 
+    def test_process_multiline_css_rules(self):
+        """Test processing multi-line CSS rules."""
+        css_content = (
+            "body {\n"
+            "    font-family: Georgia, serif;\n"
+            "    font-size: 17px;\n"
+            "    background-color: #fff;\n"
+            "    color: #000;\n"
+            "    margin: 0;\n"
+            "    padding: 0;\n"
+            "}"
+        )
+
+        result = process_css_file(css_content)
+
+        # Check that properties are sorted alphabetically
+        lines = result.split('\n')
+        prop_lines = [
+            line.strip().rstrip(';')
+            for line in lines
+            if ':' in line
+        ]
+
+        # Properties should be in alphabetical order
+        self.assertEqual(prop_lines[0], "background-color: #fff")
+        self.assertEqual(prop_lines[1], "color: #000")
+        self.assertEqual(prop_lines[2], "font-family: Georgia, serif")
+        self.assertEqual(prop_lines[3], "font-size: 17px")
+        self.assertEqual(prop_lines[4], "margin: 0")
+        self.assertEqual(prop_lines[5], "padding: 0")
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -111,8 +111,43 @@ def process_css_file(css_content: str) -> str:
                 )
             else:
                 result_lines.append(line)
+        # Check if line starts a multi-line CSS rule (has { but no })
+        elif '{' in line and '}' not in line:
+            # Collect all lines until we find the closing }
+            selector = line
+            properties = []
+            i += 1
+            indent = ''
+
+            while i < len(lines) and '}' not in lines[i]:
+                prop_line = lines[i].strip()
+                if prop_line and not prop_line.startswith('/*'):
+                    # Extract indentation from first property line
+                    if not indent and lines[i].startswith(' '):
+                        indent = lines[i][:len(lines[i]) -
+                                          len(lines[i].lstrip())]
+                    # Remove trailing semicolon and whitespace
+                    prop_line = prop_line.rstrip(';').strip()
+                    if prop_line:
+                        properties.append(prop_line)
+                i += 1
+
+            # Add the closing brace line if we found it
+            closing_line = lines[i] if i < len(lines) else '}'
+
+            # Sort and format the multi-line rule
+            if properties:
+                sorted_properties = sort_css_properties(properties)
+                result_lines.append(selector)
+                for prop in sorted_properties:
+                    result_lines.append(f"{indent}{prop};")
+                result_lines.append(closing_line)
+            else:
+                # No properties, just add the selector and closing brace
+                result_lines.append(selector)
+                result_lines.append(closing_line)
         else:
-            # For multi-line rules or non-rule content, keep as-is
+            # For non-rule content, keep as-is
             result_lines.append(line)
 
         i += 1
