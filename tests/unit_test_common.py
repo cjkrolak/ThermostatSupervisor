@@ -9,6 +9,7 @@ from io import TextIOWrapper
 import os
 import pprint
 import sys
+import threading
 import time
 import unittest
 from unittest.mock import patch
@@ -152,6 +153,9 @@ class TestMetricsTracker:
 # Global test metrics tracker instance
 _test_metrics_tracker = TestMetricsTracker()
 
+# Thread-local storage for runner metrics flag to avoid race conditions
+_thread_locals = threading.local()
+
 
 class PatchMeta(type):
     """A metaclass to patch all inherited classes."""
@@ -199,8 +203,12 @@ class UnitTest(unittest.TestCase, metaclass=PatchMeta):
 
         self.print_test_result()
 
-        # Complete the test tracking with metrics
-        _test_metrics_tracker.complete_test(self.id(), test_passed, error_message)
+        # Complete test tracking only if not using runner metrics
+        use_runner = getattr(_thread_locals, 'use_runner_metrics', False)
+        if not use_runner:
+            _test_metrics_tracker.complete_test(
+                self.id(), test_passed, error_message
+            )
 
     def setup_thermostat_zone(self):
         """
@@ -1204,6 +1212,143 @@ class UserInputs(util.UserInputs):
         ]
 
 
+class CumulativeTimeTrackingResult(unittest.TextTestResult):
+    """
+    Custom test result class that tracks and reports cumulative time.
+
+    This class extends unittest.TextTestResult to add cumulative time tracking
+    for all tests, regardless of whether they inherit from the custom UnitTest
+    class.
+    """
+
+    def __init__(self, stream, descriptions, verbosity):
+        """Initialize the cumulative time tracking result."""
+        super().__init__(stream, descriptions, verbosity)
+        self.suite_start_time = time.time()
+        self.test_start_time = None
+        self.previous_test_name = None
+        self.previous_test_time = None
+        self.tests_completed = 0
+        self.tests_passed = 0
+        self.tests_failed = 0
+        self.failed_tests = []
+        self.central_tz = pytz.timezone('US/Central')
+
+    def startTest(self, test):
+        """Called when a test is about to run."""
+        super().startTest(test)
+        self.test_start_time = time.time()
+
+    def addSuccess(self, test):
+        """Called when a test passes."""
+        super().addSuccess(test)
+        self.tests_completed += 1
+        self.tests_passed += 1
+        self._record_test_completion(test)
+        self._print_cumulative_metrics(test)
+
+    def addError(self, test, err):
+        """Called when a test has an error."""
+        super().addError(test, err)
+        self.tests_completed += 1
+        self.tests_failed += 1
+        # Extract error message from err tuple
+        error_msg = (
+            str(err[1])
+            if err and len(err) > 1 and err[1] is not None
+            else 'Error occurred'
+        )
+        self.failed_tests.append({
+            'name': str(test),
+            'error': f'ERROR: {error_msg}'
+        })
+        self._record_test_completion(test)
+        self._print_cumulative_metrics(test)
+
+    def addFailure(self, test, err):
+        """Called when a test fails."""
+        super().addFailure(test, err)
+        self.tests_completed += 1
+        self.tests_failed += 1
+        # Extract failure message from err tuple
+        error_msg = (
+            str(err[1])
+            if err and len(err) > 1 and err[1] is not None
+            else 'Test failed'
+        )
+        self.failed_tests.append({
+            'name': str(test),
+            'error': f'FAIL: {error_msg}'
+        })
+        self._record_test_completion(test)
+        self._print_cumulative_metrics(test)
+
+    def addSkip(self, test, reason):
+        """Called when a test is skipped."""
+        super().addSkip(test, reason)
+        self.tests_completed += 1
+        self._record_test_completion(test)
+        self._print_cumulative_metrics(test)
+
+    def _record_test_completion(self, test):
+        """Record completion of a test for tracking."""
+        if self.test_start_time is not None:
+            self.previous_test_time = time.time() - self.test_start_time
+            self.previous_test_name = str(test)
+
+    def _print_cumulative_metrics(self, test):
+        """Print cumulative test metrics after each test."""
+        # Calculate elapsed time for entire suite
+        suite_elapsed_seconds = time.time() - self.suite_start_time
+        suite_elapsed_minutes = suite_elapsed_seconds / 60.0
+
+        # Get Central US timestamp
+        central_time = datetime.now(self.central_tz)
+        timestamp_str = central_time.strftime('%Y-%m-%d %H:%M:%S %Z')
+
+        # Print cumulative metrics
+        print(
+            f"\n{timestamp_str} | Suite: {suite_elapsed_minutes:.1f}min | "
+            f"Completed: {self.tests_completed} | "
+            f"Passed: {self.tests_passed} | "
+            f"Failed: {self.tests_failed}"
+        )
+
+        # Print previous test info if available
+        if (self.previous_test_name is not None
+                and self.previous_test_time is not None):
+            print(f"Previous test: {self.previous_test_name} | "
+                  f"Time: {self.previous_test_time:.3f}s")
+
+        # Print failing tests if any
+        if self.failed_tests:
+            print(f"Failed tests ({len(self.failed_tests)}):")
+            for failed_test in self.failed_tests:
+                print(f"  - {failed_test['name']}: {failed_test['error']}")
+
+        print("-" * 80)
+
+
+class CumulativeTimeTestRunner(unittest.TextTestRunner):
+    """
+    Custom test runner that uses CumulativeTimeTrackingResult.
+
+    This runner ensures all tests report cumulative time, regardless of
+    their base class.
+    """
+
+    resultclass = CumulativeTimeTrackingResult
+
+    def run(self, test):
+        """Run tests with runner-based metrics enabled."""
+        # Use thread-local storage to avoid race conditions
+        _thread_locals.use_runner_metrics = True
+        try:
+            return super().run(test)
+        finally:
+            _thread_locals.use_runner_metrics = False
+
+
 def run_all_tests():
     """
     Run all enabled unit tests.
@@ -1212,8 +1357,8 @@ def run_all_tests():
     print("discovering tests...")
     suite = unittest.TestLoader().discover(".", pattern="test_*.py")
 
-    # run all unit tests
-    result = unittest.TextTestRunner(verbosity=2).run(suite)
+    # run all unit tests with cumulative time tracking
+    result = CumulativeTimeTestRunner(verbosity=2).run(suite)
 
     # flush stdout so that the following output will be at the end
     sys.stdout.flush()
