@@ -62,7 +62,9 @@ Set in: **Settings** → **Secrets and variables** → **Actions** → **Secrets
 ### `.github/workflows/trigger-ado-tests.yml` (New)
 
 - Checks `USE_ADO_UNIT_TESTS` variable
-- Triggers ADO pipeline via REST API if enabled
+- Triggers ADO pipeline via REST API (Build API) if enabled
+- Uses Build API endpoint to ensure proper PR association
+- Sets `reason: "pullRequest"` to mark runs as "PR automated"
 - Runs on PR to `develop` branch
 - Can be manually triggered via workflow_dispatch
 
@@ -88,6 +90,9 @@ Set in: **Settings** → **Secrets and variables** → **Actions** → **Secrets
    (e.g., fish_recognition)
 4. **Better Error Messages**: GitHub workflow provides clear setup
    instructions if configuration is missing
+5. **Proper PR Association**: Uses Azure DevOps Build API with
+   `reason: "pullRequest"` to ensure runs show as "PR automated" instead
+   of "manually run"
 
 ## Testing
 
@@ -126,8 +131,43 @@ If you see authentication errors in the workflow logs:
 2. Verify PR includes Python file changes (`.py` files)
 3. Check workflow file syntax with yamllint
 
+## Technical Notes
+
+### Azure DevOps API Selection
+
+The workflow uses the **Build API** (`/_apis/build/builds`) instead of the
+**Pipeline Runs API** (`/_apis/pipelines/{id}/runs`) for the following
+reasons:
+
+1. **PR Association**: Build API properly associates runs with GitHub PRs
+   when using `reason: "pullRequest"`
+2. **Status Reporting**: Runs triggered via Build API show as "PR automated"
+   in Azure DevOps instead of "manually run"
+3. **GitHub Integration**: Better integration with GitHub PR checks when
+   using Build API with repository context
+
+### API Payload Structure
+
+The workflow creates a JSON payload with the following key fields:
+
+```json
+{
+  "definition": {"id": 3},
+  "sourceBranch": "refs/pull/{pr_number}/merge",
+  "sourceVersion": "{commit_sha}",
+  "reason": "pullRequest",
+  "repository": {
+    "id": "{repo_id}",
+    "type": "GitHub"
+  }
+}
+```
+
+The `reason: "pullRequest"` field is critical for proper PR association.
+
 ## References
 
 - Main documentation: `UNIT_TEST_TOGGLE.md`
 - Test file: `tests/test_yamllint_workflow.py`
 - Similar implementation: github.com/cjkrolak/fish_recognition/pull/1759
+- Azure DevOps Build API: https://learn.microsoft.com/en-us/rest/api/azure/devops/build/builds/queue
