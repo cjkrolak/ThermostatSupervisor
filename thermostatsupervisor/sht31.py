@@ -80,7 +80,7 @@ class ThermostatClass(tc.ThermostatCommon):
         self.zone_info = {}
 
         # if in unit test mode, spawn flask server with emulated data on client
-        if (self.zone_name == sht31_config.UNIT_TEST_ZONE and util.unit_test_mode):
+        if self.zone_name == sht31_config.UNIT_TEST_ZONE:
             self.spawn_flask_server()
 
     def get_target_zone_id(self, zone=0):
@@ -198,7 +198,17 @@ class ThermostatClass(tc.ThermostatCommon):
         """
         # Import flask server module only when needed for unit testing
         # This avoids loading server dependencies in production client code
-        from thermostatsupervisor import sht31_flask_server as sht31_fs
+        import sys
+        import importlib
+
+        # Force reload of sht31_flask_server to ensure Flask is imported
+        # This handles Python 3.13's module caching behavior
+        if 'thermostatsupervisor.sht31_flask_server' in sys.modules:
+            sht31_fs = importlib.reload(
+                sys.modules['thermostatsupervisor.sht31_flask_server']
+            )
+        else:
+            from thermostatsupervisor import sht31_flask_server as sht31_fs
 
         # setup flask runtime variables
         sht31_fs.uip = sht31_fs.UserInputs(
