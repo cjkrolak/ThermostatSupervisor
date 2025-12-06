@@ -155,14 +155,15 @@ class Test(utc.UnitTest):
         not before, so that subsequent calls within the fetch_interval don't
         trigger unnecessary API calls.
         """
-        # Track API call count
+        # Test constants
+        API_DELAY_SECONDS = 2  # Simulated API call delay
         api_call_count = 0
 
         def slow_get_zones_info_func():
             nonlocal api_call_count
             api_call_count += 1
-            # Simulate a slow API call (2 seconds delay)
-            time.sleep(2)
+            # Simulate a slow API call
+            time.sleep(API_DELAY_SECONDS)
             return [
                 {
                     "DeviceID": 123456,
@@ -201,11 +202,12 @@ class Test(utc.UnitTest):
         # Verify API was called
         self.assertEqual(api_call_count, 1, "API should be called on first refresh")
 
-        # Verify the slow API call took at least 2 seconds
+        # Verify the slow API call took at least the expected delay
         self.assertGreaterEqual(
             first_call_duration,
-            2.0,
-            "First call should take at least 2 seconds due to slow API",
+            API_DELAY_SECONDS,
+            f"First call should take at least {API_DELAY_SECONDS} seconds "
+            f"due to slow API",
         )
 
         # Second call immediately after (within fetch_interval_sec)
