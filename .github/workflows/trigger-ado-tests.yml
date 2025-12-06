@@ -94,10 +94,30 @@ jobs:
           repo_url="${repo_url}?api-version=7.0"
 
           # Fetch repository details to get the repository ID
-          repo_response=$(curl -s -u ":${AZURE_DEVOPS_PAT}" "${repo_url}")
-          # Extract the first repository ID (assuming ThermostatSupervisor repo)
-          repo_id=$(echo "${repo_response}" | grep -o '"id":"[^"]*"' |
-          head -1 | cut -d'"' -f4)
+          # Note: This fetches all repos and uses the first one. In most cases
+          # this is the ThermostatSupervisor repo. The fallback handles any
+          # issues.
+          set +e
+          repo_response=$(curl -s -u ":${AZURE_DEVOPS_PAT}" "${repo_url}" \
+            2>&1)
+          curl_status=$?
+          set -e
+
+          if [ ${curl_status} -ne 0 ]; then
+            echo "⚠️  WARNING: Failed to fetch repository list (curl exit:"
+            echo "   ${curl_status})"
+            repo_id=""
+          else
+            # Use jq if available, otherwise fall back to grep
+            if command -v jq &> /dev/null; then
+              repo_id=$(echo "${repo_response}" | jq -r '.value[0].id //
+              empty' 2>/dev/null || echo "")
+            else
+              # Fallback to grep for environments without jq
+              repo_id=$(echo "${repo_response}" | grep -o '"id":"[^"]*"' |
+              head -1 | cut -d'"' -f4 2>/dev/null || echo "")
+            fi
+          fi
 
           if [ -z "${repo_id}" ]; then
             echo "⚠️  WARNING: Could not fetch repository ID, using default"
