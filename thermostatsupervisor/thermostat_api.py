@@ -197,8 +197,8 @@ class UserInputs(util.UserInputs):
                     "order": 7,  # index in the argv list
                     "value": None,
                     "type": int,
-                    "default": 10000,
-                    "valid_range": range(1, 10001),
+                    "default": 52500,  # 1 year at 10min polling time
+                    "valid_range": range(1, 52501),
                     "sflag": "-n",
                     "lflag": "--" + input_flds.measurements,
                     "help": "number of measurements",
