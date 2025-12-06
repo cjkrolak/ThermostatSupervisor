@@ -7,7 +7,7 @@ jobs:
     outputs:
       certificates-imported: ${{ steps.check-https.outputs.has-https }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - name: Check for HTTPS servers in configuration
         id: check-https
         run: |
@@ -38,7 +38,7 @@ jobs:
         # only run 1 version of python to save CI time
         python-version: ['3.13']
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v6
         with:
