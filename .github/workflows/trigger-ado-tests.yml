@@ -102,16 +102,19 @@ jobs:
           set -e
 
           if [ ${curl_status} -ne 0 ]; then
-            echo "⚠️  WARNING: Failed to fetch repository list (curl exit \
-            ${curl_status})"
+            echo "⚠️  WARNING: Failed to fetch repository list" \
+              "(curl exit ${curl_status})"
             repo_id=""
           else
             # Use jq if available, otherwise fall back to grep
             if command -v jq &> /dev/null; then
               # Filter by repository name for accuracy
+              # Note: Repository name is hardcoded to ThermostatSupervisor
+              repo_name="ThermostatSupervisor"
               repo_id=$(echo "${repo_response}" | \
-                jq -r '.value[] | select(.name=="ThermostatSupervisor") | \
-                .id // empty' 2>/dev/null || echo "")
+                jq -r --arg name "${repo_name}" \
+                '.value[] | select(.name==$name) | .id // empty' \
+                2>/dev/null || echo "")
             else
               # Fallback to grep for environments without jq
               # This is less precise but still functional
@@ -130,7 +133,8 @@ jobs:
           fi
 
           # Create JSON payload for ADO build trigger (PR validation)
-          # Using Build API with pullRequestId enables proper PR association
+          # Using Build API with reason="pullRequest" enables proper PR
+          # association
           if [ -n "${repo_id}" ]; then
             cat > /tmp/ado_payload.json << JSONEOF
           {
