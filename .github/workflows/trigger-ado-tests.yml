@@ -59,7 +59,7 @@ jobs:
           echo "🚀 Triggering Azure DevOps pipeline..."
           # Validate AZURE_DEVOPS_PAT is present
           if [ -z "${AZURE_DEVOPS_PAT}" ]; then
-            echo "⚠️  WARNING: AZURE_DEVOPS_PAT secret is not available"
+            echo "⚠️ WARNING: AZURE_DEVOPS_PAT secret is not available"
             echo ""
             echo "This is expected for:"
             echo "  • Dependabot pull requests"
