@@ -878,14 +878,17 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
         returns:
             None, populates self.zone_info dict.
         """
-        now_time = time.time()
-        # refresh if past expiration date or force_refresh option
+        # Check if refresh is needed before capturing timestamp
+        check_time = time.time()
         if force_refresh or (
-            now_time >= (self.last_fetch_time + self.fetch_interval_sec)
+            check_time >= (self.last_fetch_time + self.fetch_interval_sec)
         ):
             all_zones_info = get_zones_info_with_retries(
                 self.pyhtcc.get_zones_info, self.thermostat_type, self.zone_name
             )
+            # Capture timestamp AFTER successful API call to ensure cache
+            # works correctly even when API call is slow or has retries
+            now_time = time.time()
             for zone_data in all_zones_info:
                 if zone_data["DeviceID"] == self.device_id:
                     pyhtcc.logger.debug(

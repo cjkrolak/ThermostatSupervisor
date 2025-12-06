@@ -94,8 +94,12 @@ class TestSHT31ImportIsolation(utc.UnitTest):
         for module in modules_to_remove:
             del sys.modules[module]
 
-        # Import sht31
+        # Import sht31 and utilities
         from thermostatsupervisor import sht31
+        from thermostatsupervisor import utilities as util
+
+        # Ensure unit_test_mode is True (required for Flask server spawn)
+        util.unit_test_mode = True
 
         # Verify Flask is not loaded yet
         self.assertNotIn('flask', sys.modules)
