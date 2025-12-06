@@ -91,27 +91,67 @@ jobs:
           PR_COMMIT="${{ github.event.pull_request.head.sha }}"
           echo "📋 PR #${PR_NUMBER} - Branch: ${PR_BRANCH}"
           echo "📋 Commit: ${PR_COMMIT}"
-          # Trigger the ADO pipeline
+          # For PR validation builds, we need to use the Build API (not Pipeline
+          # Runs API)
+          # to properly associate the run with the GitHub PR
+          # Build API: https://dev.azure.com/{org}/{project}/_apis/build/builds
           ado_url="https://dev.azure.com/${ADO_ORG}/${ADO_PROJECT}"
-          ado_url="${ado_url}/_apis/pipelines/${ADO_PIPELINE_ID}/runs"
-          ado_url="${ado_url}?api-version=7.0"
+          ado_url="${ado_url}/_apis/build/builds?api-version=7.0"
           echo "🔗 API URL: ${ado_url}"
 
-          # Create JSON payload for ADO pipeline trigger
-          cat > /tmp/ado_payload.json << 'JSONEOF'
+          # Get repository ID from Azure DevOps
+          # First, get the repository information
+          repo_url="https://dev.azure.com/${ADO_ORG}/${ADO_PROJECT}"
+          repo_url="${repo_url}/_apis/git/repositories"
+          repo_url="${repo_url}?api-version=7.0"
+
+          # Fetch repository details to get the repository ID
+          repo_response=$(curl -s -u ":${AZURE_DEVOPS_PAT}" "${repo_url}")
+          # Extract the first repository ID (assuming ThermostatSupervisor repo)
+          repo_id=$(echo "${repo_response}" | grep -o '"id":"[^"]*"' |
+          head -1 | cut -d'"' -f4)
+
+          if [ -z "${repo_id}" ]; then
+            echo "⚠️  WARNING: Could not fetch repository ID, using default"
+            echo "   approach"
+            repo_id=""
+          else
+            echo "✅ Repository ID: ${repo_id}"
+          fi
+
+          # Create JSON payload for ADO build trigger (PR validation)
+          # Using Build API with pullRequestId enables proper PR association
+          if [ -n "${repo_id}" ]; then
+            cat > /tmp/ado_payload.json << JSONEOF
           {
-            "resources": {
-              "repositories": {
-                "self": {
-                  "refName": "refs/pull/PR_NUM_PLACEHOLDER/merge"
-                }
-              }
+            "definition": {
+              "id": ${ADO_PIPELINE_ID}
+            },
+            "sourceBranch": "refs/pull/${PR_NUMBER}/merge",
+            "sourceVersion": "${PR_COMMIT}",
+            "reason": "pullRequest",
+            "parameters": "{}",
+            "repository": {
+              "id": "${repo_id}",
+              "type": "GitHub"
             }
           }
           JSONEOF
+          else
+            # Fallback without repository ID
+            cat > /tmp/ado_payload.json << JSONEOF
+          {
+            "definition": {
+              "id": ${ADO_PIPELINE_ID}
+            },
+            "sourceBranch": "refs/pull/${PR_NUMBER}/merge",
+            "sourceVersion": "${PR_COMMIT}",
+            "reason": "pullRequest",
+            "parameters": "{}"
+          }
+          JSONEOF
+          fi
 
-          # Replace placeholder with actual PR number
-          sed -i "s/PR_NUM_PLACEHOLDER/${PR_NUMBER}/g" /tmp/ado_payload.json
           echo "JSON Payload:"
           cat /tmp/ado_payload.json
 
