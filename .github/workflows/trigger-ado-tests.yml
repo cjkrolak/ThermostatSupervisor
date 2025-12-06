@@ -100,7 +100,6 @@ jobs:
             2>&1)
           curl_status=$?
           set -e
-
           if [ ${curl_status} -ne 0 ]; then
             echo "⚠️  WARNING: Failed to fetch repository list" \
               "(curl exit ${curl_status})"
@@ -123,7 +122,6 @@ jobs:
                 cut -d'"' -f4 2>/dev/null || echo "")
             fi
           fi
-
           if [ -z "${repo_id}" ]; then
             echo "⚠️  WARNING: Could not fetch repository ID, using default"
             echo "   approach"
@@ -165,7 +163,6 @@ jobs:
           }
           JSONEOF
           fi
-
           echo "JSON Payload:"
           cat /tmp/ado_payload.json
 
