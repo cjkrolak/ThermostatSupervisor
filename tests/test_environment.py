@@ -431,7 +431,7 @@ def get_import_count():
             self.assertTrue(hasattr(mod1, "get_import_count"))
 
             # Check that module is in sys.modules
-            self.assertIn("test_reuse_module", sys.modules)
+            self.assertModuleIn("test_reuse_module")
 
             # Second import should NOT print warning
             initial_path_count = sys.path.count(test_dir)

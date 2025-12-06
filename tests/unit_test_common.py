@@ -362,6 +362,68 @@ class UnitTest(unittest.TestCase, metaclass=PatchMeta):
         except AttributeError:
             return None
 
+    def _truncate_sys_modules(self, max_chars=500):
+        """
+        Create truncated string representation of sys.modules.
+
+        Args:
+            max_chars (int): Maximum number of characters to include
+
+        Returns:
+            str: Truncated representation with metadata
+        """
+        full_repr = str(sys.modules)
+        full_length = len(full_repr)
+
+        if full_length <= max_chars:
+            return full_repr
+
+        truncated = full_repr[:max_chars]
+        return (
+            f"{truncated}... [OUTPUT TRUNCATED: showing {max_chars} of "
+            f"{full_length} characters]"
+        )
+
+    def assertModuleIn(self, module_name, msg=None):
+        """
+        Assert that a module is in sys.modules.
+
+        This method avoids printing the entire sys.modules dict on failure.
+
+        Args:
+            module_name (str): Name of the module to check
+            msg (str): Optional custom message
+        """
+        if module_name not in sys.modules:
+            truncated_modules = self._truncate_sys_modules()
+            error_msg = (
+                f"'{module_name}' not found in sys.modules. "
+                f"Available modules (truncated): {truncated_modules}"
+            )
+            if msg:
+                error_msg = f"{msg}\n{error_msg}"
+            self.fail(error_msg)
+
+    def assertModuleNotIn(self, module_name, msg=None):
+        """
+        Assert that a module is NOT in sys.modules.
+
+        This method avoids printing the entire sys.modules dict on failure.
+
+        Args:
+            module_name (str): Name of the module to check
+            msg (str): Optional custom message
+        """
+        if module_name in sys.modules:
+            truncated_modules = self._truncate_sys_modules()
+            error_msg = (
+                f"'{module_name}' unexpectedly found in sys.modules. "
+                f"All modules (truncated): {truncated_modules}"
+            )
+            if msg:
+                error_msg = f"{msg}\n{error_msg}"
+            self.fail(error_msg)
+
 
 class IntegrationTest(UnitTest):
     """Common integration test framework."""
