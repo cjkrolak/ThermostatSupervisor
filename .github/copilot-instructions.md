@@ -66,6 +66,7 @@
 - **ALWAYS run** `flake8 --config=setup.cfg .` to verify code style compliance before any commit.
 - **ZERO linting errors policy**: Address ALL linting issues before committing code - no exceptions.
 - **MANDATORY**: Linting MUST pass before any GitHub Actions workflows are triggered.
+- **APPLIES TO ALL CHANGES**: This includes ALL copilot commits, including those from code reviews, automated fixes, and any other source.
 - Follow the existing flake8 configuration in `setup.cfg` which includes black compatibility settings.
 - Pay special attention to:
   - W293: blank line contains whitespace (ensure blank lines are completely empty)
