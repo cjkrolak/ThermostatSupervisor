@@ -9,6 +9,7 @@ from io import TextIOWrapper
 import os
 import pprint
 import sys
+import threading
 import time
 import unittest
 from unittest.mock import patch
@@ -152,8 +153,8 @@ class TestMetricsTracker:
 # Global test metrics tracker instance
 _test_metrics_tracker = TestMetricsTracker()
 
-# Flag to disable legacy tracker when using CumulativeTimeTestRunner
-_use_runner_metrics = False
+# Thread-local storage for runner metrics flag to avoid race conditions
+_thread_locals = threading.local()
 
 
 class PatchMeta(type):
@@ -202,8 +203,9 @@ class UnitTest(unittest.TestCase, metaclass=PatchMeta):
 
         self.print_test_result()
 
-        # Complete the test tracking with metrics only if not using runner metrics
-        if not _use_runner_metrics:
+        # Complete test tracking only if not using runner metrics
+        use_runner = getattr(_thread_locals, 'use_runner_metrics', False)
+        if not use_runner:
             _test_metrics_tracker.complete_test(
                 self.id(), test_passed, error_message
             )
@@ -1251,7 +1253,11 @@ class CumulativeTimeTrackingResult(unittest.TextTestResult):
         self.tests_completed += 1
         self.tests_failed += 1
         # Extract error message from err tuple
-        error_msg = str(err[1]) if err and len(err) > 1 else 'Error occurred'
+        error_msg = (
+            str(err[1])
+            if err and len(err) > 1 and err[1] is not None
+            else 'Error occurred'
+        )
         self.failed_tests.append({
             'name': str(test),
             'error': f'ERROR: {error_msg}'
@@ -1265,7 +1271,11 @@ class CumulativeTimeTrackingResult(unittest.TextTestResult):
         self.tests_completed += 1
         self.tests_failed += 1
         # Extract failure message from err tuple
-        error_msg = str(err[1]) if err and len(err) > 1 else 'Test failed'
+        error_msg = (
+            str(err[1])
+            if err and len(err) > 1 and err[1] is not None
+            else 'Test failed'
+        )
         self.failed_tests.append({
             'name': str(test),
             'error': f'FAIL: {error_msg}'
@@ -1305,8 +1315,8 @@ class CumulativeTimeTrackingResult(unittest.TextTestResult):
         )
 
         # Print previous test info if available
-        if (self.previous_test_name is not None and
-                self.previous_test_time is not None):
+        if (self.previous_test_name is not None
+                and self.previous_test_time is not None):
             print(f"Previous test: {self.previous_test_name} | "
                   f"Time: {self.previous_test_time:.3f}s")
 
@@ -1331,12 +1341,12 @@ class CumulativeTimeTestRunner(unittest.TextTestRunner):
 
     def run(self, test):
         """Run tests with runner-based metrics enabled."""
-        global _use_runner_metrics
-        _use_runner_metrics = True
+        # Use thread-local storage to avoid race conditions
+        _thread_locals.use_runner_metrics = True
         try:
             return super().run(test)
         finally:
-            _use_runner_metrics = False
+            _thread_locals.use_runner_metrics = False
 
 
 def run_all_tests():
