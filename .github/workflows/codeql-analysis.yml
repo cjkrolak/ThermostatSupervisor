@@ -35,7 +35,7 @@ jobs:
         # https://git.io/codeql-language-support
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       # Initializes the CodeQL tools for scanning.
       - name: Initialize CodeQL
