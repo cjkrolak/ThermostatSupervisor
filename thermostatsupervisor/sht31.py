@@ -80,7 +80,7 @@ class ThermostatClass(tc.ThermostatCommon):
         self.zone_info = {}
 
         # if in unit test mode, spawn flask server with emulated data on client
-        if self.zone_name == sht31_config.UNIT_TEST_ZONE:
+        if (self.zone_name == sht31_config.UNIT_TEST_ZONE and util.unit_test_mode):
             self.spawn_flask_server()
 
     def get_target_zone_id(self, zone=0):
@@ -199,6 +199,17 @@ class ThermostatClass(tc.ThermostatCommon):
         # Import flask server module only when needed for unit testing
         # This avoids loading server dependencies in production client code
         from thermostatsupervisor import sht31_flask_server as sht31_fs
+
+        # Verify Flask was actually imported
+        # This is critical for unit tests that check for Flask in sys.modules
+        import sys
+        if 'flask' not in sys.modules:
+            error_msg = (
+                "FATAL ERROR: Flask was not imported after loading sht31_flask_server. "
+                "This may indicate a module caching issue or import system problem."
+            )
+            util.log_msg(error_msg, mode=util.BOTH_LOG, func_name=1)
+            raise ImportError(error_msg)
 
         # setup flask runtime variables
         sht31_fs.uip = sht31_fs.UserInputs(
