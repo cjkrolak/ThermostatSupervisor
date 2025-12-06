@@ -1,3 +1,4 @@
+---
 name: Trigger Azure DevOps Tests
 # This workflow checks if ADO tests should run and triggers the ADO pipeline
 # if USE_ADO_UNIT_TESTS is set to 'true'. This prevents ADO pipeline from
