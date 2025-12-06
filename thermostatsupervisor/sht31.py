@@ -14,6 +14,7 @@ data structure expected:
 # built-in imports
 import json
 import os
+import sys
 import threading
 import time
 from typing import Union
@@ -202,7 +203,6 @@ class ThermostatClass(tc.ThermostatCommon):
 
         # Verify Flask was actually imported
         # This is critical for unit tests that check for Flask in sys.modules
-        import sys
         if 'flask' not in sys.modules:
             error_msg = (
                 "FATAL ERROR: Flask was not imported after loading sht31_flask_server. "
