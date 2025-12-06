@@ -6,6 +6,8 @@ Tests retry functionality with mocked exceptions.
 
 # built-in imports
 import http.client
+import time
+import types
 import unittest
 from unittest import mock
 
@@ -153,8 +155,6 @@ class Test(utc.UnitTest):
         not before, so that subsequent calls within the fetch_interval don't
         trigger unnecessary API calls.
         """
-        import time
-
         # Track API call count
         api_call_count = 0
 
@@ -185,9 +185,9 @@ class Test(utc.UnitTest):
         mock_zone.pyhtcc = mock_pyhtcc
 
         # Bind the actual refresh_zone_info method to our mock zone
-        # We need to use the unbound method and bind it
-        mock_zone.refresh_zone_info = lambda force_refresh=False: (
-            honeywell.ThermostatZone.refresh_zone_info(mock_zone, force_refresh)
+        # using types.MethodType
+        mock_zone.refresh_zone_info = types.MethodType(
+            honeywell.ThermostatZone.refresh_zone_info, mock_zone
         )
         mock_zone.zone_info = {}
 
