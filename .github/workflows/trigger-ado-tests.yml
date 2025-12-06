@@ -110,12 +110,13 @@ jobs:
           else
             # Use jq if available, otherwise fall back to grep
             if command -v jq &> /dev/null; then
-              repo_id=$(echo "${repo_response}" | jq -r '.value[0].id //
-              empty' 2>/dev/null || echo "")
+              repo_id=$(echo "${repo_response}" | \
+                jq -r '.value[0].id // empty' 2>/dev/null || echo "")
             else
               # Fallback to grep for environments without jq
-              repo_id=$(echo "${repo_response}" | grep -o '"id":"[^"]*"' |
-              head -1 | cut -d'"' -f4 2>/dev/null || echo "")
+              repo_id=$(echo "${repo_response}" | \
+                grep -o '"id":"[^"]*"' | head -1 | \
+                cut -d'"' -f4 2>/dev/null || echo "")
             fi
           fi
 
