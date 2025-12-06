@@ -27,6 +27,10 @@ jobs:
       - name: Build documentation
         run: |
           make html
+      - name: Sort CSS properties alphabetically
+        run: |
+          python sort_css_properties.py \
+            _build/html/_static/*.css
       - name: Upload documentation artifacts
         uses: actions/upload-artifact@v5
         with:
