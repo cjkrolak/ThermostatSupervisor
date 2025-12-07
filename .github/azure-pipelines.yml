@@ -48,8 +48,8 @@ steps:
       # discover process is not allowing argv override so calling
       # unit_test_common instead.
       python -m tests.unit_test_coverage
-    name: runTests
     displayName: Unit Tests
+    name: runTests
     continueOnError: true
     # timeout after 45 minutes, nominal job time is 10 minutes
     timeoutInMinutes: '45'
@@ -207,9 +207,12 @@ steps:
       coverage_gist_id="$(uploadCoverage.coverageGistId)"
       echo "Coverage gist ID: ${coverage_gist_id}"
 
-      # Determine test result status based on runTests step outcome
-      test_result="$(runTests.status)"
-      if [[ "${test_result}" == "Succeeded" ]]; then
+      # Determine test result status based on overall job status
+      # In Azure DevOps, Agent.JobStatus reflects the current job status
+      # including previous steps with continueOnError
+      job_status="$(Agent.JobStatus)"
+      echo "Agent.JobStatus: ${job_status}"
+      if [[ "${job_status}" == "Succeeded" ]]; then
         result_status="success"
       else
         result_status="failure"
