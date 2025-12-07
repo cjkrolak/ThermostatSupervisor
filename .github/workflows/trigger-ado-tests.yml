@@ -60,17 +60,29 @@ jobs:
           echo "🚀 Triggering Azure DevOps pipeline..."
           # Validate AZURE_DEVOPS_PAT is present
           if [ -z "${AZURE_DEVOPS_PAT}" ]; then
-            echo "❌ ERROR: AZURE_DEVOPS_PAT secret is not set"
+            echo "⚠️ WARNING: AZURE_DEVOPS_PAT secret is not available"
             echo ""
-            echo "SETUP INSTRUCTIONS:"
-            echo "1. Go to Azure DevOps > User Settings > Personal"
-            echo "   Access Tokens"
-            echo "2. Create a new token with 'Build (Read & Execute)' scope"
-            echo "3. Go to GitHub Settings > Secrets and variables > Actions"
-            echo "4. Add a new secret named 'AZURE_DEVOPS_PAT' with the"
-            echo "   token value"
+            echo "This is expected for:"
+            echo "  • Dependabot pull requests"
+            echo "  • Pull requests from forks"
             echo ""
-            exit 1
+            echo "Azure DevOps pipeline will NOT be triggered."
+            echo "This is a GitHub Actions security feature to protect"
+            echo "secrets and is not an error."
+            echo ""
+            echo "If you need to trigger the ADO pipeline, please:"
+            echo "  1. Merge this PR first, or"
+            echo "  2. Push changes to a branch (not from Dependabot/fork)"
+            echo ""
+            echo "For repository maintainers only:"
+            echo "If the secret is genuinely missing, set it up at:"
+            echo "GitHub Settings > Secrets and variables > Actions"
+            echo "  • Secret name: AZURE_DEVOPS_PAT"
+            echo "  • Get token from: Azure DevOps > User Settings >"
+            echo "    Personal Access Tokens"
+            echo "  • Required scope: Build (Read & Execute)"
+            echo ""
+            exit 0
           fi
           echo "✅ AZURE_DEVOPS_PAT is configured"
           # Get PR information
