@@ -68,7 +68,9 @@ jobs:
           python -m pip install flake8 --upgrade
           flake8 --config=setup.cfg .
       - name: Run unit tests with coverage
+        id: run_tests
         timeout-minutes: 45
+        continue-on-error: true
         env:
           # Integration test environment variables (same as Azure pipeline)
           GMAIL_USERNAME: ${{ secrets.GMAIL_USERNAME }}
@@ -94,7 +96,7 @@ jobs:
             htmlcov/
           retention-days: 30
       - name: Upload coverage to GitHub
-        if: success()
+        if: always()
         env:
           THERMOSTATSUPERVISOR_PR: ${{ secrets.THERMOSTATSUPERVISOR_PR }}
         run: |
@@ -173,7 +175,7 @@ jobs:
             exit 1
           fi
       - name: Trigger SonarQube workflow
-        if: success()
+        if: always()
         env:
           THERMOSTATSUPERVISOR_PR: ${{ secrets.THERMOSTATSUPERVISOR_PR }}
         run: |-
@@ -184,12 +186,21 @@ jobs:
           coverage_gist_id="${COVERAGE_GIST_ID:-}"
           echo "📊 Coverage gist ID: ${coverage_gist_id}"
 
+          # Determine test result status
+          test_outcome="${{ steps.run_tests.outcome }}"
+          if [[ "${test_outcome}" == "success" ]]; then
+            result_status="success"
+          else
+            result_status="failure"
+          fi
+          echo "📋 Test result status: ${result_status}"
+
           # Create JSON payload for repository dispatch
           json_payload=$(cat << EOF
           {
             "event_type": "github-actions-completed",
             "client_payload": {
-              "result": "success",
+              "result": "${result_status}",
               "run_id": "${{ github.run_id }}",
               "coverage_gist_id": "${coverage_gist_id}",
               "source": "github-actions"
@@ -216,4 +227,13 @@ jobs:
             echo "HTTP ${http_code}"
             echo "Response: ${response_body}"
             exit 1
+          fi
+      - name: Check test results
+        if: always()
+        run: |
+          if [[ "${{ steps.run_tests.outcome }}" != "success" ]]; then
+            echo "❌ Unit tests failed"
+            exit 1
+          else
+            echo "✅ Unit tests passed"
           fi
