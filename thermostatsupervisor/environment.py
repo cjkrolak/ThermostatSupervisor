@@ -81,30 +81,34 @@ def get_env_variable(env_key, default=None):
     Get environment variable.
 
     First attempts to read from supervisor-env.txt file, then falls back
-    to environment variables. Results will be logged but passwords will be masked off.
+    to environment variables. Results will be logged but passwords will be
+    masked off.
 
     inputs:
        env_key(str): env variable of interest
        default: default value to return if env variable is not found (optional)
     returns:
-       (dict): {status, value, key}
+       (dict): {status, value, key, source}
     """
     # defaults
     return_buffer = {
         "status": util.NO_ERROR,
         "value": None,
         "key": env_key,
+        "source": None,
     }
 
     try:
         # unit test key is not required to be in env var list
         if env_key == sht31_config.UNIT_TEST_ENV_KEY:
             return_buffer["value"] = get_local_ip()
+            return_buffer["source"] = "unit_test"
         else:
             # First try to get from supervisor-env.txt file
             file_env_vars = _read_supervisor_env_file()
             if env_key in file_env_vars:
                 return_buffer["value"] = file_env_vars[env_key]
+                return_buffer["source"] = "supervisor-env.txt"
                 util.log_msg(
                     f"Environment variable '{env_key}' loaded from "
                     "supervisor-env.txt",
@@ -113,9 +117,10 @@ def get_env_variable(env_key, default=None):
             else:
                 # Fall back to system environment variables
                 return_buffer["value"] = os.environ[env_key]
+                return_buffer["source"] = "environment_variable"
 
-        # mask off any password keys
-        if "PASSWORD" in return_buffer["key"]:
+        # mask off any password keys or 2FA keys
+        if "PASSWORD" in return_buffer["key"] or "2FA" in return_buffer["key"]:
             value_shown = "(hidden)"
         else:
             value_shown = return_buffer["value"]
@@ -124,13 +129,15 @@ def get_env_variable(env_key, default=None):
     except KeyError:
         if default is not None:
             return_buffer["value"] = default
-            # mask off any password keys
-            if "PASSWORD" in return_buffer["key"]:
+            return_buffer["source"] = "default"
+            # mask off any password keys or 2FA keys
+            if "PASSWORD" in return_buffer["key"] or "2FA" in return_buffer["key"]:
                 value_shown = "(hidden)"
             else:
                 value_shown = return_buffer["value"]
             util.log_msg(
-                f"{env_key}={value_shown} (using default value)", mode=util.DEBUG_LOG
+                f"{env_key}={value_shown} (using default value)",
+                mode=util.DEBUG_LOG
             )
         else:
             util.log_msg(

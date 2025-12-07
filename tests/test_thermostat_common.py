@@ -1053,8 +1053,26 @@ class Test(utc.UnitTest):
             )
 
     def test_display_runtime_settings(self):
-        """Verify display_runtime_settings()."""
-        self.Zone.display_runtime_settings()
+        """Verify display_runtime_settings() with new format."""
+        from unittest.mock import patch
+        import io
+
+        # Set known values for testing
+        self.Zone.poll_time_sec = 600  # 10 minutes
+        self.Zone.connection_time_sec = 86400  # 1440 minutes (24 hours)
+
+        # Capture log output
+        with patch('sys.stdout', new=io.StringIO()) as fake_stdout:
+            self.Zone.display_runtime_settings()
+            output = fake_stdout.getvalue()
+
+        # Verify poll_time format: "X.X minutes (Y seconds)"
+        self.assertIn("10.0 minutes (600 seconds)", output,
+                      "poll_time should be formatted as 'X.X minutes (Y seconds)'")
+
+        # Verify connection_time format: "X minutes (Y seconds)" (no decimals)
+        self.assertIn("1440 minutes (86400 seconds)", output,
+                      "connection_time should be formatted as 'X minutes (Y seconds)'")
 
     def test_display_session_settings(self):
         """
@@ -1275,6 +1293,62 @@ class Test(utc.UnitTest):
                 self.Zone.revert_setpoint_func = original_revert_func
             if original_get_func is not None:
                 self.Zone.get_setpoint_func = original_get_func
+
+    def test_supervisor_loop_max_loop_time_display(self):
+        """Test that max_loop_time is displayed in days format."""
+        from unittest.mock import patch, Mock
+        import io
+
+        # Configure test with known values
+        test_argv = [
+            "supervise.py",
+            "emulator",
+            "0",
+            "600",  # 10 minute poll time (600 seconds)
+            "1000",  # connection time
+            "2",  # tolerance
+            "UNKNOWN_MODE",
+            "5",  # 5 measurements
+        ]
+        api.uip = api.UserInputs(test_argv)
+
+        # Mock get_current_mode to avoid actual operations
+        original_get_current_mode = self.Zone.get_current_mode
+
+        def mock_get_current_mode(*args, **kwargs):
+            return {
+                "heat_mode": False,
+                "cool_mode": False,
+                "heat_deviation": False,
+                "cool_deviation": False,
+                "hold_mode": False,
+                "status_msg": "test status",
+            }
+
+        try:
+            self.Zone.get_current_mode = mock_get_current_mode
+            self.Zone.refresh_zone_info = Mock()
+            self.Zone.revert_all_deviations = False
+
+            # Capture log output
+            with patch('sys.stdout', new=io.StringIO()) as fake_stdout:
+                # Call supervisor_loop - it will exit after measurements complete
+                self.Zone.supervisor_loop(
+                    self.Thermostat, session_count=1, measurement=1, debug=False
+                )
+                output = fake_stdout.getvalue()
+
+            # Expected: (5 measurements * 600 sec) + (5 * 300 sec buffer)
+            # = 4500 seconds
+            # 4500 / 86400 = 0.052... days ≈ 0.1 days (with rounding)
+            # Verify the output contains "days" format
+            self.assertIn("max_loop_time=", output,
+                          "Output should contain max_loop_time message")
+            self.assertIn("days", output,
+                          "max_loop_time should be displayed in days")
+
+        finally:
+            self.Zone.get_current_mode = original_get_current_mode
 
     def test_supervisor_loop_timeout(self):
         """Test that supervisor_loop respects the maximum loop time limit."""

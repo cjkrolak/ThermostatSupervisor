@@ -15,12 +15,13 @@ jobs:
   sonarqube:
     name: SonarQube
     runs-on: ubuntu-latest
-    # Run if Azure pipeline was successful OR if manually triggered OR if PR to develop
+    # Run if triggered manually OR on PR OR on repository dispatch with valid result
     if: |
       github.event_name == 'workflow_dispatch' ||
       github.event_name == 'pull_request' ||
       (github.event_name == 'repository_dispatch' &&
-       github.event.client_payload.result == 'success')
+       (github.event.client_payload.result == 'success' ||
+        github.event.client_payload.result == 'failure'))
     permissions:
       # Grant permissions needed for the action
       contents: read
@@ -28,7 +29,7 @@ jobs:
       checks: write
     steps:
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           # Shallow clones should be disabled for better analysis relevancy
           fetch-depth: 0

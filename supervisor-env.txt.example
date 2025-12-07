@@ -18,8 +18,13 @@ FLASK_LIMITER_STORAGE_URI=memory://
 # TCC_PASSWORD=your_tcc_password
 
 # KumoCloud credentials (if using):
-# KUMO_USERNAME=your_kumo_username  
+# KUMO_USERNAME=your_kumo_username
 # KUMO_PASSWORD=your_kumo_password
+
+# Blink camera credentials (if using):
+# BLINK_USERNAME=your_blink_username
+# BLINK_PASSWORD=your_blink_password
+# BLINK_2FA=123456
 
 # Nest API credentials (if using):
 # GCLOUD_CLIENT_ID=your_google_client_id

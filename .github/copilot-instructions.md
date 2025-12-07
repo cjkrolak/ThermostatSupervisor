@@ -34,11 +34,39 @@
 - Write unit tests for functions and document them with docstrings explaining 
   the test cases.
 
+### Pre-Commit Testing and Validation Requirements
+- **MANDATORY**: All changes MUST be thoroughly tested before committing.
+- **ZERO tolerance for untested code**: Every change must be validated before commit.
+- **Test workflows and scripts locally**: 
+  - For shell scripts: Run in a test shell to verify syntax and logic
+  - For YAML workflows: Test bash scripts extracted from workflow files
+  - For Python code: Run unit tests and verify imports work correctly
+- **Iterative testing approach**: Test after each small change, not just at the end
+- **Validation checklist before ANY commit**:
+  1. Syntax validation (bash -n for scripts, yamllint for YAML, flake8 for Python)
+  2. Local execution test (run the actual code/script in isolation)
+  3. Integration test (verify it works in context)
+  4. Lint verification (flake8, yamllint, etc.)
+  5. Review git diff to confirm only intended changes
+- **For GitHub Actions workflows specifically**:
+  - Extract bash scripts from YAML and test them independently
+  - Test with sample environment variables
+  - Verify all quotes, escapes, and substitutions work correctly
+  - Test JSON payload construction and validate with `python -m json.tool`
+- **STOP and test immediately if**:
+  - You're modifying shell scripts with complex quoting
+  - You're working with JSON construction in bash
+  - You're using command substitution `$(...)` or variable expansion
+  - You're making changes to GitHub Actions workflows
+- **Multiple iterations on same issue = process failure**: If requiring more than 
+  2-3 commits to fix an issue, STOP and reassess approach before continuing
+
 ### Linting and Code Quality
 - **MANDATORY**: All code changes MUST pass flake8 linting before committing.
 - **ALWAYS run** `flake8 --config=setup.cfg .` to verify code style compliance before any commit.
 - **ZERO linting errors policy**: Address ALL linting issues before committing code - no exceptions.
 - **MANDATORY**: Linting MUST pass before any GitHub Actions workflows are triggered.
+- **APPLIES TO ALL CHANGES**: This includes ALL copilot commits, including those from code reviews, automated fixes, and any other source.
 - Follow the existing flake8 configuration in `setup.cfg` which includes black compatibility settings.
 - Pay special attention to:
   - W293: blank line contains whitespace (ensure blank lines are completely empty)

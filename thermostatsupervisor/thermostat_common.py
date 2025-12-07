@@ -1256,15 +1256,16 @@ class ThermostatCommonZone:
         """
         # poll time setting:
         util.log_msg(
-            f"polling time set to {self.poll_time_sec / 60.0:.1f} minutes",
+            f"polling time set to {self.poll_time_sec / 60.0:.1f} minutes "
+            f"({self.poll_time_sec} seconds)",
             mode=util.BOTH_LOG,
         )
 
         # reconnection time to thermostat server:
         util.log_msg(
             f"server re-connect time set to "
-            f"{self.connection_time_sec / 60.0:.1f}"
-            f" minutes",
+            f"{int(self.connection_time_sec / 60.0)} minutes "
+            f"({self.connection_time_sec} seconds)",
             mode=util.BOTH_LOG,
         )
 
@@ -1343,7 +1344,8 @@ class ThermostatCommonZone:
             )  # 5 min buffer per measurement
             loop_start_time = time.time()
             util.log_msg(
-                f"supervisor_loop: max_loop_time={max_loop_time_sec}s "
+                f"supervisor_loop: max_loop_time="
+                f"{max_loop_time_sec / 86400.0:.1f} days "
                 f"for {max_measurements} measurements",
                 mode=util.DUAL_STREAM_LOG,
                 func_name=1,

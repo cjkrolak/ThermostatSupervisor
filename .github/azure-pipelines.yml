@@ -2,17 +2,12 @@
 name: Azure Pipelines
 # disable CI trigger
 trigger: none
-# trigger on PR to dev branch only for relevant file changes
-# NOTE: This pipeline will only run if repository variable USE_GITHUB_UNIT_TESTS
-# is NOT set to 'true'
-pr:
-  branches:
-    include: [develop]
-  paths:
-    include:
-      - '**/*.py'
-      - .github/azure-pipelines.yml
-      - .github/workflows/sonarqube.yml
+# disable automatic PR triggers - pipeline is now triggered by GitHub workflow
+# NOTE: This pipeline is triggered by .github/workflows/trigger-ado-tests.yml
+# which checks the USE_ADO_UNIT_TESTS repository variable before starting this
+# pipeline. This prevents the pipeline from starting and failing due to ADO
+# account limits before the environment variable can be checked.
+pr: none
 pool:
   vmImage: ubuntu-latest
 strategy:
@@ -23,15 +18,12 @@ strategy:
     Python313:
       python.version: '3.13'
 steps:
-  # Check if GitHub unit tests are enabled, if so, skip Azure pipeline
+  # This pipeline is now triggered by GitHub workflow trigger-ado-tests.yml
   - script: |
-      echo "Checking repository variable USE_GITHUB_UNIT_TESTS..."
-      # Note: In Azure DevOps, we cannot directly access GitHub repository variables
-      # This pipeline will be manually disabled when GitHub Actions are enabled
-      # by setting the pipeline trigger to 'none' or using branch policies
-      echo "Azure Pipeline is running (GitHub Actions unit tests should be disabled)"
-      echo "If GitHub Actions unit tests are enabled, this pipeline should be disabled"
-    displayName: Check Test Method Toggle
+      echo "Azure Pipeline triggered by GitHub Actions workflow"
+      echo "The USE_ADO_UNIT_TESTS variable was checked before starting"
+      echo "this pipeline to prevent account limit failures"
+    displayName: ADO Pipeline Status
   - task: UsePythonVersion@0
     inputs:
       versionSpec: $(python.version)
@@ -55,8 +47,21 @@ steps:
       # python -m unittest discover -v
       # discover process is not allowing argv override so calling
       # unit_test_common instead.
+      set +e  # Don't exit on error so we can capture exit code
       python -m tests.unit_test_coverage
+      exit_code=$?
+      # Set output variable for test result
+      echo "##vso[task.setvariable variable=testExitCode;"\
+      "isOutput=true]${exit_code}"
+      if [ ${exit_code} -ne 0 ]; then
+        echo "Tests failed with exit code ${exit_code}"
+      else
+        echo "Tests passed"
+      fi
+      exit ${exit_code}
+    continueOnError: true
     displayName: Unit Tests
+    name: runTests
     # timeout after 45 minutes, nominal job time is 10 minutes
     timeoutInMinutes: '45'
     env:
@@ -76,6 +81,7 @@ steps:
     inputs:
       summaryFileLocation: coverage.xml
     displayName: Publish Code Coverage
+    condition: always()
   # Upload coverage.xml as GitHub artifact for SonarQube workflow
   - script: |
       set -e
@@ -161,7 +167,7 @@ steps:
       fi
     name: uploadCoverage
     displayName: Upload Coverage Data
-    condition: succeeded()
+    condition: always()
     env:
       THERMOSTATSUPERVISOR_PR: $(THERMOSTATSUPERVISOR_PR)
   # trigger SonarQube workflow on successful completion
@@ -212,8 +218,18 @@ steps:
       coverage_gist_id="$(uploadCoverage.coverageGistId)"
       echo "Coverage gist ID: ${coverage_gist_id}"
 
+      # Determine test result status based on test exit code
+      test_exit_code="$(runTests.testExitCode)"
+      echo "Test exit code: ${test_exit_code}"
+      if [[ "${test_exit_code}" == "0" ]]; then
+        result_status="success"
+      else
+        result_status="failure"
+      fi
+      echo "Test result status: ${result_status}"
+
       # Create JSON payload for repository dispatch (Azure DevOps source)
-      json_payload='{"event_type":"azure-pipeline-completed","client_payload":{"result":"success","run_id":"'$(Build.BuildId)'","coverage_gist_id":"'${coverage_gist_id}'","source":"azure-devops"}}'
+      json_payload='{"event_type":"azure-pipeline-completed","client_payload":{"result":"'${result_status}'","run_id":"'$(Build.BuildId)'","coverage_gist_id":"'${coverage_gist_id}'","source":"azure-devops"}}'
 
       # Make the API request with detailed error handling
       echo "Triggering repository dispatch event..."
@@ -271,7 +287,7 @@ steps:
         exit 1
       fi
     displayName: Trigger SonarQube Workflow
-    condition: succeeded()
+    condition: always()
     env:
       THERMOSTATSUPERVISOR_PR: $(THERMOSTATSUPERVISOR_PR)
       # Azure DevOps pipeline variable - must be Personal Access Token

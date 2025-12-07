@@ -1,0 +1,232 @@
+---
+name: Trigger Azure DevOps Tests
+# This workflow checks if ADO tests should run and triggers the ADO pipeline
+# if USE_ADO_UNIT_TESTS is set to 'true'. This prevents ADO pipeline from
+# starting automatically and potentially failing due to account limits before
+# the environment variable check can occur.
+on:
+  pull_request:
+    branches: [develop]
+    paths:
+      - '**/*.py'
+      - .github/azure-pipelines.yml
+      - .github/workflows/trigger-ado-tests.yml
+      - .github/workflows/sonarqube.yml
+  workflow_dispatch:  # Allow manual triggering
+# Cancel in-progress runs for the same PR
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  check-ado-toggle:
+    name: Check ADO Test Toggle
+    runs-on: ubuntu-latest
+    outputs:
+      should-run: ${{ steps.check.outputs.should-run }}
+    steps:
+      - name: Check if ADO tests should run
+        id: check
+        run: |
+          # Check if repository variable USE_ADO_UNIT_TESTS is 'true'
+          # Use bash parameter expansion to default to 'false' if unset/empty
+          USE_ADO_TESTS="${{ vars.USE_ADO_UNIT_TESTS }}"
+          USE_ADO_TESTS="${USE_ADO_TESTS:-false}"
+          echo "Repository variable USE_ADO_UNIT_TESTS: '${USE_ADO_TESTS}'"
+          echo "Raw value from vars context: '${{ vars.USE_ADO_UNIT_TESTS }}'"
+          if [[ "${USE_ADO_TESTS}" == "true" ]]; then
+            echo "should-run=true" >> $GITHUB_OUTPUT
+            echo "✅ ADO unit tests are ENABLED"
+          else
+            echo "should-run=false" >> $GITHUB_OUTPUT
+            echo "❌ ADO unit tests are DISABLED"
+            echo "   Current value: '${USE_ADO_TESTS}'"
+            echo "   To enable: Set repository variable USE_ADO_UNIT_TESTS"
+            echo "   to 'true' in GitHub Settings"
+          fi
+  trigger-ado-pipeline:
+    name: Trigger Azure DevOps Pipeline
+    runs-on: ubuntu-latest
+    needs: check-ado-toggle
+    if: needs.check-ado-toggle.outputs.should-run == 'true'
+    steps:
+      - name: Trigger ADO Pipeline
+        env:
+          AZURE_DEVOPS_PAT: ${{ secrets.AZURE_DEVOPS_PAT }}
+          ADO_ORG: cjkrolak
+          ADO_PROJECT: ThermostatSupervisor
+          ADO_PIPELINE_ID: 3
+        run: |-
+          set -e
+          echo "🚀 Triggering Azure DevOps pipeline..."
+          # Validate AZURE_DEVOPS_PAT is present
+          if [ -z "${AZURE_DEVOPS_PAT}" ]; then
+            echo "⚠️ WARNING: AZURE_DEVOPS_PAT secret is not available"
+            echo ""
+            echo "This is expected for:"
+            echo "  • Dependabot pull requests"
+            echo "  • Pull requests from forks"
+            echo ""
+            echo "Azure DevOps pipeline will NOT be triggered."
+            echo "This is a GitHub Actions security feature to protect"
+            echo "secrets and is not an error."
+            echo ""
+            echo "If you need to trigger the ADO pipeline, please:"
+            echo "  1. Merge this PR first, or"
+            echo "  2. Push changes to a branch (not from Dependabot/fork)"
+            echo ""
+            echo "For repository maintainers only:"
+            echo "If the secret is genuinely missing, set it up at:"
+            echo "GitHub Settings > Secrets and variables > Actions"
+            echo "  • Secret name: AZURE_DEVOPS_PAT"
+            echo "  • Get token from: Azure DevOps > User Settings >"
+            echo "    Personal Access Tokens"
+            echo "  • Required scope: Build (Read & Execute)"
+            echo ""
+            exit 0
+          fi
+          echo "✅ AZURE_DEVOPS_PAT is configured"
+          # Get PR information
+          PR_NUMBER="${{ github.event.pull_request.number }}"
+          PR_BRANCH="${{ github.head_ref }}"
+          PR_COMMIT="${{ github.event.pull_request.head.sha }}"
+          echo "📋 PR #${PR_NUMBER} - Branch: ${PR_BRANCH}"
+          echo "📋 Commit: ${PR_COMMIT}"
+          # For PR validation builds, we need to use the Build API (not Pipeline
+          # Runs API)
+          # to properly associate the run with the GitHub PR
+          # Build API: https://dev.azure.com/{org}/{project}/_apis/build/builds
+          ado_url="https://dev.azure.com/${ADO_ORG}/${ADO_PROJECT}"
+          ado_url="${ado_url}/_apis/build/builds?api-version=7.0"
+          echo "🔗 API URL: ${ado_url}"
+
+          # Get repository ID from Azure DevOps
+          # First, get the repository information
+          repo_url="https://dev.azure.com/${ADO_ORG}/${ADO_PROJECT}"
+          repo_url="${repo_url}/_apis/git/repositories"
+          repo_url="${repo_url}?api-version=7.0"
+
+          # Fetch repository details to get the repository ID
+          # Filter by repository name to ensure we get the correct repo
+          set +e
+          repo_response=$(curl -s -u ":${AZURE_DEVOPS_PAT}" "${repo_url}" \
+            2>&1)
+          curl_status=$?
+          set -e
+          if [ ${curl_status} -ne 0 ]; then
+            echo "⚠️  WARNING: Failed to fetch repository list" \
+              "(curl exit ${curl_status})"
+            repo_id=""
+          else
+            # Use jq if available, otherwise fall back to grep
+            if command -v jq &> /dev/null; then
+              # Filter by repository name for accuracy
+              # Note: Repository name is hardcoded to ThermostatSupervisor
+              repo_name="ThermostatSupervisor"
+              repo_id=$(echo "${repo_response}" | \
+                jq -r --arg name "${repo_name}" \
+                '.value[] | select(.name==$name) | .id // empty' \
+                2>/dev/null || echo "")
+            else
+              # Fallback to grep for environments without jq
+              # This is less precise but still functional
+              repo_id=$(echo "${repo_response}" | \
+                grep -o '"id":"[^"]*"' | head -1 | \
+                cut -d'"' -f4 2>/dev/null || echo "")
+            fi
+          fi
+          if [ -z "${repo_id}" ]; then
+            echo "⚠️  WARNING: Could not fetch repository ID, using default"
+            echo "   approach"
+            repo_id=""
+          else
+            echo "✅ Repository ID: ${repo_id}"
+          fi
+
+          # Create JSON payload for ADO build trigger (PR validation)
+          # Using Build API with reason="pullRequest" enables proper PR
+          # association
+          if [ -n "${repo_id}" ]; then
+            cat > /tmp/ado_payload.json << JSONEOF
+          {
+            "definition": {
+              "id": ${ADO_PIPELINE_ID}
+            },
+            "sourceBranch": "refs/pull/${PR_NUMBER}/merge",
+            "sourceVersion": "${PR_COMMIT}",
+            "reason": "pullRequest",
+            "parameters": "{}",
+            "repository": {
+              "id": "${repo_id}",
+              "type": "GitHub"
+            }
+          }
+          JSONEOF
+          else
+            # Fallback without repository ID
+            cat > /tmp/ado_payload.json << JSONEOF
+          {
+            "definition": {
+              "id": ${ADO_PIPELINE_ID}
+            },
+            "sourceBranch": "refs/pull/${PR_NUMBER}/merge",
+            "sourceVersion": "${PR_COMMIT}",
+            "reason": "pullRequest",
+            "parameters": "{}"
+          }
+          JSONEOF
+          fi
+          echo "JSON Payload:"
+          cat /tmp/ado_payload.json
+
+          # Make the API call - disable set -e for curl to capture exit code
+          set +e
+          http_response=$(curl -w "\n%{http_code}" -s -X POST \
+            -H "Content-Type: application/json" \
+            -u ":${AZURE_DEVOPS_PAT}" \
+            "${ado_url}" \
+            -d @/tmp/ado_payload.json 2>&1)
+          curl_exit_code=$?
+          set -e
+
+          # Check if curl command succeeded
+          if [ ${curl_exit_code} -ne 0 ]; then
+            echo "❌ ERROR: curl command failed with exit code ${curl_exit_code}"
+            echo "Response: ${http_response}"
+            echo ""
+            echo "Common curl exit codes:"
+            echo "  6  - Could not resolve host"
+            echo "  7  - Failed to connect to host"
+            echo "  22 - HTTP error (non-2xx status)"
+            echo "  28 - Timeout"
+            echo "  35 - SSL connect error"
+            echo "  43 - Internal error"
+            echo ""
+            echo "Troubleshooting:"
+            echo "1. Check network connectivity to dev.azure.com"
+            echo "2. Verify AZURE_DEVOPS_PAT is valid and not expired"
+            echo "3. Confirm organization name: ${ADO_ORG}"
+            echo "4. Confirm project name: ${ADO_PROJECT}"
+            echo "5. Verify pipeline ID: ${ADO_PIPELINE_ID}"
+            exit 1
+          fi
+
+          # Extract HTTP status code (last line) and response body
+          http_code=$(echo "${http_response}" | tail -n 1)
+          response_body=$(echo "${http_response}" | sed '$d')
+          echo "📊 HTTP Status Code: ${http_code}"
+
+          # Check if the request was successful
+          if [[ "${http_code}" -ge 200 && "${http_code}" -lt 300 ]]; then
+            echo "✅ SUCCESS: ADO pipeline triggered successfully"
+            echo "Response: ${response_body}"
+          else
+            echo "❌ ERROR: Failed to trigger ADO pipeline"
+            echo "HTTP Status: ${http_code}"
+            echo "Response Body: ${response_body}"
+            echo ""
+            echo "Common HTTP errors:"
+            echo "  401 - Authentication failed (check PAT)"
+            echo "  403 - Forbidden (check PAT permissions)"
+            echo "  404 - Not found (check org/project/pipeline ID)"
+            exit 1
+          fi
