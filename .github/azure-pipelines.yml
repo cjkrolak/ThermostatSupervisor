@@ -68,6 +68,7 @@ steps:
     inputs:
       summaryFileLocation: coverage.xml
     displayName: Publish Code Coverage
+    condition: always()
   # Upload coverage.xml as GitHub artifact for SonarQube workflow
   - script: |
       set -e
@@ -153,7 +154,7 @@ steps:
       fi
     name: uploadCoverage
     displayName: Upload Coverage Data
-    condition: succeeded()
+    condition: always()
     env:
       THERMOSTATSUPERVISOR_PR: $(THERMOSTATSUPERVISOR_PR)
   # trigger SonarQube workflow on successful completion
@@ -263,7 +264,7 @@ steps:
         exit 1
       fi
     displayName: Trigger SonarQube Workflow
-    condition: succeeded()
+    condition: always()
     env:
       THERMOSTATSUPERVISOR_PR: $(THERMOSTATSUPERVISOR_PR)
       # Azure DevOps pipeline variable - must be Personal Access Token

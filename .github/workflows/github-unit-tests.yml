@@ -94,7 +94,7 @@ jobs:
             htmlcov/
           retention-days: 30
       - name: Upload coverage to GitHub
-        if: success()
+        if: always()
         env:
           THERMOSTATSUPERVISOR_PR: ${{ secrets.THERMOSTATSUPERVISOR_PR }}
         run: |
@@ -173,7 +173,7 @@ jobs:
             exit 1
           fi
       - name: Trigger SonarQube workflow
-        if: success()
+        if: always()
         env:
           THERMOSTATSUPERVISOR_PR: ${{ secrets.THERMOSTATSUPERVISOR_PR }}
         run: |-
