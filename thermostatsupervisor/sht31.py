@@ -210,6 +210,11 @@ class ThermostatClass(tc.ThermostatCommon):
         else:
             from thermostatsupervisor import sht31_flask_server as sht31_fs
 
+        # Explicitly import flask to ensure it's in sys.modules
+        # In Python 3.13, importlib.reload() doesn't always propagate
+        # module-level imports to sys.modules in the expected way
+        import flask  # noqa: F401
+
         # setup flask runtime variables
         sht31_fs.uip = sht31_fs.UserInputs(
             [os.path.realpath(__file__), sht31_config.FLASK_DEBUG_MODE]
