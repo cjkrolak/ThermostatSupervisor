@@ -230,7 +230,7 @@ jobs:
           fi
       - name: Check test results
         if: always()
-        run: |
+        run: |-
           if [[ "${{ steps.run_tests.outcome }}" != "success" ]]; then
             echo "❌ Unit tests failed"
             exit 1
