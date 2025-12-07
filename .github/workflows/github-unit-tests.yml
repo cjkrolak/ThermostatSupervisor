@@ -69,8 +69,8 @@ jobs:
           flake8 --config=setup.cfg .
       - name: Run unit tests with coverage
         id: run_tests
-        continue-on-error: true
         timeout-minutes: 45
+        continue-on-error: true
         env:
           # Integration test environment variables (same as Azure pipeline)
           GMAIL_USERNAME: ${{ secrets.GMAIL_USERNAME }}

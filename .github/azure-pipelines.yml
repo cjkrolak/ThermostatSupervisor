@@ -48,9 +48,9 @@ steps:
       # discover process is not allowing argv override so calling
       # unit_test_common instead.
       python -m tests.unit_test_coverage
+    continueOnError: true
     displayName: Unit Tests
     name: runTests
-    continueOnError: true
     # timeout after 45 minutes, nominal job time is 10 minutes
     timeoutInMinutes: '45'
     env:
