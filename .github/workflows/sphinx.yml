@@ -32,7 +32,7 @@ jobs:
           python sort_css_properties.py \
             _build/html/_static/*.css
       - name: Upload documentation artifacts
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: documentation
           path: _build/html/
