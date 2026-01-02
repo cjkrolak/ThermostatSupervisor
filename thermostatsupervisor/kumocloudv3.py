@@ -931,10 +931,10 @@ class ThermostatClass(tc.ThermostatCommon):
             self.serial_number = kumocloudv3_config.metadata[zone_index][
                 "serial_number"
             ]
-            if not self.serial_number:
+            if self.serial_number is None:
                 # Fallback to index-based lookup if metadata not populated
                 self.serial_number = serial_num_lst[zone_index]
-        except (KeyError, IndexError) as exc:
+        except (KeyError, IndexError, TypeError) as exc:
             raise IndexError(
                 f"ERROR: Invalid Zone, index ({zone_index}) does "
                 "not exist in metadata or serial number list "
