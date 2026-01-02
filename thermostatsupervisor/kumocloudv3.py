@@ -314,8 +314,9 @@ class ThermostatClass(tc.ThermostatCommon):
         return zone_name_to_index
 
     def _find_zone_indices_by_patterns(self, zone_name_to_index):
-        """Find main level and basement indices based on naming patterns."""
-        main_level_index = None
+        """Find main level, kitchen, and basement indices based on naming patterns."""
+        main_living_index = None
+        kitchen_index = None
         basement_index = None
 
         # Check for various naming patterns
@@ -333,7 +334,16 @@ class ThermostatClass(tc.ThermostatCommon):
                     "1st floor",
                 ]
             ):
-                main_level_index = index
+                main_living_index = index
+
+            # Check for kitchen patterns
+            if any(
+                pattern in zone_name_lower
+                for pattern in [
+                    "kitchen",
+                ]
+            ):
+                kitchen_index = index
 
             # Check for basement patterns
             elif any(
@@ -342,27 +352,50 @@ class ThermostatClass(tc.ThermostatCommon):
             ):
                 basement_index = index
 
-        return main_level_index, basement_index
+        return main_living_index, kitchen_index, basement_index
 
-    def _update_config_with_indices(self, main_level_index, basement_index):
+    def _update_config_with_indices(
+        self, main_living_index, kitchen_index, basement_index
+    ):
         """Update config module with discovered zone indices."""
-        # Update the config module with discovered assignments
-        if main_level_index is not None:
-            kumocloudv3_config.MAIN_LEVEL = main_level_index
-            kumocloudv3_config.supported_configs["zones"][0] = main_level_index
+        # Rebuild zones list from scratch to avoid inconsistent indices
+        # when some zones are not found
+        discovered_zones = []
 
-        if basement_index is not None:
+        # Update the config module with discovered assignments
+        # Use a set to track already-added indices to prevent duplicates
+        added_indices = set()
+
+        if main_living_index is not None and main_living_index not in added_indices:
+            kumocloudv3_config.MAIN_LIVING = main_living_index
+            discovered_zones.append(main_living_index)
+            added_indices.add(main_living_index)
+
+        if kitchen_index is not None and kitchen_index not in added_indices:
+            kumocloudv3_config.KITCHEN = kitchen_index
+            discovered_zones.append(kitchen_index)
+            added_indices.add(kitchen_index)
+
+        if basement_index is not None and basement_index not in added_indices:
             kumocloudv3_config.BASEMENT = basement_index
-            if len(kumocloudv3_config.supported_configs["zones"]) > 1:
-                kumocloudv3_config.supported_configs["zones"][1] = basement_index
-            else:
-                kumocloudv3_config.supported_configs["zones"].append(basement_index)
+            discovered_zones.append(basement_index)
+            added_indices.add(basement_index)
+
+        # Only update the zones list if we discovered at least one zone
+        # If no zones were discovered, keep the existing configuration as fallback
+        if discovered_zones:
+            kumocloudv3_config.supported_configs["zones"] = discovered_zones
 
     def _rebuild_metadata_dict(
-        self, zone_name_to_index, main_level_index, basement_index
+        self,
+        zone_name_to_index,
+        main_living_index,
+        kitchen_index,
+        basement_index
     ):
         """Rebuild metadata dict with discovered assignments."""
-        if main_level_index is not None and basement_index is not None:
+        if all(idx is not None for idx in
+               (main_living_index, kitchen_index, basement_index)):
             # Clear existing metadata and rebuild with correct indices
             kumocloudv3_config.metadata.clear()
 
@@ -376,8 +409,9 @@ class ThermostatClass(tc.ThermostatCommon):
 
         if self.verbose:
             print(
-                f"Updated zone assignments - MAIN_LEVEL: "
-                f"{kumocloudv3_config.MAIN_LEVEL}, "
+                f"Updated zone assignments - MAIN_LIVING: "
+                f"{kumocloudv3_config.MAIN_LIVING}, "
+                f"KITCHEN: {kumocloudv3_config.KITCHEN}, "
                 f"BASEMENT: {kumocloudv3_config.BASEMENT}"
             )
             print(f"Updated metadata: {kumocloudv3_config.metadata}")
@@ -389,7 +423,7 @@ class ThermostatClass(tc.ThermostatCommon):
         This method retrieves zone information from the API and updates the
         config module's zone assignments to match the actual API response.
         Zone assignments are not static in v3 API - sometimes zone 0 is
-        MAIN_LEVEL and other times zone 1 is MAIN_LEVEL.
+        MAIN_LIVING and other times zone 1 is MAIN_LIVING.
         """
         try:
             # Get sites and zones from API
@@ -401,16 +435,20 @@ class ThermostatClass(tc.ThermostatCommon):
             zone_name_to_index = self._build_zone_name_mapping(zones)
 
             # Find zone indices by patterns
-            main_level_index, basement_index = self._find_zone_indices_by_patterns(
-                zone_name_to_index
-            )
+            main_living_index, kitchen_index, basement_index = \
+                self._find_zone_indices_by_patterns(zone_name_to_index)
 
             # Update config with discovered indices
-            self._update_config_with_indices(main_level_index, basement_index)
+            self._update_config_with_indices(
+                main_living_index, kitchen_index, basement_index
+            )
 
             # Update metadata dict with discovered assignments
             self._rebuild_metadata_dict(
-                zone_name_to_index, main_level_index, basement_index
+                zone_name_to_index,
+                main_living_index,
+                kitchen_index,
+                basement_index
             )
 
         except Exception as e:
@@ -925,22 +963,22 @@ class ThermostatZone(tc.ThermostatCommonZone):
         # switch config for this thermostat
         self.system_switch_position[
             tc.ThermostatCommonZone.HEAT_MODE
-        ] = 1  # "Heat" 0 0001
+        ] = "heat"  # "Heat" 0 0001
         self.system_switch_position[
             tc.ThermostatCommonZone.OFF_MODE
-        ] = 16  # "Off"  1 0000
+        ] = "off"  # "Off"  1 0000
         self.system_switch_position[
             tc.ThermostatCommonZone.FAN_MODE
-        ] = 7  # "Fan"   0 0111
+        ] = "vent"  # "Fan"   0 0111
         self.system_switch_position[
             tc.ThermostatCommonZone.DRY_MODE
-        ] = 2  # dry     0 0010
+        ] = "dry"  # dry     0 0010
         self.system_switch_position[
             tc.ThermostatCommonZone.COOL_MODE
-        ] = 3  # cool   0 0011
+        ] = "cool"  # cool   0 0011
         self.system_switch_position[
             tc.ThermostatCommonZone.AUTO_MODE
-        ] = 33  # auto   0 0101
+        ] = "auto"  # also autoHeat and autoCool? # auto   0 0101
 
         # zone info
         self.verbose = verbose
@@ -1255,8 +1293,20 @@ class ThermostatZone(tc.ThermostatCommonZone):
             if fan_speed is None:
                 return 0  # no fan_speed key, return 0
             else:
+                # Handle both string and numeric fan_speed values
+                fan_is_on = False
+                if isinstance(fan_speed, str):
+                    # String values: "auto" or any non-"off" value indicates fan is on
+                    # This catch-all approach handles any string fan speed modes
+                    fan_is_on = fan_speed == "auto" or fan_speed != "off"
+                elif isinstance(fan_speed, (int, float)):
+                    # Numeric values: greater than 0 indicates fan is on
+                    fan_is_on = fan_speed > 0
+                # For unexpected types, fan_is_on remains False (fan off)
+                # fan_speed_text check below provides additional validation
+
                 return int(
-                    fan_speed > 0
+                    fan_is_on
                     or self.get_parameter("fan_speed_text", "more", "reportedCondition")
                     != "off"
                 )
