@@ -855,6 +855,14 @@ class ThermostatClass(tc.ThermostatCommon):
                 return
 
             zones = self._get_zones(site_id)
+            if not zones:
+                # Fallback to sequential assignment if no zones data
+                for idx, serial_number in enumerate(serial_num_lst):
+                    if idx in kumocloudv3_config.metadata:
+                        kumocloudv3_config.metadata[idx]["serial_number"] = (
+                            serial_number
+                        )
+                return
 
             # Build mapping of serial number to zone name
             serial_to_zone_name = {}
@@ -865,24 +873,30 @@ class ThermostatClass(tc.ThermostatCommon):
                 if device_serial and zone_name:
                     serial_to_zone_name[device_serial] = zone_name
 
+            # Build reverse lookup: zone_name -> metadata index
+            # This improves performance from O(n*m) to O(n+m)
+            zone_name_to_idx = {
+                meta.get("zone_name"): idx
+                for idx, meta in kumocloudv3_config.metadata.items()
+                if meta.get("zone_name")
+            }
+
             # Assign serial numbers to correct metadata indices
             # by matching zone names
             for serial_number in serial_num_lst:
                 zone_name = serial_to_zone_name.get(serial_number)
                 if zone_name:
-                    # Find the metadata index for this zone name
-                    for idx, meta in kumocloudv3_config.metadata.items():
-                        if meta.get("zone_name") == zone_name:
-                            kumocloudv3_config.metadata[idx]["serial_number"] = (
-                                serial_number
+                    idx = zone_name_to_idx.get(zone_name)
+                    if idx is not None:
+                        kumocloudv3_config.metadata[idx]["serial_number"] = (
+                            serial_number
+                        )
+                        if self.verbose:
+                            print(
+                                f"zone index={idx}, "
+                                f"name={zone_name}, "
+                                f"serial_number={serial_number}"
                             )
-                            if self.verbose:
-                                print(
-                                    f"zone index={idx}, "
-                                    f"name={zone_name}, "
-                                    f"serial_number={serial_number}"
-                                )
-                            break
 
         except Exception as exc:
             # Fallback to sequential assignment on any error
