@@ -1284,6 +1284,10 @@ class ThermostatZone(tc.ThermostatCommonZone):
                 elif isinstance(fan_speed, (int, float)):
                     # Numeric values: greater than 0 indicates fan is on
                     fan_is_on = fan_speed > 0
+                else:
+                    # Unexpected type: default to False (fan off)
+                    # fan_speed_text check below provides additional validation
+                    fan_is_on = False
 
                 return int(
                     fan_is_on
