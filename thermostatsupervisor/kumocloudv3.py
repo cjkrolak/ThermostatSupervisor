@@ -378,7 +378,11 @@ class ThermostatClass(tc.ThermostatCommon):
                 kumocloudv3_config.supported_configs["zones"].append(basement_index)
 
     def _rebuild_metadata_dict(
-        self, zone_name_to_index, main_living_index, kitchen_index, basement_index
+        self,
+        zone_name_to_index,
+        main_living_index,
+        kitchen_index,
+        basement_index
     ):
         """Rebuild metadata dict with discovered assignments."""
         if all(idx is not None for idx in
