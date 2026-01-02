@@ -825,6 +825,19 @@ class ThermostatClass(tc.ThermostatCommon):
                     " check your credentials."
                 )
 
+    def _assign_serials_sequentially(self, serial_num_lst):
+        """
+        Assign serial numbers to metadata sequentially (fallback method).
+
+        inputs:
+            serial_num_lst(list): List of serial numbers
+        """
+        for idx, serial_number in enumerate(serial_num_lst):
+            if idx in kumocloudv3_config.metadata:
+                kumocloudv3_config.metadata[idx]["serial_number"] = (
+                    serial_number
+                )
+
     def _populate_metadata(self, serial_num_lst):
         """
         Populate metadata with serial numbers.
@@ -837,31 +850,19 @@ class ThermostatClass(tc.ThermostatCommon):
             sites = self._get_sites()
             if not sites:
                 # Fallback to sequential assignment if no sites data
-                for idx, serial_number in enumerate(serial_num_lst):
-                    if idx in kumocloudv3_config.metadata:
-                        kumocloudv3_config.metadata[idx]["serial_number"] = (
-                            serial_number
-                        )
+                self._assign_serials_sequentially(serial_num_lst)
                 return
 
             site_id = sites[0].get("id")
             if not site_id:
                 # Fallback to sequential assignment
-                for idx, serial_number in enumerate(serial_num_lst):
-                    if idx in kumocloudv3_config.metadata:
-                        kumocloudv3_config.metadata[idx]["serial_number"] = (
-                            serial_number
-                        )
+                self._assign_serials_sequentially(serial_num_lst)
                 return
 
             zones = self._get_zones(site_id)
             if not zones:
                 # Fallback to sequential assignment if no zones data
-                for idx, serial_number in enumerate(serial_num_lst):
-                    if idx in kumocloudv3_config.metadata:
-                        kumocloudv3_config.metadata[idx]["serial_number"] = (
-                            serial_number
-                        )
+                self._assign_serials_sequentially(serial_num_lst)
                 return
 
             # Build mapping of serial number to zone name
@@ -892,24 +893,28 @@ class ThermostatClass(tc.ThermostatCommon):
                             serial_number
                         )
                         if self.verbose:
-                            print(
+                            util.log_msg(
                                 f"zone index={idx}, "
                                 f"name={zone_name}, "
-                                f"serial_number={serial_number}"
+                                f"serial_number={serial_number}",
+                                mode=util.DEBUG_LOG + util.STDOUT_LOG,
+                                func_name=1,
                             )
 
         except Exception as exc:
             # Fallback to sequential assignment on any error
             if self.verbose:
-                print(
-                    f"Warning: Failed to match serial numbers by name: {exc}"
+                util.log_msg(
+                    f"Warning: Failed to match serial numbers by name: {exc}",
+                    mode=util.DEBUG_LOG + util.STDOUT_LOG,
+                    func_name=1,
                 )
-                print("Using sequential assignment as fallback")
-            for idx, serial_number in enumerate(serial_num_lst):
-                if idx in kumocloudv3_config.metadata:
-                    kumocloudv3_config.metadata[idx]["serial_number"] = (
-                        serial_number
-                    )
+                util.log_msg(
+                    "Using sequential assignment as fallback",
+                    mode=util.DEBUG_LOG + util.STDOUT_LOG,
+                    func_name=1,
+                )
+            self._assign_serials_sequentially(serial_num_lst)
 
     def _get_specific_zone_data(self, zone, serial_num_lst):
         """Get data for specific zone."""
