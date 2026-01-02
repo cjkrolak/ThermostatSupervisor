@@ -375,6 +375,7 @@ class ThermostatClass(tc.ThermostatCommon):
             discovered_zones.append(basement_index)
 
         # Only update the zones list if we discovered at least one zone
+        # If no zones were discovered, keep the existing configuration as fallback
         if discovered_zones:
             kumocloudv3_config.supported_configs["zones"] = discovered_zones
 
