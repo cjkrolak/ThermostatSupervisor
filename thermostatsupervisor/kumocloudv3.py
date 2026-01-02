@@ -430,7 +430,10 @@ class ThermostatClass(tc.ThermostatCommon):
 
             # Update metadata dict with discovered assignments
             self._rebuild_metadata_dict(
-                zone_name_to_index, main_living_index, kitchen_index, basement_index
+                zone_name_to_index,
+                main_living_index,
+                kitchen_index,
+                basement_index
             )
 
         except Exception as e:
