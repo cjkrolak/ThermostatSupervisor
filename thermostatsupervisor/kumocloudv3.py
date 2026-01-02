@@ -1275,8 +1275,17 @@ class ThermostatZone(tc.ThermostatCommonZone):
             if fan_speed is None:
                 return 0  # no fan_speed key, return 0
             else:
+                # Handle both string and numeric fan_speed values
+                fan_is_on = False
+                if isinstance(fan_speed, str):
+                    # String values: "auto" or non-"off" values indicate fan is on
+                    fan_is_on = fan_speed == "auto" or fan_speed != "off"
+                elif isinstance(fan_speed, (int, float)):
+                    # Numeric values: greater than 0 indicates fan is on
+                    fan_is_on = fan_speed > 0
+
                 return int(
-                    (fan_speed == "auto" or fan_speed > 0)
+                    fan_is_on
                     or self.get_parameter("fan_speed_text", "more", "reportedCondition")
                     != "off"
                 )
