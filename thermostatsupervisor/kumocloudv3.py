@@ -362,17 +362,23 @@ class ThermostatClass(tc.ThermostatCommon):
         discovered_zones = []
 
         # Update the config module with discovered assignments
-        if main_living_index is not None:
+        # Use a set to track already-added indices to prevent duplicates
+        added_indices = set()
+
+        if main_living_index is not None and main_living_index not in added_indices:
             kumocloudv3_config.MAIN_LIVING = main_living_index
             discovered_zones.append(main_living_index)
+            added_indices.add(main_living_index)
 
-        if kitchen_index is not None:
+        if kitchen_index is not None and kitchen_index not in added_indices:
             kumocloudv3_config.KITCHEN = kitchen_index
             discovered_zones.append(kitchen_index)
+            added_indices.add(kitchen_index)
 
-        if basement_index is not None:
+        if basement_index is not None and basement_index not in added_indices:
             kumocloudv3_config.BASEMENT = basement_index
             discovered_zones.append(basement_index)
+            added_indices.add(basement_index)
 
         # Only update the zones list if we discovered at least one zone
         # If no zones were discovered, keep the existing configuration as fallback
