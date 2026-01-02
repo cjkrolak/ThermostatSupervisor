@@ -232,6 +232,84 @@ class ZoneMetadataPopulationUnitTest(utc.UnitTest):
             # Other zones may not match due to missing names
             # This is acceptable fallback behavior
 
+    def test_get_specific_zone_data_uses_metadata_serial(self):
+        """
+        Test that _get_specific_zone_data uses the serial number from
+        metadata (populated by zone name matching), not from serial_num_lst
+        by index.
+        """
+        # Setup metadata dict to simulate post-_populate_metadata state
+        kumocloudv3_config.metadata.clear()
+        kumocloudv3_config.metadata.update(
+            copy.deepcopy(self.expected_metadata_structure)
+        )
+
+        # Manually populate with correct serial numbers by zone name
+        kumocloudv3_config.metadata[0]["serial_number"] = "SERIAL_KITCHEN_001"
+        kumocloudv3_config.metadata[1]["serial_number"] = "SERIAL_BASEMENT_002"
+        kumocloudv3_config.metadata[2]["serial_number"] = "SERIAL_MAIN_003"
+
+        # Create a mock thermostat instance for zone 2 (Main Living)
+        with patch.object(
+            kumocloudv3.ThermostatClass, "_authenticate"
+        ), patch.object(
+            kumocloudv3.ThermostatClass, "_update_zone_assignments"
+        ):
+            thermostat = kumocloudv3.ThermostatClass(zone=2, verbose=False)
+
+            # Mock get_raw_json to return zone data
+            mock_raw_json = [
+                {},  # token_info
+                "",  # last_update
+                {
+                    "children": [
+                        {
+                            "zoneTable": {
+                                "SERIAL_KITCHEN_001": {
+                                    "label": "Kitchen",
+                                    "reportedCondition": {"room_temp": 20.0},
+                                },
+                                "SERIAL_BASEMENT_002": {
+                                    "label": "Basement",
+                                    "reportedCondition": {"room_temp": 18.0},
+                                },
+                                "SERIAL_MAIN_003": {
+                                    "label": "Main Living",
+                                    "reportedCondition": {"room_temp": 22.0},
+                                },
+                            }
+                        }
+                    ]
+                },
+                "",  # device_token
+            ]
+            thermostat.get_raw_json = MagicMock(return_value=mock_raw_json)
+
+            # Call _get_specific_zone_data for zone 2 (Main Living)
+            # Pass serial_num_lst in API order (not zone index order)
+            result = thermostat._get_specific_zone_data(
+                2, self.serial_num_lst
+            )
+
+            # Verify it returned Main Living's data (temp 22.0), not Kitchen's
+            self.assertEqual(
+                result["label"],
+                "Main Living",
+                "Should return Main Living data for zone 2",
+            )
+            self.assertEqual(
+                result["reportedCondition"]["room_temp"],
+                22.0,
+                "Should return correct temperature for Main Living",
+            )
+
+            # Verify the serial_number was set correctly
+            self.assertEqual(
+                thermostat.serial_number,
+                "SERIAL_MAIN_003",
+                "Should use serial from metadata, not serial_num_lst[2]",
+            )
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

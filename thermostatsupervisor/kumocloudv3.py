@@ -924,17 +924,26 @@ class ThermostatClass(tc.ThermostatCommon):
         else:
             zone_index = zone
 
+        # Get serial number from metadata (populated by _populate_metadata)
+        # This ensures we use the correct serial for this zone_index
+        # regardless of the order in serial_num_lst
         try:
-            self.serial_number = serial_num_lst[zone_index]
-        except IndexError as exc:
+            self.serial_number = kumocloudv3_config.metadata[zone_index][
+                "serial_number"
+            ]
+            if not self.serial_number:
+                # Fallback to index-based lookup if metadata not populated
+                self.serial_number = serial_num_lst[zone_index]
+        except (KeyError, IndexError) as exc:
             raise IndexError(
                 f"ERROR: Invalid Zone, index ({zone_index}) does "
-                "not exist in serial number list "
-                f"({serial_num_lst})"
+                "not exist in metadata or serial number list "
+                f"(metadata keys: {list(kumocloudv3_config.metadata.keys())}, "
+                f"serial_num_lst: {serial_num_lst})"
             ) from exc
 
         return self.get_raw_json()[2]["children"][0]["zoneTable"][
-            serial_num_lst[zone_index]
+            self.serial_number
         ]
 
     def _process_raw_data(self, raw_json, parameter, zone):
