@@ -430,8 +430,9 @@ class ThermostatClass(tc.ThermostatCommon):
                 self._find_zone_indices_by_patterns(zone_name_to_index)
 
             # Update config with discovered indices
-            self._update_config_with_indices(main_living_index, kitchen_index,
-                                             basement_index)
+            self._update_config_with_indices(
+                main_living_index, kitchen_index, basement_index
+            )
 
             # Update metadata dict with discovered assignments
             self._rebuild_metadata_dict(
