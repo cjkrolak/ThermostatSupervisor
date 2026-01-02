@@ -357,24 +357,26 @@ class ThermostatClass(tc.ThermostatCommon):
     def _update_config_with_indices(self, main_living_index, kitchen_index,
                                     basement_index):
         """Update config module with discovered zone indices."""
+        # Rebuild zones list from scratch to avoid inconsistent indices
+        # when some zones are not found
+        discovered_zones = []
+
         # Update the config module with discovered assignments
         if main_living_index is not None:
             kumocloudv3_config.MAIN_LIVING = main_living_index
-            kumocloudv3_config.supported_configs["zones"][0] = main_living_index
+            discovered_zones.append(main_living_index)
 
         if kitchen_index is not None:
             kumocloudv3_config.KITCHEN = kitchen_index
-            if len(kumocloudv3_config.supported_configs["zones"]) > 1:
-                kumocloudv3_config.supported_configs["zones"][1] = kitchen_index
-            else:
-                kumocloudv3_config.supported_configs["zones"].append(kitchen_index)
+            discovered_zones.append(kitchen_index)
 
         if basement_index is not None:
             kumocloudv3_config.BASEMENT = basement_index
-            if len(kumocloudv3_config.supported_configs["zones"]) > 2:
-                kumocloudv3_config.supported_configs["zones"][2] = basement_index
-            else:
-                kumocloudv3_config.supported_configs["zones"].append(basement_index)
+            discovered_zones.append(basement_index)
+
+        # Only update the zones list if we discovered at least one zone
+        if discovered_zones:
+            kumocloudv3_config.supported_configs["zones"] = discovered_zones
 
     def _rebuild_metadata_dict(
         self, zone_name_to_index, main_living_index, kitchen_index, basement_index
