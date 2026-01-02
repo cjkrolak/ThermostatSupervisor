@@ -358,24 +358,33 @@ class ThermostatClass(tc.ThermostatCommon):
         self, main_living_index, kitchen_index, basement_index
     ):
         """Update config module with discovered zone indices."""
+        # Rebuild zones list from scratch to avoid inconsistent indices
+        # when some zones are not found
+        discovered_zones = []
+
         # Update the config module with discovered assignments
-        if main_living_index is not None:
+        # Use a set to track already-added indices to prevent duplicates
+        added_indices = set()
+
+        if main_living_index is not None and main_living_index not in added_indices:
             kumocloudv3_config.MAIN_LIVING = main_living_index
-            kumocloudv3_config.supported_configs["zones"][0] = main_living_index
+            discovered_zones.append(main_living_index)
+            added_indices.add(main_living_index)
 
-        if kitchen_index is not None:
+        if kitchen_index is not None and kitchen_index not in added_indices:
             kumocloudv3_config.KITCHEN = kitchen_index
-            if len(kumocloudv3_config.supported_configs["zones"]) > 1:
-                kumocloudv3_config.supported_configs["zones"][1] = kitchen_index
-            else:
-                kumocloudv3_config.supported_configs["zones"].append(kitchen_index)
+            discovered_zones.append(kitchen_index)
+            added_indices.add(kitchen_index)
 
-        if basement_index is not None:
+        if basement_index is not None and basement_index not in added_indices:
             kumocloudv3_config.BASEMENT = basement_index
-            if len(kumocloudv3_config.supported_configs["zones"]) > 2:
-                kumocloudv3_config.supported_configs["zones"][2] = basement_index
-            else:
-                kumocloudv3_config.supported_configs["zones"].append(basement_index)
+            discovered_zones.append(basement_index)
+            added_indices.add(basement_index)
+
+        # Only update the zones list if we discovered at least one zone
+        # If no zones were discovered, keep the existing configuration as fallback
+        if discovered_zones:
+            kumocloudv3_config.supported_configs["zones"] = discovered_zones
 
     def _rebuild_metadata_dict(
         self,
