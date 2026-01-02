@@ -354,8 +354,9 @@ class ThermostatClass(tc.ThermostatCommon):
 
         return main_living_index, kitchen_index, basement_index
 
-    def _update_config_with_indices(self, main_living_index, kitchen_index,
-                                    basement_index):
+    def _update_config_with_indices(
+        self, main_living_index, kitchen_index, basement_index
+    ):
         """Update config module with discovered zone indices."""
         # Update the config module with discovered assignments
         if main_living_index is not None:
