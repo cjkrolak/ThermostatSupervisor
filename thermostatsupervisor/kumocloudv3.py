@@ -826,11 +826,76 @@ class ThermostatClass(tc.ThermostatCommon):
                 )
 
     def _populate_metadata(self, serial_num_lst):
-        """Populate metadata with serial numbers."""
-        for idx, serial_number in enumerate(serial_num_lst):
+        """
+        Populate metadata with serial numbers.
+
+        This method correctly matches serial numbers to zone indices
+        by using zone names from the API response.
+        """
+        try:
+            # Get zones data to match zone names with serial numbers
+            sites = self._get_sites()
+            if not sites:
+                # Fallback to sequential assignment if no sites data
+                for idx, serial_number in enumerate(serial_num_lst):
+                    if idx in kumocloudv3_config.metadata:
+                        kumocloudv3_config.metadata[idx]["serial_number"] = (
+                            serial_number
+                        )
+                return
+
+            site_id = sites[0].get("id")
+            if not site_id:
+                # Fallback to sequential assignment
+                for idx, serial_number in enumerate(serial_num_lst):
+                    if idx in kumocloudv3_config.metadata:
+                        kumocloudv3_config.metadata[idx]["serial_number"] = (
+                            serial_number
+                        )
+                return
+
+            zones = self._get_zones(site_id)
+
+            # Build mapping of serial number to zone name
+            serial_to_zone_name = {}
+            for zone in zones:
+                adapter = zone.get("adapter", {})
+                device_serial = adapter.get("deviceSerial")
+                zone_name = zone.get("name", "").strip()
+                if device_serial and zone_name:
+                    serial_to_zone_name[device_serial] = zone_name
+
+            # Assign serial numbers to correct metadata indices
+            # by matching zone names
+            for serial_number in serial_num_lst:
+                zone_name = serial_to_zone_name.get(serial_number)
+                if zone_name:
+                    # Find the metadata index for this zone name
+                    for idx, meta in kumocloudv3_config.metadata.items():
+                        if meta.get("zone_name") == zone_name:
+                            kumocloudv3_config.metadata[idx]["serial_number"] = (
+                                serial_number
+                            )
+                            if self.verbose:
+                                print(
+                                    f"zone index={idx}, "
+                                    f"name={zone_name}, "
+                                    f"serial_number={serial_number}"
+                                )
+                            break
+
+        except Exception as exc:
+            # Fallback to sequential assignment on any error
             if self.verbose:
-                print(f"zone index={idx}, serial_number={serial_number}")
-            kumocloudv3_config.metadata[idx]["serial_number"] = serial_number
+                print(
+                    f"Warning: Failed to match serial numbers by name: {exc}"
+                )
+                print("Using sequential assignment as fallback")
+            for idx, serial_number in enumerate(serial_num_lst):
+                if idx in kumocloudv3_config.metadata:
+                    kumocloudv3_config.metadata[idx]["serial_number"] = (
+                        serial_number
+                    )
 
     def _get_specific_zone_data(self, zone, serial_num_lst):
         """Get data for specific zone."""
