@@ -657,10 +657,16 @@ class ThermostatClass(tc.ThermostatCommon):
             "rssi": {"rssi": device.get("rssi", util.BOGUS_INT)},
             "status_display": {
                 "reportedCondition": {
-                    "defrost": 1 if device["displayConfig"].get("defrost",
-                                                                util.BOGUS_BOOL) else 0,
-                    "standby": 1 if device["displayConfig"].get("standby",
-                                                                util.BOGUS_BOOL) else 0,
+                    "defrost": 1
+                    if device.get("displayConfig", {}).get(
+                        "defrost", util.BOGUS_BOOL
+                    )
+                    else 0,
+                    "standby": 1
+                    if device.get("displayConfig", {}).get(
+                        "standby", util.BOGUS_BOOL
+                    )
+                    else 0,
                 }
             },
         }
@@ -669,9 +675,17 @@ class ThermostatClass(tc.ThermostatCommon):
         if "reportedCondition" not in legacy_device:
             legacy_device["reportedCondition"] = {}
 
-        fan_speed = legacy_device["reportedCondition"].get("fan_speed", util.BOGUS_INT)
+        fan_speed = legacy_device["reportedCondition"].get(
+            "fan_speed", util.BOGUS_INT
+        )
         legacy_device["reportedCondition"]["more"] = {
-            "fan_speed_text": "off" if fan_speed == 0 else "on"
+            # Explicitly handle missing/invalid fan_speed values represented
+            # by util.BOGUS_INT, so we do not incorrectly report them as "on".
+            "fan_speed_text": (
+                "unknown"
+                if fan_speed == util.BOGUS_INT
+                else ("off" if fan_speed == 0 else "on")
+            )
         }
 
         return legacy_device
@@ -832,8 +846,8 @@ class ThermostatClass(tc.ThermostatCommon):
         """
         Assign serial numbers to metadata sequentially (fallback method).
 
-        inputs:
-            serial_num_lst(list): List of serial numbers
+        Args:
+            serial_num_lst (list): List of serial numbers
         """
         for idx, serial_number in enumerate(serial_num_lst):
             if idx in kumocloudv3_config.metadata:
@@ -843,10 +857,18 @@ class ThermostatClass(tc.ThermostatCommon):
 
     def _populate_metadata(self, serial_num_lst):
         """
-        Populate metadata with serial numbers.
+        Populate metadata with serial numbers matched by zone name.
 
         This method correctly matches serial numbers to zone indices
-        by using zone names from the API response.
+        by using zone names from the API response, ensuring correct
+        assignment regardless of API response order.
+
+        Modifies kumocloudv3_config.metadata in-place by setting the
+        'serial_number' field for each zone based on zone name matching.
+        Falls back to sequential assignment on API errors.
+
+        Args:
+            serial_num_lst (list): List of serial numbers from API
         """
         try:
             # Get zones data to match zone names with serial numbers
@@ -903,9 +925,62 @@ class ThermostatClass(tc.ThermostatCommon):
                                 mode=util.DEBUG_LOG + util.STDOUT_LOG,
                                 func_name=1,
                             )
+                    elif self.verbose:
+                        # Log a warning when a zone name from the API
+                        # cannot be mapped to a metadata index. This
+                        # helps debug configuration mismatches.
+                        util.log_msg(
+                            "Warning: Zone name from API not found in "
+                            f"metadata: zone_name={zone_name!r}, "
+                            f"serial_number={serial_number}",
+                            mode=util.DEBUG_LOG + util.STDOUT_LOG,
+                            func_name=1,
+                        )
+                elif self.verbose:
+                    # Log a warning when a serial number from the indoor
+                    # units list cannot be matched to any zone name from
+                    # the zones API response. This condition is silent
+                    # otherwise and may cause issues later when specific
+                    # zone data is requested.
+                    util.log_msg(
+                        "Warning: Serial number from indoor units could "
+                        "not be matched to any zone name from API: "
+                        f"serial_number={serial_number}",
+                        mode=util.DEBUG_LOG + util.STDOUT_LOG,
+                        func_name=1,
+                    )
 
+        except requests.exceptions.RequestException as exc:
+            # API communication errors - fallback to sequential assignment
+            if self.verbose:
+                util.log_msg(
+                    f"Warning: API request failed during serial matching: {exc}",
+                    mode=util.DEBUG_LOG + util.STDOUT_LOG,
+                    func_name=1,
+                )
+                util.log_msg(
+                    "Using sequential assignment as fallback",
+                    mode=util.DEBUG_LOG + util.STDOUT_LOG,
+                    func_name=1,
+                )
+            self._assign_serials_sequentially(serial_num_lst)
+        except (KeyError, TypeError, AttributeError) as exc:
+            # Data structure issues - fallback to sequential assignment
+            if self.verbose:
+                util.log_msg(
+                    f"Warning: Unexpected data structure during serial "
+                    f"matching: {exc}",
+                    mode=util.DEBUG_LOG + util.STDOUT_LOG,
+                    func_name=1,
+                )
+                util.log_msg(
+                    "Using sequential assignment as fallback",
+                    mode=util.DEBUG_LOG + util.STDOUT_LOG,
+                    func_name=1,
+                )
+            self._assign_serials_sequentially(serial_num_lst)
         except Exception as exc:
-            # Fallback to sequential assignment on any error
+            # Unexpected errors - log and fallback to sequential assignment
             if self.verbose:
                 util.log_msg(
                     f"Warning: Failed to match serial numbers by name: {exc}",
@@ -920,7 +995,27 @@ class ThermostatClass(tc.ThermostatCommon):
             self._assign_serials_sequentially(serial_num_lst)
 
     def _get_specific_zone_data(self, zone, serial_num_lst):
-        """Get data for specific zone."""
+        """
+        Get data for specific zone from API.
+
+        Retrieves the zone data from the API's zoneTable by looking up
+        the serial number that was matched to this zone by _populate_metadata.
+        This ensures the correct device data is returned regardless of API
+        response ordering.
+
+        Args:
+            zone (int or str): Zone index (int) or zone name (str)
+            serial_num_lst (list): List of serial numbers from API (used as
+                fallback if metadata serial not populated)
+
+        Returns:
+            dict: Zone data from API containing device information and
+                reported conditions
+
+        Raises:
+            IndexError: If zone_index is invalid or serial number cannot be
+                found in metadata or serial_num_lst
+        """
         if not isinstance(zone, int):
             self.zone_name = zone
             zone_index = self.get_zone_index_from_name()
