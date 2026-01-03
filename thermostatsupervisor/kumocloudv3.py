@@ -637,27 +637,27 @@ class ThermostatClass(tc.ThermostatCommon):
             "label": zone.get("name", "Unknown Zone"),
             "address": device.get("macAddress", ""),
             "reportedCondition": {
-                "room_temp": device.get("roomTemperature", 20.0),
-                "sp_heat": device.get("heatSetpoint", 20.0),
-                "sp_cool": device.get("coolSetpoint", 25.0),
-                "operation_mode": device.get("operationMode", 16),
-                "power": 1 if device.get("power", False) else 0,
-                "fan_speed": device.get("fanSpeed", 0),
-                "humidity": device.get("humidity"),
+                "room_temp": device.get("roomTemp", util.BOGUS_INT),
+                "sp_heat": device.get("spHeat", util.BOGUS_INT),
+                "sp_cool": device.get("spCool", util.BOGUS_INT),
+                "operation_mode": device.get("operationMode", util.BOGUS_INT),
+                "power": 1 if device.get("power", util.BOGUS_BOOL) else 0,
+                "fan_speed": device.get("fanSpeed", util.BOGUS_INT),
+                "humidity": device.get("humidity", util.BOGUS_INT),
             },
             "reportedInitialSettings": {
-                "energy_save": 1 if device.get("energySave", False) else 0,
+                "energy_save": 1 if device.get("energySave", util.BOGUS_BOOL) else 0,
             },
             "inputs": {
                 "acoilSettings": {
-                    "humidistat": 1 if device.get("hasHumiditySensor", False) else 0,
+                    "humidistat": 1 if device.get("hasHumiditySensor", util.BOGUS_BOOL) else 0,
                 }
             },
-            "rssi": {"rssi": device.get("wifiSignalStrength", -50.0)},
+            "rssi": {"rssi": device.get("rssi", util.BOGUS_INT)},
             "status_display": {
                 "reportedCondition": {
-                    "defrost": 1 if device.get("defrosting", False) else 0,
-                    "standby": 1 if device.get("standby", False) else 0,
+                    "defrost": 1 if device["displayConfig"].get("defrost", util.BOGUS_BOOL) else 0,
+                    "standby": 1 if device["displayConfig"].get("standby", util.BOGUS_BOOL) else 0,
                 }
             },
         }
@@ -666,7 +666,7 @@ class ThermostatClass(tc.ThermostatCommon):
         if "reportedCondition" not in legacy_device:
             legacy_device["reportedCondition"] = {}
 
-        fan_speed = legacy_device["reportedCondition"].get("fan_speed", 0)
+        fan_speed = legacy_device["reportedCondition"].get("fan_speed", util.BOGUS_INT)
         legacy_device["reportedCondition"]["more"] = {
             "fan_speed_text": "off" if fan_speed == 0 else "on"
         }
