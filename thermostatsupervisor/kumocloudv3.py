@@ -650,14 +650,17 @@ class ThermostatClass(tc.ThermostatCommon):
             },
             "inputs": {
                 "acoilSettings": {
-                    "humidistat": 1 if device.get("hasHumiditySensor", util.BOGUS_BOOL) else 0,
+                    "humidistat": 1 if device.get("hasHumiditySensor",
+                                                  util.BOGUS_BOOL) else 0,
                 }
             },
             "rssi": {"rssi": device.get("rssi", util.BOGUS_INT)},
             "status_display": {
                 "reportedCondition": {
-                    "defrost": 1 if device["displayConfig"].get("defrost", util.BOGUS_BOOL) else 0,
-                    "standby": 1 if device["displayConfig"].get("standby", util.BOGUS_BOOL) else 0,
+                    "defrost": 1 if device["displayConfig"].get("defrost",
+                                                                util.BOGUS_BOOL) else 0,
+                    "standby": 1 if device["displayConfig"].get("standby",
+                                                                util.BOGUS_BOOL) else 0,
                 }
             },
         }
