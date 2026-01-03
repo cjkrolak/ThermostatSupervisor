@@ -637,27 +637,36 @@ class ThermostatClass(tc.ThermostatCommon):
             "label": zone.get("name", "Unknown Zone"),
             "address": device.get("macAddress", ""),
             "reportedCondition": {
-                "room_temp": device.get("roomTemperature", 20.0),
-                "sp_heat": device.get("heatSetpoint", 20.0),
-                "sp_cool": device.get("coolSetpoint", 25.0),
-                "operation_mode": device.get("operationMode", 16),
-                "power": 1 if device.get("power", False) else 0,
-                "fan_speed": device.get("fanSpeed", 0),
-                "humidity": device.get("humidity"),
+                "room_temp": device.get("roomTemp", util.BOGUS_INT),
+                "sp_heat": device.get("spHeat", util.BOGUS_INT),
+                "sp_cool": device.get("spCool", util.BOGUS_INT),
+                "operation_mode": device.get("operationMode", util.BOGUS_INT),
+                "power": 1 if device.get("power", util.BOGUS_BOOL) else 0,
+                "fan_speed": device.get("fanSpeed", util.BOGUS_INT),
+                "humidity": device.get("humidity", util.BOGUS_INT),
             },
             "reportedInitialSettings": {
-                "energy_save": 1 if device.get("energySave", False) else 0,
+                "energy_save": 1 if device.get("energySave", util.BOGUS_BOOL) else 0,
             },
             "inputs": {
                 "acoilSettings": {
-                    "humidistat": 1 if device.get("hasHumiditySensor", False) else 0,
+                    "humidistat": 1 if device.get("hasHumiditySensor",
+                                                  util.BOGUS_BOOL) else 0,
                 }
             },
-            "rssi": {"rssi": device.get("wifiSignalStrength", -50.0)},
+            "rssi": {"rssi": device.get("rssi", util.BOGUS_INT)},
             "status_display": {
                 "reportedCondition": {
-                    "defrost": 1 if device.get("defrosting", False) else 0,
-                    "standby": 1 if device.get("standby", False) else 0,
+                    "defrost": 1
+                    if device.get("displayConfig", {}).get(
+                        "defrost", util.BOGUS_BOOL
+                    )
+                    else 0,
+                    "standby": 1
+                    if device.get("displayConfig", {}).get(
+                        "standby", util.BOGUS_BOOL
+                    )
+                    else 0,
                 }
             },
         }
@@ -666,9 +675,17 @@ class ThermostatClass(tc.ThermostatCommon):
         if "reportedCondition" not in legacy_device:
             legacy_device["reportedCondition"] = {}
 
-        fan_speed = legacy_device["reportedCondition"].get("fan_speed", 0)
+        fan_speed = legacy_device["reportedCondition"].get(
+            "fan_speed", util.BOGUS_INT
+        )
         legacy_device["reportedCondition"]["more"] = {
-            "fan_speed_text": "off" if fan_speed == 0 else "on"
+            # Explicitly handle missing/invalid fan_speed values represented
+            # by util.BOGUS_INT, so we do not incorrectly report them as "on".
+            "fan_speed_text": (
+                "unknown"
+                if fan_speed == util.BOGUS_INT
+                else ("off" if fan_speed == 0 else "on")
+            )
         }
 
         return legacy_device
@@ -825,32 +842,206 @@ class ThermostatClass(tc.ThermostatCommon):
                     " check your credentials."
                 )
 
-    def _populate_metadata(self, serial_num_lst):
-        """Populate metadata with serial numbers."""
+    def _assign_serials_sequentially(self, serial_num_lst):
+        """
+        Assign serial numbers to metadata sequentially (fallback method).
+
+        Args:
+            serial_num_lst (list): List of serial numbers
+        """
         for idx, serial_number in enumerate(serial_num_lst):
+            if idx in kumocloudv3_config.metadata:
+                kumocloudv3_config.metadata[idx]["serial_number"] = (
+                    serial_number
+                )
+
+    def _populate_metadata(self, serial_num_lst):
+        """
+        Populate metadata with serial numbers matched by zone name.
+
+        This method correctly matches serial numbers to zone indices
+        by using zone names from the API response, ensuring correct
+        assignment regardless of API response order.
+
+        Modifies kumocloudv3_config.metadata in-place by setting the
+        'serial_number' field for each zone based on zone name matching.
+        Falls back to sequential assignment on API errors.
+
+        Args:
+            serial_num_lst (list): List of serial numbers from API
+        """
+        try:
+            # Get zones data to match zone names with serial numbers
+            sites = self._get_sites()
+            if not sites:
+                # Fallback to sequential assignment if no sites data
+                self._assign_serials_sequentially(serial_num_lst)
+                return
+
+            site_id = sites[0].get("id")
+            if not site_id:
+                # Fallback to sequential assignment
+                self._assign_serials_sequentially(serial_num_lst)
+                return
+
+            zones = self._get_zones(site_id)
+            if not zones:
+                # Fallback to sequential assignment if no zones data
+                self._assign_serials_sequentially(serial_num_lst)
+                return
+
+            # Build mapping of serial number to zone name
+            serial_to_zone_name = {}
+            for zone in zones:
+                adapter = zone.get("adapter", {})
+                device_serial = adapter.get("deviceSerial")
+                zone_name = zone.get("name", "").strip()
+                if device_serial and zone_name:
+                    serial_to_zone_name[device_serial] = zone_name
+
+            # Build reverse lookup: zone_name -> metadata index
+            # This improves performance from O(n*m) to O(n+m)
+            zone_name_to_idx = {
+                meta.get("zone_name"): idx
+                for idx, meta in kumocloudv3_config.metadata.items()
+                if meta.get("zone_name")
+            }
+
+            # Assign serial numbers to correct metadata indices
+            # by matching zone names
+            for serial_number in serial_num_lst:
+                zone_name = serial_to_zone_name.get(serial_number)
+                if zone_name:
+                    idx = zone_name_to_idx.get(zone_name)
+                    if idx is not None:
+                        kumocloudv3_config.metadata[idx]["serial_number"] = (
+                            serial_number
+                        )
+                        if self.verbose:
+                            util.log_msg(
+                                f"zone index={idx}, "
+                                f"name={zone_name}, "
+                                f"serial_number={serial_number}",
+                                mode=util.DEBUG_LOG + util.STDOUT_LOG,
+                                func_name=1,
+                            )
+                    elif self.verbose:
+                        # Log a warning when a zone name from the API
+                        # cannot be mapped to a metadata index. This
+                        # helps debug configuration mismatches.
+                        util.log_msg(
+                            "Warning: Zone name from API not found in "
+                            f"metadata: zone_name={zone_name!r}, "
+                            f"serial_number={serial_number}",
+                            mode=util.DEBUG_LOG + util.STDOUT_LOG,
+                            func_name=1,
+                        )
+                elif self.verbose:
+                    # Log a warning when a serial number from the indoor
+                    # units list cannot be matched to any zone name from
+                    # the zones API response. This condition is silent
+                    # otherwise and may cause issues later when specific
+                    # zone data is requested.
+                    util.log_msg(
+                        "Warning: Serial number from indoor units could "
+                        "not be matched to any zone name from API: "
+                        f"serial_number={serial_number}",
+                        mode=util.DEBUG_LOG + util.STDOUT_LOG,
+                        func_name=1,
+                    )
+
+        except requests.exceptions.RequestException as exc:
+            # API communication errors - fallback to sequential assignment
             if self.verbose:
-                print(f"zone index={idx}, serial_number={serial_number}")
-            kumocloudv3_config.metadata[idx]["serial_number"] = serial_number
+                util.log_msg(
+                    f"Warning: API request failed during serial matching: {exc}",
+                    mode=util.DEBUG_LOG + util.STDOUT_LOG,
+                    func_name=1,
+                )
+                util.log_msg(
+                    "Using sequential assignment as fallback",
+                    mode=util.DEBUG_LOG + util.STDOUT_LOG,
+                    func_name=1,
+                )
+            self._assign_serials_sequentially(serial_num_lst)
+        except (KeyError, TypeError, AttributeError) as exc:
+            # Data structure issues - fallback to sequential assignment
+            if self.verbose:
+                util.log_msg(
+                    f"Warning: Unexpected data structure during serial "
+                    f"matching: {exc}",
+                    mode=util.DEBUG_LOG + util.STDOUT_LOG,
+                    func_name=1,
+                )
+                util.log_msg(
+                    "Using sequential assignment as fallback",
+                    mode=util.DEBUG_LOG + util.STDOUT_LOG,
+                    func_name=1,
+                )
+            self._assign_serials_sequentially(serial_num_lst)
+        except Exception as exc:
+            # Unexpected errors - log and fallback to sequential assignment
+            if self.verbose:
+                util.log_msg(
+                    f"Warning: Failed to match serial numbers by name: {exc}",
+                    mode=util.DEBUG_LOG + util.STDOUT_LOG,
+                    func_name=1,
+                )
+                util.log_msg(
+                    "Using sequential assignment as fallback",
+                    mode=util.DEBUG_LOG + util.STDOUT_LOG,
+                    func_name=1,
+                )
+            self._assign_serials_sequentially(serial_num_lst)
 
     def _get_specific_zone_data(self, zone, serial_num_lst):
-        """Get data for specific zone."""
+        """
+        Get data for specific zone from API.
+
+        Retrieves the zone data from the API's zoneTable by looking up
+        the serial number that was matched to this zone by _populate_metadata.
+        This ensures the correct device data is returned regardless of API
+        response ordering.
+
+        Args:
+            zone (int or str): Zone index (int) or zone name (str)
+            serial_num_lst (list): List of serial numbers from API (used as
+                fallback if metadata serial not populated)
+
+        Returns:
+            dict: Zone data from API containing device information and
+                reported conditions
+
+        Raises:
+            IndexError: If zone_index is invalid or serial number cannot be
+                found in metadata or serial_num_lst
+        """
         if not isinstance(zone, int):
             self.zone_name = zone
             zone_index = self.get_zone_index_from_name()
         else:
             zone_index = zone
 
+        # Get serial number from metadata (populated by _populate_metadata)
+        # This ensures we use the correct serial for this zone_index
+        # regardless of the order in serial_num_lst
         try:
-            self.serial_number = serial_num_lst[zone_index]
-        except IndexError as exc:
+            self.serial_number = kumocloudv3_config.metadata[zone_index][
+                "serial_number"
+            ]
+            if self.serial_number is None:
+                # Fallback to index-based lookup if metadata not populated
+                self.serial_number = serial_num_lst[zone_index]
+        except (KeyError, IndexError, TypeError) as exc:
             raise IndexError(
                 f"ERROR: Invalid Zone, index ({zone_index}) does "
-                "not exist in serial number list "
-                f"({serial_num_lst})"
+                "not exist in metadata or serial number list "
+                f"(metadata keys: {list(kumocloudv3_config.metadata.keys())}, "
+                f"serial_num_lst: {serial_num_lst})"
             ) from exc
 
         return self.get_raw_json()[2]["children"][0]["zoneTable"][
-            serial_num_lst[zone_index]
+            self.serial_number
         ]
 
     def _process_raw_data(self, raw_json, parameter, zone):
