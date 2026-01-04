@@ -1154,22 +1154,22 @@ class ThermostatZone(tc.ThermostatCommonZone):
         # switch config for this thermostat
         self.system_switch_position[
             tc.ThermostatCommonZone.HEAT_MODE
-        ] = "heat"  # "Heat" 0 0001
+        ] = [1, "heat"]  # "Heat" 0 0001
         self.system_switch_position[
             tc.ThermostatCommonZone.OFF_MODE
-        ] = "off"  # "Off"  1 0000
+        ] = [16, "off"]  # "Off"  1 0000
         self.system_switch_position[
             tc.ThermostatCommonZone.FAN_MODE
-        ] = "vent"  # "Fan"   0 0111
+        ] = [7, "vent"]  # "Fan"   0 0111
         self.system_switch_position[
             tc.ThermostatCommonZone.DRY_MODE
-        ] = "dry"  # dry     0 0010
+        ] = [2, "dry"]  # dry     0 0010
         self.system_switch_position[
             tc.ThermostatCommonZone.COOL_MODE
-        ] = "cool"  # cool   0 0011
+        ] = [3, "cool"]  # cool   0 0011
         self.system_switch_position[
             tc.ThermostatCommonZone.AUTO_MODE
-        ] = ["auto", "autoHeat", "autoCool"]  # auto modes  0 0101
+        ] = [5, "auto", "autoHeat", "autoCool"]  # auto modes  0 0101
 
         # zone info
         self.verbose = verbose
