@@ -544,14 +544,14 @@ class ThermostatZone(tc.ThermostatCommonZone):
         # TODO, are vacationhold unique fields?  what used for?
         return self.get_parameter("vacation_hold")
 
-    def get_system_switch_position(self) -> int:  # used
+    def get_system_switch_position(self) -> Union[int, str]:  # used
         """
         Return the system switch position.
 
         inputs:
             None
         returns:
-            (int) current mode for unit, should match value
+            (int or str) current mode for unit, should match value
                   in self.system_switch_position
         """
         self.refresh_zone_info()
