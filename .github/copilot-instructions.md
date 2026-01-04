@@ -1,8 +1,22 @@
+### Project Context
+This project is a **Thermostat Supervisor** application that:
+- Monitors and controls multiple thermostat brands (Honeywell, 3M50, Kumo, Nest,
+  etc.)
+- Provides Flask-based REST APIs for thermostat control
+- Integrates with hardware sensors (SHT31 temperature/humidity sensors via I2C)
+- Requires authentication with external thermostat APIs
+- Runs on Raspberry Pi and standard Linux systems
+- Uses Python 3.13 as the primary development version
+
 ### Python Instructions
+- **Python Version**: This project uses Python 3.13. Ensure all code is
+  compatible.
 - Write clear and concise comments for each function.
 - Ensure functions have descriptive names and include type hints.
-- Provide docstrings following <a href="https://peps.python.org/pep-0257/">PEP 257</a> conventions.
-- Use the `typing` module for type annotations (e.g., `List[str]`, `Dict[str, int]`).
+- Provide docstrings following <a href="https://peps.python.org/pep-0257/">PEP
+  257</a> conventions.
+- Use the `typing` module for type annotations (e.g., `List[str]`,
+  `Dict[str, int]`).
 - Break down complex functions into smaller, more manageable functions.
 
 ### General Instructions
@@ -28,22 +42,70 @@
 
 ### Edge Cases and Testing
 - Always include test cases for critical paths of the application.
-- Account for common edge cases like empty inputs, invalid data types, and 
+- Account for common edge cases like empty inputs, invalid data types, and
   large datasets.
 - Include comments for edge cases and the expected behavior in those cases.
-- Write unit tests for functions and document them with docstrings explaining 
+- Write unit tests for functions and document them with docstrings explaining
   the test cases.
+
+### Hardware-Dependent Code and Mocking
+- **Hardware Libraries**: This project uses hardware-specific libraries that may
+  not be available in all environments:
+  - `RPi.GPIO` - Raspberry Pi GPIO control (may not be available on
+    non-RPi systems)
+  - `smbus` / `smbus2` - I2C bus communication for SHT31 sensors
+  - Hardware sensors like SHT31 temperature/humidity sensors
+- **Testing Strategy**:
+  - Always mock hardware dependencies in unit tests using `unittest.mock`
+  - Tests must run successfully in CI/CD environments without physical hardware
+  - Use conditional imports with try/except blocks for hardware libraries
+  - Implement graceful fallbacks when hardware is not available
+- **Example Pattern**:
+  ```python
+  try:
+      import RPi.GPIO as GPIO
+      HAS_GPIO = True
+  except ImportError:
+      HAS_GPIO = False
+      # Mock or skip hardware-dependent functionality
+  ```
+
+### API Integration and Authentication
+- **External API Integrations**: This project integrates with multiple
+  thermostat APIs:
+  - Honeywell Total Connect Comfort (TCC) API
+  - Kumo Cloud API
+  - Google Nest API
+  - 3M50 thermostat API
+  - Blink camera API (for monitoring)
+- **Secrets Management**:
+  - Never commit API credentials, usernames, or passwords to source code
+  - Use environment variables for all sensitive configuration
+  - Reference `supervisor-env.txt.example` for required environment variables
+  - In tests, use GitHub Secrets or environment variables for integration tests
+  - Mock external API calls in unit tests to avoid rate limiting and
+    authentication issues
+- **API Error Handling**:
+  - Implement retry logic with exponential backoff for transient API failures
+  - Handle authentication errors gracefully with clear error messages
+  - Log API errors with sufficient context for debugging
+  - Respect API rate limits and implement appropriate throttling
 
 ### Pre-Commit Testing and Validation Requirements
 - **MANDATORY**: All changes MUST be thoroughly tested before committing.
-- **ZERO tolerance for untested code**: Every change must be validated before commit.
-- **Test workflows and scripts locally**: 
+- **ZERO tolerance for untested code**: Every change must be validated before
+  commit.
+- **Test workflows and scripts locally**:
   - For shell scripts: Run in a test shell to verify syntax and logic
   - For YAML workflows: Test bash scripts extracted from workflow files
   - For Python code: Run unit tests and verify imports work correctly
-- **Iterative testing approach**: Test after each small change, not just at the end
+  - For Flask applications: Test API endpoints manually or with integration
+    tests
+- **Iterative testing approach**: Test after each small change, not just at the
+  end
 - **Validation checklist before ANY commit**:
-  1. Syntax validation (bash -n for scripts, yamllint for YAML, flake8 for Python)
+  1. Syntax validation (bash -n for scripts, yamllint for YAML, flake8 for
+     Python)
   2. Local execution test (run the actual code/script in isolation)
   3. Integration test (verify it works in context)
   4. Lint verification (flake8, yamllint, etc.)
@@ -58,8 +120,38 @@
   - You're working with JSON construction in bash
   - You're using command substitution `$(...)` or variable expansion
   - You're making changes to GitHub Actions workflows
-- **Multiple iterations on same issue = process failure**: If requiring more than 
-  2-3 commits to fix an issue, STOP and reassess approach before continuing
+  - You're modifying Flask routes or API endpoints
+- **Multiple iterations on same issue = process failure**: If requiring more
+  than 2-3 commits to fix an issue, STOP and reassess approach before
+  continuing
+
+### Flask Application Development
+- **Framework**: This project uses Flask for REST APIs and web interfaces
+- **Production Server**: Use Gunicorn as the WSGI server for production
+  deployments
+  - Configuration files: `gunicorn.supervisor.conf.py`,
+    `gunicorn.sht31.conf.py`
+  - Start scripts: `start_supervisor_production.sh`,
+    `start_sht31_production.sh`
+- **Security Requirements**:
+  - Enable CSRF protection using `Flask_wtf`
+  - Implement rate limiting with `Flask_Limiter`
+  - Use IP banning with `flask-ipban` to block malicious actors
+  - Never expose debug mode in production
+- **API Development Best Practices**:
+  - Use `Flask_RESTful` for RESTful API endpoints
+  - Implement proper HTTP status codes (200, 201, 400, 401, 404, 500, etc.)
+  - Use JSON for request/response payloads
+  - Validate all input parameters
+  - Document API endpoints with clear docstrings
+- **Scheduled Tasks**:
+  - Use `Flask_APscheduler` for scheduled background tasks
+  - Ensure scheduled tasks are properly configured and documented
+- **Testing Flask Applications**:
+  - Use Flask's test client for endpoint testing
+  - Mock external dependencies (thermostat APIs, hardware)
+  - Test authentication and authorization flows
+  - Verify error handling and edge cases
 
 ### Linting and Code Quality
 - **MANDATORY**: All code changes MUST pass flake8 linting before committing.
@@ -247,6 +339,27 @@
   - Use conventional commit format when possible (feat:, fix:, docs:, test:, 
     refactor:)
 
-<tool_calling>
-You have the capability to call multiple tools in a single response. For maximum efficiency, whenever you need to perform multiple independent operations, ALWAYS invoke all relevant tools simultaneously rather than sequentially. Especially when exploring repository, reading files, viewing directories, validating changes or replying to comments.
-</tool_calling>
+### Parallel Tool Execution
+You have the capability to call multiple tools in a single response. For maximum
+efficiency, whenever you need to perform multiple independent operations, ALWAYS
+invoke all relevant tools simultaneously rather than sequentially. This is
+especially important when:
+- Exploring the repository (multiple file reads, directory listings)
+- Reading multiple files for context
+- Viewing directories and files in parallel
+- Validating changes across multiple files
+- Running independent linting/testing commands
+- Replying to comments while gathering information
+
+**Examples of parallel operations**:
+- Reading 3 different Python files simultaneously
+- Running `git status` and `git diff` together
+- Viewing directory structure and specific files at once
+- Editing different files in parallel (when changes don't overlap)
+
+**Sequential operations** (must wait for previous results):
+- Operations that depend on output from previous commands (e.g., sessionId from
+  bash)
+- Chained commands where later parameters depend on earlier results
+- Interactive bash sessions using write_bash/read_bash
+
