@@ -29,8 +29,11 @@ class TestSHT31MissingEnvVar(utc.UnitTest):
         super().tearDown()
 
     @patch.object(sht31.ThermostatClass, "spawn_flask_server")
+    @patch("thermostatsupervisor.environment._read_supervisor_env_file")
     @patch.dict(os.environ, {}, clear=False)
-    def test_missing_env_var_fallback_in_unit_test_mode(self, mock_spawn):
+    def test_missing_env_var_fallback_in_unit_test_mode(
+        self, mock_spawn, mock_read_env_file
+    ):
         """
         Test that missing environment variables fall back to localhost in unit
         test mode.
@@ -42,6 +45,8 @@ class TestSHT31MissingEnvVar(utc.UnitTest):
         - Should fall back to 127.0.0.1 instead of None or placeholder
         """
         mock_spawn.return_value = None
+        # Mock the file reading to return empty dict (simulating missing file)
+        mock_read_env_file.return_value = {}
 
         # Save original state
         original_mode = util.unit_test_mode

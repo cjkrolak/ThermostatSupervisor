@@ -1052,6 +1052,16 @@ class ThermostatClass(tc.ThermostatCommon):
         if parameter is None:
             return raw_json
         else:
+            # Check if parameter exists in raw_json before accessing
+            if parameter not in raw_json:
+                error_msg = (
+                    f"Parameter '{parameter}' not found in raw_json for zone "
+                    f"'{zone}'. Available keys: {list(raw_json.keys())}"
+                )
+                util.log_msg(error_msg, mode=util.BOTH_LOG, func_name=1)
+                # Return None or raise exception depending on requirements
+                # For now, return None to allow graceful degradation
+                return None
             return raw_json[parameter]
 
     def _is_auth_failed(self, raw_json):
