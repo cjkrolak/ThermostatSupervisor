@@ -2,6 +2,8 @@
 kumolocal config file.
 """
 
+from thermostatsupervisor import kumo_common_zones
+
 ALIAS = "kumolocal"
 
 # thermostat zones
@@ -43,13 +45,13 @@ supported_configs = {
 metadata = {
     MAIN_LEVEL: {
         "ip_address": "192.168.86.229",  # local IP, for ref only.
-        "zone_name": "Main Level",  # customize for your site.
+        "zone_name": kumo_common_zones.ZONE_NAME_MAIN_LEVEL,
         "host_name": "tbd",  # used for DNS lookup
         "local_net_available": None,  # updated by local network detection
     },
     BASEMENT: {
         "ip_address": "192.168.86.236",  # local IP, for ref only.
-        "zone_name": "Basement",  # customize for your site.
+        "zone_name": kumo_common_zones.ZONE_NAME_BASEMENT,
         "host_name": "tbd",  # used for DNS lookup
         "local_net_available": None,  # updated by local network detection
     },

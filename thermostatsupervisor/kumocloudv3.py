@@ -346,7 +346,7 @@ class ThermostatClass(tc.ThermostatCommon):
                 kitchen_index = index
 
             # Check for basement patterns
-            elif any(
+            if any(
                 pattern in zone_name_lower
                 for pattern in ["basement", "lower", "cellar", "downstairs"]
             ):
