@@ -600,64 +600,55 @@ class ThermostatCommonZone:
         else:
             return False
 
+    def _is_mode(self, expected_mode: str) -> bool:
+        """
+        Check if current system switch position matches the expected mode.
+
+        This helper method supports single values, lists of values,
+        and mixed int/string datatypes in system_switch_position.
+
+        inputs:
+            expected_mode(str): Mode constant (e.g., self.HEAT_MODE)
+        returns:
+            (bool): True if current position matches expected mode
+        """
+        try:
+            current_position = self.get_system_switch_position()
+            detected_mode = util.get_key_from_value(
+                self.system_switch_position, current_position
+            )
+            return detected_mode == expected_mode
+        except KeyError:
+            # Position not found in system_switch_position dict
+            return False
+
     def is_heat_mode(self) -> int:
         """Return 1 if in heat mode."""
-        return int(
-            (
-                self.get_system_switch_position()
-                == self.system_switch_position[self.HEAT_MODE]
-            )
-        )
+        return int(self._is_mode(self.HEAT_MODE))
 
     def is_cool_mode(self) -> int:
         """Return 1 if in cool mode."""
-        return int(
-            (
-                self.get_system_switch_position()
-                == self.system_switch_position[self.COOL_MODE]
-            )
-        )
+        return int(self._is_mode(self.COOL_MODE))
 
     def is_dry_mode(self) -> int:
         """Return 1 if in dry mode."""
-        return int(
-            (
-                self.get_system_switch_position()
-                == self.system_switch_position[self.DRY_MODE]
-            )
-        )
+        return int(self._is_mode(self.DRY_MODE))
 
     def is_auto_mode(self) -> int:
         """Return 1 if in auto mode."""
-        return int(
-            (
-                self.get_system_switch_position()
-                == self.system_switch_position[self.AUTO_MODE]
-            )
-        )
+        return int(self._is_mode(self.AUTO_MODE))
 
     def is_eco_mode(self) -> int:
         """Return 1 if in eco mode."""
-        return int(
-            (
-                self.get_system_switch_position()
-                == self.system_switch_position[self.ECO_MODE]
-            )
-        )
+        return int(self._is_mode(self.ECO_MODE))
 
     def is_fan_mode(self) -> int:
         """Return 1 if fan mode enabled, else 0."""
-        return (
-            self.get_system_switch_position()
-            == self.system_switch_position[self.FAN_MODE]
-        )
+        return int(self._is_mode(self.FAN_MODE))
 
     def is_off_mode(self) -> int:
         """Return 1 if fan mode enabled, else 0."""
-        return (
-            self.get_system_switch_position()
-            == self.system_switch_position[self.OFF_MODE]
-        )
+        return int(self._is_mode(self.OFF_MODE))
 
     def is_controlled_mode(self) -> int:
         """Return True if mode is being controlled."""
@@ -766,9 +757,13 @@ class ThermostatCommonZone:
         """Return humidity sensor status."""
         return util.BOGUS_BOOL  # placeholder
 
-    def get_system_switch_position(self) -> int:  # noqa R0201
-        """Return the 'SystemSwitchPosition'
-        'SystemSwitchPosition' = 1 for heat, 2 for off
+    def get_system_switch_position(self) -> Union[int, str]:  # noqa R0201
+        """Return the 'SystemSwitchPosition'.
+
+        The system switch position can be an integer or string depending
+        on the thermostat API implementation.
+        'SystemSwitchPosition' = 1 for heat, 2 for off (for integer-based)
+        'SystemSwitchPosition' = "heat", "cool", etc. (for string-based)
         """
         return util.BOGUS_INT  # placeholder
 
