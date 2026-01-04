@@ -106,6 +106,9 @@ def get_env_variable(env_key, default=None):
         else:
             # First try to get from supervisor-env.txt file
             file_env_vars = _read_supervisor_env_file()
+            # Handle None return from mocked function
+            if file_env_vars is None:
+                file_env_vars = {}
             if env_key in file_env_vars:
                 return_buffer["value"] = file_env_vars[env_key]
                 return_buffer["source"] = "supervisor-env.txt"

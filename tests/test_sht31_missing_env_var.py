@@ -28,9 +28,9 @@ class TestSHT31MissingEnvVar(utc.UnitTest):
         util.unit_test_mode = self.original_unit_test_mode
         super().tearDown()
 
-    @patch.object(sht31.ThermostatClass, "spawn_flask_server")
     @patch("thermostatsupervisor.environment._read_supervisor_env_file")
     @patch.dict(os.environ, {}, clear=False)
+    @patch.object(sht31.ThermostatClass, "spawn_flask_server")
     def test_missing_env_var_fallback_in_unit_test_mode(
         self, mock_spawn, mock_read_env_file
     ):
