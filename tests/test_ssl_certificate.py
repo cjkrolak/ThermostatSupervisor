@@ -75,9 +75,11 @@ class TestSSLCertificate(unittest.TestCase):
             key_path.write_text(
                 "-----BEGIN PRIVATE KEY-----\ntest key\n-----END PRIVATE KEY-----"
             )
-            return mock_subprocess.return_value
+            # Create a mock return value with returncode
+            mock_result = unittest.mock.Mock()
+            mock_result.returncode = 0
+            return mock_result
 
-        mock_subprocess.return_value.returncode = 0
         mock_subprocess.side_effect = create_cert_files
 
         ssl_context = ssl_certificate.get_ssl_context(
