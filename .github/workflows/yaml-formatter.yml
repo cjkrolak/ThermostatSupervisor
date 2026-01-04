@@ -1,3 +1,4 @@
+---
 name: yaml-formatter
 on:
   push:
