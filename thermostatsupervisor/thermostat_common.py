@@ -216,8 +216,32 @@ class ThermostatCommonZone:
                 mode_configurator()
                 return
 
-        # If no mode matches, raise error
-        print(f"DEBUG: zone info: {self.zone_info}")
+        # If no mode matches, provide detailed diagnostics
+        try:
+            current_position = self.get_system_switch_position()
+        except Exception as exc:
+            current_position = f"Error getting position: {exc}"
+
+        mode_check_results = {
+            "heat": self.is_heat_mode(),
+            "cool": self.is_cool_mode(),
+            "dry": self.is_dry_mode(),
+            "auto": self.is_auto_mode(),
+            "eco": self.is_eco_mode(),
+            "fan": self.is_fan_mode(),
+            "off": self.is_off_mode(),
+        }
+
+        error_msg = (
+            f"Unknown thermostat mode detected.\n"
+            f"Current system switch position: {current_position}\n"
+            f"System switch position mapping: "
+            f"{self.system_switch_position}\n"
+            f"Mode check results: {mode_check_results}\n"
+            f"Zone info keys: "
+            f"{list(self.zone_info.keys()) if self.zone_info else 'None'}"
+        )
+        util.log_msg(error_msg, mode=util.BOTH_LOG, func_name=1)
         raise ValueError("unknown thermostat mode")
 
     def _configure_heat_mode(self):
