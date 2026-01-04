@@ -340,7 +340,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         returns:
             (int): heat mode.
         """
-        return int(self._get_tmode() == self.system_switch_position[self.HEAT_MODE])
+        return int(self._is_mode(self.HEAT_MODE))
 
     def is_cool_mode(self) -> int:
         """
@@ -351,7 +351,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         returns:
             (int): 1=cool mode enabled, 0=disabled.
         """
-        return int(self._get_tmode() == self.system_switch_position[self.COOL_MODE])
+        return int(self._is_mode(self.COOL_MODE))
 
     def is_dry_mode(self) -> int:
         """
@@ -362,7 +362,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         returns:
             (int): 1=dry mode enabled, 0=disabled.
         """
-        return int(self._get_tmode() == self.system_switch_position[self.DRY_MODE])
+        return int(self._is_mode(self.DRY_MODE))
 
     def is_auto_mode(self) -> int:
         """
@@ -373,7 +373,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         returns:
             (int): 1=auto mode enabled, 0=disabled.
         """
-        return int(self._get_tmode() == self.system_switch_position[self.AUTO_MODE])
+        return int(self._is_mode(self.AUTO_MODE))
 
     def is_eco_mode(self) -> int:
         """
@@ -384,7 +384,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         returns:
             (int): 1=eco mode enabled, 0=disabled.
         """
-        return int(self._get_tmode() == self.system_switch_position[self.ECO_MODE])
+        return int(self._is_mode(self.ECO_MODE))
 
     def _get_tmode(self, retries=1):
         """
@@ -745,19 +745,20 @@ class ThermostatZone(tc.ThermostatCommonZone):
         """
         return False  # not implemented
 
-    def get_system_switch_position(self) -> int:
+    def get_system_switch_position(self) -> Union[int, str]:
         """Return the thermostat mode.
 
         inputs:
             None
         returns:
-            (int): thermostat mode, refer to tc.system_swtich position
+            (int or str): thermostat mode, refer to tc.system_swtich position
             for details.
         """
         result = self._get_tmode()
-        if not isinstance(result, int):
+        if not isinstance(result, (int, str)):
             raise TypeError(
-                f"get_system_switch_position is type {type(result)}, should be int"
+                f"get_system_switch_position is type {type(result)}, "
+                f"should be int or str"
             )
         return result
 

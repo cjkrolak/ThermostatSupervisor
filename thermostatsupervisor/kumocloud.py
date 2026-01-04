@@ -492,10 +492,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         returns:
             (int) heat mode, 1=enabled, 0=disabled.
         """
-        return int(
-            self.get_system_switch_position()
-            == self.system_switch_position[tc.ThermostatCommonZone.HEAT_MODE]
-        )
+        return int(self._is_mode(tc.ThermostatCommonZone.HEAT_MODE))
 
     def is_cool_mode(self) -> int:
         """
@@ -506,10 +503,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         returns:
             (int): cool mode, 1=enabled, 0=disabled.
         """
-        return int(
-            self.get_system_switch_position()
-            == self.system_switch_position[tc.ThermostatCommonZone.COOL_MODE]
-        )
+        return int(self._is_mode(tc.ThermostatCommonZone.COOL_MODE))
 
     def is_dry_mode(self) -> int:
         """
@@ -520,10 +514,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         returns:
             (int): dry mode, 1=enabled, 0=disabled.
         """
-        return int(
-            self.get_system_switch_position()
-            == self.system_switch_position[tc.ThermostatCommonZone.DRY_MODE]
-        )
+        return int(self._is_mode(tc.ThermostatCommonZone.DRY_MODE))
 
     def is_fan_mode(self) -> int:
         """
@@ -534,10 +525,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         returns:
             (int): fan mode, 1=enabled, 0=disabled.
         """
-        return int(
-            self.get_system_switch_position()
-            == self.system_switch_position[tc.ThermostatCommonZone.FAN_MODE]
-        )
+        return int(self._is_mode(tc.ThermostatCommonZone.FAN_MODE))
 
     def is_auto_mode(self) -> int:
         """
@@ -548,10 +536,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         returns:
             (int): auto mode, 1=enabled, 0=disabled.
         """
-        return int(
-            self.get_system_switch_position()
-            == self.system_switch_position[tc.ThermostatCommonZone.AUTO_MODE]
-        )
+        return int(self._is_mode(tc.ThermostatCommonZone.AUTO_MODE))
 
     def is_eco_mode(self) -> int:
         """
@@ -573,10 +558,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         returns:
             (int): off mode, 1=enabled, 0=disabled.
         """
-        return int(
-            self.get_system_switch_position()
-            == self.system_switch_position[tc.ThermostatCommonZone.OFF_MODE]
-        )
+        return int(self._is_mode(tc.ThermostatCommonZone.OFF_MODE))
 
     def is_heating(self):
         """Return 1 if heating relay is active, else 0."""
@@ -775,21 +757,27 @@ class ThermostatZone(tc.ThermostatCommonZone):
         """
         return False  # no schedule, hold not implemented
 
-    def get_system_switch_position(self) -> int:  # used
+    def get_system_switch_position(self) -> Union[int, str]:  # used
         """
         Return the system switch position.
 
         inputs:
             None
         returns:
-            (int) current mode for unit, should match value
+            (int or str) current mode for unit, should match value
                   in self.system_switch_position
         """
         self.refresh_zone_info()
         # first check if power is on
         # if power is off then operation_mode key may be missing.
         if not self.is_power_on():
-            return self.system_switch_position[tc.ThermostatCommonZone.OFF_MODE]
+            off_mode_value = self.system_switch_position[
+                tc.ThermostatCommonZone.OFF_MODE
+            ]
+            # If the value is a list, return the first element
+            if isinstance(off_mode_value, list):
+                return off_mode_value[0]
+            return off_mode_value
         else:
             return self.get_parameter("operation_mode", "reportedCondition")
 

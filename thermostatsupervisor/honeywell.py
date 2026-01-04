@@ -528,10 +528,7 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
         returns:
             (int): 1 heat mode, else 0
         """
-        return int(
-            self.get_system_switch_position()
-            == self.system_switch_position[tc.ThermostatCommonZone.HEAT_MODE]
-        )
+        return int(self._is_mode(tc.ThermostatCommonZone.HEAT_MODE))
 
     def is_cool_mode(self) -> int:
         """
@@ -542,10 +539,7 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
         returns:
             (int): 1 if cool mode, else 0
         """
-        return int(
-            self.get_system_switch_position()
-            == self.system_switch_position[tc.ThermostatCommonZone.COOL_MODE]
-        )
+        return int(self._is_mode(tc.ThermostatCommonZone.COOL_MODE))
 
     def is_dry_mode(self) -> int:
         """
@@ -556,10 +550,7 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
         returns:
             (int): 1 if dry mode, else 0
         """
-        return int(
-            self.get_system_switch_position()
-            == self.system_switch_position[tc.ThermostatCommonZone.DRY_MODE]
-        )
+        return int(self._is_mode(tc.ThermostatCommonZone.DRY_MODE))
 
     def is_fan_mode(self) -> int:
         """
@@ -573,8 +564,7 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
             (int): fan mode, 1=enabled, 0=disabled.
         """
         return int(
-            self.get_system_switch_position()
-            == self.system_switch_position[tc.ThermostatCommonZone.OFF_MODE]
+            self._is_mode(tc.ThermostatCommonZone.OFF_MODE)
             and (self.is_fan_on_mode() or self.is_fan_circulate_mode())
         )
 
@@ -587,10 +577,7 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
         returns:
             (int): 1 if auto mode, else 0
         """
-        return int(
-            self.get_system_switch_position()
-            == self.system_switch_position[tc.ThermostatCommonZone.AUTO_MODE]
-        )
+        return int(self._is_mode(tc.ThermostatCommonZone.AUTO_MODE))
 
     def is_eco_mode(self) -> int:
         """
@@ -601,10 +588,7 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
         returns:
             (int): 1 if auto mode, else 0
         """
-        return int(
-            self.get_system_switch_position()
-            == self.system_switch_position[tc.ThermostatCommonZone.ECO_MODE]
-        )
+        return int(self._is_mode(tc.ThermostatCommonZone.ECO_MODE))
 
     def is_heating(self) -> int:
         """
