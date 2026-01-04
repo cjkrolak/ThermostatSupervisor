@@ -61,8 +61,25 @@ class TestSSLCertificate(unittest.TestCase):
         # Verify certificate content
         self.assertTrue(ssl_certificate.validate_ssl_certificate(cert_path))
 
-    def test_get_ssl_context_success(self):
+    @patch("thermostatsupervisor.ssl_certificate.subprocess.run")
+    def test_get_ssl_context_success(self, mock_subprocess):
         """Test SSL context generation when OpenSSL is available."""
+        # Mock subprocess to succeed and create files
+        cert_path = pathlib.Path(self.test_dir) / "context_test.crt"
+        key_path = pathlib.Path(self.test_dir) / "context_test.key"
+
+        def create_cert_files(*args, **kwargs):
+            cert_path.write_text(
+                "-----BEGIN CERTIFICATE-----\ntest cert\n-----END CERTIFICATE-----"
+            )
+            key_path.write_text(
+                "-----BEGIN PRIVATE KEY-----\ntest key\n-----END PRIVATE KEY-----"
+            )
+            return mock_subprocess.return_value
+
+        mock_subprocess.return_value.returncode = 0
+        mock_subprocess.side_effect = create_cert_files
+
         ssl_context = ssl_certificate.get_ssl_context(
             cert_file="context_test.crt",
             key_file="context_test.key",
@@ -74,9 +91,9 @@ class TestSSLCertificate(unittest.TestCase):
         self.assertEqual(len(ssl_context), 2)
 
         # Files should exist
-        cert_path, key_path = ssl_context
-        self.assertTrue(pathlib.Path(cert_path).exists())
-        self.assertTrue(pathlib.Path(key_path).exists())
+        returned_cert_path, returned_key_path = ssl_context
+        self.assertTrue(pathlib.Path(returned_cert_path).exists())
+        self.assertTrue(pathlib.Path(returned_key_path).exists())
 
     def test_get_ssl_context_with_adhoc_fallback(self):
         """Test SSL context generation with adhoc fallback."""
