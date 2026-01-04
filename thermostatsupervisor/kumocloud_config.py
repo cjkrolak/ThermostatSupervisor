@@ -2,6 +2,8 @@
 kumocloud config file.
 """
 
+from thermostatsupervisor import kumo_common_zones
+
 ALIAS = "kumocloud"
 
 # thermostat zones
@@ -39,12 +41,12 @@ supported_configs = {
 # 'host_name' is just for reference
 metadata = {
     MAIN_LEVEL: {
-        "zone_name": "Main Level",
+        "zone_name": kumo_common_zones.ZONE_NAME_MAIN_LEVEL,
         "host_name": "tbd",
         "serial_number": None,
     },
     BASEMENT: {
-        "zone_name": "basement",
+        "zone_name": kumo_common_zones.ZONE_NAME_BASEMENT,
         "host_name": "tbd",
         "serial_number": None,
     },
