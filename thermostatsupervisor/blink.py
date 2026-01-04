@@ -890,7 +890,11 @@ class ThermostatZone(tc.ThermostatCommonZone):
         returns:
             (int): thermostat mode, see tc.system_switch_position for details.
         """
-        return self.system_switch_position[self.OFF_MODE]
+        off_mode_value = self.system_switch_position[self.OFF_MODE]
+        # If the value is a list, return the first element
+        if isinstance(off_mode_value, list):
+            return off_mode_value[0]
+        return off_mode_value
 
     def get_wifi_strength(self) -> float:  # noqa R0201
         """Return the wifi signal strength in dBm."""
