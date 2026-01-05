@@ -211,26 +211,21 @@ class ThermostatCommonZone:
             self.is_off_mode: self._configure_off_mode,
         }
 
+        # Store mode check results to avoid calling twice
+        mode_check_results = {}
         for mode_checker, mode_configurator in mode_handlers.items():
-            if mode_checker():
+            result = mode_checker()
+            mode_check_results[mode_checker.__name__] = result
+            if result:
+                # Found matching mode, configure it
                 mode_configurator()
                 return
 
         # If no mode matches, provide detailed diagnostics
         try:
             current_position = self.get_system_switch_position()
-        except Exception as exc:
+        except (AttributeError, RuntimeError, TypeError) as exc:
             current_position = f"Error getting position: {exc}"
-
-        mode_check_results = {
-            "heat": self.is_heat_mode(),
-            "cool": self.is_cool_mode(),
-            "dry": self.is_dry_mode(),
-            "auto": self.is_auto_mode(),
-            "eco": self.is_eco_mode(),
-            "fan": self.is_fan_mode(),
-            "off": self.is_off_mode(),
-        }
 
         error_msg = (
             f"Unknown thermostat mode detected.\n"

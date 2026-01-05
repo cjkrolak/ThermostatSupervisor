@@ -48,9 +48,6 @@ class TestSHT31MissingEnvVar(utc.UnitTest):
         # Mock the file reading to return empty dict (simulating missing file)
         mock_read_env_file.return_value = {}
 
-        # Save original state
-        original_mode = util.unit_test_mode
-
         try:
             # Explicitly set unit test mode
             util.unit_test_mode = True
@@ -97,8 +94,8 @@ class TestSHT31MissingEnvVar(utc.UnitTest):
             self.assertNotIn("http://:5000", tstat.url)
             self.assertNotIn("None", tstat.url)
         finally:
-            # Always restore original mode
-            util.unit_test_mode = original_mode
+            # Always restore original mode (saved in setUp())
+            util.unit_test_mode = self.original_unit_test_mode
 
     @patch.object(sht31.ThermostatClass, "spawn_flask_server")
     @patch.dict(os.environ, {}, clear=False)

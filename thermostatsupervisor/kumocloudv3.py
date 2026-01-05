@@ -1045,7 +1045,26 @@ class ThermostatClass(tc.ThermostatCommon):
         ]
 
     def _process_raw_data(self, raw_json, parameter, zone):
-        """Process raw JSON data."""
+        """
+        Process raw JSON data from API response.
+
+        Args:
+            raw_json: JSON response from API
+            parameter: Specific parameter to extract (None returns full dict)
+            zone: Zone name for error reporting
+
+        Returns:
+            - Full raw_json dict if parameter is None
+            - Extracted parameter value if found
+            - None if parameter not found (graceful degradation for optional
+              parameters like 'customName')
+
+        Note:
+            Parameters like 'customName', 'label', and other user-defined
+            fields may be missing from API responses. This method returns
+            None for missing optional parameters to allow graceful degradation.
+            Callers should handle None returns appropriately.
+        """
         if self._is_auth_failed(raw_json):
             return self._handle_auth_failed_data(raw_json, parameter, zone)
 
@@ -1059,8 +1078,7 @@ class ThermostatClass(tc.ThermostatCommon):
                     f"'{zone}'. Available keys: {list(raw_json.keys())}"
                 )
                 util.log_msg(error_msg, mode=util.BOTH_LOG, func_name=1)
-                # Return None or raise exception depending on requirements
-                # For now, return None to allow graceful degradation
+                # Return None for missing optional parameters
                 return None
             return raw_json[parameter]
 
