@@ -190,9 +190,14 @@ class UnitTest(unittest.TestCase, metaclass=PatchMeta):
         self.print_test_name()
         # Start tracking this test
         _test_metrics_tracker.start_test(self.id())
-        self.unit_test_argv = unit_test_argv
-        self.thermostat_type = unit_test_argv[1]
-        self.zone_number = unit_test_argv[2]
+        # Only set unit_test_argv if not already populated by a subclass
+        # (e.g., IntegrationTest.setUpIntTest()).
+        # Empty list [] is treated as "not set" since class variable default
+        # is [].
+        if not hasattr(self, 'unit_test_argv') or not self.unit_test_argv:
+            self.unit_test_argv = unit_test_argv
+        self.thermostat_type = self.unit_test_argv[1]
+        self.zone_number = self.unit_test_argv[2]
         util.unit_test_mode = True
 
     def tearDown(self):

@@ -1430,10 +1430,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         returns:
             (int): off mode, 1=enabled, 0=disabled.
         """
-        return int(
-            self.get_system_switch_position()
-            == self.system_switch_position[tc.ThermostatCommonZone.OFF_MODE]
-        )
+        return int(self._is_mode(tc.ThermostatCommonZone.OFF_MODE))
 
     def is_heating(self):
         """Return 1 if heating relay is active, else 0."""
