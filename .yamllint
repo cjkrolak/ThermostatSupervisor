@@ -1,3 +1,4 @@
+---
 # yamllint configuration for ThermostatSupervisor
 # Aligned with project's Python formatting standards (setup.cfg)
 
@@ -14,9 +15,9 @@ rules:
     min-spaces-from-content: 1
     level: warning
 
-  # Document start is not required for all YAML files
+  # Document start is allowed (yamlfix adds it automatically)
   document-start:
-    present: false
+    present: true
     level: warning
 
   # Allow truthy values commonly used in GitHub Actions

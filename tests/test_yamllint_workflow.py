@@ -60,14 +60,19 @@ class TestYamlLintWorkflow(unittest.TestCase):
                 "yamllint",
                 "--config-file",
                 str(self.yamllint_config),
+                "--format",
+                "parsable",
                 str(self.yamllint_config),
             ],
             cwd=self.repo_root,
             capture_output=True,
             text=True,
         )
+        output = result.stdout + result.stderr
         self.assertEqual(
-            result.returncode, 0, f"yamllint config should be valid: {result.stderr}"
+            result.returncode,
+            0,
+            f"yamllint config should be valid:\n{output}",
         )
 
     def test_yamllint_workflow_is_valid(self):
@@ -77,16 +82,19 @@ class TestYamlLintWorkflow(unittest.TestCase):
                 "yamllint",
                 "--config-file",
                 str(self.yamllint_config),
+                "--format",
+                "parsable",
                 str(self.yamllint_workflow),
             ],
             cwd=self.repo_root,
             capture_output=True,
             text=True,
         )
+        output = result.stdout + result.stderr
         self.assertEqual(
             result.returncode,
             0,
-            f"yamllint workflow should pass linting: {result.stderr}",
+            f"yamllint workflow should pass linting:\n{output}",
         )
 
     def test_yaml_formatter_workflow_is_valid(self):
@@ -96,16 +104,19 @@ class TestYamlLintWorkflow(unittest.TestCase):
                 "yamllint",
                 "--config-file",
                 str(self.yamllint_config),
+                "--format",
+                "parsable",
                 str(self.yaml_formatter_workflow),
             ],
             cwd=self.repo_root,
             capture_output=True,
             text=True,
         )
+        output = result.stdout + result.stderr
         self.assertEqual(
             result.returncode,
             0,
-            f"yaml-formatter workflow should pass linting: {result.stderr}",
+            f"yaml-formatter workflow should pass linting:\n{output}",
         )
 
     def test_trigger_ado_workflow_exists(self):
@@ -122,16 +133,19 @@ class TestYamlLintWorkflow(unittest.TestCase):
                 "yamllint",
                 "--config-file",
                 str(self.yamllint_config),
+                "--format",
+                "parsable",
                 str(self.trigger_ado_workflow),
             ],
             cwd=self.repo_root,
             capture_output=True,
             text=True,
         )
+        output = result.stdout + result.stderr
         self.assertEqual(
             result.returncode,
             0,
-            f"trigger-ado-tests workflow should pass linting: {result.stderr}",
+            f"trigger-ado-tests workflow should pass linting:\n{output}",
         )
 
     def test_yamllint_catches_common_issues(self):
@@ -149,18 +163,28 @@ class TestYamlLintWorkflow(unittest.TestCase):
 
         try:
             result = subprocess.run(
-                ["yamllint", "--config-file", str(self.yamllint_config), temp_file],
+                [
+                    "yamllint",
+                    "--config-file",
+                    str(self.yamllint_config),
+                    "--format",
+                    "parsable",
+                    temp_file,
+                ],
                 capture_output=True,
                 text=True,
             )
+            output = result.stdout + result.stderr
             # Should fail due to issues
             self.assertNotEqual(
-                result.returncode, 0, "yamllint should catch formatting issues"
+                result.returncode,
+                0,
+                f"yamllint should catch formatting issues:\n{output}",
             )
             # Should report specific issues
-            self.assertIn("trailing-spaces", result.stdout)
-            self.assertIn("line-length", result.stdout)
-            self.assertIn("new-line-at-end-of-file", result.stdout)
+            self.assertIn("trailing-spaces", output)
+            self.assertIn("line-length", output)
+            self.assertIn("new-line-at-end-of-file", output)
         finally:
             os.unlink(temp_file)
 
