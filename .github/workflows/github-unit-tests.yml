@@ -70,7 +70,6 @@ jobs:
       - name: Run unit tests with coverage
         id: run_tests
         timeout-minutes: 45
-        continue-on-error: true
         env:
           # Integration test environment variables (same as Azure pipeline)
           GMAIL_USERNAME: ${{ secrets.GMAIL_USERNAME }}
@@ -227,13 +226,4 @@ jobs:
             echo "HTTP ${http_code}"
             echo "Response: ${response_body}"
             exit 1
-          fi
-      - name: Check test results
-        if: always()
-        run: |-
-          if [[ "${{ steps.run_tests.outcome }}" != "success" ]]; then
-            echo "❌ Unit tests failed"
-            exit 1
-          else
-            echo "✅ Unit tests passed"
           fi
