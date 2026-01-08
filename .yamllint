@@ -17,7 +17,7 @@ rules:
 
   # Document start is allowed (yamlfix adds it automatically)
   document-start:
-    present: true
+    present: false
     level: warning
 
   # Allow truthy values commonly used in GitHub Actions
@@ -46,6 +46,10 @@ rules:
   trailing-spaces:
     level: error
 
+  # Allow platform-specific line endings for cross-platform compatibility
+  new-lines:
+    type: platform  # Accept LF on Unix, CRLF on Windows
+
 # Ignore generated or external files
 ignore: |
   .git/
@@ -56,3 +60,6 @@ ignore: |
   dist/
   build/
   *.egg-info/
+  node_modules/
+  *.md
+  tmp/
