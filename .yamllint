@@ -15,10 +15,9 @@ rules:
     min-spaces-from-content: 1
     level: warning
 
-  # Document start is allowed (yamlfix adds it automatically)
-  document-start:
-    present: false
-    level: warning
+  # Document start markers (---) are optional
+  # Existing workflow files have them, so we allow them
+  document-start: disable
 
   # Allow truthy values commonly used in GitHub Actions
   truthy:
