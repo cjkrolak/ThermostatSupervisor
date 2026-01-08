@@ -181,7 +181,7 @@ This project is a **Thermostat Supervisor** application that:
 - **MANDATORY**: YAML linting MUST pass before any other testing or GitHub Actions workflows are started.
 - Follow the existing yamllint configuration in `.yamllint` which includes:
   - Line length limit of 88 characters (aligned with Python formatting)
-  - No document-start markers (`---`) at the beginning of files
+  - Document-start markers (`---`) are optional (allowed but not required)
   - Consistent 2-space indentation for YAML structures
   - No trailing whitespace
   - Proper comment indentation aligned with content
@@ -189,7 +189,7 @@ This project is a **Thermostat Supervisor** application that:
   - Line length: Split long lines using YAML multiline syntax (`>-` or `|`)
   - Comment indentation: Ensure comments are indented to match their content level
   - Trailing spaces: Remove all trailing whitespace from lines
-  - Document structure: Do not use `---` document start markers
+  - Document structure: `---` document start markers are optional
 - **Pre-commit validation for YAML**: Always validate YAML style before any automated processes:
   1. Run `yamllint --config-file .yamllint .github/` on all modified YAML files
   2. Fix ALL yamllint errors and warnings before proceeding with commits
