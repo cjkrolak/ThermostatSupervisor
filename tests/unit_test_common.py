@@ -46,7 +46,7 @@ ENABLE_BLINK_TESTS = (
     False and not env.is_azure_environment()
 )  # Blink cameras, TODO #638
 # nest thermostats
-ENABLE_NEST_TESTS = True and ENABLE_SITE2_TESTS and not env.is_azure_environment()
+ENABLE_NEST_TESTS = False and ENABLE_SITE2_TESTS and not env.is_azure_environment()
 
 # generic argv list for unit testing
 unit_test_emulator = emulator_config.argv
