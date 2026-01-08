@@ -138,9 +138,14 @@ class Test(utc.UnitTest):
                 original_unit_test_mode = util.unit_test_mode
                 util.unit_test_mode = False
                 try:
+                    # Mock both os.environ and supervisor-env.txt file reading
+                    # to ensure the test doesn't get credentials from the file
                     with mock.patch.dict(
                         os.environ, modified_environ, clear=True
-                    ):  # noqa e501, pylint:disable=undefined-variable
+                    ), mock.patch(
+                        "thermostatsupervisor.environment._read_supervisor_env_file",
+                        return_value={}
+                    ):
                         return_status, return_status_msg = eml.send_email_alert(
                             to_address=to_address,
                             subject=f"test email alert with "
