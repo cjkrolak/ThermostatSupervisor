@@ -24,3 +24,5 @@ radiotherm>=2.1.0  # 3m50 library
 requests>=2.28.2  # used by Honeywell and mmm at least
 setuptools>=67.7.1  # not in repo but azdo native version has vulnerability
 str2bool>=1.1  # input parameter parsing
+yamlfix>=1.0.0  # YAML formatting and fixing tool
+yamllint>=1.35.0  # YAML linting for CI/CD workflows
