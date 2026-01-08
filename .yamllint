@@ -62,4 +62,3 @@ ignore: |
   *.egg-info/
   node_modules/
   *.md
-  tmp/
