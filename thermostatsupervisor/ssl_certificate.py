@@ -6,6 +6,7 @@ certificates for Flask servers.
 """
 
 # built-in imports
+import os
 import pathlib
 import platform
 import subprocess
@@ -39,22 +40,30 @@ def _create_windows_openssl_config() -> str:
     Returns:
         str: Path to the temporary configuration file
     """
-    config_content = """
-[ req ]
+    config_content = """[ req ]
 distinguished_name = req_distinguished_name
 prompt = no
 
 [ req_distinguished_name ]
 # Empty section - values will be provided via -subj parameter
 """
-    # Create a temporary file that won't be automatically deleted
-    with tempfile.NamedTemporaryFile(
-        mode='w',
-        suffix='.cnf',
-        delete=False
-    ) as config_file:
-        config_file.write(config_content)
-        return config_file.name
+    # Create a temporary file with restricted permissions
+    # that won't be automatically deleted
+    fd, temp_path = tempfile.mkstemp(suffix='.cnf', text=True)
+    try:
+        # Set restrictive permissions on the file
+        os.chmod(temp_path, 0o600)
+        # Write config content to the file
+        with os.fdopen(fd, 'w') as config_file:
+            config_file.write(config_content.lstrip())
+        return temp_path
+    except Exception:
+        # Clean up on error
+        try:
+            os.unlink(temp_path)
+        except Exception:
+            pass
+        raise
 
 
 def generate_self_signed_certificate(
@@ -156,12 +165,16 @@ def generate_self_signed_certificate(
 
     finally:
         # Clean up temporary config file on Windows
-        if config_file_path and pathlib.Path(config_file_path).exists():
-            try:
-                pathlib.Path(config_file_path).unlink()
-            except Exception:
-                # Ignore cleanup errors
-                pass
+        if config_file_path:
+            config_path_obj = pathlib.Path(config_file_path)
+            if config_path_obj.exists():
+                try:
+                    config_path_obj.unlink()
+                except (FileNotFoundError, PermissionError) as e:
+                    util.log_msg(
+                        f"Failed to cleanup temp config file: {e}",
+                        mode=util.DEBUG_LOG
+                    )
 
 
 def get_ssl_context(
@@ -239,12 +252,16 @@ def validate_ssl_certificate(cert_path: pathlib.Path) -> bool:
 
     finally:
         # Clean up temporary config file on Windows
-        if config_file_path and pathlib.Path(config_file_path).exists():
-            try:
-                pathlib.Path(config_file_path).unlink()
-            except Exception:
-                # Ignore cleanup errors
-                pass
+        if config_file_path:
+            config_path_obj = pathlib.Path(config_file_path)
+            if config_path_obj.exists():
+                try:
+                    config_path_obj.unlink()
+                except (FileNotFoundError, PermissionError) as e:
+                    util.log_msg(
+                        f"Failed to cleanup temp config file: {e}",
+                        mode=util.DEBUG_LOG
+                    )
 
 
 def download_ssl_certificate(hostname: str, port: int = 443) -> pathlib.Path:
@@ -332,12 +349,16 @@ def download_ssl_certificate(hostname: str, port: int = 443) -> pathlib.Path:
 
     finally:
         # Clean up temporary config file on Windows
-        if config_file_path and pathlib.Path(config_file_path).exists():
-            try:
-                pathlib.Path(config_file_path).unlink()
-            except Exception:
-                # Ignore cleanup errors
-                pass
+        if config_file_path:
+            config_path_obj = pathlib.Path(config_file_path)
+            if config_path_obj.exists():
+                try:
+                    config_path_obj.unlink()
+                except (FileNotFoundError, PermissionError) as e:
+                    util.log_msg(
+                        f"Failed to cleanup temp config file: {e}",
+                        mode=util.DEBUG_LOG
+                    )
 
 
 def import_ssl_certificate_to_system(cert_path: pathlib.Path) -> bool:
