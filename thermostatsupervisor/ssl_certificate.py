@@ -66,6 +66,24 @@ prompt = no
         raise
 
 
+def _cleanup_temp_config(config_file_path: Optional[str]) -> None:
+    """Clean up temporary OpenSSL configuration file.
+
+    Args:
+        config_file_path: Path to the temporary config file to clean up
+    """
+    if config_file_path:
+        config_path_obj = pathlib.Path(config_file_path)
+        if config_path_obj.exists():
+            try:
+                config_path_obj.unlink()
+            except (FileNotFoundError, PermissionError) as e:
+                util.log_msg(
+                    f"Failed to cleanup temp config file: {e}",
+                    mode=util.DEBUG_LOG
+                )
+
+
 def generate_self_signed_certificate(
     cert_file: str = "server.crt",
     key_file: str = "server.key",
@@ -157,24 +175,15 @@ def generate_self_signed_certificate(
 
     except FileNotFoundError as e:
         error_msg = (
-            "OpenSSL not found. Please install OpenSSL to generate "
-            "SSL certificates"
+            "OpenSSL not found. Please install OpenSSL to generate SSL "
+            "certificates"
         )
         util.log_msg(error_msg, mode=util.STDERR_LOG)
         raise RuntimeError(error_msg) from e
 
     finally:
         # Clean up temporary config file on Windows
-        if config_file_path:
-            config_path_obj = pathlib.Path(config_file_path)
-            if config_path_obj.exists():
-                try:
-                    config_path_obj.unlink()
-                except (FileNotFoundError, PermissionError) as e:
-                    util.log_msg(
-                        f"Failed to cleanup temp config file: {e}",
-                        mode=util.DEBUG_LOG
-                    )
+        _cleanup_temp_config(config_file_path)
 
 
 def get_ssl_context(
@@ -252,16 +261,7 @@ def validate_ssl_certificate(cert_path: pathlib.Path) -> bool:
 
     finally:
         # Clean up temporary config file on Windows
-        if config_file_path:
-            config_path_obj = pathlib.Path(config_file_path)
-            if config_path_obj.exists():
-                try:
-                    config_path_obj.unlink()
-                except (FileNotFoundError, PermissionError) as e:
-                    util.log_msg(
-                        f"Failed to cleanup temp config file: {e}",
-                        mode=util.DEBUG_LOG
-                    )
+        _cleanup_temp_config(config_file_path)
 
 
 def download_ssl_certificate(hostname: str, port: int = 443) -> pathlib.Path:
@@ -349,16 +349,7 @@ def download_ssl_certificate(hostname: str, port: int = 443) -> pathlib.Path:
 
     finally:
         # Clean up temporary config file on Windows
-        if config_file_path:
-            config_path_obj = pathlib.Path(config_file_path)
-            if config_path_obj.exists():
-                try:
-                    config_path_obj.unlink()
-                except (FileNotFoundError, PermissionError) as e:
-                    util.log_msg(
-                        f"Failed to cleanup temp config file: {e}",
-                        mode=util.DEBUG_LOG
-                    )
+        _cleanup_temp_config(config_file_path)
 
 
 def import_ssl_certificate_to_system(cert_path: pathlib.Path) -> bool:
