@@ -9,6 +9,7 @@ certificates for Flask servers.
 import pathlib
 import platform
 import subprocess
+import tempfile
 import time
 from typing import Tuple, Optional, List
 
@@ -27,6 +28,33 @@ def get_ssl_cert_directory() -> pathlib.Path:
     ssl_dir = project_root / "ssl"
     ssl_dir.mkdir(exist_ok=True)
     return ssl_dir
+
+
+def _create_windows_openssl_config() -> str:
+    """Create a minimal OpenSSL configuration file for Windows.
+
+    This function creates a temporary configuration file that includes
+    the minimum required sections for OpenSSL to work properly on Windows.
+
+    Returns:
+        str: Path to the temporary configuration file
+    """
+    config_content = """
+[ req ]
+distinguished_name = req_distinguished_name
+prompt = no
+
+[ req_distinguished_name ]
+# Empty section - values will be provided via -subj parameter
+"""
+    # Create a temporary file that won't be automatically deleted
+    with tempfile.NamedTemporaryFile(
+        mode='w',
+        suffix='.cnf',
+        delete=False
+    ) as config_file:
+        config_file.write(config_content)
+        return config_file.name
 
 
 def generate_self_signed_certificate(
@@ -84,10 +112,11 @@ def generate_self_signed_certificate(
     ]
 
     # Windows-specific configuration to avoid config file issues
+    config_file_path = None
     if platform.system().lower() == "windows":
-        # Add -config flag to bypass default config file loading on Windows
-        # This prevents the "Unable to load config info" error on Windows
-        openssl_cmd.extend(["-config", "nul"])
+        # Create a temporary config file with minimal required sections
+        config_file_path = _create_windows_openssl_config()
+        openssl_cmd.extend(["-config", config_file_path])
 
     try:
         # Run OpenSSL command
@@ -119,10 +148,20 @@ def generate_self_signed_certificate(
 
     except FileNotFoundError as e:
         error_msg = (
-            "OpenSSL not found. Please install OpenSSL to generate " "SSL certificates"
+            "OpenSSL not found. Please install OpenSSL to generate "
+            "SSL certificates"
         )
         util.log_msg(error_msg, mode=util.STDERR_LOG)
         raise RuntimeError(error_msg) from e
+
+    finally:
+        # Clean up temporary config file on Windows
+        if config_file_path and pathlib.Path(config_file_path).exists():
+            try:
+                pathlib.Path(config_file_path).unlink()
+            except Exception:
+                # Ignore cleanup errors
+                pass
 
 
 def get_ssl_context(
@@ -170,14 +209,16 @@ def validate_ssl_certificate(cert_path: pathlib.Path) -> bool:
     if not cert_path.exists():
         return False
 
+    config_file_path = None
     try:
         # Build OpenSSL validation command
         openssl_cmd = ["openssl", "x509", "-in", str(cert_path), "-noout", "-text"]
 
         # Windows-specific configuration to avoid config file issues
         if platform.system().lower() == "windows":
-            # Add -config flag to bypass default config file loading on Windows
-            openssl_cmd.extend(["-config", "nul"])
+            # Create a temporary config file with minimal required sections
+            config_file_path = _create_windows_openssl_config()
+            openssl_cmd.extend(["-config", config_file_path])
 
         # Use OpenSSL to verify the certificate
         subprocess.run(
@@ -195,6 +236,15 @@ def validate_ssl_certificate(cert_path: pathlib.Path) -> bool:
         FileNotFoundError,
     ):
         return False
+
+    finally:
+        # Clean up temporary config file on Windows
+        if config_file_path and pathlib.Path(config_file_path).exists():
+            try:
+                pathlib.Path(config_file_path).unlink()
+            except Exception:
+                # Ignore cleanup errors
+                pass
 
 
 def download_ssl_certificate(hostname: str, port: int = 443) -> pathlib.Path:
@@ -218,6 +268,7 @@ def download_ssl_certificate(hostname: str, port: int = 443) -> pathlib.Path:
         f"Downloading SSL certificate from {hostname}:{port}", mode=util.STDOUT_LOG
     )
 
+    config_file_path = None
     try:
         # Use openssl command to get the certificate
         openssl_cmd = [
@@ -232,8 +283,9 @@ def download_ssl_certificate(hostname: str, port: int = 443) -> pathlib.Path:
 
         # Windows-specific configuration to avoid config file issues
         if platform.system().lower() == "windows":
-            # Add -config flag to bypass default config file loading on Windows
-            openssl_cmd.extend(["-config", "nul"])
+            # Create a temporary config file with minimal required sections
+            config_file_path = _create_windows_openssl_config()
+            openssl_cmd.extend(["-config", config_file_path])
 
         # Run openssl command
         result = subprocess.run(
@@ -262,7 +314,9 @@ def download_ssl_certificate(hostname: str, port: int = 443) -> pathlib.Path:
         # Set proper permissions
         cert_path.chmod(0o644)
 
-        util.log_msg(f"SSL certificate downloaded to {cert_path}", mode=util.STDOUT_LOG)
+        util.log_msg(
+            f"SSL certificate downloaded to {cert_path}", mode=util.STDOUT_LOG
+        )
         return cert_path
 
     except subprocess.TimeoutExpired:
@@ -270,9 +324,20 @@ def download_ssl_certificate(hostname: str, port: int = 443) -> pathlib.Path:
         util.log_msg(error_msg, mode=util.STDERR_LOG)
         raise RuntimeError(error_msg)
     except Exception as e:
-        error_msg = f"Failed to download SSL certificate from {hostname}:{port}: {e}"
+        error_msg = (
+            f"Failed to download SSL certificate from {hostname}:{port}: {e}"
+        )
         util.log_msg(error_msg, mode=util.STDERR_LOG)
         raise RuntimeError(error_msg) from e
+
+    finally:
+        # Clean up temporary config file on Windows
+        if config_file_path and pathlib.Path(config_file_path).exists():
+            try:
+                pathlib.Path(config_file_path).unlink()
+            except Exception:
+                # Ignore cleanup errors
+                pass
 
 
 def import_ssl_certificate_to_system(cert_path: pathlib.Path) -> bool:
