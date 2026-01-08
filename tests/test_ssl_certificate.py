@@ -288,16 +288,19 @@ MQswCQYDVQQGEwJBVTETMBEGA1UECAwKU29tZS1TdGF0ZTEhMB8GA1UECgwYSW50
         )
 
         # Verify the OpenSSL command was called with Windows-specific config
-        expected_cmd = [
-            "openssl", "req", "-x509", "-newkey", "rsa:4096", "-nodes",
-            "-out", str(cert_path), "-keyout", str(key_path),
-            "-days", "365",
-            "-subj", "/C=US/ST=State/L=City/O=Organization/CN=windows.test",
-            "-config", "nul"
-        ]
         mock_subprocess.assert_called_once()
         args, kwargs = mock_subprocess.call_args
-        self.assertEqual(args[0], expected_cmd)
+        cmd = args[0]
+
+        # Check that command has the basic structure
+        self.assertEqual(cmd[0], "openssl")
+        self.assertEqual(cmd[1], "req")
+        self.assertIn("-config", cmd)
+        # Verify config is not "nul" but a temporary file path
+        config_idx = cmd.index("-config")
+        config_path = cmd[config_idx + 1]
+        self.assertNotEqual(config_path, "nul")
+        self.assertTrue(config_path.endswith(".cnf"))
 
         # Verify return values
         self.assertEqual(result_cert, cert_path)
@@ -325,13 +328,19 @@ MIIDXTCCAkWgAwIBAgIJAKuK0VGDJJhjMA0GCSqGSIb3DQEBCwUAMEUxCzAJBgNV
         ssl_certificate.download_ssl_certificate("windows.test.com", 443)
 
         # Verify the OpenSSL command was called with Windows-specific config
-        expected_cmd = [
-            "openssl", "s_client", "-connect", "windows.test.com:443",
-            "-servername", "windows.test.com", "-showcerts", "-config", "nul"
-        ]
         mock_subprocess.assert_called_once()
         args, kwargs = mock_subprocess.call_args
-        self.assertEqual(args[0], expected_cmd)
+        cmd = args[0]
+
+        # Check that command has the basic structure
+        self.assertEqual(cmd[0], "openssl")
+        self.assertEqual(cmd[1], "s_client")
+        self.assertIn("-config", cmd)
+        # Verify config is not "nul" but a temporary file path
+        config_idx = cmd.index("-config")
+        config_path = cmd[config_idx + 1]
+        self.assertNotEqual(config_path, "nul")
+        self.assertTrue(config_path.endswith(".cnf"))
 
     @patch("thermostatsupervisor.ssl_certificate.platform.system")
     @patch("thermostatsupervisor.ssl_certificate.subprocess.run")
@@ -352,13 +361,19 @@ MIIDXTCCAkWgAwIBAgIJAKuK0VGDJJhjMA0GCSqGSIb3DQEBCwUAMEUxCzAJBgNV
         self.assertTrue(result)
 
         # Verify the OpenSSL command was called with Windows-specific config
-        expected_cmd = [
-            "openssl", "x509", "-in", str(cert_path), "-noout", "-text",
-            "-config", "nul"
-        ]
         mock_subprocess.assert_called_once()
         args, kwargs = mock_subprocess.call_args
-        self.assertEqual(args[0], expected_cmd)
+        cmd = args[0]
+
+        # Check that command has the basic structure
+        self.assertEqual(cmd[0], "openssl")
+        self.assertEqual(cmd[1], "x509")
+        self.assertIn("-config", cmd)
+        # Verify config is not "nul" but a temporary file path
+        config_idx = cmd.index("-config")
+        config_path = cmd[config_idx + 1]
+        self.assertNotEqual(config_path, "nul")
+        self.assertTrue(config_path.endswith(".cnf"))
 
     @patch("thermostatsupervisor.ssl_certificate.download_ssl_certificate")
     @patch("thermostatsupervisor.ssl_certificate.import_ssl_certificate_to_system")
