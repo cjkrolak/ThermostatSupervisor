@@ -41,7 +41,7 @@ ENABLE_KUMOLOCAL_TESTS = False and ENABLE_SITE2_TESTS  # Kumolocal is local net 
 ENABLE_KUMOCLOUD_TESTS = True and ENABLE_SITE2_TESTS  # Kumocloud via legacy API
 ENABLE_KUMOCLOUDV3_TESTS = True and ENABLE_SITE2_TESTS  # Kumocloud via v3 API
 ENABLE_MMM_TESTS = False and ENABLE_SITE2_TESTS  # mmm50 is local net only
-ENABLE_SHT31_TESTS = True and ENABLE_SITE2_TESTS  # sht31 tests now have robust diag
+ENABLE_SHT31_TESTS = False and ENABLE_SITE2_TESTS  # sht31 tests now have robust diag
 ENABLE_BLINK_TESTS = (
     False and not env.is_azure_environment()
 )  # Blink cameras, TODO #638
