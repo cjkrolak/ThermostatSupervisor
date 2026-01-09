@@ -7,6 +7,7 @@ import pathlib
 import tempfile
 import shutil
 import os
+import platform
 from unittest.mock import patch
 
 from thermostatsupervisor import ssl_certificate
@@ -52,11 +53,42 @@ class TestSSLCertificate(unittest.TestCase):
         self.assertTrue(cert_path.exists())
         self.assertTrue(key_path.exists())
 
-        # Check file permissions (should be 0o600)
+        # Check file permissions (should be 0o600 on Unix, may differ on Windows)
         cert_perms = oct(cert_path.stat().st_mode)[-3:]
         key_perms = oct(key_path.stat().st_mode)[-3:]
-        self.assertEqual(cert_perms, "600")
-        self.assertEqual(key_perms, "600")
+
+        # Windows handles file permissions differently than Unix
+        # On Windows, chmod(0o600) may result in 666 due to different ACL model
+        if platform.system().lower() == "windows":
+            # On Windows, verify permissions are set (may be 666 or 600)
+            self.assertIn(
+                cert_perms,
+                ["600", "666"],
+                f"Certificate permissions '{cert_perms}' not as expected. "
+                f"Windows file permissions differ from Unix. "
+                f"Expected '600' or '666', got '{cert_perms}'."
+            )
+            self.assertIn(
+                key_perms,
+                ["600", "666"],
+                f"Key permissions '{key_perms}' not as expected. "
+                f"Windows file permissions differ from Unix. "
+                f"Expected '600' or '666', got '{key_perms}'."
+            )
+        else:
+            # On Unix-like systems, expect strict 600 permissions
+            self.assertEqual(
+                cert_perms,
+                "600",
+                f"Certificate permissions '{cert_perms}' not as expected. "
+                f"Expected '600' for secure file access (owner read/write only)."
+            )
+            self.assertEqual(
+                key_perms,
+                "600",
+                f"Key permissions '{key_perms}' not as expected. "
+                f"Expected '600' for secure file access (owner read/write only)."
+            )
 
         # Verify certificate content
         self.assertTrue(ssl_certificate.validate_ssl_certificate(cert_path))
