@@ -57,37 +57,40 @@ class TestSSLCertificate(unittest.TestCase):
         cert_perms = oct(cert_path.stat().st_mode)[-3:]
         key_perms = oct(key_path.stat().st_mode)[-3:]
 
-        # Windows handles file permissions differently than Unix
-        # On Windows, chmod(0o600) may result in 666 due to different ACL model
+        # Windows handles file permissions differently than Unix: the effective
+        # security is enforced via NTFS ACLs rather than traditional Unix mode
+        # bits. As a result, calling chmod(0o600) can still show up as "666"
+        # in st_mode. On Windows, "666" here does NOT mean world-readable or
+        # world-writable as it would on Unix; it simply reflects how Python
+        # maps ACLs to mode bits. The underlying ACLs still control access.
         if platform.system().lower() == "windows":
-            # On Windows, verify permissions are set (may be 666 or 600)
+            # On Windows, verify permissions are set (may be reported as 666
+            # or 600)
             self.assertIn(
                 cert_perms,
                 ["600", "666"],
-                f"Certificate permissions '{cert_perms}' not as expected. "
-                f"Windows file permissions differ from Unix. "
-                f"Expected '600' or '666', got '{cert_perms}'."
+                f"Certificate permissions '{cert_perms}' unexpected. "
+                f"Expected '600' or '666' on Windows, got '{cert_perms}'."
             )
             self.assertIn(
                 key_perms,
                 ["600", "666"],
-                f"Key permissions '{key_perms}' not as expected. "
-                f"Windows file permissions differ from Unix. "
-                f"Expected '600' or '666', got '{key_perms}'."
+                f"Key permissions '{key_perms}' unexpected. "
+                f"Expected '600' or '666' on Windows, got '{key_perms}'."
             )
         else:
             # On Unix-like systems, expect strict 600 permissions
             self.assertEqual(
                 cert_perms,
                 "600",
-                f"Certificate permissions '{cert_perms}' not as expected. "
-                f"Expected '600' for secure file access (owner read/write only)."
+                f"Certificate permissions '{cert_perms}' unexpected. "
+                f"Expected '600' (owner read/write only)."
             )
             self.assertEqual(
                 key_perms,
                 "600",
-                f"Key permissions '{key_perms}' not as expected. "
-                f"Expected '600' for secure file access (owner read/write only)."
+                f"Key permissions '{key_perms}' unexpected. "
+                f"Expected '600' (owner read/write only)."
             )
 
         # Verify certificate content
