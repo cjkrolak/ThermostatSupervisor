@@ -144,6 +144,16 @@ def generate_self_signed_certificate(
         # Create a temporary config file with minimal required sections
         config_file_path = _create_windows_openssl_config()
         openssl_cmd.extend(["-config", config_file_path])
+        util.log_msg(
+            f"Using temporary OpenSSL config: {config_file_path}",
+            mode=util.DEBUG_LOG
+        )
+        # Verify config file exists before proceeding
+        if not pathlib.Path(config_file_path).exists():
+            raise RuntimeError(
+                f"Failed to create temporary OpenSSL config file: "
+                f"{config_file_path}"
+            )
 
     try:
         # Run OpenSSL command
@@ -164,7 +174,10 @@ def generate_self_signed_certificate(
         return cert_path, key_path
 
     except subprocess.CalledProcessError as e:
-        error_msg = f"OpenSSL command failed: {e.stderr}"
+        error_msg = (
+            f"OpenSSL command failed: {e.stderr}\n"
+            f"Command: {' '.join(openssl_cmd)}"
+        )
         util.log_msg(error_msg, mode=util.STDERR_LOG)
         raise RuntimeError(error_msg) from e
 
