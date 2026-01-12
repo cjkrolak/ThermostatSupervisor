@@ -242,6 +242,10 @@ def validate_ssl_certificate(cert_path: pathlib.Path) -> bool:
         True if certificate is valid, False otherwise
     """
     if not cert_path.exists():
+        util.log_msg(
+            f"Certificate validation failed: file does not exist: {cert_path}",
+            mode=util.DEBUG_LOG
+        )
         return False
 
     config_file_path = None
@@ -254,6 +258,18 @@ def validate_ssl_certificate(cert_path: pathlib.Path) -> bool:
             # Create a temporary config file with minimal required sections
             config_file_path = _create_windows_openssl_config()
             openssl_cmd.extend(["-config", config_file_path])
+            util.log_msg(
+                f"Validating certificate with config: {config_file_path}",
+                mode=util.DEBUG_LOG
+            )
+            # Verify config file exists before proceeding
+            if not pathlib.Path(config_file_path).exists():
+                util.log_msg(
+                    f"Failed to create temporary OpenSSL config file: "
+                    f"{config_file_path}",
+                    mode=util.DEBUG_LOG
+                )
+                return False
 
         # Use OpenSSL to verify the certificate
         subprocess.run(
@@ -263,13 +279,36 @@ def validate_ssl_certificate(cert_path: pathlib.Path) -> bool:
             check=True,
             timeout=10,
         )
+        util.log_msg(
+            f"Certificate validation successful: {cert_path}",
+            mode=util.DEBUG_LOG
+        )
         return True
 
-    except (
-        subprocess.CalledProcessError,
-        subprocess.TimeoutExpired,
-        FileNotFoundError,
-    ):
+    except subprocess.CalledProcessError as e:
+        util.log_msg(
+            f"Certificate validation failed (OpenSSL error): {cert_path}\n"
+            f"Command: {' '.join(openssl_cmd)}\n"
+            f"Return code: {e.returncode}\n"
+            f"Stdout: {e.stdout}\n"
+            f"Stderr: {e.stderr}",
+            mode=util.DEBUG_LOG
+        )
+        return False
+
+    except subprocess.TimeoutExpired:
+        util.log_msg(
+            f"Certificate validation timed out: {cert_path}\n"
+            f"Command: {' '.join(openssl_cmd)}",
+            mode=util.DEBUG_LOG
+        )
+        return False
+
+    except FileNotFoundError:
+        util.log_msg(
+            f"Certificate validation failed (OpenSSL not found): {cert_path}",
+            mode=util.DEBUG_LOG
+        )
         return False
 
     finally:
