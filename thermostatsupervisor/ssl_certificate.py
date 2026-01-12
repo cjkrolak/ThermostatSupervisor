@@ -298,7 +298,7 @@ def validate_ssl_certificate(cert_path: pathlib.Path) -> bool:
                         mode=util.DEBUG_LOG
                     )
                     return False
-            except Exception as e:
+            except OSError as e:
                 util.log_msg(
                     f"Certificate validation failed: error creating Windows "
                     f"OpenSSL config file: {e}",
