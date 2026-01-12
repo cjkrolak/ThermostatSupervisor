@@ -267,7 +267,7 @@ def validate_ssl_certificate(cert_path: pathlib.Path) -> bool:
                 mode=util.DEBUG_LOG
             )
             return False
-    except (PermissionError, OSError, UnicodeDecodeError) as e:
+    except (OSError, UnicodeDecodeError) as e:
         util.log_msg(
             f"Certificate validation failed: cannot read file: {cert_path}\n"
             f"Error: {e}",
