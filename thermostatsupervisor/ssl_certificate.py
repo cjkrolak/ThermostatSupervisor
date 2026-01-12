@@ -283,17 +283,25 @@ def validate_ssl_certificate(cert_path: pathlib.Path) -> bool:
         # Windows-specific configuration to avoid config file issues
         if platform.system().lower() == "windows":
             # Create a temporary config file with minimal required sections
-            config_file_path = _create_windows_openssl_config()
-            openssl_cmd.extend(["-config", config_file_path])
-            util.log_msg(
-                f"Validating certificate with config: {config_file_path}",
-                mode=util.DEBUG_LOG
-            )
-            # Verify config file exists before proceeding
-            if not pathlib.Path(config_file_path).exists():
+            try:
+                config_file_path = _create_windows_openssl_config()
+                openssl_cmd.extend(["-config", config_file_path])
                 util.log_msg(
-                    f"Failed to create temporary OpenSSL config file: "
-                    f"{config_file_path}",
+                    f"Validating certificate with config: {config_file_path}",
+                    mode=util.DEBUG_LOG
+                )
+                # Verify config file exists before proceeding
+                if not pathlib.Path(config_file_path).exists():
+                    util.log_msg(
+                        f"Failed to create temporary OpenSSL config file: "
+                        f"{config_file_path}",
+                        mode=util.DEBUG_LOG
+                    )
+                    return False
+            except Exception as e:
+                util.log_msg(
+                    f"Certificate validation failed: error creating Windows "
+                    f"OpenSSL config file: {e}",
                     mode=util.DEBUG_LOG
                 )
                 return False
