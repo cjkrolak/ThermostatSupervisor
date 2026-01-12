@@ -250,7 +250,7 @@ def validate_ssl_certificate(cert_path: pathlib.Path) -> bool:
 
     # Check if certificate file has content
     try:
-        cert_content = cert_path.read_text()
+        cert_content = cert_path.read_text(encoding='utf-8')
         if not cert_content:
             util.log_msg(
                 f"Certificate validation failed: file is empty: {cert_path}",
@@ -258,21 +258,16 @@ def validate_ssl_certificate(cert_path: pathlib.Path) -> bool:
             )
             return False
         # Check if certificate has proper PEM markers
-        if "-----BEGIN CERTIFICATE-----" not in cert_content:
+        has_begin = "-----BEGIN CERTIFICATE-----" in cert_content
+        has_end = "-----END CERTIFICATE-----" in cert_content
+        if not has_begin or not has_end:
             util.log_msg(
-                f"Certificate validation failed: missing BEGIN CERTIFICATE "
-                f"marker: {cert_path}",
+                f"Certificate validation failed: missing PEM markers "
+                f"(BEGIN: {has_begin}, END: {has_end}): {cert_path}",
                 mode=util.DEBUG_LOG
             )
             return False
-        if "-----END CERTIFICATE-----" not in cert_content:
-            util.log_msg(
-                f"Certificate validation failed: missing END CERTIFICATE "
-                f"marker: {cert_path}",
-                mode=util.DEBUG_LOG
-            )
-            return False
-    except Exception as e:
+    except (PermissionError, OSError, UnicodeDecodeError) as e:
         util.log_msg(
             f"Certificate validation failed: cannot read file: {cert_path}\n"
             f"Error: {e}",
