@@ -248,6 +248,38 @@ def validate_ssl_certificate(cert_path: pathlib.Path) -> bool:
         )
         return False
 
+    # Check if certificate file has content
+    try:
+        cert_content = cert_path.read_text()
+        if not cert_content:
+            util.log_msg(
+                f"Certificate validation failed: file is empty: {cert_path}",
+                mode=util.DEBUG_LOG
+            )
+            return False
+        # Check if certificate has proper PEM markers
+        if "-----BEGIN CERTIFICATE-----" not in cert_content:
+            util.log_msg(
+                f"Certificate validation failed: missing BEGIN CERTIFICATE "
+                f"marker: {cert_path}",
+                mode=util.DEBUG_LOG
+            )
+            return False
+        if "-----END CERTIFICATE-----" not in cert_content:
+            util.log_msg(
+                f"Certificate validation failed: missing END CERTIFICATE "
+                f"marker: {cert_path}",
+                mode=util.DEBUG_LOG
+            )
+            return False
+    except Exception as e:
+        util.log_msg(
+            f"Certificate validation failed: cannot read file: {cert_path}\n"
+            f"Error: {e}",
+            mode=util.DEBUG_LOG
+        )
+        return False
+
     config_file_path = None
     try:
         # Build OpenSSL validation command
