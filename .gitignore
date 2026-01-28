@@ -41,6 +41,7 @@ debug
 doc
 *.ini
 *.json
+!tests/playwright/package.json
 supervisor-env.txt
 
 # SSL certificates (auto-generated)
