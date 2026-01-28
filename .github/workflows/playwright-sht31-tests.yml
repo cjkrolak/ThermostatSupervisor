@@ -64,37 +64,50 @@ jobs:
           FLASK_ENV: testing
         run: |
           cd /home/runner/work/ThermostatSupervisor/ThermostatSupervisor
+
+          # Create a mock iwconfig command that returns fake data
+          sudo tee /usr/local/bin/iwconfig > /dev/null << 'EOF'
+          #!/bin/bash
+          echo "wlan0     IEEE 802.11  ESSID:\"TestNetwork\""
+          mode="Mode:Managed  Frequency:2.437 GHz"
+          ap="Access Point: \"00:11:22:33:44:55\""
+          echo "          ${mode}  ${ap}"
+          echo "          Bit Rate=72.2 Mb/s   Tx-Power=31 dBm"
+          echo "          Retry short limit:7   RTS thr:off   Fragment thr:off"
+          echo "          Power Management:on"
+          echo "          Link Quality=70/70  Signal level=-40 dBm"
+          echo "          Rx invalid nwid:0  Rx invalid crypt:0  Rx invalid frag:0"
+          echo "          Tx excessive retries:0  Invalid misc:0   Missed beacon:0"
+          EOF
+          sudo chmod +x /usr/local/bin/iwconfig
+          export PATH=/usr/local/bin:$PATH
+
+          # Test the mock iwconfig
+          iwconfig
+
           python -c "
           import sys
           import os
           import time
-          import subprocess
-          import signal
-
-          # Start the SHT31 Flask server in unit test mode
-          print('Starting SHT31 Flask server in test mode...')
+          import threading
 
           # Set environment for unit test
-          env = os.environ.copy()
-          env['SHT31_REMOTE_IP_ADDRESS_99'] = 'mock_test_server'
+          os.environ['SHT31_REMOTE_IP_ADDRESS_99'] = 'mock_test_server'
 
-          # Start server as background process
-          proc = subprocess.Popen(
-              [sys.executable, '-m', 'thermostatsupervisor.sht31_flask_server'],
-              env=env,
-              stdout=subprocess.PIPE,
-              stderr=subprocess.PIPE,
-              text=True
-          )
+          # Import sht31 to spawn Flask server in unit test mode
+          from thermostatsupervisor import sht31
+          from thermostatsupervisor import sht31_config
 
-          # Write PID to file for cleanup
-          with open('/tmp/sht31_server.pid', 'w') as f:
-              f.write(str(proc.pid))
+          print('Spawning SHT31 Flask server in unit test mode...')
 
-          # Wait for server to start
-          print(f'Server started with PID: {proc.pid}')
-          print('Waiting for server to be ready...')
+          # Create thermostat instance with unit test zone
+          # This automatically spawns Flask server
+          thermostat = sht31.ThermostatClass(sht31_config.UNIT_TEST_ZONE)
 
+          print(f'Flask server thread alive: '
+                f'{thermostat.flask_server.is_alive()}')
+
+          # Wait for server to be ready
           import requests
           max_attempts = 30
           for i in range(max_attempts):
@@ -103,7 +116,7 @@ jobs:
                       'http://127.0.0.1:5000/unit', timeout=2)
                   if response.status_code == 200:
                       print(f'✅ Server is ready! (attempt {i+1})')
-                      sys.exit(0)
+                      break
               except Exception as e:
                   if i < max_attempts - 1:
                       time.sleep(1)
@@ -112,10 +125,22 @@ jobs:
                       msg += f'{max_attempts} attempts'
                       print(msg)
                       print(f'Last error: {e}')
-                      proc.kill()
                       sys.exit(1)
+
+          # Keep the server running by sleeping indefinitely
+          # The workflow will kill this process when needed
+          print('Server is running. Press Ctrl+C to stop.')
+          while True:
+              time.sleep(1)
           " &
-          sleep 15
+
+          # Save the background Python process PID
+          SERVER_PID=$!
+          echo $SERVER_PID > /tmp/sht31_server.pid
+          echo "Started server with PID: $SERVER_PID"
+
+          # Wait for server to be ready
+          sleep 5
 
           # Check if server is running
           url="http://127.0.0.1:5000/unit"
