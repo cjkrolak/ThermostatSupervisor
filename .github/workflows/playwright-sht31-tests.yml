@@ -63,14 +63,12 @@ jobs:
           SHT31_REMOTE_IP_ADDRESS_99: "mock_test_server"
           FLASK_ENV: testing
         run: |
-          cd /home/runner/work/ThermostatSupervisor/ThermostatSupervisor
-
           # Create a mock iwconfig command that returns fake data
           sudo tee /usr/local/bin/iwconfig > /dev/null << 'EOF'
           #!/bin/bash
           echo "wlan0     IEEE 802.11  ESSID:\"TestNetwork\""
           mode="Mode:Managed  Frequency:2.437 GHz"
-          ap="Access Point: \"00:11:22:33:44:55\""
+          ap="Access Point: 00:11:22:33:44:55"
           echo "          ${mode}  ${ap}"
           echo "          Bit Rate=72.2 Mb/s   Tx-Power=31 dBm"
           echo "          Retry short limit:7   RTS thr:off   Fragment thr:off"
@@ -121,9 +119,8 @@ jobs:
                   if i < max_attempts - 1:
                       time.sleep(1)
                   else:
-                      msg = f'❌ Server failed to start after '
-                      msg += f'{max_attempts} attempts'
-                      print(msg)
+                      print(f'❌ Server failed to start after '
+                            f'{max_attempts} attempts')
                       print(f'Last error: {e}')
                       sys.exit(1)
 

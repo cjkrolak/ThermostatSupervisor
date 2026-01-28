@@ -1,5 +1,5 @@
 // @ts-check
-const { defineConfig, devices } = require('@playwright/test');
+const { defineConfig } = require('@playwright/test');
 
 /**
  * Playwright configuration for SHT31 API testing.
@@ -33,19 +33,12 @@ module.exports = defineConfig({
     
     /* Collect trace when retrying the failed test */
     trace: 'on-first-retry',
-    
-    /* Screenshot on failure */
-    screenshot: 'only-on-failure',
-    
-    /* Video on failure */
-    video: 'retain-on-failure',
   },
 
-  /* Configure projects for different test scenarios */
+  /* Configure projects for API testing */
   projects: [
     {
-      name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
+      name: 'api-tests',
     },
   ],
 

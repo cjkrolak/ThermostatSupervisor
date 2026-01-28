@@ -204,7 +204,7 @@ test.describe('SHT31 API Response Time', () => {
     const responseTime = endTime - startTime;
     
     expect(response.ok()).toBeTruthy();
-    expect(responseTime).toBeLessThan(5000); // 5 seconds
+    expect(responseTime).toBeLessThan(2000); // 2 seconds
   });
 
   test('/unit endpoint responds within acceptable time', async ({ request }) => {
@@ -214,6 +214,6 @@ test.describe('SHT31 API Response Time', () => {
     const responseTime = endTime - startTime;
     
     expect(response.ok()).toBeTruthy();
-    expect(responseTime).toBeLessThan(5000); // 5 seconds
+    expect(responseTime).toBeLessThan(2000); // 2 seconds
   });
 });
