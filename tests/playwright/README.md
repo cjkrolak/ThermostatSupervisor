@@ -5,20 +5,28 @@ This directory contains Playwright end-to-end tests for the SHT31 Flask API endp
 ## Overview
 
 The test suite validates the following SHT31 API endpoints:
-- `/data` - Production sensor measurements
-- `/unit` - Unit test sensor measurements
-- `/diag` - Diagnostic register data
-- `/clear_diag` - Clear diagnostic register
-- `/enable_heater` - Enable sensor heater
-- `/disable_heater` - Disable sensor heater
-- `/soft_reset` - Perform soft reset
-- `/i2c_detect` - Detect I2C devices
-- `/i2c_detect/0` - Detect I2C devices on bus 0
-- `/i2c_detect/1` - Detect I2C devices on bus 1
-- `/i2c_logic_levels` - Get I2C logic levels
+
+### Endpoints tested in CI (without hardware):
+- `/unit` - Unit test sensor measurements (fabricated data)
+- `/i2c_detect/0` - Detect I2C devices on bus 0 (simulated)
+- `/i2c_detect/1` - Detect I2C devices on bus 1 (simulated)
 - `/i2c_bus_health` - Get I2C bus health status
 - `/print_block_list` - Get IP ban block list
 - `/clear_block_list` - Clear IP ban block list
+- Error handling (404, 405 responses)
+
+### Endpoints requiring hardware (skipped in CI):
+- `/data` - Production sensor measurements (requires SHT31 hardware)
+- `/diag` - Diagnostic register data (requires SHT31 hardware)
+- `/clear_diag` - Clear diagnostic register (requires SHT31 hardware)
+- `/enable_heater` - Enable sensor heater (requires SHT31 hardware)
+- `/disable_heater` - Disable sensor heater (requires SHT31 hardware)
+- `/soft_reset` - Perform soft reset (requires SHT31 hardware)
+- `/i2c_detect` - Detect I2C devices (requires hardware without bus number)
+- `/i2c_logic_levels` - Get I2C logic levels (requires GPIO hardware)
+
+Tests for hardware-dependent endpoints are marked with `test.skip()` and can be
+enabled on systems with actual SHT31 hardware.
 
 ## Prerequisites
 

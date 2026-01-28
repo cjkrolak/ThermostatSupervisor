@@ -6,6 +6,22 @@ const { test, expect } = require('@playwright/test');
  * 
  * This test suite validates the SHT31 temperature/humidity sensor
  * Flask API endpoints by making API requests and verifying responses.
+ * 
+ * Note: Some endpoints require actual SHT31 hardware and are marked with
+ * test.skip() for CI environments. These include:
+ * - /data (production sensor readings)
+ * - /diag, /clear_diag (diagnostic register access)
+ * - /enable_heater, /disable_heater (heater control)
+ * - /soft_reset, /reset (hardware reset commands)
+ * - /i2c_detect (without bus number)
+ * - /i2c_logic_levels (GPIO pin levels)
+ * - /i2c_recovery (I2C bus recovery)
+ * 
+ * Endpoints that work in CI (without hardware):
+ * - /unit (unit test mock data)
+ * - /i2c_detect/0, /i2c_detect/1 (simulated I2C bus scans)
+ * - /i2c_bus_health (bus health check)
+ * - /print_block_list, /clear_block_list (IP ban management)
  */
 
 // Helper function to validate common response structure
@@ -34,7 +50,8 @@ function validateSensorData(data) {
 }
 
 test.describe('SHT31 API Production Endpoints', () => {
-  test('GET /data returns production sensor measurements', async ({ request }) => {
+  test.skip('GET /data returns production sensor measurements', async ({ request }) => {
+    // This test requires actual SHT31 hardware
     const response = await request.get('/data');
     expect(response.ok()).toBeTruthy();
     expect(response.status()).toBe(200);
@@ -54,7 +71,8 @@ test.describe('SHT31 API Production Endpoints', () => {
 });
 
 test.describe('SHT31 API Diagnostic Endpoints', () => {
-  test('GET /diag returns diagnostic register data', async ({ request }) => {
+  test.skip('GET /diag returns diagnostic register data', async ({ request }) => {
+    // This test requires actual SHT31 hardware
     const response = await request.get('/diag');
     expect(response.ok()).toBeTruthy();
     expect(response.status()).toBe(200);
@@ -64,7 +82,8 @@ test.describe('SHT31 API Diagnostic Endpoints', () => {
     expect(typeof data.raw_binary).toBe('string');
   });
 
-  test('GET /clear_diag clears diagnostic register', async ({ request }) => {
+  test.skip('GET /clear_diag clears diagnostic register', async ({ request }) => {
+    // This test requires actual SHT31 hardware
     const response = await request.get('/clear_diag');
     expect(response.ok()).toBeTruthy();
     expect(response.status()).toBe(200);
@@ -75,7 +94,8 @@ test.describe('SHT31 API Diagnostic Endpoints', () => {
 });
 
 test.describe('SHT31 API Heater Control Endpoints', () => {
-  test('GET /enable_heater enables sensor heater', async ({ request }) => {
+  test.skip('GET /enable_heater enables sensor heater', async ({ request }) => {
+    // This test requires actual SHT31 hardware
     const response = await request.get('/enable_heater');
     expect(response.ok()).toBeTruthy();
     expect(response.status()).toBe(200);
@@ -84,7 +104,8 @@ test.describe('SHT31 API Heater Control Endpoints', () => {
     expect(data).toHaveProperty('raw_binary');
   });
 
-  test('GET /disable_heater disables sensor heater', async ({ request }) => {
+  test.skip('GET /disable_heater disables sensor heater', async ({ request }) => {
+    // This test requires actual SHT31 hardware
     const response = await request.get('/disable_heater');
     expect(response.ok()).toBeTruthy();
     expect(response.status()).toBe(200);
@@ -95,7 +116,8 @@ test.describe('SHT31 API Heater Control Endpoints', () => {
 });
 
 test.describe('SHT31 API Reset Endpoints', () => {
-  test('GET /soft_reset performs soft reset', async ({ request }) => {
+  test.skip('GET /soft_reset performs soft reset', async ({ request }) => {
+    // This test requires actual SHT31 hardware
     const response = await request.get('/soft_reset');
     expect(response.ok()).toBeTruthy();
     expect(response.status()).toBe(200);
@@ -109,7 +131,8 @@ test.describe('SHT31 API Reset Endpoints', () => {
 });
 
 test.describe('SHT31 API I2C Diagnostic Endpoints', () => {
-  test('GET /i2c_detect detects I2C devices', async ({ request }) => {
+  test.skip('GET /i2c_detect detects I2C devices', async ({ request }) => {
+    // This test requires actual I2C hardware
     const response = await request.get('/i2c_detect');
     expect(response.ok()).toBeTruthy();
     expect(response.status()).toBe(200);
@@ -137,7 +160,8 @@ test.describe('SHT31 API I2C Diagnostic Endpoints', () => {
     expect(data).toHaveProperty('i2c_detect');
   });
 
-  test('GET /i2c_logic_levels returns I2C logic levels', async ({ request }) => {
+  test.skip('GET /i2c_logic_levels returns I2C logic levels', async ({ request }) => {
+    // This test requires actual GPIO hardware
     const response = await request.get('/i2c_logic_levels');
     expect(response.ok()).toBeTruthy();
     expect(response.status()).toBe(200);
@@ -197,7 +221,8 @@ test.describe('SHT31 API Error Handling', () => {
 });
 
 test.describe('SHT31 API Response Time', () => {
-  test('/data endpoint responds within acceptable time', async ({ request }) => {
+  test.skip('/data endpoint responds within acceptable time', async ({ request }) => {
+    // This test requires actual SHT31 hardware
     const startTime = Date.now();
     const response = await request.get('/data');
     const endTime = Date.now();
