@@ -18,6 +18,22 @@ sys.path.insert(0, repo_root)
 os.environ['SHT31_REMOTE_IP_ADDRESS_99'] = 'mock_test_server'
 
 try:
+    # Import utilities first and set unit test mode
+    from thermostatsupervisor import utilities as util
+    util.unit_test_mode = True
+
+    # Patch the environment check to bypass Raspberry Pi detection in test mode
+    from thermostatsupervisor import environment as env
+    original_is_raspberrypi = env.is_raspberrypi_environment
+
+    def mock_is_raspberrypi_environment(verbose=False):
+        """Mock version that always returns True for unit testing."""
+        if verbose:
+            print("Mock: raspberry pi environment check bypassed for unit testing")
+        return True
+
+    env.is_raspberrypi_environment = mock_is_raspberrypi_environment
+
     # Import sht31 to spawn Flask server in unit test mode
     from thermostatsupervisor import sht31
     from thermostatsupervisor import sht31_config
