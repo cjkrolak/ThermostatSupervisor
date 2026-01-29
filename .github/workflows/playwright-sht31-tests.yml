@@ -1,3 +1,4 @@
+---
 name: Playwright SHT31 API Tests
 on:
   pull_request:
@@ -84,18 +85,15 @@ jobs:
 
           # Set environment for unit test
           os.environ['SHT31_REMOTE_IP_ADDRESS_99'] = 'mock_test_server'
-
           try:
               # Import sht31 to spawn Flask server in unit test mode
               from thermostatsupervisor import sht31
               from thermostatsupervisor import sht31_config
-
               print('Spawning SHT31 Flask server in unit test mode...', flush=True)
 
               # Create thermostat instance with unit test zone
               # This automatically spawns Flask server
               thermostat = sht31.ThermostatClass(sht31_config.UNIT_TEST_ZONE)
-
               alive = thermostat.flask_server.is_alive()
               print(f'Flask server thread alive: {alive}', flush=True)
 
@@ -122,7 +120,6 @@ jobs:
               print('Server is running. Keeping alive...', flush=True)
               while True:
                   time.sleep(10)
-
           except Exception as e:
               print(f'❌ ERROR starting server: {e}', flush=True)
               import traceback
@@ -158,7 +155,6 @@ jobs:
             echo "Attempt $i/$max_checks: Server not ready yet, waiting..."
             sleep 2
           done
-
           msg="❌ ERROR: SHT31 Flask server is not responding after"
           echo "$msg $max_checks attempts"
           echo "Server logs:"
