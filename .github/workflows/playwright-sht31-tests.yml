@@ -1,4 +1,3 @@
----
 name: Playwright SHT31 API Tests
 on:
   pull_request:
@@ -72,67 +71,99 @@ jobs:
 
           # Test the mock iwconfig
           iwconfig
-          python -c "
+
+          # Create a Python script to start the server
+          cat > /tmp/start_sht31_server.py << 'PYEOF'
           import sys
           import os
           import time
-          import threading
+
+          # Add current directory to Python path
+          repo_path = os.environ.get('GITHUB_WORKSPACE', os.getcwd())
+          sys.path.insert(0, repo_path)
 
           # Set environment for unit test
           os.environ['SHT31_REMOTE_IP_ADDRESS_99'] = 'mock_test_server'
 
-          # Import sht31 to spawn Flask server in unit test mode
-          from thermostatsupervisor import sht31
-          from thermostatsupervisor import sht31_config
-          print('Spawning SHT31 Flask server in unit test mode...')
+          try:
+              # Import sht31 to spawn Flask server in unit test mode
+              from thermostatsupervisor import sht31
+              from thermostatsupervisor import sht31_config
 
-          # Create thermostat instance with unit test zone
-          # This automatically spawns Flask server
-          thermostat = sht31.ThermostatClass(sht31_config.UNIT_TEST_ZONE)
-          print(f'Flask server thread alive: '
-                f'{thermostat.flask_server.is_alive()}')
+              print('Spawning SHT31 Flask server in unit test mode...', flush=True)
 
-          # Wait for server to be ready
-          import requests
-          max_attempts = 30
-          for i in range(max_attempts):
-              try:
-                  response = requests.get(
-                      'http://127.0.0.1:5000/unit', timeout=2)
-                  if response.status_code == 200:
-                      print(f'✅ Server is ready! (attempt {i+1})')
-                      break
-              except Exception as e:
-                  if i < max_attempts - 1:
-                      time.sleep(1)
-                  else:
-                      print(f'❌ Server failed to start after '
-                            f'{max_attempts} attempts')
-                      print(f'Last error: {e}')
-                      sys.exit(1)
+              # Create thermostat instance with unit test zone
+              # This automatically spawns Flask server
+              thermostat = sht31.ThermostatClass(sht31_config.UNIT_TEST_ZONE)
 
-          # Keep the server running by sleeping indefinitely
-          # The workflow will kill this process when needed
-          print('Server is running. Press Ctrl+C to stop.')
-          while True:
-              time.sleep(1)
-          " &
+              alive = thermostat.flask_server.is_alive()
+              print(f'Flask server thread alive: {alive}', flush=True)
 
-          # Save the background Python process PID
+              # Wait for server to be ready
+              import requests
+              max_attempts = 30
+              for i in range(max_attempts):
+                  try:
+                      response = requests.get('http://127.0.0.1:5000/unit', timeout=2)
+                      if response.status_code == 200:
+                          print(f'✅ Server is ready! (attempt {i+1})', flush=True)
+                          break
+                  except Exception as e:
+                      if i < max_attempts - 1:
+                          time.sleep(1)
+                      else:
+                          msg = f'❌ Server failed to start after '
+                          msg += f'{max_attempts} attempts'
+                          print(msg, flush=True)
+                          print(f'Last error: {e}', flush=True)
+                          sys.exit(1)
+
+              # Keep the server running by sleeping indefinitely
+              print('Server is running. Keeping alive...', flush=True)
+              while True:
+                  time.sleep(10)
+
+          except Exception as e:
+              print(f'❌ ERROR starting server: {e}', flush=True)
+              import traceback
+              traceback.print_exc()
+              sys.exit(1)
+          PYEOF
+
+          # Start the server in the background
+          python3 /tmp/start_sht31_server.py > /tmp/sht31_server.log 2>&1 &
           SERVER_PID=$!
           echo $SERVER_PID > /tmp/sht31_server.pid
           echo "Started server with PID: $SERVER_PID"
 
-          # Wait for server to be ready
-          sleep 5
+          # Wait for server to be ready (give it time to start)
+          echo "Waiting for server to initialize..."
+          sleep 10
 
-          # Check if server is running
-          url="http://127.0.0.1:5000/unit"
-          if ! curl -f ${url} --max-time 5 --silent > /dev/null; then
-            echo "❌ ERROR: SHT31 Flask server is not responding"
+          # Check if server process is still running
+          if ! ps -p $SERVER_PID > /dev/null 2>&1; then
+            echo "❌ ERROR: Server process died. Check logs:"
+            cat /tmp/sht31_server.log
             exit 1
           fi
-          echo "✅ SHT31 Flask server is running and responding"
+
+          # Check if server is responding
+          url="http://127.0.0.1:5000/unit"
+          max_checks=10
+          for i in $(seq 1 $max_checks); do
+            if curl -f ${url} --max-time 5 --silent > /dev/null; then
+              echo "✅ SHT31 Flask server is running and responding"
+              exit 0
+            fi
+            echo "Attempt $i/$max_checks: Server not ready yet, waiting..."
+            sleep 2
+          done
+
+          msg="❌ ERROR: SHT31 Flask server is not responding after"
+          echo "$msg $max_checks attempts"
+          echo "Server logs:"
+          cat /tmp/sht31_server.log
+          exit 1
       - name: Run Playwright tests
         working-directory: tests/playwright
         env:
