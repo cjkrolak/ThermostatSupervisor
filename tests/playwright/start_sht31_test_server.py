@@ -14,35 +14,69 @@ import time
 repo_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, repo_root)
 
-# Set environment for unit test
+# Set environment for unit test - this bypasses Raspberry Pi checks
 os.environ['SHT31_REMOTE_IP_ADDRESS_99'] = 'mock_test_server'
+os.environ['PLAYWRIGHT_TEST_MODE'] = '1'  # Signal test mode
 
 try:
+    print('DEBUG: Starting Flask server initialization...', flush=True)
+
     # Import utilities first and set unit test mode
     from thermostatsupervisor import utilities as util
     util.unit_test_mode = True
+    print('DEBUG: Set util.unit_test_mode = True', flush=True)
 
     # Patch the environment check to bypass Raspberry Pi detection in test mode
+    # We need to patch it in sys.modules so it persists through importlib.reload()
     from thermostatsupervisor import environment as env
     original_is_raspberrypi = env.is_raspberrypi_environment
 
     def mock_is_raspberrypi_environment(verbose=False):
         """Mock version that always returns True for unit testing."""
         if verbose:
-            print("Mock: raspberry pi environment check bypassed for unit testing")
+            msg = "Mock: raspberry pi environment check bypassed for unit testing"
+            print(msg, flush=True)
+        msg2 = 'DEBUG: mock_is_raspberrypi_environment called, returning True'
+        print(msg2, flush=True)
         return True
 
+    # Patch in the environment module
     env.is_raspberrypi_environment = mock_is_raspberrypi_environment
 
+    # Also patch in sys.modules to ensure it persists through reloads
+    env_mod = sys.modules['thermostatsupervisor.environment']
+    env_mod.is_raspberrypi_environment = mock_is_raspberrypi_environment
+    msg = 'DEBUG: Patched env.is_raspberrypi_environment in module and sys.modules'
+    print(msg, flush=True)
+
+    # Verify the patch is in place
+    test_result = env.is_raspberrypi_environment(verbose=True)
+    msg = f'DEBUG: Test call to is_raspberrypi_environment returned: {test_result}'
+    print(msg, flush=True)
+
     # Import sht31 to spawn Flask server in unit test mode
+    print('DEBUG: About to import sht31 module...', flush=True)
     from thermostatsupervisor import sht31
     from thermostatsupervisor import sht31_config
+    print('DEBUG: Successfully imported sht31 modules', flush=True)
 
     print('Spawning SHT31 Flask server in unit test mode...', flush=True)
 
+    # Verify patch is still in place before creating ThermostatClass
+    print('DEBUG: Verifying patch before ThermostatClass creation...', flush=True)
+    test_result_2 = env.is_raspberrypi_environment(verbose=True)
+    print(f'DEBUG: Second test call returned: {test_result_2}', flush=True)
+
+    # Also verify it's still in sys.modules
+    from thermostatsupervisor import environment as env2
+    test_result_3 = env2.is_raspberrypi_environment(verbose=True)
+    print(f'DEBUG: Test via reimport returned: {test_result_3}', flush=True)
+
     # Create thermostat instance with unit test zone
     # This automatically spawns Flask server
+    print('DEBUG: About to create ThermostatClass...', flush=True)
     thermostat = sht31.ThermostatClass(sht31_config.UNIT_TEST_ZONE)
+    print('DEBUG: ThermostatClass created successfully!', flush=True)
 
     alive = thermostat.flask_server.is_alive()
     print(f'Flask server thread alive: {alive}', flush=True)
