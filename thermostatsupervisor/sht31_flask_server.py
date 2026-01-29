@@ -1234,12 +1234,13 @@ if __name__ == "__main__":
     # enable logging to STDERR for Flask
     util.log_stdout_to_stderr = True
 
-    # verify environment
+    # verify environment (skip check if SKIP_RASPBERRY_PI_CHECK is set)
     env.get_python_version()
-    if not env.is_raspberrypi_environment(True):
-        raise EnvironmentError(
-            "ERROR: SHT31 Flask server only supported on Raspberry PI environment"
-        )
+    if os.environ.get('SKIP_RASPBERRY_PI_CHECK') != '1':
+        if not env.is_raspberrypi_environment(True):
+            raise EnvironmentError(
+                "ERROR: SHT31 Flask server only supported on Raspberry PI environment"
+            )
 
     # parse runtime parameters
     uip = UserInputs()

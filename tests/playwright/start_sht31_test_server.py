@@ -17,6 +17,7 @@ sys.path.insert(0, repo_root)
 # Set environment for unit test - this bypasses Raspberry Pi checks
 os.environ['SHT31_REMOTE_IP_ADDRESS_99'] = 'mock_test_server'
 os.environ['PLAYWRIGHT_TEST_MODE'] = '1'  # Signal test mode
+os.environ['SKIP_RASPBERRY_PI_CHECK'] = '1'  # Skip all Raspberry Pi checks
 
 try:
     print('DEBUG: Starting Flask server initialization...', flush=True)
