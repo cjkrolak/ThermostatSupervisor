@@ -33,11 +33,16 @@ try:
 
     def mock_is_raspberrypi_environment(verbose=False):
         """Mock version that always returns True for unit testing."""
+        import traceback
         if verbose:
             msg = "Mock: raspberry pi environment check bypassed for unit testing"
             print(msg, flush=True)
         msg2 = 'DEBUG: mock_is_raspberrypi_environment called, returning True'
         print(msg2, flush=True)
+        # Print call stack to see where it's being called from
+        print('DEBUG: Call stack:', flush=True)
+        for line in traceback.format_stack()[:-1]:
+            print(line.strip(), flush=True)
         return True
 
     # Patch in the environment module
@@ -75,8 +80,18 @@ try:
     # Create thermostat instance with unit test zone
     # This automatically spawns Flask server
     print('DEBUG: About to create ThermostatClass...', flush=True)
-    thermostat = sht31.ThermostatClass(sht31_config.UNIT_TEST_ZONE)
-    print('DEBUG: ThermostatClass created successfully!', flush=True)
+    try:
+        thermostat = sht31.ThermostatClass(sht31_config.UNIT_TEST_ZONE)
+        print('DEBUG: ThermostatClass created successfully!', flush=True)
+    except Exception as init_error:
+        print(f'DEBUG: Exception during ThermostatClass init: {init_error}', flush=True)
+        print(f'DEBUG: Exception type: {type(init_error).__name__}', flush=True)
+        print(f'DEBUG: Exception args: {init_error.args}', flush=True)
+        import traceback
+        print('DEBUG: Full traceback:', flush=True)
+        traceback.print_exc()
+        # Re-raise to let outer handler catch it
+        raise
 
     alive = thermostat.flask_server.is_alive()
     print(f'Flask server thread alive: {alive}', flush=True)
