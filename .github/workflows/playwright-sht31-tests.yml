@@ -1,0 +1,157 @@
+---
+name: Playwright SHT31 API Tests
+on:
+  pull_request:
+    branches: [develop, main]
+    paths:
+      - tests/playwright/**/*.spec.js
+      - tests/playwright/playwright.config.js
+      - tests/playwright/package.json
+      - thermostatsupervisor/sht31*.py
+      - .github/workflows/playwright-sht31-tests.yml
+  push:
+    branches: [develop, main]
+    paths:
+      - tests/playwright/**/*.spec.js
+      - tests/playwright/playwright.config.js
+      - tests/playwright/package.json
+      - thermostatsupervisor/sht31*.py
+      - .github/workflows/playwright-sht31-tests.yml
+  workflow_dispatch:  # Allow manual triggering
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  playwright-tests:
+    name: Playwright SHT31 API Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -r requirements_sht31.txt
+          pip list
+      - name: Install Playwright dependencies
+        working-directory: tests/playwright
+        run: |
+          npm install
+          npx playwright install --with-deps chromium
+      - name: Start SHT31 Flask server
+        env:
+          SHT31_REMOTE_IP_ADDRESS_99: mock_test_server
+          FLASK_ENV: testing
+        run: |
+          # Create a mock iwconfig command that returns fake data
+          sudo tee /usr/local/bin/iwconfig > /dev/null << 'EOF'
+          #!/bin/bash
+          echo "wlan0     IEEE 802.11  ESSID:\"TestNetwork\""
+          mode="Mode:Managed  Frequency:2.437 GHz"
+          ap="Access Point: 00:11:22:33:44:55"
+          echo "          ${mode}  ${ap}"
+          echo "          Bit Rate=72.2 Mb/s   Tx-Power=31 dBm"
+          echo "          Retry short limit:7   RTS thr:off   Fragment thr:off"
+          echo "          Power Management:on"
+          echo "          Link Quality=70/70  Signal level=-40 dBm"
+          echo "          Rx invalid nwid:0  Rx invalid crypt:0  Rx invalid frag:0"
+          echo "          Tx excessive retries:0  Invalid misc:0   Missed beacon:0"
+          EOF
+          sudo chmod +x /usr/local/bin/iwconfig
+          export PATH=/usr/local/bin:$PATH
+
+          # Test the mock iwconfig
+          iwconfig
+
+          # Start the server in the background using the repo script
+          script_path="tests/playwright/start_sht31_test_server.py"
+          python3 ${script_path} > /tmp/sht31_server.log 2>&1 &
+          SERVER_PID=$!
+          echo $SERVER_PID > /tmp/sht31_server.pid
+          echo "Started server with PID: $SERVER_PID"
+
+          # Wait for server to be ready (give it time to start)
+          echo "Waiting for server to initialize..."
+          sleep 10
+
+          # Check if server process is still running
+          if ! ps -p $SERVER_PID > /dev/null 2>&1; then
+            echo "❌ ERROR: Server process died. Check logs:"
+            cat /tmp/sht31_server.log
+            exit 1
+          fi
+
+          # Check if server is responding
+          url="http://127.0.0.1:5000/unit"
+          max_checks=10
+          for i in $(seq 1 $max_checks); do
+            if curl -f ${url} --max-time 5 --silent > /dev/null; then
+              echo "✅ SHT31 Flask server is running and responding"
+              exit 0
+            fi
+            echo "Attempt $i/$max_checks: Server not ready yet, waiting..."
+            sleep 2
+          done
+          msg="❌ ERROR: SHT31 Flask server is not responding after"
+          echo "$msg $max_checks attempts"
+          echo "Server logs:"
+          cat /tmp/sht31_server.log
+          exit 1
+      - name: Run Playwright tests
+        working-directory: tests/playwright
+        env:
+          SHT31_BASE_URL: http://127.0.0.1:5000
+          CI: true
+        run: |
+          npm test
+      - name: Upload Playwright report
+        uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: playwright-report
+          path: tests/playwright/playwright-report/
+          retention-days: 30
+      - name: Upload test results
+        uses: actions/upload-artifact@v6
+        if: always()
+        with:
+          name: playwright-test-results
+          path: |
+            tests/playwright/test-results/
+            tests/playwright/test-results.json
+            tests/playwright/test-results.xml
+          retention-days: 30
+      - name: Stop SHT31 Flask server
+        if: always()
+        run: |
+          if [ -f /tmp/sht31_server.pid ]; then
+            pid=$(cat /tmp/sht31_server.pid)
+            if kill -0 $pid 2>/dev/null; then
+              echo "Stopping SHT31 Flask server (PID: $pid)"
+              kill $pid
+              sleep 2
+              kill -9 $pid 2>/dev/null || true
+            fi
+            rm /tmp/sht31_server.pid
+          fi
+          # Also kill any remaining Python processes running sht31_flask_server
+          pkill -f sht31_flask_server || true
+      - name: Display test summary
+        if: always()
+        run: |-
+          echo "## Playwright Test Results" >> $GITHUB_STEP_SUMMARY
+          if [ -f tests/playwright/test-results.json ]; then
+            echo "Test results available in artifacts" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⚠️ Test results not found" >> $GITHUB_STEP_SUMMARY
+          fi

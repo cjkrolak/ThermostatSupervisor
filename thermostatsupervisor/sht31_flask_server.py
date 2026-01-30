@@ -20,8 +20,9 @@ try:
     import smbus2  # noqa F405
 
     pi_library_exception = None  # successful
-except ImportError as ex:
+except (ImportError, RuntimeError) as ex:
     # hardware-related library, not needed in unittest mode
+    # RuntimeError is raised by RPi.GPIO when not on a Raspberry Pi
     print(traceback.format_exc())
     print(
         "WARNING: RPi or smbus library import error, "
@@ -1234,12 +1235,13 @@ if __name__ == "__main__":
     # enable logging to STDERR for Flask
     util.log_stdout_to_stderr = True
 
-    # verify environment
+    # verify environment (skip check if SKIP_RASPBERRY_PI_CHECK is set)
     env.get_python_version()
-    if not env.is_raspberrypi_environment(True):
-        raise EnvironmentError(
-            "ERROR: SHT31 Flask server only supported on Raspberry PI environment"
-        )
+    if os.environ.get('SKIP_RASPBERRY_PI_CHECK') != '1':
+        if not env.is_raspberrypi_environment(True):
+            raise EnvironmentError(
+                "ERROR: SHT31 Flask server only supported on Raspberry PI environment"
+            )
 
     # parse runtime parameters
     uip = UserInputs()
