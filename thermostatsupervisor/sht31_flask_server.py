@@ -20,8 +20,9 @@ try:
     import smbus2  # noqa F405
 
     pi_library_exception = None  # successful
-except ImportError as ex:
+except (ImportError, RuntimeError) as ex:
     # hardware-related library, not needed in unittest mode
+    # RuntimeError is raised by RPi.GPIO when not on a Raspberry Pi
     print(traceback.format_exc())
     print(
         "WARNING: RPi or smbus library import error, "
