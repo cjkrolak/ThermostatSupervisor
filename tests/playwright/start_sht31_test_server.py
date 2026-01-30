@@ -9,6 +9,7 @@ It spawns the server in unit test mode which generates fabricated sensor data.
 import sys
 import os
 import time
+import traceback
 
 # Add repository root to Python path
 repo_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -30,11 +31,9 @@ try:
     # Patch the environment check to bypass Raspberry Pi detection in test mode
     # We need to patch it in sys.modules so it persists through importlib.reload()
     from thermostatsupervisor import environment as env
-    original_is_raspberrypi = env.is_raspberrypi_environment
 
     def mock_is_raspberrypi_environment(verbose=False):
         """Mock version that always returns True for unit testing."""
-        import traceback
         if verbose:
             msg = "Mock: raspberry pi environment check bypassed for unit testing"
             print(msg, flush=True)
@@ -88,7 +87,6 @@ try:
         print(f'DEBUG: Exception during ThermostatClass init: {init_error}', flush=True)
         print(f'DEBUG: Exception type: {type(init_error).__name__}', flush=True)
         print(f'DEBUG: Exception args: {init_error.args}', flush=True)
-        import traceback
         print('DEBUG: Full traceback:', flush=True)
         traceback.print_exc()
         # Re-raise to let outer handler catch it
@@ -122,6 +120,5 @@ try:
 
 except Exception as e:
     print(f'❌ ERROR starting server: {e}', flush=True)
-    import traceback
     traceback.print_exc()
     sys.exit(1)
