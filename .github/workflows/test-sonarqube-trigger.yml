@@ -3,7 +3,8 @@ name: Test SonarQube Trigger
 # This workflow tests the repository dispatch mechanism
 on:
   repository_dispatch:
-    types: [test-trigger, azure-pipeline-completed]
+    types:
+      [test-trigger, azure-pipeline-completed, github-actions-completed]
   workflow_dispatch:
     inputs:
       test_coverage_gist_id:
