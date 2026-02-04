@@ -1,10 +1,10 @@
 ---
 name: SonarQube Scan
 # run this workflow when triggered by Azure DevOps pipeline completion
-# or manually, or on pull requests to develop branch
+# or GitHub Actions unit tests completion, or manually
 on:
   repository_dispatch:
-    types: [azure-pipeline-completed]
+    types: [azure-pipeline-completed, github-actions-completed]
   workflow_dispatch:
     inputs:
       coverage_gist_id:
