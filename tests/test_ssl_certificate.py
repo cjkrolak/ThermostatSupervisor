@@ -8,6 +8,7 @@ import tempfile
 import shutil
 import os
 import platform
+import subprocess
 from unittest.mock import patch
 
 from thermostatsupervisor import ssl_certificate
@@ -444,6 +445,388 @@ MIIDXTCCAkWgAwIBAgIJAKuK0VGDJJhjMA0GCSqGSIb3DQEBCwUAMEUxCzAJBgNV
         self.assertFalse(result)
         self.assertEqual(mock_download.call_count, 2)
         # Only called for successful download
+        self.assertEqual(mock_import.call_count, 1)
+
+    def test_cleanup_temp_config_with_permission_error(self):
+        """Test cleanup of temp config file with permission error."""
+        # Create a temp file
+        temp_path = pathlib.Path(self.test_dir) / "test_config.cnf"
+        temp_path.write_text("test config")
+
+        # Mock unlink to raise PermissionError
+        with patch("pathlib.Path.unlink") as mock_unlink:
+            mock_unlink.side_effect = PermissionError("Permission denied")
+
+            # Should not raise exception
+            ssl_certificate._cleanup_temp_config(str(temp_path))
+
+            # Verify unlink was attempted
+            mock_unlink.assert_called_once()
+
+    def test_cleanup_temp_config_with_file_not_found_error(self):
+        """Test cleanup of temp config file with FileNotFoundError."""
+        # Create a temp file path (but don't create the file)
+        temp_path = pathlib.Path(self.test_dir) / "nonexistent_config.cnf"
+
+        # Mock exists to return True, then unlink to raise FileNotFoundError
+        with patch("pathlib.Path.exists", return_value=True):
+            with patch("pathlib.Path.unlink") as mock_unlink:
+                mock_unlink.side_effect = FileNotFoundError("File not found")
+
+                # Should not raise exception
+                ssl_certificate._cleanup_temp_config(str(temp_path))
+
+                # Verify unlink was attempted
+                mock_unlink.assert_called_once()
+
+    def test_cleanup_temp_config_with_none_path(self):
+        """Test cleanup with None path."""
+        # Should not raise exception
+        ssl_certificate._cleanup_temp_config(None)
+
+    def test_cleanup_temp_config_nonexistent_file(self):
+        """Test cleanup of nonexistent temp config file."""
+        # Create a path that doesn't exist
+        temp_path = pathlib.Path(self.test_dir) / "nonexistent.cnf"
+
+        # Should not raise exception
+        ssl_certificate._cleanup_temp_config(str(temp_path))
+
+    @patch("tempfile.mkstemp")
+    @patch("os.chmod")
+    def test_create_windows_openssl_config_error(self, mock_chmod, mock_mkstemp):
+        """Test _create_windows_openssl_config with error."""
+        # Mock mkstemp to return a file descriptor and path
+        mock_fd = 100
+        mock_path = "/tmp/test_config.cnf"
+        mock_mkstemp.return_value = (mock_fd, mock_path)
+
+        # Mock chmod to raise an exception
+        mock_chmod.side_effect = OSError("Permission denied")
+
+        # Mock os.fdopen to avoid issues with mock fd
+        with patch("os.fdopen") as mock_fdopen:
+            with patch("os.unlink") as mock_unlink:
+                mock_fdopen.side_effect = OSError("Cannot open file")
+
+                # Should raise the exception
+                with self.assertRaises(OSError):
+                    ssl_certificate._create_windows_openssl_config()
+
+                # Verify cleanup was attempted
+                mock_unlink.assert_called_once_with(mock_path)
+
+    @patch("thermostatsupervisor.ssl_certificate.subprocess.run")
+    def test_download_ssl_certificate_missing_cert_markers(self, mock_subprocess):
+        """Test SSL certificate download with missing cert markers."""
+        # Mock output without certificate markers
+        mock_cert_output = """
+        CONNECTED(00000003)
+        depth=0 CN = test.example.com
+        verify return:1
+        No certificate found
+        """
+        mock_subprocess.return_value.returncode = 0
+        mock_subprocess.return_value.stdout = mock_cert_output
+        mock_subprocess.return_value.stderr = ""
+
+        with self.assertRaises(RuntimeError) as context:
+            ssl_certificate.download_ssl_certificate("test.example.com", 443)
+
+        self.assertIn("Could not find certificate", str(context.exception))
+
+    @patch("thermostatsupervisor.ssl_certificate.subprocess.run")
+    def test_download_ssl_certificate_timeout(self, mock_subprocess):
+        """Test SSL certificate download timeout."""
+        # Mock timeout
+        mock_subprocess.side_effect = subprocess.TimeoutExpired("openssl", 30)
+
+        with self.assertRaises(RuntimeError) as context:
+            ssl_certificate.download_ssl_certificate("slow.example.com", 443)
+
+        self.assertIn("Timeout", str(context.exception))
+
+    def test_validate_ssl_certificate_empty_file(self):
+        """Test validation of empty certificate file."""
+        # Create an empty certificate file
+        cert_path = pathlib.Path(self.test_dir) / "empty.crt"
+        cert_path.write_text("")
+
+        result = ssl_certificate.validate_ssl_certificate(cert_path)
+        self.assertFalse(result)
+
+    def test_validate_ssl_certificate_missing_begin_marker(self):
+        """Test validation of certificate missing BEGIN marker."""
+        # Create a certificate file missing BEGIN marker
+        cert_path = pathlib.Path(self.test_dir) / "incomplete.crt"
+        cert_path.write_text(
+            "Some content\n-----END CERTIFICATE-----"
+        )
+
+        result = ssl_certificate.validate_ssl_certificate(cert_path)
+        self.assertFalse(result)
+
+    def test_validate_ssl_certificate_missing_end_marker(self):
+        """Test validation of certificate missing END marker."""
+        # Create a certificate file missing END marker
+        cert_path = pathlib.Path(self.test_dir) / "incomplete2.crt"
+        cert_path.write_text(
+            "-----BEGIN CERTIFICATE-----\nSome content"
+        )
+
+        result = ssl_certificate.validate_ssl_certificate(cert_path)
+        self.assertFalse(result)
+
+    @patch("pathlib.Path.read_text")
+    def test_validate_ssl_certificate_unicode_error(self, mock_read_text):
+        """Test validation of certificate with unicode decode error."""
+        # Create a certificate file
+        cert_path = pathlib.Path(self.test_dir) / "binary.crt"
+        cert_path.write_bytes(b"\x80\x81\x82\x83")
+
+        # Mock read_text to raise UnicodeDecodeError
+        mock_read_text.side_effect = UnicodeDecodeError(
+            "utf-8", b"\x80\x81", 0, 1, "invalid start byte"
+        )
+
+        result = ssl_certificate.validate_ssl_certificate(cert_path)
+        self.assertFalse(result)
+
+    @patch("pathlib.Path.read_text")
+    def test_validate_ssl_certificate_os_error(self, mock_read_text):
+        """Test validation of certificate with OS error."""
+        # Create a certificate file
+        cert_path = pathlib.Path(self.test_dir) / "inaccessible.crt"
+        cert_path.write_text("test")
+
+        # Mock read_text to raise OSError
+        mock_read_text.side_effect = OSError("Cannot read file")
+
+        result = ssl_certificate.validate_ssl_certificate(cert_path)
+        self.assertFalse(result)
+
+    @patch("thermostatsupervisor.ssl_certificate.platform.system")
+    @patch("thermostatsupervisor.ssl_certificate.subprocess.run")
+    def test_validate_ssl_certificate_windows_config_creation_error(
+        self, mock_subprocess, mock_platform
+    ):
+        """Test certificate validation with Windows config creation error."""
+        mock_platform.return_value = "Windows"
+
+        # Create a mock certificate file
+        cert_path = pathlib.Path(self.test_dir) / "test.crt"
+        cert_path.write_text(
+            "-----BEGIN CERTIFICATE-----\ntest cert\n-----END CERTIFICATE-----"
+        )
+
+        # Mock _create_windows_openssl_config to raise OSError
+        with patch(
+            "thermostatsupervisor.ssl_certificate._create_windows_openssl_config"
+        ) as mock_create_config:
+            mock_create_config.side_effect = OSError("Cannot create config")
+
+            result = ssl_certificate.validate_ssl_certificate(cert_path)
+            self.assertFalse(result)
+
+    @patch("thermostatsupervisor.ssl_certificate.platform.system")
+    @patch("thermostatsupervisor.ssl_certificate.subprocess.run")
+    def test_validate_ssl_certificate_subprocess_timeout(
+        self, mock_subprocess, mock_platform
+    ):
+        """Test certificate validation with subprocess timeout."""
+        mock_platform.return_value = "Linux"
+
+        # Create a mock certificate file
+        cert_path = pathlib.Path(self.test_dir) / "test.crt"
+        cert_path.write_text(
+            "-----BEGIN CERTIFICATE-----\ntest cert\n-----END CERTIFICATE-----"
+        )
+
+        # Mock subprocess to timeout
+        mock_subprocess.side_effect = subprocess.TimeoutExpired("openssl", 10)
+
+        result = ssl_certificate.validate_ssl_certificate(cert_path)
+        self.assertFalse(result)
+
+    @patch("thermostatsupervisor.ssl_certificate.platform.system")
+    @patch("thermostatsupervisor.ssl_certificate.subprocess.run")
+    def test_validate_ssl_certificate_openssl_not_found(
+        self, mock_subprocess, mock_platform
+    ):
+        """Test certificate validation with OpenSSL not found."""
+        mock_platform.return_value = "Linux"
+
+        # Create a mock certificate file
+        cert_path = pathlib.Path(self.test_dir) / "test.crt"
+        cert_path.write_text(
+            "-----BEGIN CERTIFICATE-----\ntest cert\n-----END CERTIFICATE-----"
+        )
+
+        # Mock subprocess to raise FileNotFoundError
+        mock_subprocess.side_effect = FileNotFoundError("OpenSSL not found")
+
+        result = ssl_certificate.validate_ssl_certificate(cert_path)
+        self.assertFalse(result)
+
+    @patch("thermostatsupervisor.ssl_certificate.platform.system")
+    @patch("thermostatsupervisor.ssl_certificate.subprocess.run")
+    def test_import_cert_linux_subprocess_timeout(
+        self, mock_subprocess, mock_platform
+    ):
+        """Test Linux certificate import with subprocess timeout."""
+        mock_platform.return_value = "Linux"
+
+        # Create a mock certificate file
+        cert_path = pathlib.Path(self.test_dir) / "test.crt"
+        cert_path.write_text(
+            "-----BEGIN CERTIFICATE-----\ntest cert\n-----END CERTIFICATE-----"
+        )
+
+        # Mock subprocess to timeout
+        mock_subprocess.side_effect = subprocess.TimeoutExpired("sudo", 30)
+
+        # Mock that cert directory exists
+        with patch("pathlib.Path.exists", return_value=True):
+            with patch("pathlib.Path.is_dir", return_value=True):
+                result = ssl_certificate.import_ssl_certificate_to_system(cert_path)
+                # Should still return True with fallback message
+                self.assertTrue(result)
+
+    @patch("thermostatsupervisor.ssl_certificate.platform.system")
+    @patch("thermostatsupervisor.ssl_certificate.subprocess.run")
+    def test_import_cert_windows_subprocess_error(
+        self, mock_subprocess, mock_platform
+    ):
+        """Test Windows certificate import with subprocess error."""
+        mock_platform.return_value = "Windows"
+
+        # Create a mock certificate file
+        cert_path = pathlib.Path(self.test_dir) / "test.crt"
+        cert_path.write_text(
+            "-----BEGIN CERTIFICATE-----\ntest cert\n-----END CERTIFICATE-----"
+        )
+
+        # Mock subprocess to fail
+        mock_subprocess.side_effect = subprocess.CalledProcessError(
+            1, "certutil", stderr="Access denied"
+        )
+
+        result = ssl_certificate.import_ssl_certificate_to_system(cert_path)
+        self.assertFalse(result)
+
+    def test_import_ssl_certificate_nonexistent_file(self):
+        """Test importing nonexistent certificate file."""
+        nonexistent_path = pathlib.Path(self.test_dir) / "nonexistent.crt"
+
+        result = ssl_certificate.import_ssl_certificate_to_system(nonexistent_path)
+        self.assertFalse(result)
+
+    @patch("thermostatsupervisor.ssl_certificate._import_cert_linux")
+    @patch("thermostatsupervisor.ssl_certificate.platform.system")
+    def test_import_ssl_certificate_exception_handling(
+        self, mock_platform, mock_import_linux
+    ):
+        """Test certificate import with unexpected exception."""
+        mock_platform.return_value = "Linux"
+        # Mock _import_cert_linux to raise an exception
+        mock_import_linux.side_effect = Exception("Unexpected error")
+
+        # Create a mock certificate file
+        cert_path = pathlib.Path(self.test_dir) / "test.crt"
+        cert_path.write_text(
+            "-----BEGIN CERTIFICATE-----\ntest cert\n-----END CERTIFICATE-----"
+        )
+
+        result = ssl_certificate.import_ssl_certificate_to_system(cert_path)
+        self.assertFalse(result)
+
+    @patch("thermostatsupervisor.ssl_certificate.subprocess.run")
+    def test_generate_self_signed_certificate_timeout(self, mock_subprocess):
+        """Test certificate generation with timeout."""
+        # Mock subprocess to timeout
+        mock_subprocess.side_effect = subprocess.TimeoutExpired("openssl", 30)
+
+        with self.assertRaises(RuntimeError) as context:
+            ssl_certificate.generate_self_signed_certificate(
+                cert_file="timeout_test.crt",
+                key_file="timeout_test.key"
+            )
+
+        self.assertIn("timed out", str(context.exception))
+
+    @patch("thermostatsupervisor.ssl_certificate.subprocess.run")
+    def test_generate_self_signed_certificate_openssl_not_found(
+        self, mock_subprocess
+    ):
+        """Test certificate generation with OpenSSL not found."""
+        # Mock subprocess to raise FileNotFoundError
+        mock_subprocess.side_effect = FileNotFoundError("OpenSSL not found")
+
+        with self.assertRaises(RuntimeError) as context:
+            ssl_certificate.generate_self_signed_certificate(
+                cert_file="missing_openssl.crt",
+                key_file="missing_openssl.key"
+            )
+
+        self.assertIn("OpenSSL not found", str(context.exception))
+
+    @patch("thermostatsupervisor.ssl_certificate.subprocess.run")
+    def test_generate_self_signed_certificate_files_not_created(
+        self, mock_subprocess
+    ):
+        """Test certificate generation when files are not created."""
+        # Mock subprocess to succeed but don't create files
+        mock_subprocess.return_value.returncode = 0
+
+        with self.assertRaises(RuntimeError) as context:
+            ssl_certificate.generate_self_signed_certificate(
+                cert_file="not_created.crt",
+                key_file="not_created.key"
+            )
+
+        self.assertIn("Certificate files were not created", str(context.exception))
+
+    def test_get_ssl_context_without_fallback(self):
+        """Test SSL context generation without adhoc fallback."""
+        # Mock generate_self_signed_certificate to fail
+        original_generate = ssl_certificate.generate_self_signed_certificate
+
+        def mock_generate_failure(*args, **kwargs):
+            raise RuntimeError("Mocked failure")
+
+        ssl_certificate.generate_self_signed_certificate = mock_generate_failure
+
+        try:
+            ssl_context = ssl_certificate.get_ssl_context(
+                cert_file="no_fallback.crt",
+                key_file="no_fallback.key",
+                fallback_to_adhoc=False,
+            )
+
+            # Should return None
+            self.assertIsNone(ssl_context)
+
+        finally:
+            # Restore original function
+            ssl_certificate.generate_self_signed_certificate = original_generate
+
+    @patch("thermostatsupervisor.ssl_certificate.download_ssl_certificate")
+    @patch("thermostatsupervisor.ssl_certificate.import_ssl_certificate_to_system")
+    def test_download_and_import_ssl_certificates_import_failure(
+        self, mock_import, mock_download
+    ):
+        """Test downloading and importing certificates with import failure."""
+        # Mock successful download but failed import
+        mock_cert_path = pathlib.Path(self.test_dir) / "test.crt"
+        mock_download.return_value = mock_cert_path
+        mock_import.return_value = False
+
+        servers = [("example.com", 443)]
+        result = ssl_certificate.download_and_import_ssl_certificates(servers)
+
+        # Should return False due to import failure
+        self.assertFalse(result)
+        self.assertEqual(mock_download.call_count, 1)
         self.assertEqual(mock_import.call_count, 1)
 
 
