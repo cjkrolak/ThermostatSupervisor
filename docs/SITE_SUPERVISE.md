@@ -277,7 +277,7 @@ A comprehensive example script is provided in `examples/site_supervise_example.p
 
 Run the example:
 ```bash
-cd /home/runner/work/ThermostatSupervisor/ThermostatSupervisor
+cd ThermostatSupervisor  # Navigate to project root
 PYTHONPATH=. python examples/site_supervise_example.py
 ```
 

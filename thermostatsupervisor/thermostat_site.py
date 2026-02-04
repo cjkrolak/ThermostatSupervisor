@@ -281,8 +281,8 @@ class ThermostatSite:
 
                 measurement += 1
 
-                # Wait before next measurement (except on last measurement)
-                if measurement <= max_measurements:
+                # Wait before next measurement (except after last measurement)
+                if measurement < max_measurements:
                     time.sleep(Zone.poll_time_sec)
 
             util.log_msg(
