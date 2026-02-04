@@ -1,5 +1,5 @@
 """
-Unit tests for the `flask_generic` module in the `thermostatsupervisor` package.
+Unit tests for the `flask_generic` module in the `src` package.
 Classes:
     TestFlaskGeneric: Contains unit tests for the `schedule_ipban_block_list_report`
                       and `print_ipban_block_list_with_timestamp` functions.

@@ -82,7 +82,7 @@ SHT31_BASE_URL=http://localhost:8000 npm test
 The tests are automatically run by the GitHub Actions workflow 
 `.github/workflows/playwright-sht31-tests.yml` when:
 - Changes are made to Playwright test files (`tests/playwright/**/*.spec.js`)
-- Changes are made to SHT31 Python code (`thermostatsupervisor/sht31*.py`)
+- Changes are made to SHT31 Python code (`src/sht31*.py`)
 
 ## Test Structure
 

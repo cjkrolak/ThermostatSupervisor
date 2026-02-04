@@ -16,7 +16,7 @@ import requests
 
 # local imports
 
-PACKAGE_NAME = "thermostatsupervisor"  # should match name in __init__.py
+PACKAGE_NAME = "src"  # should match name in __init__.py
 
 # error codes
 NO_ERROR = 0
