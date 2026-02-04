@@ -13,10 +13,10 @@ import unittest.mock
 # third-party imports
 
 # local imports
-import thermostatsupervisor
-from thermostatsupervisor import emulator_config
-from thermostatsupervisor import environment as env
-from thermostatsupervisor import utilities as util
+import src
+from src import emulator_config
+from src import environment as env
+from src import utilities as util
 from tests import unit_test_common as utc
 
 

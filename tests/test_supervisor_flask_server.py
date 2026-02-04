@@ -15,15 +15,15 @@ from flask_wtf.csrf import CSRFProtect
 import requests
 
 # local imports
-from thermostatsupervisor import environment as env
-from thermostatsupervisor import flask_generic as flg
+from src import environment as env
+from src import flask_generic as flg
 
 # thermostat_api is imported but not used to avoid a circular import
-from thermostatsupervisor import (  # noqa F401, pylint: disable=unused-import.
+from src import (  # noqa F401, pylint: disable=unused-import.
     thermostat_api as api,
 )
-from thermostatsupervisor import supervisor_flask_server as sfs
-from thermostatsupervisor import utilities as util
+from src import supervisor_flask_server as sfs
+from src import utilities as util
 from tests import unit_test_common as utc
 
 

@@ -12,7 +12,7 @@ from typing import Dict, Optional, Union
 import requests
 
 # local imports
-from thermostatsupervisor import utilities as util
+from src import utilities as util
 
 
 class WeatherError(Exception):

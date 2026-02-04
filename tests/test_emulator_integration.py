@@ -9,9 +9,9 @@ import math
 import unittest
 
 # local imports
-from thermostatsupervisor import emulator
-from thermostatsupervisor import emulator_config
-from thermostatsupervisor import utilities as util
+from src import emulator
+from src import emulator_config
+from src import utilities as util
 from tests import unit_test_common as utc
 
 

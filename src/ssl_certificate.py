@@ -15,7 +15,7 @@ import time
 from typing import Tuple, Optional, List
 
 # local imports
-from thermostatsupervisor import utilities as util
+from src import utilities as util
 
 
 def get_ssl_cert_directory() -> pathlib.Path:

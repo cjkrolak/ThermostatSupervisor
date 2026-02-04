@@ -5,7 +5,7 @@ Unit tests for environment.py package version detection.
 import unittest
 from unittest.mock import MagicMock, patch
 
-from thermostatsupervisor import environment as env
+from src import environment as env
 from tests import unit_test_common as utc
 
 

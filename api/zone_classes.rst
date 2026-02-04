@@ -129,7 +129,7 @@ Common Base Class
 ThermostatCommonZone
 ~~~~~~~~~~~~~~~~~~~
 
-.. autoclass:: thermostatsupervisor.thermostat_common.ThermostatCommonZone
+.. autoclass:: src.thermostat_common.ThermostatCommonZone
    :members:
    :undoc-members:
    :show-inheritance:
@@ -165,7 +165,7 @@ Implementation Examples
 Honeywell Zone
 ~~~~~~~~~~~~~
 
-.. autoclass:: thermostatsupervisor.honeywell.ThermostatZone
+.. autoclass:: src.honeywell.ThermostatZone
    :members: get_current_mode, report_heating_parameters, get_schedule_heat_sp, set_heat_setpoint, get_schedule_cool_sp, set_cool_setpoint, refresh_zone_info
    :show-inheritance:
 
@@ -174,7 +174,7 @@ Full implementation for Honeywell TCC-compatible thermostats.
 Emulator Zone
 ~~~~~~~~~~~~
 
-.. autoclass:: thermostatsupervisor.emulator.ThermostatZone
+.. autoclass:: src.emulator.ThermostatZone
    :members: get_current_mode, report_heating_parameters, get_schedule_heat_sp, set_heat_setpoint, get_schedule_cool_sp, set_cool_setpoint, refresh_zone_info
    :show-inheritance:
 

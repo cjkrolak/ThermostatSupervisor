@@ -41,7 +41,7 @@ jobs:
           ls -la
           echo ""
           echo "=== Main Module ==="
-          ls -la thermostatsupervisor/
+          ls -la src/
           echo ""
           echo "=== Tests ==="
           ls -la tests/

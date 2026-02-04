@@ -50,7 +50,7 @@ Common Base Class
 ThermostatCommon
 ~~~~~~~~~~~~~~~
 
-.. autoclass:: thermostatsupervisor.thermostat_common.ThermostatCommon
+.. autoclass:: src.thermostat_common.ThermostatCommon
    :members:
    :undoc-members:
    :show-inheritance:
@@ -62,14 +62,14 @@ Key Methods:
 get_all_metadata()
 ******************
 
-.. automethod:: thermostatsupervisor.thermostat_common.ThermostatCommon.get_all_metadata
+.. automethod:: src.thermostat_common.ThermostatCommon.get_all_metadata
 
 Retrieves complete metadata for the specified zone.
 
 get_metadata()
 *************
 
-.. automethod:: thermostatsupervisor.thermostat_common.ThermostatCommon.get_metadata
+.. automethod:: src.thermostat_common.ThermostatCommon.get_metadata
 
 Retrieves specific metadata parameters for a zone.
 
@@ -79,7 +79,7 @@ Implementation Examples
 Honeywell Thermostat
 ~~~~~~~~~~~~~~~~~~~
 
-.. autoclass:: thermostatsupervisor.honeywell.ThermostatClass
+.. autoclass:: src.honeywell.ThermostatClass
    :members: print_all_thermostat_metadata, get_target_zone_id, get_all_metadata, get_metadata
    :show-inheritance:
 
@@ -88,7 +88,7 @@ The Honeywell implementation provides full support for TCC-compatible thermostat
 Emulator Thermostat
 ~~~~~~~~~~~~~~~~~~
 
-.. autoclass:: thermostatsupervisor.emulator.ThermostatClass
+.. autoclass:: src.emulator.ThermostatClass
    :members: print_all_thermostat_metadata, get_target_zone_id, get_all_metadata, get_metadata
    :show-inheritance:
 

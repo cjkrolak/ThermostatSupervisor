@@ -188,7 +188,7 @@ def main():
     )
     parser.add_argument(
         "--init-file",
-        default="thermostatsupervisor/__init__.py",
+        default="src/__init__.py",
         help="Path to __init__.py file",
     )
     parser.add_argument(

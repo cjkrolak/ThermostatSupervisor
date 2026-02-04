@@ -13,12 +13,12 @@ This document provides instructions for deploying the ThermostatSupervisor Flask
 ### 1. Supervisor Flask Server
 - **Purpose**: Displays supervisor output on web page
 - **Default Port**: 5001
-- **WSGI Entry Point**: `thermostatsupervisor.supervisor_wsgi:application`
+- **WSGI Entry Point**: `src.supervisor_wsgi:application`
 
 ### 2. SHT31 Flask Server  
 - **Purpose**: Flask API for Raspberry Pi SHT31 sensor
 - **Default Port**: 5000
-- **WSGI Entry Point**: `thermostatsupervisor.sht31_wsgi:application`
+- **WSGI Entry Point**: `src.sht31_wsgi:application`
 - **Requirements**: Raspberry Pi environment with SHT31 sensor
 
 ## Production Deployment Options
@@ -42,11 +42,11 @@ Start servers directly with Gunicorn:
 ```bash
 # Supervisor Flask server
 gunicorn --config gunicorn.supervisor.conf.py \
-         thermostatsupervisor.supervisor_wsgi:application
+         src.supervisor_wsgi:application
 
 # SHT31 Flask server
 gunicorn --config gunicorn.sht31.conf.py \
-         thermostatsupervisor.sht31_wsgi:application
+         src.sht31_wsgi:application
 ```
 
 ### Option 3: Custom Configuration
@@ -60,7 +60,7 @@ gunicorn --bind 0.0.0.0:5001 \
          --timeout 30 \
          --access-logfile - \
          --error-logfile - \
-         thermostatsupervisor.supervisor_wsgi:application
+         src.supervisor_wsgi:application
 ```
 
 ## Configuration Files
@@ -86,8 +86,8 @@ Both configurations include:
 The application supports both HTTP and HTTPS modes. To enable HTTPS:
 
 1. **Enable HTTPS in Configuration**: Set `FLASK_USE_HTTPS = True` in:
-   - `thermostatsupervisor/supervisor_flask_server.py` for the supervisor server
-   - `thermostatsupervisor/sht31_config.py` for the SHT31 server
+   - `src/supervisor_flask_server.py` for the supervisor server
+   - `src/sht31_config.py` for the SHT31 server
 
 2. **Automatic Certificate Generation**: When HTTPS is enabled, the application automatically:
    - Generates self-signed SSL certificates using OpenSSL
@@ -129,7 +129,7 @@ The application supports both HTTP and HTTPS modes. To enable HTTPS:
 
 ## Development vs Production
 
-- **Development**: Use `python -m thermostatsupervisor.supervisor_flask_server`
+- **Development**: Use `python -m src.supervisor_flask_server`
 - **Production**: Use Gunicorn with the configurations provided
 
 The development server will continue to work as before when running the Python modules directly.

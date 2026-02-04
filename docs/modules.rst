@@ -1,7 +1,7 @@
-thermostatsupervisor
-====================
+src
+===
 
 .. toctree::
    :maxdepth: 4
 
-   thermostatsupervisor
+   src

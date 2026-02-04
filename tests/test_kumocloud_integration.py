@@ -10,8 +10,8 @@ import unittest
 # local imports
 # conditionally import kumocloud module to handle missing pykumo dependency
 try:
-    from thermostatsupervisor import kumocloud
-    from thermostatsupervisor import kumocloud_config
+    from src import kumocloud
+    from src import kumocloud_config
 
     kumocloud_import_error = None
 except ImportError as ex:
@@ -20,7 +20,7 @@ except ImportError as ex:
     kumocloud_config = None
     kumocloud_import_error = ex
 
-from thermostatsupervisor import utilities as util
+from src import utilities as util
 from tests import unit_test_common as utc
 
 

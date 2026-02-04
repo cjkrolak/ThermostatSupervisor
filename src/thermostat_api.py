@@ -9,17 +9,17 @@ any changes to thermostat configs.
 import munch
 
 # local imports
-from thermostatsupervisor import blink_config
-from thermostatsupervisor import emulator_config
-from thermostatsupervisor import honeywell_config
-from thermostatsupervisor import kumocloud_config
-from thermostatsupervisor import kumocloudv3_config
-from thermostatsupervisor import kumolocal_config
-from thermostatsupervisor import mmm_config
-from thermostatsupervisor import nest_config
-from thermostatsupervisor import sht31_config
-from thermostatsupervisor import environment as env
-from thermostatsupervisor import utilities as util
+from src import blink_config
+from src import emulator_config
+from src import honeywell_config
+from src import kumocloud_config
+from src import kumocloudv3_config
+from src import kumolocal_config
+from src import mmm_config
+from src import nest_config
+from src import sht31_config
+from src import environment as env
+from src import utilities as util
 
 # thermostat types
 DEFAULT_THERMOSTAT = emulator_config.ALIAS

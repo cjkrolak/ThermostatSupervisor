@@ -10,8 +10,8 @@ import unittest
 from unittest.mock import Mock, patch
 import requests
 
-from thermostatsupervisor import sht31
-from thermostatsupervisor import utilities as util
+from src import sht31
+from src import utilities as util
 
 
 class TestSht31EdgeCases(unittest.TestCase):
@@ -27,7 +27,7 @@ class TestSht31EdgeCases(unittest.TestCase):
         """Clean up test environment."""
         util.unit_test_mode = self.original_unit_test_mode
 
-    @patch('thermostatsupervisor.environment.get_env_variable')
+    @patch('src.environment.get_env_variable')
     def test_should_use_fallback_with_none(self, mock_env):
         """Test _should_use_fallback with None value."""
         mock_env.return_value = {"value": "192.168.1.1"}
@@ -36,7 +36,7 @@ class TestSht31EdgeCases(unittest.TestCase):
         result = tstat._should_use_fallback(None)
         self.assertTrue(result)
 
-    @patch('thermostatsupervisor.environment.get_env_variable')
+    @patch('src.environment.get_env_variable')
     def test_should_use_fallback_with_non_string(self, mock_env):
         """Test _should_use_fallback with non-string value."""
         mock_env.return_value = {"value": "192.168.1.1"}
@@ -49,7 +49,7 @@ class TestSht31EdgeCases(unittest.TestCase):
         result = tstat._should_use_fallback(['list'])
         self.assertFalse(result)
 
-    @patch('thermostatsupervisor.environment.get_env_variable')
+    @patch('src.environment.get_env_variable')
     def test_should_use_fallback_with_whitespace(self, mock_env):
         """Test _should_use_fallback with whitespace-only strings."""
         mock_env.return_value = {"value": "192.168.1.1"}
@@ -62,7 +62,7 @@ class TestSht31EdgeCases(unittest.TestCase):
         result = tstat._should_use_fallback("\t\n")
         self.assertTrue(result)
 
-    @patch('thermostatsupervisor.environment.get_env_variable')
+    @patch('src.environment.get_env_variable')
     def test_should_use_fallback_with_placeholder_in_unit_test_mode(
         self, mock_env
     ):
@@ -89,7 +89,7 @@ class TestSht31EdgeCases(unittest.TestCase):
         finally:
             util.unit_test_mode = original_mode
 
-    @patch('thermostatsupervisor.environment.get_env_variable')
+    @patch('src.environment.get_env_variable')
     def test_handle_403_error_with_ipban_message(self, mock_env):
         """Test _handle_403_error with IP ban message."""
         mock_env.return_value = {"value": "192.168.1.1"}
@@ -109,7 +109,7 @@ class TestSht31EdgeCases(unittest.TestCase):
         self.assertIn("IP address", str(context.exception))
         self.assertIn("blocked", str(context.exception))
 
-    @patch('thermostatsupervisor.environment.get_env_variable')
+    @patch('src.environment.get_env_variable')
     def test_handle_403_error_without_ipban_message(self, mock_env):
         """Test _handle_403_error without IP ban message."""
         mock_env.return_value = {"value": "192.168.1.1"}
@@ -125,7 +125,7 @@ class TestSht31EdgeCases(unittest.TestCase):
         self.assertIn("403", str(context.exception))
         self.assertIn("forbidden", str(context.exception))
 
-    @patch('thermostatsupervisor.environment.get_env_variable')
+    @patch('src.environment.get_env_variable')
     def test_parse_response_json_decode_error(self, mock_env):
         """Test _parse_response with JSON decode error."""
         mock_env.return_value = {"value": "192.168.1.1"}
@@ -142,7 +142,7 @@ class TestSht31EdgeCases(unittest.TestCase):
 
         self.assertIn("not responding", str(context.exception))
 
-    @patch('thermostatsupervisor.environment.get_env_variable')
+    @patch('src.environment.get_env_variable')
     def test_parse_response_with_parameter(self, mock_env):
         """Test _parse_response with parameter extraction."""
         mock_env.return_value = {"value": "192.168.1.1"}
@@ -158,7 +158,7 @@ class TestSht31EdgeCases(unittest.TestCase):
         result = tstat._parse_response(mock_response, "temperature")
         self.assertEqual(result, 72.5)
 
-    @patch('thermostatsupervisor.environment.get_env_variable')
+    @patch('src.environment.get_env_variable')
     def test_parse_response_without_parameter(self, mock_env):
         """Test _parse_response without parameter."""
         mock_env.return_value = {"value": "192.168.1.1"}
@@ -172,8 +172,8 @@ class TestSht31EdgeCases(unittest.TestCase):
         result = tstat._parse_response(mock_response, None)
         self.assertEqual(result, mock_data)
 
-    @patch('thermostatsupervisor.utilities.execute_with_extended_retries')
-    @patch('thermostatsupervisor.environment.get_env_variable')
+    @patch('src.utilities.execute_with_extended_retries')
+    @patch('src.environment.get_env_variable')
     def test_execute_with_retry_delegates_correctly(
         self, mock_env, mock_retry
     ):
@@ -198,7 +198,7 @@ class TestSht31EdgeCases(unittest.TestCase):
         self.assertIn(json.decoder.JSONDecodeError, exception_types)
         self.assertIn(RuntimeError, exception_types)
 
-    @patch('thermostatsupervisor.environment.get_env_variable')
+    @patch('src.environment.get_env_variable')
     def test_get_wifi_status_with_valid_rssi(self, mock_env):
         """Test get_wifi_status with valid RSSI value."""
         mock_env.return_value = {"value": "192.168.1.1"}
@@ -215,7 +215,7 @@ class TestSht31EdgeCases(unittest.TestCase):
             result = zone.get_wifi_status()
             self.assertTrue(result)
 
-    @patch('thermostatsupervisor.environment.get_env_variable')
+    @patch('src.environment.get_env_variable')
     def test_get_wifi_status_with_weak_signal(self, mock_env):
         """Test get_wifi_status with weak signal."""
         mock_env.return_value = {"value": "192.168.1.1"}
@@ -232,7 +232,7 @@ class TestSht31EdgeCases(unittest.TestCase):
             result = zone.get_wifi_status()
             self.assertFalse(result)
 
-    @patch('thermostatsupervisor.environment.get_env_variable')
+    @patch('src.environment.get_env_variable')
     def test_get_wifi_status_with_non_numeric_rssi(self, mock_env):
         """Test get_wifi_status with non-numeric RSSI value."""
         mock_env.return_value = {"value": "192.168.1.1"}
@@ -254,7 +254,7 @@ class TestSht31EdgeCases(unittest.TestCase):
             result = zone.get_wifi_status()
             self.assertFalse(result)
 
-    @patch('thermostatsupervisor.environment.get_env_variable')
+    @patch('src.environment.get_env_variable')
     def test_get_client_ip_success(self, mock_env):
         """Test _get_client_ip with successful resolution."""
         mock_env.return_value = {"value": "192.168.1.1"}
@@ -266,7 +266,7 @@ class TestSht31EdgeCases(unittest.TestCase):
                 result = tstat._get_client_ip()
                 self.assertEqual(result, '192.168.1.100')
 
-    @patch('thermostatsupervisor.environment.get_env_variable')
+    @patch('src.environment.get_env_variable')
     def test_get_client_ip_socket_error(self, mock_env):
         """Test _get_client_ip with socket error."""
         mock_env.return_value = {"value": "192.168.1.1"}
@@ -278,7 +278,7 @@ class TestSht31EdgeCases(unittest.TestCase):
             result = tstat._get_client_ip()
             self.assertEqual(result, 'unknown')
 
-    @patch('thermostatsupervisor.environment.get_env_variable')
+    @patch('src.environment.get_env_variable')
     def test_get_client_ip_os_error(self, mock_env):
         """Test _get_client_ip with OS error."""
         mock_env.return_value = {"value": "192.168.1.1"}
@@ -302,14 +302,14 @@ class TestSht31ThermostatZone(unittest.TestCase):
         """Clean up test environment."""
         util.unit_test_mode = self.original_unit_test_mode
 
-    @patch('thermostatsupervisor.environment.get_env_variable')
+    @patch('src.environment.get_env_variable')
     def test_get_system_switch_position_with_list(self, mock_env):
         """Test get_system_switch_position when OFF_MODE is a list."""
         mock_env.return_value = {"value": "192.168.1.1"}
         tstat = sht31.ThermostatClass(zone=0, verbose=False)
 
         # Create a zone to test
-        from thermostatsupervisor import thermostat_common as tc
+        from src import thermostat_common as tc
         zone = sht31.ThermostatZone(
             Thermostat_obj=tstat,
             verbose=False
@@ -323,14 +323,14 @@ class TestSht31ThermostatZone(unittest.TestCase):
         result = zone.get_system_switch_position()
         self.assertEqual(result, 0)
 
-    @patch('thermostatsupervisor.environment.get_env_variable')
+    @patch('src.environment.get_env_variable')
     def test_get_system_switch_position_with_int(self, mock_env):
         """Test get_system_switch_position when OFF_MODE is an int."""
         mock_env.return_value = {"value": "192.168.1.1"}
         tstat = sht31.ThermostatClass(zone=0, verbose=False)
 
         # Create a zone to test
-        from thermostatsupervisor import thermostat_common as tc
+        from src import thermostat_common as tc
         zone = sht31.ThermostatZone(
             Thermostat_obj=tstat,
             verbose=False
@@ -344,7 +344,7 @@ class TestSht31ThermostatZone(unittest.TestCase):
         result = zone.get_system_switch_position()
         self.assertEqual(result, 3)
 
-    @patch('thermostatsupervisor.environment.get_env_variable')
+    @patch('src.environment.get_env_variable')
     def test_handle_404_error(self, mock_env):
         """Test _handle_http_errors with 404 error."""
         mock_env.return_value = {"value": "192.168.1.1"}
@@ -358,7 +358,7 @@ class TestSht31ThermostatZone(unittest.TestCase):
 
         self.assertIn("404", str(context.exception))
 
-    @patch('thermostatsupervisor.environment.get_env_variable')
+    @patch('src.environment.get_env_variable')
     def test_get_ip_address_production_mode_with_blank_value(self, mock_env):
         """Test get_ip_address in production mode with blank value."""
         # Set up for production mode
@@ -374,7 +374,7 @@ class TestSht31ThermostatZone(unittest.TestCase):
         finally:
             util.unit_test_mode = original_mode
 
-    @patch('thermostatsupervisor.environment.get_env_variable')
+    @patch('src.environment.get_env_variable')
     def test_get_ip_address_unit_test_mode_with_blank_value(self, mock_env):
         """Test get_ip_address in unit test mode with blank value."""
         original_mode = util.unit_test_mode
@@ -389,7 +389,7 @@ class TestSht31ThermostatZone(unittest.TestCase):
             util.unit_test_mode = original_mode
 
     @patch('requests.get')
-    @patch('thermostatsupervisor.environment.get_env_variable')
+    @patch('src.environment.get_env_variable')
     def test_get_metadata_without_retry(self, mock_env, mock_get):
         """Test get_metadata with retry=False."""
         mock_env.return_value = {"value": "192.168.1.1"}
@@ -404,7 +404,7 @@ class TestSht31ThermostatZone(unittest.TestCase):
         self.assertEqual(result, {"temp": 72.5})
 
     @patch('requests.get')
-    @patch('thermostatsupervisor.environment.get_env_variable')
+    @patch('src.environment.get_env_variable')
     def test_get_all_metadata(self, mock_env, mock_get):
         """Test get_all_metadata method."""
         mock_env.return_value = {"value": "192.168.1.1"}
@@ -418,7 +418,7 @@ class TestSht31ThermostatZone(unittest.TestCase):
         result = tstat.get_all_metadata(zone=0, retry=False)
         self.assertEqual(result, {"temp": 72.5, "humidity": 45})
 
-    @patch('thermostatsupervisor.environment.get_env_variable')
+    @patch('src.environment.get_env_variable')
     def test_print_all_thermostat_metadata(self, mock_env):
         """Test print_all_thermostat_metadata method."""
         mock_env.return_value = {"value": "192.168.1.1"}
@@ -448,7 +448,7 @@ class TestSht31ZoneMetadataMethods(unittest.TestCase):
         util.unit_test_mode = self.original_unit_test_mode
 
     @patch('requests.get')
-    @patch('thermostatsupervisor.environment.get_env_variable')
+    @patch('src.environment.get_env_variable')
     def test_zone_get_metadata_without_retry(self, mock_env, mock_get):
         """Test zone get_metadata with retry=False."""
         mock_env.return_value = {"value": "192.168.1.1"}
@@ -468,7 +468,7 @@ class TestSht31ZoneMetadataMethods(unittest.TestCase):
         self.assertEqual(result, {"temp": 72.5})
 
     @patch('requests.get')
-    @patch('thermostatsupervisor.environment.get_env_variable')
+    @patch('src.environment.get_env_variable')
     def test_zone_get_metadata_with_parameter(self, mock_env, mock_get):
         """Test zone get_metadata with parameter extraction."""
         mock_env.return_value = {"value": "192.168.1.1"}
@@ -487,7 +487,7 @@ class TestSht31ZoneMetadataMethods(unittest.TestCase):
         result = zone.get_metadata(parameter="temp", retry=False)
         self.assertEqual(result, 72.5)
 
-    @patch('thermostatsupervisor.environment.get_env_variable')
+    @patch('src.environment.get_env_variable')
     def test_zone_handle_403_error_with_ipban(self, mock_env):
         """Test zone _handle_zone_403_error with IP ban message."""
         mock_env.return_value = {"value": "192.168.1.1"}
@@ -509,7 +509,7 @@ class TestSht31ZoneMetadataMethods(unittest.TestCase):
 
         self.assertIn("blocked", str(context.exception))
 
-    @patch('thermostatsupervisor.environment.get_env_variable')
+    @patch('src.environment.get_env_variable')
     def test_zone_handle_403_error_generic(self, mock_env):
         """Test zone _handle_zone_403_error with generic message."""
         mock_env.return_value = {"value": "192.168.1.1"}
@@ -529,7 +529,7 @@ class TestSht31ZoneMetadataMethods(unittest.TestCase):
         self.assertIn("forbidden", str(context.exception))
 
     @patch('requests.get')
-    @patch('thermostatsupervisor.environment.get_env_variable')
+    @patch('src.environment.get_env_variable')
     def test_zone_handle_http_errors_403(self, mock_env, mock_get):
         """Test zone _handle_zone_http_errors with 403 status."""
         mock_env.return_value = {"value": "192.168.1.1"}
@@ -546,7 +546,7 @@ class TestSht31ZoneMetadataMethods(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             zone._handle_zone_http_errors(mock_response)
 
-    @patch('thermostatsupervisor.environment.get_env_variable')
+    @patch('src.environment.get_env_variable')
     def test_zone_get_client_ip_success(self, mock_env):
         """Test zone _get_zone_client_ip success."""
         mock_env.return_value = {"value": "192.168.1.1"}
@@ -561,7 +561,7 @@ class TestSht31ZoneMetadataMethods(unittest.TestCase):
                 result = zone._get_zone_client_ip()
                 self.assertEqual(result, '192.168.1.100')
 
-    @patch('thermostatsupervisor.environment.get_env_variable')
+    @patch('src.environment.get_env_variable')
     def test_zone_get_client_ip_socket_error(self, mock_env):
         """Test zone _get_zone_client_ip with socket error."""
         mock_env.return_value = {"value": "192.168.1.1"}
@@ -576,7 +576,7 @@ class TestSht31ZoneMetadataMethods(unittest.TestCase):
             result = zone._get_zone_client_ip()
             self.assertEqual(result, 'unknown')
 
-    @patch('thermostatsupervisor.environment.get_env_variable')
+    @patch('src.environment.get_env_variable')
     def test_zone_get_client_ip_os_error(self, mock_env):
         """Test zone _get_zone_client_ip with OS error."""
         mock_env.return_value = {"value": "192.168.1.1"}
@@ -590,7 +590,7 @@ class TestSht31ZoneMetadataMethods(unittest.TestCase):
             result = zone._get_zone_client_ip()
             self.assertEqual(result, 'unknown')
 
-    @patch('thermostatsupervisor.environment.get_env_variable')
+    @patch('src.environment.get_env_variable')
     def test_zone_parse_response_json_decode_error(self, mock_env):
         """Test zone _parse_zone_response with JSONDecodeError."""
         mock_env.return_value = {"value": "192.168.1.1"}
@@ -610,7 +610,7 @@ class TestSht31ZoneMetadataMethods(unittest.TestCase):
 
         self.assertIn("not responding", str(context.exception))
 
-    @patch('thermostatsupervisor.environment.get_env_variable')
+    @patch('src.environment.get_env_variable')
     def test_zone_parse_response_missing_parameter_key(self, mock_env):
         """Test zone _parse_zone_response with missing parameter key."""
         mock_env.return_value = {"value": "192.168.1.1"}
@@ -628,7 +628,7 @@ class TestSht31ZoneMetadataMethods(unittest.TestCase):
 
         self.assertIn("did not contain key", str(context.exception))
 
-    @patch('thermostatsupervisor.environment.get_env_variable')
+    @patch('src.environment.get_env_variable')
     def test_zone_parse_response_missing_param_with_message(self, mock_env):
         """Test zone _parse_zone_response with message in response."""
         mock_env.return_value = {"value": "192.168.1.1"}
@@ -646,8 +646,8 @@ class TestSht31ZoneMetadataMethods(unittest.TestCase):
         with self.assertRaises(KeyError):
             zone._parse_zone_response(mock_response, "humidity")
 
-    @patch('thermostatsupervisor.utilities.execute_with_extended_retries')
-    @patch('thermostatsupervisor.environment.get_env_variable')
+    @patch('src.utilities.execute_with_extended_retries')
+    @patch('src.environment.get_env_variable')
     def test_zone_execute_with_retry(self, mock_env, mock_retry):
         """Test zone _execute_zone_with_retry."""
         mock_env.return_value = {"value": "192.168.1.1"}
@@ -684,7 +684,7 @@ class TestSht31ZoneSimpleMethods(unittest.TestCase):
         util.unit_test_mode = self.original_unit_test_mode
 
     @patch('requests.get')
-    @patch('thermostatsupervisor.environment.get_env_variable')
+    @patch('src.environment.get_env_variable')
     def test_get_display_temp(self, mock_env, mock_get):
         """Test get_display_temp method."""
         mock_env.return_value = {"value": "192.168.1.1"}
@@ -704,7 +704,7 @@ class TestSht31ZoneSimpleMethods(unittest.TestCase):
             result = zone.get_display_temp()
             self.assertEqual(result, 72.5)
 
-    @patch('thermostatsupervisor.environment.get_env_variable')
+    @patch('src.environment.get_env_variable')
     def test_get_display_humidity_with_value(self, mock_env):
         """Test get_display_humidity with valid value."""
         mock_env.return_value = {"value": "192.168.1.1"}
@@ -718,7 +718,7 @@ class TestSht31ZoneSimpleMethods(unittest.TestCase):
             result = zone.get_display_humidity()
             self.assertEqual(result, 45.5)
 
-    @patch('thermostatsupervisor.environment.get_env_variable')
+    @patch('src.environment.get_env_variable')
     def test_get_display_humidity_with_none(self, mock_env):
         """Test get_display_humidity with None value."""
         mock_env.return_value = {"value": "192.168.1.1"}
@@ -732,7 +732,7 @@ class TestSht31ZoneSimpleMethods(unittest.TestCase):
             result = zone.get_display_humidity()
             self.assertIsNone(result)
 
-    @patch('thermostatsupervisor.environment.get_env_variable')
+    @patch('src.environment.get_env_variable')
     def test_get_is_humidity_supported(self, mock_env):
         """Test get_is_humidity_supported method."""
         mock_env.return_value = {"value": "192.168.1.1"}
@@ -750,7 +750,7 @@ class TestSht31ZoneSimpleMethods(unittest.TestCase):
             result = zone.get_is_humidity_supported()
             self.assertFalse(result)
 
-    @patch('thermostatsupervisor.environment.get_env_variable')
+    @patch('src.environment.get_env_variable')
     def test_mode_methods(self, mock_env):
         """Test all mode checking methods."""
         mock_env.return_value = {"value": "192.168.1.1"}
@@ -768,7 +768,7 @@ class TestSht31ZoneSimpleMethods(unittest.TestCase):
         self.assertEqual(zone.is_fan_mode(), 0)
         self.assertEqual(zone.is_off_mode(), 1)
 
-    @patch('thermostatsupervisor.environment.get_env_variable')
+    @patch('src.environment.get_env_variable')
     def test_relay_status_methods(self, mock_env):
         """Test all relay status methods."""
         mock_env.return_value = {"value": "192.168.1.1"}
@@ -789,7 +789,7 @@ class TestSht31ZoneSimpleMethods(unittest.TestCase):
         self.assertEqual(zone.is_defrosting(), 0)
         self.assertEqual(zone.is_standby(), 0)
 
-    @patch('thermostatsupervisor.environment.get_env_variable')
+    @patch('src.environment.get_env_variable')
     def test_get_wifi_strength_with_value(self, mock_env):
         """Test get_wifi_strength with valid value."""
         mock_env.return_value = {"value": "192.168.1.1"}
@@ -803,8 +803,8 @@ class TestSht31ZoneSimpleMethods(unittest.TestCase):
             result = zone.get_wifi_strength()
             self.assertEqual(result, -55.0)
 
-    @patch('thermostatsupervisor.utilities.execute_with_extended_retries')
-    @patch('thermostatsupervisor.environment.get_env_variable')
+    @patch('src.utilities.execute_with_extended_retries')
+    @patch('src.environment.get_env_variable')
     def test_get_wifi_strength_key_error(self, mock_env, mock_retry):
         """Test get_wifi_strength when key is missing."""
         mock_env.return_value = {"value": "192.168.1.1"}
@@ -821,7 +821,7 @@ class TestSht31ZoneSimpleMethods(unittest.TestCase):
         # Should return BOGUS_INT when KeyError is raised
         self.assertEqual(result, float(util.BOGUS_INT))
 
-    @patch('thermostatsupervisor.environment.get_env_variable')
+    @patch('src.environment.get_env_variable')
     def test_get_wifi_strength_with_none(self, mock_env):
         """Test get_wifi_strength with None value."""
         mock_env.return_value = {"value": "192.168.1.1"}
@@ -835,7 +835,7 @@ class TestSht31ZoneSimpleMethods(unittest.TestCase):
             result = zone.get_wifi_strength()
             self.assertEqual(result, float(util.BOGUS_INT))
 
-    @patch('thermostatsupervisor.environment.get_env_variable')
+    @patch('src.environment.get_env_variable')
     def test_refresh_zone_info_force_refresh(self, mock_env):
         """Test refresh_zone_info with force_refresh=True."""
         mock_env.return_value = {"value": "192.168.1.1"}
@@ -849,7 +849,7 @@ class TestSht31ZoneSimpleMethods(unittest.TestCase):
         zone.refresh_zone_info(force_refresh=True)
         self.assertEqual(zone.zone_info, {})
 
-    @patch('thermostatsupervisor.environment.get_env_variable')
+    @patch('src.environment.get_env_variable')
     def test_refresh_zone_info_expired(self, mock_env):
         """Test refresh_zone_info when data is expired."""
         mock_env.return_value = {"value": "192.168.1.1"}
@@ -865,7 +865,7 @@ class TestSht31ZoneSimpleMethods(unittest.TestCase):
         zone.refresh_zone_info(force_refresh=False)
         self.assertEqual(zone.zone_info, {})
 
-    @patch('thermostatsupervisor.environment.get_env_variable')
+    @patch('src.environment.get_env_variable')
     def test_refresh_zone_info_not_expired(self, mock_env):
         """Test refresh_zone_info when data is not expired."""
         mock_env.return_value = {"value": "192.168.1.1"}

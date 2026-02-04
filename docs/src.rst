@@ -1,213 +1,213 @@
-thermostatsupervisor package
-============================
+src package
+===========
 
 Submodules
 ----------
 
-thermostatsupervisor.blink module
+src.blink module
 ---------------------------------
 
-.. automodule:: thermostatsupervisor.blink
+.. automodule:: src.blink
    :members:
    :undoc-members:
    :show-inheritance:
 
-thermostatsupervisor.blink\_config module
+src.blink\_config module
 -----------------------------------------
 
-.. automodule:: thermostatsupervisor.blink_config
+.. automodule:: src.blink_config
    :members:
    :undoc-members:
    :show-inheritance:
 
-thermostatsupervisor.blink\_debug module
+src.blink\_debug module
 ----------------------------------------
 
-.. automodule:: thermostatsupervisor.blink_debug
+.. automodule:: src.blink_debug
    :members:
    :undoc-members:
    :show-inheritance:
 
-thermostatsupervisor.email\_notification module
+src.email\_notification module
 -----------------------------------------------
 
-.. automodule:: thermostatsupervisor.email_notification
+.. automodule:: src.email_notification
    :members:
    :undoc-members:
    :show-inheritance:
 
-thermostatsupervisor.emulator module
+src.emulator module
 ------------------------------------
 
-.. automodule:: thermostatsupervisor.emulator
+.. automodule:: src.emulator
    :members:
    :undoc-members:
    :show-inheritance:
 
-thermostatsupervisor.emulator\_config module
+src.emulator\_config module
 --------------------------------------------
 
-.. automodule:: thermostatsupervisor.emulator_config
+.. automodule:: src.emulator_config
    :members:
    :undoc-members:
    :show-inheritance:
 
-thermostatsupervisor.environment module
+src.environment module
 ---------------------------------------
 
-.. automodule:: thermostatsupervisor.environment
+.. automodule:: src.environment
    :members:
    :undoc-members:
    :show-inheritance:
 
-thermostatsupervisor.flask\_generic module
+src.flask\_generic module
 ------------------------------------------
 
-.. automodule:: thermostatsupervisor.flask_generic
+.. automodule:: src.flask_generic
    :members:
    :undoc-members:
    :show-inheritance:
 
-thermostatsupervisor.honeywell module
+src.honeywell module
 -------------------------------------
 
-.. automodule:: thermostatsupervisor.honeywell
+.. automodule:: src.honeywell
    :members:
    :undoc-members:
    :show-inheritance:
 
-thermostatsupervisor.honeywell\_config module
+src.honeywell\_config module
 ---------------------------------------------
 
-.. automodule:: thermostatsupervisor.honeywell_config
+.. automodule:: src.honeywell_config
    :members:
    :undoc-members:
    :show-inheritance:
 
-thermostatsupervisor.kumocloud module
+src.kumocloud module
 -------------------------------------
 
-.. automodule:: thermostatsupervisor.kumocloud
+.. automodule:: src.kumocloud
    :members:
    :undoc-members:
    :show-inheritance:
 
-thermostatsupervisor.kumocloud\_config module
+src.kumocloud\_config module
 ---------------------------------------------
 
-.. automodule:: thermostatsupervisor.kumocloud_config
+.. automodule:: src.kumocloud_config
    :members:
    :undoc-members:
    :show-inheritance:
 
-thermostatsupervisor.kumolocal module
+src.kumolocal module
 -------------------------------------
 
-.. automodule:: thermostatsupervisor.kumolocal
+.. automodule:: src.kumolocal
    :members:
    :undoc-members:
    :show-inheritance:
 
-thermostatsupervisor.kumolocal\_config module
+src.kumolocal\_config module
 ---------------------------------------------
 
-.. automodule:: thermostatsupervisor.kumolocal_config
+.. automodule:: src.kumolocal_config
    :members:
    :undoc-members:
    :show-inheritance:
 
-thermostatsupervisor.mmm module
+src.mmm module
 -------------------------------
 
-.. automodule:: thermostatsupervisor.mmm
+.. automodule:: src.mmm
    :members:
    :undoc-members:
    :show-inheritance:
 
-thermostatsupervisor.mmm\_config module
+src.mmm\_config module
 ---------------------------------------
 
-.. automodule:: thermostatsupervisor.mmm_config
+.. automodule:: src.mmm_config
    :members:
    :undoc-members:
    :show-inheritance:
 
-thermostatsupervisor.nest module
+src.nest module
 --------------------------------
 
-.. automodule:: thermostatsupervisor.nest
+.. automodule:: src.nest
    :members:
    :undoc-members:
    :show-inheritance:
 
-thermostatsupervisor.nest\_config module
+src.nest\_config module
 ----------------------------------------
 
-.. automodule:: thermostatsupervisor.nest_config
+.. automodule:: src.nest_config
    :members:
    :undoc-members:
    :show-inheritance:
 
-thermostatsupervisor.sht31 module
+src.sht31 module
 ---------------------------------
 
-.. automodule:: thermostatsupervisor.sht31
+.. automodule:: src.sht31
    :members:
    :undoc-members:
    :show-inheritance:
 
-thermostatsupervisor.sht31\_config module
+src.sht31\_config module
 -----------------------------------------
 
-.. automodule:: thermostatsupervisor.sht31_config
+.. automodule:: src.sht31_config
    :members:
    :undoc-members:
    :show-inheritance:
 
-thermostatsupervisor.sht31\_flask\_server module
+src.sht31\_flask\_server module
 ------------------------------------------------
 
-.. automodule:: thermostatsupervisor.sht31_flask_server
+.. automodule:: src.sht31_flask_server
    :members:
    :undoc-members:
    :show-inheritance:
 
-thermostatsupervisor.supervise module
+src.supervise module
 -------------------------------------
 
-.. automodule:: thermostatsupervisor.supervise
+.. automodule:: src.supervise
    :members:
    :undoc-members:
    :show-inheritance:
 
-thermostatsupervisor.supervisor\_flask\_server module
+src.supervisor\_flask\_server module
 -----------------------------------------------------
 
-.. automodule:: thermostatsupervisor.supervisor_flask_server
+.. automodule:: src.supervisor_flask_server
    :members:
    :undoc-members:
    :show-inheritance:
 
-thermostatsupervisor.thermostat\_api module
+src.thermostat\_api module
 -------------------------------------------
 
-.. automodule:: thermostatsupervisor.thermostat_api
+.. automodule:: src.thermostat_api
    :members:
    :undoc-members:
    :show-inheritance:
 
-thermostatsupervisor.thermostat\_common module
+src.thermostat\_common module
 ----------------------------------------------
 
-.. automodule:: thermostatsupervisor.thermostat_common
+.. automodule:: src.thermostat_common
    :members:
    :undoc-members:
    :show-inheritance:
 
-thermostatsupervisor.utilities module
+src.utilities module
 -------------------------------------
 
-.. automodule:: thermostatsupervisor.utilities
+.. automodule:: src.utilities
    :members:
    :undoc-members:
    :show-inheritance:
@@ -215,7 +215,7 @@ thermostatsupervisor.utilities module
 Module contents
 ---------------
 
-.. automodule:: thermostatsupervisor
+.. automodule:: src
    :members:
    :undoc-members:
    :show-inheritance:

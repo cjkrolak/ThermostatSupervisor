@@ -10,11 +10,11 @@ from typing import Union
 # third party imports
 
 # local imports
-from thermostatsupervisor import kumolocal_config
-from thermostatsupervisor import thermostat_api as api
-from thermostatsupervisor import thermostat_common as tc
-from thermostatsupervisor import environment as env
-from thermostatsupervisor import utilities as util
+from src import kumolocal_config
+from src import thermostat_api as api
+from src import thermostat_common as tc
+from src import environment as env
+from src import utilities as util
 
 # pykumo
 PYKUMO_DEBUG = False  # debug uses local pykumo repo instead of pkg

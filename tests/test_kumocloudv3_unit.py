@@ -15,10 +15,10 @@ import requests
 
 # local imports
 try:
-    from thermostatsupervisor import kumocloudv3
-    from thermostatsupervisor import kumocloudv3_config
-    from thermostatsupervisor import thermostat_common as tc
-    from thermostatsupervisor import utilities as util
+    from src import kumocloudv3
+    from src import kumocloudv3_config
+    from src import thermostat_common as tc
+    from src import utilities as util
 
     kumocloudv3_import_error = None
 except ImportError as ex:
@@ -341,7 +341,7 @@ class AuthenticationUnitTest(utc.UnitTest):
         kumocloudv3_config.metadata.update(self.original_metadata)
         super().tearDown()
 
-    @patch("thermostatsupervisor.kumocloudv3.requests.Session")
+    @patch("src.kumocloudv3.requests.Session")
     def test_authenticate_success(self, mock_session_class):
         """Test successful authentication with JWT tokens."""
         mock_session = Mock()
@@ -370,7 +370,7 @@ class AuthenticationUnitTest(utc.UnitTest):
                 thermostat.refresh_token, "test_refresh_token_456"
             )
 
-    @patch("thermostatsupervisor.kumocloudv3.requests.Session")
+    @patch("src.kumocloudv3.requests.Session")
     def test_authenticate_top_level_tokens(self, mock_session_class):
         """Test authentication with top-level token structure."""
         mock_session = Mock()
@@ -398,7 +398,7 @@ class AuthenticationUnitTest(utc.UnitTest):
                 thermostat.refresh_token, "top_level_refresh_token"
             )
 
-    @patch("thermostatsupervisor.kumocloudv3.requests.Session")
+    @patch("src.kumocloudv3.requests.Session")
     def test_authenticate_no_token(self, mock_session_class):
         """Test authentication failure when no token received."""
         mock_session = Mock()
@@ -421,7 +421,7 @@ class AuthenticationUnitTest(utc.UnitTest):
             # Should have stored error
             self.assertIsNotNone(thermostat._authentication_error)
 
-    @patch("thermostatsupervisor.kumocloudv3.requests.Session")
+    @patch("src.kumocloudv3.requests.Session")
     def test_authenticate_request_exception(self, mock_session_class):
         """Test authentication failure with request exception."""
         mock_session = Mock()
@@ -443,8 +443,8 @@ class AuthenticationUnitTest(utc.UnitTest):
             # Should have stored error
             self.assertIsNotNone(thermostat._authentication_error)
 
-    @patch("thermostatsupervisor.kumocloudv3.requests.Session")
-    @patch("thermostatsupervisor.kumocloudv3.time.time")
+    @patch("src.kumocloudv3.requests.Session")
+    @patch("src.kumocloudv3.time.time")
     def test_refresh_auth_token_success(
         self, mock_time, mock_session_class
     ):
@@ -486,8 +486,8 @@ class AuthenticationUnitTest(utc.UnitTest):
             self.assertEqual(thermostat.auth_token, "new_access_token")
             self.assertEqual(thermostat.refresh_token, "new_refresh_token")
 
-    @patch("thermostatsupervisor.kumocloudv3.requests.Session")
-    @patch("thermostatsupervisor.kumocloudv3.time.time")
+    @patch("src.kumocloudv3.requests.Session")
+    @patch("src.kumocloudv3.time.time")
     def test_refresh_token_expired(self, mock_time, mock_session_class):
         """Test re-authentication when refresh token expired."""
         mock_time.return_value = 3000000.0  # Far in future
@@ -512,8 +512,8 @@ class AuthenticationUnitTest(utc.UnitTest):
             result = thermostat._refresh_auth_token()
             self.assertTrue(result)
 
-    @patch("thermostatsupervisor.kumocloudv3.requests.Session")
-    @patch("thermostatsupervisor.kumocloudv3.time.time")
+    @patch("src.kumocloudv3.requests.Session")
+    @patch("src.kumocloudv3.time.time")
     def test_ensure_authenticated_not_authenticated(
         self, mock_time, mock_session_class
     ):
@@ -536,8 +536,8 @@ class AuthenticationUnitTest(utc.UnitTest):
             with self.assertRaises(tc.AuthenticationError):
                 thermostat._ensure_authenticated()
 
-    @patch("thermostatsupervisor.kumocloudv3.requests.Session")
-    @patch("thermostatsupervisor.kumocloudv3.time.time")
+    @patch("src.kumocloudv3.requests.Session")
+    @patch("src.kumocloudv3.time.time")
     def test_ensure_authenticated_token_expired(
         self, mock_time, mock_session_class
     ):
@@ -603,7 +603,7 @@ class ApiRequestsUnitTest(utc.UnitTest):
         kumocloudv3_config.metadata.update(self.original_metadata)
         super().tearDown()
 
-    @patch("thermostatsupervisor.kumocloudv3.requests.Session")
+    @patch("src.kumocloudv3.requests.Session")
     def test_make_authenticated_request_success(self, mock_session_class):
         """Test successful authenticated request."""
         mock_session = Mock()
@@ -637,7 +637,7 @@ class ApiRequestsUnitTest(utc.UnitTest):
             self.assertEqual(response.status_code, 200)
             self.assertEqual(response.json(), {"data": "test"})
 
-    @patch("thermostatsupervisor.kumocloudv3.requests.Session")
+    @patch("src.kumocloudv3.requests.Session")
     def test_make_authenticated_request_401_retry(
         self, mock_session_class
     ):
@@ -693,7 +693,7 @@ class ApiRequestsUnitTest(utc.UnitTest):
             self.assertEqual(response.status_code, 200)
             self.assertEqual(mock_session.request.call_count, 2)
 
-    @patch("thermostatsupervisor.kumocloudv3.requests.Session")
+    @patch("src.kumocloudv3.requests.Session")
     def test_get_sites_success(self, mock_session_class):
         """Test _get_sites returns site list."""
         mock_session = Mock()
@@ -726,8 +726,8 @@ class ApiRequestsUnitTest(utc.UnitTest):
             self.assertEqual(len(sites), 1)
             self.assertEqual(sites[0]["id"], "site1")
 
-    @patch("thermostatsupervisor.kumocloudv3.requests.Session")
-    @patch("thermostatsupervisor.kumocloudv3.time.time")
+    @patch("src.kumocloudv3.requests.Session")
+    @patch("src.kumocloudv3.time.time")
     def test_get_sites_cached(self, mock_time, mock_session_class):
         """Test _get_sites uses cached data."""
         mock_time.return_value = 1000.0
@@ -765,7 +765,7 @@ class ApiRequestsUnitTest(utc.UnitTest):
             # Should have only made one API request
             self.assertEqual(mock_session.request.call_count, 1)
 
-    @patch("thermostatsupervisor.kumocloudv3.requests.Session")
+    @patch("src.kumocloudv3.requests.Session")
     def test_get_zones_success(self, mock_session_class):
         """Test _get_zones returns zone list."""
         mock_session = Mock()
@@ -798,7 +798,7 @@ class ApiRequestsUnitTest(utc.UnitTest):
             self.assertEqual(len(zones), 1)
             self.assertEqual(zones[0]["name"], "Kitchen")
 
-    @patch("thermostatsupervisor.kumocloudv3.requests.Session")
+    @patch("src.kumocloudv3.requests.Session")
     def test_get_device_success(self, mock_session_class):
         """Test _get_device returns device data."""
         mock_session = Mock()
@@ -944,7 +944,7 @@ class ZoneAssignmentUnitTest(utc.UnitTest):
             self.assertIsNone(kitchen)
             self.assertIsNone(basement)
 
-    @patch("thermostatsupervisor.kumocloudv3.requests.Session")
+    @patch("src.kumocloudv3.requests.Session")
     def test_update_zone_assignments_success(self, mock_session_class):
         """Test successful zone assignment update."""
         mock_session = Mock()
@@ -983,7 +983,7 @@ class ZoneAssignmentUnitTest(utc.UnitTest):
         self.assertEqual(kumocloudv3_config.KITCHEN, 1)
         self.assertEqual(kumocloudv3_config.BASEMENT, 2)
 
-    @patch("thermostatsupervisor.kumocloudv3.requests.Session")
+    @patch("src.kumocloudv3.requests.Session")
     def test_update_zone_assignments_api_error(self, mock_session_class):
         """Test zone assignment handles API errors gracefully."""
         mock_session = Mock()
@@ -1032,7 +1032,7 @@ class GetMetadataUnitTest(utc.UnitTest):
         kumocloudv3_config.metadata.update(self.original_metadata)
         super().tearDown()
 
-    @patch("thermostatsupervisor.kumocloudv3.requests.Session")
+    @patch("src.kumocloudv3.requests.Session")
     def test_get_indoor_units_success(self, mock_session_class):
         """Test get_indoor_units returns serial numbers."""
         mock_session = Mock()
@@ -1076,7 +1076,7 @@ class GetMetadataUnitTest(utc.UnitTest):
             self.assertIn("SERIAL1", serials)
             self.assertIn("SERIAL2", serials)
 
-    @patch("thermostatsupervisor.kumocloudv3.requests.Session")
+    @patch("src.kumocloudv3.requests.Session")
     def test_get_indoor_units_auth_error(self, mock_session_class):
         """Test get_indoor_units handles auth errors."""
         mock_session = Mock()
@@ -1826,7 +1826,7 @@ class RawJsonAndConversionUnitTest(utc.UnitTest):
         kumocloudv3_config.metadata.update(self.original_metadata)
         super().tearDown()
 
-    @patch("thermostatsupervisor.kumocloudv3.requests.Session")
+    @patch("src.kumocloudv3.requests.Session")
     def test_get_raw_json_success(self, mock_session_class):
         """Test get_raw_json returns legacy format."""
         mock_session = Mock()
@@ -2037,7 +2037,7 @@ class ErrorHandlingUnitTest(utc.UnitTest):
             with self.assertRaises(tc.AuthenticationError):
                 thermostat._validate_serial_numbers([])
 
-    @patch("thermostatsupervisor.kumocloudv3.requests.Session")
+    @patch("src.kumocloudv3.requests.Session")
     def test_get_specific_zone_data_by_name(self, mock_session_class):
         """Test _get_specific_zone_data with zone name."""
         mock_session = Mock()
@@ -2099,7 +2099,7 @@ class ErrorHandlingUnitTest(utc.UnitTest):
             # Should not raise
             thermostat.print_all_thermostat_metadata(0)
 
-    @patch("thermostatsupervisor.kumocloudv3.requests.Session")
+    @patch("src.kumocloudv3.requests.Session")
     def test_assign_serials_sequentially(self, mock_session_class):
         """Test _assign_serials_sequentially fallback method."""
         mock_session = Mock()
@@ -2232,7 +2232,7 @@ class ErrorHandlingUnitTest(utc.UnitTest):
         with self.assertRaises((KeyError, TypeError)):
             zone.get_parameter("nonexistent_key")
 
-    @patch("thermostatsupervisor.kumocloudv3.requests.Session")
+    @patch("src.kumocloudv3.requests.Session")
     def test_update_config_with_indices_duplicates(
         self, mock_session_class
     ):
@@ -2260,7 +2260,7 @@ class ErrorHandlingUnitTest(utc.UnitTest):
             zones = kumocloudv3_config.supported_configs.get("zones", [])
             self.assertEqual(zones.count(0), 1)
 
-    @patch("thermostatsupervisor.kumocloudv3.requests.Session")
+    @patch("src.kumocloudv3.requests.Session")
     def test_populate_metadata_requests_exception(
         self, mock_session_class
     ):
@@ -2297,7 +2297,7 @@ class ErrorHandlingUnitTest(utc.UnitTest):
             kumocloudv3_config.metadata[0]["serial_number"], "SERIAL1"
         )
 
-    @patch("thermostatsupervisor.kumocloudv3.requests.Session")
+    @patch("src.kumocloudv3.requests.Session")
     def test_populate_metadata_key_error(self, mock_session_class):
         """Test _populate_metadata handles KeyError in data structure."""
         mock_session = Mock()
@@ -2345,7 +2345,7 @@ class ErrorHandlingUnitTest(utc.UnitTest):
             kumocloudv3_config.metadata[0]["serial_number"], "SERIAL1"
         )
 
-    @patch("thermostatsupervisor.kumocloudv3.requests.Session")
+    @patch("src.kumocloudv3.requests.Session")
     def test_populate_metadata_type_error(self, mock_session_class):
         """Test _populate_metadata handles TypeError."""
         mock_session = Mock()

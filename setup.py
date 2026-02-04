@@ -51,5 +51,5 @@ def get_version(rel_path):
 
 
 setup(
-    version=get_version("thermostatsupervisor/__init__.py"),
+    version=get_version("src/__init__.py"),
 )

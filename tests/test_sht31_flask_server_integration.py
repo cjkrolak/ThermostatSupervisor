@@ -12,15 +12,15 @@ import unittest
 
 # local imports
 # thermostat_api is imported but not used to avoid a circular import
-from thermostatsupervisor import environment as env
-from thermostatsupervisor import flask_generic as flg
-from thermostatsupervisor import (
+from src import environment as env
+from src import flask_generic as flg
+from src import (
     thermostat_api as api,
 )  # noqa F401, pylint: disable=unused-import.
-from thermostatsupervisor import sht31
-from thermostatsupervisor import sht31_config
-from thermostatsupervisor import sht31_flask_server as sht31_fs
-from thermostatsupervisor import utilities as util
+from src import sht31
+from src import sht31_config
+from src import sht31_flask_server as sht31_fs
+from src import utilities as util
 from tests import unit_test_common as utc
 
 
