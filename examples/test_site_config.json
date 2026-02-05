@@ -1,0 +1,23 @@
+{
+    "site_name": "test_home",
+    "thermostats": [
+        {
+            "thermostat_type": "emulator",
+            "zone": 0,
+            "enabled": true,
+            "poll_time": 1,
+            "tolerance": 2,
+            "target_mode": "OFF_MODE",
+            "measurements": 1
+        },
+        {
+            "thermostat_type": "emulator",
+            "zone": 1,
+            "enabled": true,
+            "poll_time": 1,
+            "tolerance": 2,
+            "target_mode": "OFF_MODE",
+            "measurements": 1
+        }
+    ]
+}
