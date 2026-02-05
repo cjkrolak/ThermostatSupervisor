@@ -18,6 +18,7 @@ from thermostatsupervisor import kumolocal_config
 from thermostatsupervisor import mmm_config
 from thermostatsupervisor import nest_config
 from thermostatsupervisor import sht31_config
+from thermostatsupervisor import site_config
 from thermostatsupervisor import environment as env
 from thermostatsupervisor import utilities as util
 
@@ -38,6 +39,7 @@ config_modules = [
     mmm_config,
     nest_config,
     sht31_config,
+    site_config,
 ]
 
 SUPPORTED_THERMOSTATS = {

@@ -1,0 +1,34 @@
+{
+    "site_name": "sample_home",
+    "thermostats": [
+        {
+            "thermostat_type": "honeywell",
+            "zone": 0,
+            "enabled": true,
+            "poll_time": 600,
+            "connection_time": 300,
+            "tolerance": 2,
+            "target_mode": "AUTO_MODE",
+            "measurements": 10
+        },
+        {
+            "thermostat_type": "kumocloud",
+            "zone": 0,
+            "enabled": true,
+            "poll_time": 300,
+            "connection_time": 300,
+            "tolerance": 3,
+            "target_mode": "HEAT_MODE",
+            "measurements": 10
+        },
+        {
+            "thermostat_type": "kumocloud",
+            "zone": 1,
+            "enabled": false,
+            "poll_time": 300,
+            "tolerance": 3,
+            "target_mode": "COOL_MODE",
+            "measurements": 10
+        }
+    ]
+}
