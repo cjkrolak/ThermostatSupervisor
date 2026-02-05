@@ -40,6 +40,10 @@ class ThermostatSite:
                 with thermostats and their settings. Defaults to None which
                 uses the default site configuration.
             verbose (bool, optional): Enable verbose logging. Defaults to True.
+
+        Raises:
+            ValueError: If site_config_dict is malformed or missing required
+                fields.
         """
         self.verbose = verbose
         self.site_config = (
@@ -47,16 +51,62 @@ class ThermostatSite:
             if site_config_dict
             else site_config.get_default_site_config()
         )
+
+        # Validate configuration structure
+        self._validate_config()
+
         self.site_name = self.site_config.get(
             "site_name", "unnamed_site"
         )
         self.thermostats = []
-        self.zones = []
+        # Shared measurement cache updated from multiple supervision threads
         self.measurement_results = {}
+        # Lock protects concurrent access to measurement_results across
+        # multiple threads during supervision operations
         self._lock = threading.Lock()
+        # Track thread errors for reporting
+        self.thread_errors = {}
 
         # Validate and initialize thermostats
         self._initialize_thermostats()
+
+    def _validate_config(self):
+        """
+        Validate site configuration structure.
+
+        Raises:
+            ValueError: If configuration is malformed or missing required
+                fields.
+        """
+        if not isinstance(self.site_config, dict):
+            raise ValueError(
+                "site_config_dict must be a dictionary"
+            )
+
+        if "thermostats" not in self.site_config:
+            raise ValueError(
+                "site_config_dict must contain 'thermostats' key"
+            )
+
+        if not isinstance(self.site_config["thermostats"], list):
+            raise ValueError(
+                "'thermostats' must be a list"
+            )
+
+        # Validate each thermostat configuration
+        for idx, tstat in enumerate(self.site_config["thermostats"]):
+            if not isinstance(tstat, dict):
+                raise ValueError(
+                    f"Thermostat config at index {idx} must be a dictionary"
+                )
+
+            required_fields = ["thermostat_type", "zone"]
+            for field in required_fields:
+                if field not in tstat:
+                    raise ValueError(
+                        f"Thermostat config at index {idx} missing required "
+                        f"field: '{field}'"
+                    )
 
     def _initialize_thermostats(self):
         """
@@ -201,10 +251,21 @@ class ThermostatSite:
         """
         Supervise a single thermostat in a separate thread.
 
+        This helper is intended to run in its own thread, using a
+        human-readable thread name for logging. The effective number of
+        measurements is typically controlled by the thermostat configuration
+        (for example, ``max_measurements`` in ``tstat_config``) and may
+        override the ``measurement_count`` argument.
+
         Args:
-            tstat_config (dict): Configuration for the thermostat.
-            thread_id (int): Unique identifier for this thread.
-            measurement_count (int, optional): Number of measurements to take.
+            tstat_config (dict): Configuration for the thermostat, including
+                per-thermostat settings such as maximum measurements.
+            thread_id (int): Unique identifier used to build a descriptive
+                thread name for logging and debugging purposes.
+            measurement_count (int, optional): Default or legacy value for the
+                number of measurements to take. In current implementations,
+                this value may be overridden by configuration values read from
+                ``tstat_config`` (for example, ``max_measurements``).
                 Defaults to 1.
         """
         thermostat_type = tstat_config.get("thermostat_type")
@@ -233,6 +294,8 @@ class ThermostatSite:
             # Update runtime parameters from config
             if tstat_config.get("poll_time"):
                 Zone.poll_time_sec = tstat_config["poll_time"]
+            if tstat_config.get("connection_time"):
+                Zone.connection_time_sec = tstat_config["connection_time"]
             if tstat_config.get("tolerance"):
                 Zone.tolerance_degrees = tstat_config["tolerance"]
             if tstat_config.get("target_mode"):
@@ -248,10 +311,8 @@ class ThermostatSite:
                 func_name=1,
             )
 
-            # Supervision loop
-            measurement = 1
-
-            while measurement <= max_measurements:
+            # Supervision loop - using for loop for clarity
+            for measurement in range(1, max_measurements + 1):
                 # Query the thermostat
                 Zone.query_thermostat_zone()
 
@@ -279,25 +340,31 @@ class ThermostatSite:
                     func_name=1,
                 )
 
-                measurement += 1
-
                 # Wait before next measurement (except after last measurement)
                 if measurement < max_measurements:
                     time.sleep(Zone.poll_time_sec)
 
             util.log_msg(
-                f"{thread_name}: Completed {measurement - 1} measurements",
+                f"{thread_name}: Completed {max_measurements} measurements",
                 mode=util.BOTH_LOG,
                 func_name=1,
             )
 
-            # Clean up
+            # Clean up external resources; Python will garbage-collect
+            # these objects when they go out of scope
             if hasattr(Thermostat, "close"):
                 Thermostat.close()
-            del Zone
-            del Thermostat
 
         except Exception as ex:
+            # Track error for reporting
+            result_key = f"{thermostat_type}_zone{zone_num}"
+            with self._lock:
+                self.thread_errors[result_key] = {
+                    "error": str(ex),
+                    "thread": thread_name,
+                    "timestamp": time.time(),
+                }
+
             util.log_msg(
                 f"{thread_name}: ERROR - {str(ex)}",
                 mode=util.BOTH_LOG,
@@ -318,14 +385,24 @@ class ThermostatSite:
         """
         Supervise all enabled zones within the site.
 
+        The measurement_count parameter provides a default value, but
+        per-thermostat 'measurements' configuration takes precedence if
+        specified in the thermostat config dictionary.
+
         Args:
-            measurement_count (int, optional): Number of measurements per
-                thermostat. Defaults to 1.
+            measurement_count (int, optional): Default number of measurements
+                per thermostat. This value is overridden by per-thermostat
+                'measurements' config if present. Defaults to 1.
             use_threading (bool, optional): Use multi-threading for parallel
                 supervision. Defaults to True.
 
         Returns:
-            dict: Dictionary of measurement results keyed by thermostat/zone.
+            dict: Dictionary with two keys:
+                - 'results': Dict of measurement results keyed by
+                  thermostat/zone identifier. Each entry contains a list of
+                  measurement dictionaries.
+                - 'errors': Dict of errors keyed by thermostat/zone identifier
+                  for any thermostats that failed during supervision.
         """
         util.log_msg(
             f"\nStarting site supervision: {self.site_name}",
@@ -339,19 +416,23 @@ class ThermostatSite:
                 mode=util.BOTH_LOG,
                 func_name=1,
             )
-            return {}
+            return {"results": {}, "errors": {}}
 
-        # Clear previous results
-        self.measurement_results = {}
+        # Clear previous results under lock for thread safety
+        with self._lock:
+            self.measurement_results = {}
+            self.thread_errors = {}
 
         if use_threading:
             # Multi-threaded approach for parallel supervision
             threads = []
+            thread_configs = []
             for idx, tstat_config in enumerate(self.thermostats, 1):
                 # Use measurement count from config if available
                 measurements = tstat_config.get(
                     "measurements", measurement_count
                 )
+                thread_configs.append((tstat_config, measurements))
                 thread = threading.Thread(
                     target=self._supervise_single_thermostat,
                     args=(tstat_config, idx, measurements),
@@ -360,9 +441,25 @@ class ThermostatSite:
                 threads.append(thread)
                 thread.start()
 
-            # Wait for all threads to complete
+            # Wait for all threads to complete with timeout
+            # Calculate timeout: max(connection_time + poll_time * measurements)
+            max_timeout = 0
+            for tstat_config, measurements in thread_configs:
+                conn_time = tstat_config.get("connection_time", 300)
+                poll_time = tstat_config.get("poll_time", 60)
+                safety_margin = 60  # Extra time for processing
+                timeout = conn_time + (poll_time * measurements) + safety_margin
+                max_timeout = max(max_timeout, timeout)
+
             for thread in threads:
-                thread.join()
+                thread.join(timeout=max_timeout)
+                if thread.is_alive():
+                    util.log_msg(
+                        f"WARNING: Thread {thread.name} did not complete "
+                        f"within timeout ({max_timeout}s)",
+                        mode=util.BOTH_LOG,
+                        func_name=1,
+                    )
 
             util.log_msg(
                 f"All {len(threads)} supervision threads completed",
@@ -385,13 +482,28 @@ class ThermostatSite:
             mode=util.BOTH_LOG,
             func_name=1,
         )
+
+        # Calculate total measurements efficiently (only done once at end)
+        total_measurements = sum(
+            len(v) for v in self.measurement_results.values()
+        )
         util.log_msg(
-            f"Total results collected: "
-            f"{sum(len(v) for v in self.measurement_results.values())} "
+            f"Total results collected: {total_measurements} "
             f"measurements across {len(self.measurement_results)} "
             f"thermostats",
             mode=util.BOTH_LOG,
             func_name=1,
         )
 
-        return self.measurement_results
+        # Report any errors
+        if self.thread_errors:
+            util.log_msg(
+                f"Errors occurred in {len(self.thread_errors)} thermostat(s)",
+                mode=util.BOTH_LOG,
+                func_name=1,
+            )
+
+        return {
+            "results": self.measurement_results,
+            "errors": self.thread_errors
+        }

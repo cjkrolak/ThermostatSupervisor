@@ -162,13 +162,15 @@ class TestThermostatSite(utc.UnitTest):
             site_config_dict=small_config,
             verbose=False
         )
-        results = site.supervise_all_zones(
+        result = site.supervise_all_zones(
             measurement_count=1,
             use_threading=False
         )
-        # Verify we got results
-        self.assertIsInstance(results, dict)
-        self.assertGreater(len(results), 0)
+        # Verify we got results dict with results and errors keys
+        self.assertIsInstance(result, dict)
+        self.assertIn("results", result)
+        self.assertIn("errors", result)
+        self.assertGreater(len(result["results"]), 0)
 
     def test_supervise_all_zones_threaded(self):
         """Verify supervise_all_zones works with multi-threading."""
@@ -176,16 +178,51 @@ class TestThermostatSite(utc.UnitTest):
             site_config_dict=self.test_site_config,
             verbose=False
         )
-        results = site.supervise_all_zones(
+        result = site.supervise_all_zones(
             measurement_count=1,
             use_threading=True
         )
-        # Verify we got results from both thermostats
-        self.assertIsInstance(results, dict)
+        # Verify we got results dict with results and errors keys
+        self.assertIsInstance(result, dict)
+        self.assertIn("results", result)
+        self.assertIn("errors", result)
+        results = result["results"]
         self.assertGreater(len(results), 0)
         # Check that we have measurements
         total_measurements = sum(len(v) for v in results.values())
         self.assertGreater(total_measurements, 0)
+
+    def test_supervise_disabled_thermostats_excluded(self):
+        """Verify disabled thermostats are excluded from supervision."""
+        config_with_disabled = {
+            "site_name": "test_site",
+            "thermostats": [
+                {
+                    "thermostat_type": "emulator",
+                    "zone": 0,
+                    "enabled": True,
+                    "poll_time": 1,
+                    "measurements": 1,
+                },
+                {
+                    "thermostat_type": "emulator",
+                    "zone": 1,
+                    "enabled": False,  # This should be excluded
+                    "poll_time": 1,
+                    "measurements": 1,
+                },
+            ],
+        }
+        site = ts.ThermostatSite(
+            site_config_dict=config_with_disabled,
+            verbose=False
+        )
+        result = site.supervise_all_zones(use_threading=False)
+        results = result["results"]
+        # Should only have zone 0, not zone 1
+        self.assertEqual(len(results), 1)
+        self.assertIn("emulator_zone0", results)
+        self.assertNotIn("emulator_zone1", results)
 
     def test_supervise_all_zones_empty_site(self):
         """Verify supervise_all_zones handles empty site gracefully."""
@@ -197,10 +234,47 @@ class TestThermostatSite(utc.UnitTest):
             site_config_dict=empty_config,
             verbose=False
         )
-        results = site.supervise_all_zones(measurement_count=1)
-        # Should return empty dict
-        self.assertIsInstance(results, dict)
-        self.assertEqual(len(results), 0)
+        result = site.supervise_all_zones(measurement_count=1)
+        # Should return dict with empty results and errors
+        self.assertIsInstance(result, dict)
+        self.assertIn("results", result)
+        self.assertIn("errors", result)
+        self.assertEqual(len(result["results"]), 0)
+
+    def test_config_validation_missing_thermostats(self):
+        """Verify config validation catches missing thermostats key."""
+        invalid_config = {
+            "site_name": "invalid_site",
+            # Missing 'thermostats' key
+        }
+        with self.assertRaises(ValueError) as context:
+            ts.ThermostatSite(site_config_dict=invalid_config, verbose=False)
+        self.assertIn("thermostats", str(context.exception))
+
+    def test_config_validation_invalid_structure(self):
+        """Verify config validation catches invalid structures."""
+        invalid_config = {
+            "site_name": "invalid_site",
+            "thermostats": "not_a_list",  # Should be a list
+        }
+        with self.assertRaises(ValueError) as context:
+            ts.ThermostatSite(site_config_dict=invalid_config, verbose=False)
+        self.assertIn("list", str(context.exception))
+
+    def test_config_validation_missing_required_fields(self):
+        """Verify config validation catches missing required fields."""
+        invalid_config = {
+            "site_name": "invalid_site",
+            "thermostats": [
+                {
+                    "zone": 0,
+                    # Missing 'thermostat_type'
+                }
+            ],
+        }
+        with self.assertRaises(ValueError) as context:
+            ts.ThermostatSite(site_config_dict=invalid_config, verbose=False)
+        self.assertIn("thermostat_type", str(context.exception))
 
     def test_default_site_config(self):
         """Verify default site config is valid."""

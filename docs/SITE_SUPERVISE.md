@@ -279,31 +279,62 @@ Site Temperature Summary: my_home
 Supervise all enabled zones within the site.
 
 **Parameters:**
-- `measurement_count` (int, optional): Number of measurements per thermostat (default: 1). Overridden by per-thermostat `measurements` config.
+- `measurement_count` (int, optional): Default number of measurements per thermostat. This value is overridden by per-thermostat 'measurements' config if present. (default: 1)
 - `use_threading` (bool, optional): Use multi-threading for parallel supervision (default: True)
 
 **Returns:**
-- `dict`: Dictionary of measurement results keyed by thermostat/zone identifier
+- `dict`: Dictionary with two keys:
+  - `'results'`: Dict of measurement results keyed by thermostat/zone identifier. Each entry contains a **list** of measurement dictionaries.
+  - `'errors'`: Dict of errors keyed by thermostat/zone identifier for any thermostats that failed during supervision.
 
 **Example:**
 ```python
-results = site.supervise_all_zones(use_threading=True)
+result = site.supervise_all_zones(use_threading=True)
 
 # Results structure:
 {
-    "honeywell_zone0": [
-        {
+    "results": {
+        "honeywell_zone0": [  # List of measurements
+            {
+                "timestamp": 1234567890.0,
+                "measurement": 1,
+                "temperature": 72.0,
+                "humidity": 45.0,
+                "mode": "AUTO_MODE",
+                "thread": "Thread-1-honeywell-Zone0",
+            },
+            {
+                "timestamp": 1234567950.0,
+                "measurement": 2,
+                "temperature": 72.5,
+                "humidity": 46.0,
+                "mode": "AUTO_MODE",
+                "thread": "Thread-1-honeywell-Zone0",
+            },
+            # Additional measurements...
+        ],
+        "kumocloud_zone1": [
+            # List of measurements for zone 1...
+        ],
+    },
+    "errors": {
+        # If any thermostats fail, they appear here
+        "nest_zone0": {
+            "error": "Connection timeout",
+            "thread": "Thread-3-nest-Zone0",
             "timestamp": 1234567890.0,
-            "measurement": 1,
-            "temperature": 72.0,
-            "humidity": 45.0,
-            "mode": "AUTO_MODE",
-            "thread": "Thread-1-honeywell-Zone0",
-        },
-        # Additional measurements...
-    ],
-    "kumocloud_zone1": [...],
+        }
+    }
 }
+
+# Access results safely
+results = result.get("results", {})
+errors = result.get("errors", {})
+
+for thermostat_key, measurements in results.items():
+    print(f"{thermostat_key}: {len(measurements)} measurements")
+    for measurement in measurements:
+        print(f"  Temp: {measurement['temperature']}°F")
 ```
 
 ## Multi-Threading

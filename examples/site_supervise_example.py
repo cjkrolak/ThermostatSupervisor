@@ -93,21 +93,47 @@ def example_supervise_site():
 
     # Run supervision with multi-threading
     print("Starting multi-threaded supervision...")
-    results = site.supervise_all_zones(use_threading=True)
+    result = site.supervise_all_zones(use_threading=True)
 
     # Display results summary
     print(f"\n{'='*60}")
     print("Supervision Results Summary")
     print(f"{'='*60}")
+
+    # Handle the new return format with results and errors
+    results = result.get("results", {})
+    errors = result.get("errors", {})
+
     for thermostat_key, measurements in results.items():
         print(f"\n{thermostat_key}:")
         for measurement in measurements:
+            # Safe formatting with None handling
+            temp = measurement.get("temperature")
+            humidity = measurement.get("humidity")
+            mode = measurement.get("mode", "N/A")
+
+            if isinstance(temp, (int, float)):
+                temp_str = f"{temp:.1f}°F"
+            else:
+                temp_str = "N/A"
+
+            if isinstance(humidity, (int, float)):
+                humidity_str = f"{humidity:.1f}%"
+            else:
+                humidity_str = "N/A"
+
             print(
-                f"  Measurement {measurement['measurement']}: "
-                f"{measurement['temperature']:.1f}°F, "
-                f"{measurement['humidity']:.1f}%, "
-                f"Mode: {measurement['mode']}"
+                f"  Measurement {measurement.get('measurement', 'N/A')}: "
+                f"{temp_str}, {humidity_str}, Mode: {mode}"
             )
+
+    # Display any errors
+    if errors:
+        print(f"\n{'='*60}")
+        print("Errors:")
+        print(f"{'='*60}")
+        for thermostat_key, error_info in errors.items():
+            print(f"\n{thermostat_key}: {error_info.get('error', 'Unknown error')}")
 
 
 def example_disabled_thermostats():

@@ -206,12 +206,15 @@ def site_supervisor(args):
         func_name=1,
     )
 
-    results = site.supervise_all_zones(
+    result = site.supervise_all_zones(
         measurement_count=args.measurements if args.measurements else 1,
         use_threading=args.use_threading
     )
 
     # Display results summary
+    results = result.get("results", {})
+    errors = result.get("errors", {})
+
     if results:
         util.log_msg(
             f"\n{'='*60}\nSite Supervision Results\n{'='*60}",
@@ -220,6 +223,18 @@ def site_supervisor(args):
         for tstat_key, measurements in results.items():
             util.log_msg(
                 f"\n{tstat_key}: {len(measurements)} measurements",
+                mode=util.BOTH_LOG,
+            )
+
+    # Display any errors
+    if errors:
+        util.log_msg(
+            f"\n{'='*60}\nErrors\n{'='*60}",
+            mode=util.BOTH_LOG,
+        )
+        for tstat_key, error_info in errors.items():
+            util.log_msg(
+                f"\n{tstat_key}: {error_info.get('error', 'Unknown error')}",
                 mode=util.BOTH_LOG,
             )
 
