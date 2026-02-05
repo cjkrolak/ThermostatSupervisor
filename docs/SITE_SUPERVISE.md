@@ -13,7 +13,50 @@ The `ThermostatSite` class provides a unified interface to:
 
 ## Quick Start
 
-### Basic Usage
+### Command-Line Usage
+
+The easiest way to use site supervision is through the command-line interface:
+
+```bash
+# Use default site configuration
+python -m thermostatsupervisor.site_supervise
+
+# Display zones without running supervision
+python -m thermostatsupervisor.site_supervise --display-zones
+
+# Display current temperatures only
+python -m thermostatsupervisor.site_supervise --display-temps
+
+# Use custom configuration file
+python -m thermostatsupervisor.site_supervise -c mysite.json
+
+# Override measurement count for all thermostats
+python -m thermostatsupervisor.site_supervise -n 10
+
+# Disable multi-threading (for debugging)
+python -m thermostatsupervisor.site_supervise --no-threading
+
+# Run with quiet mode (less verbose)
+python -m thermostatsupervisor.site_supervise -q
+
+# Get help and see all options
+python -m thermostatsupervisor.site_supervise --help
+```
+
+**Command-Line Options:**
+- `-h, --help`: Display help message with all options
+- `-c, --config CONFIG`: Path to site configuration JSON file (default: built-in config)
+- `-n, --measurements N`: Number of measurements per thermostat (overrides config)
+- `--threading`: Enable multi-threading for parallel supervision (default)
+- `--no-threading`: Disable multi-threading (run sequentially)
+- `-v, --verbose`: Enable verbose logging (default)
+- `-q, --quiet`: Disable verbose logging
+- `--display-zones`: Display all zones and exit (no supervision)
+- `--display-temps`: Display current temperatures and exit (no supervision)
+
+### Python API Usage
+
+For programmatic control, use the Python API directly:
 
 ```python
 from thermostatsupervisor import thermostat_site as ts
@@ -32,6 +75,8 @@ results = site.supervise_all_zones(use_threading=True)
 ```
 
 ### Custom Configuration
+
+Create a JSON configuration file for your site:
 
 ```python
 from thermostatsupervisor import thermostat_site as ts
@@ -60,6 +105,55 @@ config = {
         },
     ],
 }
+
+site = ts.ThermostatSite(site_config_dict=config)
+site.supervise_all_zones(use_threading=True)
+```
+
+**Using JSON Configuration File:**
+
+Create a JSON file (e.g., `mysite.json`) with your site configuration:
+
+```json
+{
+    "site_name": "my_home",
+    "thermostats": [
+        {
+            "thermostat_type": "honeywell",
+            "zone": 0,
+            "enabled": true,
+            "poll_time": 60,
+            "tolerance": 2,
+            "target_mode": "AUTO_MODE",
+            "measurements": 10
+        },
+        {
+            "thermostat_type": "kumocloud",
+            "zone": 1,
+            "enabled": true,
+            "poll_time": 30,
+            "tolerance": 3,
+            "target_mode": "HEAT_MODE",
+            "measurements": 10
+        }
+    ]
+}
+```
+
+Then use it from the command line:
+
+```bash
+python -m thermostatsupervisor.site_supervise -c mysite.json
+```
+
+Or load it programmatically:
+
+```python
+import json
+from thermostatsupervisor import thermostat_site as ts
+
+with open('mysite.json', 'r') as f:
+    config = json.load(f)
 
 site = ts.ThermostatSite(site_config_dict=config)
 site.supervise_all_zones(use_threading=True)

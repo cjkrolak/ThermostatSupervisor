@@ -117,6 +117,28 @@ runtime parameters can be specified to override defaults either via single dash 
 * argv[7] or '-n'= number of measurements (default is infinitity).<br/><br/>
 command line usage (unnamed):  "*python -m thermostatsupervisor.supervise \<thermostat type\> \<zone\> \<poll time\> \<connection time\> \<tolerance\> \<target mode\> \<measurements\>*".<br/>
 command line usage (named):  "*python -m thermostatsupervisor.supervise -t \<thermostat type\> -z \<zone\> -p \<poll time\> -c \<connection time\> -d \<tolerance\> -m \<target mode\> -n \<measurements\>*"
+
+## site_supervise.py:
+This module provides site-level orchestration for monitoring multiple thermostats simultaneously.<br/>
+Supports concurrent supervision with multi-threading, per-thermostat configuration, and selective thermostat inclusion/exclusion.<br/>
+See [Site Supervise Documentation](docs/SITE_SUPERVISE.md) for detailed configuration and usage information.<br/>
+Command-line options:
+* '-h' or '--help': Display help screen with all options
+* '-c' or '--config': Path to site configuration JSON file (default: uses built-in config)
+* '-n' or '--measurements': Number of measurements per thermostat (overrides config)
+* '--threading': Enable multi-threading for parallel supervision (default)
+* '--no-threading': Disable multi-threading (run sequentially for debugging)
+* '-v' or '--verbose': Enable verbose logging (default)
+* '-q' or '--quiet': Disable verbose logging
+* '--display-zones': Display all zones and exit (no supervision)
+* '--display-temps': Display current temperatures and exit (no supervision)<br/><br/>
+command line usage: "*python -m thermostatsupervisor.site_supervise [options]*"<br/>
+Examples:
+* Use default configuration: "*python -m thermostatsupervisor.site_supervise*"
+* Use custom config file: "*python -m thermostatsupervisor.site_supervise -c mysite.json*"
+* Override measurement count: "*python -m thermostatsupervisor.site_supervise -n 10*"
+* Display zones only: "*python -m thermostatsupervisor.site_supervise --display-zones*"
+* Disable threading: "*python -m thermostatsupervisor.site_supervise --no-threading*"
   
 ## supervisor_flask_server.py:
 This module will render supervise.py output on an HTML page using Flask.<br/>
