@@ -32,7 +32,7 @@ class TestSHT31ImportIsolation(utc.UnitTest):
         self.assertModuleNotIn('flask_limiter')
 
         # Import sht31 module
-        from thermostatsupervisor import sht31  # noqa: F401
+        from src import sht31  # noqa: F401
 
         # Verify Flask dependencies are still not loaded
         self.assertModuleNotIn(
@@ -59,7 +59,7 @@ class TestSHT31ImportIsolation(utc.UnitTest):
             del sys.modules[module]
 
         # Import sht31 and create regular zone
-        from thermostatsupervisor import sht31
+        from src import sht31
 
         # Mock to avoid actual network calls
         with patch.object(
@@ -84,7 +84,7 @@ class TestSHT31ImportIsolation(utc.UnitTest):
                 "flask_restful should not be loaded for regular zone"
             )
             self.assertModuleNotIn(
-                'thermostatsupervisor.sht31_flask_server',
+                'src.sht31_flask_server',
                 "sht31_flask_server should not be loaded for regular zone"
             )
 
@@ -100,8 +100,8 @@ class TestSHT31ImportIsolation(utc.UnitTest):
             del sys.modules[module]
 
         # Import sht31 and utilities
-        from thermostatsupervisor import sht31
-        from thermostatsupervisor import utilities as util
+        from src import sht31
+        from src import utilities as util
 
         # Ensure unit_test_mode is True (required for Flask server spawn)
         util.unit_test_mode = True
@@ -127,7 +127,7 @@ class TestSHT31ImportIsolation(utc.UnitTest):
                 'flask', "Flask should be loaded for unit test zone 99"
             )
             self.assertModuleIn(
-                'thermostatsupervisor.sht31_flask_server',
+                'src.sht31_flask_server',
                 "sht31_flask_server should be loaded for unit test zone 99"
             )
 

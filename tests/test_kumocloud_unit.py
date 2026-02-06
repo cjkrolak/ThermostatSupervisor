@@ -14,9 +14,9 @@ from unittest.mock import MagicMock, patch
 # local imports
 # conditionally import kumocloud module to handle missing pykumo dependency
 try:
-    from thermostatsupervisor import kumocloud
-    from thermostatsupervisor import kumocloud_config
-    import thermostatsupervisor.thermostat_common as tc
+    from src import kumocloud
+    from src import kumocloud_config
+    import src.thermostat_common as tc
 
     kumocloud_import_error = None
 except ImportError as ex:
@@ -26,7 +26,7 @@ except ImportError as ex:
     tc = None
     kumocloud_import_error = ex
 
-from thermostatsupervisor import utilities as util
+from src import utilities as util
 from tests import unit_test_common as utc
 
 
@@ -57,7 +57,7 @@ class SupervisorLogHandlerUnitTest(utc.UnitTest):
             exc_info=None,
         )
 
-        with patch("thermostatsupervisor.utilities.log_msg") as mock_log:
+        with patch("src.utilities.log_msg") as mock_log:
             handler.emit(record)
             mock_log.assert_called_once()
             args, kwargs = mock_log.call_args
@@ -80,7 +80,7 @@ class SupervisorLogHandlerUnitTest(utc.UnitTest):
             exc_info=None,
         )
 
-        with patch("thermostatsupervisor.utilities.log_msg") as mock_log:
+        with patch("src.utilities.log_msg") as mock_log:
             handler.emit(record)
             args, kwargs = mock_log.call_args
             self.assertEqual(kwargs["mode"], util.DATA_LOG)
@@ -98,7 +98,7 @@ class SupervisorLogHandlerUnitTest(utc.UnitTest):
             exc_info=None,
         )
 
-        with patch("thermostatsupervisor.utilities.log_msg") as mock_log:
+        with patch("src.utilities.log_msg") as mock_log:
             handler.emit(record)
             args, kwargs = mock_log.call_args
             self.assertEqual(
@@ -120,7 +120,7 @@ class SupervisorLogHandlerUnitTest(utc.UnitTest):
 
         # Mock log_msg to raise an exception
         with patch(
-            "thermostatsupervisor.utilities.log_msg",
+            "src.utilities.log_msg",
             side_effect=Exception("Log error")
         ):
             # Mock handleError to verify it's called
@@ -141,7 +141,7 @@ class ThermostatClassUnitTest(utc.UnitTest):
         super().setUp()
         self.print_test_name()
 
-    @patch("thermostatsupervisor.kumocloud.pykumo.KumoCloudAccount.__init__")
+    @patch("src.kumocloud.pykumo.KumoCloudAccount.__init__")
     @patch.object(kumocloud.ThermostatClass, "_setup_pykumo_logging")
     def test_init_success(self, mock_logging, mock_kumo_init):
         """Test successful ThermostatClass initialization."""
@@ -157,7 +157,7 @@ class ThermostatClassUnitTest(utc.UnitTest):
             mock_logging.assert_called_once()
             mock_kumo_init.assert_called_once()
 
-    @patch("thermostatsupervisor.kumocloud.pykumo.KumoCloudAccount.__init__")
+    @patch("src.kumocloud.pykumo.KumoCloudAccount.__init__")
     @patch.object(kumocloud.ThermostatClass, "_setup_pykumo_logging")
     def test_init_missing_credentials(self, mock_logging, mock_kumo_init):
         """Test initialization with missing credentials."""
@@ -171,7 +171,7 @@ class ThermostatClassUnitTest(utc.UnitTest):
     def test_setup_pykumo_logging_success(self):
         """Test _setup_pykumo_logging() configures loggers correctly."""
         with patch(
-            "thermostatsupervisor.kumocloud.pykumo.KumoCloudAccount.__init__"
+            "src.kumocloud.pykumo.KumoCloudAccount.__init__"
         ), patch.dict(
             "os.environ",
             {"KUMO_USERNAME": "test", "KUMO_PASSWORD": "test"}
@@ -193,7 +193,7 @@ class ThermostatClassUnitTest(utc.UnitTest):
     def test_setup_pykumo_logging_exception(self):
         """Test _setup_pykumo_logging() handles exceptions."""
         with patch(
-            "thermostatsupervisor.kumocloud.pykumo.KumoCloudAccount.__init__"
+            "src.kumocloud.pykumo.KumoCloudAccount.__init__"
         ), patch.dict(
             "os.environ",
             {"KUMO_USERNAME": "test", "KUMO_PASSWORD": "test"}
@@ -201,7 +201,7 @@ class ThermostatClassUnitTest(utc.UnitTest):
             # Mock logging.getLogger to raise an exception
             with patch(
                 "logging.getLogger", side_effect=Exception("Logger error")
-            ), patch("thermostatsupervisor.utilities.log_msg") as mock_log:
+            ), patch("src.utilities.log_msg") as mock_log:
                 # Should not raise exception, just log it
                 kumocloud.ThermostatClass(zone=0, verbose=False)
                 # Verify error was logged
@@ -210,7 +210,7 @@ class ThermostatClassUnitTest(utc.UnitTest):
                     for call in mock_log.call_args_list
                 ))
 
-    @patch("thermostatsupervisor.kumocloud.pykumo.KumoCloudAccount.__init__")
+    @patch("src.kumocloud.pykumo.KumoCloudAccount.__init__")
     @patch.object(kumocloud.ThermostatClass, "_setup_pykumo_logging")
     def test_get_target_zone_id(self, mock_logging, mock_kumo_init):
         """Test get_target_zone_id() returns zone parameter."""
@@ -224,7 +224,7 @@ class ThermostatClassUnitTest(utc.UnitTest):
             self.assertEqual(tstat.get_target_zone_id(5), 5)
             self.assertEqual(tstat.get_target_zone_id("TestZone"), "TestZone")
 
-    @patch("thermostatsupervisor.kumocloud.pykumo.KumoCloudAccount.__init__")
+    @patch("src.kumocloud.pykumo.KumoCloudAccount.__init__")
     @patch.object(kumocloud.ThermostatClass, "_setup_pykumo_logging")
     def test_get_zone_index_from_name_success(
         self, mock_logging, mock_kumo_init
@@ -242,7 +242,7 @@ class ThermostatClassUnitTest(utc.UnitTest):
             zone_index = tstat.get_zone_index_from_name()
             self.assertEqual(zone_index, 0)
 
-    @patch("thermostatsupervisor.kumocloud.pykumo.KumoCloudAccount.__init__")
+    @patch("src.kumocloud.pykumo.KumoCloudAccount.__init__")
     @patch.object(kumocloud.ThermostatClass, "_setup_pykumo_logging")
     def test_get_zone_index_from_name_invalid(
         self, mock_logging, mock_kumo_init
@@ -261,7 +261,7 @@ class ThermostatClassUnitTest(utc.UnitTest):
             self.assertIn("NonExistentZone", str(context.exception))
             self.assertIn("not found", str(context.exception))
 
-    @patch("thermostatsupervisor.kumocloud.pykumo.KumoCloudAccount.__init__")
+    @patch("src.kumocloud.pykumo.KumoCloudAccount.__init__")
     @patch.object(kumocloud.ThermostatClass, "_setup_pykumo_logging")
     def test_get_serial_number_list_success(
         self, mock_logging, mock_kumo_init
@@ -280,7 +280,7 @@ class ThermostatClassUnitTest(utc.UnitTest):
             result = tstat._get_serial_number_list()
             self.assertEqual(result, ["SERIAL001", "SERIAL002"])
 
-    @patch("thermostatsupervisor.kumocloud.pykumo.KumoCloudAccount.__init__")
+    @patch("src.kumocloud.pykumo.KumoCloudAccount.__init__")
     @patch.object(kumocloud.ThermostatClass, "_setup_pykumo_logging")
     def test_get_serial_number_list_with_retry(
         self, mock_logging, mock_kumo_init
@@ -305,7 +305,7 @@ class ThermostatClassUnitTest(utc.UnitTest):
                 self.assertEqual(result, ["SERIAL001"])
                 self.assertEqual(tstat.get_indoor_units.call_count, 2)
 
-    @patch("thermostatsupervisor.kumocloud.pykumo.KumoCloudAccount.__init__")
+    @patch("src.kumocloud.pykumo.KumoCloudAccount.__init__")
     @patch.object(kumocloud.ThermostatClass, "_setup_pykumo_logging")
     def test_validate_and_populate_metadata_success(
         self, mock_logging, mock_kumo_init
@@ -330,7 +330,7 @@ class ThermostatClassUnitTest(utc.UnitTest):
                 kumocloud_config.metadata[1]["serial_number"], "SERIAL002"
             )
 
-    @patch("thermostatsupervisor.kumocloud.pykumo.KumoCloudAccount.__init__")
+    @patch("src.kumocloud.pykumo.KumoCloudAccount.__init__")
     @patch.object(kumocloud.ThermostatClass, "_setup_pykumo_logging")
     def test_validate_and_populate_metadata_empty_list(
         self, mock_logging, mock_kumo_init
@@ -348,7 +348,7 @@ class ThermostatClassUnitTest(utc.UnitTest):
                 tstat._validate_and_populate_metadata([])
             self.assertIn("Authentication Error", str(context.exception))
 
-    @patch("thermostatsupervisor.kumocloud.pykumo.KumoCloudAccount.__init__")
+    @patch("src.kumocloud.pykumo.KumoCloudAccount.__init__")
     @patch.object(kumocloud.ThermostatClass, "_setup_pykumo_logging")
     def test_get_zone_data_all_zones(self, mock_logging, mock_kumo_init):
         """Test _get_zone_data() with zone=None returns all zones."""
@@ -365,7 +365,7 @@ class ThermostatClassUnitTest(utc.UnitTest):
             result = tstat._get_zone_data(None, [])
             self.assertEqual(result, {"all_zones": "data"})
 
-    @patch("thermostatsupervisor.kumocloud.pykumo.KumoCloudAccount.__init__")
+    @patch("src.kumocloud.pykumo.KumoCloudAccount.__init__")
     @patch.object(kumocloud.ThermostatClass, "_setup_pykumo_logging")
     def test_get_zone_data_specific_zone_by_index(
         self, mock_logging, mock_kumo_init
@@ -396,7 +396,7 @@ class ThermostatClassUnitTest(utc.UnitTest):
             self.assertEqual(result, mock_zone_data)
             self.assertEqual(tstat.serial_number, "SERIAL001")
 
-    @patch("thermostatsupervisor.kumocloud.pykumo.KumoCloudAccount.__init__")
+    @patch("src.kumocloud.pykumo.KumoCloudAccount.__init__")
     @patch.object(kumocloud.ThermostatClass, "_setup_pykumo_logging")
     def test_get_zone_data_specific_zone_by_name(
         self, mock_logging, mock_kumo_init
@@ -435,7 +435,7 @@ class ThermostatClassUnitTest(utc.UnitTest):
             self.assertEqual(result, mock_zone_data)
             self.assertEqual(tstat.serial_number, "SERIAL002")
 
-    @patch("thermostatsupervisor.kumocloud.pykumo.KumoCloudAccount.__init__")
+    @patch("src.kumocloud.pykumo.KumoCloudAccount.__init__")
     @patch.object(kumocloud.ThermostatClass, "_setup_pykumo_logging")
     def test_get_zone_data_invalid_index(self, mock_logging, mock_kumo_init):
         """Test _get_zone_data() with invalid zone index."""
@@ -459,7 +459,7 @@ class ThermostatClassUnitTest(utc.UnitTest):
                 tstat._get_zone_data(5, serial_list)
             self.assertIn("Invalid Zone", str(context.exception))
 
-    @patch("thermostatsupervisor.kumocloud.pykumo.KumoCloudAccount.__init__")
+    @patch("src.kumocloud.pykumo.KumoCloudAccount.__init__")
     @patch.object(kumocloud.ThermostatClass, "_setup_pykumo_logging")
     def test_get_metadata_without_retry(self, mock_logging, mock_kumo_init):
         """Test get_metadata() without retry option."""
@@ -486,7 +486,7 @@ class ThermostatClassUnitTest(utc.UnitTest):
             result = tstat.get_metadata(zone=0, parameter="temp")
             self.assertEqual(result, 72)
 
-    @patch("thermostatsupervisor.kumocloud.pykumo.KumoCloudAccount.__init__")
+    @patch("src.kumocloud.pykumo.KumoCloudAccount.__init__")
     @patch.object(kumocloud.ThermostatClass, "_setup_pykumo_logging")
     def test_get_metadata_with_retry(self, mock_logging, mock_kumo_init):
         """Test get_metadata() with retry option."""
@@ -508,7 +508,7 @@ class ThermostatClassUnitTest(utc.UnitTest):
             tstat._get_zone_data = MagicMock(return_value=mock_zone_data)
 
             with patch(
-                "thermostatsupervisor.utilities.execute_with_extended_retries"
+                "src.utilities.execute_with_extended_retries"
             ) as mock_retry:
                 mock_retry.return_value = mock_zone_data
 
@@ -521,7 +521,7 @@ class ThermostatClassUnitTest(utc.UnitTest):
                 self.assertEqual(call_kwargs["number_of_retries"], 5)
                 self.assertEqual(result, mock_zone_data)
 
-    @patch("thermostatsupervisor.kumocloud.pykumo.KumoCloudAccount.__init__")
+    @patch("src.kumocloud.pykumo.KumoCloudAccount.__init__")
     @patch.object(kumocloud.ThermostatClass, "_setup_pykumo_logging")
     def test_get_all_metadata(self, mock_logging, mock_kumo_init):
         """Test get_all_metadata() delegates to get_metadata()."""
@@ -539,7 +539,7 @@ class ThermostatClassUnitTest(utc.UnitTest):
             tstat.get_metadata.assert_called_once_with(1, retry=True)
             self.assertEqual(result, {"test": "data"})
 
-    @patch("thermostatsupervisor.kumocloud.pykumo.KumoCloudAccount.__init__")
+    @patch("src.kumocloud.pykumo.KumoCloudAccount.__init__")
     @patch.object(kumocloud.ThermostatClass, "_setup_pykumo_logging")
     def test_print_all_thermostat_metadata(
         self, mock_logging, mock_kumo_init
@@ -1228,7 +1228,7 @@ class ThermostatZoneUnitTest(utc.UnitTest):
             self.mock_thermostat, verbose=False
         )
 
-        with patch("thermostatsupervisor.utilities.log_msg") as mock_log:
+        with patch("src.utilities.log_msg") as mock_log:
             zone.set_heat_setpoint(70)
             # Verify warning was logged
             self.assertTrue(any(
@@ -1242,7 +1242,7 @@ class ThermostatZoneUnitTest(utc.UnitTest):
             self.mock_thermostat, verbose=False
         )
 
-        with patch("thermostatsupervisor.utilities.log_msg") as mock_log:
+        with patch("src.utilities.log_msg") as mock_log:
             zone.set_cool_setpoint(75)
             # Verify warning was logged
             self.assertTrue(any(
@@ -1310,7 +1310,7 @@ class ThermostatZoneUnitTest(utc.UnitTest):
             side_effect=UnboundLocalError("Test error")
         )
 
-        with patch("thermostatsupervisor.utilities.log_msg") as mock_log:
+        with patch("src.utilities.log_msg") as mock_log:
             zone.refresh_zone_info(force_refresh=False)
             # Verify warning was logged
             self.assertTrue(any(

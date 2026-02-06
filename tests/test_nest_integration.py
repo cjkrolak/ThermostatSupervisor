@@ -8,9 +8,9 @@ This test requires connection to nest thermostat.
 import unittest
 
 # local imports
-from thermostatsupervisor import nest
-from thermostatsupervisor import nest_config
-from thermostatsupervisor import utilities as util
+from src import nest
+from src import nest_config
+from src import utilities as util
 from tests import unit_test_common as utc
 
 

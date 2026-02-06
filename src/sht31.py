@@ -22,11 +22,11 @@ from typing import Union
 import requests
 
 # local imports
-from thermostatsupervisor import environment as env
-from thermostatsupervisor import sht31_config
-from thermostatsupervisor import thermostat_api as api
-from thermostatsupervisor import thermostat_common as tc
-from thermostatsupervisor import utilities as util
+from src import environment as env
+from src import sht31_config
+from src import thermostat_api as api
+from src import thermostat_common as tc
+from src import utilities as util
 
 
 class ThermostatClass(tc.ThermostatCommon):
@@ -203,15 +203,15 @@ class ThermostatClass(tc.ThermostatCommon):
 
         # Force reload of sht31_flask_server to ensure Flask is imported
         # This handles Python 3.13's module caching behavior
-        if 'thermostatsupervisor.sht31_flask_server' in sys.modules:
+        if 'src.sht31_flask_server' in sys.modules:
             sht31_fs = importlib.reload(
-                sys.modules['thermostatsupervisor.sht31_flask_server']
+                sys.modules['src.sht31_flask_server']
             )
         else:
-            from thermostatsupervisor import sht31_flask_server as sht31_fs
+            from src import sht31_flask_server as sht31_fs
             # Explicitly register the module in sys.modules for Python 3.13
             # The 'from X import Y' syntax doesn't always register the module
-            sys.modules['thermostatsupervisor.sht31_flask_server'] = sht31_fs
+            sys.modules['src.sht31_flask_server'] = sht31_fs
 
         # Explicitly import flask to ensure it's in sys.modules
         # In Python 3.13, importlib.reload() doesn't always propagate

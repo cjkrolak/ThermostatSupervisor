@@ -10,10 +10,10 @@ from unittest.mock import patch
 # third-party imports
 
 # local imports
-from thermostatsupervisor import emulator_config
-from thermostatsupervisor import thermostat_api as api
-from thermostatsupervisor import thermostat_common as tc
-from thermostatsupervisor import weather
+from src import emulator_config
+from src import thermostat_api as api
+from src import thermostat_common as tc
+from src import weather
 
 
 class TestWeatherIntegration(unittest.TestCase):
@@ -49,8 +49,8 @@ class TestWeatherIntegration(unittest.TestCase):
         self.assertIsInstance(zip_code, str)
         self.assertEqual(zip_code, "55378")
 
-    @patch("thermostatsupervisor.weather.get_outdoor_weather")
-    @patch("thermostatsupervisor.weather.get_weather_api_key")
+    @patch("src.weather.get_outdoor_weather")
+    @patch("src.weather.get_weather_api_key")
     def test_weather_data_integration(self, mock_get_api_key, mock_get_weather):
         """Test weather data integration in thermostat reporting."""
         # Mock weather data

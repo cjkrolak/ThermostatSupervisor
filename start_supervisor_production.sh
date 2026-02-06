@@ -17,4 +17,4 @@ echo "Server will be available at http://0.0.0.0:5001"
 # Run Gunicorn with supervisor configuration
 exec gunicorn \
     --config gunicorn.supervisor.conf.py \
-    thermostatsupervisor.supervisor_wsgi:application
+    src.supervisor_wsgi:application

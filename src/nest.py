@@ -19,11 +19,11 @@ import oauthlib.oauth2.rfc6749.errors
 import requests
 
 # local imports
-from thermostatsupervisor import nest_config
-from thermostatsupervisor import thermostat_api as api
-from thermostatsupervisor import thermostat_common as tc
-from thermostatsupervisor import environment as env
-from thermostatsupervisor import utilities as util
+from src import nest_config
+from src import thermostat_api as api
+from src import thermostat_common as tc
+from src import environment as env
+from src import utilities as util
 
 # python-nest package import
 # note this code uses python-google-nest package.

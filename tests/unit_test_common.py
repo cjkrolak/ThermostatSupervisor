@@ -19,13 +19,13 @@ import pytz
 from str2bool import str2bool
 
 # local imports
-from thermostatsupervisor import emulator_config
-from thermostatsupervisor import honeywell_config
-from thermostatsupervisor import supervise as sup
-from thermostatsupervisor import thermostat_api as api
-from thermostatsupervisor import thermostat_common as tc
-from thermostatsupervisor import environment as env
-from thermostatsupervisor import utilities as util
+from src import emulator_config
+from src import honeywell_config
+from src import supervise as sup
+from src import thermostat_api as api
+from src import thermostat_common as tc
+from src import environment as env
+from src import utilities as util
 
 # enable modes
 ENABLE_FUNCTIONAL_INTEGRATION_TESTS = True  # enable func int tests

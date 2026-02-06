@@ -13,15 +13,15 @@ import traceback
 import psutil
 
 # local imports
-from thermostatsupervisor import utilities as util
+from src import utilities as util
 
 # thermostat config files
-from thermostatsupervisor import honeywell_config
-from thermostatsupervisor import kumocloud_config
-from thermostatsupervisor import kumolocal_config
-from thermostatsupervisor import mmm_config
-from thermostatsupervisor import nest_config
-from thermostatsupervisor import sht31_config
+from src import honeywell_config
+from src import kumocloud_config
+from src import kumolocal_config
+from src import mmm_config
+from src import nest_config
+from src import sht31_config
 
 MIN_PYTHON_MAJOR_VERSION = 3  # minimum python major version required
 MIN_PYTHON_MINOR_VERSION = 7  # minimum python minor version required

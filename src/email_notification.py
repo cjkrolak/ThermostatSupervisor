@@ -15,8 +15,8 @@ import sys
 import traceback
 
 # local libraries
-from thermostatsupervisor import environment as env
-from thermostatsupervisor import utilities as util
+from src import environment as env
+from src import utilities as util
 
 # tracing data
 module_name = sys.modules[__name__]

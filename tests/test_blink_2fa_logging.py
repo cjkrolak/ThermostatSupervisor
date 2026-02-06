@@ -6,7 +6,7 @@ Unit test module for blink.py 2FA logging functionality.
 import unittest
 
 # local imports
-from thermostatsupervisor import utilities as util
+from src import utilities as util
 from tests import unit_test_common as utc
 
 

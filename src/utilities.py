@@ -16,7 +16,7 @@ import requests
 
 # local imports
 
-PACKAGE_NAME = "thermostatsupervisor"  # should match name in __init__.py
+PACKAGE_NAME = "src"  # should match name in __init__.py
 
 # error codes
 NO_ERROR = 0
@@ -1259,7 +1259,7 @@ def execute_with_extended_retries(
     # Import thermostat_common to access connection_ok flag
     # note this import will cause circular import issue of put at top of file.
     try:
-        from thermostatsupervisor import thermostat_common as tc  # noqa: E402, C0415
+        from src import thermostat_common as tc  # noqa: E402, C0415
     except ImportError:
         tc = None
 

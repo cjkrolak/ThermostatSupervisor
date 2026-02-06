@@ -6,7 +6,7 @@ SHT31 config file.
 import munch
 
 # local imports
-from thermostatsupervisor import utilities as util
+from src import utilities as util
 
 ALIAS = "sht31"
 
@@ -23,7 +23,7 @@ FLASK_USE_HTTPS = False  # HTTPS requires a cert to be installed.
 FLASK_DEBUG_MODE = False  # True to enable flask debugging mode
 if FLASK_USE_HTTPS:
     # Import ssl_certificate module for generating certificates
-    from thermostatsupervisor import ssl_certificate
+    from src import ssl_certificate
 
     # Try to use generated SSL certificate, fallback to adhoc if needed
     FLASK_SSL_CERT = ssl_certificate.get_ssl_context(

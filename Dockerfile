@@ -72,4 +72,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
 ENTRYPOINT ["python3", "-m"]
 # defaults runtime parameters to emulator zone 0 if runtime parameters are not provided
 # [module, thermostat, zone, poll time, connect time, tolerance, target mode, measurements]
-CMD ["thermostatsupervisor.supervise", "emulator", "0", "30", "86400", "3", "OFF_MODE", "4"]
+CMD ["src.supervise", "emulator", "0", "30", "86400", "3", "OFF_MODE", "4"]

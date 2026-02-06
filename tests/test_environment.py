@@ -13,10 +13,10 @@ import unittest.mock
 # third-party imports
 
 # local imports
-import thermostatsupervisor
-from thermostatsupervisor import emulator_config
-from thermostatsupervisor import environment as env
-from thermostatsupervisor import utilities as util
+import src
+from src import emulator_config
+from src import environment as env
+from src import utilities as util
 from tests import unit_test_common as utc
 
 
@@ -356,7 +356,7 @@ KEY4=value4=with=equals
         """
         Verify get_package_version().
         """
-        pkg = thermostatsupervisor
+        pkg = src
         return_type = tuple
         return_val = env.get_package_version(pkg)
         self.assertTrue(
@@ -383,11 +383,11 @@ KEY4=value4=with=equals
 
     def test_show_package_version(self):
         """Verify show_package_version()."""
-        env.show_package_version(thermostatsupervisor)
+        env.show_package_version(src)
 
     def test_get_package_path(self):
         """Verify get_package_path()."""
-        pkg = thermostatsupervisor
+        pkg = src
         return_val = env.get_package_path(pkg)
         self.assertTrue(
             isinstance(return_val, str),

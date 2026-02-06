@@ -12,11 +12,11 @@ from aiohttp import ClientSession
 # third party imports
 
 # local imports
-from thermostatsupervisor import blink_config
-from thermostatsupervisor import environment as env
-from thermostatsupervisor import thermostat_api as api
-from thermostatsupervisor import thermostat_common as tc
-from thermostatsupervisor import utilities as util
+from src import blink_config
+from src import environment as env
+from src import thermostat_api as api
+from src import thermostat_common as tc
+from src import utilities as util
 
 # Blink library
 BLINK_DEBUG = True  # debug uses local blink repo instead of pkg

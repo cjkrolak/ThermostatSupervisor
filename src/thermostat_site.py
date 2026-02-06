@@ -12,10 +12,10 @@ import time
 from typing import Dict, Optional
 
 # local imports
-from thermostatsupervisor import site_config
-from thermostatsupervisor import thermostat_api as api
-from thermostatsupervisor import thermostat_common as tc
-from thermostatsupervisor import utilities as util
+from src import site_config
+from src import thermostat_api as api
+from src import thermostat_common as tc
+from src import utilities as util
 
 
 class ThermostatSite:

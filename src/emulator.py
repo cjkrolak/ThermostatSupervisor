@@ -8,11 +8,11 @@ import traceback
 from typing import Union
 
 # local imports
-from thermostatsupervisor import emulator_config
-from thermostatsupervisor import environment as env
-from thermostatsupervisor import thermostat_api as api
-from thermostatsupervisor import thermostat_common as tc
-from thermostatsupervisor import utilities as util
+from src import emulator_config
+from src import environment as env
+from src import thermostat_api as api
+from src import thermostat_common as tc
+from src import utilities as util
 
 
 class ThermostatClass(tc.ThermostatCommon):

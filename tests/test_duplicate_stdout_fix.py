@@ -9,7 +9,7 @@ from io import StringIO
 # Add the project to path if needed  # noqa: E402
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from thermostatsupervisor import utilities as util  # noqa: E402
+from src import utilities as util  # noqa: E402
 
 
 class DuplicateStdoutFixTest(unittest.TestCase):

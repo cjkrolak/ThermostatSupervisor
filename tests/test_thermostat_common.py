@@ -10,9 +10,9 @@ import unittest
 import unittest.mock
 
 # local imports
-from thermostatsupervisor import thermostat_api as api
-from thermostatsupervisor import thermostat_common as tc
-from thermostatsupervisor import utilities as util
+from src import thermostat_api as api
+from src import thermostat_common as tc
+from src import utilities as util
 from tests import unit_test_common as utc
 
 

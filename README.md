@@ -40,7 +40,7 @@ psutil for all thermostat types<br/>
 refer to requirements.txt for full list of package dependencies.<br/>
 
 ## Run the Docker Image:
-docker run --rm -it --privileged --env-file 'envfile' 'username'/thermostatsupervisor:'tag' thermostatsupervisor.'module' 'runtime parameters'<br/>
+docker run --rm -it --privileged --env-file 'envfile' 'username'/src:'tag' src.'module' 'runtime parameters'<br/>
 * '--rm' removes the docker container when done<br/>
 * '-it' runs in interactive mode so that output is displayed in the console<br/>
 * '--env-file' specifies your env variables from file 'envfile', see below for required env variables<br/>
@@ -114,9 +114,9 @@ runtime parameters can be specified to override defaults either via single dash 
 * argv[4] or '-c'= re-connect time in seconds (default is thermostat-specific)
 * argv[5] or '-d'= tolerance from setpoint allowed in °F (default is 2°F)
 * argv[6] or '-m'= target thermostat mode (e.g. OFF_MODE, COOL_MODE, HEAT_MODE, DRY_MODE, etc.), not yet fully functional.
-* argv[7] or '-n'= number of measurements (default is infinitity).<br/><br/>
-command line usage (unnamed):  "*python -m thermostatsupervisor.supervise \<thermostat type\> \<zone\> \<poll time\> \<connection time\> \<tolerance\> \<target mode\> \<measurements\>*".<br/>
-command line usage (named):  "*python -m thermostatsupervisor.supervise -t \<thermostat type\> -z \<zone\> -p \<poll time\> -c \<connection time\> -d \<tolerance\> -m \<target mode\> -n \<measurements\>*"
+* argv[7] or '-n'= number of measurements (default is infinity).<br/><br/>
+command line usage (unnamed):  "*python -m src.supervise \<thermostat type\> \<zone\> \<poll time\> \<connection time\> \<tolerance\> \<target mode\> \<measurements\>*".<br/>
+command line usage (named):  "*python -m src.supervise -t \<thermostat type\> -z \<zone\> -p \<poll time\> -c \<connection time\> -d \<tolerance\> -m \<target mode\> -n \<measurements\>*"
 
 ## site_supervise.py:
 This module provides site-level orchestration for monitoring multiple thermostats simultaneously.<br/>
@@ -132,38 +132,38 @@ Command-line options:
 * '-q' or '--quiet': Disable verbose logging
 * '--display-zones': Display all zones and exit (no supervision)
 * '--display-temps': Display current temperatures and exit (no supervision)<br/><br/>
-command line usage: "*python -m thermostatsupervisor.site_supervise [options]*"<br/>
+command line usage: "*python -m src.site_supervise [options]*"<br/>
 Examples:
-* Use default configuration: "*python -m thermostatsupervisor.site_supervise*"
-* Use custom config file: "*python -m thermostatsupervisor.site_supervise -c mysite.json*"
-* Override measurement count: "*python -m thermostatsupervisor.site_supervise -n 10*"
-* Display zones only: "*python -m thermostatsupervisor.site_supervise --display-zones*"
-* Disable threading: "*python -m thermostatsupervisor.site_supervise --no-threading*"
+* Use default configuration: "*python -m src.site_supervise*"
+* Use custom config file: "*python -m src.site_supervise -c mysite.json*"
+* Override measurement count: "*python -m src.site_supervise -n 10*"
+* Display zones only: "*python -m src.site_supervise --display-zones*"
+* Disable threading: "*python -m src.site_supervise --no-threading*"
   
 ## supervisor_flask_server.py:
 This module will render supervise.py output on an HTML page using Flask.<br/>
 Same runtime parameters as supervise.py can be specified to override defaults:<br/>
 Port is currently hard-coded to 5001, access at server's local IP address<br/><br/>
-command line usage:  "*python -m thermostatsupervisor.supervisor_flask_server \<runtime parameters\>*"
+command line usage:  "*python -m src.supervisor_flask_server \<runtime parameters\>*"
 
 ## emulator.py:
 Script will run an emulator with fabribated thermostat meta data.<br/><br/>
-command line usage:  "*python -m thermostatsupervisor.emulator \<thermostat type\> \<zone\>*"
+command line usage:  "*python -m src.emulator \<thermostat type\> \<zone\>*"
 
 ## honeywell.py:
 Script will logon to TCC web site and query thermostat meta data.<br/>
 Default poll time is currently set to 3 minutes, longer poll times experience connection errors, shorter poll times are impractical based on emperical data.<br/><br/>
-command line usage:  "*python -m thermostatsupervisor.honeywell \<thermostat type\> \<zone\>*"
+command line usage:  "*python -m src.honeywell \<thermostat type\> \<zone\>*"
 
 ## mmm50.py:
 Script will connect to 3m50 thermostat on local network, IP address stored in mmm_config.mmm_metadata.<br/>
 Default poll time is currently set to 10 minutes.<br/><br/>
-command line usage:  "*python -m thermostatsupervisor.mmm \<thermostat type\> \<zone\>*"
+command line usage:  "*python -m src.mmm \<thermostat type\> \<zone\>*"
 
 ## sht31.py:
 Script will connect to sht31 thermometer at URL specified (can be local IP or remote URL).<br/>
 Default poll time is currently set to 1 minute.<br/><br/>
-command line usage:  "*python -m thermostatsupervisor.sht31 \<thermostat type\> \<zone\>*"
+command line usage:  "*python -m src.sht31 \<thermostat type\> \<zone\>*"
 
 ## sht31_flask_server.py:
 This module will render sht31 sensor output on an HTML page using Flask.<br/>
@@ -187,7 +187,7 @@ Production data is at /data, subfolders provide additional commands:<br/>
 * /clear_block_list: clear the ip ban block list<br/>
 
 ### server command line usage:<br/>
-"*python -m thermostatsupervisor.sht31_flask_server \<debug\>*"<br/>
+"*python -m src.sht31_flask_server \<debug\>*"<br/>
 argv[1] = debug (bool): True to enable Flask debug mode, False is default.<br/>
 
 ### client URL usage:<br/>
@@ -201,33 +201,33 @@ seed=seed value for fabricated data in unit test mode (default=0x7F)<br/>
 Script will connect to Mitsubishi ductless thermostat through kumocloud account only.<br/>
 Default poll time is currently set to 10 minutes.<br/>
 Zone number refers to the thermostat order in kumocloud, 0=first thermostat data returned, 1=second thermostat, etc.<br/><br/>
-command line usage:  "*python -m thermostatsupervisor.kumocloud \<thermostat type\> \<zone\>*"
+command line usage:  "*python -m src.kumocloud \<thermostat type\> \<zone\>*"
 
 ## kumocloudv3.py:
 Script will connect to Mitsubishi ductless thermostat through the new KumoCloud v3 API.<br/>
 Default poll time is currently set to 18 seconds.<br/>
 Zone assignments are dynamically discovered from the v3 API and can vary between installations.<br/>
 Uses the same login credentials as legacy kumocloud but provides improved functionality and dynamic zone management.<br/><br/>
-command line usage:  "*python -m thermostatsupervisor.kumocloudv3 \<thermostat type\> \<zone\>*"
+command line usage:  "*python -m src.kumocloudv3 \<thermostat type\> \<zone\>*"
 
 ## kumolocal.py:
 Script will connect to Mitsubishi ductless thermostat through kumocloud account and local network.<br/>
 Default poll time is currently set to 10 minutes.<br/>
 Zone number refers to the thermostat order in kumocloud, 0=first thermostat data returned, 1=second thermostat, etc.<br/><br/>
-command line usage:  "*python -m thermostatsupervisor.kumolocal \<thermostat type\> \<zone\>*"
+command line usage:  "*python -m src.kumolocal \<thermostat type\> \<zone\>*"
 
 ## blink.py:
 Script will connect to Blink camera through Blink account.<br/>
 Default poll time is currently set to 10 minutes.<br/>
 Zone number refers to the thermostat order in Blink server, 0=first thermostat data returned, 1=second thermostat, etc.<br/><br/>
-command line usage:  "*python -m thermostatsupervisor.blink \<thermostat type\> \<zone\>*"
+command line usage:  "*python -m src.blink \<thermostat type\> \<zone\>*"
 
 ## nest.py:
 Script will connect to nest thermostats through Google Device Access console account.<br/>
 Follow instructions in this repo to setup Google Device Access registration and Google Cloud OAuth account: https://github.com/axlan/python-nest/.<br/>
 Default poll time is currently set to 10 minutes.<br/>
 Zone number refers to the thermostat order in nest server, 0=first thermostat data returned, 1=second thermostat, etc.<br/><br/>
-command line usage:  "*python -m thermostatsupervisor.nest \<thermostat type\> \<zone\>*"
+command line usage:  "*python -m src.nest \<thermostat type\> \<zone\>*"
 
 ## Supervisor API required methods:<br/>
 **For complete API documentation, see: [Thermostat Classes API](api/thermostat_classes.rst) and [Zone Classes API](api/zone_classes.rst)**<br/><br/>

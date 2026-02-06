@@ -8,9 +8,9 @@ import sys
 import unittest
 
 # local imports
-from thermostatsupervisor import emulator_config
-from thermostatsupervisor import thermostat_api as api
-from thermostatsupervisor import utilities as util
+from src import emulator_config
+from src import thermostat_api as api
+from src import utilities as util
 from tests import unit_test_common as utc
 
 thermostat_type = emulator_config.ALIAS

@@ -6,9 +6,9 @@ Unit test module for thermostat_site.py.
 import unittest
 
 # local imports
-from thermostatsupervisor import site_config
-from thermostatsupervisor import thermostat_site as ts
-from thermostatsupervisor import utilities as util
+from src import site_config
+from src import thermostat_site as ts
+from src import utilities as util
 from tests import unit_test_common as utc
 
 

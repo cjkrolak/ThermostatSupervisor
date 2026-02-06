@@ -17,4 +17,4 @@ echo "Server will be available at http://0.0.0.0:5000"
 # Run Gunicorn with SHT31 configuration
 exec gunicorn \
     --config gunicorn.sht31.conf.py \
-    thermostatsupervisor.sht31_wsgi:application
+    src.sht31_wsgi:application

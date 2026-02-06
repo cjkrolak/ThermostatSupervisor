@@ -9,8 +9,8 @@ and are properly configured for production use.
 import unittest
 
 # local imports
-from thermostatsupervisor import supervisor_wsgi
-from thermostatsupervisor import sht31_wsgi
+from src import supervisor_wsgi
+from src import sht31_wsgi
 
 
 class TestWSGIEntryPoints(unittest.TestCase):

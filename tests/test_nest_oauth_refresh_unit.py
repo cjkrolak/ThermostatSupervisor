@@ -15,7 +15,7 @@ from unittest.mock import Mock, patch
 import oauthlib.oauth2.rfc6749.errors
 
 # local imports
-from thermostatsupervisor import nest
+from src import nest
 from tests import unit_test_common as utc
 
 
@@ -53,7 +53,7 @@ class TestNestOAuthRefresh(utc.UnitTest):
         if os.path.exists(self.cache_file_path):
             os.unlink(self.cache_file_path)
 
-    @patch("thermostatsupervisor.nest.requests.post")
+    @patch("src.nest.requests.post")
     def test_refresh_oauth_token_with_new_refresh_token(self, mock_post):
         """Test OAuth refresh when server returns a new refresh token."""
         # Mock successful refresh response with new refresh token
@@ -89,7 +89,7 @@ class TestNestOAuthRefresh(utc.UnitTest):
         # Verify the refresh token was not overwritten with access token
         self.assertNotEqual(updated_data["refresh_token"], updated_data["access_token"])
 
-    @patch("thermostatsupervisor.nest.requests.post")
+    @patch("src.nest.requests.post")
     def test_refresh_oauth_token_without_new_refresh_token(self, mock_post):
         """Test OAuth refresh when server does NOT return a new refresh token."""
         # Mock successful refresh response without new refresh token
@@ -128,7 +128,7 @@ class TestNestOAuthRefresh(utc.UnitTest):
         # access token
         self.assertNotEqual(updated_data["refresh_token"], updated_data["access_token"])
 
-    @patch("thermostatsupervisor.nest.requests.post")
+    @patch("src.nest.requests.post")
     def test_refresh_oauth_token_failure(self, mock_post):
         """Test OAuth refresh failure handling."""
         # Mock failed refresh response
@@ -162,7 +162,7 @@ class TestNestOAuthRefresh(utc.UnitTest):
         # Data should be unchanged
         self.assertEqual(unchanged_data, self.initial_token_data)
 
-    @patch("thermostatsupervisor.nest.requests.post")
+    @patch("src.nest.requests.post")
     def test_get_device_data_with_invalid_grant_retry(self, mock_post):
         """
         Test get_device_data retries after token refresh on InvalidGrantError.

@@ -17,9 +17,9 @@ import pyhtcc
 import urllib3.exceptions
 
 # local imports
-from thermostatsupervisor import honeywell
-import thermostatsupervisor.thermostat_common as tc
-from thermostatsupervisor import utilities as util
+from src import honeywell
+import src.thermostat_common as tc
+from src import utilities as util
 from tests import unit_test_common as utc
 
 
@@ -49,7 +49,7 @@ class Test(utc.UnitTest):
 
                 # Mock time.sleep and email notifications to speed up the test
                 with mock.patch("time.sleep"), mock.patch(
-                    "thermostatsupervisor.email_notification.send_email_alert"
+                    "src.email_notification.send_email_alert"
                 ):
                     # Create a mock function that raises the exception on first calls,
                     # then succeeds on the final call
@@ -81,7 +81,7 @@ class Test(utc.UnitTest):
         """
         # Mock time.sleep and email notifications to speed up the test
         with mock.patch("time.sleep"), mock.patch(
-            "thermostatsupervisor.email_notification.send_email_alert"
+            "src.email_notification.send_email_alert"
         ):
             # Mock a function that raises ConnectionError then succeeds
             call_count = 0
@@ -119,7 +119,7 @@ class Test(utc.UnitTest):
 
         # Mock time.sleep and email notifications to speed up the test
         with mock.patch("time.sleep"), mock.patch(
-            "thermostatsupervisor.email_notification.send_email_alert"
+            "src.email_notification.send_email_alert"
         ):
             # Mock a function that always raises TooManyAttemptsError
             def mock_func():
@@ -429,7 +429,7 @@ class Test(utc.UnitTest):
                     return_value=mock_zones,
                 ):
                     with mock.patch(
-                        "thermostatsupervisor.utilities."
+                        "src.utilities."
                         "execute_with_extended_retries"
                     ) as mock_retry:
                         mock_retry.return_value = mock_zones[0]
@@ -507,7 +507,7 @@ class Test(utc.UnitTest):
                 ):
                     tstat = honeywell.ThermostatClass(zone=0)
                     with mock.patch(
-                        "thermostatsupervisor.utilities.log_msg"
+                        "src.utilities.log_msg"
                     ) as mock_log:
                         latest_data = tstat.get_latestdata(zone=0, debug=True)
 
@@ -723,7 +723,7 @@ class Test(utc.UnitTest):
         # Mock both parent class __init__ methods to avoid resetting attributes
         with mock.patch("pyhtcc.Zone.__init__", return_value=None):
             with mock.patch(
-                "thermostatsupervisor.thermostat_common."
+                "src.thermostat_common."
                 "ThermostatCommonZone.__init__",
                 return_value=None,
             ):
@@ -1481,7 +1481,7 @@ class Test(utc.UnitTest):
             exc_info=None,
         )
 
-        with mock.patch("thermostatsupervisor.utilities.log_msg") as mock_log:
+        with mock.patch("src.utilities.log_msg") as mock_log:
             handler.emit(record)
             # Verify log_msg was called
             mock_log.assert_called()
@@ -1502,7 +1502,7 @@ class Test(utc.UnitTest):
         # Mock handleError to verify it's called on exception
         with mock.patch.object(handler, "handleError") as mock_handle_error:
             with mock.patch(
-                "thermostatsupervisor.utilities.log_msg",
+                "src.utilities.log_msg",
                 side_effect=Exception("Test error"),
             ):
                 handler.emit(record)

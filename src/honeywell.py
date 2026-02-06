@@ -17,12 +17,12 @@ from typing import Union
 import urllib3.exceptions
 
 # local imports
-from thermostatsupervisor import email_notification
-from thermostatsupervisor import environment as env
-from thermostatsupervisor import honeywell_config
-from thermostatsupervisor import thermostat_api as api
-from thermostatsupervisor import thermostat_common as tc
-from thermostatsupervisor import utilities as util
+from src import email_notification
+from src import environment as env
+from src import honeywell_config
+from src import thermostat_api as api
+from src import thermostat_common as tc
+from src import utilities as util
 
 # honeywell import
 HONEYWELL_DEBUG = False  # debug uses local pyhtcc repo instead of pkg

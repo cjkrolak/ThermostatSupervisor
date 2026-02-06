@@ -42,10 +42,10 @@ import munch
 from str2bool import str2bool
 
 # local imports
-from thermostatsupervisor import environment as env
-from thermostatsupervisor import flask_generic as flg
-from thermostatsupervisor import sht31_config
-from thermostatsupervisor import utilities as util
+from src import environment as env
+from src import flask_generic as flg
+from src import sht31_config
+from src import utilities as util
 
 # enable logging
 limiter_logger = logging.getLogger("flask_limiter")
