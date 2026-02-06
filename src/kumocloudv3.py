@@ -11,11 +11,11 @@ from typing import Union, Dict, Any, List
 import requests
 
 # local imports
-from thermostatsupervisor import environment as env
-from thermostatsupervisor import kumocloudv3_config
-from thermostatsupervisor import thermostat_api as api
-from thermostatsupervisor import thermostat_common as tc
-from thermostatsupervisor import utilities as util
+from src import environment as env
+from src import kumocloudv3_config
+from src import thermostat_api as api
+from src import thermostat_common as tc
+from src import utilities as util
 
 
 class ThermostatClass(tc.ThermostatCommon):

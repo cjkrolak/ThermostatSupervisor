@@ -10,8 +10,8 @@ import unittest
 from unittest.mock import MagicMock, patch
 
 # local imports
-from thermostatsupervisor import nest
-from thermostatsupervisor import nest_config
+from src import nest
+from src import nest_config
 
 
 class NestSpamMitigationTest(unittest.TestCase):
@@ -42,7 +42,7 @@ class NestSpamMitigationTest(unittest.TestCase):
 
         # Create zone instance
         with patch(
-            "thermostatsupervisor.nest.nest.Device.filter_for_trait",
+            "src.nest.nest.Device.filter_for_trait",
             return_value=self.mock_thermostat.devices,
         ):
             zone = nest.ThermostatZone(self.mock_thermostat, verbose=False)
@@ -73,7 +73,7 @@ class NestSpamMitigationTest(unittest.TestCase):
 
         # Create zone instance
         with patch(
-            "thermostatsupervisor.nest.nest.Device.filter_for_trait",
+            "src.nest.nest.Device.filter_for_trait",
             return_value=self.mock_thermostat.devices,
         ):
             zone = nest.ThermostatZone(self.mock_thermostat, verbose=False)
@@ -92,7 +92,7 @@ class NestSpamMitigationTest(unittest.TestCase):
         zone.refresh_zone_info(force_refresh=True)
         self.assertEqual(self.mock_thermostat.get_device_data.call_count, 2)
 
-    @patch("thermostatsupervisor.nest.util.log_msg")
+    @patch("src.nest.util.log_msg")
     def test_refresh_zone_info_logging_simple(self, mock_log):
         """Test that refresh_zone_info logs cache operations when verbose."""
         # Setup proper device access for constructor
@@ -100,7 +100,7 @@ class NestSpamMitigationTest(unittest.TestCase):
 
         # Create zone instance with verbose logging
         with patch(
-            "thermostatsupervisor.nest.nest.Device.filter_for_trait",
+            "src.nest.nest.Device.filter_for_trait",
             return_value=self.mock_thermostat.devices,
         ):
             zone = nest.ThermostatZone(self.mock_thermostat, verbose=True)
@@ -134,7 +134,7 @@ class NestSpamMitigationTest(unittest.TestCase):
 
         # Create zone instance
         with patch(
-            "thermostatsupervisor.nest.nest.Device.filter_for_trait",
+            "src.nest.nest.Device.filter_for_trait",
             return_value=self.mock_thermostat.devices,
         ):
             zone = nest.ThermostatZone(self.mock_thermostat, verbose=False)
@@ -142,7 +142,7 @@ class NestSpamMitigationTest(unittest.TestCase):
         # Verify fetch_interval_sec matches config
         self.assertEqual(zone.fetch_interval_sec, nest_config.cache_period_sec)
 
-    @patch("thermostatsupervisor.nest.util.execute_with_extended_retries")
+    @patch("src.nest.util.execute_with_extended_retries")
     def test_get_metadata_retry_mechanism_simple(self, mock_retry):
         """Test that get_metadata uses retry mechanism when requested."""
         # Mock the retry function to return test data
@@ -174,8 +174,8 @@ class NestSpamMitigationTest(unittest.TestCase):
         self.assertIn(ConnectionError, exception_types)
         self.assertIn(TimeoutError, exception_types)
 
-    @patch("thermostatsupervisor.nest.time.time")
-    @patch("thermostatsupervisor.nest.util.log_msg")
+    @patch("src.nest.time.time")
+    @patch("src.nest.util.log_msg")
     def test_cached_data_message_reduction(self, mock_log, mock_time):
         """Test that cached data messages are only printed when refresh time changes."""
         # Setup time progression for repeated cache access with similar refresh times
@@ -194,10 +194,10 @@ class NestSpamMitigationTest(unittest.TestCase):
 
         # Create zone instance with verbose=True
         with patch(
-            "thermostatsupervisor.nest.nest.Device.filter_for_trait",
+            "src.nest.nest.Device.filter_for_trait",
             return_value=self.mock_thermostat.devices,
         ), patch(
-            "thermostatsupervisor.thermostat_common.time.time",
+            "src.thermostat_common.time.time",
             return_value=start_time - 120,
         ):
             zone = nest.ThermostatZone(self.mock_thermostat, verbose=True)

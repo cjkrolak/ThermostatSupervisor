@@ -9,9 +9,9 @@ import os
 import unittest
 from unittest.mock import patch
 
-from thermostatsupervisor import sht31
-from thermostatsupervisor import sht31_config
-from thermostatsupervisor import utilities as util
+from src import sht31
+from src import sht31_config
+from src import utilities as util
 from tests import unit_test_common as utc
 
 
@@ -30,7 +30,7 @@ class TestSHT31MissingEnvVar(utc.UnitTest):
         os.chdir(self.original_cwd)
         super().tearDown()
 
-    @patch("thermostatsupervisor.environment._read_supervisor_env_file")
+    @patch("src.environment._read_supervisor_env_file")
     @patch.dict(os.environ, {}, clear=False)
     @patch.object(sht31.ThermostatClass, "spawn_flask_server")
     def test_missing_env_var_fallback_in_unit_test_mode(
@@ -68,7 +68,7 @@ class TestSHT31MissingEnvVar(utc.UnitTest):
 
             # Debug information to help diagnose failures
             if tstat.ip_address != "127.0.0.1":
-                from thermostatsupervisor import environment as env
+                from src import environment as env
                 env_result = env.get_env_variable('SHT31_REMOTE_IP_ADDRESS_1')
                 self.fail(
                     f"Expected IP address '127.0.0.1' but got "

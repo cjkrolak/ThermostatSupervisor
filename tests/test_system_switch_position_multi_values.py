@@ -10,8 +10,8 @@ This test module verifies that system_switch_position can handle:
 import unittest
 from unittest.mock import MagicMock
 
-from thermostatsupervisor import thermostat_common as tc
-from thermostatsupervisor import utilities as util
+from src import thermostat_common as tc
+from src import utilities as util
 from tests import unit_test_common as utc
 
 

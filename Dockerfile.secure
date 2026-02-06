@@ -83,4 +83,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
 
 # Security: Use ENTRYPOINT + CMD pattern for immutable execution
 ENTRYPOINT ["python3", "-m"]
-CMD ["thermostatsupervisor.supervise", "emulator", "0", "30", "86400", "3", "OFF_MODE", "4"]
+CMD ["src.supervise", "emulator", "0", "30", "86400", "3", "OFF_MODE", "4"]

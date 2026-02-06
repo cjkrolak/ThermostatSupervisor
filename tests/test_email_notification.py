@@ -9,9 +9,9 @@ import unittest
 from unittest import mock
 
 # local libraries
-from thermostatsupervisor import email_notification as eml
-from thermostatsupervisor import environment as env
-from thermostatsupervisor import utilities as util
+from src import email_notification as eml
+from src import environment as env
+from src import utilities as util
 from tests import unit_test_common as utc
 
 
@@ -143,7 +143,7 @@ class Test(utc.UnitTest):
                     with mock.patch.dict(
                         os.environ, modified_environ, clear=True
                     ), mock.patch(
-                        "thermostatsupervisor.environment._read_supervisor_env_file",
+                        "src.environment._read_supervisor_env_file",
                         return_value={}
                     ):
                         return_status, return_status_msg = eml.send_email_alert(

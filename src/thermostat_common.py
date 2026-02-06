@@ -12,10 +12,10 @@ import traceback
 from typing import Union
 
 # local imports
-from thermostatsupervisor import email_notification as eml
-from thermostatsupervisor import thermostat_api as api
-from thermostatsupervisor import utilities as util
-from thermostatsupervisor import weather
+from src import email_notification as eml
+from src import thermostat_api as api
+from src import utilities as util
+from src import weather
 
 
 DEGREE_SIGN = "\N{DEGREE SIGN}"

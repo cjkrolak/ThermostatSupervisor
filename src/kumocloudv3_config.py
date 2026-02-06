@@ -1,14 +1,19 @@
 """
-kumolocal config file.
+kumocloudv3 config file.
 """
 
-from thermostatsupervisor import kumo_common_zones
+from src import kumo_common_zones
 
-ALIAS = "kumolocal"
+ALIAS = "kumocloudv3"
 
 # thermostat zones
-MAIN_LEVEL = 0  # zone 0
-BASEMENT = 1  # zone 1
+# NOTE: Zone assignments are dynamically updated from v3 API at runtime
+# The values below are defaults/fallbacks in case dynamic assignment fails
+# v3 API zone assignments are not static - sometimes zone 0 is MAIN_LIVING,
+# other times zone 1 is MAIN_LIVING, depending on the actual installation
+MAIN_LIVING = 0  # zone 0 (default, updated dynamically at runtime)
+KITCHEN = 1  # zone 1 (default, updated dynamically at runtime)
+BASEMENT = 2  # zone 2 (default, updated dynamically at runtime)
 
 # constants
 MAX_HEAT_SETPOINT = 68
@@ -22,9 +27,9 @@ env_variables = {
 
 # supported thermostat configs
 supported_configs = {
-    "module": "kumolocal",
-    "type": 5,
-    "zones": [MAIN_LEVEL, BASEMENT],
+    "module": "kumocloudv3",
+    "type": 4,
+    "zones": [MAIN_LIVING, KITCHEN, BASEMENT],
     "modes": [
         "OFF_MODE",
         "HEAT_MODE",
@@ -37,23 +42,23 @@ supported_configs = {
 }
 
 # metadata dict
-# 'zone_name' is a placeholder, used at Thermostat class level.
-# 'zone_name' is updated by device memory via Zone.get_zone_name()
-# 'host_name' is used for DNS lookup to determine if device
-# 'ip_address' is just for reference.
-# 'local_net_available' is set by local network detection
+# 'zone_name' is updated by Zone.get_zone_name()
+# 'host_name' is just for reference
 metadata = {
-    MAIN_LEVEL: {
-        "ip_address": "192.168.86.229",  # local IP, for ref only.
+    MAIN_LIVING: {
         "zone_name": kumo_common_zones.ZONE_NAME_MAIN_LEVEL,
-        "host_name": "tbd",  # used for DNS lookup
-        "local_net_available": None,  # updated by local network detection
+        "host_name": "tbd",
+        "serial_number": None,
+    },
+    KITCHEN: {
+        "zone_name": kumo_common_zones.ZONE_NAME_KITCHEN,
+        "host_name": "tbd",
+        "serial_number": None,
     },
     BASEMENT: {
-        "ip_address": "192.168.86.236",  # local IP, for ref only.
         "zone_name": kumo_common_zones.ZONE_NAME_BASEMENT,
-        "host_name": "tbd",  # used for DNS lookup
-        "local_net_available": None,  # updated by local network detection
+        "host_name": "tbd",
+        "serial_number": None,
     },
 }
 
@@ -79,9 +84,9 @@ argv = [
     "supervise.py",  # module
     ALIAS,  # thermostat
     str(default_zone),  # zone
-    "16",  # poll time in sec
-    "356",  # reconnect time in sec
-    "4",  # tolerance
+    "18",  # poll time in sec
+    "358",  # reconnect time in sec
+    "2",  # tolerance
     "OFF_MODE",  # thermostat mode
     "2",  # number of measurements
 ]

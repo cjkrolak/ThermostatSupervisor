@@ -10,7 +10,7 @@ env:
   # Use docker.io for Docker Hub if empty
   REGISTRY: docker.io
   # docker image name
-  IMAGE_NAME: ${{ secrets.DOCKER_USERNAME }}/thermostatsupervisor
+  IMAGE_NAME: ${{ secrets.DOCKER_USERNAME }}/src
 jobs:
   build:
     runs-on: ubuntu-latest

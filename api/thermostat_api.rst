@@ -4,7 +4,7 @@ Thermostat API Module
 The ``thermostat_api`` module provides the core API functionality for ThermostatSupervisor.
 This module handles thermostat type discovery, configuration loading, and user input processing.
 
-.. automodule:: thermostatsupervisor.thermostat_api
+.. automodule:: src.thermostat_api
    :members:
    :undoc-members:
    :show-inheritance:
@@ -15,7 +15,7 @@ Key Functions
 verify_required_env_variables
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. autofunction:: thermostatsupervisor.thermostat_api.verify_required_env_variables
+.. autofunction:: src.thermostat_api.verify_required_env_variables
 
 Verifies that all required environment variables are present for the specified thermostat type.
 This function is critical for ensuring proper thermostat connectivity.
@@ -34,7 +34,7 @@ This function is critical for ensuring proper thermostat connectivity.
 load_hardware_library
 ~~~~~~~~~~~~~~~~~~~~~
 
-.. autofunction:: thermostatsupervisor.thermostat_api.load_hardware_library
+.. autofunction:: src.thermostat_api.load_hardware_library
 
 Dynamically loads the appropriate hardware library for the specified thermostat type.
 
@@ -47,7 +47,7 @@ Dynamically loads the appropriate hardware library for the specified thermostat 
 load_user_inputs
 ~~~~~~~~~~~~~~~~
 
-.. autofunction:: thermostatsupervisor.thermostat_api.load_user_inputs
+.. autofunction:: src.thermostat_api.load_user_inputs
 
 Loads and processes user input configurations for the specified thermostat.
 
@@ -60,7 +60,7 @@ Classes
 UserInputs
 ~~~~~~~~~~
 
-.. autoclass:: thermostatsupervisor.thermostat_api.UserInputs
+.. autoclass:: src.thermostat_api.UserInputs
    :members:
    :undoc-members:
    :show-inheritance:

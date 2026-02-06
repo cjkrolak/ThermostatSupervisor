@@ -24,13 +24,13 @@ try:
     print('DEBUG: Starting Flask server initialization...', flush=True)
 
     # Import utilities first and set unit test mode
-    from thermostatsupervisor import utilities as util
+    from src import utilities as util
     util.unit_test_mode = True
     print('DEBUG: Set util.unit_test_mode = True', flush=True)
 
     # Patch the environment check to bypass Raspberry Pi detection in test mode
     # We need to patch it in sys.modules so it persists through importlib.reload()
-    from thermostatsupervisor import environment as env
+    from src import environment as env
 
     def mock_is_raspberrypi_environment(verbose=False):
         """Mock version that always returns True for unit testing."""
@@ -49,7 +49,7 @@ try:
     env.is_raspberrypi_environment = mock_is_raspberrypi_environment
 
     # Also patch in sys.modules to ensure it persists through reloads
-    env_mod = sys.modules['thermostatsupervisor.environment']
+    env_mod = sys.modules['src.environment']
     env_mod.is_raspberrypi_environment = mock_is_raspberrypi_environment
     msg = 'DEBUG: Patched env.is_raspberrypi_environment in module and sys.modules'
     print(msg, flush=True)
@@ -61,8 +61,8 @@ try:
 
     # Import sht31 to spawn Flask server in unit test mode
     print('DEBUG: About to import sht31 module...', flush=True)
-    from thermostatsupervisor import sht31
-    from thermostatsupervisor import sht31_config
+    from src import sht31
+    from src import sht31_config
     print('DEBUG: Successfully imported sht31 modules', flush=True)
 
     print('Spawning SHT31 Flask server in unit test mode...', flush=True)
@@ -73,7 +73,7 @@ try:
     print(f'DEBUG: Second test call returned: {test_result_2}', flush=True)
 
     # Also verify it's still in sys.modules
-    from thermostatsupervisor import environment as env2
+    from src import environment as env2
     test_result_3 = env2.is_raspberrypi_environment(verbose=True)
     print(f'DEBUG: Test via reimport returned: {test_result_3}', flush=True)
 

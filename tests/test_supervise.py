@@ -6,10 +6,10 @@ Unit test module for supervise.py.
 import unittest
 
 # local imports
-from thermostatsupervisor import emulator_config
-from thermostatsupervisor import environment as env
-from thermostatsupervisor import supervise as sup
-from thermostatsupervisor import utilities as util
+from src import emulator_config
+from src import environment as env
+from src import supervise as sup
+from src import utilities as util
 from tests import unit_test_common as utc
 
 

@@ -10,10 +10,10 @@ import argparse
 import sys
 
 # local imports
-from thermostatsupervisor import environment as env
-from thermostatsupervisor import site_config
-from thermostatsupervisor import thermostat_site as ts
-from thermostatsupervisor import utilities as util
+from src import environment as env
+from src import site_config
+from src import thermostat_site as ts
+from src import utilities as util
 
 
 def parse_arguments(argv_list=None):
@@ -32,19 +32,19 @@ def parse_arguments(argv_list=None):
         epilog="""
 Examples:
   # Use default site configuration
-  python -m thermostatsupervisor.site_supervise
+  python -m src.site_supervise
 
   # Use custom site configuration file
-  python -m thermostatsupervisor.site_supervise -c mysite.json
+  python -m src.site_supervise -c mysite.json
 
   # Enable threading (default)
-  python -m thermostatsupervisor.site_supervise --threading
+  python -m src.site_supervise --threading
 
   # Disable threading for debugging
-  python -m thermostatsupervisor.site_supervise --no-threading
+  python -m src.site_supervise --no-threading
 
   # Set custom measurement count for all thermostats
-  python -m thermostatsupervisor.site_supervise -n 5
+  python -m src.site_supervise -n 5
         """,
     )
 

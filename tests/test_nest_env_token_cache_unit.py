@@ -14,7 +14,7 @@ import unittest
 from unittest.mock import patch
 
 # local imports
-from thermostatsupervisor import nest
+from src import nest
 from tests import unit_test_common as utc
 
 

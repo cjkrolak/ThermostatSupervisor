@@ -2,7 +2,7 @@
 kumocloud config file.
 """
 
-from thermostatsupervisor import kumo_common_zones
+from src import kumo_common_zones
 
 ALIAS = "kumocloud"
 

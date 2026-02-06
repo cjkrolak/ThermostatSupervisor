@@ -8,7 +8,7 @@ The SSL certificate download and import system allows automatic downloading of s
 
 ## Components
 
-### 1. SSL Certificate Module (`thermostatsupervisor/ssl_certificate.py`)
+### 1. SSL Certificate Module (`src/ssl_certificate.py`)
 
 Extended functionality includes:
 
@@ -73,7 +73,7 @@ Automatically detects HTTPS/SSL configuration and imports certificates before ru
 ### Manual Certificate Download
 
 ```python
-from thermostatsupervisor.ssl_certificate import download_ssl_certificate, import_ssl_certificate_to_system
+from src.ssl_certificate import download_ssl_certificate, import_ssl_certificate_to_system
 
 # Download certificate
 cert_path = download_ssl_certificate("myserver.com", 443)
@@ -85,7 +85,7 @@ success = import_ssl_certificate_to_system(cert_path)
 ### Batch Processing
 
 ```python
-from thermostatsupervisor.ssl_certificate import download_and_import_ssl_certificates
+from src.ssl_certificate import download_and_import_ssl_certificates
 
 servers = [
     ("server1.com", 443),

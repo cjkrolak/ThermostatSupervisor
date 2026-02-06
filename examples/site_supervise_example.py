@@ -7,8 +7,8 @@ multiple thermostats at a single site simultaneously.
 """
 
 # local imports
-from thermostatsupervisor import thermostat_site as ts
-from thermostatsupervisor import utilities as util
+from src import thermostat_site as ts
+from src import utilities as util
 
 
 def example_basic_usage():

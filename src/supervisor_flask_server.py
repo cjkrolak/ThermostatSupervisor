@@ -17,12 +17,12 @@ from flask_limiter.util import get_remote_address
 from flask_wtf.csrf import CSRFProtect
 
 # local imports
-from thermostatsupervisor import environment as env
-from thermostatsupervisor import ssl_certificate
-from thermostatsupervisor import flask_generic as flg
-from thermostatsupervisor import supervise as sup
-from thermostatsupervisor import thermostat_api as api
-from thermostatsupervisor import utilities as util
+from src import environment as env
+from src import ssl_certificate
+from src import flask_generic as flg
+from src import supervise as sup
+from src import thermostat_api as api
+from src import utilities as util
 
 # flask server
 if env.is_windows_environment():
@@ -127,7 +127,7 @@ def index():
         executable = "python"
         dont_buffer = "-u"  # option to not buffer results
         run_module = "-m"  # option to reference package
-        script = "thermostatsupervisor.supervise"
+        script = "src.supervise"
         if argv:
             # argv list override for unit testing
             arg_list = [executable, dont_buffer, run_module, script] + argv[1:]

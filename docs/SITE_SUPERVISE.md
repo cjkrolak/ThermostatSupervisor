@@ -19,28 +19,28 @@ The easiest way to use site supervision is through the command-line interface:
 
 ```bash
 # Use default site configuration
-python -m thermostatsupervisor.site_supervise
+python -m src.site_supervise
 
 # Display zones without running supervision
-python -m thermostatsupervisor.site_supervise --display-zones
+python -m src.site_supervise --display-zones
 
 # Display current temperatures only
-python -m thermostatsupervisor.site_supervise --display-temps
+python -m src.site_supervise --display-temps
 
 # Use custom configuration file
-python -m thermostatsupervisor.site_supervise -c mysite.json
+python -m src.site_supervise -c mysite.json
 
 # Override measurement count for all thermostats
-python -m thermostatsupervisor.site_supervise -n 10
+python -m src.site_supervise -n 10
 
 # Disable multi-threading (for debugging)
-python -m thermostatsupervisor.site_supervise --no-threading
+python -m src.site_supervise --no-threading
 
 # Run with quiet mode (less verbose)
-python -m thermostatsupervisor.site_supervise -q
+python -m src.site_supervise -q
 
 # Get help and see all options
-python -m thermostatsupervisor.site_supervise --help
+python -m src.site_supervise --help
 ```
 
 **Command-Line Options:**
@@ -59,7 +59,7 @@ python -m thermostatsupervisor.site_supervise --help
 For programmatic control, use the Python API directly:
 
 ```python
-from thermostatsupervisor import thermostat_site as ts
+from src import thermostat_site as ts
 
 # Use default configuration
 site = ts.ThermostatSite()
@@ -79,7 +79,7 @@ results = site.supervise_all_zones(use_threading=True)
 Create a JSON configuration file for your site:
 
 ```python
-from thermostatsupervisor import thermostat_site as ts
+from src import thermostat_site as ts
 
 # Create custom site configuration
 config = {
@@ -143,14 +143,14 @@ Create a JSON file (e.g., `mysite.json`) with your site configuration:
 Then use it from the command line:
 
 ```bash
-python -m thermostatsupervisor.site_supervise -c mysite.json
+python -m src.site_supervise -c mysite.json
 ```
 
 Or load it programmatically:
 
 ```python
 import json
-from thermostatsupervisor import thermostat_site as ts
+from src import thermostat_site as ts
 
 with open('mysite.json', 'r') as f:
     config = json.load(f)
@@ -481,7 +481,7 @@ Possible future enhancements to the site supervise feature:
 
 ### Common Issues
 
-**Issue**: `ModuleNotFoundError: No module named 'thermostatsupervisor'`
+**Issue**: `ModuleNotFoundError: No module named 'src'`
 **Solution**: Set PYTHONPATH before running:
 ```bash
 PYTHONPATH=/path/to/ThermostatSupervisor python your_script.py

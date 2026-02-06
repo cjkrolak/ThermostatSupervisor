@@ -43,7 +43,7 @@ Key Features
    :maxdepth: 2
    :caption: Module Reference:
    
-   docs/thermostatsupervisor
+   docs/src
 
 Indices and tables
 ==================
