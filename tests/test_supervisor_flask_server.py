@@ -17,11 +17,6 @@ import requests
 # local imports
 from src import environment as env
 from src import flask_generic as flg
-
-# thermostat_api is imported but not used to avoid a circular import
-from src import (  # noqa F401, pylint: disable=unused-import.
-    thermostat_api as api,
-)
 from src import supervisor_flask_server as sfs
 from src import utilities as util
 from tests import unit_test_common as utc

@@ -1,4 +1,4 @@
-""""
+"""
 Gunicorn configuration file for supervisor Flask server
 Usage: gunicorn --config gunicorn.supervisor.conf.py \\
                 src.supervisor_wsgi:application

@@ -114,7 +114,7 @@ runtime parameters can be specified to override defaults either via single dash 
 * argv[4] or '-c'= re-connect time in seconds (default is thermostat-specific)
 * argv[5] or '-d'= tolerance from setpoint allowed in °F (default is 2°F)
 * argv[6] or '-m'= target thermostat mode (e.g. OFF_MODE, COOL_MODE, HEAT_MODE, DRY_MODE, etc.), not yet fully functional.
-* argv[7] or '-n'= number of measurements (default is infinitity).<br/><br/>
+* argv[7] or '-n'= number of measurements (default is infinity).<br/><br/>
 command line usage (unnamed):  "*python -m src.supervise \<thermostat type\> \<zone\> \<poll time\> \<connection time\> \<tolerance\> \<target mode\> \<measurements\>*".<br/>
 command line usage (named):  "*python -m src.supervise -t \<thermostat type\> -z \<zone\> -p \<poll time\> -c \<connection time\> -d \<tolerance\> -m \<target mode\> -n \<measurements\>*"
 

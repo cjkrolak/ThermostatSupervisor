@@ -18,7 +18,7 @@ import unittest
 from unittest.mock import MagicMock, patch
 import unittest.mock
 
-# thrird-party modules
+# third-party modules
 
 # local modules
 from src.flask_generic import (
