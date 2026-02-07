@@ -513,34 +513,34 @@ def get_key_from_value(input_dict, val):
     raise KeyError(f"key not found in dict '{input_dict}' with value='{val}'")
 
 
-def c_to_f(tempc) -> float:
+def c_to_f(tempc) -> float | None:
     """
     Convert from Celsius to Fahrenheit.
 
     inputs:
-        tempc(int, float): temp in °C.
+        tempc(int | float | None): temp in °C.
     returns:
-        (float): temp in °F.
+        (float | None): temp in °F, or None if input is None.
     """
     if isinstance(tempc, type(None)):
-        return 0.0  # return default instead of None
+        return None  # pass through None
     elif isinstance(tempc, (int, float)):
         return tempc * 9.0 / 5 + 32
     else:
         raise TypeError(f"raw value '{tempc}' is not an int or float")
 
 
-def f_to_c(tempf) -> float:
+def f_to_c(tempf) -> float | None:
     """
     Convert from Fahrenheit to Celsius.
 
     inputs:
-        tempc(int, float): temp in °F.
+        tempf(int | float | None): temp in °F.
     returns:
-        (float): temp in °C.
+        (float | None): temp in °C, or None if input is None.
     """
     if isinstance(tempf, type(None)):
-        return 0.0  # return default instead of None
+        return None  # pass through None
     elif isinstance(tempf, (int, float)):
         return (tempf - 32) * 5 / 9.0
     else:

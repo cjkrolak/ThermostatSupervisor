@@ -72,6 +72,9 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):  # type: ignore[misc]
             zone(str):  zone of thermostat.
             verbose(bool): debug flag.
         """
+        # Initialize parent classes
+        tc.ThermostatCommon.__init__(self)
+
         # Blink server auth credentials from env vars
         self.BL_UNAME_KEY = "BLINK_USERNAME"
         self.BL_PASSWORD_KEY = "BLINK_PASSWORD"
