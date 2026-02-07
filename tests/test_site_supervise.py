@@ -40,6 +40,7 @@ class TestParseArguments(utc.UnitTest):
         self.assertTrue(args.verbose)
         self.assertFalse(args.display_zones)
         self.assertFalse(args.display_temps)
+        self.assertFalse(args.debug)
 
     def test_parse_arguments_with_config(self):
         """Verify config file argument parsing."""
@@ -95,6 +96,16 @@ class TestParseArguments(utc.UnitTest):
         """Verify display temps argument parsing."""
         args = ss.parse_arguments(["--display-temps"])
         self.assertTrue(args.display_temps)
+
+    def test_parse_arguments_debug(self):
+        """Verify parse_arguments with debug option."""
+        args = ss.parse_arguments(["--debug"])
+        self.assertTrue(args.debug)
+
+    def test_parse_arguments_debug_default(self):
+        """Verify debug defaults to False."""
+        args = ss.parse_arguments([])
+        self.assertFalse(args.debug)
 
     def test_parse_arguments_combined_options(self):
         """Verify combined argument parsing."""
@@ -374,6 +385,43 @@ class TestExecSiteSupervise(utc.UnitTest):
         self.assertTrue(result)
         # Verify debug mode was set
         self.assertTrue(util.log_msg.debug)
+
+    def test_exec_site_supervise_with_debug_flag(self):
+        """Verify --debug flag enables util.log_msg.debug via CLI flow."""
+        # Start with debug disabled
+        util.log_msg.debug = False
+
+        # Execute with --debug flag in argv_list
+        result = ss.exec_site_supervise(
+            argv_list=["--debug", "-n", "1"]
+        )
+        self.assertTrue(result)
+        # Verify debug mode was enabled from --debug flag
+        self.assertTrue(util.log_msg.debug)
+
+    def test_exec_site_supervise_without_debug_flag(self):
+        """Verify default behavior keeps debug disabled."""
+        # Start with debug disabled
+        util.log_msg.debug = False
+
+        # Execute without --debug flag
+        result = ss.exec_site_supervise(
+            argv_list=["-n", "1"]
+        )
+        self.assertTrue(result)
+        # Verify debug mode remains disabled
+        self.assertFalse(util.log_msg.debug)
+
+    def test_exec_site_supervise_explicit_debug_overrides_flag(self):
+        """Verify explicit debug parameter overrides --debug flag."""
+        # Execute with --debug flag but explicit debug=False
+        result = ss.exec_site_supervise(
+            debug=False,
+            argv_list=["--debug", "-n", "1"]
+        )
+        self.assertTrue(result)
+        # Verify explicit debug=False overrides --debug flag
+        self.assertFalse(util.log_msg.debug)
 
     def test_exec_site_supervise_with_arguments(self):
         """Verify exec_site_supervise with custom arguments."""
