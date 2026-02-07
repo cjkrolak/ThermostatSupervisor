@@ -188,16 +188,14 @@ class TestSiteSupervisor(utc.UnitTest):
         })()
 
     def test_site_supervisor_with_default_config(self):
-        """Verify site_supervisor with default configuration."""
+        """Verify site_supervisor with default configuration.
+
+        Tests that site supervision completes successfully with default
+        settings. If an exception is raised, the test will fail.
+        """
         args = self.default_args
         args.measurements = 1
-        # This should run without raising any exceptions
-        try:
-            ss.site_supervisor(args)
-            # If we reach here, the test passed
-            self.assertTrue(True)
-        except Exception as e:
-            self.fail(f"site_supervisor raised exception: {e}")
+        ss.site_supervisor(args)
 
     def test_site_supervisor_with_custom_config_file(self):
         """Verify site_supervisor with custom config file."""
@@ -228,17 +226,15 @@ class TestSiteSupervisor(utc.UnitTest):
             os.unlink(temp_file)
 
     def test_site_supervisor_with_measurement_override(self):
-        """Verify measurement count override."""
+        """Verify measurement count override.
+
+        Tests that the measurement override is properly processed
+        (lines 175-181 of site_supervise.py). If an exception is raised,
+        the test will fail.
+        """
         args = self.default_args
         args.measurements = 1
-        # Verify the function completes without errors
-        # The override is applied in lines 175-181 of site_supervise.py
-        try:
-            ss.site_supervisor(args)
-            # If we reach here, the override was processed correctly
-            self.assertTrue(True)
-        except Exception as e:
-            self.fail(f"site_supervisor raised exception: {e}")
+        ss.site_supervisor(args)
 
     def test_site_supervisor_with_threading(self):
         """Verify site_supervisor with threading enabled."""
@@ -262,17 +258,15 @@ class TestSiteSupervisor(utc.UnitTest):
         ss.site_supervisor(args)
 
     def test_site_supervisor_with_results(self):
-        """Verify site_supervisor processes results correctly."""
+        """Verify site_supervisor processes results correctly.
+
+        Tests that full supervision execution completes and results are
+        displayed (lines 214-239 of site_supervise.py). If an exception
+        is raised, the test will fail.
+        """
         args = self.default_args
         args.measurements = 1
-        # This should execute full supervision and display results
-        # Results processing happens in lines 214-239 of site_supervise.py
-        try:
-            ss.site_supervisor(args)
-            # If we reach here, results were processed correctly
-            self.assertTrue(True)
-        except Exception as e:
-            self.fail(f"site_supervisor raised exception: {e}")
+        ss.site_supervisor(args)
 
     def test_site_supervisor_with_errors(self):
         """Verify site_supervisor handles errors in results."""
