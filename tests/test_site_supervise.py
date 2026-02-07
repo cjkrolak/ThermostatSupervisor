@@ -19,6 +19,18 @@ from tests import unit_test_common as utc
 class TestParseArguments(utc.UnitTest):
     """Test parse_arguments function."""
 
+    def setUp(self):
+        """Set up test fixtures."""
+        super().setUp()
+        # Set test-specific log file
+        self.original_log_file = util.log_msg.file_name
+        util.log_msg.file_name = "unit_test.txt"
+
+    def tearDown(self):
+        """Clean up after tests."""
+        util.log_msg.file_name = self.original_log_file
+        super().tearDown()
+
     def test_parse_arguments_defaults(self):
         """Verify default argument parsing."""
         args = ss.parse_arguments([])
@@ -104,6 +116,18 @@ class TestParseArguments(utc.UnitTest):
 class TestLoadSiteConfigFromFile(utc.UnitTest):
     """Test load_site_config_from_file function."""
 
+    def setUp(self):
+        """Set up test fixtures."""
+        super().setUp()
+        # Set test-specific log file
+        self.original_log_file = util.log_msg.file_name
+        util.log_msg.file_name = "unit_test.txt"
+
+    def tearDown(self):
+        """Clean up after tests."""
+        util.log_msg.file_name = self.original_log_file
+        super().tearDown()
+
     def test_load_valid_config(self):
         """Verify loading a valid JSON configuration file."""
         # Create a temporary JSON config file
@@ -177,6 +201,9 @@ class TestSiteSupervisor(utc.UnitTest):
     def setUp(self):
         """Set up test fixtures."""
         super().setUp()
+        # Set test-specific log file
+        self.original_log_file = util.log_msg.file_name
+        util.log_msg.file_name = "unit_test.txt"
         # Create a minimal args namespace
         self.default_args = type('Args', (), {
             'config': None,
@@ -186,6 +213,11 @@ class TestSiteSupervisor(utc.UnitTest):
             'display_zones': False,
             'display_temps': False,
         })()
+
+    def tearDown(self):
+        """Clean up after tests."""
+        util.log_msg.file_name = self.original_log_file
+        super().tearDown()
 
     def test_site_supervisor_with_default_config(self):
         """Verify site_supervisor with default configuration.
@@ -309,14 +341,36 @@ class TestSiteSupervisor(utc.UnitTest):
 class TestExecSiteSupervise(utc.UnitTest):
     """Test exec_site_supervise function."""
 
+    def setUp(self):
+        """Set up test fixtures."""
+        super().setUp()
+        # Save current log file and debug mode
+        self.original_log_file = util.log_msg.file_name
+        self.original_debug = getattr(util.log_msg, 'debug', False)
+        # Set test-specific log file
+        util.log_msg.file_name = "unit_test.txt"
+
+    def tearDown(self):
+        """Clean up after tests."""
+        # Restore original log file and debug mode
+        util.log_msg.file_name = self.original_log_file
+        util.log_msg.debug = self.original_debug
+        super().tearDown()
+
     def test_exec_site_supervise_default(self):
         """Verify exec_site_supervise with defaults."""
-        result = ss.exec_site_supervise(debug=False, argv_list=[])
+        result = ss.exec_site_supervise(
+            debug=False,
+            argv_list=["-n", "1"]
+        )
         self.assertTrue(result)
 
     def test_exec_site_supervise_with_debug(self):
         """Verify exec_site_supervise with debug mode."""
-        result = ss.exec_site_supervise(debug=True, argv_list=[])
+        result = ss.exec_site_supervise(
+            debug=True,
+            argv_list=["-n", "1"]
+        )
         self.assertTrue(result)
         # Verify debug mode was set
         self.assertTrue(util.log_msg.debug)
