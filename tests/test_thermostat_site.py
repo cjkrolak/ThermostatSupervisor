@@ -284,6 +284,51 @@ class TestThermostatSite(utc.UnitTest):
         self.assertIn("thermostats", config)
         self.assertIsInstance(config["thermostats"], list)
 
+    def test_supervise_all_zones_keyboard_interrupt_sequential(self):
+        """Verify KeyboardInterrupt is propagated in sequential mode."""
+        site = ts.ThermostatSite(
+            site_config_dict=self.test_site_config,
+            verbose=False
+        )
+        # Mock _supervise_single_thermostat to raise KeyboardInterrupt
+        original_method = site._supervise_single_thermostat
+
+        def mock_supervise(*args, **kwargs):
+            raise KeyboardInterrupt("User interrupted")
+
+        site._supervise_single_thermostat = mock_supervise
+        # Verify KeyboardInterrupt is raised
+        with self.assertRaises(KeyboardInterrupt):
+            site.supervise_all_zones(
+                measurement_count=1,
+                use_threading=False
+            )
+        # Restore original method
+        site._supervise_single_thermostat = original_method
+
+    def test_supervise_all_zones_keyboard_interrupt_threaded(self):
+        """Verify KeyboardInterrupt is handled in threaded mode."""
+        site = ts.ThermostatSite(
+            site_config_dict=self.test_site_config,
+            verbose=False
+        )
+        # Mock thread join to raise KeyboardInterrupt
+        import threading
+        original_join = threading.Thread.join
+
+        def mock_join(*args, **kwargs):
+            raise KeyboardInterrupt("User interrupted")
+
+        threading.Thread.join = mock_join
+        # Verify KeyboardInterrupt is raised
+        with self.assertRaises(KeyboardInterrupt):
+            site.supervise_all_zones(
+                measurement_count=1,
+                use_threading=True
+            )
+        # Restore original method
+        threading.Thread.join = original_join
+
 
 if __name__ == "__main__":
     util.log_msg.debug = True
