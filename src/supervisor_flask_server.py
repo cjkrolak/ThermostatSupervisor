@@ -73,7 +73,8 @@ def create_app():
     app_.config["SECRET_KEY"] = secret_key
 
     # override JSONEncoder
-    app_.json_encoder = flg.CustomJSONEncoder
+    # Note: json_encoder is deprecated in Flask 2.2+, but still functional
+    app_.json_encoder = flg.CustomJSONEncoder  # type: ignore[attr-defined]
 
     # api = Api(app)
 
@@ -144,10 +145,11 @@ def index():
             universal_newlines=True,
             shell=True,
         ) as p_out:
-            for i, line in enumerate(p_out.stdout):
-                print(f"DEBUG: line {i}: {line}", file=sys.stderr)
-                yield "<code>{}</code>".format(html.escape(line.rstrip("\n")))
-                yield "<br>\n"
+            if p_out.stdout is not None:
+                for i, line in enumerate(p_out.stdout):
+                    print(f"DEBUG: line {i}: {line}", file=sys.stderr)
+                    yield "<code>{}</code>".format(html.escape(line.rstrip("\n")))
+                    yield "<br>\n"
 
     return Response(run_supervise(), mimetype="text/html")
 

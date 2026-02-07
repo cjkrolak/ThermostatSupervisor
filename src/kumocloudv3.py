@@ -1419,7 +1419,10 @@ class ThermostatZone(tc.ThermostatCommonZone):
         returns:
             (int): eco mode, 1=enabled, 0=disabled.
         """
-        return int(self.get_parameter("energy_save", "reportedInitialSettings"))
+        eco_value = self.get_parameter("energy_save", "reportedInitialSettings")
+        if eco_value is None or isinstance(eco_value, dict):
+            return 0
+        return int(eco_value)
 
     def is_off_mode(self) -> int:
         """
@@ -1485,7 +1488,10 @@ class ThermostatZone(tc.ThermostatCommonZone):
     def is_power_on(self) -> int:
         """Return 1 if power relay is active, else 0."""
         self.refresh_zone_info()
-        return int(self.get_parameter("power", "reportedCondition", default_val=0))
+        power_value = self.get_parameter("power", "reportedCondition", default_val=0)
+        if power_value is None or isinstance(power_value, dict):
+            return 0
+        return int(power_value)
 
     def is_fan_on(self) -> int:
         """Return 1 if fan relay is active, else 0."""
@@ -1517,12 +1523,22 @@ class ThermostatZone(tc.ThermostatCommonZone):
     def is_defrosting(self) -> int:
         """Return 1 if defrosting is active, else 0."""
         self.refresh_zone_info()
-        return int(self.get_parameter("defrost", "status_display", "reportedCondition"))
+        defrost_value = self.get_parameter(
+            "defrost", "status_display", "reportedCondition"
+        )
+        if defrost_value is None or isinstance(defrost_value, dict):
+            return 0
+        return int(defrost_value)
 
     def is_standby(self) -> int:
         """Return 1 if standby is active, else 0."""
         self.refresh_zone_info()
-        return int(self.get_parameter("standby", "status_display", "reportedCondition"))
+        standby_value = self.get_parameter(
+            "standby", "status_display", "reportedCondition"
+        )
+        if standby_value is None or isinstance(standby_value, dict):
+            return 0
+        return int(standby_value)
 
     def get_wifi_strength(self) -> float:  # noqa R0201
         """Return the wifi signal strength in dBm.
@@ -1532,7 +1548,10 @@ class ThermostatZone(tc.ThermostatCommonZone):
         rssi dict can be empty if unit is off.
         """
         self.refresh_zone_info()
-        return float(self.get_parameter("rssi", "rssi", None, util.BOGUS_INT))
+        rssi_value = self.get_parameter("rssi", "rssi", None, util.BOGUS_INT)
+        if rssi_value is None or isinstance(rssi_value, dict):
+            return float(util.BOGUS_INT)
+        return float(rssi_value)
 
     def get_wifi_status(self) -> bool:  # noqa R0201
         """Return the wifi connection status."""
@@ -1663,7 +1682,11 @@ class ThermostatZone(tc.ThermostatCommonZone):
                 return off_mode_value[0]
             return off_mode_value
         else:
-            return self.get_parameter("operation_mode", "reportedCondition")
+            op_mode = self.get_parameter("operation_mode", "reportedCondition")
+            # Return valid value or default to 0
+            if op_mode is None or isinstance(op_mode, dict):
+                return 0
+            return op_mode
 
     def set_heat_setpoint(self, temp: int) -> None:
         """

@@ -88,7 +88,7 @@ def supervisor(thermostat_type, zone_str):
             f"(session:{session_count})...",
             mode=util.BOTH_LOG,
         )
-        Thermostat = mod.ThermostatClass(zone_num)
+        Thermostat = mod.ThermostatClass(zone_num)  # type: ignore[attr-defined]
 
         # dump all meta data
         if debug:
@@ -96,7 +96,7 @@ def supervisor(thermostat_type, zone_str):
             Thermostat.print_all_thermostat_metadata(zone_num)
 
         # get Zone object based on deviceID
-        Zone = mod.ThermostatZone(Thermostat)
+        Zone = mod.ThermostatZone(Thermostat)  # type: ignore[attr-defined]
         util.log_msg(f"zone name={Zone.zone_name}", mode=util.BOTH_LOG, func_name=1)
 
         # display banner and session settings
@@ -126,12 +126,15 @@ def supervisor(thermostat_type, zone_str):
     )
 
     # clean-up sessions and delete packages if necessary
-    if "Thermostat" in locals() and hasattr(Thermostat, "close"):
-        Thermostat.close()
+    if (
+        "Thermostat" in locals()
+        and hasattr(Thermostat, "close")  # type: ignore[possibly-unbound]
+    ):
+        Thermostat.close()  # type: ignore[possibly-unbound]
     if "Zone" in locals():
-        del Zone
+        del Zone  # type: ignore[possibly-unbound]
     if "Thermostat" in locals():
-        del Thermostat
+        del Thermostat  # type: ignore[possibly-unbound]
     if "mod" in locals():
         del mod
 
@@ -146,7 +149,7 @@ def exec_supervise(debug=True, argv_list=None):
     returns:
         (bool): True if complete.
     """
-    util.log_msg.debug = debug  # debug mode set
+    util.log_msg.debug = debug  # type: ignore[attr-defined]
 
     # parse all runtime parameters if necessary
     api.uip = api.UserInputs(argv_list)

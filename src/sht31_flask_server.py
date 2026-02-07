@@ -201,14 +201,16 @@ class Sensors:
             None
         """
         # set address pin on SHT31
-        GPIO.setmode(GPIO.BCM)  # broadcom pin numbering
-        GPIO.setup(addr_pin, GPIO.OUT)  # address pin set as output
-        GPIO.setup(alert_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+        GPIO.setmode(GPIO.BCM)  # type: ignore[attr-defined]
+        GPIO.setup(addr_pin, GPIO.OUT)  # type: ignore[attr-defined]
+        GPIO.setup(  # type: ignore[attr-defined]
+            alert_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP  # type: ignore[attr-defined]
+        )
         # Configure SHT31 address: 0x45 requires ADDR_PIN HIGH, 0x44 uses LOW
         if i2c_addr == 0x45:
-            GPIO.output(addr_pin, GPIO.HIGH)  # Switch to address 0x45
+            GPIO.output(addr_pin, GPIO.HIGH)  # type: ignore[attr-defined]
         else:
-            GPIO.output(addr_pin, GPIO.LOW)  # Use default address 0x44
+            GPIO.output(addr_pin, GPIO.LOW)  # type: ignore[attr-defined]
 
     def send_i2c_cmd(self, bus, i2c_addr, i2c_command):
         """
@@ -440,7 +442,7 @@ class Sensors:
         )
 
         # activate smbus
-        bus = smbus2.SMBus(sht31_config.I2C_BUS)
+        bus = smbus2.SMBus(sht31_config.I2C_BUS)  # type: ignore[attr-defined]
         time.sleep(0.5)
 
         # data structure
@@ -477,7 +479,7 @@ class Sensors:
         finally:
             # close the smbus connection
             bus.close()
-            GPIO.cleanup()  # clean up GPIO
+            GPIO.cleanup()  # type: ignore[attr-defined]
 
     def send_cmd_get_diag(self, i2c_command):
         """
@@ -494,7 +496,7 @@ class Sensors:
         )
 
         # activate smbus
-        bus = smbus2.SMBus(sht31_config.I2C_BUS)
+        bus = smbus2.SMBus(sht31_config.I2C_BUS)  # type: ignore[attr-defined]
         time.sleep(0.5)
 
         try:
@@ -515,7 +517,7 @@ class Sensors:
         finally:
             # close the smbus connection
             bus.close()
-            GPIO.cleanup()  # clean up GPIO
+            GPIO.cleanup()  # type: ignore[attr-defined]
 
     def i2c_recovery(self):
         """
@@ -533,18 +535,18 @@ class Sensors:
 
         try:
             # set SCL pin for output
-            GPIO.setmode(GPIO.BCM)  # broadcom pin numbering
-            GPIO.setup(addr_pin, GPIO.OUT)  # address pin set as output
+            GPIO.setmode(GPIO.BCM)  # type: ignore[attr-defined]
+            GPIO.setup(addr_pin, GPIO.OUT)  # type: ignore[attr-defined]
 
             # set pin high to start
-            GPIO.output(addr_pin, GPIO.HIGH)
+            GPIO.output(addr_pin, GPIO.HIGH)  # type: ignore[attr-defined]
 
             # send clock cycles
             for _ in range(num_clock_cycles):
                 time.sleep(recovery_delay_sec)
-                GPIO.output(addr_pin, GPIO.LOW)
+                GPIO.output(addr_pin, GPIO.LOW)  # type: ignore[attr-defined]
                 time.sleep(recovery_delay_sec)
-                GPIO.output(addr_pin, GPIO.HIGH)
+                GPIO.output(addr_pin, GPIO.HIGH)  # type: ignore[attr-defined]
             # status message
             msg_dict = {}
             msg_dict["action_complete"] = (
@@ -559,7 +561,7 @@ class Sensors:
             )
             return {"i2c_recovery": msg_dict}
         finally:
-            GPIO.cleanup()  # clean up GPIO
+            GPIO.cleanup()  # type: ignore[attr-defined]
 
     def i2c_detect(self, bus=sht31_config.I2C_BUS):
         """
@@ -644,13 +646,13 @@ class Sensors:
 
         try:
             # set GPIO mode and configure pins as inputs
-            GPIO.setmode(GPIO.BCM)  # broadcom pin numbering
-            GPIO.setup(sht31_config.SDA_PIN, GPIO.IN)
-            GPIO.setup(sht31_config.SCL_PIN, GPIO.IN)
+            GPIO.setmode(GPIO.BCM)  # type: ignore[attr-defined]
+            GPIO.setup(sht31_config.SDA_PIN, GPIO.IN)  # type: ignore[attr-defined]
+            GPIO.setup(sht31_config.SCL_PIN, GPIO.IN)  # type: ignore[attr-defined]
 
             # read current pin states
-            sda_level = GPIO.input(sht31_config.SDA_PIN)
-            scl_level = GPIO.input(sht31_config.SCL_PIN)
+            sda_level = GPIO.input(sht31_config.SDA_PIN)  # type: ignore[attr-defined]
+            scl_level = GPIO.input(sht31_config.SCL_PIN)  # type: ignore[attr-defined]
 
             # create response dictionary
             logic_levels = {
@@ -665,7 +667,7 @@ class Sensors:
 
             return {"i2c_logic_levels": logic_levels}
         finally:
-            GPIO.cleanup()  # clean up GPIO
+            GPIO.cleanup()  # type: ignore[attr-defined]
 
     def i2c_bus_health_check(self):
         """
@@ -965,7 +967,7 @@ class Sensors:
         with subprocess.Popen(
             cmd_lst, stdout=subprocess.PIPE, stderr=subprocess.PIPE
         ) as proc:
-            result = proc.stdout.read().decode("utf-8")
+            result = proc.stdout.read().decode("utf-8")  # type: ignore[union-attr]
         return result
 
 
@@ -1131,8 +1133,10 @@ def create_app():
         secret_key = secrets.token_hex(32)
     app_.config["SECRET_KEY"] = secret_key
 
-    # override JSONEncoder
-    app_.json_encoder = flg.CustomJSONEncoder
+    # override JSONEncoder with custom JSON encoder
+    # Note: In Flask 2.2+, use app.json_encoder (deprecated) or app.json.encoder
+    # For compatibility, we add type ignore for the attribute assignment
+    app_.json_encoder = flg.CustomJSONEncoder  # type: ignore[attr-defined]
 
     # add API routes
     api = Api(app_)

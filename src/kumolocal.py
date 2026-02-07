@@ -60,7 +60,9 @@ class SupervisorLogHandler(logging.Handler):
             self.handleError(record)
 
 
-class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
+class ThermostatClass(
+    pykumo.KumoCloudAccount, tc.ThermostatCommon  # type: ignore[name-defined]
+):
     """KumoCloud thermostat functions."""
 
     def __init__(self, zone, verbose=True):
@@ -85,7 +87,9 @@ class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
         # call both parent class __init__
         self.args = [self.kc_uname, self.kc_pwd]
         # kumocloud account init sets the self._url
-        pykumo.KumoCloudAccount.__init__(self, *self.args)
+        pykumo.KumoCloudAccount.__init__(  # type: ignore[attr-defined]
+            self, *self.args
+        )
         tc.ThermostatCommon.__init__(self)
 
         # integrate pykumo logger with supervisor logging system
@@ -468,13 +472,19 @@ class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
 
         def _get_metadata_internal():
             # refresh device status
-            self.device_id.update_status()
+            self.device_id.update_status()  # type: ignore[attr-defined]
             meta_data = {}
-            meta_data["status"] = self.device_id.get_status()
+            meta_data["status"] = (
+                self.device_id.get_status()  # type: ignore[attr-defined]
+            )
             # pylint: disable=protected-access
-            meta_data["sensors"] = self.device_id._sensors
+            meta_data["sensors"] = (
+                self.device_id._sensors  # type: ignore[attr-defined]
+            )
             # pylint: disable=protected-access
-            meta_data["profile"] = self.device_id._profile
+            meta_data["profile"] = (
+                self.device_id._profile  # type: ignore[attr-defined]
+            )
             if parameter is None:
                 return meta_data
             else:

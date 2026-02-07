@@ -33,8 +33,11 @@ else:
 
 # Import blinkpy exceptions for proper error handling
 try:
-    from blinkpy.auth import LoginError, UnauthorizedError
-    from aiohttp.client_exceptions import ClientConnectionError, ContentTypeError
+    from blinkpy.auth import LoginError, UnauthorizedError  # type: ignore
+    from aiohttp.client_exceptions import (  # type: ignore
+        ClientConnectionError,
+        ContentTypeError,
+    )
 except ImportError:
     # Fallback for older versions or missing exceptions
     class LoginError(Exception):
@@ -58,7 +61,7 @@ except ImportError:
         pass
 
 
-class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):
+class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):  # type: ignore[misc]
     """Blink Camera thermostat functions."""
 
     def __init__(self, zone, verbose=True):
@@ -69,6 +72,9 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):
             zone(str):  zone of thermostat.
             verbose(bool): debug flag.
         """
+        # Initialize parent classes
+        tc.ThermostatCommon.__init__(self)
+
         # Blink server auth credentials from env vars
         self.BL_UNAME_KEY = "BLINK_USERNAME"
         self.BL_PASSWORD_KEY = "BLINK_PASSWORD"
@@ -104,7 +110,7 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):
         self.args = None
         self.thermostat_type = None
         self.blink = None
-        if env.get_package_version(blinkpy) >= (0, 22, 0):
+        if env.get_package_version(blinkpy) >= (0, 22, 0):  # type: ignore[operator]
             asyncio.run(self.async_auth_start())
         else:
             self.auth_start()
@@ -197,18 +203,22 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):
 
     def _attempt_authentication(self):
         """Attempt single authentication process."""
-        self.blink = blinkpy.Blink()
+        self.blink = blinkpy.Blink()  # type: ignore[misc]
         if self.blink is None:
             raise RuntimeError(
                 "ERROR: Blink object failed to instantiate "
                 f"for zone {self.zone_number}"
             )
 
-        self.blink.auth = auth.Auth(self.auth_dict, no_prompt=True)
+        self.blink.auth = auth.Auth(  # type: ignore[misc]
+            self.auth_dict, no_prompt=True
+        )
         self.blink.start()
 
         # Send 2FA key with proper error checking
-        auth_success = self.blink.auth.send_auth_key(self.blink, self.bl_2fa)
+        auth_success = self.blink.auth.send_auth_key(  # type: ignore[attr-defined]
+            self.blink, self.bl_2fa
+        )
         if not auth_success:
             raise ValueError(
                 "2FA verification failed. Please check your verification code."
@@ -361,21 +371,26 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):
 
     async def _attempt_async_authentication(self, session):
         """Attempt single async authentication process."""
-        self.blink = blinkpy.Blink(session=session)
+        self.blink = blinkpy.Blink(session=session)  # type: ignore[misc]
         if self.blink is None:
             raise RuntimeError(
                 "ERROR: Blink object failed to instantiate "
                 f"for zone {self.zone_number}"
             )
 
-        self.blink.auth = auth.Auth(self.auth_dict, no_prompt=True, session=session)
+        self.blink.auth = auth.Auth(  # type: ignore[misc]
+            self.auth_dict, no_prompt=True, session=session
+        )
         await self.blink.start()
 
         # Send 2FA key with proper error checking
-        auth_success = await self.blink.auth.send_auth_key(self.blink, self.bl_2fa)
+        # type: ignore on next line for dynamic auth attributes
+        auth_success = await self.blink.auth.send_auth_key(  # type: ignore
+            self.blink, self.bl_2fa
+        )
         if not auth_success:
             raise ValueError(
-                "2FA verification failed. " "Please check your verification code."
+                "2FA verification failed. Please check your verification code."
             )
 
         # Check if setup_post_verify succeeds with retry
@@ -519,19 +534,21 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):
             print("blink camera inventory:")
             print("-" * table_length)
 
-        if not self.blink.cameras:
+        if not self.blink.cameras:  # type: ignore[attr-defined]
             if self.verbose:
                 print("WARNING: No cameras found in blink.cameras")
                 print("This may indicate authentication or setup issues")
             return
 
-        for name, camera in self.blink.cameras.items():
+        for name, camera in self.blink.cameras.items():  # type: ignore[attr-defined]
             if self.verbose:
                 print(name)
                 print(camera.attributes)
             self.camera_metadata[name] = camera.attributes
         if self.verbose:
-            print(f"Total cameras found: {len(self.blink.cameras)}")
+            # type: ignore on next line for dynamic blink attributes
+            total = len(self.blink.cameras)  # type: ignore[attr-defined]
+            print(f"Total cameras found: {total}")
             print("-" * table_length)
 
     def get_all_metadata(self, zone=None, retry=False):
@@ -548,7 +565,9 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):
     def _handle_empty_camera_list_async(self, zone_name):
         """Handle empty camera list for async version of blinkpy."""
         available_cameras = (
-            list(self.blink.cameras.keys()) if self.blink.cameras else []
+            list(self.blink.cameras.keys())  # type: ignore[attr-defined]
+            if self.blink.cameras  # type: ignore[attr-defined]
+            else []
         )
         error_msg = (
             f"Camera list is empty when searching for camera "
@@ -565,7 +584,10 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):
             print(f"Token refresh failed: {str(refresh_error)}")
 
         available_cameras = (
-            list(self.blink.cameras.keys()) if self.blink.cameras else []
+            # type: ignore on next lines for dynamic blink attributes
+            list(self.blink.cameras.keys())  # type: ignore[attr-defined]
+            if self.blink.cameras  # type: ignore[attr-defined]
+            else []
         )
         error_msg = (
             f"Camera list is empty when searching for "
@@ -588,26 +610,26 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):
         """Perform the actual token refresh."""
         if self.verbose:
             print("Attempting to refresh authentication token...")
-        self.blink.auth.refresh_token()
+        self.blink.auth.refresh_token()  # type: ignore[attr-defined, operator]
 
     def _refresh_camera_data(self):
         """Refresh camera data after token refresh."""
         if hasattr(self.blink, "refresh"):
-            self.blink.refresh()
+            self.blink.refresh()  # type: ignore[attr-defined]
         elif hasattr(self.blink, "setup_camera_list"):
-            self.blink.setup_camera_list()
+            self.blink.setup_camera_list()  # type: ignore[attr-defined]
 
         # Update our local camera metadata cache
         self.get_cameras()
 
     def _refresh_camera_list_if_empty(self, zone_name):
         """Refresh camera list if it's empty."""
-        if self.blink.cameras != {}:
+        if self.blink.cameras != {}:  # type: ignore[attr-defined]
             return
 
         self._log_camera_refresh_attempt(zone_name)
 
-        if not hasattr(self.blink.auth, "refresh_token"):
+        if not hasattr(self.blink.auth, "refresh_token"):  # type: ignore[attr-defined]
             return
 
         try:
@@ -626,14 +648,14 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):
 
     def _attempt_camera_refresh(self, zone_name):
         """Attempt to refresh camera list based on blinkpy version."""
-        if env.get_package_version(blinkpy) >= (0, 22, 0):
+        if env.get_package_version(blinkpy) >= (0, 22, 0):  # type: ignore[operator]
             self._handle_empty_camera_list_async(zone_name)
         else:
             self._attempt_sync_token_refresh(zone_name)
 
     def _validate_camera_refresh_success(self, zone_name):
         """Validate that camera refresh was successful."""
-        if self.blink.cameras == {}:
+        if self.blink.cameras == {}:  # type: ignore[attr-defined]
             error_msg = (
                 f"Camera list is still empty after refresh attempt "
                 f"for camera '{zone_name}'. This may indicate "
@@ -655,7 +677,7 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):
 
     def _find_camera_by_name(self, zone_name, parameter):
         """Find camera by name and return its attributes or specific parameter."""
-        for name, camera in self.blink.cameras.items():
+        for name, camera in self.blink.cameras.items():  # type: ignore[attr-defined]
             if name == zone_name:
                 if self.verbose:
                     print(f"found camera {name}: {camera.attributes}")
@@ -665,7 +687,10 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):
                     return camera.attributes[parameter]
 
         # Camera not found - provide helpful error
-        available_cameras = list(self.blink.cameras.keys())
+        # type: ignore on next line for dynamic blink attributes
+        available_cameras = list(
+            self.blink.cameras.keys()  # type: ignore[attr-defined]
+        )
         error_msg = (
             f"Camera zone '{zone_name}' was not found. "
             f"Available cameras: {available_cameras}. "
@@ -753,12 +778,24 @@ class ThermostatZone(tc.ThermostatCommonZone):
         self.last_printed_refresh_time = None  # track last printed cache message time
 
         # switch config for this thermostat
-        self.system_switch_position[tc.ThermostatCommonZone.COOL_MODE] = "cool"
-        self.system_switch_position[tc.ThermostatCommonZone.HEAT_MODE] = "heat"
-        self.system_switch_position[tc.ThermostatCommonZone.OFF_MODE] = "off"
-        self.system_switch_position[tc.ThermostatCommonZone.DRY_MODE] = "dry"
-        self.system_switch_position[tc.ThermostatCommonZone.AUTO_MODE] = "auto"
-        self.system_switch_position[tc.ThermostatCommonZone.FAN_MODE] = "vent"
+        self.system_switch_position[  # type: ignore[assignment]
+            tc.ThermostatCommonZone.COOL_MODE
+        ] = "cool"
+        self.system_switch_position[  # type: ignore[assignment]
+            tc.ThermostatCommonZone.HEAT_MODE
+        ] = "heat"
+        self.system_switch_position[  # type: ignore[assignment]
+            tc.ThermostatCommonZone.OFF_MODE
+        ] = "off"
+        self.system_switch_position[  # type: ignore[assignment]
+            tc.ThermostatCommonZone.DRY_MODE
+        ] = "dry"
+        self.system_switch_position[  # type: ignore[assignment]
+            tc.ThermostatCommonZone.AUTO_MODE
+        ] = "auto"
+        self.system_switch_position[  # type: ignore[assignment]
+            tc.ThermostatCommonZone.FAN_MODE
+        ] = "vent"
 
         # zone info
         self.verbose = verbose
@@ -890,10 +927,12 @@ class ThermostatZone(tc.ThermostatCommonZone):
         returns:
             (int): thermostat mode, see tc.system_switch_position for details.
         """
-        off_mode_value = self.system_switch_position[self.OFF_MODE]
+        off_mode_value = self.system_switch_position[  # type: ignore[index]
+            self.OFF_MODE
+        ]
         # If the value is a list, return the first element
         if isinstance(off_mode_value, list):
-            return off_mode_value[0]
+            return off_mode_value[0]  # type: ignore[index]
         return off_mode_value
 
     def get_wifi_strength(self) -> float:  # noqa R0201

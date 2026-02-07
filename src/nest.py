@@ -87,8 +87,15 @@ class ThermostatClass(tc.ThermostatCommon):
         # check if token cache should be auto-generated from environment variables
         self._create_token_cache_from_env_if_needed()
 
+        # Validate required parameters
+        if not self.project_id or not self.client_id or not self.client_secret:
+            raise ValueError(
+                "Missing required credentials: project_id, client_id, "
+                "or client_secret"
+            )
+
         # establish thermostat object
-        self.thermostat_obj = nest.Nest(
+        self.thermostat_obj = nest.Nest(  # type: ignore[attr-defined]
             project_id=self.project_id,
             client_id=self.client_id,
             client_secret=self.client_secret,
@@ -216,7 +223,8 @@ class ThermostatClass(tc.ThermostatCommon):
         with open(self.access_token_cache_file, "r", encoding="utf-8") as f:
             token_data = json.load(f)
         # Update the OAuth2Session token in-memory
-        if self.thermostat_obj._client:
+        if self.thermostat_obj._client:  # pylint: disable=protected-access
+            # type: ignore[attr-defined]
             self.thermostat_obj._client.token = token_data
             print("Reloaded token from cache into thermostat client")
 
@@ -473,7 +481,9 @@ class ThermostatZone(tc.ThermostatCommonZone):
             (str) trait value
         """
         # will reuse the cached result unless cache_period has elapsed
-        devices = nest.Device.filter_for_trait(self.devices, trait_name)
+        devices = nest.Device.filter_for_trait(  # type: ignore[attr-defined]
+            self.devices, trait_name
+        )
 
         # will reuse the cached result unless cache_period has elapsed
         trait_value = devices[self.zone_number].traits[trait_name]
@@ -492,7 +502,9 @@ class ThermostatZone(tc.ThermostatCommonZone):
             (dict) body of response
         """
         # will reuse the cached result unless cache_period has elapsed
-        devices = nest.Device.filter_for_cmd(self.devices, cmd_name)
+        devices = nest.Device.filter_for_cmd(  # type: ignore[attr-defined]
+            self.devices, cmd_name
+        )
 
         # will trigger a request to POST the cmd
         result = devices[self.zone_number].send_cmd(cmd_name, {par_name: par_value})
@@ -690,7 +702,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
     def get_wifi_status(self) -> bool:  # noqa R0201
         """Return the wifi connection status."""
         self.refresh_zone_info()
-        return int(self.get_trait("Connectivity")["status"] == "ONLINE")
+        return bool(self.get_trait("Connectivity")["status"] == "ONLINE")
 
     def get_battery_voltage(self) -> float:  # noqa R0201
         """Return the battery voltage in volts.

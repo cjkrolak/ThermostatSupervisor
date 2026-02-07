@@ -369,8 +369,9 @@ class ThermostatCommonZone:
         )
 
         if self.is_temp_deviated_from_schedule() and self.is_controlled_mode():
+            mode_str = self.current_mode.upper() if self.current_mode else "UNKNOWN"
             status_msg = (
-                f"[{self.current_mode.upper()} deviation] act temp="
+                f"[{mode_str} deviation] act temp="
                 f"{util.temp_value_with_units(self.display_temp)}"
             )
         else:
@@ -407,11 +408,12 @@ class ThermostatCommonZone:
             )
 
         date_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        mode_str = self.current_mode.upper() if self.current_mode else "UNKNOWN"
         full_status_msg = (
             f"{date_str}: "
             f"(tstat:{self.thermostat_type}, zone:{self.zone_name}, "
             f"session:{session_count}, poll:{poll_count}) "
-            f"{self.current_mode.upper()} {status_msg}"
+            f"{mode_str} {status_msg}"
         )
         if print_status:
             util.log_msg(full_status_msg, mode=util.BOTH_LOG)
@@ -750,7 +752,7 @@ class ThermostatCommonZone:
         returns:
             (bool): True if deviation exists.
         """
-        return self.is_heat_mode() and self.is_temp_deviated_from_schedule()
+        return bool(self.is_heat_mode() and self.is_temp_deviated_from_schedule())
 
     def is_cool_deviation(self) -> bool:
         """
@@ -761,7 +763,7 @@ class ThermostatCommonZone:
         returns:
             (bool): True if deviation exists.
         """
-        return self.is_cool_mode() and self.is_temp_deviated_from_schedule()
+        return bool(self.is_cool_mode() and self.is_temp_deviated_from_schedule())
 
     # Thermostat-specific methods will be overloaded
     def get_display_temp(self) -> float:  # noqa R0201
@@ -1238,18 +1240,19 @@ class ThermostatCommonZone:
         if setpoint is None:
             setpoint = self.current_setpoint
 
+        mode_str = self.current_mode.upper() if self.current_mode else "UNKNOWN"
         eml.send_email_alert(
-            subject=f"{self.thermostat_type} {self.current_mode.upper()} "
+            subject=f"{self.thermostat_type} {mode_str} "
             f"deviation alert on zone {self.zone_name}",
             body=msg,
         )
         util.log_msg(
-            f"\n*** {self.thermostat_type} {self.current_mode.upper()} "
+            f"\n*** {self.thermostat_type} {mode_str} "
             f"deviation detected on zone {self.zone_name}, "
             f"reverting thermostat to heat schedule ***\n",
             mode=util.BOTH_LOG,
         )
-        self.revert_setpoint_func(setpoint)
+        self.revert_setpoint_func(int(setpoint))  # type: ignore[arg-type]
 
     def function_not_supported(self, *_, **__):
         """Function for unsupported activities."""
@@ -1300,7 +1303,7 @@ class ThermostatCommonZone:
             None
         """
         # set log file name
-        util.log_msg.file_name = (
+        util.log_msg.file_name = (  # type: ignore[attr-defined]
             self.thermostat_type + "_" + str(self.zone_name) + ".txt"
         )
 
@@ -1508,7 +1511,7 @@ def create_thermostat_instance(
         Thermostat(obj): Thermostat object
         Zone(obj):  Zone object
     """
-    util.log_msg.debug = verbose  # debug mode set
+    util.log_msg.debug = verbose  # type: ignore[attr-defined]
 
     # verify required env vars
     api.verify_required_env_variables(thermostat_type, str(zone), verbose=verbose)
@@ -1549,7 +1552,7 @@ def thermostat_basic_checkout(thermostat_type, zone, ThermostatClass, Thermostat
         Thermostat(obj): Thermostat object
         Zone(obj):  Zone object
     """
-    util.log_msg.debug = True  # debug mode set
+    util.log_msg.debug = True  # type: ignore[attr-defined]
 
     # create class instances
     Thermostat, Zone = create_thermostat_instance(
@@ -1620,11 +1623,16 @@ def print_select_data_from_all_zones(
         display_battery(bool): display battery status
         display_outdoor_weather(bool): display outdoor weather data
     returns:
-        Thermostat(obj): Thermostat object
-        Zone(obj):  Zone object
+        Thermostat(obj | None): Thermostat object or None if zone_lst is empty
+        Zone(obj | None):  Zone object or None if zone_lst is empty
     """
-    util.log_msg.debug = False  # debug mode unset
+    util.log_msg.debug = False  # type: ignore[attr-defined]
     print("\nquerying select data for all zones:")
+
+    # Handle empty zone list
+    if not zone_lst:
+        print("No zones to query")
+        return None, None
 
     # Get outdoor weather data once if enabled (same for all zones)
     outdoor_weather_data = None

@@ -88,8 +88,9 @@ class ThermostatClass(tc.ThermostatCommon):
         """
         # verify thermostat exists on network
         try:
+            # type: ignore[attr-defined]
             self.device_id = radiotherm.get_thermostat(self.ip_address)
-        except urllib.error.URLError as ex:
+        except urllib.error.URLError as ex:  # type: ignore[attr-defined]
             raise RuntimeError(
                 f"FATAL ERROR: 3m thermostat not found at ip address: "
                 f"{self.ip_address}"
@@ -140,7 +141,7 @@ class ThermostatClass(tc.ThermostatCommon):
                 attr_dict[key] = val
         return attr_dict
 
-    def get_all_metadata(self, zone, retry=False) -> list:
+    def get_all_metadata(self, zone=mmm_config.default_zone, retry=False):
         """
         Get all the current thermostat metadata.
 
@@ -153,7 +154,7 @@ class ThermostatClass(tc.ThermostatCommon):
         return self.get_metadata(zone, retry=retry)
 
     def get_metadata(
-        self, zone, trait=None, parameter=None, retry=False
+        self, zone=mmm_config.default_zone, trait=None, parameter=None, retry=False
     ) -> Union[dict, str]:
         """
         Get the current thermostat metadata settings.
@@ -177,14 +178,14 @@ class ThermostatClass(tc.ThermostatCommon):
 
         if retry:
             # Use standardized extended retry mechanism
-            return util.execute_with_extended_retries(
+            result = util.execute_with_extended_retries(
                 func=_get_metadata_internal,
                 thermostat_type=self.thermostat_type,
                 zone_name=str(zone),
                 number_of_retries=5,
                 initial_retry_delay_sec=30,
                 exception_types=(
-                    urllib.error.URLError,
+                    urllib.error.URLError,  # type: ignore[attr-defined]
                     socket.timeout,
                     socket.error,
                     ConnectionError,
@@ -196,6 +197,9 @@ class ThermostatClass(tc.ThermostatCommon):
                 ),
                 email_notification=None,  # MMM doesn't import email_notification
             )
+            if result is None:
+                return {} if parameter is None else ""
+            return result
         else:
             # Single attempt without retry
             return _get_metadata_internal()
@@ -724,6 +728,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         todays_setpoint_lst = self.get_setpoint_list(
             sp_dict, datetime.datetime.today().weekday()
         )
+        time_delta = 24 * 60 - minutes_since_midnight  # default to end of day
         for idx in [0, 2, 4, 6]:
             if todays_setpoint_lst[idx] > minutes_since_midnight:
                 time_delta = todays_setpoint_lst[idx] - minutes_since_midnight
@@ -794,7 +799,7 @@ def __init__(self, host, timeout=SOCKET_TIMEOUT):  # changed from 4 (default)
     self.timeout = timeout
 
 
-radiotherm.thermostat.Thermostat.__init__ = __init__
+radiotherm.thermostat.Thermostat.__init__ = __init__  # type: ignore[attr-defined]
 # end of monkeypatch radiotherm.thermostat.Thermostst __init__
 
 if __name__ == "__main__":

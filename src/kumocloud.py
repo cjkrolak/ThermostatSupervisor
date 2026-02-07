@@ -6,7 +6,7 @@ import os
 import pprint
 import time
 import traceback
-from typing import Union
+from typing import TYPE_CHECKING, Union
 
 # third party imports
 
@@ -23,9 +23,13 @@ if PYKUMO_DEBUG and not env.is_azure_environment():
     mod_path = "..\\pykumo\\pykumo"
     if env.is_interactive_environment():
         mod_path = "..\\" + mod_path
-    pykumo = env.dynamic_module_import("pykumo", mod_path)
+    pykumo = env.dynamic_module_import("pykumo", mod_path)  # type: ignore
+elif TYPE_CHECKING:
+    # Allow type checking to proceed without runtime import
+    from typing import Any
+    pykumo: Any = None  # type: ignore
 else:
-    import pykumo  # noqa E402, from path / site packages
+    import pykumo  # noqa: E402
 
 
 class SupervisorLogHandler(logging.Handler):
@@ -61,7 +65,9 @@ class SupervisorLogHandler(logging.Handler):
             self.handleError(record)
 
 
-class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
+class ThermostatClass(
+    pykumo.KumoCloudAccount, tc.ThermostatCommon  # type: ignore[name-defined]
+):
     """KumoCloud thermostat functions."""
 
     def __init__(self, zone, verbose=True):
@@ -87,7 +93,9 @@ class ThermostatClass(pykumo.KumoCloudAccount, tc.ThermostatCommon):
         self._need_fetch = True  # force data fetch
         self.args = [self.kc_uname, self.kc_pwd]
         # kumocloud account init sets the self._url
-        pykumo.KumoCloudAccount.__init__(self, *self.args)
+        pykumo.KumoCloudAccount.__init__(  # type: ignore[attr-defined]
+            self, *self.args
+        )
         tc.ThermostatCommon.__init__(self)
 
         # integrate pykumo logger with supervisor logging system
@@ -547,7 +555,10 @@ class ThermostatZone(tc.ThermostatCommonZone):
         returns:
             (int): eco mode, 1=enabled, 0=disabled.
         """
-        return int(self.get_parameter("energy_save", "reportedInitialSettings"))
+        eco_value = self.get_parameter(
+            "energy_save", "reportedInitialSettings", default_val=0
+        )
+        return int(eco_value if eco_value is not None else 0)
 
     def is_off_mode(self) -> int:
         """
@@ -613,7 +624,8 @@ class ThermostatZone(tc.ThermostatCommonZone):
     def is_power_on(self) -> int:
         """Return 1 if power relay is active, else 0."""
         self.refresh_zone_info()
-        return int(self.get_parameter("power", "reportedCondition", default_val=0))
+        power_value = self.get_parameter("power", "reportedCondition", default_val=0)
+        return int(power_value if power_value is not None else 0)
 
     def is_fan_on(self) -> int:
         """Return 1 if fan relay is active, else 0."""
@@ -633,12 +645,18 @@ class ThermostatZone(tc.ThermostatCommonZone):
     def is_defrosting(self) -> int:
         """Return 1 if defrosting is active, else 0."""
         self.refresh_zone_info()
-        return int(self.get_parameter("defrost", "status_display", "reportedCondition"))
+        defrost_value = self.get_parameter(
+            "defrost", "status_display", "reportedCondition"
+        )
+        return int(defrost_value if defrost_value is not None else 0)
 
     def is_standby(self) -> int:
         """Return 1 if standby is active, else 0."""
         self.refresh_zone_info()
-        return int(self.get_parameter("standby", "status_display", "reportedCondition"))
+        standby_value = self.get_parameter(
+            "standby", "status_display", "reportedCondition", default_val=0
+        )
+        return int(standby_value if standby_value is not None else 0)
 
     def get_wifi_strength(self) -> float:  # noqa R0201
         """Return the wifi signal strength in dBm.
@@ -648,7 +666,8 @@ class ThermostatZone(tc.ThermostatCommonZone):
         rssi dict can be empty if unit is off.
         """
         self.refresh_zone_info()
-        return float(self.get_parameter("rssi", "rssi", None, util.BOGUS_INT))
+        rssi_value = self.get_parameter("rssi", "rssi", None, util.BOGUS_INT)
+        return float(rssi_value if rssi_value is not None else util.BOGUS_INT)
 
     def get_wifi_status(self) -> bool:  # noqa R0201
         """Return the wifi connection status."""
@@ -779,7 +798,8 @@ class ThermostatZone(tc.ThermostatCommonZone):
                 return off_mode_value[0]
             return off_mode_value
         else:
-            return self.get_parameter("operation_mode", "reportedCondition")
+            op_mode = self.get_parameter("operation_mode", "reportedCondition")
+            return op_mode if op_mode is not None else 0
 
     def set_heat_setpoint(self, temp: int) -> None:
         """

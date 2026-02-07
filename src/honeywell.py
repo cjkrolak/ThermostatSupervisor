@@ -14,6 +14,7 @@ import time
 from typing import Union
 
 # third-party imports
+import requests.exceptions
 import urllib3.exceptions
 
 # local imports
@@ -70,7 +71,7 @@ class SupervisorLogHandler(logging.Handler):
             self.handleError(record)
 
 
-class ThermostatClass(pyhtcc.PyHTCC, tc.ThermostatCommon):
+class ThermostatClass(pyhtcc.PyHTCC, tc.ThermostatCommon):  # type: ignore[name-defined]
     """Extend the PyHTCC class with additional methods."""
 
     def __init__(self, zone, verbose=True):
@@ -92,7 +93,7 @@ class ThermostatClass(pyhtcc.PyHTCC, tc.ThermostatCommon):
         # construct the superclass
         # call both parent class __init__
         self.args = [self.tcc_uname, self.tcc_pwd]
-        pyhtcc.PyHTCC.__init__(self, *self.args)
+        pyhtcc.PyHTCC.__init__(self, *self.args)  # type: ignore[attr-defined]
         tc.ThermostatCommon.__init__(self)
 
         # integrate pyhtcc logger with supervisor logging system
@@ -108,8 +109,9 @@ class ThermostatClass(pyhtcc.PyHTCC, tc.ThermostatCommon):
 
     def close(self):
         """Explicitly close the session created in pyhtcc."""
-        if hasattr(self, "session") and self.session is not None:
-            self.session.close()
+        session = getattr(self, "session", None)
+        if session is not None:
+            session.close()
             self.session = None
 
     def __del__(self):
@@ -129,7 +131,7 @@ class ThermostatClass(pyhtcc.PyHTCC, tc.ThermostatCommon):
         same destination.
         """
         # Get the pyhtcc logger
-        pyhtcc_logger = pyhtcc.logger
+        pyhtcc_logger = pyhtcc.logger  # type: ignore[attr-defined]
 
         # Remove any existing handlers to avoid duplicate logging
         for handler in pyhtcc_logger.handlers[:]:
@@ -209,6 +211,10 @@ class ThermostatClass(pyhtcc.PyHTCC, tc.ThermostatCommon):
           (dict) thermostat meta data.
         """
         return_data = self.get_metadata(zone, retry=retry)
+        if not isinstance(return_data, dict):
+            raise TypeError(
+                f"Expected dict from get_metadata, got {type(return_data).__name__}"
+            )
         util.log_msg(
             f"all meta data: {return_data}",
             mode=util.DEBUG_LOG + util.STDOUT_LOG,
@@ -255,21 +261,21 @@ class ThermostatClass(pyhtcc.PyHTCC, tc.ThermostatCommon):
                     func_name=1,
                 )
                 return return_data
-            else:
-                try:
-                    return_data = zone_info_list[zone].get(parameter)
-                except IndexError:
-                    print(
-                        f"ERROR: zone {zone} does not exist in zone_info_list: "
-                        f"{zone_info_list}"
-                    )
-                    raise
-                util.log_msg(
-                    f"zone {zone} parameter '{parameter}': {return_data}",
-                    mode=util.DEBUG_LOG + util.STDOUT_LOG,
-                    func_name=1,
+
+            try:
+                return_data = zone_info_list[zone].get(parameter)
+            except IndexError:
+                print(
+                    f"ERROR: zone {zone} does not exist in zone_info_list: "
+                    f"{zone_info_list}"
                 )
-                return return_data
+                raise
+            util.log_msg(
+                f"zone {zone} parameter '{parameter}': {return_data}",
+                mode=util.DEBUG_LOG + util.STDOUT_LOG,
+                func_name=1,
+            )
+            return return_data
 
         if retry:
             # Use standardized extended retry mechanism
@@ -280,11 +286,11 @@ class ThermostatClass(pyhtcc.PyHTCC, tc.ThermostatCommon):
                 number_of_retries=5,
                 initial_retry_delay_sec=30,
                 exception_types=(
-                    pyhtcc.requests.exceptions.ConnectionError,
-                    pyhtcc.pyhtcc.UnexpectedError,
-                    pyhtcc.pyhtcc.NoZonesFoundError,
-                    pyhtcc.pyhtcc.UnauthorizedError,
-                    pyhtcc.pyhtcc.TooManyAttemptsError,
+                    requests.exceptions.ConnectionError,
+                    pyhtcc.pyhtcc.UnexpectedError,  # type: ignore[attr-defined]
+                    pyhtcc.pyhtcc.NoZonesFoundError,  # type: ignore[attr-defined]
+                    pyhtcc.pyhtcc.UnauthorizedError,  # type: ignore[attr-defined]
+                    pyhtcc.pyhtcc.TooManyAttemptsError,  # type: ignore[attr-defined]
                     ConnectionError,
                     TimeoutError,
                     IndexError,
@@ -297,7 +303,9 @@ class ThermostatClass(pyhtcc.PyHTCC, tc.ThermostatCommon):
             # Single attempt without retry
             return _get_metadata_internal()
 
-    def get_latestdata(self, zone=honeywell_config.default_zone, debug=False) -> dict:
+    def get_latestdata(
+        self, zone=honeywell_config.default_zone, debug=False
+    ) -> Union[dict, None]:
         """
         Return the current thermostat latest data.
 
@@ -305,9 +313,14 @@ class ThermostatClass(pyhtcc.PyHTCC, tc.ThermostatCommon):
           zone(int): zone number, default=honeywell_config.default_zone
           debug(bool): debug flag
         returns:
-          (dict) latest data from thermostat.
+          (dict, None) latest data from thermostat, or None if not available.
         """
-        latest_data_dict = self.get_metadata(zone).get("latestData")
+        metadata = self.get_metadata(zone)
+        if not isinstance(metadata, dict):
+            raise TypeError(
+                f"Expected dict from get_metadata, got {type(metadata).__name__}"
+            )
+        latest_data_dict = metadata.get("latestData")
         if debug:
             util.log_msg(
                 f"zone{zone} latestData: {latest_data_dict}",
@@ -316,16 +329,19 @@ class ThermostatClass(pyhtcc.PyHTCC, tc.ThermostatCommon):
             )
         return latest_data_dict
 
-    def get_ui_data(self, zone=honeywell_config.default_zone) -> dict:
+    def get_ui_data(self, zone=honeywell_config.default_zone) -> Union[dict, None]:
         """
         Return the latest thermostat ui data.
 
         inputs:
           zone(int): zone, default=honeywell_config.default_zone
         returns:
-          (dict) ui data from thermostat.
+          (dict) ui data from thermostat, or None if not available.
         """
-        ui_data_dict = self.get_latestdata(zone).get("uiData")
+        latest_data = self.get_latestdata(zone)
+        if latest_data is None:
+            return None
+        ui_data_dict = latest_data.get("uiData")
         util.log_msg(
             f"zone{zone} latestData: {ui_data_dict}",
             mode=util.DEBUG_LOG + util.STDOUT_LOG,
@@ -335,7 +351,7 @@ class ThermostatClass(pyhtcc.PyHTCC, tc.ThermostatCommon):
 
     def get_ui_data_param(
         self, zone=honeywell_config.default_zone, parameter=None
-    ) -> dict:
+    ) -> Union[dict, None]:
         """
         Return the latest thermostat ui data for one specific parameter.
 
@@ -343,11 +359,12 @@ class ThermostatClass(pyhtcc.PyHTCC, tc.ThermostatCommon):
           zone(int): zone, default=honeywell_config.default_zone
           parameter(str): paramenter name
         returns:
-          (dict)  # need to verify return data type.
+          (dict, None): parameter data dict, or None if not available.
         """
-        parameter_data = self.get_ui_data(zone=honeywell_config.default_zone).get(
-            parameter
-        )
+        ui_data = self.get_ui_data(zone=zone)
+        if ui_data is None:
+            return None
+        parameter_data = ui_data.get(parameter)
         util.log_msg(
             f"zone{zone} uiData parameter {parameter}: {parameter_data}",
             mode=util.DEBUG_LOG + util.STDOUT_LOG,
@@ -386,18 +403,18 @@ def get_zones_info_with_retries(func, thermostat_type, zone_name) -> list:
 
     # Define Honeywell-specific exception types
     honeywell_exceptions = (
-        pyhtcc.requests.exceptions.ConnectionError,
-        pyhtcc.pyhtcc.UnexpectedError,
-        pyhtcc.pyhtcc.NoZonesFoundError,
-        pyhtcc.pyhtcc.UnauthorizedError,
-        pyhtcc.pyhtcc.TooManyAttemptsError,
-        pyhtcc.requests.exceptions.HTTPError,
+        requests.exceptions.ConnectionError,
+        pyhtcc.pyhtcc.UnexpectedError,  # type: ignore[attr-defined]
+        pyhtcc.pyhtcc.NoZonesFoundError,  # type: ignore[attr-defined]
+        pyhtcc.pyhtcc.UnauthorizedError,  # type: ignore[attr-defined]
+        pyhtcc.pyhtcc.TooManyAttemptsError,  # type: ignore[attr-defined]
+        requests.exceptions.HTTPError,
         urllib3.exceptions.ProtocolError,
         http.client.RemoteDisconnected,
     )
 
     # Use the common retry utility
-    return util.execute_with_extended_retries(
+    result = util.execute_with_extended_retries(
         func=func,
         thermostat_type=thermostat_type,
         zone_name=zone_name,
@@ -406,9 +423,13 @@ def get_zones_info_with_retries(func, thermostat_type, zone_name) -> list:
         exception_types=honeywell_exceptions,
         email_notification=email_notification,
     )
+    # Handle case where retry utility returns None
+    return result if result is not None else []
 
 
-class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
+class ThermostatZone(
+    pyhtcc.Zone, tc.ThermostatCommonZone  # type: ignore[name-defined]
+):
     """Extend the Zone class with additional methods to get and set
     uiData parameters."""
 
@@ -441,7 +462,7 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
 
         # call both parent class __init__
         self.args = [Thermostat_obj.device_id, Thermostat_obj]
-        pyhtcc.Zone.__init__(self, *self.args)
+        pyhtcc.Zone.__init__(self, *self.args)  # type: ignore[attr-defined]
         tc.ThermostatCommonZone.__init__(self)
 
         # switch config for this thermostat
@@ -497,8 +518,7 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
         raw_humidity = self.get_indoor_humidity_raw()
         if raw_humidity is not None:
             return float(raw_humidity)
-        else:
-            return raw_humidity
+        return raw_humidity
 
     def get_is_humidity_supported(self) -> bool:  # used
         """
@@ -875,7 +895,7 @@ class ThermostatZone(pyhtcc.Zone, tc.ThermostatCommonZone):
             now_time = time.time()
             for zone_data in all_zones_info:
                 if zone_data["DeviceID"] == self.device_id:
-                    pyhtcc.logger.debug(
+                    pyhtcc.logger.debug(  # type: ignore[attr-defined]
                         f"Refreshed zone info for \
                                         {self.device_id}"
                     )
@@ -904,11 +924,32 @@ class TimeoutHTTPAdapter(HTTPAdapter):
             del kwargs["timeout"]
         super().__init__(*args, **kwargs)
 
-    def send(self, request, **kwargs):  # pylint: disable=arguments-differ
-        timeout = kwargs.get("timeout")
+    def send(
+        self, request, stream=False, timeout=None, verify=True, cert=None,
+        proxies=None
+    ):
+        """
+        Send a request with default timeout if not specified.
+
+        Args:
+            request: The PreparedRequest being sent.
+            stream: Whether to stream the request.
+            timeout: How long to wait for the server to send data before
+                giving up.
+            verify: Either a boolean to verify SSL certificates or a path to
+                a CA bundle.
+            cert: Either a single filename (containing cert) or a tuple (cert, key).
+            proxies: Dictionary mapping protocol to URL of proxy.
+
+        Returns:
+            Response object.
+        """
         if timeout is None:
-            kwargs["timeout"] = self.timeout
-        return super().send(request, **kwargs)
+            timeout = self.timeout
+        return super().send(
+            request, stream=stream, timeout=timeout, verify=verify,
+            cert=cert, proxies=proxies
+        )
 
 
 if __name__ == "__main__":

@@ -189,7 +189,10 @@ def load_all_env_variables():
 
 def is_interactive_environment():
     """Return True if script is run through IDE."""
-    parent = psutil.Process(os.getpid()).parent().name()
+    parent_process = psutil.Process(os.getpid()).parent()
+    if parent_process is None:
+        return False
+    parent = parent_process.name()
     if parent in ["cmd.exe", "py.exe", "bash", "sphinx-build.exe"]:
         return False
     elif parent in ["eclipse.exe", "python.exe", "pycharm.exe"]:
@@ -358,7 +361,8 @@ def _import_from_installed_packages(name, path):
         raise ModuleNotFoundError(f"module '{name}' could not be found")
     mod = importlib.util.module_from_spec(spec)
     sys.modules[name] = mod
-    spec.loader.exec_module(mod)
+    if spec.loader is not None:
+        spec.loader.exec_module(mod)
     return mod
 
 
@@ -458,12 +462,15 @@ def get_package_version(module, element=None, verbose=False):
     except AttributeError:
         # __version__ attribute not available, try importlib.metadata
         try:
-            import importlib.metadata
+            import importlib.metadata  # type: ignore[no-redef]
 
             module_version = ".".join(
                 importlib.metadata.version(module.__name__).split(".")[:3]
             )
-        except (ImportError, importlib.metadata.PackageNotFoundError):
+        except (
+            ImportError,
+            importlib.metadata.PackageNotFoundError,  # type: ignore[possibly-unbound]
+        ):
             # fallback to dummy version
             module_version = "0.0.0"
 
@@ -498,7 +505,11 @@ def show_package_version(module):
     """
     pkg_path = get_package_path(module).replace("\\", "/")
     pkg_version = get_package_version(module)
-    pkg_version_str = ".".join(tuple(map(str, pkg_version)))
+    # Ensure pkg_version is a tuple for string conversion
+    if isinstance(pkg_version, int):
+        pkg_version_str = str(pkg_version)
+    else:
+        pkg_version_str = ".".join(tuple(map(str, pkg_version)))
     print(f"'{module.__name__}' version {pkg_version_str} installed from {pkg_path}")
 
 
