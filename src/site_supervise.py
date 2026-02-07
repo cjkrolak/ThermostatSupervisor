@@ -206,10 +206,23 @@ def site_supervisor(args):
         func_name=1,
     )
 
-    result = site.supervise_all_zones(
-        measurement_count=args.measurements if args.measurements else 1,
-        use_threading=args.use_threading
-    )
+    try:
+        result = site.supervise_all_zones(
+            measurement_count=args.measurements if args.measurements else 1,
+            use_threading=args.use_threading
+        )
+    except KeyboardInterrupt:
+        util.log_msg(
+            "\n\nSite supervision interrupted by user (CTRL-C)",
+            mode=util.BOTH_LOG,
+            func_name=1,
+        )
+        util.log_msg(
+            "Exiting gracefully...",
+            mode=util.BOTH_LOG,
+            func_name=1,
+        )
+        sys.exit(0)
 
     # Display results summary
     results = result.get("results", {})
