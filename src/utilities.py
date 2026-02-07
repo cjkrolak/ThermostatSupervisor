@@ -518,7 +518,7 @@ def c_to_f(tempc) -> float | None:
     Convert from Celsius to Fahrenheit.
 
     inputs:
-        tempc(int, float, None): temp in °C.
+        tempc(int | float | None): temp in °C.
     returns:
         (float | None): temp in °F, or None if input is None.
     """
@@ -535,7 +535,7 @@ def f_to_c(tempf) -> float | None:
     Convert from Fahrenheit to Celsius.
 
     inputs:
-        tempf(int, float, None): temp in °F.
+        tempf(int | float | None): temp in °F.
     returns:
         (float | None): temp in °C, or None if input is None.
     """
