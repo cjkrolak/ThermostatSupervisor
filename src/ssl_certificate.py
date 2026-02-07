@@ -104,7 +104,8 @@ def _get_openssl_timeout() -> int:
     # Match 'arm' (armv7l, etc.) and 'aarch' (aarch64) variants
     if any(arch in machine for arch in ["arm", "aarch"]):
         return 120
-    # x86_64 and Windows systems can use shorter timeout
+    # Non-ARM platforms (e.g., x86_64 on Windows, macOS, Linux) can use a
+    # shorter timeout
     return 30
 
 

@@ -829,6 +829,124 @@ MIIDXTCCAkWgAwIBAgIJAKuK0VGDJJhjMA0GCSqGSIb3DQEBCwUAMEUxCzAJBgNV
         self.assertEqual(mock_download.call_count, 1)
         self.assertEqual(mock_import.call_count, 1)
 
+    @patch("src.ssl_certificate.platform.machine")
+    def test_get_openssl_timeout_arm_platform(self, mock_machine):
+        """Test timeout value for ARM platforms."""
+        # Test various ARM platform strings
+        arm_platforms = ["armv7l", "aarch64", "arm64", "armv8l"]
+
+        for platform_str in arm_platforms:
+            with self.subTest(platform=platform_str):
+                mock_machine.return_value = platform_str
+                timeout = ssl_certificate._get_openssl_timeout()
+                self.assertEqual(
+                    timeout,
+                    120,
+                    f"ARM platform '{platform_str}' should use 120s timeout"
+                )
+
+    @patch("src.ssl_certificate.platform.machine")
+    def test_get_openssl_timeout_non_arm_platform(self, mock_machine):
+        """Test timeout value for non-ARM platforms."""
+        # Test various non-ARM platform strings
+        non_arm_platforms = ["x86_64", "AMD64", "i686", "i386", "x64"]
+
+        for platform_str in non_arm_platforms:
+            with self.subTest(platform=platform_str):
+                mock_machine.return_value = platform_str
+                timeout = ssl_certificate._get_openssl_timeout()
+                self.assertEqual(
+                    timeout,
+                    30,
+                    f"Non-ARM platform '{platform_str}' should use 30s timeout"
+                )
+
+    @patch("src.ssl_certificate.platform.machine")
+    @patch("src.ssl_certificate.subprocess.run")
+    def test_generate_certificate_uses_arm_timeout(
+        self, mock_subprocess, mock_machine
+    ):
+        """Test that ARM platforms use 120s timeout in certificate generation."""
+        # Mock ARM platform
+        mock_machine.return_value = "aarch64"
+
+        # Mock subprocess to succeed
+        mock_subprocess.return_value.returncode = 0
+
+        # Create mock certificate files (to satisfy file existence check)
+        cert_path = pathlib.Path(self.test_dir) / "arm_test.crt"
+        key_path = pathlib.Path(self.test_dir) / "arm_test.key"
+
+        def create_cert_files(*args, **kwargs):
+            """Side effect to create certificate files when subprocess.run is called."""
+            cert_path.write_text(
+                "-----BEGIN CERTIFICATE-----\ntest\n-----END CERTIFICATE-----"
+            )
+            key_path.write_text(
+                "-----BEGIN PRIVATE KEY-----\ntest\n-----END PRIVATE KEY-----"
+            )
+            return mock_subprocess.return_value
+
+        mock_subprocess.side_effect = create_cert_files
+
+        # Generate certificate
+        ssl_certificate.generate_self_signed_certificate(
+            cert_file="arm_test.crt",
+            key_file="arm_test.key"
+        )
+
+        # Verify subprocess.run was called with 120s timeout
+        mock_subprocess.assert_called_once()
+        call_args = mock_subprocess.call_args
+        self.assertEqual(
+            call_args.kwargs.get("timeout"),
+            120,
+            "ARM platform should use 120s timeout in subprocess call"
+        )
+
+    @patch("src.ssl_certificate.platform.machine")
+    @patch("src.ssl_certificate.subprocess.run")
+    def test_generate_certificate_uses_non_arm_timeout(
+        self, mock_subprocess, mock_machine
+    ):
+        """Test that non-ARM platforms use 30s timeout in certificate generation."""
+        # Mock x86_64 platform
+        mock_machine.return_value = "x86_64"
+
+        # Mock subprocess to succeed
+        mock_subprocess.return_value.returncode = 0
+
+        # Create mock certificate files (to satisfy file existence check)
+        cert_path = pathlib.Path(self.test_dir) / "x86_test.crt"
+        key_path = pathlib.Path(self.test_dir) / "x86_test.key"
+
+        def create_cert_files(*args, **kwargs):
+            """Side effect to create certificate files when subprocess.run is called."""
+            cert_path.write_text(
+                "-----BEGIN CERTIFICATE-----\ntest\n-----END CERTIFICATE-----"
+            )
+            key_path.write_text(
+                "-----BEGIN PRIVATE KEY-----\ntest\n-----END PRIVATE KEY-----"
+            )
+            return mock_subprocess.return_value
+
+        mock_subprocess.side_effect = create_cert_files
+
+        # Generate certificate
+        ssl_certificate.generate_self_signed_certificate(
+            cert_file="x86_test.crt",
+            key_file="x86_test.key"
+        )
+
+        # Verify subprocess.run was called with 30s timeout
+        mock_subprocess.assert_called_once()
+        call_args = mock_subprocess.call_args
+        self.assertEqual(
+            call_args.kwargs.get("timeout"),
+            30,
+            "Non-ARM platform should use 30s timeout in subprocess call"
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
