@@ -45,7 +45,13 @@ distinguished_name = req_distinguished_name
 prompt = no
 
 [ req_distinguished_name ]
-# Empty section - values will be provided via -subj parameter
+# Default values required by OpenSSL on Windows
+# These will be overridden by -subj parameter
+C = US
+ST = State
+L = City
+O = Organization
+CN = localhost
 """
     # Create a temporary file with restricted permissions
     # that won't be automatically deleted
