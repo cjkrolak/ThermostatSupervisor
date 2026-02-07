@@ -396,7 +396,9 @@ MIIDXTCCAkWgAwIBAgIJAKuK0VGDJJhjMA0GCSqGSIb3DQEBCwUAMEUxCzAJBgNV
         result = ssl_certificate.validate_ssl_certificate(cert_path)
         self.assertTrue(result)
 
-        # Verify the OpenSSL command was called with Windows-specific config
+        # Verify the OpenSSL command was called correctly
+        # Note: openssl x509 does not need config files, so no -config should
+        # be present
         mock_subprocess.assert_called_once()
         args, kwargs = mock_subprocess.call_args
         cmd = args[0]
@@ -404,12 +406,11 @@ MIIDXTCCAkWgAwIBAgIJAKuK0VGDJJhjMA0GCSqGSIb3DQEBCwUAMEUxCzAJBgNV
         # Check that command has the basic structure
         self.assertEqual(cmd[0], "openssl")
         self.assertEqual(cmd[1], "x509")
-        self.assertIn("-config", cmd)
-        # Verify config is not "nul" but a temporary file path
-        config_idx = cmd.index("-config")
-        config_path = cmd[config_idx + 1]
-        self.assertNotEqual(config_path, "nul")
-        self.assertTrue(config_path.endswith(".cnf"))
+        self.assertIn("-in", cmd)
+        self.assertIn("-noout", cmd)
+        self.assertIn("-text", cmd)
+        # Verify no -config parameter is present (not needed for x509)
+        self.assertNotIn("-config", cmd)
 
     @patch("src.ssl_certificate.download_ssl_certificate")
     @patch("src.ssl_certificate.import_ssl_certificate_to_system")
@@ -607,11 +608,17 @@ MIIDXTCCAkWgAwIBAgIJAKuK0VGDJJhjMA0GCSqGSIb3DQEBCwUAMEUxCzAJBgNV
 
     @patch("src.ssl_certificate.platform.system")
     @patch("src.ssl_certificate.subprocess.run")
-    def test_validate_ssl_certificate_windows_config_creation_error(
+    def test_validate_ssl_certificate_windows_no_config_needed(
         self, mock_subprocess, mock_platform
     ):
-        """Test certificate validation with Windows config creation error."""
+        """Test certificate validation on Windows without config file.
+
+        This test verifies that openssl x509 works correctly without a
+        config file, which is the expected behavior since x509 command
+        doesn't use config files.
+        """
         mock_platform.return_value = "Windows"
+        mock_subprocess.return_value.returncode = 0
 
         # Create a mock certificate file
         cert_path = pathlib.Path(self.test_dir) / "test.crt"
@@ -619,14 +626,9 @@ MIIDXTCCAkWgAwIBAgIJAKuK0VGDJJhjMA0GCSqGSIb3DQEBCwUAMEUxCzAJBgNV
             "-----BEGIN CERTIFICATE-----\ntest cert\n-----END CERTIFICATE-----"
         )
 
-        # Mock _create_windows_openssl_config to raise OSError
-        with patch(
-            "src.ssl_certificate._create_windows_openssl_config"
-        ) as mock_create_config:
-            mock_create_config.side_effect = OSError("Cannot create config")
-
-            result = ssl_certificate.validate_ssl_certificate(cert_path)
-            self.assertFalse(result)
+        # Should succeed without needing config file creation
+        result = ssl_certificate.validate_ssl_certificate(cert_path)
+        self.assertTrue(result)
 
     @patch("src.ssl_certificate.platform.system")
     @patch("src.ssl_certificate.subprocess.run")
