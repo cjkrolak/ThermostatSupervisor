@@ -107,9 +107,6 @@ class ThermostatClass(pyhtcc.PyHTCC, tc.ThermostatCommon):  # type: ignore[name-
         self.zone_name = int(zone)
         self.device_id = self.get_target_zone_id(self.zone_name)
 
-        # initialize session attribute for cleanup tracking
-        self.session = None
-
     def close(self):
         """Explicitly close the session created in pyhtcc."""
         session = getattr(self, "session", None)
