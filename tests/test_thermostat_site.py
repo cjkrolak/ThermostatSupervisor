@@ -328,13 +328,13 @@ class TestThermostatSite(utc.UnitTest):
                 measurement_msg,
                 "Measurement log message not found"
             )
-            # Check for timestamp format: [YYYY-MM-DD HH:MM:SS]
+            # Check for timestamp format at start: [YYYY-MM-DD HH:MM:SS]
             timestamp_pattern = (
-                r'\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\]'
+                r'^\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\]'
             )
             self.assertIsNotNone(
-                re.search(timestamp_pattern, measurement_msg),
-                f"Timestamp not found in message: {measurement_msg}"
+                re.match(timestamp_pattern, measurement_msg),
+                f"Timestamp not found at start of message: {measurement_msg}"
             )
 
     def test_supervise_all_zones_keyboard_interrupt_sequential(self):
