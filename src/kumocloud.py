@@ -24,10 +24,12 @@ if PYKUMO_DEBUG and not env.is_azure_environment():
     if env.is_interactive_environment():
         mod_path = "..\\" + mod_path
     pykumo = env.dynamic_module_import("pykumo", mod_path)  # type: ignore
-elif not TYPE_CHECKING:
-    import pykumo  # noqa: E402
+elif TYPE_CHECKING:
+    # Allow type checking to proceed without runtime import
+    from typing import Any
+    pykumo: Any = None  # type: ignore
 else:
-    raise ImportError("pykumo cannot be imported in type checking mode")
+    import pykumo  # noqa: E402
 
 
 class SupervisorLogHandler(logging.Handler):

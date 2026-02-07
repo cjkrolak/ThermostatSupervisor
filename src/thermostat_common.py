@@ -1623,11 +1623,16 @@ def print_select_data_from_all_zones(
         display_battery(bool): display battery status
         display_outdoor_weather(bool): display outdoor weather data
     returns:
-        Thermostat(obj): Thermostat object
-        Zone(obj):  Zone object
+        Thermostat(obj | None): Thermostat object or None if zone_lst is empty
+        Zone(obj | None):  Zone object or None if zone_lst is empty
     """
     util.log_msg.debug = False  # type: ignore[attr-defined]
     print("\nquerying select data for all zones:")
+
+    # Handle empty zone list
+    if not zone_lst:
+        print("No zones to query")
+        return None, None
 
     # Get outdoor weather data once if enabled (same for all zones)
     outdoor_weather_data = None
@@ -1680,7 +1685,7 @@ def print_select_data_from_all_zones(
 
         print(msg)
 
-    return Thermostat, Zone  # type: ignore[possibly-unbound]
+    return Thermostat, Zone
 
 
 class AuthenticationError(ValueError):
