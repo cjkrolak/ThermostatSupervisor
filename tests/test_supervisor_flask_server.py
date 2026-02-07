@@ -166,5 +166,5 @@ class TestRunSupervise(utc.UnitTest):
 
 
 if __name__ == "__main__":
-    util.log_msg.debug = True
+    util.log_msg.debug = True  # type: ignore[attr-defined]
     unittest.main(verbosity=2)

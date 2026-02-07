@@ -228,7 +228,7 @@ class UnitTest(unittest.TestCase, metaclass=PatchMeta):
 
         # create new Thermostat and Zone instances
         if self.Thermostat is None and self.Zone is None:
-            util.log_msg.debug = True  # debug mode set
+            util.log_msg.debug = True  # type: ignore[attr-defined]
             thermostat_type = api.uip.get_user_inputs(
                 api.uip.zone_name, api.input_flds.thermostat_type
             )

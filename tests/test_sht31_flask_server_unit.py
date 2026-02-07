@@ -26,7 +26,7 @@ class RuntimeParameterTest(utc.RuntimeParameterTest):
 
     mod = sht31_fs  # module to test
     script = os.path.realpath(__file__)
-    debug = False
+    debug = False  # type: ignore[assignment]
 
     # fields for testing, mapped to class variables.
     # (value, field name)
@@ -178,15 +178,17 @@ class Sht31FlaskServerSensorUnit(utc.UnitTest):
                         "src.sht31_flask_server.request"
                     ) as mock_request:
                         # Create a proper mock that returns values based on the key
-                        def mock_args_get(key, default=None, type=None):
+                        def mock_args_get(
+                            key, default=None, type_=None, current_seed=seed
+                        ):
                             values = {
                                 "measurements": 1,  # Single measurement for
                                 # simple comparison
-                                "seed": seed,
+                                "seed": current_seed,
                             }
                             value = values.get(key, default)
-                            if type is not None and value is not None:
-                                return type(value)
+                            if type_ is not None and value is not None:
+                                return type_(value)
                             return value
 
                         mock_request.args.get = mock_args_get
@@ -237,14 +239,14 @@ class Sht31FlaskServerSensorUnit(utc.UnitTest):
                     "src.sht31_flask_server.request"
                 ) as mock_request:
 
-                    def mock_args_get_repeat(key, default=None, type=None):
+                    def mock_args_get_repeat(key, default=None, type_=None):
                         values = {
                             "measurements": 1,
                             "seed": test_seeds[0],  # Use first seed again
                         }
                         value = values.get(key, default)
-                        if type is not None and value is not None:
-                            return type(value)
+                        if type_ is not None and value is not None:
+                            return type_(value)
                         return value
 
                     mock_request.args.get = mock_args_get_repeat
@@ -397,12 +399,14 @@ class Sht31FlaskServerSensorUnit(utc.UnitTest):
     def test_get_health_recommendations(self):
         """Test health recommendations generation."""
         # Test recommendations for stuck bus
+        # type: ignore[attr-defined]
         recs = self.sensors._get_health_recommendations("STUCK_LOW")
         self.assertIsInstance(recs, list)
         self.assertTrue(len(recs) > 0)
         self.assertTrue(any("recovery" in rec.lower() for rec in recs))
 
         # Test recommendations for idle bus
+        # type: ignore[attr-defined]
         recs = self.sensors._get_health_recommendations("IDLE")
         self.assertIsInstance(recs, list)
         self.assertTrue(len(recs) > 0)
@@ -574,7 +578,7 @@ class Sht31FlaskServerSensorUnit(utc.UnitTest):
         # Return fewer bytes than expected
         mock_bus.read_i2c_block_data.return_value = [0x4A, 0xEA]
 
-        def _failing_read():
+        def _failing_read():  # noqa: F841
             response = mock_bus.read_i2c_block_data(0x44, 0x00, 6)
             if len(response) != 6:
                 raise ValueError("Length mismatch")
@@ -906,5 +910,5 @@ class TestSht31FlaskEndpoints(utc.UnitTest):
 
 
 if __name__ == "__main__":
-    util.log_msg.debug = True
+    util.log_msg.debug = True  # type: ignore[attr-defined]
     unittest.main(verbosity=2)

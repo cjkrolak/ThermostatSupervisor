@@ -55,11 +55,11 @@ class Test(utc.UnitTest):
                     # then succeeds on the final call
                     call_count = 0
 
-                    def mock_func():
+                    def mock_func(exc_type=exception_type, exc_args=exception_args):
                         nonlocal call_count
                         call_count += 1
                         if call_count < 3:  # Fail first 2 times
-                            utc.mock_exception(exception_type, exception_args)
+                            utc.mock_exception(exc_type, exc_args)
                         else:  # Succeed on 3rd call
                             return [{"test": "success"}]
 
@@ -197,7 +197,7 @@ class Test(utc.UnitTest):
         start_time = time.time()
 
         # First call should trigger API call (cache is stale by default)
-        mock_zone.refresh_zone_info()
+        mock_zone.refresh_zone_info()  # type: ignore[misc]
         first_call_duration = time.time() - start_time
 
         # Verify API was called
@@ -214,7 +214,7 @@ class Test(utc.UnitTest):
         # Second call immediately after (within fetch_interval_sec)
         # should NOT trigger another API call if caching is working correctly
         second_call_start = time.time()
-        mock_zone.refresh_zone_info()
+        mock_zone.refresh_zone_info()  # type: ignore[misc]
         second_call_duration = time.time() - second_call_start
 
         # Verify API was NOT called again (still using cache)
@@ -295,7 +295,8 @@ class Test(utc.UnitTest):
                     return_value=mock_zones,
                 ):
                     tstat = honeywell.ThermostatClass(zone=0)
-                    zone_ids = tstat._get_zone_device_ids()
+                    # type: ignore on next line for protected member
+                    zone_ids = tstat._get_zone_device_ids()  # type: ignore
 
                     # Verify all zone IDs are returned
                     self.assertEqual(zone_ids, [111, 222, 333])
@@ -391,8 +392,13 @@ class Test(utc.UnitTest):
                     metadata = tstat.get_metadata(zone=0, parameter=None)
 
                     # Verify full zone data is returned
-                    self.assertEqual(metadata["DeviceID"], 111)
-                    self.assertEqual(metadata["Name"], "TestZone")
+                    # type: ignore on next lines for indexing
+                    self.assertEqual(  # type: ignore[index]
+                        metadata["DeviceID"], 111
+                    )
+                    self.assertEqual(  # type: ignore[index]
+                        metadata["Name"], "TestZone"
+                    )
 
     def test_get_metadata_specific_parameter(self):
         """Test get_metadata with specific parameter."""
@@ -438,7 +444,10 @@ class Test(utc.UnitTest):
 
                         # Verify retry mechanism was called
                         mock_retry.assert_called_once()
-                        self.assertEqual(metadata["Name"], "TestZone")
+                        # type: ignore on next line for indexing
+                        self.assertEqual(  # type: ignore[index]
+                            metadata["Name"], "TestZone"
+                        )
 
     def test_get_metadata_index_error(self):
         """Test get_metadata with invalid zone index."""
@@ -484,8 +493,10 @@ class Test(utc.UnitTest):
                     latest_data = tstat.get_latestdata(zone=0)
 
                     # Verify latest data structure
-                    self.assertIn("uiData", latest_data)
-                    self.assertIn("fanData", latest_data)
+                    self.assertIsNotNone(latest_data)
+                    if latest_data is not None:
+                        self.assertIn("uiData", latest_data)
+                        self.assertIn("fanData", latest_data)
 
     def test_get_latestdata_debug(self):
         """Test get_latestdata with debug=True."""
@@ -513,7 +524,9 @@ class Test(utc.UnitTest):
 
                         # Verify logging was called with debug
                         mock_log.assert_called()
-                        self.assertIn("uiData", latest_data)
+                        self.assertIsNotNone(latest_data)
+                        if latest_data is not None:
+                            self.assertIn("uiData", latest_data)
 
     def test_get_ui_data(self):
         """Test get_ui_data method."""
@@ -542,8 +555,10 @@ class Test(utc.UnitTest):
                     ui_data = tstat.get_ui_data(zone=0)
 
                     # Verify ui data contents
-                    self.assertEqual(ui_data["DispTemperature"], 72)
-                    self.assertEqual(ui_data["SystemSwitchPosition"], 1)
+                    self.assertIsNotNone(ui_data)
+                    if ui_data is not None:
+                        self.assertEqual(ui_data["DispTemperature"], 72)
+                        self.assertEqual(ui_data["SystemSwitchPosition"], 1)
 
     def test_get_ui_data_param(self):
         """Test get_ui_data_param method."""
@@ -589,7 +604,7 @@ class Test(utc.UnitTest):
                     tstat = honeywell.ThermostatClass(zone=0)
                     # Create a mock session
                     mock_session = mock.Mock()
-                    tstat.session = mock_session
+                    tstat.session = mock_session  # type: ignore[assignment]
 
                     # Test close
                     tstat.close()
@@ -612,7 +627,7 @@ class Test(utc.UnitTest):
                 ):
                     tstat = honeywell.ThermostatClass(zone=0)
                     mock_session = mock.Mock()
-                    tstat.session = mock_session
+                    tstat.session = mock_session  # type: ignore[assignment]
 
                     # Test __del__
                     tstat.__del__()
@@ -1568,5 +1583,5 @@ class Test(utc.UnitTest):
 
 
 if __name__ == "__main__":
-    util.log_msg.debug = True
+    util.log_msg.debug = True  # type: ignore[attr-defined]
     unittest.main(verbosity=2)

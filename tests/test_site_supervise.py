@@ -23,12 +23,12 @@ class TestParseArguments(utc.UnitTest):
         """Set up test fixtures."""
         super().setUp()
         # Set test-specific log file
-        self.original_log_file = util.log_msg.file_name
-        util.log_msg.file_name = "unit_test.txt"
+        self.original_log_file = util.log_msg.file_name  # type: ignore[attr-defined]
+        util.log_msg.file_name = "unit_test.txt"  # type: ignore[attr-defined]
 
     def tearDown(self):
         """Clean up after tests."""
-        util.log_msg.file_name = self.original_log_file
+        util.log_msg.file_name = self.original_log_file  # type: ignore[attr-defined]
         super().tearDown()
 
     def test_parse_arguments_defaults(self):
@@ -131,12 +131,12 @@ class TestLoadSiteConfigFromFile(utc.UnitTest):
         """Set up test fixtures."""
         super().setUp()
         # Set test-specific log file
-        self.original_log_file = util.log_msg.file_name
-        util.log_msg.file_name = "unit_test.txt"
+        self.original_log_file = util.log_msg.file_name  # type: ignore[attr-defined]
+        util.log_msg.file_name = "unit_test.txt"  # type: ignore[attr-defined]
 
     def tearDown(self):
         """Clean up after tests."""
-        util.log_msg.file_name = self.original_log_file
+        util.log_msg.file_name = self.original_log_file  # type: ignore[attr-defined]
         super().tearDown()
 
     def test_load_valid_config(self):
@@ -213,8 +213,8 @@ class TestSiteSupervisor(utc.UnitTest):
         """Set up test fixtures."""
         super().setUp()
         # Set test-specific log file
-        self.original_log_file = util.log_msg.file_name
-        util.log_msg.file_name = "unit_test.txt"
+        self.original_log_file = util.log_msg.file_name  # type: ignore[attr-defined]
+        util.log_msg.file_name = "unit_test.txt"  # type: ignore[attr-defined]
         # Create a minimal args namespace
         self.default_args = type('Args', (), {
             'config': None,
@@ -227,7 +227,7 @@ class TestSiteSupervisor(utc.UnitTest):
 
     def tearDown(self):
         """Clean up after tests."""
-        util.log_msg.file_name = self.original_log_file
+        util.log_msg.file_name = self.original_log_file  # type: ignore[attr-defined]
         super().tearDown()
 
     def test_site_supervisor_with_default_config(self):
@@ -237,7 +237,7 @@ class TestSiteSupervisor(utc.UnitTest):
         settings. If an exception is raised, the test will fail.
         """
         args = self.default_args
-        args.measurements = 1
+        args.measurements = 1  # type: ignore[attr-defined]
         ss.site_supervisor(args)
 
     def test_site_supervisor_with_custom_config_file(self):
@@ -263,7 +263,7 @@ class TestSiteSupervisor(utc.UnitTest):
 
         try:
             args = self.default_args
-            args.config = temp_file
+            args.config = temp_file  # type: ignore[attr-defined]
             ss.site_supervisor(args)
         finally:
             os.unlink(temp_file)
@@ -276,27 +276,27 @@ class TestSiteSupervisor(utc.UnitTest):
         the test will fail.
         """
         args = self.default_args
-        args.measurements = 1
+        args.measurements = 1  # type: ignore[attr-defined]
         ss.site_supervisor(args)
 
     def test_site_supervisor_with_threading(self):
         """Verify site_supervisor with threading enabled."""
         args = self.default_args
-        args.use_threading = True
-        args.measurements = 1
+        args.use_threading = True  # type: ignore[attr-defined]
+        args.measurements = 1  # type: ignore[attr-defined]
         ss.site_supervisor(args)
 
     def test_site_supervisor_display_zones_only(self):
         """Verify site_supervisor with display_zones flag."""
         args = self.default_args
-        args.display_zones = True
+        args.display_zones = True  # type: ignore[attr-defined]
         # Should display zones and return early
         ss.site_supervisor(args)
 
     def test_site_supervisor_display_temps_only(self):
         """Verify site_supervisor with display_temps flag."""
         args = self.default_args
-        args.display_temps = True
+        args.display_temps = True  # type: ignore[attr-defined]
         # Should display temps and return early
         ss.site_supervisor(args)
 
@@ -308,7 +308,7 @@ class TestSiteSupervisor(utc.UnitTest):
         is raised, the test will fail.
         """
         args = self.default_args
-        args.measurements = 1
+        args.measurements = 1  # type: ignore[attr-defined]
         ss.site_supervisor(args)
 
     def test_site_supervisor_with_errors(self):
@@ -334,8 +334,8 @@ class TestSiteSupervisor(utc.UnitTest):
 
         try:
             args = self.default_args
-            args.config = temp_file
-            args.measurements = 1
+            args.config = temp_file  # type: ignore[attr-defined]
+            args.measurements = 1  # type: ignore[attr-defined]
             # Run supervision - errors are logged but don't crash
             ss.site_supervisor(args)
         finally:
@@ -344,8 +344,8 @@ class TestSiteSupervisor(utc.UnitTest):
     def test_site_supervisor_verbose_mode(self):
         """Verify site_supervisor with verbose logging."""
         args = self.default_args
-        args.verbose = True
-        args.measurements = 1
+        args.verbose = True  # type: ignore[attr-defined]
+        args.measurements = 1  # type: ignore[attr-defined]
         ss.site_supervisor(args)
 
 
@@ -356,16 +356,16 @@ class TestExecSiteSupervise(utc.UnitTest):
         """Set up test fixtures."""
         super().setUp()
         # Save current log file and debug mode
-        self.original_log_file = util.log_msg.file_name
+        self.original_log_file = util.log_msg.file_name  # type: ignore[attr-defined]
         self.original_debug = getattr(util.log_msg, 'debug', False)
         # Set test-specific log file
-        util.log_msg.file_name = "unit_test.txt"
+        util.log_msg.file_name = "unit_test.txt"  # type: ignore[attr-defined]
 
     def tearDown(self):
         """Clean up after tests."""
         # Restore original log file and debug mode
-        util.log_msg.file_name = self.original_log_file
-        util.log_msg.debug = self.original_debug
+        util.log_msg.file_name = self.original_log_file  # type: ignore[attr-defined]
+        util.log_msg.debug = self.original_debug  # type: ignore[attr-defined]
         super().tearDown()
 
     def test_exec_site_supervise_default(self):
@@ -384,12 +384,12 @@ class TestExecSiteSupervise(utc.UnitTest):
         )
         self.assertTrue(result)
         # Verify debug mode was set
-        self.assertTrue(util.log_msg.debug)
+        self.assertTrue(util.log_msg.debug)  # type: ignore[attr-defined]
 
     def test_exec_site_supervise_with_debug_flag(self):
         """Verify --debug flag enables util.log_msg.debug via CLI flow."""
         # Start with debug disabled
-        util.log_msg.debug = False
+        util.log_msg.debug = False  # type: ignore[attr-defined]
 
         # Execute with --debug flag in argv_list
         result = ss.exec_site_supervise(
@@ -397,12 +397,12 @@ class TestExecSiteSupervise(utc.UnitTest):
         )
         self.assertTrue(result)
         # Verify debug mode was enabled from --debug flag
-        self.assertTrue(util.log_msg.debug)
+        self.assertTrue(util.log_msg.debug)  # type: ignore[attr-defined]
 
     def test_exec_site_supervise_without_debug_flag(self):
         """Verify default behavior keeps debug disabled."""
         # Start with debug disabled
-        util.log_msg.debug = False
+        util.log_msg.debug = False  # type: ignore[attr-defined]
 
         # Execute without --debug flag
         result = ss.exec_site_supervise(
@@ -410,7 +410,7 @@ class TestExecSiteSupervise(utc.UnitTest):
         )
         self.assertTrue(result)
         # Verify debug mode remains disabled
-        self.assertFalse(util.log_msg.debug)
+        self.assertFalse(util.log_msg.debug)  # type: ignore[attr-defined]
 
     def test_exec_site_supervise_explicit_debug_overrides_flag(self):
         """Verify explicit debug parameter overrides --debug flag."""
@@ -421,7 +421,7 @@ class TestExecSiteSupervise(utc.UnitTest):
         )
         self.assertTrue(result)
         # Verify explicit debug=False overrides --debug flag
-        self.assertFalse(util.log_msg.debug)
+        self.assertFalse(util.log_msg.debug)  # type: ignore[attr-defined]
 
     def test_exec_site_supervise_with_arguments(self):
         """Verify exec_site_supervise with custom arguments."""
@@ -487,5 +487,5 @@ class TestExecSiteSupervise(utc.UnitTest):
 
 
 if __name__ == "__main__":
-    util.log_msg.debug = True
+    util.log_msg.debug = True  # type: ignore[attr-defined]
     unittest.main(verbosity=2)

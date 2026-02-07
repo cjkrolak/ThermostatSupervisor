@@ -31,167 +31,194 @@ class TestSystemSwitchPositionMultiValues(utc.UnitTest):
     def test_single_int_value_backward_compatibility(self):
         """Verify backward compatibility with single int values."""
         # Setup: Use traditional single int values
+        # type: ignore[attr-defined]
         self.Zone.system_switch_position[tc.ThermostatCommonZone.HEAT_MODE] = 1
+        # type: ignore[attr-defined]
         self.Zone.system_switch_position[tc.ThermostatCommonZone.COOL_MODE] = 2
+        # type: ignore[attr-defined]
         self.Zone.system_switch_position[tc.ThermostatCommonZone.OFF_MODE] = 0
 
         # Mock get_system_switch_position to return int value
+        # type: ignore[attr-defined]
         self.Zone.get_system_switch_position = MagicMock(return_value=1)
 
         # Test: is_heat_mode should return 1
-        result = self.Zone.is_heat_mode()
+        result = self.Zone.is_heat_mode()  # type: ignore[attr-defined]
         self.assertEqual(1, result, "Expected heat mode to be detected")
 
         # Test: is_cool_mode should return 0
-        result = self.Zone.is_cool_mode()
+        result = self.Zone.is_cool_mode()  # type: ignore[attr-defined]
         self.assertEqual(0, result, "Expected cool mode to not be detected")
 
     def test_single_string_value(self):
         """Verify single string values work correctly."""
         # Setup: Use string values
+        # type: ignore[attr-defined]
         self.Zone.system_switch_position[tc.ThermostatCommonZone.HEAT_MODE] = "heat"
+        # type: ignore[attr-defined]
         self.Zone.system_switch_position[tc.ThermostatCommonZone.COOL_MODE] = "cool"
+        # type: ignore[attr-defined]
         self.Zone.system_switch_position[tc.ThermostatCommonZone.AUTO_MODE] = "auto"
 
         # Mock get_system_switch_position to return string value
+        # type: ignore[attr-defined]
         self.Zone.get_system_switch_position = MagicMock(return_value="heat")
 
         # Test: is_heat_mode should return 1
-        result = self.Zone.is_heat_mode()
+        result = self.Zone.is_heat_mode()  # type: ignore[attr-defined]
         self.assertEqual(1, result, "Expected heat mode to be detected")
 
         # Test: is_auto_mode should return 0
-        result = self.Zone.is_auto_mode()
+        result = self.Zone.is_auto_mode()  # type: ignore[attr-defined]
         self.assertEqual(0, result, "Expected auto mode to not be detected")
 
     def test_list_of_string_values(self):
         """Verify list of string values work correctly."""
         # Setup: Use list of string values for AUTO_MODE
+        # type: ignore[attr-defined]
         self.Zone.system_switch_position[tc.ThermostatCommonZone.HEAT_MODE] = "heat"
         self.Zone.system_switch_position[
             tc.ThermostatCommonZone.AUTO_MODE
         ] = ["auto", "autoHeat", "autoCool"]
+        # type: ignore[attr-defined]
         self.Zone.system_switch_position[tc.ThermostatCommonZone.COOL_MODE] = "cool"
 
         # Test: "auto" should be detected as AUTO_MODE
+        # type: ignore[attr-defined]
         self.Zone.get_system_switch_position = MagicMock(return_value="auto")
-        result = self.Zone.is_auto_mode()
+        result = self.Zone.is_auto_mode()  # type: ignore[attr-defined]
         self.assertEqual(1, result, 'Expected "auto" to be detected as auto mode')
 
         # Test: "autoHeat" should be detected as AUTO_MODE
+        # type: ignore[attr-defined]
         self.Zone.get_system_switch_position = MagicMock(return_value="autoHeat")
-        result = self.Zone.is_auto_mode()
+        result = self.Zone.is_auto_mode()  # type: ignore[attr-defined]
         self.assertEqual(
             1, result, 'Expected "autoHeat" to be detected as auto mode'
         )
 
         # Test: "autoCool" should be detected as AUTO_MODE
+        # type: ignore[attr-defined]
         self.Zone.get_system_switch_position = MagicMock(return_value="autoCool")
-        result = self.Zone.is_auto_mode()
+        result = self.Zone.is_auto_mode()  # type: ignore[attr-defined]
         self.assertEqual(
             1, result, 'Expected "autoCool" to be detected as auto mode'
         )
 
         # Test: "heat" should not be detected as AUTO_MODE
+        # type: ignore[attr-defined]
         self.Zone.get_system_switch_position = MagicMock(return_value="heat")
-        result = self.Zone.is_auto_mode()
+        result = self.Zone.is_auto_mode()  # type: ignore[attr-defined]
         self.assertEqual(0, result, 'Expected "heat" to not be auto mode')
 
     def test_list_of_int_values(self):
         """Verify list of int values work correctly."""
         # Setup: Use list of int values
+        # type: ignore[attr-defined]
         self.Zone.system_switch_position[tc.ThermostatCommonZone.HEAT_MODE] = 1
         self.Zone.system_switch_position[
             tc.ThermostatCommonZone.AUTO_MODE
         ] = [4, 5, 6]
+        # type: ignore[attr-defined]
         self.Zone.system_switch_position[tc.ThermostatCommonZone.COOL_MODE] = 2
 
         # Test: 4 should be detected as AUTO_MODE
+        # type: ignore[attr-defined]
         self.Zone.get_system_switch_position = MagicMock(return_value=4)
-        result = self.Zone.is_auto_mode()
+        result = self.Zone.is_auto_mode()  # type: ignore[attr-defined]
         self.assertEqual(1, result, "Expected 4 to be detected as auto mode")
 
         # Test: 5 should be detected as AUTO_MODE
+        # type: ignore[attr-defined]
         self.Zone.get_system_switch_position = MagicMock(return_value=5)
-        result = self.Zone.is_auto_mode()
+        result = self.Zone.is_auto_mode()  # type: ignore[attr-defined]
         self.assertEqual(1, result, "Expected 5 to be detected as auto mode")
 
         # Test: 6 should be detected as AUTO_MODE
+        # type: ignore[attr-defined]
         self.Zone.get_system_switch_position = MagicMock(return_value=6)
-        result = self.Zone.is_auto_mode()
+        result = self.Zone.is_auto_mode()  # type: ignore[attr-defined]
         self.assertEqual(1, result, "Expected 6 to be detected as auto mode")
 
         # Test: 1 should not be detected as AUTO_MODE
+        # type: ignore[attr-defined]
         self.Zone.get_system_switch_position = MagicMock(return_value=1)
-        result = self.Zone.is_auto_mode()
+        result = self.Zone.is_auto_mode()  # type: ignore[attr-defined]
         self.assertEqual(0, result, "Expected 1 to not be auto mode")
 
     def test_mixed_int_and_string_values(self):
         """Verify mixed int and string values work correctly."""
         # Setup: Mix int and string values in the same list
+        # type: ignore[attr-defined]
         self.Zone.system_switch_position[tc.ThermostatCommonZone.HEAT_MODE] = "heat"
         self.Zone.system_switch_position[
             tc.ThermostatCommonZone.AUTO_MODE
         ] = ["auto", 4, "autoHeat", 5]
+        # type: ignore[attr-defined]
         self.Zone.system_switch_position[tc.ThermostatCommonZone.COOL_MODE] = "cool"
 
         # Test: string "auto" should be detected
+        # type: ignore[attr-defined]
         self.Zone.get_system_switch_position = MagicMock(return_value="auto")
         result = self.Zone.is_auto_mode()
         self.assertEqual(1, result, 'Expected "auto" to be detected')
 
-        # Test: int 4 should be detected
+        # Test: int 4 should be detected  # type: ignore[attr-defined]
         self.Zone.get_system_switch_position = MagicMock(return_value=4)
         result = self.Zone.is_auto_mode()
         self.assertEqual(1, result, "Expected 4 to be detected")
-
+  # type: ignore[attr-defined]
         # Test: string "autoHeat" should be detected
         self.Zone.get_system_switch_position = MagicMock(return_value="autoHeat")
-        result = self.Zone.is_auto_mode()
+        result = self.Zone.is_auto_mode()  # type: ignore[attr-defined]
         self.assertEqual(1, result, 'Expected "autoHeat" to be detected')
 
         # Test: int 5 should be detected
         self.Zone.get_system_switch_position = MagicMock(return_value=5)
-        result = self.Zone.is_auto_mode()
+        result = self.Zone.is_auto_mode()  # type: ignore[attr-defined]
         self.assertEqual(1, result, "Expected 5 to be detected")
 
-        # Test: "cool" should not be detected as auto mode
+        # Test: "cool" should not be detected as auto mode  # type: ignore[attr-defined]
         self.Zone.get_system_switch_position = MagicMock(return_value="cool")
         result = self.Zone.is_auto_mode()
         self.assertEqual(0, result, 'Expected "cool" to not be auto mode')
 
-    def test_unknown_value_returns_false(self):
+    def test_unknown_value_returns_false(self):  # type: ignore[attr-defined]
         """Verify unknown values are handled gracefully."""
         # Setup
         self.Zone.system_switch_position[tc.ThermostatCommonZone.HEAT_MODE] = 1
+        # type: ignore[attr-defined]
         self.Zone.system_switch_position[tc.ThermostatCommonZone.COOL_MODE] = 2
 
         # Mock get_system_switch_position to return unknown value
         self.Zone.get_system_switch_position = MagicMock(return_value=999)
-
+  # type: ignore[attr-defined]
         # Test: Unknown value should return 0
         result = self.Zone.is_heat_mode()
         self.assertEqual(0, result, "Expected unknown value to return 0")
-
+  # type: ignore[attr-defined]
     def test_is_mode_helper_with_list_values(self):
         """Test the _is_mode helper method directly."""
-        # Setup
+        # Setup  # type: ignore[attr-defined]
         self.Zone.system_switch_position[
             tc.ThermostatCommonZone.AUTO_MODE
         ] = ["auto", "autoHeat", "autoCool"]
 
         # Test with "auto"
         self.Zone.get_system_switch_position = MagicMock(return_value="auto")
+        # type: ignore[attr-defined]
         result = self.Zone._is_mode(tc.ThermostatCommonZone.AUTO_MODE)
         self.assertTrue(result, 'Expected _is_mode to return True for "auto"')
 
         # Test with "autoHeat"
         self.Zone.get_system_switch_position = MagicMock(return_value="autoHeat")
+        # type: ignore[attr-defined]
         result = self.Zone._is_mode(tc.ThermostatCommonZone.AUTO_MODE)
         self.assertTrue(result, 'Expected _is_mode to return True for "autoHeat"')
 
         # Test with non-matching value
         self.Zone.get_system_switch_position = MagicMock(return_value="heat")
+        # type: ignore[attr-defined]
         result = self.Zone._is_mode(tc.ThermostatCommonZone.AUTO_MODE)
         self.assertFalse(result, 'Expected _is_mode to return False for "heat"')
 

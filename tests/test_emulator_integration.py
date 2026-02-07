@@ -155,10 +155,19 @@ class FunctionalIntegrationTest(IntegrationTest, utc.FunctionalIntegrationTest):
             current_humidity = Zone.get_display_humidity()
 
             # Values should be within normal variation range from base values
-            temp_diff = abs(current_temp - Zone.get_parameter("display_temp"))
-            humidity_diff = abs(
-                current_humidity - Zone.get_parameter("display_humidity")
-            )
+            display_temp = Zone.get_parameter("display_temp")
+            display_humidity = Zone.get_parameter("display_humidity")
+
+            # Type guards for get_parameter() return values
+            if display_temp is not None:
+                temp_diff = abs(current_temp - display_temp)
+            else:
+                temp_diff = 0.0
+
+            if display_humidity is not None and current_humidity is not None:
+                humidity_diff = abs(current_humidity - display_humidity)
+            else:
+                humidity_diff = 0.0
 
             self.assertLessEqual(
                 temp_diff,
@@ -271,5 +280,5 @@ class EmulatorUnitTest(utc.UnitTest):
 
 
 if __name__ == "__main__":
-    util.log_msg.debug = True
+    util.log_msg.debug = True  # type: ignore[attr-defined]
     unittest.main(verbosity=2)

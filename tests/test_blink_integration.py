@@ -119,7 +119,7 @@ class BlinkSpamMitigationTest(unittest.TestCase):
 
     @patch("src.blink.time.time")
     @patch("src.blink.util.log_msg")
-    def test_refresh_zone_info_caching(self, mock_log, mock_time):
+    def test_refresh_zone_info_caching(self, _mock_log, mock_time):
         """Test that refresh_zone_info respects cache timeout."""
         # Setup time progression
         start_time = 1000.0
@@ -237,5 +237,5 @@ class BlinkSpamMitigationTest(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    util.log_msg.debug = True
+    util.log_msg.debug = True  # type: ignore[attr-defined]
     unittest.main(verbosity=2)
