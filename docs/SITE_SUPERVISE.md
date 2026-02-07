@@ -54,6 +54,15 @@ python -m src.site_supervise --help
 - `--display-zones`: Display all zones and exit (no supervision)
 - `--display-temps`: Display current temperatures and exit (no supervision)
 
+**Interrupting Supervision:**
+
+You can gracefully exit site supervision at any time by pressing `CTRL-C`. This will:
+- Abort the current supervision loop
+- Log a message indicating user interruption
+- Exit cleanly without leaving threads running
+
+This is useful when you want to stop long-running supervision tasks without waiting for completion.
+
 ### Python API Usage
 
 For programmatic control, use the Python API directly:
