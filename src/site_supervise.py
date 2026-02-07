@@ -112,7 +112,6 @@ Examples:
     parser.add_argument(
         "--debug",
         action="store_true",
-        default=False,
         help="Enable debug mode (default: False).",
     )
 
