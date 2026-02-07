@@ -522,8 +522,8 @@ def c_to_f(tempc) -> float | None:
     returns:
         (float | None): temp in °F, or None if input is None.
     """
-    if isinstance(tempc, type(None)):
-        return tempc  # pass thru
+    if tempc is None:
+        return None
     elif isinstance(tempc, (int, float)):
         return tempc * 9.0 / 5 + 32
     else:
@@ -539,8 +539,8 @@ def f_to_c(tempf) -> float | None:
     returns:
         (float | None): temp in °C, or None if input is None.
     """
-    if isinstance(tempf, type(None)):
-        return tempf  # pass thru
+    if tempf is None:
+        return None
     elif isinstance(tempf, (int, float)):
         return (tempf - 32) * 5 / 9.0
     else:
