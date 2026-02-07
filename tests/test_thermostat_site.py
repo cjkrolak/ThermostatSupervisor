@@ -3,7 +3,9 @@ Unit test module for thermostat_site.py.
 """
 
 # built-in imports
+import re
 import unittest
+from unittest.mock import patch
 
 # local imports
 from src import site_config
@@ -283,6 +285,56 @@ class TestThermostatSite(utc.UnitTest):
         self.assertIn("site_name", config)
         self.assertIn("thermostats", config)
         self.assertIsInstance(config["thermostats"], list)
+
+    def test_measurement_printout_includes_timestamp(self):
+        """Verify measurement printouts include timestamp."""
+        small_config = {
+            "site_name": "test_site",
+            "thermostats": [
+                {
+                    "thermostat_type": "emulator",
+                    "zone": 0,
+                    "enabled": True,
+                    "poll_time": 1,
+                    "tolerance": 2,
+                    "target_mode": "OFF_MODE",
+                    "measurements": 1,
+                },
+            ],
+        }
+        site = ts.ThermostatSite(
+            site_config_dict=small_config,
+            verbose=False
+        )
+
+        # Use patch to capture log_msg calls
+        with patch('src.utilities.log_msg') as mock_log:
+            site.supervise_all_zones(
+                measurement_count=1,
+                use_threading=False
+            )
+
+            # Find the measurement log message
+            measurement_msg = None
+            for call in mock_log.call_args_list:
+                msg = str(call[0][0]) if call[0] else ""
+                if "Measurement" in msg and "Temp:" in msg:
+                    measurement_msg = msg
+                    break
+
+            # Verify timestamp format is present
+            self.assertIsNotNone(
+                measurement_msg,
+                "Measurement log message not found"
+            )
+            # Check for timestamp format: [YYYY-MM-DD HH:MM:SS]
+            timestamp_pattern = (
+                r'\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\]'
+            )
+            self.assertIsNotNone(
+                re.search(timestamp_pattern, measurement_msg),
+                f"Timestamp not found in message: {measurement_msg}"
+            )
 
 
 if __name__ == "__main__":

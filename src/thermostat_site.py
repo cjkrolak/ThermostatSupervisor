@@ -7,6 +7,7 @@ support.
 """
 
 # built-ins
+import datetime
 import threading
 import time
 from typing import Dict, Optional
@@ -331,8 +332,11 @@ class ThermostatSite:
                         "thread": thread_name,
                     })
 
+                timestamp = datetime.datetime.now().strftime(
+                    "%Y-%m-%d %H:%M:%S"
+                )
                 util.log_msg(
-                    f"{thread_name}: Measurement {measurement}/"
+                    f"[{timestamp}] {thread_name}: Measurement {measurement}/"
                     f"{max_measurements} - "
                     f"Temp: {Zone.display_temp}{tc.DEGREE_SIGN}F, "
                     f"Humidity: {Zone.display_humidity}%",
