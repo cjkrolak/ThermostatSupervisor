@@ -336,6 +336,7 @@ class TestThermostatSite(utc.UnitTest):
                 re.search(timestamp_pattern, measurement_msg),
                 f"Timestamp not found in message: {measurement_msg}"
             )
+
     def test_supervise_all_zones_keyboard_interrupt_sequential(self):
         """Verify KeyboardInterrupt is propagated in sequential mode."""
         site = ts.ThermostatSite(
