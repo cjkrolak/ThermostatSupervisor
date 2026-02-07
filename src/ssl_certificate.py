@@ -281,36 +281,10 @@ def validate_ssl_certificate(cert_path: pathlib.Path) -> bool:
         )
         return False
 
-    config_file_path = None
     try:
         # Build OpenSSL validation command
+        # Note: openssl x509 does not use config files, so no -config needed
         openssl_cmd = ["openssl", "x509", "-in", str(cert_path), "-noout", "-text"]
-
-        # Windows-specific configuration to avoid config file issues
-        if platform.system().lower() == "windows":
-            # Create a temporary config file with minimal required sections
-            try:
-                config_file_path = _create_windows_openssl_config()
-                openssl_cmd.extend(["-config", config_file_path])
-                util.log_msg(
-                    f"Validating certificate with config: {config_file_path}",
-                    mode=util.DEBUG_LOG
-                )
-                # Verify config file exists before proceeding
-                if not pathlib.Path(config_file_path).exists():
-                    util.log_msg(
-                        f"Failed to create temporary OpenSSL config file: "
-                        f"{config_file_path}",
-                        mode=util.DEBUG_LOG
-                    )
-                    return False
-            except OSError as e:
-                util.log_msg(
-                    f"Certificate validation failed: error creating Windows "
-                    f"OpenSSL config file: {e}",
-                    mode=util.DEBUG_LOG
-                )
-                return False
 
         # Use OpenSSL to verify the certificate
         subprocess.run(
@@ -351,10 +325,6 @@ def validate_ssl_certificate(cert_path: pathlib.Path) -> bool:
             mode=util.DEBUG_LOG
         )
         return False
-
-    finally:
-        # Clean up temporary config file on Windows
-        _cleanup_temp_config(config_file_path)
 
 
 def download_ssl_certificate(hostname: str, port: int = 443) -> pathlib.Path:
