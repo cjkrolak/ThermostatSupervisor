@@ -8,7 +8,7 @@ import os
 import sys
 import tempfile
 import unittest
-from unittest.mock import patch,MagicMock
+from unittest.mock import patch
 
 # local imports
 from src import site_supervise as ss
