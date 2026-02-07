@@ -8,6 +8,7 @@ This test module verifies that system_switch_position can handle:
 """
 
 import unittest
+from typing import Any
 from unittest.mock import MagicMock
 
 from src import thermostat_common as tc
@@ -31,23 +32,21 @@ class TestSystemSwitchPositionMultiValues(utc.UnitTest):
     def test_single_int_value_backward_compatibility(self):
         """Verify backward compatibility with single int values."""
         # Setup: Use traditional single int values
-        # type: ignore[attr-defined]
-        self.Zone.system_switch_position[tc.ThermostatCommonZone.HEAT_MODE] = 1
-        # type: ignore[attr-defined]
-        self.Zone.system_switch_position[tc.ThermostatCommonZone.COOL_MODE] = 2
-        # type: ignore[attr-defined]
-        self.Zone.system_switch_position[tc.ThermostatCommonZone.OFF_MODE] = 0
+        # Cast to Any to avoid type errors on dynamic attribute access
+        zone: Any = self.Zone
+        zone.system_switch_position[tc.ThermostatCommonZone.HEAT_MODE] = 1
+        zone.system_switch_position[tc.ThermostatCommonZone.COOL_MODE] = 2
+        zone.system_switch_position[tc.ThermostatCommonZone.OFF_MODE] = 0
 
         # Mock get_system_switch_position to return int value
-        # type: ignore[attr-defined]
-        self.Zone.get_system_switch_position = MagicMock(return_value=1)
+        zone.get_system_switch_position = MagicMock(return_value=1)
 
         # Test: is_heat_mode should return 1
-        result = self.Zone.is_heat_mode()  # type: ignore[attr-defined]
+        result = zone.is_heat_mode()
         self.assertEqual(1, result, "Expected heat mode to be detected")
 
         # Test: is_cool_mode should return 0
-        result = self.Zone.is_cool_mode()  # type: ignore[attr-defined]
+        result = zone.is_cool_mode()
         self.assertEqual(0, result, "Expected cool mode to not be detected")
 
     def test_single_string_value(self):
