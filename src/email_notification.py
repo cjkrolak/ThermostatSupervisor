@@ -129,8 +129,7 @@ def send_email_alert(
         )
     except (
         ValueError,  # not sure if this exception will be raised here
-        TimeoutError,  # observed on Windows for bad port
-        OSError,  # on AzDO with bad port
+        OSError,  # on AzDO with bad port, also catches TimeoutError
     ) as ex:
         util.log_msg(
             f"exception during smtp connection: {str(ex)}",
@@ -187,7 +186,7 @@ def send_email_alert(
 
 
 if __name__ == "__main__":
-    util.log_msg.debug = True
+    util.log_msg.debug = True  # type: ignore[attr-defined]
     send_email_alert(
         subject="test email alert",
         body="this is a test of the email notification alert.",

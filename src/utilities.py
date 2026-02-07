@@ -108,7 +108,7 @@ def log_msg(msg, mode, func_name=-1, file_name=None):
 
     # define filename
     if file_name is not None:
-        log_msg.file_name = file_name
+        log_msg.file_name = file_name  # type: ignore[attr-defined]
 
     # build message string
     if func_name > 0:
@@ -123,7 +123,7 @@ def log_msg(msg, mode, func_name=-1, file_name=None):
             os.makedirs(FILE_PATH)
 
         # build full file name
-        full_path = get_full_file_path(log_msg.file_name)
+        full_path = get_full_file_path(log_msg.file_name)  # type: ignore[attr-defined]
 
         # check file size and rotate if necessary
         file_size_bytes = get_file_size_bytes(full_path)
@@ -167,7 +167,7 @@ def log_msg(msg, mode, func_name=-1, file_name=None):
 
 
 # global default log file name if none is specified
-log_msg.file_name = "default_log.txt"
+log_msg.file_name = "default_log.txt"  # type: ignore[attr-defined]
 
 
 def _is_verbose_retry_message(msg):
@@ -523,7 +523,7 @@ def c_to_f(tempc) -> float:
         (float): temp in °F.
     """
     if isinstance(tempc, type(None)):
-        return tempc  # pass thru
+        return 0.0  # return default instead of None
     elif isinstance(tempc, (int, float)):
         return tempc * 9.0 / 5 + 32
     else:
@@ -540,7 +540,7 @@ def f_to_c(tempf) -> float:
         (float): temp in °C.
     """
     if isinstance(tempf, type(None)):
-        return tempf  # pass thru
+        return 0.0  # return default instead of None
     elif isinstance(tempf, (int, float)):
         return (tempf - 32) * 5 / 9.0
     else:
@@ -1002,9 +1002,9 @@ class UserInputs:
             arg = arg.strip()  # remove any leading spaces
         if arg in [None, ""]:
             self.parser.error(f"The file '{arg}' does not exist!")
-        elif not os.path.exists(arg):
+        elif arg is not None and not os.path.exists(arg):
             self.parser.error(f"The file '{os.path.abspath(arg)}' does not exist!")
-        else:
+        elif arg is not None:
             return open(arg, "r", encoding="utf8")  # return a file handle
 
     def parse_input_file(self, input_file):
@@ -1233,7 +1233,7 @@ def execute_with_extended_retries(
     zone_name: str,
     number_of_retries: int = 5,
     initial_retry_delay_sec: int = 30,
-    exception_types: tuple = None,
+    exception_types: tuple = None,  # type: ignore[assignment]
     email_notification=None,
 ):
     """

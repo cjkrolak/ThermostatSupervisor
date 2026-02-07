@@ -209,7 +209,7 @@ def get_ssl_context(
     cert_file: str = "server.crt",
     key_file: str = "server.key",
     fallback_to_adhoc: bool = True,
-) -> Optional[str]:
+) -> Optional[Tuple[str, str]] | str | None:
     """Get SSL context for Flask application.
 
     Args:
@@ -329,7 +329,7 @@ def validate_ssl_certificate(cert_path: pathlib.Path) -> bool:
     except subprocess.CalledProcessError as e:
         util.log_msg(
             f"Certificate validation failed (OpenSSL error): {cert_path}\n"
-            f"Command: {' '.join(openssl_cmd)}\n"
+            f"Command: {' '.join(openssl_cmd)}\n"  # type: ignore[possibly-unbound]
             f"Return code: {e.returncode}\n"
             f"Stdout: {e.stdout}\n"
             f"Stderr: {e.stderr}",
@@ -340,7 +340,7 @@ def validate_ssl_certificate(cert_path: pathlib.Path) -> bool:
     except subprocess.TimeoutExpired:
         util.log_msg(
             f"Certificate validation timed out: {cert_path}\n"
-            f"Command: {' '.join(openssl_cmd)}",
+            f"Command: {' '.join(openssl_cmd)}",  # type: ignore[possibly-unbound]
             mode=util.DEBUG_LOG
         )
         return False

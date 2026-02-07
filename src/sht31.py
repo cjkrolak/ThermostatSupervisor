@@ -66,9 +66,11 @@ class ThermostatClass(tc.ThermostatCommon):
             # self.path = ""
             self.unit_test_seed = ""
         self.measurements = "?measurements=" + str(sht31_config.MEASUREMENTS)
+        # Type guard: ensure ip_address is not None before concatenation
+        ip_addr = self.ip_address if self.ip_address is not None else "127.0.0.1"
         self.url = (
             sht31_config.FLASK_URL_PREFIX
-            + self.ip_address
+            + ip_addr
             + ":"
             + self.port
             + self.path
@@ -219,7 +221,7 @@ class ThermostatClass(tc.ThermostatCommon):
         import flask  # noqa: F401
 
         # setup flask runtime variables
-        sht31_fs.uip = sht31_fs.UserInputs(
+        sht31_fs.uip = sht31_fs.UserInputs(  # type: ignore[attr-defined]
             [os.path.realpath(__file__), sht31_config.FLASK_DEBUG_MODE]
         )
 
@@ -265,7 +267,7 @@ class ThermostatClass(tc.ThermostatCommon):
         self.zone_info = self.get_metadata(zone, retry=retry)
         return self.zone_info
 
-    def get_metadata(self, zone, trait=None, parameter=None, retry=True):
+    def get_metadata(self, zone=None, trait=None, parameter=None, retry=True):
         """
         Get current thermostat metadata.
 
@@ -533,7 +535,8 @@ class ThermostatZone(tc.ThermostatCommonZone):
         returns:
             (float): temperature in °F.
         """
-        return float(self.get_metadata(parameter=self.tempfield))
+        temp_value = self.get_metadata(parameter=self.tempfield)
+        return float(temp_value) if temp_value is not None else 0.0
 
     def get_display_humidity(self) -> Union[float, None]:
         """
@@ -652,9 +655,9 @@ class ThermostatZone(tc.ThermostatCommonZone):
         """
         off_mode_value = self.system_switch_position[self.OFF_MODE]
         # If the value is a list, return the first element
-        if isinstance(off_mode_value, list):
-            return off_mode_value[0]
-        return off_mode_value
+        if isinstance(off_mode_value, (list, tuple)):
+            return int(off_mode_value[0])  # type: ignore[index]
+        return int(off_mode_value)  # type: ignore[arg-type]
 
     def refresh_zone_info(self, force_refresh=False) -> None:
         """

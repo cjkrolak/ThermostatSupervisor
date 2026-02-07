@@ -181,8 +181,8 @@ class ThermostatZone(tc.ThermostatCommonZone):
     def initialize_meta_data_dict(self):
         """Initialize the meta data dict"""
         # add parameters and values
-        self.set_heat_setpoint(emulator_config.STARTING_TEMP)
-        self.set_cool_setpoint(emulator_config.STARTING_TEMP)
+        self.set_heat_setpoint(int(emulator_config.STARTING_TEMP))
+        self.set_cool_setpoint(int(emulator_config.STARTING_TEMP))
         self.set_parameter("display_temp", emulator_config.STARTING_TEMP)
         self.set_parameter("display_humidity", emulator_config.STARTING_HUMIDITY)
         self.set_parameter("humidity_support", True)
@@ -248,7 +248,10 @@ class ThermostatZone(tc.ThermostatCommonZone):
 
         # Normal behavior if no deviation data
         self.refresh_zone_info()
-        return self.get_parameter("display_temp") + random.uniform(
+        temp = self.get_parameter("display_temp")
+        if temp is None:
+            return 0.0
+        return temp + random.uniform(
             -emulator_config.NORMAL_TEMP_VARIATION,
             emulator_config.NORMAL_TEMP_VARIATION,
         )
@@ -272,7 +275,10 @@ class ThermostatZone(tc.ThermostatCommonZone):
             return float(deviation_humidity)
 
         # Normal behavior if no deviation data
-        return self.get_parameter("display_humidity") + random.uniform(
+        humidity = self.get_parameter("display_humidity")
+        if humidity is None:
+            return 0.0
+        return humidity + random.uniform(
             -emulator_config.NORMAL_HUMIDITY_VARIATION,
             emulator_config.NORMAL_HUMIDITY_VARIATION,
         )
@@ -305,6 +311,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
             "switch_position",
             self.system_switch_position[getattr(tc.ThermostatCommonZone, target_mode)],
         )
+        return True
 
     def is_heat_mode(self) -> int:
         """
@@ -385,53 +392,79 @@ class ThermostatZone(tc.ThermostatCommonZone):
 
     def is_heating(self):
         """Return 1 if heating relay is active, else 0."""
+        heat_sp = self.get_heat_setpoint_raw()
+        display_temp = self.get_display_temp()
+        if heat_sp is None or display_temp is None:
+            return 0
         return int(
             self.is_heat_mode()
             and self.is_power_on()
-            and self.get_heat_setpoint_raw() > self.get_display_temp()
+            and heat_sp > display_temp  # type: ignore[arg-type]
         )
 
     def is_cooling(self):
         """Return 1 if cooling relay is active, else 0."""
+        cool_sp = self.get_cool_setpoint_raw()
+        display_temp = self.get_display_temp()
+        if cool_sp is None or display_temp is None:
+            return 0
         return int(
             self.is_cool_mode()
             and self.is_power_on()
-            and self.get_cool_setpoint_raw() < self.get_display_temp()
+            and cool_sp < display_temp  # type: ignore[arg-type]
         )
 
     def is_drying(self):
         """Return 1 if drying relay is active, else 0."""
+        cool_sp = self.get_cool_setpoint_raw()
+        display_temp = self.get_display_temp()
+        if cool_sp is None or display_temp is None:
+            return 0
         return int(
             self.is_dry_mode()
             and self.is_power_on()
-            and self.get_cool_setpoint_raw() < self.get_display_temp()
+            and cool_sp < display_temp  # type: ignore[arg-type]
         )
 
     def is_auto(self):
         """Return 1 if auto relay is active, else 0."""
+        cool_sp = self.get_cool_setpoint_raw()
+        heat_sp = self.get_heat_setpoint_raw()
+        display_temp = self.get_display_temp()
+        if cool_sp is None or heat_sp is None or display_temp is None:
+            return 0
         return int(
             self.is_auto_mode()
             and self.is_power_on()
             and (
-                self.get_cool_setpoint_raw() < self.get_display_temp()
-                or self.get_heat_setpoint_raw() > self.get_display_temp()
+                cool_sp < display_temp
+                or heat_sp > display_temp  # type: ignore[arg-type]
             )
         )
 
     def is_eco(self):
         """Return 1 if eco relay is active, else 0."""
+        cool_sp = self.get_cool_setpoint_raw()
+        heat_sp = self.get_heat_setpoint_raw()
+        display_temp = self.get_display_temp()
+        if cool_sp is None or heat_sp is None or display_temp is None:
+            return 0
         return int(
             self.is_eco_mode()
             and self.is_power_on()
             and (
-                self.get_cool_setpoint_raw() < self.get_display_temp()
-                or self.get_heat_setpoint_raw() > self.get_display_temp()
+                cool_sp < display_temp
+                or heat_sp > display_temp  # type: ignore[arg-type]
             )
         )
 
     def is_fanning(self) -> int:
         """Return 1 if fan relay is active, else 0."""
-        return int(self.is_fan_on() and self.is_power_on())
+        fan_on = self.is_fan_on()
+        power_on = self.is_power_on()
+        if fan_on is None or power_on is None:
+            return 0
+        return int(fan_on and power_on)  # type: ignore[arg-type]
 
     def is_power_on(self):
         """Return 1 if power relay is active, else 0."""
@@ -441,17 +474,22 @@ class ThermostatZone(tc.ThermostatCommonZone):
     def is_fan_on(self):
         """Return 1 if fan relay is active, else 0."""
         self.refresh_zone_info()
-        return self.get_parameter("fan_speed") > 0
+        fan_speed = self.get_parameter("fan_speed")
+        if fan_speed is None:
+            return False
+        return fan_speed > 0
 
     def is_defrosting(self):
         """Return 1 if defrosting is active, else 0."""
         self.refresh_zone_info()
-        return int(self.get_parameter("defrost"))
+        defrost = self.get_parameter("defrost")
+        return int(defrost) if defrost is not None else 0
 
     def is_standby(self):
         """Return 1 if standby is active, else 0."""
         self.refresh_zone_info()
-        return int(self.get_parameter("standby"))
+        standby = self.get_parameter("standby")
+        return int(standby) if standby is not None else 0
 
     def get_heat_setpoint_raw(self) -> float:  # used
         """
@@ -469,7 +507,8 @@ class ThermostatZone(tc.ThermostatCommonZone):
 
         # Normal behavior if no deviation data
         self.refresh_zone_info()
-        return float(self.get_parameter("heat_setpoint"))
+        heat_sp = self.get_parameter("heat_setpoint")
+        return float(heat_sp) if heat_sp is not None else 0.0
 
     def get_heat_setpoint(self) -> str:
         """Return heat setpoint with units as a string."""
@@ -513,7 +552,8 @@ class ThermostatZone(tc.ThermostatCommonZone):
 
         # Normal behavior if no deviation data
         self.refresh_zone_info()
-        return float(self.get_parameter("cool_setpoint"))
+        cool_sp = self.get_parameter("cool_setpoint")
+        return float(cool_sp) if cool_sp is not None else 0.0
 
     def get_cool_setpoint(self) -> str:
         """Return cool setpoint with units as a string."""
@@ -529,7 +569,8 @@ class ThermostatZone(tc.ThermostatCommonZone):
         returns:
             (booL): True if is in vacation hold mode.
         """
-        return bool(self.get_parameter("vacation_hold"))
+        vacation_hold = self.get_parameter("vacation_hold")
+        return bool(vacation_hold) if vacation_hold is not None else False
 
     def get_vacation_hold(self) -> bool:
         """
@@ -542,7 +583,8 @@ class ThermostatZone(tc.ThermostatCommonZone):
             (bool): True if vacation hold is set.
         """
         # TODO, are vacationhold unique fields?  what used for?
-        return self.get_parameter("vacation_hold")
+        vacation_hold = self.get_parameter("vacation_hold")
+        return bool(vacation_hold) if vacation_hold is not None else False
 
     def get_system_switch_position(self) -> Union[int, str]:  # used
         """
@@ -558,15 +600,18 @@ class ThermostatZone(tc.ThermostatCommonZone):
         # first check if power is on
         # if power is off then operation_mode key may be missing.
         if not self.is_power_on():
-            off_mode_value = self.system_switch_position[
+            off_mode_value = self.system_switch_position[  # type: ignore[index]
                 tc.ThermostatCommonZone.OFF_MODE
             ]
             # If the value is a list, return the first element
             if isinstance(off_mode_value, list):
-                return off_mode_value[0]
-            return off_mode_value
+                return int(off_mode_value[0])  # type: ignore[index]
+            return int(off_mode_value)  # type: ignore[arg-type]
         else:
-            return self.get_parameter("switch_position")
+            switch_pos = self.get_parameter("switch_position")
+            if switch_pos is None:
+                return 0
+            return switch_pos
 
     def set_heat_setpoint(self, temp: int) -> None:
         """
@@ -662,7 +707,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         except (pickle.PickleError, EOFError):
             return default_val
 
-    def has_deviation_data(self, key: str = None) -> bool:
+    def has_deviation_data(self, key: str = None) -> bool:  # type: ignore[assignment]
         """
         Check if deviation data exists.
 

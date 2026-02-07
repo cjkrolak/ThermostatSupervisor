@@ -203,8 +203,8 @@ class ThermostatSite:
                 mod = api.load_hardware_library(thermostat_type)
 
                 # Create thermostat and zone objects
-                Thermostat = mod.ThermostatClass(zone_num)
-                Zone = mod.ThermostatZone(Thermostat)
+                Thermostat = mod.ThermostatClass(zone_num)  # type: ignore[attr-defined]
+                Zone = mod.ThermostatZone(Thermostat)  # type: ignore[attr-defined]
 
                 # Query current conditions
                 Zone.query_thermostat_zone()
@@ -288,8 +288,8 @@ class ThermostatSite:
             api.verify_required_env_variables(thermostat_type, str(zone_num))
 
             # Create thermostat and zone objects
-            Thermostat = mod.ThermostatClass(zone_num)
-            Zone = mod.ThermostatZone(Thermostat)
+            Thermostat = mod.ThermostatClass(zone_num)  # type: ignore[attr-defined]
+            Zone = mod.ThermostatZone(Thermostat)  # type: ignore[attr-defined]
 
             # Update runtime parameters from config
             if tstat_config.get("poll_time"):
