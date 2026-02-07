@@ -99,18 +99,9 @@ class TestParseArguments(utc.UnitTest):
 
     def test_parse_arguments_debug(self):
         """Verify parse_arguments with debug option."""
-        args = site_supervise.parse_arguments(["--debug"])
+        args = ss.parse_arguments(["--debug"])
         self.assertTrue(args.debug)
 
-    @patch('src.site_supervise.ts.ThermostatSite')
-    def test_site_supervisor_keyboard_interrupt(self, mock_site_class):
-        """Verify site_supervisor handles KeyboardInterrupt gracefully."""
-        # Create mock site instance
-        mock_site = MagicMock()
-        mock_site_class.return_value = mock_site
-        # Mock supervise_all_zones to raise KeyboardInterrupt
-        mock_site.supervise_all_zones.side_effect = KeyboardInterrupt(
-            "User interrupted"
     def test_parse_arguments_combined_options(self):
         """Verify combined argument parsing."""
         args = ss.parse_arguments(
