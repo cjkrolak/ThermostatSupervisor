@@ -90,6 +90,23 @@ def _cleanup_temp_config(config_file_path: Optional[str]) -> None:
                 )
 
 
+def _get_openssl_timeout() -> int:
+    """Get timeout value for OpenSSL operations based on platform.
+
+    ARM processors (like Raspberry Pi) need more time for cryptographic
+    operations compared to x86_64 systems.
+
+    Returns:
+        int: Timeout in seconds (120 for ARM, 30 for other platforms)
+    """
+    machine = platform.machine().lower()
+    # ARM-based systems (Raspberry Pi, etc.) need longer timeout
+    if any(arch in machine for arch in ["arm", "aarch"]):
+        return 120
+    # x86_64 and Windows systems can use shorter timeout
+    return 30
+
+
 def generate_self_signed_certificate(
     cert_file: str = "server.crt",
     key_file: str = "server.key",
@@ -162,9 +179,16 @@ def generate_self_signed_certificate(
             )
 
     try:
+        # Get platform-appropriate timeout
+        timeout = _get_openssl_timeout()
+        util.log_msg(
+            f"Running OpenSSL with timeout={timeout}s on {platform.machine()}",
+            mode=util.DEBUG_LOG
+        )
+
         # Run OpenSSL command
         subprocess.run(
-            openssl_cmd, capture_output=True, text=True, check=True, timeout=30
+            openssl_cmd, capture_output=True, text=True, check=True, timeout=timeout
         )
 
         util.log_msg("SSL certificate generated successfully", mode=util.STDOUT_LOG)
