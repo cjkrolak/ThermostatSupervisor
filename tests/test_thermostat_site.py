@@ -4,6 +4,7 @@ Unit test module for thermostat_site.py.
 
 # built-in imports
 import re
+import threading
 import unittest
 from unittest.mock import patch
 
@@ -335,6 +336,43 @@ class TestThermostatSite(utc.UnitTest):
                 re.search(timestamp_pattern, measurement_msg),
                 f"Timestamp not found in message: {measurement_msg}"
             )
+    def test_supervise_all_zones_keyboard_interrupt_sequential(self):
+        """Verify KeyboardInterrupt is propagated in sequential mode."""
+        site = ts.ThermostatSite(
+            site_config_dict=self.test_site_config,
+            verbose=False
+        )
+        # Mock _supervise_single_thermostat to raise KeyboardInterrupt
+        with patch.object(
+            site,
+            '_supervise_single_thermostat',
+            side_effect=KeyboardInterrupt("User interrupted")
+        ):
+            # Verify KeyboardInterrupt is raised
+            with self.assertRaises(KeyboardInterrupt):
+                site.supervise_all_zones(
+                    measurement_count=1,
+                    use_threading=False
+                )
+
+    def test_supervise_all_zones_keyboard_interrupt_threaded(self):
+        """Verify KeyboardInterrupt is handled in threaded mode."""
+        site = ts.ThermostatSite(
+            site_config_dict=self.test_site_config,
+            verbose=False
+        )
+        # Mock thread join to raise KeyboardInterrupt
+        with patch.object(
+            threading.Thread,
+            'join',
+            side_effect=KeyboardInterrupt("User interrupted")
+        ):
+            # Verify KeyboardInterrupt is raised
+            with self.assertRaises(KeyboardInterrupt):
+                site.supervise_all_zones(
+                    measurement_count=1,
+                    use_threading=True
+                )
 
 
 if __name__ == "__main__":
