@@ -109,6 +109,13 @@ Examples:
         help="Display current temperatures and exit (no supervision).",
     )
 
+    parser.add_argument(
+        "--debug",
+        action="store_true",
+        default=False,
+        help="Enable debug mode (default: False).",
+    )
+
     if argv_list is None:
         argv_list = sys.argv[1:]
 
@@ -284,5 +291,8 @@ if __name__ == "__main__":
     # Verify environment
     env.get_python_version()
 
+    # Parse arguments to get debug flag
+    args = parse_arguments(sys.argv[1:])
+
     # Execute site supervision
-    exec_site_supervise(debug=True, argv_list=sys.argv[1:])
+    exec_site_supervise(debug=args.debug, argv_list=sys.argv[1:])

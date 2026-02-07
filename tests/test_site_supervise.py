@@ -32,6 +32,7 @@ class TestSiteSupervise(utc.UnitTest):
         self.assertTrue(args.verbose)
         self.assertFalse(args.display_zones)
         self.assertFalse(args.display_temps)
+        self.assertFalse(args.debug)
 
     def test_parse_arguments_custom_config(self):
         """Verify parse_arguments with custom config path."""
@@ -62,6 +63,11 @@ class TestSiteSupervise(utc.UnitTest):
         """Verify parse_arguments with display-temps option."""
         args = site_supervise.parse_arguments(["--display-temps"])
         self.assertTrue(args.display_temps)
+
+    def test_parse_arguments_debug(self):
+        """Verify parse_arguments with debug option."""
+        args = site_supervise.parse_arguments(["--debug"])
+        self.assertTrue(args.debug)
 
     @patch('src.site_supervise.ts.ThermostatSite')
     def test_site_supervisor_keyboard_interrupt(self, mock_site_class):
