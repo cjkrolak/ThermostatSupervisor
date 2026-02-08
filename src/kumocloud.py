@@ -146,7 +146,7 @@ class ThermostatClass(
                 supervisor_handler.setFormatter(formatter)
 
                 pykumo_logger.addHandler(supervisor_handler)
-                pykumo_logger.setLevel(logging.DEBUG)
+                pykumo_logger.setLevel(logging.INFO)
 
                 # Prevent propagation to avoid duplicate messages
                 pykumo_logger.propagate = False
