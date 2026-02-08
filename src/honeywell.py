@@ -146,7 +146,7 @@ class ThermostatClass(pyhtcc.PyHTCC, tc.ThermostatCommon):  # type: ignore[name-
         supervisor_handler.setFormatter(formatter)
 
         pyhtcc_logger.addHandler(supervisor_handler)
-        pyhtcc_logger.setLevel(logging.DEBUG)
+        pyhtcc_logger.setLevel(logging.INFO)
 
         # Prevent propagation to avoid duplicate messages
         pyhtcc_logger.propagate = False
