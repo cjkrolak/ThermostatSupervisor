@@ -197,12 +197,12 @@ __version__ = "1.0.12"
                 return result
             elif len(cmd) >= 2 and cmd[:2] == ["git", "show"]:
                 # First call with src/ path fails
-                if "src/__init__.py" in cmd[2]:
+                if len(cmd) >= 3 and "src/__init__.py" in cmd[2]:
                     raise subprocess.CalledProcessError(
                         1, cmd, stderr="path does not exist"
                     )
                 # Second call with thermostatsupervisor/ path succeeds
-                elif "thermostatsupervisor/__init__.py" in cmd[2]:
+                elif len(cmd) >= 3 and "thermostatsupervisor/__init__.py" in cmd[2]:
                     result = MagicMock()
                     result.stdout = self.sample_version_content
                     return result
