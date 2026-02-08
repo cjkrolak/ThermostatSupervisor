@@ -190,12 +190,12 @@ __version__ = "1.0.12"
         """Test fallback to legacy thermostatsupervisor/ path."""
         def mock_subprocess_run(cmd, **kwargs):
             """Mock subprocess.run with fallback behavior."""
-            if cmd[0] == "git" and len(cmd) > 1 and cmd[1] == "fetch":
+            if cmd[:2] == ["git", "fetch"]:
                 # Mock successful fetch
                 result = MagicMock()
                 result.stdout = ""
                 return result
-            elif cmd[0] == "git" and len(cmd) > 1 and cmd[1] == "show":
+            elif cmd[:2] == ["git", "show"]:
                 # First call with src/ path fails
                 if "src/__init__.py" in cmd[2]:
                     raise subprocess.CalledProcessError(
