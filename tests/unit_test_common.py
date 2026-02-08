@@ -284,25 +284,25 @@ class UnitTest(unittest.TestCase, metaclass=PatchMeta):
         ):
             api.thermostats[self.thermostat_type] = self.original_thermostat_config
         api.uip.user_inputs = self.user_inputs_backup  # type: ignore[assignment]
-        # type: ignore[attr-defined, assignment]
-        self.Zone.is_off_mode = self.is_off_mode_bckup
+        self.Zone.is_off_mode = self.is_off_mode_bckup  # type: ignore[attr-defined]
 
     def print_test_result(self):
         """Print unit test result to console."""
-        # type: ignore[attr-defined]  # Python 3.4 - 3.10
         if hasattr(self, "_outcome") and hasattr(getattr(self, "_outcome"), "errors"):
             # These two methods have no side effects
             result = self.defaultTestResult()
-            # type: ignore[attr-defined]
-            getattr(self, "_feedErrorsToResult")(
+            # Python 3.4 - 3.10
+            getattr(self, "_feedErrorsToResult")(  # type: ignore[attr-defined]
                 result, getattr(getattr(self, "_outcome"), "errors")
             )
-        # type: ignore[attr-defined]  # python 3.11
         elif hasattr(self, "_outcome") and hasattr(
             getattr(self, "_outcome"), "result"
         ):
             # These two methods have no side effects
-            result = getattr(getattr(self, "_outcome"), "result")
+            # Python 3.11
+            result = getattr(
+                getattr(self, "_outcome"), "result"
+            )  # type: ignore[attr-defined]
         else:  # Python 3.2 - 3.3 or 3.0 - 3.1 and 2.7
             raise OSError("this code is designed to work on Python 3.4+")
         error = self.list2reason(result.errors)
