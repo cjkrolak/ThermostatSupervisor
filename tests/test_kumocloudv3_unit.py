@@ -22,10 +22,11 @@ try:
 
     kumocloudv3_import_error = None
 except ImportError as ex:
-    kumocloudv3 = None
-    kumocloudv3_config = None
-    tc = None
-    util = None
+    from typing import Any
+    kumocloudv3: Any = None
+    kumocloudv3_config: Any = None
+    tc: Any = None
+    util: Any = None
     kumocloudv3_import_error = ex
 
 from tests import unit_test_common as utc
@@ -113,16 +114,15 @@ class ZoneMetadataPopulationUnitTest(utc.UnitTest):
 
             # Mock the _get_sites and _get_zones methods
             mock_sites = [{"id": "test_site_123"}]
-            # type: ignore[attr-defined]
-            thermostat._get_sites = MagicMock(return_value=mock_sites)
-            # type: ignore[attr-defined]
-            thermostat._get_zones = MagicMock(
+            setattr(thermostat, "_get_sites", MagicMock(return_value=mock_sites))
+            setattr(thermostat, "_get_zones", MagicMock(
                 return_value=self.mock_zones_api_response
-            )
+            ))
 
             # Call _populate_metadata with serial numbers
-            # type: ignore[attr-defined]
-            thermostat._populate_metadata(self.serial_num_lst)
+            getattr(thermostat, "_populate_metadata")(
+                self.serial_num_lst
+            )  # type: ignore
 
             # Verify that serial numbers are correctly matched by zone name
             # Kitchen (index 0) should get SERIAL_KITCHEN_001
@@ -166,14 +166,14 @@ class ZoneMetadataPopulationUnitTest(utc.UnitTest):
             thermostat = kumocloudv3.ThermostatClass(zone=0, verbose=False)
 
             # Mock _get_sites to raise an exception
-            # type: ignore[attr-defined]
-            thermostat._get_sites = MagicMock(
+            setattr(thermostat, "_get_sites", MagicMock(
                 side_effect=Exception("API Error")
-            )
+            ))
 
             # Call _populate_metadata - should fallback to sequential
-            # type: ignore[attr-defined]
-            thermostat._populate_metadata(self.serial_num_lst)
+            getattr(thermostat, "_populate_metadata")(
+                self.serial_num_lst
+            )  # type: ignore
 
             # Verify fallback behavior: sequential assignment
             self.assertEqual(
@@ -226,16 +226,15 @@ class ZoneMetadataPopulationUnitTest(utc.UnitTest):
 
             # Mock the _get_sites and _get_zones methods
             mock_sites = [{"id": "test_site_123"}]
-            # type: ignore[attr-defined]
-            thermostat._get_sites = MagicMock(return_value=mock_sites)
-            # type: ignore[attr-defined]
-            thermostat._get_zones = MagicMock(
+            setattr(thermostat, "_get_sites", MagicMock(return_value=mock_sites))
+            setattr(thermostat, "_get_zones", MagicMock(
                 return_value=mock_zones_with_missing_names
-            )
+            ))
 
             # Call _populate_metadata
-            # type: ignore[attr-defined]
-            thermostat._populate_metadata(self.serial_num_lst)
+            getattr(thermostat, "_populate_metadata")(
+                self.serial_num_lst
+            )  # type: ignore
 
             # Verify that Basement zone still got the correct serial
             self.assertEqual(
@@ -302,8 +301,7 @@ class ZoneMetadataPopulationUnitTest(utc.UnitTest):
 
             # Call _get_specific_zone_data for zone 2 (Main Living)
             # Pass serial_num_lst in API order (not zone index order)
-            # type: ignore[attr-defined]
-            result = thermostat._get_specific_zone_data(
+            result = getattr(thermostat, "_get_specific_zone_data")(  # type: ignore
                 2, self.serial_num_lst
             )
 
@@ -373,7 +371,7 @@ class AuthenticationUnitTest(utc.UnitTest):
             thermostat = kumocloudv3.ThermostatClass(zone=0, verbose=False)
 
             # Verify authentication succeeded
-            self.assertTrue(thermostat._authenticated)  # type: ignore[attr-defined]
+            self.assertTrue(getattr(thermostat, "_authenticated"))  # type: ignore
             self.assertEqual(thermostat.auth_token, "test_access_token_123")
             self.assertEqual(
                 thermostat.refresh_token, "test_refresh_token_456"
@@ -399,7 +397,7 @@ class AuthenticationUnitTest(utc.UnitTest):
         ):
             thermostat = kumocloudv3.ThermostatClass(zone=0, verbose=False)
 
-            self.assertTrue(thermostat._authenticated)  # type: ignore[attr-defined]
+            self.assertTrue(getattr(thermostat, "_authenticated"))  # type: ignore
             self.assertEqual(
                 thermostat.auth_token, "top_level_access_token"
             )
@@ -426,10 +424,10 @@ class AuthenticationUnitTest(utc.UnitTest):
             thermostat = kumocloudv3.ThermostatClass(zone=0, verbose=False)
 
             # Should not be authenticated
-            self.assertFalse(thermostat._authenticated)  # type: ignore[attr-defined]
+            self.assertFalse(getattr(thermostat, "_authenticated"))  # type: ignore
             # Should have stored error
-            # type: ignore[attr-defined]
-            self.assertIsNotNone(thermostat._authentication_error)
+            auth_error = getattr(thermostat, "_authentication_error")  # type: ignore
+            self.assertIsNotNone(auth_error)
 
     @patch("src.kumocloudv3.requests.Session")
     def test_authenticate_request_exception(self, mock_session_class):
@@ -449,10 +447,10 @@ class AuthenticationUnitTest(utc.UnitTest):
             thermostat = kumocloudv3.ThermostatClass(zone=0, verbose=False)
 
             # Should not be authenticated
-            self.assertFalse(thermostat._authenticated)  # type: ignore[attr-defined]
+            self.assertFalse(getattr(thermostat, "_authenticated"))  # type: ignore
             # Should have stored error
-            # type: ignore[attr-defined]
-            self.assertIsNotNone(thermostat._authentication_error)
+            auth_error = getattr(thermostat, "_authentication_error")  # type: ignore
+            self.assertIsNotNone(auth_error)
 
     @patch("src.kumocloudv3.requests.Session")
     @patch("src.kumocloudv3.time.time")
@@ -490,7 +488,7 @@ class AuthenticationUnitTest(utc.UnitTest):
             thermostat = kumocloudv3.ThermostatClass(zone=0, verbose=False)
 
             # Call refresh
-            result = thermostat._refresh_auth_token()  # type: ignore[attr-defined]
+            result = getattr(thermostat, "_refresh_auth_token")()  # type: ignore
 
             # Verify refresh succeeded
             self.assertTrue(result)
@@ -520,8 +518,7 @@ class AuthenticationUnitTest(utc.UnitTest):
             thermostat.refresh_token_expires_at = 1000.0
 
             # Should trigger full re-authentication
-            # type: ignore[attr-defined]
-            result = thermostat._refresh_auth_token()
+            result = getattr(thermostat, "_refresh_auth_token")()  # type: ignore
             self.assertTrue(result)
 
     @patch("src.kumocloudv3.requests.Session")
@@ -546,8 +543,7 @@ class AuthenticationUnitTest(utc.UnitTest):
 
             # Should raise authentication error
             with self.assertRaises(tc.AuthenticationError):
-                # type: ignore[attr-defined]
-                thermostat._ensure_authenticated()
+                getattr(thermostat, "_ensure_authenticated")()  # type: ignore
 
     @patch("src.kumocloudv3.requests.Session")
     @patch("src.kumocloudv3.time.time")
@@ -587,7 +583,7 @@ class AuthenticationUnitTest(utc.UnitTest):
             thermostat.token_expires_at = 1000.0
 
             # Should trigger refresh
-            thermostat._ensure_authenticated()  # type: ignore[attr-defined]
+            getattr(thermostat, "_ensure_authenticated")()  # type: ignore
 
             # Verify refresh was called
             self.assertEqual(mock_session.post.call_count, 2)
@@ -643,10 +639,8 @@ class ApiRequestsUnitTest(utc.UnitTest):
         ):
             thermostat = kumocloudv3.ThermostatClass(zone=0, verbose=False)
 
-            # type: ignore[attr-defined]
-            response = thermostat._make_authenticated_request(
-                "GET", "https://test.com/api"
-            )
+            auth_req = getattr(thermostat, "_make_authenticated_request")
+            response = auth_req("GET", "https://test.com/api")
 
             self.assertEqual(response.status_code, 200)
             self.assertEqual(response.json(), {"data": "test"})
@@ -699,10 +693,8 @@ class ApiRequestsUnitTest(utc.UnitTest):
         ):
             thermostat = kumocloudv3.ThermostatClass(zone=0, verbose=False)
 
-            # type: ignore[attr-defined]
-            response = thermostat._make_authenticated_request(
-                "GET", "https://test.com/api"
-            )
+            auth_req = getattr(thermostat, "_make_authenticated_request")
+            response = auth_req("GET", "https://test.com/api")
 
             # Should have retried and succeeded
             self.assertEqual(response.status_code, 200)
@@ -736,7 +728,7 @@ class ApiRequestsUnitTest(utc.UnitTest):
         ):
             thermostat = kumocloudv3.ThermostatClass(zone=0, verbose=False)
 
-            sites = thermostat._get_sites()  # type: ignore[attr-defined]
+            sites = getattr(thermostat, "_get_sites")()  # type: ignore
 
             self.assertEqual(len(sites), 1)
             self.assertEqual(sites[0]["id"], "site1")
@@ -769,11 +761,11 @@ class ApiRequestsUnitTest(utc.UnitTest):
             thermostat = kumocloudv3.ThermostatClass(zone=0, verbose=False)
 
             # First call - should make request
-            sites1 = thermostat._get_sites()  # type: ignore[attr-defined]
+            sites1 = getattr(thermostat, "_get_sites")()  # type: ignore
 
             # Second call - should use cache
             mock_time.return_value = 1100.0  # Within cache duration
-            sites2 = thermostat._get_sites()  # type: ignore[attr-defined]
+            sites2 = getattr(thermostat, "_get_sites")()  # type: ignore
 
             # Should be same data
             self.assertEqual(sites1, sites2)
@@ -808,7 +800,7 @@ class ApiRequestsUnitTest(utc.UnitTest):
         ):
             thermostat = kumocloudv3.ThermostatClass(zone=0, verbose=False)
 
-            zones = thermostat._get_zones("site123")  # type: ignore[attr-defined]
+            zones = getattr(thermostat, "_get_zones")("site123")  # type: ignore
 
             self.assertEqual(len(zones), 1)
             self.assertEqual(zones[0]["name"], "Kitchen")
@@ -842,7 +834,7 @@ class ApiRequestsUnitTest(utc.UnitTest):
         ):
             thermostat = kumocloudv3.ThermostatClass(zone=0, verbose=False)
 
-            device = thermostat._get_device("SERIAL123")  # type: ignore[attr-defined]
+            device = getattr(thermostat, "_get_device")("SERIAL123")  # type: ignore
 
             self.assertEqual(device["roomTemp"], 22.0)
             self.assertTrue(device["power"])
@@ -887,7 +879,8 @@ class ZoneAssignmentUnitTest(utc.UnitTest):
             thermostat = kumocloudv3.ThermostatClass(zone=0, verbose=False)
 
             # type: ignore[attr-defined]
-            mapping = thermostat._build_zone_name_mapping(zones)
+            mapper = getattr(thermostat, "_build_zone_name_mapping")
+            mapping = mapper(zones)
 
             self.assertEqual(mapping["Kitchen"], 0)
             self.assertEqual(mapping["Basement"], 1)
@@ -909,7 +902,8 @@ class ZoneAssignmentUnitTest(utc.UnitTest):
             thermostat = kumocloudv3.ThermostatClass(zone=0, verbose=False)
 
             # type: ignore[attr-defined]
-            mapping = thermostat._build_zone_name_mapping(zones)
+            mapper = getattr(thermostat, "_build_zone_name_mapping")
+            mapping = mapper(zones)
 
             # Only Kitchen should be in mapping
             self.assertEqual(len(mapping), 1)
@@ -930,10 +924,8 @@ class ZoneAssignmentUnitTest(utc.UnitTest):
         ):
             thermostat = kumocloudv3.ThermostatClass(zone=0, verbose=False)
 
-            main, kitchen, basement = (
-                # type: ignore[attr-defined]
-                thermostat._find_zone_indices_by_patterns(zone_mapping)
-            )
+            finder = getattr(thermostat, "_find_zone_indices_by_patterns")
+            main, kitchen, basement = finder(zone_mapping)
 
             self.assertEqual(main, 0)
             self.assertEqual(kitchen, 1)
@@ -955,7 +947,9 @@ class ZoneAssignmentUnitTest(utc.UnitTest):
 
             main, kitchen, basement = (
                 # type: ignore[attr-defined]
-                thermostat._find_zone_indices_by_patterns(zone_mapping)
+                getattr(thermostat, "_find_zone_indices_by_patterns")(  # type: ignore
+                    zone_mapping
+                )
             )
 
             # First Floor matches "main" pattern
@@ -1176,7 +1170,7 @@ class GetMetadataUnitTest(utc.UnitTest):
         ):
             thermostat = kumocloudv3.ThermostatClass(zone=0, verbose=False)
 
-            result = thermostat._process_raw_data(  # type: ignore[attr-defined]
+            result = getattr(thermostat, "_process_raw_data")(  # type: ignore
                 raw_json, "label", zone=0
             )
 
@@ -1193,7 +1187,7 @@ class GetMetadataUnitTest(utc.UnitTest):
         ):
             thermostat = kumocloudv3.ThermostatClass(zone=0, verbose=False)
 
-            result = thermostat._process_raw_data(  # type: ignore[attr-defined]
+            result = getattr(thermostat, "_process_raw_data")(  # type: ignore
                 raw_json, "nonexistent", zone=0
             )
 
@@ -1211,7 +1205,7 @@ class GetMetadataUnitTest(utc.UnitTest):
         ):
             thermostat = kumocloudv3.ThermostatClass(zone=0, verbose=False)
 
-            result = thermostat._process_raw_data(  # type: ignore[attr-defined]
+            result = getattr(thermostat, "_process_raw_data")(  # type: ignore
                 raw_json, "address", zone=0
             )
 
@@ -1252,7 +1246,7 @@ class ThermostatZoneUnitTest(utc.UnitTest):
         mock_thermostat.device_id = 0
         mock_thermostat.zone_number = 0
         mock_thermostat.get_all_metadata.return_value = zone_info
-        mock_thermostat._cache_expires_at = 0  # type: ignore[attr-defined]
+        setattr(mock_thermostat, "_cache_expires_at", 0)
         return mock_thermostat
 
     def test_get_parameter_simple(self):
@@ -1321,7 +1315,7 @@ class ThermostatZoneUnitTest(utc.UnitTest):
         zone_info = {"reportedCondition": {"room_temp": 20.0}}
 
         mock_thermostat = self._create_mock_thermostat(zone_info)
-        mock_thermostat._cache_expires_at = 0  # type: ignore[attr-defined]
+        setattr(mock_thermostat, "_cache_expires_at", 0)
         zone = kumocloudv3.ThermostatZone(mock_thermostat, verbose=False)
 
         temp = zone.get_display_temp()
@@ -1336,7 +1330,7 @@ class ThermostatZoneUnitTest(utc.UnitTest):
         }
 
         mock_thermostat = self._create_mock_thermostat(zone_info)
-        mock_thermostat._cache_expires_at = 0  # type: ignore[attr-defined]
+        setattr(mock_thermostat, "_cache_expires_at", 0)
         zone = kumocloudv3.ThermostatZone(mock_thermostat, verbose=False)
 
         humidity = zone.get_display_humidity()
@@ -1350,7 +1344,7 @@ class ThermostatZoneUnitTest(utc.UnitTest):
         }
 
         mock_thermostat = self._create_mock_thermostat(zone_info)
-        mock_thermostat._cache_expires_at = 0  # type: ignore[attr-defined]
+        setattr(mock_thermostat, "_cache_expires_at", 0)
         zone = kumocloudv3.ThermostatZone(mock_thermostat, verbose=False)
 
         humidity = zone.get_display_humidity()
@@ -1363,7 +1357,7 @@ class ThermostatZoneUnitTest(utc.UnitTest):
         }
 
         mock_thermostat = self._create_mock_thermostat(zone_info)
-        mock_thermostat._cache_expires_at = 0  # type: ignore[attr-defined]
+        setattr(mock_thermostat, "_cache_expires_at", 0)
         zone = kumocloudv3.ThermostatZone(mock_thermostat, verbose=False)
 
         result = zone.is_heat_mode()
@@ -1376,7 +1370,7 @@ class ThermostatZoneUnitTest(utc.UnitTest):
         }
 
         mock_thermostat = self._create_mock_thermostat(zone_info)
-        mock_thermostat._cache_expires_at = 0  # type: ignore[attr-defined]
+        setattr(mock_thermostat, "_cache_expires_at", 0)
         zone = kumocloudv3.ThermostatZone(mock_thermostat, verbose=False)
 
         result = zone.is_cool_mode()
@@ -1389,7 +1383,7 @@ class ThermostatZoneUnitTest(utc.UnitTest):
         }
 
         mock_thermostat = self._create_mock_thermostat(zone_info)
-        mock_thermostat._cache_expires_at = 0  # type: ignore[attr-defined]
+        setattr(mock_thermostat, "_cache_expires_at", 0)
         zone = kumocloudv3.ThermostatZone(mock_thermostat, verbose=False)
 
         result = zone.is_fan_mode()
@@ -1402,7 +1396,7 @@ class ThermostatZoneUnitTest(utc.UnitTest):
         }
 
         mock_thermostat = self._create_mock_thermostat(zone_info)
-        mock_thermostat._cache_expires_at = 0  # type: ignore[attr-defined]
+        setattr(mock_thermostat, "_cache_expires_at", 0)
         zone = kumocloudv3.ThermostatZone(mock_thermostat, verbose=False)
 
         result = zone.is_off_mode()
@@ -1413,7 +1407,7 @@ class ThermostatZoneUnitTest(utc.UnitTest):
         zone_info = {"reportedCondition": {"power": 1}}
 
         mock_thermostat = self._create_mock_thermostat(zone_info)
-        mock_thermostat._cache_expires_at = 0  # type: ignore[attr-defined]
+        setattr(mock_thermostat, "_cache_expires_at", 0)
         zone = kumocloudv3.ThermostatZone(mock_thermostat, verbose=False)
 
         result = zone.is_power_on()
@@ -1430,7 +1424,7 @@ class ThermostatZoneUnitTest(utc.UnitTest):
         }
 
         mock_thermostat = self._create_mock_thermostat(zone_info)
-        mock_thermostat._cache_expires_at = 0  # type: ignore[attr-defined]
+        setattr(mock_thermostat, "_cache_expires_at", 0)
         zone = kumocloudv3.ThermostatZone(mock_thermostat, verbose=False)
 
         result = zone.is_fan_on()
@@ -1447,7 +1441,7 @@ class ThermostatZoneUnitTest(utc.UnitTest):
         }
 
         mock_thermostat = self._create_mock_thermostat(zone_info)
-        mock_thermostat._cache_expires_at = 0  # type: ignore[attr-defined]
+        setattr(mock_thermostat, "_cache_expires_at", 0)
         zone = kumocloudv3.ThermostatZone(mock_thermostat, verbose=False)
 
         result = zone.is_fan_on()
@@ -1464,7 +1458,7 @@ class ThermostatZoneUnitTest(utc.UnitTest):
         }
 
         mock_thermostat = self._create_mock_thermostat(zone_info)
-        mock_thermostat._cache_expires_at = 0  # type: ignore[attr-defined]
+        setattr(mock_thermostat, "_cache_expires_at", 0)
         zone = kumocloudv3.ThermostatZone(mock_thermostat, verbose=False)
 
         result = zone.is_fan_on()
@@ -1482,7 +1476,7 @@ class ThermostatZoneUnitTest(utc.UnitTest):
         }
 
         mock_thermostat = self._create_mock_thermostat(zone_info)
-        mock_thermostat._cache_expires_at = 0  # type: ignore[attr-defined]
+        setattr(mock_thermostat, "_cache_expires_at", 0)
         zone = kumocloudv3.ThermostatZone(mock_thermostat, verbose=False)
 
         # Temp below setpoint, should be heating
@@ -1501,7 +1495,7 @@ class ThermostatZoneUnitTest(utc.UnitTest):
         }
 
         mock_thermostat = self._create_mock_thermostat(zone_info)
-        mock_thermostat._cache_expires_at = 0  # type: ignore[attr-defined]
+        setattr(mock_thermostat, "_cache_expires_at", 0)
         zone = kumocloudv3.ThermostatZone(mock_thermostat, verbose=False)
 
         # Temp above setpoint, should be cooling
@@ -1513,7 +1507,7 @@ class ThermostatZoneUnitTest(utc.UnitTest):
         zone_info = {"reportedCondition": {"sp_heat": 20.0}}
 
         mock_thermostat = self._create_mock_thermostat(zone_info)
-        mock_thermostat._cache_expires_at = 0  # type: ignore[attr-defined]
+        setattr(mock_thermostat, "_cache_expires_at", 0)
         zone = kumocloudv3.ThermostatZone(mock_thermostat, verbose=False)
 
         setpoint = zone.get_heat_setpoint_raw()
@@ -1525,7 +1519,7 @@ class ThermostatZoneUnitTest(utc.UnitTest):
         zone_info = {"reportedCondition": {"sp_cool": 24.0}}
 
         mock_thermostat = self._create_mock_thermostat(zone_info)
-        mock_thermostat._cache_expires_at = 0  # type: ignore[attr-defined]
+        setattr(mock_thermostat, "_cache_expires_at", 0)
         zone = kumocloudv3.ThermostatZone(mock_thermostat, verbose=False)
 
         setpoint = zone.get_cool_setpoint_raw()
@@ -1537,7 +1531,7 @@ class ThermostatZoneUnitTest(utc.UnitTest):
         zone_info = {"reportedCondition": {"power": 0}}
 
         mock_thermostat = self._create_mock_thermostat(zone_info)
-        mock_thermostat._cache_expires_at = 0  # type: ignore[attr-defined]
+        setattr(mock_thermostat, "_cache_expires_at", 0)
         zone = kumocloudv3.ThermostatZone(mock_thermostat, verbose=False)
 
         position = zone.get_system_switch_position()
@@ -1551,7 +1545,7 @@ class ThermostatZoneUnitTest(utc.UnitTest):
         }
 
         mock_thermostat = self._create_mock_thermostat(zone_info)
-        mock_thermostat._cache_expires_at = 0  # type: ignore[attr-defined]
+        setattr(mock_thermostat, "_cache_expires_at", 0)
         zone = kumocloudv3.ThermostatZone(mock_thermostat, verbose=False)
 
         position = zone.get_system_switch_position()
@@ -1562,7 +1556,7 @@ class ThermostatZoneUnitTest(utc.UnitTest):
         zone_info = {"rssi": {"rssi": -50.0}}
 
         mock_thermostat = self._create_mock_thermostat(zone_info)
-        mock_thermostat._cache_expires_at = 0  # type: ignore[attr-defined]
+        setattr(mock_thermostat, "_cache_expires_at", 0)
         zone = kumocloudv3.ThermostatZone(mock_thermostat, verbose=False)
 
         strength = zone.get_wifi_strength()
@@ -1573,7 +1567,7 @@ class ThermostatZoneUnitTest(utc.UnitTest):
         zone_info = {"rssi": {"rssi": -50.0}}
 
         mock_thermostat = self._create_mock_thermostat(zone_info)
-        mock_thermostat._cache_expires_at = 0  # type: ignore[attr-defined]
+        setattr(mock_thermostat, "_cache_expires_at", 0)
         zone = kumocloudv3.ThermostatZone(mock_thermostat, verbose=False)
 
         status = zone.get_wifi_status()
@@ -1584,7 +1578,7 @@ class ThermostatZoneUnitTest(utc.UnitTest):
         zone_info = {"rssi": {"rssi": -50.0}}
 
         mock_thermostat = self._create_mock_thermostat(zone_info)
-        mock_thermostat._cache_expires_at = 0  # type: ignore[attr-defined]
+        setattr(mock_thermostat, "_cache_expires_at", 0)
         zone = kumocloudv3.ThermostatZone(mock_thermostat, verbose=False)
 
         voltage = zone.get_battery_voltage()
@@ -1602,7 +1596,7 @@ class ThermostatZoneUnitTest(utc.UnitTest):
         }
 
         mock_thermostat = self._create_mock_thermostat(zone_info)
-        mock_thermostat._cache_expires_at = 0  # type: ignore[attr-defined]
+        setattr(mock_thermostat, "_cache_expires_at", 0)
         zone = kumocloudv3.ThermostatZone(mock_thermostat, verbose=False)
 
         result = zone.is_drying()
@@ -1621,7 +1615,7 @@ class ThermostatZoneUnitTest(utc.UnitTest):
         }
 
         mock_thermostat = self._create_mock_thermostat(zone_info)
-        mock_thermostat._cache_expires_at = 0  # type: ignore[attr-defined]
+        setattr(mock_thermostat, "_cache_expires_at", 0)
         zone = kumocloudv3.ThermostatZone(mock_thermostat, verbose=False)
 
         result = zone.is_auto()
@@ -1640,7 +1634,7 @@ class ThermostatZoneUnitTest(utc.UnitTest):
         }
 
         mock_thermostat = self._create_mock_thermostat(zone_info)
-        mock_thermostat._cache_expires_at = 0  # type: ignore[attr-defined]
+        setattr(mock_thermostat, "_cache_expires_at", 0)
         zone = kumocloudv3.ThermostatZone(mock_thermostat, verbose=False)
 
         result = zone.is_eco()
@@ -1657,7 +1651,7 @@ class ThermostatZoneUnitTest(utc.UnitTest):
         }
 
         mock_thermostat = self._create_mock_thermostat(zone_info)
-        mock_thermostat._cache_expires_at = 0  # type: ignore[attr-defined]
+        setattr(mock_thermostat, "_cache_expires_at", 0)
         zone = kumocloudv3.ThermostatZone(mock_thermostat, verbose=False)
 
         result = zone.is_fanning()
@@ -1672,7 +1666,7 @@ class ThermostatZoneUnitTest(utc.UnitTest):
         }
 
         mock_thermostat = self._create_mock_thermostat(zone_info)
-        mock_thermostat._cache_expires_at = 0  # type: ignore[attr-defined]
+        setattr(mock_thermostat, "_cache_expires_at", 0)
         zone = kumocloudv3.ThermostatZone(mock_thermostat, verbose=False)
 
         result = zone.is_defrosting()
@@ -1687,7 +1681,7 @@ class ThermostatZoneUnitTest(utc.UnitTest):
         }
 
         mock_thermostat = self._create_mock_thermostat(zone_info)
-        mock_thermostat._cache_expires_at = 0  # type: ignore[attr-defined]
+        setattr(mock_thermostat, "_cache_expires_at", 0)
         zone = kumocloudv3.ThermostatZone(mock_thermostat, verbose=False)
 
         result = zone.is_standby()
@@ -1698,7 +1692,7 @@ class ThermostatZoneUnitTest(utc.UnitTest):
         zone_info = {"reportedCondition": {"sp_heat": 20.0}}
 
         mock_thermostat = self._create_mock_thermostat(zone_info)
-        mock_thermostat._cache_expires_at = 0  # type: ignore[attr-defined]
+        setattr(mock_thermostat, "_cache_expires_at", 0)
         zone = kumocloudv3.ThermostatZone(mock_thermostat, verbose=False)
 
         setpoint = zone.get_heat_setpoint()
@@ -1710,7 +1704,7 @@ class ThermostatZoneUnitTest(utc.UnitTest):
         zone_info = {"reportedCondition": {"sp_cool": 24.0}}
 
         mock_thermostat = self._create_mock_thermostat(zone_info)
-        mock_thermostat._cache_expires_at = 0  # type: ignore[attr-defined]
+        setattr(mock_thermostat, "_cache_expires_at", 0)
         zone = kumocloudv3.ThermostatZone(mock_thermostat, verbose=False)
 
         setpoint = zone.get_cool_setpoint()
@@ -1762,7 +1756,7 @@ class ThermostatZoneUnitTest(utc.UnitTest):
         zone_info = {"rssi": {"rssi": -50.0}}
 
         mock_thermostat = self._create_mock_thermostat(zone_info)
-        mock_thermostat._cache_expires_at = 0  # type: ignore[attr-defined]
+        setattr(mock_thermostat, "_cache_expires_at", 0)
         zone = kumocloudv3.ThermostatZone(mock_thermostat, verbose=False)
 
         status = zone.get_battery_status()
@@ -1938,9 +1932,9 @@ class RawJsonAndConversionUnitTest(utc.UnitTest):
         ):
             thermostat = kumocloudv3.ThermostatClass(zone=0, verbose=False)
 
-            legacy = thermostat._convert_device_to_legacy_format(
-                device, zone
-            )
+            legacy = getattr(
+                thermostat, "_convert_device_to_legacy_format"
+            )(device, zone)
 
             # Verify legacy format fields
             self.assertEqual(legacy["label"], "Kitchen")
@@ -1975,9 +1969,9 @@ class RawJsonAndConversionUnitTest(utc.UnitTest):
         ):
             thermostat = kumocloudv3.ThermostatClass(zone=0, verbose=False)
 
-            legacy = thermostat._convert_device_to_legacy_format(
-                device, zone
-            )
+            legacy = getattr(
+                thermostat, "_convert_device_to_legacy_format"
+            )(device, zone)
 
             # Fan speed 0 should be "off"
             self.assertEqual(
@@ -1999,9 +1993,9 @@ class RawJsonAndConversionUnitTest(utc.UnitTest):
         ):
             thermostat = kumocloudv3.ThermostatClass(zone=0, verbose=False)
 
-            legacy = thermostat._convert_device_to_legacy_format(
-                device, zone
-            )
+            legacy = getattr(
+                thermostat, "_convert_device_to_legacy_format"
+            )(device, zone)
 
             # Fan speed > 0 should be "on"
             self.assertEqual(
@@ -2050,11 +2044,11 @@ class ErrorHandlingUnitTest(utc.UnitTest):
             kumocloudv3.ThermostatClass, "_update_zone_assignments"
         ):
             thermostat = kumocloudv3.ThermostatClass(zone=0, verbose=False)
-            thermostat._authenticated = True  # type: ignore[attr-defined]
+            setattr(thermostat, "_authenticated", True)
 
             # Should raise AuthenticationError
             with self.assertRaises(tc.AuthenticationError):
-                thermostat._validate_serial_numbers([])
+                getattr(thermostat, "_validate_serial_numbers")([])  # type: ignore
 
     @patch("src.kumocloudv3.requests.Session")
     def test_get_specific_zone_data_by_name(self, mock_session_class):
@@ -2094,7 +2088,7 @@ class ErrorHandlingUnitTest(utc.UnitTest):
             ]
             thermostat.get_raw_json = Mock(return_value=mock_raw)
 
-            result = thermostat._get_specific_zone_data(
+            result = getattr(thermostat, "_get_specific_zone_data")(  # type: ignore
                 "Kitchen", ["SERIAL1"]
             )
 
@@ -2145,7 +2139,7 @@ class ErrorHandlingUnitTest(utc.UnitTest):
             thermostat = kumocloudv3.ThermostatClass(zone=0, verbose=False)
 
             serials = ["SERIAL1", "SERIAL2"]
-            thermostat._assign_serials_sequentially(serials)
+            getattr(thermostat, "_assign_serials_sequentially")(serials)  # type: ignore
 
             # Verify sequential assignment
             self.assertEqual(
@@ -2163,7 +2157,7 @@ class ErrorHandlingUnitTest(utc.UnitTest):
         mock_thermostat.device_id = 0
         mock_thermostat.zone_number = 0
         mock_thermostat.get_all_metadata.return_value = zone_info
-        mock_thermostat._cache_expires_at = 0  # type: ignore[attr-defined]
+        setattr(mock_thermostat, "_cache_expires_at", 0)
 
         zone = kumocloudv3.ThermostatZone(mock_thermostat, verbose=False)
 
@@ -2183,7 +2177,7 @@ class ErrorHandlingUnitTest(utc.UnitTest):
         mock_thermostat.device_id = 0
         mock_thermostat.zone_number = 0
         mock_thermostat.get_all_metadata.return_value = zone_info
-        mock_thermostat._cache_expires_at = 0  # type: ignore[attr-defined]
+        setattr(mock_thermostat, "_cache_expires_at", 0)
 
         zone = kumocloudv3.ThermostatZone(mock_thermostat, verbose=False)
 
@@ -2198,7 +2192,7 @@ class ErrorHandlingUnitTest(utc.UnitTest):
         mock_thermostat.device_id = 0
         mock_thermostat.zone_number = 0
         mock_thermostat.get_all_metadata.return_value = zone_info
-        mock_thermostat._cache_expires_at = 0  # type: ignore[attr-defined]
+        setattr(mock_thermostat, "_cache_expires_at", 0)
 
         zone = kumocloudv3.ThermostatZone(mock_thermostat, verbose=False)
 
@@ -2213,7 +2207,7 @@ class ErrorHandlingUnitTest(utc.UnitTest):
         mock_thermostat.device_id = 0
         mock_thermostat.zone_number = 0
         mock_thermostat.get_all_metadata.return_value = zone_info
-        mock_thermostat._cache_expires_at = 0  # type: ignore[attr-defined]
+        setattr(mock_thermostat, "_cache_expires_at", 0)
 
         zone = kumocloudv3.ThermostatZone(mock_thermostat, verbose=False)
 
@@ -2228,7 +2222,7 @@ class ErrorHandlingUnitTest(utc.UnitTest):
         mock_thermostat.device_id = 0
         mock_thermostat.zone_number = 0
         mock_thermostat.get_all_metadata.return_value = zone_info
-        mock_thermostat._cache_expires_at = 0  # type: ignore[attr-defined]
+        setattr(mock_thermostat, "_cache_expires_at", 0)
 
         zone = kumocloudv3.ThermostatZone(mock_thermostat, verbose=False)
 
@@ -2243,7 +2237,7 @@ class ErrorHandlingUnitTest(utc.UnitTest):
         mock_thermostat.device_id = 0
         mock_thermostat.zone_number = 0
         mock_thermostat.get_all_metadata.return_value = zone_info
-        mock_thermostat._cache_expires_at = 0  # type: ignore[attr-defined]
+        setattr(mock_thermostat, "_cache_expires_at", 0)
 
         zone = kumocloudv3.ThermostatZone(mock_thermostat, verbose=False)
 
@@ -2273,7 +2267,7 @@ class ErrorHandlingUnitTest(utc.UnitTest):
             thermostat = kumocloudv3.ThermostatClass(zone=0, verbose=False)
 
             # Pass same index multiple times
-            thermostat._update_config_with_indices(0, 0, 0)
+            getattr(thermostat, "_update_config_with_indices")(0, 0, 0)  # type: ignore
 
             # Should only add once
             zones = kumocloudv3_config.supported_configs.get("zones", [])
@@ -2309,7 +2303,7 @@ class ErrorHandlingUnitTest(utc.UnitTest):
         thermostat = kumocloudv3.ThermostatClass(zone=0, verbose=True)
 
         # Should fall back to sequential assignment
-        thermostat._populate_metadata(["SERIAL1"])
+        getattr(thermostat, "_populate_metadata")(["SERIAL1"])  # type: ignore
 
         # Should have assigned sequentially
         self.assertEqual(
@@ -2357,7 +2351,7 @@ class ErrorHandlingUnitTest(utc.UnitTest):
         thermostat = kumocloudv3.ThermostatClass(zone=0, verbose=True)
 
         # Should fall back to sequential assignment
-        thermostat._populate_metadata(["SERIAL1"])
+        getattr(thermostat, "_populate_metadata")(["SERIAL1"])  # type: ignore
 
         # Should have assigned sequentially
         self.assertEqual(
@@ -2394,7 +2388,7 @@ class ErrorHandlingUnitTest(utc.UnitTest):
         thermostat = kumocloudv3.ThermostatClass(zone=0, verbose=True)
 
         # Should fall back to sequential assignment
-        thermostat._populate_metadata(["SERIAL1"])
+        getattr(thermostat, "_populate_metadata")(["SERIAL1"])  # type: ignore
 
         # Should have assigned sequentially
         self.assertEqual(

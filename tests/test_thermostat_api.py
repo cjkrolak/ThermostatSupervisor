@@ -5,6 +5,7 @@ Unit test module for thermostat_api.py.
 # built-in imports
 import os
 import sys
+from types import ModuleType
 import unittest
 
 # local imports
@@ -55,7 +56,9 @@ class Test(utc.UnitTest):
 
             # Restore user inputs backup
             if hasattr(self, "user_inputs_backup") and api.uip:
-                api.uip.user_inputs = self.user_inputs_backup
+                api.uip.user_inputs = (  # type: ignore[assignment]
+                    self.user_inputs_backup
+                )
         finally:
             super().tearDown()
 
@@ -114,8 +117,9 @@ class Test(utc.UnitTest):
             f"dynamic_module_import() returned type({type(pkg)}), "
             f"expected an object",
         )
-        print(f"package name={pkg.__name__}")
-        del sys.modules[pkg.__name__]
+        if isinstance(pkg, ModuleType):
+            print(f"package name={pkg.__name__}")
+            del sys.modules[pkg.__name__]
         del pkg
 
         # test failing case
@@ -157,7 +161,10 @@ class Test(utc.UnitTest):
         }
         # backup max_measurements
         api.uip = api.UserInputs(
-            self.unit_test_argv, "unit test parser", self.tstat, self.zone_name
+            self.unit_test_argv,
+            "unit test parser",
+            thermostat_type=self.tstat,
+            zone_name=self.zone_name,
         )
         max_measurement_bkup = api.uip.get_user_inputs(
             api.uip.zone_name, api.input_flds.measurements
@@ -215,7 +222,6 @@ class RuntimeParameterTest(utc.RuntimeParameterTest):
 
     script = os.path.realpath(__file__)
     thermostat_type = thermostat_type
-    # parent_key = zone_name  # aka zone_name in this context
     zone_number = 0
     poll_time_sec = 9
     connection_time_sec = 90

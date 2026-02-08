@@ -18,7 +18,7 @@ class FileAndLoggingTests(utc.UnitTest):
 
     def setUp(self):
         super().setUp()
-        util.log_msg.file_name = "unit_test.txt"
+        util.log_msg.file_name = "unit_test.txt"  # type: ignore[attr-defined]
 
     def test_log_msg_create_folder(self):
         """
@@ -37,7 +37,6 @@ class FileAndLoggingTests(utc.UnitTest):
 
             # write to file and path that does not exist
             test_msg1 = "first test message from unit test"
-            # test_msg1_length = util.utf8len(test_msg1 + "\n") + 1
             return_buffer = util.log_msg(
                 test_msg1, mode=util.BOTH_LOG, file_name=file_name
             )
@@ -45,7 +44,6 @@ class FileAndLoggingTests(utc.UnitTest):
 
             # confirm file exists
             file_size_bytes = os.path.getsize(full_path)
-            # self.assertEqual(file_size_bytes, test_msg1_length)
             self.assertGreater(file_size_bytes, 30)
         finally:
             # remove the directory
@@ -65,18 +63,15 @@ class FileAndLoggingTests(utc.UnitTest):
 
         # write to file that does not exist
         test_msg1 = "first test message from unit test"
-        # test_msg1_length = util.utf8len(test_msg1 + "\n") + 1
         return_buffer = util.log_msg(test_msg1, mode=util.BOTH_LOG, file_name=file_name)
         self.assertEqual(return_buffer["status"], util.NO_ERROR)
 
         # confirm file exists
         file_size_bytes = os.path.getsize(full_path)
-        # self.assertEqual(file_size_bytes, test_msg1_length)
         self.assertGreater(file_size_bytes, 30)
 
         # append to file that does exist
         test_msg2 = "second test message from unit test"
-        # test_msg2_length = util.utf8len(test_msg2 + "\n") + 1
         return_buffer = util.log_msg(test_msg2, mode=util.BOTH_LOG, file_name=file_name)
         self.assertEqual(return_buffer["status"], util.NO_ERROR)
 
@@ -237,7 +232,39 @@ class MetricsTests(utc.UnitTest):
 
     def setUp(self):
         super().setUp()
-        util.log_msg.file_name = "unit_test.txt"
+        util.log_msg.file_name = "unit_test.txt"  # type: ignore[attr-defined]
+
+    def _verify_temp_value_with_units(self, test_case, precision, disp_unit):
+        """Helper to verify temperature value formatting."""
+        print(
+            f"test case: value={test_case}, precision="
+            f"{precision}, units={disp_unit}"
+        )
+        if test_case is None:
+            formatted = "None"
+        elif "°" in str(test_case):
+            # pass-thru for already formatted values
+            formatted = f"{test_case}"
+        else:
+            if isinstance(test_case, str):
+                formatted = f"{float(test_case):.{precision}f}"
+            else:
+                formatted = f"{test_case:.{precision}f}"
+        if "°" in str(test_case):
+            # pass-thru for already formatted values
+            expected_val = f"{test_case}"
+        else:
+            expected_val = f"{formatted}°{disp_unit}"
+        actual_val = util.temp_value_with_units(
+            test_case, disp_unit, precision
+        )
+        self.assertEqual(
+            expected_val,
+            actual_val,
+            f"test case: {test_case}, expected_val="
+            f"{expected_val}, actual_val="
+            f"{actual_val}",
+        )
 
     def test_temp_value_with_units(self):
         """Verify function attaches units as expected."""
@@ -245,35 +272,7 @@ class MetricsTests(utc.UnitTest):
         for test_case in [44, -1, 101, 2, "13", "-13", None, "13°F"]:
             for precision in [0, 1, 2]:
                 for disp_unit in ["F", "c"]:
-                    print(
-                        f"test case: value={test_case}, precision="
-                        f"{precision}, units={disp_unit}"
-                    )
-                    if test_case is None:
-                        formatted = "None"
-                    elif "°" in str(test_case):
-                        # pass-thru for already formatted values
-                        formatted = f"{test_case}"
-                    else:
-                        if isinstance(test_case, str):
-                            formatted = f"{float(test_case):.{precision}f}"
-                        else:
-                            formatted = f"{test_case:.{precision}f}"
-                    if "°" in str(test_case):
-                        # pass-thru for already formatted values
-                        expected_val = f"{test_case}"
-                    else:
-                        expected_val = f"{formatted}°{disp_unit}"
-                    actual_val = util.temp_value_with_units(
-                        test_case, disp_unit, precision
-                    )
-                    self.assertEqual(
-                        expected_val,
-                        actual_val,
-                        f"test case: {test_case}, expected_val="
-                        f"{expected_val}, actual_val="
-                        f"{actual_val}",
-                    )
+                    self._verify_temp_value_with_units(test_case, precision, disp_unit)
 
         # test failing case
         with self.assertRaises(ValueError):
@@ -346,11 +345,7 @@ class MetricsTests(utc.UnitTest):
         # verify exception cases
         for tempc in ["0", "", "*"]:
             with self.assertRaises(TypeError):
-                tempf = util.c_to_f(tempc)
-            # expected_tempf = tempc
-            # self.assertEqual(expected_tempf, tempf, "test case %s: "
-            #                  "expected=%s, actual=%s" %
-            #                  (tempc, expected_tempf, tempf))
+                util.c_to_f(tempc)  # noqa: PLR0133
 
     def test_f_to_c(self):
         """Verify F to C calculations."""
@@ -371,8 +366,7 @@ class MetricsTests(utc.UnitTest):
         # verify exception case
         for tempf in ["0", "", "*"]:
             with self.assertRaises(TypeError):
-                tempc = util.f_to_c(tempf)
-            # expected_tempc = tempf  # pass-thru
+                util.f_to_c(tempf)  # noqa: PLR0133
             # self.assertEqual(expected_tempc, tempc, "test case %s: "
             #                  "expected=%s, actual=%s" %
             #                  (tempf, expected_tempc, tempc))
@@ -383,7 +377,7 @@ class MiscTests(utc.UnitTest):
 
     def setUp(self):
         super().setUp()
-        util.log_msg.file_name = "unit_test.txt"
+        util.log_msg.file_name = "unit_test.txt"  # type: ignore[attr-defined]
 
     def test_get_function_name(self):
         """
@@ -457,8 +451,8 @@ class MiscTests(utc.UnitTest):
         dict_test_dict = {"E": 4, "F": 5, "G": 6}
         test_dict = {}
         test_dict = base_test_dict  # add simple elements
-        test_dict.update({"D": dict_test_dict})  # add dict element
-        test_dict.update({"L": [7, 8, 9, 10]})  # list element
+        test_dict.update({"D": dict_test_dict})  # type: ignore[arg-type]
+        test_dict.update({"L": [7, 8, 9, 10]})  # type: ignore[arg-type]
         print(f"test_dict={test_dict}")
 
         # test keys with distinctvalue, determinant case
@@ -514,16 +508,16 @@ class MiscTests(utc.UnitTest):
         # test key not found
         with self.assertRaises(KeyError):
             print("attempting to input bad dictionary key, expect exception...")
-            actual_val = util.get_key_from_value(test_dict, "bogus_value")
+            util.get_key_from_value(test_dict, "bogus_value")  # noqa: PLR0133
 
         # unsupported datatype
-        test_dict.update({"NoneKey": None})  # None element
+        test_dict.update({"NoneKey": None})  # type: ignore[arg-type]
         with self.assertRaises(TypeError):
             print(
                 "attempting to input unsupported datatype, "
                 "expect TypeError exception..."
             )
-            actual_val = util.get_key_from_value(test_dict, None)
+            util.get_key_from_value(test_dict, None)  # noqa: PLR0133
 
     def test_is_host_on_local_net(self):
         """
@@ -562,7 +556,7 @@ class MiscTests(utc.UnitTest):
                 ip_length_symbol = ">="
                 ip_length_min = 7
                 self.assertTrue(
-                    len(ip_address) >= ip_length_min,
+                    len(ip_address) >= ip_length_min,  # type: ignore[arg-type]
                     f"ip_address returned ({ip_address}) did not "
                     f"meet length expectations ("
                     f"{ip_length_symbol + str(ip_length_min)})",

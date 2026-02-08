@@ -48,10 +48,6 @@ class TestThermostatSite(utc.UnitTest):
             ],
         }
 
-    def tearDown(self):
-        """Clean up after tests."""
-        super().tearDown()
-
     def test_site_initialization(self):
         """Verify ThermostatSite initializes correctly."""
         site = ts.ThermostatSite(
@@ -333,7 +329,7 @@ class TestThermostatSite(utc.UnitTest):
                 r'^\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\]'
             )
             self.assertIsNotNone(
-                re.match(timestamp_pattern, measurement_msg),
+                re.match(timestamp_pattern, measurement_msg),  # type: ignore[arg-type]
                 f"Timestamp not found at start of message: {measurement_msg}"
             )
 

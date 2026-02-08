@@ -21,9 +21,9 @@ try:
     kumocloud_import_error = None
 except ImportError as ex:
     # pykumo library not available, tests will be skipped
-    kumocloud = None
-    kumocloud_config = None
-    tc = None
+    kumocloud = MagicMock()  # type: ignore
+    kumocloud_config = MagicMock()  # type: ignore
+    tc = MagicMock()  # type: ignore
     kumocloud_import_error = ex
 
 from src import utilities as util
@@ -225,7 +225,10 @@ class ThermostatClassUnitTest(utc.UnitTest):
         ):
             tstat = kumocloud.ThermostatClass(zone=0, verbose=False)
             self.assertEqual(tstat.get_target_zone_id(5), 5)
-            self.assertEqual(tstat.get_target_zone_id("TestZone"), "TestZone")
+            self.assertEqual(
+                tstat.get_target_zone_id("TestZone"),  # type: ignore
+                "TestZone",
+            )
 
     @patch("src.kumocloud.pykumo.KumoCloudAccount.__init__")
     # type: ignore[union-attr]
@@ -283,7 +286,7 @@ class ThermostatClassUnitTest(utc.UnitTest):
             mock_serials = {"SERIAL001": {}, "SERIAL002": {}}
             tstat.get_indoor_units = MagicMock(return_value=mock_serials)
 
-            result = tstat._get_serial_number_list()  # type: ignore[attr-defined]
+            result = getattr(tstat, "_get_serial_number_list")()
             self.assertEqual(result, ["SERIAL001", "SERIAL002"])
 
     @patch("src.kumocloud.pykumo.KumoCloudAccount.__init__")
@@ -308,7 +311,7 @@ class ThermostatClassUnitTest(utc.UnitTest):
             )
 
             with patch("time.sleep"):  # Speed up test
-                result = tstat._get_serial_number_list()  # type: ignore[attr-defined]
+                result = getattr(tstat, "_get_serial_number_list")()
                 self.assertEqual(result, ["SERIAL001"])
                 self.assertEqual(tstat.get_indoor_units.call_count, 2)
 
@@ -329,7 +332,7 @@ class ThermostatClassUnitTest(utc.UnitTest):
             serial_list = ["SERIAL001", "SERIAL002"]
 
             # type: ignore[attr-defined]
-            tstat._validate_and_populate_metadata(serial_list)
+            getattr(tstat, "_validate_and_populate_metadata")(serial_list)
 
             # Verify metadata was populated
             self.assertEqual(
@@ -355,7 +358,7 @@ class ThermostatClassUnitTest(utc.UnitTest):
             tstat = kumocloud.ThermostatClass(zone=0, verbose=False)
 
             with self.assertRaises(tc.AuthenticationError) as context:
-                tstat._validate_and_populate_metadata([])  # type: ignore[attr-defined]
+                getattr(tstat, "_validate_and_populate_metadata")([])
             self.assertIn("Authentication Error", str(context.exception))
 
     @patch("src.kumocloud.pykumo.KumoCloudAccount.__init__")
@@ -373,7 +376,7 @@ class ThermostatClassUnitTest(utc.UnitTest):
             mock_raw_json = [None, None, {"all_zones": "data"}, None]
             tstat.get_raw_json = MagicMock(return_value=mock_raw_json)
 
-            result = tstat._get_zone_data(None, [])  # type: ignore[attr-defined]
+            result = getattr(tstat, "_get_zone_data")(None, [])
             self.assertEqual(result, {"all_zones": "data"})
 
     @patch("src.kumocloud.pykumo.KumoCloudAccount.__init__")
@@ -404,7 +407,7 @@ class ThermostatClassUnitTest(utc.UnitTest):
             tstat.get_raw_json = MagicMock(return_value=mock_raw_json)
             serial_list = ["SERIAL001"]
 
-            result = tstat._get_zone_data(0, serial_list)  # type: ignore[attr-defined]
+            result = getattr(tstat, "_get_zone_data")(0, serial_list)
             self.assertEqual(result, mock_zone_data)
             self.assertEqual(tstat.serial_number, "SERIAL001")
 
@@ -445,7 +448,7 @@ class ThermostatClassUnitTest(utc.UnitTest):
             serial_list = ["SERIAL001", "SERIAL002"]
 
             # type: ignore[attr-defined]
-            result = tstat._get_zone_data(zone_name, serial_list)
+            result = getattr(tstat, "_get_zone_data")(zone_name, serial_list)
             self.assertEqual(result, mock_zone_data)
             self.assertEqual(tstat.serial_number, "SERIAL002")
 
@@ -471,7 +474,7 @@ class ThermostatClassUnitTest(utc.UnitTest):
             serial_list = ["SERIAL001"]
 
             with self.assertRaises(IndexError) as context:
-                tstat._get_zone_data(5, serial_list)
+                getattr(tstat, "_get_zone_data")(5, serial_list)
             self.assertIn("Invalid Zone", str(context.exception))
 
     @patch("src.kumocloud.pykumo.KumoCloudAccount.__init__")
@@ -488,16 +491,13 @@ class ThermostatClassUnitTest(utc.UnitTest):
             tstat = kumocloud.ThermostatClass(zone=0, verbose=False)
             mock_zone_data = {"temp": 72, "mode": "heat"}
 
-            # type: ignore[attr-defined]
-            tstat._get_serial_number_list = MagicMock(
+            setattr(tstat, "_get_serial_number_list", MagicMock(
                 return_value=["SERIAL001"]
-            )
-            # type: ignore[attr-defined]
-            tstat._validate_and_populate_metadata = MagicMock()
-            # type: ignore[attr-defined]
-            tstat._get_zone_data = MagicMock(
+            ))
+            setattr(tstat, "_validate_and_populate_metadata", MagicMock())
+            setattr(tstat, "_get_zone_data", MagicMock(
                 return_value=mock_zone_data
-            )
+            ))
 
             # Test without parameter (returns all)
             result = tstat.get_metadata(zone=0)
@@ -523,16 +523,13 @@ class ThermostatClassUnitTest(utc.UnitTest):
             tstat.zone_name = "TestZone"
 
             mock_zone_data = {"temp": 72}
-            # type: ignore[attr-defined]
-            tstat._get_serial_number_list = MagicMock(
+            setattr(tstat, "_get_serial_number_list", MagicMock(
                 return_value=["SERIAL001"]
-            )
-            # type: ignore[attr-defined]
-            tstat._validate_and_populate_metadata = MagicMock()
-            # type: ignore[attr-defined]
-            tstat._get_zone_data = MagicMock(
+            ))
+            setattr(tstat, "_validate_and_populate_metadata", MagicMock())
+            setattr(tstat, "_get_zone_data", MagicMock(
                 return_value=mock_zone_data
-            )
+            ))
 
             with patch(
                 "src.utilities.execute_with_extended_retries"
@@ -1287,14 +1284,13 @@ class ThermostatZoneUnitTest(utc.UnitTest):
 
         # Set last fetch time to now
         zone.last_fetch_time = time.time()
-        zone.Thermostat._need_fetch = False  # type: ignore[attr-defined]
-        zone.Thermostat._fetch_if_needed = MagicMock()  # type: ignore[attr-defined]
+        setattr(zone.Thermostat, "_need_fetch", False)
+        setattr(zone.Thermostat, "_fetch_if_needed", MagicMock())
 
         zone.refresh_zone_info(force_refresh=False)
 
         # Should not call _fetch_if_needed
-        # type: ignore[attr-defined]
-        zone.Thermostat._fetch_if_needed.assert_not_called()
+        getattr(zone.Thermostat, "_fetch_if_needed").assert_not_called()
 
     def test_refresh_zone_info_expired(self):
         """Test refresh_zone_info() refreshes when expired."""
@@ -1304,14 +1300,13 @@ class ThermostatZoneUnitTest(utc.UnitTest):
 
         # Set last fetch time to past
         zone.last_fetch_time = time.time() - 2 * zone.fetch_interval_sec
-        zone.Thermostat._need_fetch = False  # type: ignore[attr-defined]
-        zone.Thermostat._fetch_if_needed = MagicMock()  # type: ignore[attr-defined]
+        setattr(zone.Thermostat, "_need_fetch", False)
+        setattr(zone.Thermostat, "_fetch_if_needed", MagicMock())
 
         zone.refresh_zone_info(force_refresh=False)
 
         # Should call _fetch_if_needed
-        # type: ignore[attr-defined]
-        zone.Thermostat._fetch_if_needed.assert_called_once()
+        getattr(zone.Thermostat, "_fetch_if_needed").assert_called_once()
 
     def test_refresh_zone_info_force_refresh(self):
         """Test refresh_zone_info() with force_refresh=True."""
@@ -1321,14 +1316,13 @@ class ThermostatZoneUnitTest(utc.UnitTest):
 
         # Set last fetch time to now (not expired)
         zone.last_fetch_time = time.time()
-        zone.Thermostat._need_fetch = False  # type: ignore[attr-defined]
-        zone.Thermostat._fetch_if_needed = MagicMock()  # type: ignore[attr-defined]
+        setattr(zone.Thermostat, "_need_fetch", False)
+        setattr(zone.Thermostat, "_fetch_if_needed", MagicMock())
 
         zone.refresh_zone_info(force_refresh=True)
 
         # Should call _fetch_if_needed even though not expired
-        # type: ignore[attr-defined]
-        zone.Thermostat._fetch_if_needed.assert_called_once()
+        getattr(zone.Thermostat, "_fetch_if_needed").assert_called_once()
 
     def test_refresh_zone_info_with_unbound_local_error(self):
         """Test refresh_zone_info() handles UnboundLocalError."""
@@ -1337,10 +1331,10 @@ class ThermostatZoneUnitTest(utc.UnitTest):
         )
 
         zone.last_fetch_time = time.time() - 2 * zone.fetch_interval_sec
-        zone.Thermostat._need_fetch = False  # type: ignore[attr-defined]
-        zone.Thermostat._fetch_if_needed = MagicMock(  # type: ignore[attr-defined]
+        setattr(zone.Thermostat, "_need_fetch", False)
+        setattr(zone.Thermostat, "_fetch_if_needed", MagicMock(
             side_effect=UnboundLocalError("Test error")
-        )
+        ))
 
         with patch("src.utilities.log_msg") as mock_log:
             zone.refresh_zone_info(force_refresh=False)

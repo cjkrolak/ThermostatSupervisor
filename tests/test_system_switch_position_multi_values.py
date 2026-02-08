@@ -217,21 +217,27 @@ class TestSystemSwitchPositionMultiValues(utc.UnitTest):
         # type: ignore[attr-defined]
         self.Zone.get_system_switch_position = MagicMock(return_value="auto")
         # type: ignore[attr-defined]
-        result = self.Zone._is_mode(tc.ThermostatCommonZone.AUTO_MODE)
+        result = getattr(self.Zone, "_is_mode")(
+            tc.ThermostatCommonZone.AUTO_MODE
+        )
         self.assertTrue(result, 'Expected _is_mode to return True for "auto"')
 
         # Test with "autoHeat"
         # type: ignore[attr-defined]
         self.Zone.get_system_switch_position = MagicMock(return_value="autoHeat")
         # type: ignore[attr-defined]
-        result = self.Zone._is_mode(tc.ThermostatCommonZone.AUTO_MODE)
+        result = getattr(self.Zone, "_is_mode")(
+            tc.ThermostatCommonZone.AUTO_MODE
+        )
         self.assertTrue(result, 'Expected _is_mode to return True for "autoHeat"')
 
         # Test with non-matching value
         # type: ignore[attr-defined]
         self.Zone.get_system_switch_position = MagicMock(return_value="heat")
         # type: ignore[attr-defined]
-        result = self.Zone._is_mode(tc.ThermostatCommonZone.AUTO_MODE)
+        result = getattr(self.Zone, "_is_mode")(
+            tc.ThermostatCommonZone.AUTO_MODE
+        )
         self.assertFalse(result, 'Expected _is_mode to return False for "heat"')
 
     def test_get_key_from_value_with_list(self):

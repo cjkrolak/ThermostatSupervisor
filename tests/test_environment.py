@@ -193,7 +193,7 @@ EMPTY_LINE_ABOVE=yes
             os.chdir(test_dir)
 
             # Test with no file
-            result = env._read_supervisor_env_file()  # type: ignore[attr-defined]
+            result = getattr(env, "_read_supervisor_env_file")()
             self.assertEqual(result, {})
 
             # Test with valid file
@@ -209,7 +209,7 @@ KEY4=value4=with=equals
             with open("supervisor-env.txt", "w", encoding="utf-8") as f:
                 f.write(env_content)
 
-            result = env._read_supervisor_env_file()  # type: ignore[attr-defined]
+            result = getattr(env, "_read_supervisor_env_file")()
             expected = {
                 "KEY1": "value1",
                 "KEY2": "value with spaces",
@@ -304,7 +304,7 @@ KEY4=value4=with=equals
             env.get_python_version("3", 7)  # type: ignore[arg-type]
 
         # no decimal point
-        env.get_python_version(3, None)
+        env.get_python_version(3, None)  # type: ignore[arg-type]
 
         # min value exception
         with self.assertRaises(EnvironmentError):
@@ -523,7 +523,7 @@ def get_import_count():
 
         try:
             # Test with None package (should do nothing)
-            env._add_package_to_path(None)  # type: ignore[attr-defined]
+            getattr(env, "_add_package_to_path")(None)
             self.assertEqual(sys.path, original_path)
 
             # Test with valid package name
@@ -531,7 +531,7 @@ def get_import_count():
             expected_path = env.get_parent_path(os.getcwd()) + "//" + test_pkg
 
             with unittest.mock.patch("builtins.print") as mock_print:
-                env._add_package_to_path(test_pkg)  # type: ignore[attr-defined]
+                getattr(env, "_add_package_to_path")(test_pkg)
 
                 # Verify package path was added to front of sys.path
                 self.assertEqual(sys.path[0], expected_path)
@@ -542,7 +542,7 @@ def get_import_count():
             # Test with verbose=True
             with unittest.mock.patch("builtins.print") as mock_print:
                 # type: ignore on next line for protected member access
-                env._add_package_to_path(  # type: ignore[attr-defined]
+                getattr(env, "_add_package_to_path")(
                     test_pkg, verbose=True
                 )
 
