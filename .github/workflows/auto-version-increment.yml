@@ -1,3 +1,4 @@
+---
 name: Auto Version Increment
 on:
   pull_request:
