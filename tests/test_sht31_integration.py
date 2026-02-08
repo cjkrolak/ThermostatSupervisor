@@ -8,9 +8,9 @@ This test requires connection to sht31 thermostat.
 import unittest
 
 # local imports
-from thermostatsupervisor import sht31
-from thermostatsupervisor import sht31_config
-from thermostatsupervisor import utilities as util
+from src import sht31
+from src import sht31_config
+from src import utilities as util
 from tests import unit_test_common as utc
 
 
@@ -108,5 +108,5 @@ class PerformanceIntegrationTest(IntegrationTest, utc.PerformanceIntegrationTest
 
 
 if __name__ == "__main__":
-    util.log_msg.debug = True
+    util.log_msg.debug = True  # type: ignore[attr-defined]
     unittest.main(verbosity=2)

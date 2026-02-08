@@ -8,9 +8,9 @@ was not using the correct path (/unit) during unit tests.
 import unittest
 from unittest.mock import patch
 
-from thermostatsupervisor import sht31
-from thermostatsupervisor import sht31_config
-from thermostatsupervisor import utilities as util
+from src import sht31
+from src import sht31_config
+from src import utilities as util
 from tests import unit_test_common as utc
 
 

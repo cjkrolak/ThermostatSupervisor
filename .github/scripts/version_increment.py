@@ -114,48 +114,68 @@ def get_main_branch_version(init_file_path: str) -> str:
         Version string from main branch
 
     Raises:
-        subprocess.CalledProcessError: If git command fails
+        RuntimeError: If version cannot be retrieved from any main branch
+            reference or path combination
     """
     # Try different ways to reference main branch
     main_refs = ["origin/main", "main"]
 
+    # Support for legacy path structure (thermostatsupervisor -> src rename)
+    possible_paths = [init_file_path]
+    if init_file_path.startswith("src/"):
+        # Try legacy path if current path starts with src/
+        legacy_path = init_file_path.replace("src/", "thermostatsupervisor/", 1)
+        possible_paths.append(legacy_path)
+    elif init_file_path.startswith("thermostatsupervisor/"):
+        # Try new path if current path starts with thermostatsupervisor/
+        new_path = init_file_path.replace(
+            "thermostatsupervisor/", "src/", 1
+        )
+        possible_paths.append(new_path)
+
     for main_ref in main_refs:
-        try:
-            # First try fetching main branch if not available
-            if main_ref == "origin/main":
-                try:
-                    subprocess.run(
-                        ["git", "fetch", "origin", "main"],
-                        capture_output=True,
-                        text=True,
-                        check=True,
-                    )
-                except subprocess.CalledProcessError:
-                    pass  # Might already be available
-
-            # Get file content from main branch
-            result = subprocess.run(
-                ["git", "show", f"{main_ref}:{init_file_path}"],
-                capture_output=True,
-                text=True,
-                check=True,
-            )
-            content = result.stdout
-
-            # Extract version from content
-            version_match = re.search(r'__version__\s*=\s*["\']([^"\']+)["\']', content)
-            if not version_match:
-                raise RuntimeError(
-                    f"No __version__ found in main branch {init_file_path}"
+        # First try fetching main branch if not available
+        if main_ref == "origin/main":
+            try:
+                subprocess.run(
+                    ["git", "fetch", "origin", "main"],
+                    capture_output=True,
+                    text=True,
+                    check=True,
                 )
+            except subprocess.CalledProcessError:
+                pass  # Might already be available
 
-            return version_match.group(1)
+        # Try each possible path
+        for file_path in possible_paths:
+            try:
+                # Get file content from main branch
+                result = subprocess.run(
+                    ["git", "show", f"{main_ref}:{file_path}"],
+                    capture_output=True,
+                    text=True,
+                    check=True,
+                )
+                content = result.stdout
 
-        except subprocess.CalledProcessError:
-            continue  # Try next reference
+                # Extract version from content
+                version_match = re.search(
+                    r'__version__\s*=\s*["\']([^"\']+)["\']', content
+                )
+                if not version_match:
+                    raise RuntimeError(
+                        f"No __version__ found in main branch {file_path}"
+                    )
+
+                print(f"Found version in main branch using path: {file_path}")
+                return version_match.group(1)
+
+            except subprocess.CalledProcessError:
+                continue  # Try next path or reference
 
     raise RuntimeError(
-        f"Failed to get main branch version from any reference: {main_refs}"
+        f"Failed to get main branch version from any reference: {main_refs}, "
+        f"tried paths: {possible_paths}"
     )
 
 
@@ -188,7 +208,7 @@ def main():
     )
     parser.add_argument(
         "--init-file",
-        default="thermostatsupervisor/__init__.py",
+        default="src/__init__.py",
         help="Path to __init__.py file",
     )
     parser.add_argument(

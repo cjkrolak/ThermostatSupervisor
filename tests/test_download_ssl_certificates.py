@@ -64,7 +64,7 @@ class TestDownloadSSLCertificatesScript(unittest.TestCase):
             [("example.com", 443), ("test.com", 8443)]
         )
 
-    @patch("thermostatsupervisor.ssl_certificate.download_ssl_certificate")
+    @patch("src.ssl_certificate.download_ssl_certificate")
     @patch(
         "sys.argv",
         ["download_ssl_certificates.py", "example.com:443", "--download-only"],
@@ -98,7 +98,7 @@ class TestDownloadSSLCertificatesScript(unittest.TestCase):
         result = main()
         self.assertEqual(result, 1)  # Should return error code
 
-    @patch("thermostatsupervisor.ssl_certificate.download_ssl_certificate")
+    @patch("src.ssl_certificate.download_ssl_certificate")
     @patch(
         "sys.argv",
         [

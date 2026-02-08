@@ -13,10 +13,10 @@ import json
 from typing import List, Tuple
 
 # Import the SSL certificate functions
-from thermostatsupervisor.ssl_certificate import (
+from src.ssl_certificate import (
     download_and_import_ssl_certificates,
 )
-from thermostatsupervisor import utilities as util
+from src import utilities as util
 
 
 def parse_servers(servers_str: str) -> List[Tuple[str, int]]:
@@ -112,7 +112,7 @@ def main():
 
         if args.download_only:
             # Import individual functions for download-only mode
-            from thermostatsupervisor.ssl_certificate import download_ssl_certificate
+            from src.ssl_certificate import download_ssl_certificate
 
             success = True
             for hostname, port in servers:

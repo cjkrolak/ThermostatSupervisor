@@ -7,9 +7,9 @@ import unittest
 from unittest.mock import patch, MagicMock
 
 # local imports
-from thermostatsupervisor import blink
-from thermostatsupervisor import blink_config
-from thermostatsupervisor import utilities as util
+from src import blink
+from src import blink_config
+from src import utilities as util
 from tests import unit_test_common as utc
 
 
@@ -117,9 +117,9 @@ class BlinkSpamMitigationTest(unittest.TestCase):
         self.mock_thermostat.zone_number = 0
         self.mock_thermostat.device_id = 0
 
-    @patch("thermostatsupervisor.blink.time.time")
-    @patch("thermostatsupervisor.blink.util.log_msg")
-    def test_refresh_zone_info_caching(self, mock_log, mock_time):
+    @patch("src.blink.time.time")
+    @patch("src.blink.util.log_msg")
+    def test_refresh_zone_info_caching(self, _mock_log, mock_time):
         """Test that refresh_zone_info respects cache timeout."""
         # Setup time progression
         start_time = 1000.0
@@ -132,7 +132,7 @@ class BlinkSpamMitigationTest(unittest.TestCase):
 
         # Create zone instance
         with patch(
-            "thermostatsupervisor.thermostat_common.time.time",
+            "src.thermostat_common.time.time",
             return_value=start_time - 120,
         ):
             zone = blink.ThermostatZone(self.mock_thermostat, verbose=False)
@@ -152,7 +152,7 @@ class BlinkSpamMitigationTest(unittest.TestCase):
         zone.refresh_zone_info()
         self.assertEqual(self.mock_thermostat.get_metadata.call_count, 2)
 
-    @patch("thermostatsupervisor.blink.time.time")
+    @patch("src.blink.time.time")
     def test_refresh_zone_info_force_refresh(self, mock_time):
         """Test that force_refresh=True bypasses cache."""
         start_time = 1000.0
@@ -164,7 +164,7 @@ class BlinkSpamMitigationTest(unittest.TestCase):
 
         # Create zone instance
         with patch(
-            "thermostatsupervisor.thermostat_common.time.time",
+            "src.thermostat_common.time.time",
             return_value=start_time - 120,
         ):
             zone = blink.ThermostatZone(self.mock_thermostat, verbose=False)
@@ -194,8 +194,8 @@ class BlinkSpamMitigationTest(unittest.TestCase):
         zone = blink.ThermostatZone(self.mock_thermostat, verbose=False)
         self.assertEqual(zone.fetch_interval_sec, 60)
 
-    @patch("thermostatsupervisor.blink.time.time")
-    @patch("thermostatsupervisor.blink.util.log_msg")
+    @patch("src.blink.time.time")
+    @patch("src.blink.util.log_msg")
     def test_cached_data_message_reduction(self, mock_log, mock_time):
         """Test that cached data messages are only printed when refresh time changes."""
         # Setup time progression for repeated cache access with similar refresh times
@@ -211,7 +211,7 @@ class BlinkSpamMitigationTest(unittest.TestCase):
 
         # Create zone instance with verbose=True
         with patch(
-            "thermostatsupervisor.thermostat_common.time.time",
+            "src.thermostat_common.time.time",
             return_value=start_time - 120,
         ):
             zone = blink.ThermostatZone(self.mock_thermostat, verbose=True)
@@ -237,5 +237,5 @@ class BlinkSpamMitigationTest(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    util.log_msg.debug = True
+    util.log_msg.debug = True  # type: ignore[attr-defined]
     unittest.main(verbosity=2)

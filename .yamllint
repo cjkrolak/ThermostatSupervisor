@@ -14,7 +14,7 @@ rules:
     min-spaces-from-content: 1
     level: warning
 
-  # Document start is not required for all YAML files
+  # Document start is allowed (yamlfix adds it automatically)
   document-start:
     present: false
     level: warning
@@ -45,6 +45,10 @@ rules:
   trailing-spaces:
     level: error
 
+  # Allow platform-specific line endings for cross-platform compatibility
+  new-lines:
+    type: platform  # Accept LF on Unix, CRLF on Windows
+
 # Ignore generated or external files
 ignore: |
   .git/
@@ -55,3 +59,5 @@ ignore: |
   dist/
   build/
   *.egg-info/
+  node_modules/
+  *.md

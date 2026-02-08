@@ -13,10 +13,10 @@ from unittest.mock import patch, MagicMock
 # third party imports
 
 # local imports
-from thermostatsupervisor import sht31_flask_server as sht31_fs
-from thermostatsupervisor import sht31_config
-from thermostatsupervisor import utilities as util
-from thermostatsupervisor.sht31_flask_server import app
+from src import sht31_flask_server as sht31_fs
+from src import sht31_config
+from src import utilities as util
+from src.sht31_flask_server import app
 from tests import unit_test_common as utc
 
 
@@ -26,7 +26,7 @@ class RuntimeParameterTest(utc.RuntimeParameterTest):
 
     mod = sht31_fs  # module to test
     script = os.path.realpath(__file__)
-    debug = False
+    debug = False  # type: ignore[assignment]
 
     # fields for testing, mapped to class variables.
     # (value, field name)
@@ -44,7 +44,7 @@ class Sht31FlaskServerSensorUnit(utc.UnitTest):
         """Set up test fixtures."""
         self.mock_app = MagicMock()
         self.mock_app.debug = True
-        with patch("thermostatsupervisor.sht31_flask_server.app", self.mock_app):
+        with patch("src.sht31_flask_server.app", self.mock_app):
             self.sensors = sht31_fs.Sensors()
 
     def test_init(self):
@@ -53,7 +53,7 @@ class Sht31FlaskServerSensorUnit(utc.UnitTest):
 
         # Test with debug False
         self.mock_app.debug = False
-        with patch("thermostatsupervisor.sht31_flask_server.app", self.mock_app):
+        with patch("src.sht31_flask_server.app", self.mock_app):
             sensors = sht31_fs.Sensors()
             self.assertFalse(sensors.verbose)
 
@@ -175,14 +175,16 @@ class Sht31FlaskServerSensorUnit(utc.UnitTest):
                 for seed in test_seeds:
                     # Mock Flask request args with specific seed and measurements=1
                     with patch(
-                        "thermostatsupervisor.sht31_flask_server.request"
+                        "src.sht31_flask_server.request"
                     ) as mock_request:
                         # Create a proper mock that returns values based on the key
-                        def mock_args_get(key, default=None, type=None):
+                        def mock_args_get(
+                            key, default=None, type=None, current_seed=seed
+                        ):
                             values = {
                                 "measurements": 1,  # Single measurement for
                                 # simple comparison
-                                "seed": seed,
+                                "seed": current_seed,
                             }
                             value = values.get(key, default)
                             if type is not None and value is not None:
@@ -234,17 +236,17 @@ class Sht31FlaskServerSensorUnit(utc.UnitTest):
 
                 # Test reproducibility - same seed should give same results
                 with patch(
-                    "thermostatsupervisor.sht31_flask_server.request"
+                    "src.sht31_flask_server.request"
                 ) as mock_request:
 
-                    def mock_args_get_repeat(key, default=None, type=None):
+                    def mock_args_get_repeat(key, default=None, type_=None):
                         values = {
                             "measurements": 1,
                             "seed": test_seeds[0],  # Use first seed again
                         }
                         value = values.get(key, default)
-                        if type is not None and value is not None:
-                            return type(value)
+                        if type_ is not None and value is not None:
+                            return type_(value)
                         return value
 
                     mock_request.args.get = mock_args_get_repeat
@@ -268,10 +270,10 @@ class Sht31FlaskServerSensorUnit(utc.UnitTest):
         """Test i2c logic levels reading method."""
         # Mock the pi_library_exception to None (successful GPIO import)
         with patch(
-            "thermostatsupervisor.sht31_flask_server.pi_library_exception", None
+            "src.sht31_flask_server.pi_library_exception", None
         ):
             # Mock the GPIO module
-            with patch("thermostatsupervisor.sht31_flask_server.GPIO") as mock_gpio:
+            with patch("src.sht31_flask_server.GPIO") as mock_gpio:
                 # Mock GPIO setup and input calls
                 mock_gpio.BCM = "BCM"
                 mock_gpio.IN = "IN"
@@ -318,10 +320,10 @@ class Sht31FlaskServerSensorUnit(utc.UnitTest):
         """Test comprehensive i2c bus health check method."""
         # Mock the pi_library_exception to None (successful GPIO import)
         with patch(
-            "thermostatsupervisor.sht31_flask_server.pi_library_exception", None
+            "src.sht31_flask_server.pi_library_exception", None
         ):
             # Mock the GPIO module
-            with patch("thermostatsupervisor.sht31_flask_server.GPIO") as mock_gpio:
+            with patch("src.sht31_flask_server.GPIO") as mock_gpio:
                 # Mock GPIO calls for healthy bus (both pins high)
                 mock_gpio.BCM = "BCM"
                 mock_gpio.IN = "IN"
@@ -362,10 +364,10 @@ class Sht31FlaskServerSensorUnit(utc.UnitTest):
         """Test i2c bus health check for stuck low condition."""
         # Mock the pi_library_exception to None (successful GPIO import)
         with patch(
-            "thermostatsupervisor.sht31_flask_server.pi_library_exception", None
+            "src.sht31_flask_server.pi_library_exception", None
         ):
             # Mock the GPIO module
-            with patch("thermostatsupervisor.sht31_flask_server.GPIO") as mock_gpio:
+            with patch("src.sht31_flask_server.GPIO") as mock_gpio:
                 # Mock GPIO calls for stuck bus (both pins low)
                 mock_gpio.BCM = "BCM"
                 mock_gpio.IN = "IN"
@@ -397,13 +399,13 @@ class Sht31FlaskServerSensorUnit(utc.UnitTest):
     def test_get_health_recommendations(self):
         """Test health recommendations generation."""
         # Test recommendations for stuck bus
-        recs = self.sensors._get_health_recommendations("STUCK_LOW")
+        recs = getattr(self.sensors, "_get_health_recommendations")("STUCK_LOW")
         self.assertIsInstance(recs, list)
         self.assertTrue(len(recs) > 0)
         self.assertTrue(any("recovery" in rec.lower() for rec in recs))
 
         # Test recommendations for idle bus
-        recs = self.sensors._get_health_recommendations("IDLE")
+        recs = getattr(self.sensors, "_get_health_recommendations")("IDLE")
         self.assertIsInstance(recs, list)
         self.assertTrue(len(recs) > 0)
 
@@ -411,9 +413,9 @@ class Sht31FlaskServerSensorUnit(utc.UnitTest):
         """Test setting SHT31 address configuration."""
         # Mock GPIO when library is available
         with patch(
-            "thermostatsupervisor.sht31_flask_server.pi_library_exception", None
+            "src.sht31_flask_server.pi_library_exception", None
         ):
-            with patch("thermostatsupervisor.sht31_flask_server.GPIO") as mock_gpio:
+            with patch("src.sht31_flask_server.GPIO") as mock_gpio:
                 mock_gpio.BCM = "BCM"
                 mock_gpio.OUT = "OUT"
                 mock_gpio.IN = "IN"
@@ -496,7 +498,7 @@ class Sht31FlaskServerSensorUnit(utc.UnitTest):
     def test_get_iwconfig_wifi_strength_windows(self):
         """Test WiFi strength detection on Windows."""
         with patch(
-            "thermostatsupervisor.environment.is_windows_environment", return_value=True
+            "src.environment.is_windows_environment", return_value=True
         ):
             with patch.object(self.sensors, "shell_cmd") as mock_shell:
                 mock_shell.return_value = "Signal: 75%"
@@ -510,7 +512,7 @@ class Sht31FlaskServerSensorUnit(utc.UnitTest):
     def test_get_iwconfig_wifi_strength_linux(self):
         """Test WiFi strength detection on Linux."""
         with patch(
-            "thermostatsupervisor.environment.is_windows_environment",
+            "src.environment.is_windows_environment",
             return_value=False,
         ):
             with patch.object(self.sensors, "shell_cmd") as mock_shell:
@@ -527,7 +529,7 @@ class Sht31FlaskServerSensorUnit(utc.UnitTest):
     def test_get_iwlist_wifi_strength_windows_error(self):
         """Test that iwlist method raises error on Windows."""
         with patch(
-            "thermostatsupervisor.environment.is_windows_environment", return_value=True
+            "src.environment.is_windows_environment", return_value=True
         ):
             with self.assertRaises(EnvironmentError):
                 self.sensors.get_iwlist_wifi_strength()
@@ -559,7 +561,7 @@ class Sht31FlaskServerSensorUnit(utc.UnitTest):
         mock_bus.read_i2c_block_data.return_value = expected_data
 
         with patch(
-            "thermostatsupervisor.utilities.execute_with_extended_retries"
+            "src.utilities.execute_with_extended_retries"
         ) as mock_retry:
             mock_retry.return_value = expected_data
 
@@ -574,14 +576,8 @@ class Sht31FlaskServerSensorUnit(utc.UnitTest):
         # Return fewer bytes than expected
         mock_bus.read_i2c_block_data.return_value = [0x4A, 0xEA]
 
-        def _failing_read():
-            response = mock_bus.read_i2c_block_data(0x44, 0x00, 6)
-            if len(response) != 6:
-                raise ValueError("Length mismatch")
-            return response
-
         with patch(
-            "thermostatsupervisor.utilities.execute_with_extended_retries"
+            "src.utilities.execute_with_extended_retries"
         ) as mock_retry:
             mock_retry.side_effect = ValueError("Length mismatch")
 
@@ -667,7 +663,7 @@ class Sht31FlaskServerSensorUnit(utc.UnitTest):
           Encryption key:on"""
 
         with patch(
-            "thermostatsupervisor.environment.is_windows_environment",
+            "src.environment.is_windows_environment",
             return_value=False,
         ):
             with patch.object(
@@ -705,7 +701,7 @@ class TestSht31FlaskEndpoints(utc.UnitTest):
 
     def test_production_endpoint(self):
         """Test Controller endpoint class."""
-        with patch("thermostatsupervisor.sht31_flask_server.app", self.mock_app):
+        with patch("src.sht31_flask_server.app", self.mock_app):
             endpoint = sht31_fs.Controller()
             self.assertIsInstance(endpoint, sht31_fs.Controller)
 
@@ -717,7 +713,7 @@ class TestSht31FlaskEndpoints(utc.UnitTest):
 
     def test_unit_test_endpoint(self):
         """Test ControllerUnit endpoint class."""
-        with patch("thermostatsupervisor.sht31_flask_server.app", self.mock_app):
+        with patch("src.sht31_flask_server.app", self.mock_app):
             endpoint = sht31_fs.ControllerUnit()
             self.assertIsInstance(endpoint, sht31_fs.ControllerUnit)
 
@@ -729,7 +725,7 @@ class TestSht31FlaskEndpoints(utc.UnitTest):
 
     def test_diagnostics_endpoint(self):
         """Test ReadFaultRegister endpoint class."""
-        with patch("thermostatsupervisor.sht31_flask_server.app", self.mock_app):
+        with patch("src.sht31_flask_server.app", self.mock_app):
             endpoint = sht31_fs.ReadFaultRegister()
             self.assertIsInstance(endpoint, sht31_fs.ReadFaultRegister)
 
@@ -741,7 +737,7 @@ class TestSht31FlaskEndpoints(utc.UnitTest):
 
     def test_clear_diagnostics_endpoint(self):
         """Test ClearFaultRegister endpoint class."""
-        with patch("thermostatsupervisor.sht31_flask_server.app", self.mock_app):
+        with patch("src.sht31_flask_server.app", self.mock_app):
             endpoint = sht31_fs.ClearFaultRegister()
             self.assertIsInstance(endpoint, sht31_fs.ClearFaultRegister)
 
@@ -753,7 +749,7 @@ class TestSht31FlaskEndpoints(utc.UnitTest):
 
     def test_enable_heater_endpoint(self):
         """Test EnableHeater endpoint class."""
-        with patch("thermostatsupervisor.sht31_flask_server.app", self.mock_app):
+        with patch("src.sht31_flask_server.app", self.mock_app):
             endpoint = sht31_fs.EnableHeater()
             self.assertIsInstance(endpoint, sht31_fs.EnableHeater)
 
@@ -764,7 +760,7 @@ class TestSht31FlaskEndpoints(utc.UnitTest):
 
     def test_disable_heater_endpoint(self):
         """Test DisableHeater endpoint class."""
-        with patch("thermostatsupervisor.sht31_flask_server.app", self.mock_app):
+        with patch("src.sht31_flask_server.app", self.mock_app):
             endpoint = sht31_fs.DisableHeater()
             self.assertIsInstance(endpoint, sht31_fs.DisableHeater)
 
@@ -775,7 +771,7 @@ class TestSht31FlaskEndpoints(utc.UnitTest):
 
     def test_soft_reset_endpoint(self):
         """Test SoftReset endpoint class."""
-        with patch("thermostatsupervisor.sht31_flask_server.app", self.mock_app):
+        with patch("src.sht31_flask_server.app", self.mock_app):
             endpoint = sht31_fs.SoftReset()
             self.assertIsInstance(endpoint, sht31_fs.SoftReset)
 
@@ -786,7 +782,7 @@ class TestSht31FlaskEndpoints(utc.UnitTest):
 
     def test_reset_endpoint(self):
         """Test Reset endpoint class."""
-        with patch("thermostatsupervisor.sht31_flask_server.app", self.mock_app):
+        with patch("src.sht31_flask_server.app", self.mock_app):
             endpoint = sht31_fs.Reset()
             self.assertIsInstance(endpoint, sht31_fs.Reset)
 
@@ -797,7 +793,7 @@ class TestSht31FlaskEndpoints(utc.UnitTest):
 
     def test_i2c_recovery_endpoint(self):
         """Test I2CRecovery endpoint class."""
-        with patch("thermostatsupervisor.sht31_flask_server.app", self.mock_app):
+        with patch("src.sht31_flask_server.app", self.mock_app):
             endpoint = sht31_fs.I2CRecovery()
             self.assertIsInstance(endpoint, sht31_fs.I2CRecovery)
 
@@ -808,7 +804,7 @@ class TestSht31FlaskEndpoints(utc.UnitTest):
 
     def test_i2c_detect_endpoint(self):
         """Test I2CDetect endpoint class."""
-        with patch("thermostatsupervisor.sht31_flask_server.app", self.mock_app):
+        with patch("src.sht31_flask_server.app", self.mock_app):
             endpoint = sht31_fs.I2CDetect()
             self.assertIsInstance(endpoint, sht31_fs.I2CDetect)
 
@@ -819,7 +815,7 @@ class TestSht31FlaskEndpoints(utc.UnitTest):
 
     def test_i2c_logic_levels_endpoint(self):
         """Test I2CLogicLevels endpoint class."""
-        with patch("thermostatsupervisor.sht31_flask_server.app", self.mock_app):
+        with patch("src.sht31_flask_server.app", self.mock_app):
             endpoint = sht31_fs.I2CLogicLevels()
             self.assertIsInstance(endpoint, sht31_fs.I2CLogicLevels)
 
@@ -830,7 +826,7 @@ class TestSht31FlaskEndpoints(utc.UnitTest):
 
     def test_i2c_bus_health_endpoint(self):
         """Test I2CBusHealth endpoint class."""
-        with patch("thermostatsupervisor.sht31_flask_server.app", self.mock_app):
+        with patch("src.sht31_flask_server.app", self.mock_app):
             endpoint = sht31_fs.I2CBusHealth()
             self.assertIsInstance(endpoint, sht31_fs.I2CBusHealth)
 
@@ -841,7 +837,7 @@ class TestSht31FlaskEndpoints(utc.UnitTest):
 
     def test_i2c_detect_bus0_endpoint(self):
         """Test I2CDetectBus0 endpoint class."""
-        with patch("thermostatsupervisor.sht31_flask_server.app", self.mock_app):
+        with patch("src.sht31_flask_server.app", self.mock_app):
             endpoint = sht31_fs.I2CDetectBus0()
             self.assertIsInstance(endpoint, sht31_fs.I2CDetectBus0)
 
@@ -852,7 +848,7 @@ class TestSht31FlaskEndpoints(utc.UnitTest):
 
     def test_i2c_detect_bus1_endpoint(self):
         """Test I2CDetectBus1 endpoint class."""
-        with patch("thermostatsupervisor.sht31_flask_server.app", self.mock_app):
+        with patch("src.sht31_flask_server.app", self.mock_app):
             endpoint = sht31_fs.I2CDetectBus1()
             self.assertIsInstance(endpoint, sht31_fs.I2CDetectBus1)
 
@@ -863,20 +859,20 @@ class TestSht31FlaskEndpoints(utc.UnitTest):
 
     def test_print_ip_ban_block_list_endpoint(self):
         """Test PrintIPBanBlockList endpoint class."""
-        with patch("thermostatsupervisor.sht31_flask_server.app", self.mock_app):
+        with patch("src.sht31_flask_server.app", self.mock_app):
             endpoint = sht31_fs.PrintIPBanBlockList()
             self.assertIsInstance(endpoint, sht31_fs.PrintIPBanBlockList)
 
             # Mock the ip_ban object and flask functions
             with patch(
-                "thermostatsupervisor.flask_generic."
+                "src.flask_generic."
                 "print_ipban_block_list_with_timestamp"
             ):
                 with patch(
-                    "thermostatsupervisor.sht31_flask_server.ip_ban"
+                    "src.sht31_flask_server.ip_ban"
                 ) as mock_ip_ban:
                     with patch(
-                        "thermostatsupervisor.sht31_flask_server.jsonify"
+                        "src.sht31_flask_server.jsonify"
                     ) as mock_jsonify:
                         mock_ip_ban.get_block_list.return_value = {"test": "data"}
                         mock_jsonify.return_value = {"test": "data"}
@@ -886,17 +882,17 @@ class TestSht31FlaskEndpoints(utc.UnitTest):
 
     def test_clear_ip_ban_block_list_endpoint(self):
         """Test ClearIPBanBlockList endpoint class."""
-        with patch("thermostatsupervisor.sht31_flask_server.app", self.mock_app):
+        with patch("src.sht31_flask_server.app", self.mock_app):
             endpoint = sht31_fs.ClearIPBanBlockList()
             self.assertIsInstance(endpoint, sht31_fs.ClearIPBanBlockList)
 
             # Mock the ip_ban object and flask functions
-            with patch("thermostatsupervisor.flask_generic.clear_ipban_block_list"):
+            with patch("src.flask_generic.clear_ipban_block_list"):
                 with patch(
-                    "thermostatsupervisor.sht31_flask_server.ip_ban"
+                    "src.sht31_flask_server.ip_ban"
                 ) as mock_ip_ban:
                     with patch(
-                        "thermostatsupervisor.sht31_flask_server.jsonify"
+                        "src.sht31_flask_server.jsonify"
                     ) as mock_jsonify:
                         mock_ip_ban.get_block_list.return_value = {"cleared": "data"}
                         mock_jsonify.return_value = {"cleared": "data"}
@@ -906,5 +902,5 @@ class TestSht31FlaskEndpoints(utc.UnitTest):
 
 
 if __name__ == "__main__":
-    util.log_msg.debug = True
+    util.log_msg.debug = True  # type: ignore[attr-defined]
     unittest.main(verbosity=2)

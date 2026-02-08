@@ -8,9 +8,9 @@ This test requires connection to mmm thermostat.
 import unittest
 
 # local imports
-from thermostatsupervisor import mmm
-from thermostatsupervisor import mmm_config
-from thermostatsupervisor import utilities as util
+from src import mmm
+from src import mmm_config
+from src import utilities as util
 from tests import unit_test_common as utc
 
 
@@ -59,6 +59,7 @@ class FunctionalIntegrationTest(IntegrationTest, utc.FunctionalIntegrationTest):
         self.Thermostat, self.Zone = self.setup_thermostat_zone()
 
         # verify function return value
+        # type: ignore[attr-defined]
         result = self.Thermostat.get_ui_data(self.Thermostat.zone_name)
         print(f"Thermostat.get_ui_data returned {result}")
         self.assertTrue(
@@ -74,7 +75,9 @@ class FunctionalIntegrationTest(IntegrationTest, utc.FunctionalIntegrationTest):
         # verify function return value
         param = "cloud"
         expected_data_type = dict
+        # type: ignore[attr-defined]
         result = self.Thermostat.get_ui_data_param(self.Thermostat.zone_name, param)
+        # type: ignore[attr-defined]
         print(
             f"Thermostat.get_ui_data_param({self.Thermostat.zone_name}, "
             f" {param}) returned {result}"
@@ -91,11 +94,13 @@ class FunctionalIntegrationTest(IntegrationTest, utc.FunctionalIntegrationTest):
         self.Thermostat, self.Zone = self.setup_thermostat_zone()
 
         # verify default option
-        result = self.Zone.get_zone_name()
+        result = self.Zone.get_zone_name()  # type: ignore[attr-defined]
         print(f"Zone.get_zone_name() returned {result}")
 
         # verify override option
+        # type: ignore[attr-defined]
         result = self.Zone.get_zone_name(self.Thermostat.zone_name)
+        # type: ignore[attr-defined]
         print(f"Zone.get_zone_name({self.Thermostat.zone_name}) returned {result}")
 
 
@@ -125,5 +130,5 @@ class PerformanceIntegrationTest(IntegrationTest, utc.PerformanceIntegrationTest
 
 
 if __name__ == "__main__":
-    util.log_msg.debug = True
+    util.log_msg.debug = True  # type: ignore[attr-defined]
     unittest.main(verbosity=2)

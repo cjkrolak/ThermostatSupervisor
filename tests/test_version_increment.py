@@ -5,30 +5,35 @@ Tests version comparison, increment logic, and file operations.
 """
 
 import os
+import subprocess
 import tempfile
 import unittest
-from unittest.mock import mock_open, patch
+from unittest.mock import mock_open, patch, MagicMock
 import sys
 
 # Add the scripts directory to the path to import our module
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".github", "scripts"))
 
 try:
-    import version_increment
+    import version_increment  # type: ignore[import]
 except ImportError:
     # Create a mock module if it doesn't exist yet during development
     class MockVersionIncrement:
-        def get_version_from_file(self, file_path):
+        def get_version_from_file(self, _file_path):
             return "1.0.12"
 
         def parse_version(self, version_str):
             return tuple(map(int, version_str.split(".")))
 
         def increment_patch_version(self, version_str):
-            major, minor, patch = self.parse_version(version_str)
-            return f"{major}.{minor}.{patch + 1}"
+            major, minor, patch_ver = self.parse_version(version_str)
+            return f"{major}.{minor}.{patch_ver + 1}"
 
-    version_increment = MockVersionIncrement()
+        def update_version_in_file(self, _file_path, _new_version):
+            """Mock implementation of update_version_in_file."""
+            pass
+
+    version_increment = MockVersionIncrement()  # type: ignore[assignment]
 
 
 class TestVersionIncrement(unittest.TestCase):
@@ -149,6 +154,98 @@ name = "Thermostatsupervisor"
                     self.assertEqual(written_content, expected)
 
 
+class TestGetMainBranchVersion(unittest.TestCase):
+    """Test get_main_branch_version functionality with path fallback."""
+
+    def setUp(self):
+        """Set up test fixtures."""
+        self.sample_version_content = '''"""Package identifier file"""
+
+# package name
+name = "Thermostatsupervisor"
+__version__ = "1.0.12"
+'''
+
+    @patch("subprocess.run")
+    def test_get_main_branch_version_src_path(self, mock_run):
+        """Test getting version from main branch with src/ path."""
+        # Mock successful git show with src/ path
+        mock_result = MagicMock()
+        mock_result.stdout = self.sample_version_content
+        mock_run.return_value = mock_result
+
+        version = version_increment.get_main_branch_version("src/__init__.py")
+
+        self.assertEqual(version, "1.0.12")
+        # Verify git show was called with src/ path
+        mock_run.assert_any_call(
+            ["git", "show", "origin/main:src/__init__.py"],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+
+    @patch("subprocess.run")
+    def test_get_main_branch_version_fallback_to_legacy(self, mock_run):
+        """Test fallback to legacy thermostatsupervisor/ path."""
+        def mock_subprocess_run(cmd, **kwargs):
+            """Mock subprocess.run with fallback behavior."""
+            if len(cmd) >= 2 and cmd[:2] == ["git", "fetch"]:
+                # Mock successful fetch
+                result = MagicMock()
+                result.stdout = ""
+                return result
+            elif len(cmd) >= 2 and cmd[:2] == ["git", "show"]:
+                # First call with src/ path fails
+                if len(cmd) >= 3 and "src/__init__.py" in cmd[2]:
+                    raise subprocess.CalledProcessError(
+                        1, cmd, stderr="path does not exist"
+                    )
+                # Second call with thermostatsupervisor/ path succeeds
+                elif (
+                    len(cmd) >= 3
+                    and "thermostatsupervisor/__init__.py" in cmd[2]
+                ):
+                    result = MagicMock()
+                    result.stdout = self.sample_version_content
+                    return result
+            raise subprocess.CalledProcessError(1, cmd)
+
+        mock_run.side_effect = mock_subprocess_run
+
+        version = version_increment.get_main_branch_version("src/__init__.py")
+
+        self.assertEqual(version, "1.0.12")
+
+    @patch("subprocess.run")
+    def test_get_main_branch_version_thermostatsupervisor_path(self, mock_run):
+        """Test getting version with thermostatsupervisor/ path."""
+        # Mock successful git show with thermostatsupervisor/ path
+        mock_result = MagicMock()
+        mock_result.stdout = self.sample_version_content
+        mock_run.return_value = mock_result
+
+        version = version_increment.get_main_branch_version(
+            "thermostatsupervisor/__init__.py"
+        )
+
+        self.assertEqual(version, "1.0.12")
+
+    @patch("subprocess.run")
+    def test_get_main_branch_version_all_paths_fail(self, mock_run):
+        """Test error when all path attempts fail."""
+        # Mock all git show attempts failing
+        mock_run.side_effect = subprocess.CalledProcessError(
+            1, ["git"], stderr="fatal: path not found"
+        )
+
+        with self.assertRaises(RuntimeError) as context:
+            version_increment.get_main_branch_version("src/__init__.py")
+
+        self.assertIn("Failed to get main branch version", str(context.exception))
+        self.assertIn("origin/main", str(context.exception))
+
+
 class TestVersionIncrementIntegration(unittest.TestCase):
     """Integration tests for version increment functionality."""
 
@@ -183,7 +280,7 @@ __version__ = "1.0.12"
             self.assertEqual(updated_version, "1.0.13")
 
             # Verify file content
-            with open(temp_file_path, "r") as f:
+            with open(temp_file_path, "r", encoding="utf-8") as f:
                 updated_content = f.read()
                 self.assertIn('__version__ = "1.0.13"', updated_content)
                 self.assertNotIn('__version__ = "1.0.12"', updated_content)

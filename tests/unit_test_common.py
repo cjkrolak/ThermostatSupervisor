@@ -2,7 +2,6 @@
 Common functions used in multiple unit tests.
 """
 
-# global imports
 import argparse
 from datetime import datetime
 from io import TextIOWrapper
@@ -11,42 +10,39 @@ import pprint
 import sys
 import threading
 import time
+from typing import Any
 import unittest
 from unittest.mock import patch
 
 # third party imports
-import pytz
+from zoneinfo import ZoneInfo
 from str2bool import str2bool
 
 # local imports
-from thermostatsupervisor import emulator_config
-from thermostatsupervisor import honeywell_config
-from thermostatsupervisor import supervise as sup
-from thermostatsupervisor import thermostat_api as api
-from thermostatsupervisor import thermostat_common as tc
-from thermostatsupervisor import environment as env
-from thermostatsupervisor import utilities as util
+from src import emulator_config
+from src import honeywell_config
+from src import supervise as sup
+from src import thermostat_api as api
+from src import thermostat_common as tc
+from src import environment as env
+from src import utilities as util
 
 # enable modes
 ENABLE_FUNCTIONAL_INTEGRATION_TESTS = True  # enable func int tests
-ENABLE_PERFORMANCE_INTEGRATION_TESTS = (
-    False and not env.is_azure_environment()
-)  # enable performance int tests
+ENABLE_PERFORMANCE_INTEGRATION_TESTS = False  # enable performance int tests
 ENABLE_SUPERVISE_INTEGRATION_TESTS = True  # enable supervise int tests
 ENABLE_FLASK_INTEGRATION_TESTS = True  # enable flask int tests
 ENABLE_SITE1_TESTS = True  # site1 tests enabled
 ENABLE_SITE2_TESTS = True  # site2 tests enabled
-ENABLE_HONEYWELL_TESTS = True and ENABLE_SITE1_TESTS  # Honeywell thermostat tests
-ENABLE_KUMOLOCAL_TESTS = False and ENABLE_SITE2_TESTS  # Kumolocal is local net only
-ENABLE_KUMOCLOUD_TESTS = False and ENABLE_SITE2_TESTS  # Kumocloud via legacy API
-ENABLE_KUMOCLOUDV3_TESTS = False and ENABLE_SITE2_TESTS  # Kumocloud via v3 API
-ENABLE_MMM_TESTS = False and ENABLE_SITE2_TESTS  # mmm50 is local net only
-ENABLE_SHT31_TESTS = True and ENABLE_SITE2_TESTS  # sht31 tests now have robust diag
-ENABLE_BLINK_TESTS = (
-    False and not env.is_azure_environment()
-)  # Blink cameras, TODO #638
+ENABLE_HONEYWELL_TESTS = ENABLE_SITE1_TESTS  # noqa: PLR0133
+ENABLE_KUMOLOCAL_TESTS = False  # noqa: PLR0133
+ENABLE_KUMOCLOUD_TESTS = ENABLE_SITE2_TESTS  # noqa: PLR0133
+ENABLE_KUMOCLOUDV3_TESTS = ENABLE_SITE2_TESTS  # noqa: PLR0133
+ENABLE_MMM_TESTS = False  # noqa: PLR0133
+ENABLE_SHT31_TESTS = False  # noqa: PLR0133
+ENABLE_BLINK_TESTS = False  # Blink cameras, TODO #638
 # nest thermostats
-ENABLE_NEST_TESTS = True and ENABLE_SITE2_TESTS and not env.is_azure_environment()
+ENABLE_NEST_TESTS = False  # Nest thermostats, TODO #638
 
 # generic argv list for unit testing
 unit_test_emulator = emulator_config.argv
@@ -80,13 +76,13 @@ class TestMetricsTracker:
         self.total_tests_passed = 0
         self.total_tests_failed = 0
         self.failed_tests = []
-        self.central_tz = pytz.timezone('US/Central')
+        self.central_tz = ZoneInfo('US/Central')
 
     def start_suite(self):
         """Mark the start of the test suite."""
         self.suite_start_time = time.time()
 
-    def start_test(self, test_name):
+    def start_test(self, _test_name):
         """Mark the start of a test."""
         if self.suite_start_time is None:
             self.start_suite()
@@ -115,7 +111,7 @@ class TestMetricsTracker:
         self.print_test_metrics(test_name)
         self.previous_test_name = test_name
 
-    def print_test_metrics(self, current_test_name):
+    def print_test_metrics(self, _current_test_name):
         """Print cumulative test metrics and previous test information."""
         if self.suite_start_time is None:
             return
@@ -163,7 +159,7 @@ class PatchMeta(type):
     def __init__(cls, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # mock argv to prevent azure runtime args from polluting test.
-        patch.object(*cls.patch_args)(
+        patch.object(*cls.patch_args)(  # type: ignore[attr-defined]
             cls
         )  # noqa e501, pylint:disable=undefined-variable
 
@@ -176,12 +172,15 @@ class UnitTest(unittest.TestCase, metaclass=PatchMeta):
     __metaclass__ = PatchMeta
     patch_args = (sys, "argv", [os.path.realpath(__file__)])
 
-    mod = None  # imported module
-    thermostat_type = None  # thermostat type
-    zone_number = None  # zone number
-    Thermostat = None  # thermostat instance
-    Zone = None  # zone instance
+    mod: Any = None  # imported module
+    mod_config: Any = None  # module config
+    thermostat_type: Any = None  # thermostat type
+    zone_number: Any = None  # zone number
+    Thermostat: Any = None  # thermostat instance
+    Zone: Any = None  # zone instance
+    uip: Any = None  # user inputs instance
 
+    original_thermostat_config: Any = None
     user_inputs_backup = None
     is_off_mode_bckup = None
 
@@ -190,9 +189,14 @@ class UnitTest(unittest.TestCase, metaclass=PatchMeta):
         self.print_test_name()
         # Start tracking this test
         _test_metrics_tracker.start_test(self.id())
-        self.unit_test_argv = unit_test_argv
-        self.thermostat_type = unit_test_argv[1]
-        self.zone_number = unit_test_argv[2]
+        # Only set unit_test_argv if not already populated by a subclass
+        # (e.g., IntegrationTest.setUpIntTest()).
+        # Empty list [] is treated as "not set" since class variable default
+        # is [].
+        if not hasattr(self, 'unit_test_argv') or not self.unit_test_argv:
+            self.unit_test_argv = unit_test_argv
+        self.thermostat_type = self.unit_test_argv[1]
+        self.zone_number = self.unit_test_argv[2]
         util.unit_test_mode = True
 
     def tearDown(self):
@@ -221,7 +225,7 @@ class UnitTest(unittest.TestCase, metaclass=PatchMeta):
 
         # create new Thermostat and Zone instances
         if self.Thermostat is None and self.Zone is None:
-            util.log_msg.debug = True  # debug mode set
+            util.log_msg.debug = True  # type: ignore[attr-defined]
             thermostat_type = api.uip.get_user_inputs(
                 api.uip.zone_name, api.input_flds.thermostat_type
             )
@@ -233,8 +237,8 @@ class UnitTest(unittest.TestCase, metaclass=PatchMeta):
             self.Thermostat, self.Zone = tc.create_thermostat_instance(
                 thermostat_type,
                 zone_number,
-                self.mod.ThermostatClass,
-                self.mod.ThermostatZone,
+                self.mod.ThermostatClass,  # type: ignore[attr-defined]
+                self.mod.ThermostatZone,  # type: ignore[attr-defined]
             )
 
         # update runtime parameters
@@ -279,22 +283,28 @@ class UnitTest(unittest.TestCase, metaclass=PatchMeta):
             and self.original_thermostat_config is not None
         ):
             api.thermostats[self.thermostat_type] = self.original_thermostat_config
-        api.uip.user_inputs = self.user_inputs_backup
-        self.Zone.is_off_mode = self.is_off_mode_bckup
+        api.uip.user_inputs = self.user_inputs_backup  # type: ignore[assignment]
+        self.Zone.is_off_mode = self.is_off_mode_bckup  # type: ignore[attr-defined]
 
     def print_test_result(self):
         """Print unit test result to console."""
-        if hasattr(self._outcome, "errors"):  # Python 3.4 - 3.10
+        if hasattr(self, "_outcome") and hasattr(getattr(self, "_outcome"), "errors"):
             # These two methods have no side effects
             result = self.defaultTestResult()
-            self._feedErrorsToResult(result, self._outcome.errors)
-        elif hasattr(self._outcome, "result"):  # python 3.11
+            # Python 3.4 - 3.10
+            getattr(self, "_feedErrorsToResult")(  # type: ignore[attr-defined]
+                result, getattr(getattr(self, "_outcome"), "errors")
+            )
+        elif hasattr(self, "_outcome") and hasattr(
+            getattr(self, "_outcome"), "result"
+        ):
             # These two methods have no side effects
-            result = self._outcome.result
+            # Python 3.11
+            result = getattr(
+                getattr(self, "_outcome"), "result"
+            )  # type: ignore[attr-defined]
         else:  # Python 3.2 - 3.3 or 3.0 - 3.1 and 2.7
             raise OSError("this code is designed to work on Python 3.4+")
-            # result = getattr(self, '_outcomeForDoCleanups',
-            #                 self._resultForDoCleanups)
         error = self.list2reason(result.errors)
         failure = self.list2reason(result.failures)
         result_ok = not error and not failure
@@ -302,8 +312,10 @@ class UnitTest(unittest.TestCase, metaclass=PatchMeta):
         # Demo:   report short info immediately (not important)
         if not result_ok:
             typ, text = ("ERROR", error) if error else ("FAIL", failure)
-            msg = [x for x in text.split("\n")[1:] if not x.startswith(" ")][0]
-            print(f"\n{typ}: {self.id()}\n     {msg}")
+            # type: ignore[union-attr]
+            if text:
+                msg = [x for x in text.split("\n")[1:] if not x.startswith(" ")][0]
+                print(f"\n{typ}: {self.id()}\n     {msg}")
 
     def list2reason(self, exc_list):
         """Parse reason from list."""
@@ -327,11 +339,20 @@ class UnitTest(unittest.TestCase, metaclass=PatchMeta):
             bool: True if test passed, False otherwise
         """
         try:
-            if hasattr(self._outcome, "errors"):  # Python 3.4 - 3.10
+            # type: ignore[attr-defined]  # Python 3.4 - 3.10
+            if hasattr(self, "_outcome") and hasattr(
+                getattr(self, "_outcome"), "errors"
+            ):
                 result = self.defaultTestResult()
-                self._feedErrorsToResult(result, self._outcome.errors)
-            elif hasattr(self._outcome, "result"):  # python 3.11
-                result = self._outcome.result
+                # type: ignore[attr-defined]
+                getattr(self, "_feedErrorsToResult")(
+                    result, getattr(getattr(self, "_outcome"), "errors")
+                )
+            # type: ignore[attr-defined]  # python 3.11
+            elif hasattr(self, "_outcome") and hasattr(
+                getattr(self, "_outcome"), "result"
+            ):
+                result = getattr(getattr(self, "_outcome"), "result")
             else:  # Python 3.2 - 3.3 or 3.0 - 3.1 and 2.7
                 return True  # Assume pass if we can't determine
 
@@ -350,11 +371,20 @@ class UnitTest(unittest.TestCase, metaclass=PatchMeta):
             str: Error message or None if test passed
         """
         try:
-            if hasattr(self._outcome, "errors"):  # Python 3.4 - 3.10
+            # type: ignore[attr-defined]  # Python 3.4 - 3.10
+            if hasattr(self, "_outcome") and hasattr(
+                getattr(self, "_outcome"), "errors"
+            ):
                 result = self.defaultTestResult()
-                self._feedErrorsToResult(result, self._outcome.errors)
-            elif hasattr(self._outcome, "result"):  # python 3.11
-                result = self._outcome.result
+                # type: ignore[attr-defined]
+                getattr(self, "_feedErrorsToResult")(
+                    result, getattr(getattr(self, "_outcome"), "errors")
+                )
+            # type: ignore[attr-defined]  # python 3.11
+            elif hasattr(self, "_outcome") and hasattr(
+                getattr(self, "_outcome"), "result"
+            ):
+                result = getattr(getattr(self, "_outcome"), "result")
             else:  # Python 3.2 - 3.3 or 3.0 - 3.1 and 2.7
                 return None
 
@@ -459,11 +489,9 @@ class IntegrationTest(UnitTest):
 
     def setUpIntTest(self):
         """Test attributes specific to integration tests."""
-        pass  # Can be overridden in subclasses
 
     def setup_common(self):
         """Test attributes common to all integration tests."""
-        pass  # Can be overridden in subclasses
 
 
 @unittest.skipIf(
@@ -488,8 +516,8 @@ class FunctionalIntegrationTest(IntegrationTest):
         IntegrationTest.Thermostat, IntegrationTest.Zone = tc.thermostat_basic_checkout(
             api.uip.get_user_inputs(api.uip.zone_name, api.input_flds.thermostat_type),
             api.uip.get_user_inputs(api.uip.zone_name, api.input_flds.zone),
-            self.mod.ThermostatClass,
-            self.mod.ThermostatZone,
+            self.mod.ThermostatClass,  # type: ignore[attr-defined]
+            self.mod.ThermostatZone,  # type: ignore[attr-defined]
         )
 
     def test_print_select_data_from_all_zones(self):
@@ -503,9 +531,9 @@ class FunctionalIntegrationTest(IntegrationTest):
             IntegrationTest.Zone,
         ) = tc.print_select_data_from_all_zones(
             api.uip.get_user_inputs(api.uip.zone_name, api.input_flds.thermostat_type),
-            self.mod_config.get_available_zones(),
-            self.mod.ThermostatClass,
-            self.mod.ThermostatZone,
+            self.mod_config.get_available_zones(),  # type: ignore[attr-defined]
+            self.mod.ThermostatClass,  # type: ignore[attr-defined]
+            self.mod.ThermostatZone,  # type: ignore[attr-defined]
             display_wifi=True,
             display_battery=True,
         )
@@ -555,15 +583,19 @@ class FunctionalIntegrationTest(IntegrationTest):
         # setup class instances
         self.Thermostat, self.Zone = self.setup_thermostat_zone()
 
+        # type: ignore[attr-defined]
         for test_case in self.mod_config.supported_configs["modes"]:
             print("-" * 80)
             print(f"test_case='{test_case}'")
             with patch.object(
                 self.Zone,
                 "get_system_switch_position",  # noqa e501, pylint:disable=undefined-variable
+                # type: ignore[attr-defined]
                 return_value=self.Zone.system_switch_position[test_case],
             ):
+                # type: ignore[attr-defined]
                 self.Zone.report_heating_parameters(
+                    # type: ignore[attr-defined]
                     self.Zone.system_switch_position[test_case]
                 )
             print("-" * 80)
@@ -576,7 +608,9 @@ class FunctionalIntegrationTest(IntegrationTest):
         self.Thermostat, self.Zone = self.setup_thermostat_zone()
 
         expected_return_type = dict if parameter is None else self.metadata_type
+        # type: ignore[attr-defined]
         metadata = self.Thermostat.get_metadata(
+            # type: ignore[attr-defined]
             zone=self.Thermostat.zone_name, trait=trait, parameter=parameter
         )
         self.assertIsInstance(
@@ -651,10 +685,13 @@ class PerformanceIntegrationTest(IntegrationTest):
         # measure thermostat response time
         measurements = self.timing_measurements
         print(
+            # type: ignore[attr-defined]
             f"{self.Zone.thermostat_type} Thermostat zone "
+            # type: ignore[attr-defined]
             f"{self.Zone.zone_name} response times for {measurements} "
             f"measurements..."
         )
+        # type: ignore[attr-defined]
         meas_data = self.Zone.measure_thermostat_repeatability(
             measurements, func=self.timing_func
         )
@@ -688,11 +725,14 @@ class PerformanceIntegrationTest(IntegrationTest):
         # measure thermostat temp repeatability
         measurements = self.temp_repeatability_measurements
         print(
+            # type: ignore[attr-defined]
             f"{self.Zone.thermostat_type} Thermostat zone "
+            # type: ignore[attr-defined]
             f"{self.Zone.zone_name} temperature repeatability for "
             f"{measurements} measurements with {self.poll_interval_sec} "
             f"sec delay between each measurement..."
         )
+        # type: ignore[attr-defined]
         meas_data = self.Zone.measure_thermostat_repeatability(
             measurements, self.poll_interval_sec
         )
@@ -717,19 +757,23 @@ class PerformanceIntegrationTest(IntegrationTest):
         self.Thermostat, self.Zone = self.setup_thermostat_zone()
 
         # check for humidity support
-        if not self.Zone.get_is_humidity_supported():
+        if not self.Zone.get_is_humidity_supported():  # type: ignore[attr-defined]
             print("humidity not supported on this thermostat, exiting")
             return
 
         # measure thermostat humidity repeatability
         measurements = self.temp_repeatability_measurements
         print(
+            # type: ignore[attr-defined]
             f"{self.Zone.thermostat_type} Thermostat zone "
+            # type: ignore[attr-defined]
             f"{self.Zone.zone_name} humidity repeatability for "
             f"{measurements} measurements with {self.poll_interval_sec} "
             f"sec delay betweeen each measurement..."
         )
+        # type: ignore[attr-defined]
         meas_data = self.Zone.measure_thermostat_repeatability(
+            # type: ignore[attr-defined]
             measurements, self.poll_interval_sec, self.Zone.get_display_humidity
         )
         print("humidity repeatability stats (%RH)")
@@ -757,7 +801,7 @@ class RuntimeParameterTest(UnitTest):
 
     def setUp(self):
         self.print_test_name()
-        util.log_msg.file_name = "unit_test.txt"
+        util.log_msg.file_name = "unit_test.txt"  # type: ignore[attr-defined]
         self.initialize_user_inputs()
 
     def tearDown(self):
@@ -909,7 +953,6 @@ class RuntimeParameterTest(UnitTest):
         argv = ["-f" + input_file]  # space after sflag is appended onto str
         args = parser.parse_args(argv)
         print(f"args returned: {' '.join(f'{k}={v}' for k, v in vars(args).items())}")
-        # assert(args.thermostat_type == "emulator")
 
     def test_is_valid_file(self):
         """
@@ -970,22 +1013,6 @@ class RuntimeParameterTest(UnitTest):
         Verify test parse_named_arguments() returns expected
         values when input known values with sflag.
         """
-        return  # not yet working
-
-        # build the named sflag list
-        self.uip = self.mod.UserInputs()
-        named_lflag_list = self.get_named_list(self.test_fields, "lflag")
-        print(f"lflag_list={named_lflag_list}")
-
-        # clear out user inputs
-        self.initialize_user_inputs()
-
-        # parse named sflag list
-        # override parent key since list input is provided.
-        self.uip = self.mod.UserInputs(
-            named_lflag_list, "unittest parsing named sflag arguments"
-        )
-        self.verify_parsed_values(util.default_parent_key)
 
     def parse_named_arguments(self, test_list, label_str):
         """
@@ -1132,6 +1159,7 @@ class RuntimeParameterTest(UnitTest):
         child_key = "test_case"
         for test_case, test_dict in test_cases.items():
             print(f"test case='{test_case}'")
+            result_dict = None
             if "TypeError" in test_case:
                 with self.assertRaises(TypeError):
                     result_dict = self.uip.validate_argv_inputs(
@@ -1294,7 +1322,7 @@ class CumulativeTimeTrackingResult(unittest.TextTestResult):
         self.tests_passed = 0
         self.tests_failed = 0
         self.failed_tests = []
-        self.central_tz = pytz.timezone('US/Central')
+        self.central_tz = ZoneInfo('US/Central')
 
     def startTest(self, test):
         """Called when a test is about to run."""
@@ -1358,7 +1386,7 @@ class CumulativeTimeTrackingResult(unittest.TextTestResult):
             self.previous_test_time = time.time() - self.test_start_time
             self.previous_test_name = str(test)
 
-    def _print_cumulative_metrics(self, test):
+    def _print_cumulative_metrics(self, _test):
         """Print cumulative test metrics after each test."""
         # Calculate elapsed time for entire suite
         suite_elapsed_seconds = time.time() - self.suite_start_time

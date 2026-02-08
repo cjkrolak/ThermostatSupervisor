@@ -11,8 +11,8 @@ import logging
 import unittest
 
 # local imports
-from thermostatsupervisor import kumolocal
-from thermostatsupervisor import kumolocal_config
+from src import kumolocal
+from src import kumolocal_config
 from tests import unit_test_common as utc
 
 

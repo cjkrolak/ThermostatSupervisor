@@ -1,5 +1,5 @@
 """
-Unit tests for the `flask_generic` module in the `thermostatsupervisor` package.
+Unit tests for the `flask_generic` module in the `src` package.
 Classes:
     TestFlaskGeneric: Contains unit tests for the `schedule_ipban_block_list_report`
                       and `print_ipban_block_list_with_timestamp` functions.
@@ -18,10 +18,10 @@ import unittest
 from unittest.mock import MagicMock, patch
 import unittest.mock
 
-# thrird-party modules
+# third-party modules
 
 # local modules
-from thermostatsupervisor.flask_generic import (
+from src.flask_generic import (
     CustomJSONEncoder,
     clear_ipban_block_list,
     initialize_ipban,
@@ -31,7 +31,7 @@ from thermostatsupervisor.flask_generic import (
     schedule_ipban_block_list_report,
     set_flask_cookie_config,
 )
-from thermostatsupervisor import utilities as util
+from src import utilities as util
 from tests import unit_test_common as utc
 
 
@@ -251,7 +251,7 @@ class TestFlaskGeneric(utc.UnitTest):
 
         mock_print.assert_called_once_with(f"ip_ban block list: {expected_block_list}")
 
-    @patch("thermostatsupervisor.flask_generic.IpBan")
+    @patch("src.flask_generic.IpBan")
     @patch("builtins.print")
     def test_initialize_ipban(self, mock_print, mock_ipban_class):
         """Test initialize_ipban() function."""
@@ -299,5 +299,5 @@ class TestFlaskGeneric(utc.UnitTest):
 
 
 if __name__ == "__main__":
-    util.log_msg.debug = True
+    util.log_msg.debug = True  # type: ignore[attr-defined]
     unittest.main(verbosity=2)

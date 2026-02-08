@@ -19,7 +19,7 @@ ThermostatSupervisor follows GitFlow branching strategy with automated CI/CD pip
 
 ### Version Storage
 The project version is stored in a single location:
-- **File**: `thermostatsupervisor/__init__.py`
+- **File**: `src/__init__.py`
 - **Format**: `__version__ = "X.Y.Z"`
 - **Current Version**: Check the file for the latest version
 
@@ -80,7 +80,7 @@ Ensure all GitHub Actions security workflows pass:
    ```
 
 2. **Update the version number**:
-   - Edit `thermostatsupervisor/__init__.py`
+   - Edit `src/__init__.py`
    - Change `__version__ = "X.Y.Z"` to the new version
    - Example: `__version__ = "1.0.11"`
 
@@ -99,7 +99,7 @@ Ensure all GitHub Actions security workflows pass:
 
 4. **Commit and merge to develop**:
    ```bash
-   git add thermostatsupervisor/__init__.py
+   git add src/__init__.py
    git commit -m "increment version to X.Y.Z"
    git push origin increment-version-X.Y.Z
    # Create PR to develop branch and merge
@@ -120,7 +120,7 @@ Ensure all GitHub Actions security workflows pass:
    git checkout main
    git pull origin main
    # Verify version in __init__.py is correct
-   cat thermostatsupervisor/__init__.py | grep __version__
+   cat src/__init__.py | grep __version__
    ```
 
 ### Step 3: Create GitHub Release

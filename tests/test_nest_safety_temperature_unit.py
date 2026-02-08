@@ -9,7 +9,7 @@ import unittest
 from unittest.mock import Mock
 
 # local imports
-from thermostatsupervisor import nest_config
+from src import nest_config
 
 
 class TestNestSafetyTemperature(unittest.TestCase):

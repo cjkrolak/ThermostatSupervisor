@@ -9,9 +9,9 @@ import unittest
 from unittest import mock
 
 # local libraries
-from thermostatsupervisor import email_notification as eml
-from thermostatsupervisor import environment as env
-from thermostatsupervisor import utilities as util
+from src import email_notification as eml
+from src import environment as env
+from src import utilities as util
 from tests import unit_test_common as utc
 
 
@@ -138,9 +138,14 @@ class Test(utc.UnitTest):
                 original_unit_test_mode = util.unit_test_mode
                 util.unit_test_mode = False
                 try:
+                    # Mock both os.environ and supervisor-env.txt file reading
+                    # to ensure the test doesn't get credentials from the file
                     with mock.patch.dict(
                         os.environ, modified_environ, clear=True
-                    ):  # noqa e501, pylint:disable=undefined-variable
+                    ), mock.patch(
+                        "src.environment._read_supervisor_env_file",
+                        return_value={}
+                    ):
                         return_status, return_status_msg = eml.send_email_alert(
                             to_address=to_address,
                             subject=f"test email alert with "
@@ -183,9 +188,12 @@ class Test(utc.UnitTest):
             print(f"testing mocked '{str(exception)} exception...")
 
             # mock the exception case
-            side_effect = lambda *_, **__: utc.mock_exception(  # noqa E731, C3001
-                exception, exception_args
-            )  # noqa E731, C3001
+            # Capture loop variables as default args to avoid late binding
+            side_effect = (
+                lambda *_, exc=exception, args=exception_args, **__: (
+                    utc.mock_exception(exc, args)
+                )
+            )
 
             # Mock SMTP_SSL and setup to reach the sendmail logic
             mock_server = mock.Mock()
@@ -216,5 +224,5 @@ class Test(utc.UnitTest):
 
 
 if __name__ == "__main__":
-    util.log_msg.debug = True
+    util.log_msg.debug = True  # type: ignore[attr-defined]
     unittest.main(verbosity=2)

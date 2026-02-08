@@ -4,7 +4,7 @@ Unit tests for weather module.
 
 import unittest
 from unittest.mock import patch, MagicMock
-from thermostatsupervisor import weather
+from src import weather
 
 
 class TestWeather(unittest.TestCase):
@@ -39,7 +39,7 @@ class TestWeather(unittest.TestCase):
             weather.get_outdoor_weather("")
 
         with self.assertRaises(weather.WeatherError):
-            weather.get_outdoor_weather(None)
+            weather.get_outdoor_weather(None)  # type: ignore[arg-type]
 
     @patch("requests.get")
     def test_get_outdoor_weather_with_api_key(self, mock_get):
@@ -85,7 +85,7 @@ class TestWeather(unittest.TestCase):
         result = weather.format_weather_display({})
         self.assertEqual(result, "outdoor: N/A")
 
-        result = weather.format_weather_display(None)
+        result = weather.format_weather_display(None)  # type: ignore[arg-type]
         self.assertEqual(result, "outdoor: N/A")
 
 

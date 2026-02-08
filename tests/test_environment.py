@@ -13,10 +13,10 @@ import unittest.mock
 # third-party imports
 
 # local imports
-import thermostatsupervisor
-from thermostatsupervisor import emulator_config
-from thermostatsupervisor import environment as env
-from thermostatsupervisor import utilities as util
+import src  # Required as package reference for version tests
+from src import emulator_config
+from src import environment as env
+from src import utilities as util
 from tests import unit_test_common as utc
 
 
@@ -25,7 +25,7 @@ class EnvironmentTests(utc.UnitTest):
 
     def setUp(self):
         super().setUp()
-        util.log_msg.file_name = "unit_test.txt"
+        util.log_msg.file_name = "unit_test.txt"  # type: ignore[attr-defined]
 
     def test_is_interactive_environment(self):
         """
@@ -193,7 +193,7 @@ EMPTY_LINE_ABOVE=yes
             os.chdir(test_dir)
 
             # Test with no file
-            result = env._read_supervisor_env_file()
+            result = getattr(env, "_read_supervisor_env_file")()
             self.assertEqual(result, {})
 
             # Test with valid file
@@ -209,7 +209,7 @@ KEY4=value4=with=equals
             with open("supervisor-env.txt", "w", encoding="utf-8") as f:
                 f.write(env_content)
 
-            result = env._read_supervisor_env_file()
+            result = getattr(env, "_read_supervisor_env_file")()
             expected = {
                 "KEY1": "value1",
                 "KEY2": "value with spaces",
@@ -301,10 +301,10 @@ KEY4=value4=with=equals
         # error checking invalid input parameter
         with self.assertRaises(TypeError):
             print("attempting to invalid input parameter type, expect exception...")
-            env.get_python_version("3", 7)
+            env.get_python_version("3", 7)  # type: ignore[arg-type]
 
         # no decimal point
-        env.get_python_version(3, None)
+        env.get_python_version(3, None)  # type: ignore[arg-type]
 
         # min value exception
         with self.assertRaises(EnvironmentError):
@@ -356,7 +356,7 @@ KEY4=value4=with=equals
         """
         Verify get_package_version().
         """
-        pkg = thermostatsupervisor
+        pkg = src
         return_type = tuple
         return_val = env.get_package_version(pkg)
         self.assertTrue(
@@ -383,11 +383,11 @@ KEY4=value4=with=equals
 
     def test_show_package_version(self):
         """Verify show_package_version()."""
-        env.show_package_version(thermostatsupervisor)
+        env.show_package_version(src)
 
     def test_get_package_path(self):
         """Verify get_package_path()."""
-        pkg = thermostatsupervisor
+        pkg = src
         return_val = env.get_package_path(pkg)
         self.assertTrue(
             isinstance(return_val, str),
@@ -518,14 +518,12 @@ def get_import_count():
 
     def test_add_package_to_path(self):
         """Test _add_package_to_path() function."""
-        import sys
-
         # Store original sys.path
         original_path = sys.path.copy()
 
         try:
             # Test with None package (should do nothing)
-            env._add_package_to_path(None)
+            getattr(env, "_add_package_to_path")(None)
             self.assertEqual(sys.path, original_path)
 
             # Test with valid package name
@@ -533,7 +531,7 @@ def get_import_count():
             expected_path = env.get_parent_path(os.getcwd()) + "//" + test_pkg
 
             with unittest.mock.patch("builtins.print") as mock_print:
-                env._add_package_to_path(test_pkg)
+                getattr(env, "_add_package_to_path")(test_pkg)
 
                 # Verify package path was added to front of sys.path
                 self.assertEqual(sys.path[0], expected_path)
@@ -543,7 +541,10 @@ def get_import_count():
 
             # Test with verbose=True
             with unittest.mock.patch("builtins.print") as mock_print:
-                env._add_package_to_path(test_pkg, verbose=True)
+                # type: ignore on next line for protected member access
+                getattr(env, "_add_package_to_path")(
+                    test_pkg, verbose=True
+                )
 
                 # Should print twice - the adding message and the sys.path
                 self.assertEqual(mock_print.call_count, 2)
@@ -554,5 +555,5 @@ def get_import_count():
 
 
 if __name__ == "__main__":
-    util.log_msg.debug = True
+    util.log_msg.debug = True  # type: ignore[attr-defined]
     unittest.main(verbosity=2)

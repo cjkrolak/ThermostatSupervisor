@@ -3,7 +3,7 @@
 # branch option was causing understated result, so it's disabled.
 branch = False
 relative_files = True
-source = thermostatsupervisor
+source = src
 
 omit =
     */site-packages/*

@@ -9,9 +9,9 @@ import os
 import unittest
 from unittest.mock import patch
 
-from thermostatsupervisor import sht31
-from thermostatsupervisor import sht31_config
-from thermostatsupervisor import utilities as util
+from src import sht31
+from src import sht31_config
+from src import utilities as util
 from tests import unit_test_common as utc
 
 
@@ -22,15 +22,20 @@ class TestSHT31MissingEnvVar(utc.UnitTest):
         """Set up test fixtures."""
         super().setUp()
         self.original_unit_test_mode = util.unit_test_mode
+        self.original_cwd = os.getcwd()
 
     def tearDown(self):
         """Clean up after tests."""
         util.unit_test_mode = self.original_unit_test_mode
+        os.chdir(self.original_cwd)
         super().tearDown()
 
-    @patch.object(sht31.ThermostatClass, "spawn_flask_server")
+    @patch("src.environment._read_supervisor_env_file")
     @patch.dict(os.environ, {}, clear=False)
-    def test_missing_env_var_fallback_in_unit_test_mode(self, mock_spawn):
+    @patch.object(sht31.ThermostatClass, "spawn_flask_server")
+    def test_missing_env_var_fallback_in_unit_test_mode(
+        self, mock_spawn, mock_read_env_file
+    ):
         """
         Test that missing environment variables fall back to localhost in unit
         test mode.
@@ -42,9 +47,8 @@ class TestSHT31MissingEnvVar(utc.UnitTest):
         - Should fall back to 127.0.0.1 instead of None or placeholder
         """
         mock_spawn.return_value = None
-
-        # Save original state
-        original_mode = util.unit_test_mode
+        # Mock the file reading to return empty dict (simulating missing file)
+        mock_read_env_file.return_value = {}
 
         try:
             # Explicitly set unit test mode
@@ -64,7 +68,7 @@ class TestSHT31MissingEnvVar(utc.UnitTest):
 
             # Debug information to help diagnose failures
             if tstat.ip_address != "127.0.0.1":
-                from thermostatsupervisor import environment as env
+                from src import environment as env
                 env_result = env.get_env_variable('SHT31_REMOTE_IP_ADDRESS_1')
                 self.fail(
                     f"Expected IP address '127.0.0.1' but got "
@@ -92,8 +96,8 @@ class TestSHT31MissingEnvVar(utc.UnitTest):
             self.assertNotIn("http://:5000", tstat.url)
             self.assertNotIn("None", tstat.url)
         finally:
-            # Always restore original mode
-            util.unit_test_mode = original_mode
+            # Always restore original mode (saved in setUp())
+            util.unit_test_mode = self.original_unit_test_mode
 
     @patch.object(sht31.ThermostatClass, "spawn_flask_server")
     @patch.dict(os.environ, {}, clear=False)
@@ -168,22 +172,21 @@ class TestSHT31MissingEnvVar(utc.UnitTest):
         # Create a temporary supervisor-env.txt with placeholder value
         import tempfile
 
-        original_cwd = os.getcwd()
-        try:
-            with tempfile.TemporaryDirectory() as temp_dir:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            try:
                 os.chdir(temp_dir)
 
                 # Create supervisor-env.txt with placeholder value
                 with open("supervisor-env.txt", "w") as f:
                     f.write("SHT31_REMOTE_IP_ADDRESS_1=***\n")
 
-                # Test that placeholder value is NOT replaced in non-unit-test
-                # mode
+                # Test that placeholder value is NOT replaced in
+                # non-unit-test mode
                 tstat = sht31.ThermostatClass(1, verbose=False)
                 self.assertEqual(tstat.ip_address, "***")
-
-        finally:
-            os.chdir(original_cwd)
+            finally:
+                # Change back to original directory before cleanup
+                os.chdir(self.original_cwd)
 
     @patch.object(sht31.ThermostatClass, "spawn_flask_server")
     @patch.dict(os.environ, {}, clear=True)  # Clear environment variables
@@ -201,9 +204,8 @@ class TestSHT31MissingEnvVar(utc.UnitTest):
         # Create a temporary supervisor-env.txt with placeholder value
         import tempfile
 
-        original_cwd = os.getcwd()
-        try:
-            with tempfile.TemporaryDirectory() as temp_dir:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            try:
                 os.chdir(temp_dir)
 
                 # Create supervisor-env.txt with placeholder value
@@ -213,9 +215,9 @@ class TestSHT31MissingEnvVar(utc.UnitTest):
                 # Test that placeholder value gets replaced with localhost
                 tstat = sht31.ThermostatClass(1, verbose=False)
                 self.assertEqual(tstat.ip_address, "127.0.0.1")
-
-        finally:
-            os.chdir(original_cwd)
+            finally:
+                # Change back to original directory before cleanup
+                os.chdir(self.original_cwd)
 
     @patch.object(sht31.ThermostatClass, "spawn_flask_server")
     def test_unit_test_zone_still_works(self, mock_spawn):

@@ -10,8 +10,8 @@ import unittest
 # local imports
 # conditionally import kumocloudv3 module to handle missing dependencies
 try:
-    from thermostatsupervisor import kumocloudv3
-    from thermostatsupervisor import kumocloudv3_config
+    from src import kumocloudv3
+    from src import kumocloudv3_config
 
     kumocloudv3_import_error = None
 except ImportError as ex:
@@ -20,7 +20,7 @@ except ImportError as ex:
     kumocloudv3_config = None
     kumocloudv3_import_error = ex
 
-from thermostatsupervisor import utilities as util
+from src import utilities as util
 from tests import unit_test_common as utc
 
 
@@ -108,5 +108,5 @@ class PerformanceIntegrationTest(IntegrationTest, utc.PerformanceIntegrationTest
 
 
 if __name__ == "__main__":
-    util.log_msg.debug = True
+    util.log_msg.debug = True  # type: ignore[attr-defined]
     unittest.main(verbosity=2)

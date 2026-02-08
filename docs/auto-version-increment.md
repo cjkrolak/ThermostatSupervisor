@@ -20,7 +20,7 @@ GitHub Actions workflow that triggers on pull requests to main branch and orches
 
 ### `.github/scripts/version_increment.py` 
 Python script that handles the core logic:
-- Version extraction from `thermostatsupervisor/__init__.py`
+- Version extraction from `src/__init__.py`
 - Comparison with main branch version
 - Semantic version increment (patch level)
 - File updating and git operations
