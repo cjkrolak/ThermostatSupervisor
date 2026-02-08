@@ -30,9 +30,13 @@ enabled on systems with actual SHT31 hardware.
 
 ## Prerequisites
 
-- Node.js (v16 or later)
+- Node.js (v18 or later recommended)
 - npm (comes with Node.js)
-- Running SHT31 Flask server (on http://127.0.0.1:5000 by default)
+- Python 3.13 (or compatible version)
+- Python dependencies installed (`pip install -r requirements.txt requirements_sht31.txt`)
+
+**Note:** The SHT31 Flask server is automatically started and stopped by Playwright's
+global setup/teardown hooks. You do not need to manually start the server.
 
 ## Installation
 
@@ -90,12 +94,24 @@ The tests are automatically run by the GitHub Actions workflow
 - `playwright.config.js` - Playwright configuration
 - `package.json` - Node.js dependencies and scripts
 
+## How It Works
+
+The test suite uses Playwright's global setup and teardown hooks to automatically:
+1. Start the SHT31 Flask server in unit test mode before tests run
+2. Wait for the server to be ready and responding
+3. Run all test suites
+4. Stop the server after tests complete
+
+This works on all platforms including Windows, Linux, and macOS.
+
 ## Troubleshooting
 
 ### Tests fail with connection error
-- Ensure the SHT31 Flask server is running
-- Check that the server is accessible at the configured base URL
+- Check that Python dependencies are installed: `pip install -r requirements.txt requirements_sht31.txt`
+- Verify Python is in your PATH (`python3` or `python` depending on platform)
+- Check server logs at `/tmp/sht31_server.log` (Linux/Mac) or `%TEMP%\sht31_server.log` (Windows)
 - Verify firewall settings allow connections to port 5000
+- Ensure port 5000 is not already in use by another application
 
 ### Browser not installed
 Run:

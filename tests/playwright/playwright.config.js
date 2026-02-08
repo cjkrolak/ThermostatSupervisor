@@ -47,4 +47,8 @@ module.exports = defineConfig({
   expect: {
     timeout: 10000,
   },
+
+  /* Global setup and teardown for server management */
+  globalSetup: require.resolve('./global-setup.js'),
+  globalTeardown: require.resolve('./global-teardown.js'),
 });
