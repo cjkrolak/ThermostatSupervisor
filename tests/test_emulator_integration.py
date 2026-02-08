@@ -158,13 +158,19 @@ class FunctionalIntegrationTest(IntegrationTest, utc.FunctionalIntegrationTest):
             display_temp = Zone.get_parameter("display_temp")
             display_humidity = Zone.get_parameter("display_humidity")
 
-            # Type guards for get_parameter() return values
-            if display_temp is not None:
-                temp_diff = abs(current_temp - display_temp)
-            else:
-                temp_diff = 0.0
+            # Assert parameters are available
+            self.assertIsNotNone(
+                display_temp,
+                "display_temp parameter should be available"
+            )
+            temp_diff = abs(current_temp - display_temp)
 
-            if display_humidity is not None and current_humidity is not None:
+            if current_humidity is not None:
+                self.assertIsNotNone(
+                    display_humidity,
+                    "display_humidity parameter should be available when "
+                    "current_humidity is available"
+                )
                 humidity_diff = abs(current_humidity - display_humidity)
             else:
                 humidity_diff = 0.0

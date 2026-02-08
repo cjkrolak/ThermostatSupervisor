@@ -179,7 +179,7 @@ class Sht31FlaskServerSensorUnit(utc.UnitTest):
                     ) as mock_request:
                         # Create a proper mock that returns values based on the key
                         def mock_args_get(
-                            key, default=None, type_=None, current_seed=seed
+                            key, default=None, type=None, current_seed=seed
                         ):
                             values = {
                                 "measurements": 1,  # Single measurement for
@@ -187,8 +187,8 @@ class Sht31FlaskServerSensorUnit(utc.UnitTest):
                                 "seed": current_seed,
                             }
                             value = values.get(key, default)
-                            if type_ is not None and value is not None:
-                                return type_(value)
+                            if type is not None and value is not None:
+                                return type(value)
                             return value
 
                         mock_request.args.get = mock_args_get

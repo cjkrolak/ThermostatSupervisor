@@ -60,9 +60,9 @@ class SupervisorLogHandlerUnitTest(utc.UnitTest):
         with patch("src.utilities.log_msg") as mock_log:
             handler.emit(record)
             mock_log.assert_called_once()
-            _, kwargs = mock_log.call_args
-            self.assertIn("pykumo", _[0])
-            self.assertIn("Test debug message", _[0])
+            args, kwargs = mock_log.call_args
+            self.assertIn("pykumo", args[0])
+            self.assertIn("Test debug message", args[0])
             self.assertEqual(
                 kwargs["mode"], util.DEBUG_LOG + util.DATA_LOG
             )
@@ -142,10 +142,10 @@ class ThermostatClassUnitTest(utc.UnitTest):
         self.print_test_name()
 
     @patch("src.kumocloud.pykumo.KumoCloudAccount.__init__")
-    # type: ignore[union-attr]
     @patch.object(kumocloud.ThermostatClass, "_setup_pykumo_logging")
     def test_init_success(self, _mock_logging, mock_kumo_init):
         """Test successful ThermostatClass initialization."""
+        assert kumocloud is not None  # Type narrowing for patch.object
         mock_kumo_init.return_value = None
 
         with patch.dict(

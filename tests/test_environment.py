@@ -304,7 +304,7 @@ KEY4=value4=with=equals
             env.get_python_version("3", 7)  # type: ignore[arg-type]
 
         # no decimal point
-        env.get_python_version(3, 0)
+        env.get_python_version(3, None)
 
         # min value exception
         with self.assertRaises(EnvironmentError):
