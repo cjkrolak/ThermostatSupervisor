@@ -1,0 +1,1210 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>src.kumolocal &#8212; ThermostatSupervisor API Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=5ecbeea2" />
+    <link rel="stylesheet" type="text/css" href="../../_static/basic.css?v=b08954a9" />
+    <link rel="stylesheet" type="text/css" href="../../_static/alabaster.css?v=1c1df0c7" />
+    <script src="../../_static/documentation_options.js?v=8d563738"></script>
+    <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for src.kumolocal</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;KumoCloud integration using local API for data.&quot;&quot;&quot;</span>
+
+<span class="c1"># built-in imports</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pprint</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Union</span>
+
+<span class="c1"># third party imports</span>
+
+<span class="c1"># local imports</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">src</span><span class="w"> </span><span class="kn">import</span> <span class="n">kumolocal_config</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">src</span><span class="w"> </span><span class="kn">import</span> <span class="n">thermostat_api</span> <span class="k">as</span> <span class="n">api</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">src</span><span class="w"> </span><span class="kn">import</span> <span class="n">thermostat_common</span> <span class="k">as</span> <span class="n">tc</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">src</span><span class="w"> </span><span class="kn">import</span> <span class="n">environment</span> <span class="k">as</span> <span class="n">env</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">src</span><span class="w"> </span><span class="kn">import</span> <span class="n">utilities</span> <span class="k">as</span> <span class="n">util</span>
+
+<span class="c1"># pykumo</span>
+<span class="n">PYKUMO_DEBUG</span> <span class="o">=</span> <span class="kc">False</span>  <span class="c1"># debug uses local pykumo repo instead of pkg</span>
+<span class="k">if</span> <span class="n">PYKUMO_DEBUG</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">env</span><span class="o">.</span><span class="n">is_azure_environment</span><span class="p">():</span>
+    <span class="n">mod_path</span> <span class="o">=</span> <span class="s2">&quot;..</span><span class="se">\\</span><span class="s2">pykumo</span><span class="se">\\</span><span class="s2">pykumo&quot;</span>
+    <span class="k">if</span> <span class="n">env</span><span class="o">.</span><span class="n">is_interactive_environment</span><span class="p">():</span>
+        <span class="n">mod_path</span> <span class="o">=</span> <span class="s2">&quot;..</span><span class="se">\\</span><span class="s2">&quot;</span> <span class="o">+</span> <span class="n">mod_path</span>
+    <span class="n">pykumo</span> <span class="o">=</span> <span class="n">env</span><span class="o">.</span><span class="n">dynamic_module_import</span><span class="p">(</span><span class="s2">&quot;pykumo&quot;</span><span class="p">,</span> <span class="n">mod_path</span><span class="p">)</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">pykumo</span>  <span class="c1"># noqa E402, from path / site packages</span>
+
+
+<div class="viewcode-block" id="SupervisorLogHandler">
+<a class="viewcode-back" href="../../docs/src.html#src.kumolocal.SupervisorLogHandler">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">SupervisorLogHandler</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">Handler</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Custom logging handler to redirect pykumo logs to supervisor logging.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="SupervisorLogHandler.emit">
+<a class="viewcode-back" href="../../docs/src.html#src.kumolocal.SupervisorLogHandler.emit">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">emit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">record</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Emit a log record through the supervisor&#39;s log_msg function.</span>
+
+<span class="sd">        inputs:</span>
+<span class="sd">            record(LogRecord): The logging record to emit</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c1"># Format the message</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">record</span><span class="p">)</span>
+
+            <span class="c1"># Map logging levels to supervisor log modes</span>
+            <span class="n">level_mapping</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">:</span> <span class="n">util</span><span class="o">.</span><span class="n">DEBUG_LOG</span> <span class="o">+</span> <span class="n">util</span><span class="o">.</span><span class="n">DATA_LOG</span><span class="p">,</span>
+                <span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">:</span> <span class="n">util</span><span class="o">.</span><span class="n">DATA_LOG</span><span class="p">,</span>
+                <span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">:</span> <span class="n">util</span><span class="o">.</span><span class="n">DATA_LOG</span><span class="p">,</span>
+                <span class="n">logging</span><span class="o">.</span><span class="n">ERROR</span><span class="p">:</span> <span class="n">util</span><span class="o">.</span><span class="n">DATA_LOG</span> <span class="o">+</span> <span class="n">util</span><span class="o">.</span><span class="n">STDERR_LOG</span><span class="p">,</span>
+                <span class="n">logging</span><span class="o">.</span><span class="n">CRITICAL</span><span class="p">:</span> <span class="n">util</span><span class="o">.</span><span class="n">DATA_LOG</span> <span class="o">+</span> <span class="n">util</span><span class="o">.</span><span class="n">STDERR_LOG</span><span class="p">,</span>
+            <span class="p">}</span>
+
+            <span class="c1"># Get the appropriate log mode, default to DATA_LOG for unknown levels</span>
+            <span class="n">log_mode</span> <span class="o">=</span> <span class="n">level_mapping</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">record</span><span class="o">.</span><span class="n">levelno</span><span class="p">,</span> <span class="n">util</span><span class="o">.</span><span class="n">DATA_LOG</span><span class="p">)</span>
+
+            <span class="c1"># Log through supervisor&#39;s logging system</span>
+            <span class="n">util</span><span class="o">.</span><span class="n">log_msg</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[pykumo] </span><span class="si">{</span><span class="n">msg</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="n">log_mode</span><span class="p">,</span> <span class="n">file_name</span><span class="o">=</span><span class="s2">&quot;kumo_log.txt&quot;</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="c1"># Fallback to avoid breaking logging completely</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">handleError</span><span class="p">(</span><span class="n">record</span><span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="ThermostatClass">
+<a class="viewcode-back" href="../../docs/src.html#src.kumolocal.ThermostatClass">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ThermostatClass</span><span class="p">(</span>
+    <span class="n">pykumo</span><span class="o">.</span><span class="n">KumoCloudAccount</span><span class="p">,</span> <span class="n">tc</span><span class="o">.</span><span class="n">ThermostatCommon</span>  <span class="c1"># type: ignore[name-defined]</span>
+<span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;KumoCloud thermostat functions.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="ThermostatClass.__init__">
+<a class="viewcode-back" href="../../docs/src.html#src.kumolocal.ThermostatClass.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">zone</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Constructor, connect to thermostat.</span>
+
+<span class="sd">        inputs:</span>
+<span class="sd">            zone(str):  zone of thermostat.</span>
+<span class="sd">            verbose(bool): debug flag.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Kumocloud server auth credentials from env vars</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">KC_UNAME_KEY</span> <span class="o">=</span> <span class="s2">&quot;KUMO_USERNAME&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">KC_PASSWORD_KEY</span> <span class="o">=</span> <span class="s2">&quot;KUMO_PASSWORD&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">kc_uname</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">KC_UNAME_KEY</span><span class="p">,</span> <span class="s2">&quot;&lt;&quot;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">KC_UNAME_KEY</span> <span class="o">+</span> <span class="n">api</span><span class="o">.</span><span class="n">KEY_MISSING_SUFFIX</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">kc_pwd</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">KC_PASSWORD_KEY</span><span class="p">,</span> <span class="s2">&quot;&lt;&quot;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">KC_PASSWORD_KEY</span> <span class="o">+</span> <span class="n">api</span><span class="o">.</span><span class="n">KEY_MISSING_SUFFIX</span>
+        <span class="p">)</span>
+
+        <span class="c1"># construct the superclass</span>
+        <span class="c1"># call both parent class __init__</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">args</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">kc_uname</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">kc_pwd</span><span class="p">]</span>
+        <span class="c1"># kumocloud account init sets the self._url</span>
+        <span class="n">pykumo</span><span class="o">.</span><span class="n">KumoCloudAccount</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>  <span class="c1"># type: ignore[attr-defined]</span>
+            <span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">args</span>
+        <span class="p">)</span>
+        <span class="n">tc</span><span class="o">.</span><span class="n">ThermostatCommon</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+
+        <span class="c1"># integrate pykumo logger with supervisor logging system</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_setup_pykumo_logging</span><span class="p">()</span>
+
+        <span class="c1"># set tstat type and debug flag</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">thermostat_type</span> <span class="o">=</span> <span class="n">kumolocal_config</span><span class="o">.</span><span class="n">ALIAS</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span> <span class="o">=</span> <span class="n">verbose</span>
+
+        <span class="c1"># configure zone info</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">zone_number</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">zone</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">zone_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_zone_name</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">device_id</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># initialize</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">device_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_target_zone_id</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">zone_number</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">serial_number</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># will be populated when unit is queried.</span>
+
+        <span class="c1"># detect local network availability for this zone</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">detect_local_network_availability</span><span class="p">()</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_setup_pykumo_logging</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Configure pykumo loggers to use supervisor logging system.</span>
+
+<span class="sd">        This method sets up a custom handler that redirects pykumo log messages</span>
+<span class="sd">        to the supervisor&#39;s log_msg function, ensuring all logging goes to the</span>
+<span class="sd">        same destination.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># List of pykumo modules that have loggers</span>
+        <span class="n">pykumo_modules</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="s2">&quot;pykumo.py_kumo_cloud_account&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;pykumo.py_kumo&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;pykumo.py_kumo_base&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;pykumo.py_kumo_station&quot;</span><span class="p">,</span>
+        <span class="p">]</span>
+
+        <span class="k">for</span> <span class="n">module_name</span> <span class="ow">in</span> <span class="n">pykumo_modules</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="c1"># Get the logger for each pykumo module</span>
+                <span class="n">pykumo_logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="n">module_name</span><span class="p">)</span>
+
+                <span class="c1"># Remove any existing handlers to avoid duplicate logging</span>
+                <span class="k">for</span> <span class="n">handler</span> <span class="ow">in</span> <span class="n">pykumo_logger</span><span class="o">.</span><span class="n">handlers</span><span class="p">[:]:</span>
+                    <span class="n">pykumo_logger</span><span class="o">.</span><span class="n">removeHandler</span><span class="p">(</span><span class="n">handler</span><span class="p">)</span>
+
+                <span class="c1"># Add our custom handler</span>
+                <span class="n">supervisor_handler</span> <span class="o">=</span> <span class="n">SupervisorLogHandler</span><span class="p">()</span>
+                <span class="n">supervisor_handler</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">)</span>
+
+                <span class="c1"># Set a simple formatter</span>
+                <span class="n">formatter</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">Formatter</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%(name)s</span><span class="s2"> - </span><span class="si">%(levelname)s</span><span class="s2"> - </span><span class="si">%(message)s</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="n">supervisor_handler</span><span class="o">.</span><span class="n">setFormatter</span><span class="p">(</span><span class="n">formatter</span><span class="p">)</span>
+
+                <span class="n">pykumo_logger</span><span class="o">.</span><span class="n">addHandler</span><span class="p">(</span><span class="n">supervisor_handler</span><span class="p">)</span>
+                <span class="n">pykumo_logger</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">)</span>
+
+                <span class="c1"># Prevent propagation to avoid duplicate messages</span>
+                <span class="n">pykumo_logger</span><span class="o">.</span><span class="n">propagate</span> <span class="o">=</span> <span class="kc">False</span>
+
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+                <span class="c1"># Log setup failure but don&#39;t break initialization</span>
+                <span class="n">util</span><span class="o">.</span><span class="n">log_msg</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Failed to setup logging for </span><span class="si">{</span><span class="n">module_name</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">exc</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                    <span class="n">mode</span><span class="o">=</span><span class="n">util</span><span class="o">.</span><span class="n">DATA_LOG</span> <span class="o">+</span> <span class="n">util</span><span class="o">.</span><span class="n">STDERR_LOG</span><span class="p">,</span>
+                    <span class="n">func_name</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                <span class="p">)</span>
+
+<div class="viewcode-block" id="ThermostatClass.get_zone_name">
+<a class="viewcode-back" href="../../docs/src.html#src.kumolocal.ThermostatClass.get_zone_name">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_zone_name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return the name associated with the zone number from metadata dict.</span>
+
+<span class="sd">        inputs:</span>
+<span class="sd">            None</span>
+<span class="sd">        returns:</span>
+<span class="sd">            (str) zone name</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">kumolocal_config</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">zone_number</span><span class="p">][</span><span class="s2">&quot;zone_name&quot;</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="ThermostatClass.get_target_zone_id">
+<a class="viewcode-back" href="../../docs/src.html#src.kumolocal.ThermostatClass.get_target_zone_id">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_target_zone_id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">zone</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return the target zone ID.</span>
+
+<span class="sd">        inputs:</span>
+<span class="sd">            zone(int): zone number.</span>
+<span class="sd">        returns:</span>
+<span class="sd">            (obj): PyKumo object</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># populate the zone dictionary</span>
+        <span class="c1"># establish local interface to kumos, must be on local net</span>
+        <span class="n">kumos</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">make_pykumos</span><span class="p">()</span>
+        <span class="n">device_id</span> <span class="o">=</span> <span class="n">kumos</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">zone_name</span><span class="p">]</span>
+        <span class="c1"># print zone name the first time it is known</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">device_id</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span><span class="p">:</span>
+            <span class="n">util</span><span class="o">.</span><span class="n">log_msg</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;zone </span><span class="si">{</span><span class="n">zone</span><span class="si">}</span><span class="s2"> name=&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">zone_name</span><span class="si">}</span><span class="s2">&#39;, device_id=</span><span class="si">{</span><span class="n">device_id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                <span class="n">mode</span><span class="o">=</span><span class="n">util</span><span class="o">.</span><span class="n">DEBUG_LOG</span> <span class="o">+</span> <span class="n">util</span><span class="o">.</span><span class="n">STDOUT_LOG</span><span class="p">,</span>
+                <span class="n">func_name</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">device_id</span> <span class="o">=</span> <span class="n">device_id</span>
+
+        <span class="c1"># return the target zone object</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">device_id</span></div>
+
+
+<div class="viewcode-block" id="ThermostatClass.detect_local_network_availability">
+<a class="viewcode-back" href="../../docs/src.html#src.kumolocal.ThermostatClass.detect_local_network_availability">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">detect_local_network_availability</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Detect if kumolocal devices are available on the local network.</span>
+
+<span class="sd">        Updates kumolocal_config.metadata with detected network information.</span>
+
+<span class="sd">        inputs:</span>
+<span class="sd">            None</span>
+<span class="sd">        returns:</span>
+<span class="sd">            None (updates metadata dict)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">serial_num_lst</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_indoor_units_list</span><span class="p">()</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">serial_num_lst</span><span class="p">:</span>
+                <span class="k">return</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">_check_zones_availability</span><span class="p">(</span><span class="n">serial_num_lst</span><span class="p">)</span>
+
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_handle_detection_error</span><span class="p">(</span><span class="n">exc</span><span class="p">)</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_indoor_units_list</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get list of indoor units.&quot;&quot;&quot;</span>
+        <span class="n">serial_num_lst</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_indoor_units</span><span class="p">())</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">serial_num_lst</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span><span class="p">:</span>
+            <span class="n">util</span><span class="o">.</span><span class="n">log_msg</span><span class="p">(</span>
+                <span class="s2">&quot;No kumolocal units found in kumocloud account&quot;</span><span class="p">,</span>
+                <span class="n">mode</span><span class="o">=</span><span class="n">util</span><span class="o">.</span><span class="n">DEBUG_LOG</span> <span class="o">+</span> <span class="n">util</span><span class="o">.</span><span class="n">STDOUT_LOG</span><span class="p">,</span>
+                <span class="n">func_name</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">serial_num_lst</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_check_zones_availability</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">serial_num_lst</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Check availability for each zone.&quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">zone_idx</span><span class="p">,</span> <span class="n">serial_number</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">serial_num_lst</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">zone_idx</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">kumolocal_config</span><span class="o">.</span><span class="n">metadata</span><span class="p">:</span>
+                <span class="k">continue</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">_process_zone_availability</span><span class="p">(</span><span class="n">zone_idx</span><span class="p">,</span> <span class="n">serial_number</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_process_zone_availability</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">zone_idx</span><span class="p">,</span> <span class="n">serial_number</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Process availability check for a single zone.&quot;&quot;&quot;</span>
+        <span class="n">local_address</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_address</span><span class="p">(</span><span class="n">serial_number</span><span class="p">)</span>
+        <span class="n">device_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_name</span><span class="p">(</span><span class="n">serial_number</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_has_valid_local_address</span><span class="p">(</span><span class="n">local_address</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_check_and_update_available_zone</span><span class="p">(</span><span class="n">zone_idx</span><span class="p">,</span> <span class="n">device_name</span><span class="p">,</span> <span class="n">local_address</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_update_unavailable_zone</span><span class="p">(</span><span class="n">zone_idx</span><span class="p">,</span> <span class="n">device_name</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_has_valid_local_address</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">local_address</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Check if local address is valid.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">local_address</span> <span class="ow">and</span> <span class="n">local_address</span> <span class="o">!=</span> <span class="s2">&quot;0.0.0.0&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_check_and_update_available_zone</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">zone_idx</span><span class="p">,</span> <span class="n">device_name</span><span class="p">,</span> <span class="n">local_address</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Check and update zone with valid local address.&quot;&quot;&quot;</span>
+        <span class="n">is_available</span><span class="p">,</span> <span class="n">detected_ip</span> <span class="o">=</span> <span class="n">util</span><span class="o">.</span><span class="n">is_host_on_local_net</span><span class="p">(</span>
+            <span class="n">host_name</span><span class="o">=</span><span class="n">device_name</span><span class="p">,</span>
+            <span class="n">ip_address</span><span class="o">=</span><span class="n">local_address</span><span class="p">,</span>
+            <span class="n">verbose</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">verbose</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;is_available=</span><span class="si">{</span><span class="n">is_available</span><span class="si">}</span><span class="s2">, detected_ip=</span><span class="si">{</span><span class="n">detected_ip</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_update_zone_metadata</span><span class="p">(</span><span class="n">zone_idx</span><span class="p">,</span> <span class="n">device_name</span><span class="p">,</span> <span class="n">local_address</span><span class="p">,</span> <span class="n">is_available</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_update_zone_metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">zone_idx</span><span class="p">,</span> <span class="n">device_name</span><span class="p">,</span> <span class="n">local_address</span><span class="p">,</span> <span class="n">is_available</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Update zone metadata with detection results.&quot;&quot;&quot;</span>
+        <span class="n">zone_meta</span> <span class="o">=</span> <span class="n">kumolocal_config</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="n">zone_idx</span><span class="p">]</span>
+        <span class="n">zone_meta</span><span class="p">[</span><span class="s2">&quot;ip_address&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">local_address</span>
+        <span class="n">zone_meta</span><span class="p">[</span><span class="s2">&quot;host_name&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">device_name</span>
+        <span class="n">zone_meta</span><span class="p">[</span><span class="s2">&quot;local_net_available&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">is_available</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span><span class="p">:</span>
+            <span class="n">status</span> <span class="o">=</span> <span class="s2">&quot;available&quot;</span> <span class="k">if</span> <span class="n">is_available</span> <span class="k">else</span> <span class="s2">&quot;not available&quot;</span>
+            <span class="n">util</span><span class="o">.</span><span class="n">log_msg</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Zone </span><span class="si">{</span><span class="n">zone_idx</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="n">device_name</span><span class="si">}</span><span class="s2">): &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;local network </span><span class="si">{</span><span class="n">status</span><span class="si">}</span><span class="s2"> at </span><span class="si">{</span><span class="n">local_address</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                <span class="n">mode</span><span class="o">=</span><span class="n">util</span><span class="o">.</span><span class="n">DEBUG_LOG</span> <span class="o">+</span> <span class="n">util</span><span class="o">.</span><span class="n">STDOUT_LOG</span><span class="p">,</span>
+                <span class="n">func_name</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+            <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_update_unavailable_zone</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">zone_idx</span><span class="p">,</span> <span class="n">device_name</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Update zone metadata for unavailable zone.&quot;&quot;&quot;</span>
+        <span class="n">zone_meta</span> <span class="o">=</span> <span class="n">kumolocal_config</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="n">zone_idx</span><span class="p">]</span>
+        <span class="n">zone_meta</span><span class="p">[</span><span class="s2">&quot;local_net_available&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span><span class="p">:</span>
+            <span class="n">util</span><span class="o">.</span><span class="n">log_msg</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Zone </span><span class="si">{</span><span class="n">zone_idx</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="n">device_name</span><span class="si">}</span><span class="s2">): &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;no local address available from kumocloud&quot;</span><span class="p">,</span>
+                <span class="n">mode</span><span class="o">=</span><span class="n">util</span><span class="o">.</span><span class="n">DEBUG_LOG</span> <span class="o">+</span> <span class="n">util</span><span class="o">.</span><span class="n">STDOUT_LOG</span><span class="p">,</span>
+                <span class="n">func_name</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+            <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_handle_detection_error</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">exc</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Handle detection errors.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span><span class="p">:</span>
+            <span class="n">util</span><span class="o">.</span><span class="n">log_msg</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Warning: local network detection failed: </span><span class="si">{</span><span class="n">exc</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                <span class="n">mode</span><span class="o">=</span><span class="n">util</span><span class="o">.</span><span class="n">DEBUG_LOG</span> <span class="o">+</span> <span class="n">util</span><span class="o">.</span><span class="n">STDOUT_LOG</span><span class="p">,</span>
+                <span class="n">func_name</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+            <span class="p">)</span>
+
+<div class="viewcode-block" id="ThermostatClass.get_kumocloud_thermostat_metadata">
+<a class="viewcode-back" href="../../docs/src.html#src.kumolocal.ThermostatClass.get_kumocloud_thermostat_metadata">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_kumocloud_thermostat_metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">zone</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">debug</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">retry</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get all thermostat meta data for zone from kumocloud.</span>
+
+<span class="sd">        inputs:</span>
+<span class="sd">            zone(): specified zone, if None will print all zones.</span>
+<span class="sd">            debug(bool): debug flag.</span>
+<span class="sd">            retry(bool): if True will retry with extended retry mechanism</span>
+<span class="sd">        returns:</span>
+<span class="sd">            (dict): JSON dict</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">del</span> <span class="n">debug</span>  <span class="c1"># unused</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">_get_metadata_internal</span><span class="p">():</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">serial_num_lst</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_indoor_units</span><span class="p">())</span>  <span class="c1"># will query unit</span>
+            <span class="k">except</span> <span class="ne">UnboundLocalError</span><span class="p">:</span>  <span class="c1"># patch for issue #205</span>
+                <span class="n">util</span><span class="o">.</span><span class="n">log_msg</span><span class="p">(</span>
+                    <span class="s2">&quot;WARNING: Kumocloud refresh failed due to timeout&quot;</span><span class="p">,</span>
+                    <span class="n">mode</span><span class="o">=</span><span class="n">util</span><span class="o">.</span><span class="n">BOTH_LOG</span><span class="p">,</span>
+                    <span class="n">func_name</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
+                <span class="n">serial_num_lst</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_indoor_units</span><span class="p">())</span>  <span class="c1"># retry</span>
+            <span class="n">util</span><span class="o">.</span><span class="n">log_msg</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;indoor unit serial numbers: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">serial_num_lst</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                <span class="n">mode</span><span class="o">=</span><span class="n">util</span><span class="o">.</span><span class="n">DEBUG_LOG</span> <span class="o">+</span> <span class="n">util</span><span class="o">.</span><span class="n">STDOUT_LOG</span><span class="p">,</span>
+                <span class="n">func_name</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+            <span class="p">)</span>
+
+            <span class="c1"># validate serial number list</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">serial_num_lst</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">tc</span><span class="o">.</span><span class="n">AuthenticationError</span><span class="p">(</span>
+                    <span class="s2">&quot;pykumo meta data is blank, probably&quot;</span>
+                    <span class="s2">&quot; due to an Authentication Error,&quot;</span>
+                    <span class="s2">&quot; check your credentials.&quot;</span>
+                <span class="p">)</span>
+
+            <span class="k">for</span> <span class="n">serial_number</span> <span class="ow">in</span> <span class="n">serial_num_lst</span><span class="p">:</span>
+                <span class="n">util</span><span class="o">.</span><span class="n">log_msg</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Unit </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">get_name</span><span class="p">(</span><span class="n">serial_number</span><span class="p">)</span><span class="si">}</span><span class="s2">: address: &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">get_address</span><span class="p">(</span><span class="n">serial_number</span><span class="p">)</span><span class="si">}</span><span class="s2"> credentials: &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">get_credentials</span><span class="p">(</span><span class="n">serial_number</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                    <span class="n">mode</span><span class="o">=</span><span class="n">util</span><span class="o">.</span><span class="n">DEBUG_LOG</span> <span class="o">+</span> <span class="n">util</span><span class="o">.</span><span class="n">STDOUT_LOG</span><span class="p">,</span>
+                    <span class="n">func_name</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="k">if</span> <span class="n">zone</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="c1"># returned cached raw data for all zones</span>
+                <span class="n">raw_json</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_raw_json</span><span class="p">()</span>  <span class="c1"># does not fetch results,</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># return cached raw data for specified zone</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">serial_number</span> <span class="o">=</span> <span class="n">serial_num_lst</span><span class="p">[</span><span class="n">zone</span><span class="p">]</span>
+                <span class="k">except</span> <span class="ne">IndexError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">IndexError</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;ERROR: Invalid Zone, index (</span><span class="si">{</span><span class="n">zone</span><span class="si">}</span><span class="s2">) does &quot;</span>
+                        <span class="s2">&quot;not exist in serial number list &quot;</span>
+                        <span class="sa">f</span><span class="s2">&quot;(</span><span class="si">{</span><span class="n">serial_num_lst</span><span class="si">}</span><span class="s2">)&quot;</span>
+                    <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">exc</span>
+
+                <span class="c1"># Safely access nested raw JSON structure with detailed error reporting</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">raw_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_raw_json</span><span class="p">()</span>
+                    <span class="k">if</span> <span class="n">raw_data</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span>
+                            <span class="s2">&quot;Raw JSON data is None - likely authentication &quot;</span>
+                            <span class="s2">&quot;or connection issue&quot;</span>
+                        <span class="p">)</span>
+
+                    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">raw_data</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">2</span><span class="p">:</span>
+                        <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span>
+                            <span class="sa">f</span><span class="s2">&quot;Raw JSON data structure invalid - expected &quot;</span>
+                            <span class="sa">f</span><span class="s2">&quot;at least 3 elements, got </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">raw_data</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+                        <span class="p">)</span>
+
+                    <span class="n">level_2_data</span> <span class="o">=</span> <span class="n">raw_data</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+                    <span class="k">if</span> <span class="s2">&quot;children&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">level_2_data</span><span class="p">:</span>
+                        <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span>
+                            <span class="s2">&quot;Missing &#39;children&#39; key in raw JSON data at level 2&quot;</span>
+                        <span class="p">)</span>
+
+                    <span class="n">children_data</span> <span class="o">=</span> <span class="n">level_2_data</span><span class="p">[</span><span class="s2">&quot;children&quot;</span><span class="p">]</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="n">children_data</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">children_data</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                        <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="s2">&quot;Empty &#39;children&#39; array in raw JSON data&quot;</span><span class="p">)</span>
+
+                    <span class="n">first_child</span> <span class="o">=</span> <span class="n">children_data</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                    <span class="k">if</span> <span class="s2">&quot;zoneTable&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">first_child</span><span class="p">:</span>
+                        <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span>
+                            <span class="s2">&quot;Missing &#39;zoneTable&#39; key in first child of &quot;</span> <span class="s2">&quot;raw JSON data&quot;</span>
+                        <span class="p">)</span>
+
+                    <span class="n">zone_table</span> <span class="o">=</span> <span class="n">first_child</span><span class="p">[</span><span class="s2">&quot;zoneTable&quot;</span><span class="p">]</span>
+                    <span class="n">zone_serial</span> <span class="o">=</span> <span class="n">serial_num_lst</span><span class="p">[</span><span class="n">zone</span><span class="p">]</span>
+                    <span class="k">if</span> <span class="n">zone_serial</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">zone_table</span><span class="p">:</span>
+                        <span class="n">available_zones</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">zone_table</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+                        <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span>
+                            <span class="sa">f</span><span class="s2">&quot;Zone serial number &#39;</span><span class="si">{</span><span class="n">zone_serial</span><span class="si">}</span><span class="s2">&#39; not found &quot;</span>
+                            <span class="sa">f</span><span class="s2">&quot;in zoneTable. Available zones: </span><span class="si">{</span><span class="n">available_zones</span><span class="si">}</span><span class="s2">&quot;</span>
+                        <span class="p">)</span>
+
+                    <span class="n">raw_json</span> <span class="o">=</span> <span class="n">zone_table</span><span class="p">[</span><span class="n">zone_serial</span><span class="p">]</span>
+
+                <span class="k">except</span> <span class="ne">KeyError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+                    <span class="c1"># Re-raise with more context about when this error occurred</span>
+                    <span class="n">serial_info</span> <span class="o">=</span> <span class="p">(</span>
+                        <span class="n">serial_num_lst</span><span class="p">[</span><span class="n">zone</span><span class="p">]</span>
+                        <span class="k">if</span> <span class="n">zone</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">serial_num_lst</span><span class="p">)</span>
+                        <span class="k">else</span> <span class="s2">&quot;unknown&quot;</span>
+                    <span class="p">)</span>
+                    <span class="n">error_msg</span> <span class="o">=</span> <span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;KeyError during metadata retrieval for zone </span><span class="si">{</span><span class="n">zone</span><span class="si">}</span><span class="s2"> &quot;</span>
+                        <span class="sa">f</span><span class="s2">&quot;(serial: </span><span class="si">{</span><span class="n">serial_info</span><span class="si">}</span><span class="s2">): </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">exc</span><span class="p">)</span><span class="si">}</span><span class="s2">. This often &quot;</span>
+                        <span class="s2">&quot;occurs immediately after setting temperature when &quot;</span>
+                        <span class="s2">&quot;the thermostat metadata structure is temporarily &quot;</span>
+                        <span class="s2">&quot;inconsistent.&quot;</span>
+                    <span class="p">)</span>
+                    <span class="n">util</span><span class="o">.</span><span class="n">log_msg</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;ERROR: </span><span class="si">{</span><span class="n">error_msg</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                        <span class="n">mode</span><span class="o">=</span><span class="n">util</span><span class="o">.</span><span class="n">BOTH_LOG</span><span class="p">,</span>
+                        <span class="n">func_name</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                    <span class="p">)</span>
+                    <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="n">error_msg</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">exc</span>
+            <span class="k">return</span> <span class="n">raw_json</span>
+
+        <span class="k">if</span> <span class="n">retry</span><span class="p">:</span>
+            <span class="c1"># Use standardized extended retry mechanism</span>
+            <span class="k">return</span> <span class="n">util</span><span class="o">.</span><span class="n">execute_with_extended_retries</span><span class="p">(</span>
+                <span class="n">func</span><span class="o">=</span><span class="n">_get_metadata_internal</span><span class="p">,</span>
+                <span class="n">thermostat_type</span><span class="o">=</span><span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;thermostat_type&quot;</span><span class="p">,</span> <span class="s2">&quot;KumoLocal&quot;</span><span class="p">),</span>
+                <span class="n">zone_name</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;zone_name&quot;</span><span class="p">,</span> <span class="n">zone</span><span class="p">)),</span>
+                <span class="n">number_of_retries</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
+                <span class="n">initial_retry_delay_sec</span><span class="o">=</span><span class="mi">60</span><span class="p">,</span>
+                <span class="n">exception_types</span><span class="o">=</span><span class="p">(</span>
+                    <span class="ne">UnboundLocalError</span><span class="p">,</span>
+                    <span class="n">tc</span><span class="o">.</span><span class="n">AuthenticationError</span><span class="p">,</span>
+                    <span class="ne">IndexError</span><span class="p">,</span>
+                    <span class="ne">KeyError</span><span class="p">,</span>
+                    <span class="ne">ConnectionError</span><span class="p">,</span>
+                    <span class="ne">TimeoutError</span><span class="p">,</span>
+                <span class="p">),</span>
+                <span class="n">email_notification</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>  <span class="c1"># KumoLocal doesn&#39;t import email_notification</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># Single attempt without retry</span>
+            <span class="k">return</span> <span class="n">_get_metadata_internal</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="ThermostatClass.get_all_metadata">
+<a class="viewcode-back" href="../../docs/src.html#src.kumolocal.ThermostatClass.get_all_metadata">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_all_metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">zone</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">retry</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get all thermostat meta data for device_id from local API.</span>
+
+<span class="sd">        inputs:</span>
+<span class="sd">            zone(): specified zone</span>
+<span class="sd">            retry(bool): if True will retry with extended retry mechanism.</span>
+<span class="sd">        returns:</span>
+<span class="sd">            (dict): dictionary of meta data.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_metadata</span><span class="p">(</span><span class="n">zone</span><span class="p">,</span> <span class="n">retry</span><span class="o">=</span><span class="n">retry</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ThermostatClass.get_metadata">
+<a class="viewcode-back" href="../../docs/src.html#src.kumolocal.ThermostatClass.get_metadata">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">zone</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">trait</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">parameter</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">retry</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get thermostat meta data for device_id from local API.</span>
+
+<span class="sd">        inputs:</span>
+<span class="sd">            zone(str or int): (unused) specified zone</span>
+<span class="sd">            trait(str): trait or parent key, if None will assume a non-nested</span>
+<span class="sd">                        dict</span>
+<span class="sd">            parameter(str): target parameter, if None will return all.</span>
+<span class="sd">            retry(bool): if True will retry with extended retry mechanism</span>
+<span class="sd">        returns:</span>
+<span class="sd">            (dict): dictionary of meta data.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">del</span> <span class="n">trait</span>  <span class="c1"># not used on Kumolocal</span>
+        <span class="k">del</span> <span class="n">zone</span>  <span class="c1"># unused</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">_get_metadata_internal</span><span class="p">():</span>
+            <span class="c1"># refresh device status</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">device_id</span><span class="o">.</span><span class="n">update_status</span><span class="p">()</span>  <span class="c1"># type: ignore[attr-defined]</span>
+            <span class="n">meta_data</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="n">meta_data</span><span class="p">[</span><span class="s2">&quot;status&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">device_id</span><span class="o">.</span><span class="n">get_status</span><span class="p">()</span>  <span class="c1"># type: ignore[attr-defined]</span>
+            <span class="p">)</span>
+            <span class="c1"># pylint: disable=protected-access</span>
+            <span class="n">meta_data</span><span class="p">[</span><span class="s2">&quot;sensors&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">device_id</span><span class="o">.</span><span class="n">_sensors</span>  <span class="c1"># type: ignore[attr-defined]</span>
+            <span class="p">)</span>
+            <span class="c1"># pylint: disable=protected-access</span>
+            <span class="n">meta_data</span><span class="p">[</span><span class="s2">&quot;profile&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">device_id</span><span class="o">.</span><span class="n">_profile</span>  <span class="c1"># type: ignore[attr-defined]</span>
+            <span class="p">)</span>
+            <span class="k">if</span> <span class="n">parameter</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">meta_data</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">meta_data</span><span class="p">[</span><span class="n">parameter</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="n">retry</span><span class="p">:</span>
+            <span class="c1"># Use standardized extended retry mechanism</span>
+            <span class="k">return</span> <span class="n">util</span><span class="o">.</span><span class="n">execute_with_extended_retries</span><span class="p">(</span>
+                <span class="n">func</span><span class="o">=</span><span class="n">_get_metadata_internal</span><span class="p">,</span>
+                <span class="n">thermostat_type</span><span class="o">=</span><span class="s2">&quot;KumoLocal&quot;</span><span class="p">,</span>
+                <span class="n">zone_name</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;zone_name&quot;</span><span class="p">,</span> <span class="s2">&quot;unknown&quot;</span><span class="p">)),</span>
+                <span class="n">number_of_retries</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
+                <span class="n">initial_retry_delay_sec</span><span class="o">=</span><span class="mi">60</span><span class="p">,</span>
+                <span class="n">exception_types</span><span class="o">=</span><span class="p">(</span>
+                    <span class="ne">KeyError</span><span class="p">,</span>
+                    <span class="ne">AttributeError</span><span class="p">,</span>
+                    <span class="ne">ConnectionError</span><span class="p">,</span>
+                    <span class="ne">TimeoutError</span><span class="p">,</span>
+                <span class="p">),</span>
+                <span class="n">email_notification</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>  <span class="c1"># KumoLocal doesn&#39;t import email_notification</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># Single attempt without retry</span>
+            <span class="k">return</span> <span class="n">_get_metadata_internal</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="ThermostatClass.print_all_thermostat_metadata">
+<a class="viewcode-back" href="../../docs/src.html#src.kumolocal.ThermostatClass.print_all_thermostat_metadata">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">print_all_thermostat_metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">zone</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Print all metadata for zone to the screen.</span>
+
+<span class="sd">        inputs:</span>
+<span class="sd">            zone(int): specified zone, if None will print all zones.</span>
+<span class="sd">        returns:</span>
+<span class="sd">            None, prints result to screen</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">exec_print_all_thermostat_metadata</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_all_metadata</span><span class="p">,</span> <span class="p">[</span><span class="n">zone</span><span class="p">])</span></div>
+
+
+<div class="viewcode-block" id="ThermostatClass.is_local_network_available">
+<a class="viewcode-back" href="../../docs/src.html#src.kumolocal.ThermostatClass.is_local_network_available">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_local_network_available</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">zone</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Check if kumolocal device is available on local network.</span>
+
+<span class="sd">        inputs:</span>
+<span class="sd">            zone(int): zone number, defaults to self.zone_number</span>
+<span class="sd">        returns:</span>
+<span class="sd">            bool: True if device is available on local network, False otherwise</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">zone_number</span> <span class="o">=</span> <span class="n">zone</span> <span class="k">if</span> <span class="n">zone</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">zone_number</span>
+        <span class="k">if</span> <span class="n">zone_number</span> <span class="ow">in</span> <span class="n">kumolocal_config</span><span class="o">.</span><span class="n">metadata</span><span class="p">:</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="n">kumolocal_config</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="n">zone_number</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+                <span class="s2">&quot;local_net_available&quot;</span><span class="p">,</span> <span class="kc">False</span>
+            <span class="p">)</span>
+            <span class="c1"># Handle case where value is None (not yet detected)</span>
+            <span class="k">return</span> <span class="n">value</span> <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">False</span>
+        <span class="k">return</span> <span class="kc">False</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="ThermostatZone">
+<a class="viewcode-back" href="../../docs/src.html#src.kumolocal.ThermostatZone">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ThermostatZone</span><span class="p">(</span><span class="n">tc</span><span class="o">.</span><span class="n">ThermostatCommonZone</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    KumoCloud single zone on local network.</span>
+
+<span class="sd">    Class needs to be updated for multi-zone support.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="ThermostatZone.__init__">
+<a class="viewcode-back" href="../../docs/src.html#src.kumolocal.ThermostatZone.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Thermostat_obj</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Zone constructor.</span>
+
+<span class="sd">        inputs:</span>
+<span class="sd">            Thermostat(obj): Thermostat class instance.</span>
+<span class="sd">            verbose(bool): debug flag.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># construct the superclass, requires auth setup first</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+
+        <span class="c1"># runtime parameter defaults</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">poll_time_sec</span> <span class="o">=</span> <span class="mi">10</span> <span class="o">*</span> <span class="mi">60</span>  <span class="c1"># default to 10 minutes</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connection_time_sec</span> <span class="o">=</span> <span class="mi">8</span> <span class="o">*</span> <span class="mi">60</span> <span class="o">*</span> <span class="mi">60</span>  <span class="c1"># default to 8 hours</span>
+
+        <span class="c1"># server data cache expiration parameters</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fetch_interval_sec</span> <span class="o">=</span> <span class="mi">60</span>  <span class="c1"># age of server data before refresh</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">last_fetch_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="mi">2</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">fetch_interval_sec</span>
+
+        <span class="c1"># switch config for this thermostat</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">system_switch_position</span><span class="p">[</span><span class="n">tc</span><span class="o">.</span><span class="n">ThermostatCommonZone</span><span class="o">.</span><span class="n">COOL_MODE</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;cool&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">system_switch_position</span><span class="p">[</span><span class="n">tc</span><span class="o">.</span><span class="n">ThermostatCommonZone</span><span class="o">.</span><span class="n">HEAT_MODE</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;heat&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">system_switch_position</span><span class="p">[</span><span class="n">tc</span><span class="o">.</span><span class="n">ThermostatCommonZone</span><span class="o">.</span><span class="n">OFF_MODE</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;off&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">system_switch_position</span><span class="p">[</span><span class="n">tc</span><span class="o">.</span><span class="n">ThermostatCommonZone</span><span class="o">.</span><span class="n">DRY_MODE</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;dry&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">system_switch_position</span><span class="p">[</span><span class="n">tc</span><span class="o">.</span><span class="n">ThermostatCommonZone</span><span class="o">.</span><span class="n">AUTO_MODE</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;auto&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">system_switch_position</span><span class="p">[</span><span class="n">tc</span><span class="o">.</span><span class="n">ThermostatCommonZone</span><span class="o">.</span><span class="n">FAN_MODE</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;vent&quot;</span>
+
+        <span class="c1"># zone info</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span> <span class="o">=</span> <span class="n">verbose</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">thermostat_type</span> <span class="o">=</span> <span class="n">kumolocal_config</span><span class="o">.</span><span class="n">ALIAS</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">device_id</span> <span class="o">=</span> <span class="n">Thermostat_obj</span><span class="o">.</span><span class="n">device_id</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Thermostat</span> <span class="o">=</span> <span class="n">Thermostat_obj</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">zone_number</span> <span class="o">=</span> <span class="n">Thermostat_obj</span><span class="o">.</span><span class="n">zone_number</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">zone_name</span> <span class="o">=</span> <span class="n">Thermostat_obj</span><span class="o">.</span><span class="n">zone_name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">zone_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_zone_name</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="ThermostatZone.get_zone_name">
+<a class="viewcode-back" href="../../docs/src.html#src.kumolocal.ThermostatZone.get_zone_name">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_zone_name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return the name associated with the zone number from device memory.</span>
+
+<span class="sd">        inputs:</span>
+<span class="sd">            None</span>
+<span class="sd">        returns:</span>
+<span class="sd">            (str) zone name</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">refresh_zone_info</span><span class="p">()</span>
+        <span class="n">zone_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">device_id</span><span class="o">.</span><span class="n">get_name</span><span class="p">()</span>
+        <span class="c1"># update metadata dict</span>
+        <span class="n">kumolocal_config</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">zone_number</span><span class="p">][</span><span class="s2">&quot;zone_name&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">zone_name</span>
+        <span class="k">return</span> <span class="n">zone_name</span></div>
+
+
+<div class="viewcode-block" id="ThermostatZone.get_display_temp">
+<a class="viewcode-back" href="../../docs/src.html#src.kumolocal.ThermostatZone.get_display_temp">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_display_temp</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>  <span class="c1"># used</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Refresh the cached zone information and return Indoor Temp in °F.</span>
+
+<span class="sd">        inputs:</span>
+<span class="sd">            None</span>
+<span class="sd">        returns:</span>
+<span class="sd">            (float): indoor temp in °F.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">refresh_zone_info</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">util</span><span class="o">.</span><span class="n">c_to_f</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">device_id</span><span class="o">.</span><span class="n">get_current_temperature</span><span class="p">())</span></div>
+
+
+<div class="viewcode-block" id="ThermostatZone.get_display_humidity">
+<a class="viewcode-back" href="../../docs/src.html#src.kumolocal.ThermostatZone.get_display_humidity">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_display_humidity</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Refresh the cached zone information and return IndoorHumidity.</span>
+
+<span class="sd">        inputs:</span>
+<span class="sd">            None</span>
+<span class="sd">        returns:</span>
+<span class="sd">            (float, None): indoor humidity in %RH, None if not supported.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">refresh_zone_info</span><span class="p">()</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">device_id</span><span class="o">.</span><span class="n">get_current_humidity</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="ThermostatZone.get_is_humidity_supported">
+<a class="viewcode-back" href="../../docs/src.html#src.kumolocal.ThermostatZone.get_is_humidity_supported">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_is_humidity_supported</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>  <span class="c1"># used</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Refresh the cached zone information and return the</span>
+<span class="sd">          True if humidity sensor data is trustworthy.</span>
+
+<span class="sd">        inputs:</span>
+<span class="sd">            None</span>
+<span class="sd">        returns:</span>
+<span class="sd">            (booL): True if is in humidity sensor is available and not faulted.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_display_humidity</span><span class="p">()</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span></div>
+
+
+<div class="viewcode-block" id="ThermostatZone.is_heat_mode">
+<a class="viewcode-back" href="../../docs/src.html#src.kumolocal.ThermostatZone.is_heat_mode">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_heat_mode</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Refresh the cached zone information and return the heat mode.</span>
+
+<span class="sd">        inputs:</span>
+<span class="sd">            None</span>
+<span class="sd">        returns:</span>
+<span class="sd">            (int) heat mode, 1=enabled, 0=disabled.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_is_mode</span><span class="p">(</span><span class="n">tc</span><span class="o">.</span><span class="n">ThermostatCommonZone</span><span class="o">.</span><span class="n">HEAT_MODE</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="ThermostatZone.is_cool_mode">
+<a class="viewcode-back" href="../../docs/src.html#src.kumolocal.ThermostatZone.is_cool_mode">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_cool_mode</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Refresh the cached zone information and return the cool mode.</span>
+
+<span class="sd">        inputs:</span>
+<span class="sd">            None</span>
+<span class="sd">        returns:</span>
+<span class="sd">            (int): cool mode, 1=enabled, 0=disabled.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_is_mode</span><span class="p">(</span><span class="n">tc</span><span class="o">.</span><span class="n">ThermostatCommonZone</span><span class="o">.</span><span class="n">COOL_MODE</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="ThermostatZone.is_dry_mode">
+<a class="viewcode-back" href="../../docs/src.html#src.kumolocal.ThermostatZone.is_dry_mode">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_dry_mode</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Refresh the cached zone information and return the dry mode.</span>
+
+<span class="sd">        inputs:</span>
+<span class="sd">            None</span>
+<span class="sd">        returns:</span>
+<span class="sd">            (int): dry mode, 1=enabled, 0=disabled.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_is_mode</span><span class="p">(</span><span class="n">tc</span><span class="o">.</span><span class="n">ThermostatCommonZone</span><span class="o">.</span><span class="n">DRY_MODE</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="ThermostatZone.is_fan_mode">
+<a class="viewcode-back" href="../../docs/src.html#src.kumolocal.ThermostatZone.is_fan_mode">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_fan_mode</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Refresh the cached zone information and return the fan mode.</span>
+
+<span class="sd">        inputs:</span>
+<span class="sd">            None</span>
+<span class="sd">        returns:</span>
+<span class="sd">            (int): fan mode, 1=enabled, 0=disabled.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_is_mode</span><span class="p">(</span><span class="n">tc</span><span class="o">.</span><span class="n">ThermostatCommonZone</span><span class="o">.</span><span class="n">FAN_MODE</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="ThermostatZone.is_auto_mode">
+<a class="viewcode-back" href="../../docs/src.html#src.kumolocal.ThermostatZone.is_auto_mode">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_auto_mode</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Refresh the cached zone information and return the auto mode.</span>
+
+<span class="sd">        inputs:</span>
+<span class="sd">            None</span>
+<span class="sd">        returns:</span>
+<span class="sd">            (int): auto mode, 1=enabled, 0=disabled.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_is_mode</span><span class="p">(</span><span class="n">tc</span><span class="o">.</span><span class="n">ThermostatCommonZone</span><span class="o">.</span><span class="n">AUTO_MODE</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="ThermostatZone.is_eco_mode">
+<a class="viewcode-back" href="../../docs/src.html#src.kumolocal.ThermostatZone.is_eco_mode">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_eco_mode</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Refresh the cached zone information and return the eco mode.</span>
+
+<span class="sd">        inputs:</span>
+<span class="sd">            None</span>
+<span class="sd">        returns:</span>
+<span class="sd">            (int): eco mode, 1=enabled, 0=disabled.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>  <span class="c1"># not supported</span></div>
+
+
+<div class="viewcode-block" id="ThermostatZone.is_off_mode">
+<a class="viewcode-back" href="../../docs/src.html#src.kumolocal.ThermostatZone.is_off_mode">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_off_mode</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Refresh the cached zone information and return the off mode.</span>
+
+<span class="sd">        inputs:</span>
+<span class="sd">            None</span>
+<span class="sd">        returns:</span>
+<span class="sd">            (int): off mode, 1=enabled, 0=disabled.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_is_mode</span><span class="p">(</span><span class="n">tc</span><span class="o">.</span><span class="n">ThermostatCommonZone</span><span class="o">.</span><span class="n">OFF_MODE</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="ThermostatZone.is_heating">
+<a class="viewcode-back" href="../../docs/src.html#src.kumolocal.ThermostatZone.is_heating">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_heating</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return 1 if heating relay is active, else 0.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">int</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">is_heat_mode</span><span class="p">()</span>
+            <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_power_on</span><span class="p">()</span>
+            <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_heat_setpoint_raw</span><span class="p">()</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_display_temp</span><span class="p">()</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ThermostatZone.is_cooling">
+<a class="viewcode-back" href="../../docs/src.html#src.kumolocal.ThermostatZone.is_cooling">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_cooling</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return 1 if cooling relay is active, else 0.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">int</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">is_cool_mode</span><span class="p">()</span>
+            <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_power_on</span><span class="p">()</span>
+            <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_cool_setpoint_raw</span><span class="p">()</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_display_temp</span><span class="p">()</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ThermostatZone.is_drying">
+<a class="viewcode-back" href="../../docs/src.html#src.kumolocal.ThermostatZone.is_drying">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_drying</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return 1 if drying relay is active, else 0.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">int</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">is_dry_mode</span><span class="p">()</span>
+            <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_power_on</span><span class="p">()</span>
+            <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_cool_setpoint_raw</span><span class="p">()</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_display_temp</span><span class="p">()</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ThermostatZone.is_auto">
+<a class="viewcode-back" href="../../docs/src.html#src.kumolocal.ThermostatZone.is_auto">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_auto</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return 1 if auto relay is active, else 0.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">int</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">is_auto_mode</span><span class="p">()</span>
+            <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_power_on</span><span class="p">()</span>
+            <span class="ow">and</span> <span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">get_cool_setpoint_raw</span><span class="p">()</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_display_temp</span><span class="p">()</span>
+                <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_heat_setpoint_raw</span><span class="p">()</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_display_temp</span><span class="p">()</span>
+            <span class="p">)</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ThermostatZone.is_eco">
+<a class="viewcode-back" href="../../docs/src.html#src.kumolocal.ThermostatZone.is_eco">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_eco</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return 1 if eco relay is active, else 0.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">int</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">is_eco_mode</span><span class="p">()</span>
+            <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_power_on</span><span class="p">()</span>
+            <span class="ow">and</span> <span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">get_cool_setpoint_raw</span><span class="p">()</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_display_temp</span><span class="p">()</span>
+                <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_heat_setpoint_raw</span><span class="p">()</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_display_temp</span><span class="p">()</span>
+            <span class="p">)</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ThermostatZone.is_fanning">
+<a class="viewcode-back" href="../../docs/src.html#src.kumolocal.ThermostatZone.is_fanning">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_fanning</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return 1 if fan relay is active, else 0.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">is_fan_on</span><span class="p">()</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_power_on</span><span class="p">())</span></div>
+
+
+<div class="viewcode-block" id="ThermostatZone.is_power_on">
+<a class="viewcode-back" href="../../docs/src.html#src.kumolocal.ThermostatZone.is_power_on">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_power_on</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return 1 if power relay is active, else 0.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">refresh_zone_info</span><span class="p">()</span>
+        <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">device_id</span><span class="o">.</span><span class="n">get_mode</span><span class="p">()</span> <span class="o">!=</span> <span class="s2">&quot;off&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ThermostatZone.is_fan_on">
+<a class="viewcode-back" href="../../docs/src.html#src.kumolocal.ThermostatZone.is_fan_on">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_fan_on</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return 1 if fan relay is active, else 0.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">refresh_zone_info</span><span class="p">()</span>
+        <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">device_id</span><span class="o">.</span><span class="n">get_fan_speed</span><span class="p">()</span> <span class="o">!=</span> <span class="s2">&quot;off&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ThermostatZone.is_defrosting">
+<a class="viewcode-back" href="../../docs/src.html#src.kumolocal.ThermostatZone.is_defrosting">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_defrosting</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return 1 if defrosting is active, else 0.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">refresh_zone_info</span><span class="p">()</span>
+        <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">device_id</span><span class="o">.</span><span class="n">get_status</span><span class="p">(</span><span class="s2">&quot;defrost&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="s2">&quot;True&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ThermostatZone.is_standby">
+<a class="viewcode-back" href="../../docs/src.html#src.kumolocal.ThermostatZone.is_standby">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_standby</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return 1 if standby is active, else 0.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">refresh_zone_info</span><span class="p">()</span>
+        <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">device_id</span><span class="o">.</span><span class="n">get_standby</span><span class="p">())</span></div>
+
+
+<div class="viewcode-block" id="ThermostatZone.get_heat_setpoint_raw">
+<a class="viewcode-back" href="../../docs/src.html#src.kumolocal.ThermostatZone.get_heat_setpoint_raw">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_heat_setpoint_raw</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>  <span class="c1"># used</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Refresh the cached zone information and return the heat setpoint.</span>
+
+<span class="sd">        inputs:</span>
+<span class="sd">            None</span>
+<span class="sd">        returns:</span>
+<span class="sd">            (float): heating set point in °F.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">refresh_zone_info</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">util</span><span class="o">.</span><span class="n">c_to_f</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">device_id</span><span class="o">.</span><span class="n">get_heat_setpoint</span><span class="p">())</span></div>
+
+
+<div class="viewcode-block" id="ThermostatZone.get_heat_setpoint">
+<a class="viewcode-back" href="../../docs/src.html#src.kumolocal.ThermostatZone.get_heat_setpoint">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_heat_setpoint</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return heat setpoint with units as a string.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">util</span><span class="o">.</span><span class="n">temp_value_with_units</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_heat_setpoint_raw</span><span class="p">())</span></div>
+
+
+<div class="viewcode-block" id="ThermostatZone.get_schedule_heat_sp">
+<a class="viewcode-back" href="../../docs/src.html#src.kumolocal.ThermostatZone.get_schedule_heat_sp">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_schedule_heat_sp</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>  <span class="c1"># used</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return the schedule heat setpoint.</span>
+
+<span class="sd">        inputs:</span>
+<span class="sd">            None</span>
+<span class="sd">        returns:</span>
+<span class="sd">            (float): scheduled heating set point in °F.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">kumolocal_config</span><span class="o">.</span><span class="n">MAX_HEAT_SETPOINT</span><span class="p">)</span>  <span class="c1"># max heat set point allowed</span></div>
+
+
+<div class="viewcode-block" id="ThermostatZone.get_schedule_cool_sp">
+<a class="viewcode-back" href="../../docs/src.html#src.kumolocal.ThermostatZone.get_schedule_cool_sp">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_schedule_cool_sp</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return the schedule cool setpoint.</span>
+
+<span class="sd">        inputs:</span>
+<span class="sd">            None</span>
+<span class="sd">        returns:</span>
+<span class="sd">            (float): scheduled cooling set point in °F.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">kumolocal_config</span><span class="o">.</span><span class="n">MIN_COOL_SETPOINT</span><span class="p">)</span>  <span class="c1"># min cool set point allowed</span></div>
+
+
+<div class="viewcode-block" id="ThermostatZone.get_cool_setpoint_raw">
+<a class="viewcode-back" href="../../docs/src.html#src.kumolocal.ThermostatZone.get_cool_setpoint_raw">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_cool_setpoint_raw</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return the cool setpoint.</span>
+
+<span class="sd">        inputs:</span>
+<span class="sd">            None</span>
+<span class="sd">        returns:</span>
+<span class="sd">            (float): cooling set point in °F.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">refresh_zone_info</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">util</span><span class="o">.</span><span class="n">c_to_f</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">device_id</span><span class="o">.</span><span class="n">get_cool_setpoint</span><span class="p">())</span></div>
+
+
+<div class="viewcode-block" id="ThermostatZone.get_cool_setpoint">
+<a class="viewcode-back" href="../../docs/src.html#src.kumolocal.ThermostatZone.get_cool_setpoint">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_cool_setpoint</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return cool setpoint with units as a string.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">util</span><span class="o">.</span><span class="n">temp_value_with_units</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_cool_setpoint_raw</span><span class="p">())</span></div>
+
+
+<div class="viewcode-block" id="ThermostatZone.get_is_invacation_hold_mode">
+<a class="viewcode-back" href="../../docs/src.html#src.kumolocal.ThermostatZone.get_is_invacation_hold_mode">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_is_invacation_hold_mode</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>  <span class="c1"># used</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return the</span>
+<span class="sd">          &#39;IsInVacationHoldMode&#39; setting.</span>
+
+<span class="sd">        inputs:</span>
+<span class="sd">            None</span>
+<span class="sd">        returns:</span>
+<span class="sd">            (booL): True if is in vacation hold mode.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="kc">False</span>  <span class="c1"># no schedule, hold not implemented</span></div>
+
+
+<div class="viewcode-block" id="ThermostatZone.get_vacation_hold">
+<a class="viewcode-back" href="../../docs/src.html#src.kumolocal.ThermostatZone.get_vacation_hold">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_vacation_hold</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return the</span>
+<span class="sd">        VacationHold setting.</span>
+
+<span class="sd">        inputs:</span>
+<span class="sd">            None</span>
+<span class="sd">        returns:</span>
+<span class="sd">            (bool): True if vacation hold is set.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="kc">False</span>  <span class="c1"># no schedule, hold not implemented</span></div>
+
+
+<div class="viewcode-block" id="ThermostatZone.get_system_switch_position">
+<a class="viewcode-back" href="../../docs/src.html#src.kumolocal.ThermostatZone.get_system_switch_position">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_system_switch_position</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>  <span class="c1"># used</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return the system switch position, same as mode.</span>
+
+<span class="sd">        inputs:</span>
+<span class="sd">            None</span>
+<span class="sd">        returns:</span>
+<span class="sd">            (int or str) current mode for unit, should match value</span>
+<span class="sd">                  in self.system_switch_position</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">refresh_zone_info</span><span class="p">()</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">device_id</span><span class="o">.</span><span class="n">get_mode</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="ThermostatZone.set_heat_setpoint">
+<a class="viewcode-back" href="../../docs/src.html#src.kumolocal.ThermostatZone.set_heat_setpoint">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">set_heat_setpoint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">temp</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Set a new heat setpoint.</span>
+
+<span class="sd">        This will also attempt to turn the thermostat to &#39;Heat&#39;</span>
+<span class="sd">        inputs:</span>
+<span class="sd">            temp(int): desired temperature in F</span>
+<span class="sd">        returns:</span>
+<span class="sd">            None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">device_id</span><span class="o">.</span><span class="n">set_heat_setpoint</span><span class="p">(</span><span class="n">util</span><span class="o">.</span><span class="n">f_to_c</span><span class="p">(</span><span class="n">temp</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="ThermostatZone.set_cool_setpoint">
+<a class="viewcode-back" href="../../docs/src.html#src.kumolocal.ThermostatZone.set_cool_setpoint">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">set_cool_setpoint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">temp</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Set a new cool setpoint.</span>
+
+<span class="sd">        This will also attempt to turn the thermostat to &#39;Cool&#39;</span>
+<span class="sd">        inputs:</span>
+<span class="sd">            temp(int): desired temperature in ° F.</span>
+<span class="sd">        returns:</span>
+<span class="sd">            None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">device_id</span><span class="o">.</span><span class="n">set_cool_setpoint</span><span class="p">(</span><span class="n">util</span><span class="o">.</span><span class="n">f_to_c</span><span class="p">(</span><span class="n">temp</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="ThermostatZone.refresh_zone_info">
+<a class="viewcode-back" href="../../docs/src.html#src.kumolocal.ThermostatZone.refresh_zone_info">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">refresh_zone_info</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">force_refresh</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Refresh zone info from KumoCloud.</span>
+
+<span class="sd">        inputs:</span>
+<span class="sd">            force_refresh(bool): if True, ignore expiration timer.</span>
+<span class="sd">        returns:</span>
+<span class="sd">            None, device_id object is refreshed.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">now_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+        <span class="c1"># refresh if past expiration date or force_refresh option</span>
+        <span class="k">if</span> <span class="n">force_refresh</span> <span class="ow">or</span> <span class="p">(</span>
+            <span class="n">now_time</span> <span class="o">&gt;=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">last_fetch_time</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">fetch_interval_sec</span><span class="p">)</span>
+        <span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">Thermostat</span><span class="o">.</span><span class="n">_need_fetch</span> <span class="o">=</span> <span class="kc">True</span>  <span class="c1"># pylint: disable=protected-access</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">Thermostat</span><span class="o">.</span><span class="n">_fetch_if_needed</span><span class="p">()</span>  <span class="c1"># pylint: disable=protected-access</span>
+            <span class="k">except</span> <span class="ne">UnboundLocalError</span><span class="p">:</span>  <span class="c1"># patch for issue #205</span>
+                <span class="n">util</span><span class="o">.</span><span class="n">log_msg</span><span class="p">(</span>
+                    <span class="s2">&quot;WARNING: Kumocloud refresh failed due to timeout&quot;</span><span class="p">,</span>
+                    <span class="n">mode</span><span class="o">=</span><span class="n">util</span><span class="o">.</span><span class="n">BOTH_LOG</span><span class="p">,</span>
+                    <span class="n">func_name</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">last_fetch_time</span> <span class="o">=</span> <span class="n">now_time</span>
+            <span class="c1"># refresh device object</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">device_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Thermostat</span><span class="o">.</span><span class="n">get_target_zone_id</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">zone_name</span><span class="p">)</span></div>
+</div>
+
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="c1"># verify environment</span>
+    <span class="n">env</span><span class="o">.</span><span class="n">get_python_version</span><span class="p">()</span>
+    <span class="n">env</span><span class="o">.</span><span class="n">show_package_version</span><span class="p">(</span><span class="n">pykumo</span><span class="p">)</span>
+
+    <span class="c1"># get zone override</span>
+    <span class="n">api</span><span class="o">.</span><span class="n">uip</span> <span class="o">=</span> <span class="n">api</span><span class="o">.</span><span class="n">UserInputs</span><span class="p">(</span><span class="n">argv_list</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">thermostat_type</span><span class="o">=</span><span class="n">kumolocal_config</span><span class="o">.</span><span class="n">ALIAS</span><span class="p">)</span>
+    <span class="n">zone_number</span> <span class="o">=</span> <span class="n">api</span><span class="o">.</span><span class="n">uip</span><span class="o">.</span><span class="n">get_user_inputs</span><span class="p">(</span><span class="n">api</span><span class="o">.</span><span class="n">uip</span><span class="o">.</span><span class="n">zone_name</span><span class="p">,</span> <span class="n">api</span><span class="o">.</span><span class="n">input_flds</span><span class="o">.</span><span class="n">zone</span><span class="p">)</span>
+
+    <span class="n">_</span><span class="p">,</span> <span class="n">Zone</span> <span class="o">=</span> <span class="n">tc</span><span class="o">.</span><span class="n">thermostat_basic_checkout</span><span class="p">(</span>
+        <span class="n">kumolocal_config</span><span class="o">.</span><span class="n">ALIAS</span><span class="p">,</span> <span class="n">zone_number</span><span class="p">,</span> <span class="n">ThermostatClass</span><span class="p">,</span> <span class="n">ThermostatZone</span>
+    <span class="p">)</span>
+
+    <span class="n">tc</span><span class="o">.</span><span class="n">print_select_data_from_all_zones</span><span class="p">(</span>
+        <span class="n">kumolocal_config</span><span class="o">.</span><span class="n">ALIAS</span><span class="p">,</span>
+        <span class="n">kumolocal_config</span><span class="o">.</span><span class="n">get_available_zones</span><span class="p">(),</span>
+        <span class="n">ThermostatClass</span><span class="p">,</span>
+        <span class="n">ThermostatZone</span><span class="p">,</span>
+        <span class="n">display_wifi</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">display_battery</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="c1"># measure thermostat response time</span>
+    <span class="k">if</span> <span class="n">kumolocal_config</span><span class="o">.</span><span class="n">check_response_time</span><span class="p">:</span>
+        <span class="n">MEASUREMENTS</span> <span class="o">=</span> <span class="mi">30</span>
+        <span class="n">meas_data</span> <span class="o">=</span> <span class="n">Zone</span><span class="o">.</span><span class="n">measure_thermostat_repeatability</span><span class="p">(</span>
+            <span class="n">MEASUREMENTS</span><span class="p">,</span>
+            <span class="n">func</span><span class="o">=</span><span class="n">Zone</span><span class="o">.</span><span class="n">pyhtcc</span><span class="o">.</span><span class="n">get_zones_info</span><span class="p">,</span>
+            <span class="n">measure_response_time</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">ppp</span> <span class="o">=</span> <span class="n">pprint</span><span class="o">.</span><span class="n">PrettyPrinter</span><span class="p">(</span><span class="n">indent</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
+        <span class="n">ppp</span><span class="o">.</span><span class="n">pprint</span><span class="p">(</span><span class="n">meas_data</span><span class="p">)</span>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../index.html">ThermostatSupervisor</a></h1>
+
+
+
+<p class="blurb">Monitor and control thermostats remotely</p>
+
+
+
+
+<p>
+<iframe src="https://ghbtns.com/github-btn.html?user=cjkrolak&repo=ThermostatSupervisor&type=star&count=true&size=large&v=2"
+  allowtransparency="true" frameborder="0" scrolling="0" width="200px" height="35px"></iframe>
+</p>
+
+
+
+
+
+
+<search id="searchbox" style="display: none" role="search">
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Search"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">API Documentation:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../api/overview.html">API Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/thermostat_api.html">Thermostat API Module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/thermostat_classes.html">Thermostat Classes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/zone_classes.html">Zone Classes</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Module Reference:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../docs/src.html">src package</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;2024, Christopher Krolak.
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

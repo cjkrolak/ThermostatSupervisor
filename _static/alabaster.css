@@ -1,0 +1,656 @@
+/* -- page layout ----------------------------------------------------------- */
+
+body {
+    background-color: #fff;
+    color: #000;
+    font-family: Georgia, serif;
+    font-size: 17px;
+    margin: 0;
+    padding: 0;
+}
+
+
+div.document {
+    margin: 30px auto 0 auto;
+    width: 1200px;
+}
+
+div.documentwrapper {
+    float: left;
+    width: 100%;
+}
+
+div.bodywrapper {
+    margin: 0 0 0 240px;
+}
+
+div.sphinxsidebar {
+    font-size: 14px;
+    line-height: 1.5;
+    width: 240px;
+}
+
+hr {
+    border: 1px solid #B1B4B6;
+}
+
+div.body {
+    background-color: #fff;
+    color: #3E4349;
+    padding: 0 30px 0 30px;
+}
+
+div.body > .section {
+    text-align: left;
+}
+
+div.footer {
+    color: #888;
+    font-size: 14px;
+    margin: 20px auto 30px auto;
+    text-align: right;
+    width: 1200px;
+}
+
+div.footer a {
+    color: #888;
+}
+
+p.caption {
+    font-family: inherit;
+    font-size: inherit;
+}
+
+
+div.relations {
+    display: none;
+}
+
+
+div.sphinxsidebar {
+    max-height: 100%;
+    overflow-y: auto;
+}
+
+div.sphinxsidebar a {
+    border-bottom: 1px dotted #999;
+    color: #444;
+    text-decoration: none;
+}
+
+div.sphinxsidebar a:hover {
+    border-bottom: 1px solid #999;
+}
+
+div.sphinxsidebarwrapper {
+    padding: 18px 10px;
+}
+
+div.sphinxsidebarwrapper p.logo {
+    margin: -10px 0 0 0px;
+    padding: 0;
+    text-align: center;
+}
+
+div.sphinxsidebarwrapper h1.logo {
+    margin-bottom: 5px;
+    margin-top: -10px;
+    text-align: center;
+    text-align: left;
+}
+
+div.sphinxsidebarwrapper h1.logo-name {
+    margin-top: 0px;
+}
+
+div.sphinxsidebarwrapper p.blurb {
+    font-style: normal;
+    margin-top: 0;
+}
+
+div.sphinxsidebar h3,
+div.sphinxsidebar h4 {
+    color: #444;
+    font-family: Georgia, serif;
+    font-size: 24px;
+    font-weight: normal;
+    margin: 0 0 5px 0;
+    padding: 0;
+}
+
+div.sphinxsidebar h4 {
+    font-size: 20px;
+}
+
+div.sphinxsidebar h3 a {
+    color: #444;
+}
+
+div.sphinxsidebar p.logo a,
+div.sphinxsidebar h3 a,
+div.sphinxsidebar p.logo a:hover,
+div.sphinxsidebar h3 a:hover {
+    border: none;
+}
+
+div.sphinxsidebar p {
+    color: #555;
+    margin: 10px 0;
+}
+
+div.sphinxsidebar ul {
+    color: #000;
+    margin: 10px 0;
+    padding: 0;
+}
+
+div.sphinxsidebar ul li.toctree-l1 > a {
+    font-size: 120%;
+}
+
+div.sphinxsidebar ul li.toctree-l2 > a {
+    font-size: 110%;
+}
+
+div.sphinxsidebar input {
+    border: 1px solid #CCC;
+    font-family: Georgia, serif;
+    font-size: 1em;
+}
+
+div.sphinxsidebar #searchbox {
+    margin: 1em 0;
+}
+
+div.sphinxsidebar .search > div {
+    display: table-cell;
+}
+
+div.sphinxsidebar hr {
+    background: #AAA;
+    border: none;
+    color: #AAA;
+    height: 1px;
+    margin-left: 0;
+    text-align: left;
+    width: 50%;
+}
+
+div.sphinxsidebar .badge {
+    border-bottom: none;
+}
+
+div.sphinxsidebar .badge:hover {
+    border-bottom: none;
+}
+
+/* To address an issue with donation coming after search */
+div.sphinxsidebar h3.donation {
+    margin-top: 10px;
+}
+
+/* -- body styles ----------------------------------------------------------- */
+
+a {
+    color: #004B6B;
+    text-decoration: underline;
+}
+
+a:hover {
+    color: #6D4100;
+    text-decoration: underline;
+}
+
+div.body h1,
+div.body h2,
+div.body h3,
+div.body h4,
+div.body h5,
+div.body h6 {
+    font-family: Georgia, serif;
+    font-weight: normal;
+    margin: 30px 0px 10px 0px;
+    padding: 0;
+}
+
+div.body h1 { font-size: 240%; margin-top: 0; padding-top: 0 }
+div.body h2 { font-size: 180% }
+div.body h3 { font-size: 150% }
+div.body h4 { font-size: 130% }
+div.body h5 { font-size: 100% }
+div.body h6 { font-size: 100% }
+
+a.headerlink {
+    color: #DDD;
+    padding: 0 4px;
+    text-decoration: none;
+}
+
+a.headerlink:hover {
+    background: #EAEAEA;
+    color: #444;
+}
+
+div.body p, div.body dd, div.body li {
+    line-height: 1.4em;
+}
+
+div.admonition {
+    background-color: #EEE;
+    border: 1px solid #CCC;
+    margin: 20px 0px;
+    padding: 10px 30px;
+}
+
+div.admonition tt.xref, div.admonition code.xref, div.admonition a tt {
+    background-color: #FBFBFB;
+    border-bottom: 1px solid #fafafa;
+}
+
+div.admonition p.admonition-title {
+    font-family: Georgia, serif;
+    font-size: 24px;
+    font-weight: normal;
+    line-height: 1;
+    margin: 0 0 10px 0;
+    padding: 0;
+}
+
+div.admonition p.last {
+    margin-bottom: 0;
+}
+
+dt:target, .highlight {
+    background: #FAF3E8;
+}
+
+div.warning {
+    background-color: #FCC;
+    border: 1px solid #FAA;
+}
+
+div.danger {
+    -moz-box-shadow: 2px 2px 4px #D52C2C;
+    -webkit-box-shadow: 2px 2px 4px #D52C2C;
+    background-color: #FCC;
+    border: 1px solid #FAA;
+    box-shadow: 2px 2px 4px #D52C2C;
+}
+
+div.error {
+    -moz-box-shadow: 2px 2px 4px #D52C2C;
+    -webkit-box-shadow: 2px 2px 4px #D52C2C;
+    background-color: #FCC;
+    border: 1px solid #FAA;
+    box-shadow: 2px 2px 4px #D52C2C;
+}
+
+div.caution {
+    background-color: #FCC;
+    border: 1px solid #FAA;
+}
+
+div.attention {
+    background-color: #FCC;
+    border: 1px solid #FAA;
+}
+
+div.important {
+    background-color: #EEE;
+    border: 1px solid #CCC;
+}
+
+div.note {
+    background-color: #EEE;
+    border: 1px solid #CCC;
+}
+
+div.tip {
+    background-color: #EEE;
+    border: 1px solid #CCC;
+}
+
+div.hint {
+    background-color: #EEE;
+    border: 1px solid #CCC;
+}
+
+div.seealso {
+    background-color: #EEE;
+    border: 1px solid #CCC;
+}
+
+div.topic {
+    background-color: #EEE;
+}
+
+p.admonition-title {
+    display: inline;
+}
+
+p.admonition-title:after {
+    content: ":";
+}
+
+pre, tt, code {
+    font-family: 'Consolas', 'Menlo', 'DejaVu Sans Mono', 'Bitstream Vera Sans Mono', monospace;
+    font-size: 0.9em;
+}
+
+.hll {
+    background-color: #FFC;
+    display: block;
+    margin: 0 -12px;
+    padding: 0 12px;
+}
+
+img.screenshot {
+}
+
+tt.descname, tt.descclassname, code.descname, code.descclassname {
+    font-size: 0.95em;
+}
+
+tt.descname, code.descname {
+    padding-right: 0.08em;
+}
+
+img.screenshot {
+    -moz-box-shadow: 2px 2px 4px #EEE;
+    -webkit-box-shadow: 2px 2px 4px #EEE;
+    box-shadow: 2px 2px 4px #EEE;
+}
+
+table.docutils {
+    -moz-box-shadow: 2px 2px 4px #EEE;
+    -webkit-box-shadow: 2px 2px 4px #EEE;
+    border: 1px solid #888;
+    box-shadow: 2px 2px 4px #EEE;
+}
+
+table.docutils td, table.docutils th {
+    border: 1px solid #888;
+    padding: 0.25em 0.7em;
+}
+
+table.field-list, table.footnote {
+    -moz-box-shadow: none;
+    -webkit-box-shadow: none;
+    border: none;
+    box-shadow: none;
+}
+
+table.footnote {
+    background: #FDFDFD;
+    border: 1px solid #EEE;
+    font-size: 0.9em;
+    margin: 15px 0;
+    width: 100%;
+}
+
+table.footnote + table.footnote {
+    border-top: none;
+    margin-top: -15px;
+}
+
+table.field-list th {
+    padding: 0 0.8em 0 0;
+}
+
+table.field-list td {
+    padding: 0;
+}
+
+table.field-list p {
+    margin-bottom: 0.8em;
+}
+
+/* Cloned from
+ * https://github.com/sphinx-doc/sphinx/commit/ef60dbfce09286b20b7385333d63a60321784e68
+ */
+.field-name {
+    -moz-hyphens: manual;
+    -ms-hyphens: manual;
+    -webkit-hyphens: manual;
+    hyphens: manual;
+}
+
+table.footnote td.label {
+    padding: 0.3em 0 0.3em 0.5em;
+    width: .1px;
+}
+
+table.footnote td {
+    padding: 0.3em 0.5em;
+}
+
+dl {
+    margin-left: 0;
+    margin-right: 0;
+    margin-top: 0;
+    padding: 0;
+}
+
+dl dd {
+    margin-left: 30px;
+}
+
+blockquote {
+    margin: 0 0 0 30px;
+    padding: 0;
+}
+
+ul, ol {
+    margin: 10px 0 10px 30px;
+    padding: 0;
+}
+
+pre {
+    background: unset;
+    line-height: 1.3em;
+    margin: 15px 0px;
+    padding: 7px 30px;
+}
+
+div.viewcode-block:target {
+    background: #ffd;
+}
+
+dl pre, blockquote pre, li pre {
+    margin-left: 0;
+    padding-left: 30px;
+}
+
+tt, code {
+    background-color: #ecf0f3;
+    color: #222;
+}
+
+tt.xref, code.xref, a tt {
+    background-color: #FBFBFB;
+    border-bottom: 1px solid #fff;
+}
+
+a.reference {
+    border-bottom: 1px dotted #004B6B;
+    text-decoration: none;
+}
+
+a.reference:hover {
+    border-bottom: 1px solid #6D4100;
+}
+
+/* Don't put an underline on images */
+a.image-reference, a.image-reference:hover {
+    border-bottom: none;
+}
+
+a.footnote-reference {
+    border-bottom: 1px dotted #004B6B;
+    font-size: 0.7em;
+    text-decoration: none;
+    vertical-align: top;
+}
+
+a.footnote-reference:hover {
+    border-bottom: 1px solid #6D4100;
+}
+
+a:hover tt, a:hover code {
+    background: #EEE;
+}
+
+@media screen and (max-width: 1200px) {
+    body {;
+    margin: 0;
+    padding: 20px 30px;
+    }
+
+    div.documentwrapper {
+        background: #fff;
+        float: none;
+        margin-bottom: 0;
+        margin-left: 0;
+        margin-right: 0;
+        margin-top: 0;
+    }
+
+    div.sphinxsidebar {
+        background: #333;
+        color: #FFF;
+        display: block;
+        float: none;
+        margin: 50px -30px -20px -30px;
+        padding: 10px 20px;
+        width: unset;
+    }
+
+    div.sphinxsidebar h3, div.sphinxsidebar h4, div.sphinxsidebar p,
+    div.sphinxsidebar h3 a {
+        color: #fff;
+    }
+
+    div.sphinxsidebar a {
+        color: #AAA;
+    }
+
+    div.sphinxsidebar p.logo {
+        display: none;
+    }
+
+    div.document {
+        margin: 0;
+        width: 100%;
+    }
+
+    div.footer {
+        display: none;
+    }
+
+    div.bodywrapper {
+        margin: 0;
+    }
+
+    div.body {
+        min-height: 0;
+        min-width: auto; /* fixes width on small screens, breaks .hll */;
+        padding: 0;
+    }
+    
+    .hll {
+        width: max-content;
+    }
+
+    .rtd_doc_footer {
+        display: none;
+    }
+
+    .document {
+        width: auto;
+    }
+
+    .footer {
+        width: auto;
+    }
+
+    .github {
+        display: none;
+    }
+
+    ul {
+        margin-left: 0;
+    }
+
+    li > ul {
+        margin-left: 30px;
+    }
+}
+
+
+/* misc. */
+
+.revsys-inline {
+    display: none!important;
+}
+
+/* Hide ugly table cell borders in ..bibliography:: directive output */
+table.docutils.citation, table.docutils.citation td, table.docutils.citation th {
+  -moz-box-shadow: none;
+  -webkit-box-shadow: none;
+  border: none;
+  box-shadow: none;
+}
+
+
+/* relbar */
+
+.related {
+    font-size: 0.9rem;
+    line-height: 30px;
+    width: 100%;
+}
+
+.related.top {
+    border-bottom: 1px solid #EEE;
+    margin-bottom: 20px;
+}
+
+.related.bottom {
+    border-top: 1px solid #EEE;
+}
+
+.related ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.related li {
+    display: inline;
+}
+
+nav#rellinks {
+    float: right;
+}
+
+nav#rellinks li+li:before {
+    content: "|";
+}
+
+nav#breadcrumbs li+li:before {
+    content: "\00BB";
+}
+
+/* Hide certain items when printing */
+@media print {
+    display: none;
+    div.related {;
+    }
+}
+
+img.github  {
+    border: 0;
+    position: absolute;
+    right: 0;
+    top: 0;
+}

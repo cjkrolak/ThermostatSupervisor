@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Thermostat API Module &#8212; ThermostatSupervisor API Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=5ecbeea2" />
+    <link rel="stylesheet" type="text/css" href="../_static/basic.css?v=b08954a9" />
+    <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=1c1df0c7" />
+    <script src="../_static/documentation_options.js?v=8d563738"></script>
+    <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Thermostat Classes" href="thermostat_classes.html" />
+    <link rel="prev" title="API Overview" href="overview.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="thermostat-api-module">
+<h1>Thermostat API Module<a class="headerlink" href="#thermostat-api-module" title="Link to this heading">¶</a></h1>
+<p>The <code class="docutils literal notranslate"><span class="pre">thermostat_api</span></code> module provides the core API functionality for ThermostatSupervisor.
+This module handles thermostat type discovery, configuration loading, and user input processing.</p>
+<p id="module-src.thermostat_api">Thermostat API.</p>
+<p>This file should be updated for any new thermostats supported and
+any changes to thermostat configs.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="src.thermostat_api.UserInputs">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">src.thermostat_api.</span></span><span class="sig-name descname"><span class="pre">UserInputs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">argv_list</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">help_description</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">suppress_warnings</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">thermostat_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'emulator'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">zone_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'argv'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/thermostat_api.html#UserInputs"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.thermostat_api.UserInputs" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="../docs/src.html#src.utilities.UserInputs" title="src.utilities.UserInputs"><code class="xref py py-class docutils literal notranslate"><span class="pre">UserInputs</span></code></a></p>
+<p>Manage runtime arguments for thermostat_api.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="src.thermostat_api.UserInputs.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">argv_list</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">help_description</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">suppress_warnings</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">thermostat_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'emulator'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">zone_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'argv'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/thermostat_api.html#UserInputs.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.thermostat_api.UserInputs.__init__" title="Link to this definition">¶</a></dt>
+<dd><p>Initialize UserInputs for thermostat_api.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>argv_list</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><em>list</em></a><em>, </em><em>optional</em>) – Override runtime values. Defaults to None.</p></li>
+<li><p><strong>help_description</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>optional</em>) – Description field for help text.
+Defaults to None.</p></li>
+<li><p><strong>suppress_warnings</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a><em>, </em><em>optional</em>) – True to suppress warning messages.
+Defaults to False.</p></li>
+<li><p><strong>thermostat_type</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>optional</em>) – Thermostat type alias.
+Defaults to DEFAULT_THERMOSTAT.</p></li>
+<li><p><strong>zone_name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>optional</em>) – Thermostat zone name (e.g. ‘living room’).
+Defaults to DEFAULT_ZONE_NAME.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.thermostat_api.UserInputs.initialize_user_inputs">
+<span class="sig-name descname"><span class="pre">initialize_user_inputs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parent_keys</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/thermostat_api.html#UserInputs.initialize_user_inputs"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.thermostat_api.UserInputs.initialize_user_inputs" title="Link to this definition">¶</a></dt>
+<dd><p>Populate user_inputs dictionary with thermostat-specific parameters.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>parent_keys</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><em>list</em></a><em>, </em><em>optional</em>) – List of parent keys to initialize.
+Defaults to [self.default_parent_key].</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.thermostat_api.UserInputs.dynamic_update_user_inputs">
+<span class="sig-name descname"><span class="pre">dynamic_update_user_inputs</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/thermostat_api.html#UserInputs.dynamic_update_user_inputs"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.thermostat_api.UserInputs.dynamic_update_user_inputs" title="Link to this definition">¶</a></dt>
+<dd><p>Update thermostat-specific values in user_inputs dict.</p>
+<p>This function expands each input parameter list to match
+the length of the thermostat parameter field.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.thermostat_api.UserInputs.max_measurement_count_exceeded">
+<span class="sig-name descname"><span class="pre">max_measurement_count_exceeded</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">measurement</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/thermostat_api.html#UserInputs.max_measurement_count_exceeded"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.thermostat_api.UserInputs.max_measurement_count_exceeded" title="Link to this definition">¶</a></dt>
+<dd><p>Return True if max measurement reached.</p>
+<dl class="simple">
+<dt>inputs:</dt><dd><p>measurement(int): current measurement value</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>True if max measurement reached.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>(<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)">bool</a>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="src.thermostat_api.verify_required_env_variables">
+<span class="sig-prename descclassname"><span class="pre">src.thermostat_api.</span></span><span class="sig-name descname"><span class="pre">verify_required_env_variables</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tstat</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">zone_str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/thermostat_api.html#verify_required_env_variables"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.thermostat_api.verify_required_env_variables" title="Link to this definition">¶</a></dt>
+<dd><p>Verify all required environment variables are present for thermostat config.</p>
+<p>Checks that all required environment variables for the specified thermostat type
+are present in the environment. Some environment variables may require
+zone-specific suffixes (indicated by trailing underscore).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>tstat</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – Thermostat type alias (e.g., ‘honeywell’, ‘emulator’)</p></li>
+<li><p><strong>zone_str</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – Zone identifier as string</p></li>
+<li><p><strong>verbose</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a><em>, </em><em>optional</em>) – Enable debug output. Defaults to True.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>True if all required environment variables are present</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)">bool</a></p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#KeyError" title="(in Python v3.14)"><strong>KeyError</strong></a> – If required environment variables are missing</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="src.thermostat_api.load_hardware_library">
+<span class="sig-prename descclassname"><span class="pre">src.thermostat_api.</span></span><span class="sig-name descname"><span class="pre">load_hardware_library</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">thermostat_type</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/thermostat_api.html#load_hardware_library"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.thermostat_api.load_hardware_library" title="Link to this definition">¶</a></dt>
+<dd><p>Dynamically load appropriate hardware library for the thermostat type.</p>
+<p>Imports the hardware-specific module for the given thermostat type using dynamic
+module loading. This allows the system to support multiple thermostat brands
+without static imports.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>thermostat_type</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – Thermostat type alias (e.g., ‘honeywell’,
+‘emulator’)</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Loaded Python module for the thermostat type</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>module</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ImportError" title="(in Python v3.14)"><strong>ImportError</strong></a> – If the thermostat type module cannot be loaded</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#KeyError" title="(in Python v3.14)"><strong>KeyError</strong></a> – If the thermostat type is not supported</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="src.thermostat_api.load_user_inputs">
+<span class="sig-prename descclassname"><span class="pre">src.thermostat_api.</span></span><span class="sig-name descname"><span class="pre">load_user_inputs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config_mod</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/thermostat_api.html#load_user_inputs"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.thermostat_api.load_user_inputs" title="Link to this definition">¶</a></dt>
+<dd><p>Load the default user inputs and return the zone number.</p>
+<dl class="simple">
+<dt>inputs:</dt><dd><p>config_mod(obj): config module</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>zone number</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>zone_number(<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)">int</a>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<section id="key-functions">
+<h2>Key Functions<a class="headerlink" href="#key-functions" title="Link to this heading">¶</a></h2>
+<section id="verify-required-env-variables">
+<h3>verify_required_env_variables<a class="headerlink" href="#verify-required-env-variables" title="Link to this heading">¶</a></h3>
+<dl class="py function">
+<dt class="sig sig-object py" id="id0">
+<span class="sig-prename descclassname"><span class="pre">src.thermostat_api.</span></span><span class="sig-name descname"><span class="pre">verify_required_env_variables</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tstat</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">zone_str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/thermostat_api.html#verify_required_env_variables"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#id0" title="Link to this definition">¶</a></dt>
+<dd><p>Verify all required environment variables are present for thermostat config.</p>
+<p>Checks that all required environment variables for the specified thermostat type
+are present in the environment. Some environment variables may require
+zone-specific suffixes (indicated by trailing underscore).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>tstat</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – Thermostat type alias (e.g., ‘honeywell’, ‘emulator’)</p></li>
+<li><p><strong>zone_str</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – Zone identifier as string</p></li>
+<li><p><strong>verbose</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a><em>, </em><em>optional</em>) – Enable debug output. Defaults to True.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>True if all required environment variables are present</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)">bool</a></p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#KeyError" title="(in Python v3.14)"><strong>KeyError</strong></a> – If required environment variables are missing</p>
+</dd>
+</dl>
+</dd></dl>
+
+<p>Verifies that all required environment variables are present for the specified thermostat type.
+This function is critical for ensuring proper thermostat connectivity.</p>
+<dl class="simple">
+<dt><strong>Parameters:</strong></dt><dd><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">tstat</span></code> (str): Thermostat type alias</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">zone_str</span></code> (str): Zone identifier as string</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">verbose</span></code> (bool): Enable debug output</p></li>
+</ul>
+</dd>
+<dt><strong>Returns:</strong></dt><dd><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">bool</span></code>: True if all required environment variables are present</p></li>
+</ul>
+</dd>
+<dt><strong>Raises:</strong></dt><dd><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">KeyError</span></code>: If required environment variables are missing</p></li>
+</ul>
+</dd>
+</dl>
+</section>
+<section id="load-hardware-library">
+<h3>load_hardware_library<a class="headerlink" href="#load-hardware-library" title="Link to this heading">¶</a></h3>
+<dl class="py function">
+<dt class="sig sig-object py" id="id1">
+<span class="sig-prename descclassname"><span class="pre">src.thermostat_api.</span></span><span class="sig-name descname"><span class="pre">load_hardware_library</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">thermostat_type</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/thermostat_api.html#load_hardware_library"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#id1" title="Link to this definition">¶</a></dt>
+<dd><p>Dynamically load appropriate hardware library for the thermostat type.</p>
+<p>Imports the hardware-specific module for the given thermostat type using dynamic
+module loading. This allows the system to support multiple thermostat brands
+without static imports.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>thermostat_type</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – Thermostat type alias (e.g., ‘honeywell’,
+‘emulator’)</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Loaded Python module for the thermostat type</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>module</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ImportError" title="(in Python v3.14)"><strong>ImportError</strong></a> – If the thermostat type module cannot be loaded</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#KeyError" title="(in Python v3.14)"><strong>KeyError</strong></a> – If the thermostat type is not supported</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<p>Dynamically loads the appropriate hardware library for the specified thermostat type.</p>
+<dl class="simple">
+<dt><strong>Parameters:</strong></dt><dd><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">thermostat_type</span></code> (str): Thermostat type alias</p></li>
+</ul>
+</dd>
+<dt><strong>Returns:</strong></dt><dd><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">module</span></code>: Loaded Python module for the thermostat type</p></li>
+</ul>
+</dd>
+</dl>
+</section>
+<section id="load-user-inputs">
+<h3>load_user_inputs<a class="headerlink" href="#load-user-inputs" title="Link to this heading">¶</a></h3>
+<dl class="py function">
+<dt class="sig sig-object py" id="id2">
+<span class="sig-prename descclassname"><span class="pre">src.thermostat_api.</span></span><span class="sig-name descname"><span class="pre">load_user_inputs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config_mod</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/thermostat_api.html#load_user_inputs"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#id2" title="Link to this definition">¶</a></dt>
+<dd><p>Load the default user inputs and return the zone number.</p>
+<dl class="simple">
+<dt>inputs:</dt><dd><p>config_mod(obj): config module</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>zone number</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>zone_number(<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)">int</a>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<p>Loads and processes user input configurations for the specified thermostat.</p>
+<dl class="simple">
+<dt><strong>Parameters:</strong></dt><dd><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">config_mod</span></code> (module): Configuration module for the thermostat type</p></li>
+</ul>
+</dd>
+</dl>
+</section>
+</section>
+<section id="classes">
+<h2>Classes<a class="headerlink" href="#classes" title="Link to this heading">¶</a></h2>
+<section id="userinputs">
+<h3>UserInputs<a class="headerlink" href="#userinputs" title="Link to this heading">¶</a></h3>
+<dl class="py class">
+<dt class="sig sig-object py" id="id3">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">src.thermostat_api.</span></span><span class="sig-name descname"><span class="pre">UserInputs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">argv_list</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">help_description</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">suppress_warnings</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">thermostat_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'emulator'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">zone_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'argv'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/thermostat_api.html#UserInputs"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#id3" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="../docs/src.html#src.utilities.UserInputs" title="src.utilities.UserInputs"><code class="xref py py-class docutils literal notranslate"><span class="pre">UserInputs</span></code></a></p>
+<p>Manage runtime arguments for thermostat_api.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="id4">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">argv_list</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">help_description</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">suppress_warnings</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">thermostat_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'emulator'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">zone_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'argv'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/thermostat_api.html#UserInputs.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#id4" title="Link to this definition">¶</a></dt>
+<dd><p>Initialize UserInputs for thermostat_api.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>argv_list</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><em>list</em></a><em>, </em><em>optional</em>) – Override runtime values. Defaults to None.</p></li>
+<li><p><strong>help_description</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>optional</em>) – Description field for help text.
+Defaults to None.</p></li>
+<li><p><strong>suppress_warnings</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><em>bool</em></a><em>, </em><em>optional</em>) – True to suppress warning messages.
+Defaults to False.</p></li>
+<li><p><strong>thermostat_type</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>optional</em>) – Thermostat type alias.
+Defaults to DEFAULT_THERMOSTAT.</p></li>
+<li><p><strong>zone_name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>optional</em>) – Thermostat zone name (e.g. ‘living room’).
+Defaults to DEFAULT_ZONE_NAME.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="id5">
+<span class="sig-name descname"><span class="pre">initialize_user_inputs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parent_keys</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/thermostat_api.html#UserInputs.initialize_user_inputs"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#id5" title="Link to this definition">¶</a></dt>
+<dd><p>Populate user_inputs dictionary with thermostat-specific parameters.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>parent_keys</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><em>list</em></a><em>, </em><em>optional</em>) – List of parent keys to initialize.
+Defaults to [self.default_parent_key].</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="id6">
+<span class="sig-name descname"><span class="pre">dynamic_update_user_inputs</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/thermostat_api.html#UserInputs.dynamic_update_user_inputs"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#id6" title="Link to this definition">¶</a></dt>
+<dd><p>Update thermostat-specific values in user_inputs dict.</p>
+<p>This function expands each input parameter list to match
+the length of the thermostat parameter field.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="id7">
+<span class="sig-name descname"><span class="pre">max_measurement_count_exceeded</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">measurement</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/thermostat_api.html#UserInputs.max_measurement_count_exceeded"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#id7" title="Link to this definition">¶</a></dt>
+<dd><p>Return True if max measurement reached.</p>
+<dl class="simple">
+<dt>inputs:</dt><dd><p>measurement(int): current measurement value</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>True if max measurement reached.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>(<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)">bool</a>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<p>Manages runtime arguments and configuration for thermostat operations.</p>
+<p>Key Methods:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">initialize_user_inputs()</span></code>: Set up input parameter parsing</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">dynamic_update_user_inputs()</span></code>: Update inputs based on thermostat configuration</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">max_measurement_count_exceeded()</span></code>: Check if measurement limits are exceeded</p></li>
+</ul>
+</section>
+</section>
+<section id="configuration-data">
+<h2>Configuration Data<a class="headerlink" href="#configuration-data" title="Link to this heading">¶</a></h2>
+<section id="supported-thermostats">
+<h3>SUPPORTED_THERMOSTATS<a class="headerlink" href="#supported-thermostats" title="Link to this heading">¶</a></h3>
+<p>Dictionary containing configuration information for all supported thermostat types:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">SUPPORTED_THERMOSTATS</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s1">&#39;emulator&#39;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s1">&#39;module&#39;</span><span class="p">:</span> <span class="s1">&#39;emulator&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="s1">&#39;zones&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span>
+        <span class="s1">&#39;modes&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;HEAT_MODE&#39;</span><span class="p">,</span> <span class="s1">&#39;COOL_MODE&#39;</span><span class="p">,</span> <span class="s1">&#39;AUTO_MODE&#39;</span><span class="p">]</span>
+    <span class="p">},</span>
+    <span class="c1"># ... additional thermostat configurations</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+<section id="thermostats">
+<h3>thermostats<a class="headerlink" href="#thermostats" title="Link to this heading">¶</a></h3>
+<p>Dictionary mapping thermostat types to their required environment variables:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">thermostats</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s1">&#39;honeywell&#39;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s1">&#39;required_env_variables&#39;</span><span class="p">:</span> <span class="p">[</span>
+            <span class="s1">&#39;HONEYWELL_USERNAME&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;HONEYWELL_PASSWORD&#39;</span>
+        <span class="p">]</span>
+    <span class="p">},</span>
+    <span class="c1"># ... additional thermostat configurations</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="input-field-definitions">
+<h2>Input Field Definitions<a class="headerlink" href="#input-field-definitions" title="Link to this heading">¶</a></h2>
+<p>The module defines standard input field names used throughout the application:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">input_flds</span><span class="o">.</span><span class="n">thermostat_type</span> <span class="o">=</span> <span class="s2">&quot;thermostat_type&quot;</span>
+<span class="n">input_flds</span><span class="o">.</span><span class="n">zone</span> <span class="o">=</span> <span class="s2">&quot;zone&quot;</span>
+<span class="n">input_flds</span><span class="o">.</span><span class="n">poll_time</span> <span class="o">=</span> <span class="s2">&quot;poll_time&quot;</span>
+<span class="n">input_flds</span><span class="o">.</span><span class="n">connection_time</span> <span class="o">=</span> <span class="s2">&quot;connection_time&quot;</span>
+<span class="n">input_flds</span><span class="o">.</span><span class="n">tolerance</span> <span class="o">=</span> <span class="s2">&quot;tolerance&quot;</span>
+<span class="n">input_flds</span><span class="o">.</span><span class="n">target_mode</span> <span class="o">=</span> <span class="s2">&quot;target_mode&quot;</span>
+<span class="n">input_flds</span><span class="o">.</span><span class="n">measurements</span> <span class="o">=</span> <span class="s2">&quot;measurements&quot;</span>
+<span class="n">input_flds</span><span class="o">.</span><span class="n">input_file</span> <span class="o">=</span> <span class="s2">&quot;input_file&quot;</span>
+</pre></div>
+</div>
+</section>
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">ThermostatSupervisor</a></h1>
+
+
+
+<p class="blurb">Monitor and control thermostats remotely</p>
+
+
+
+
+<p>
+<iframe src="https://ghbtns.com/github-btn.html?user=cjkrolak&repo=ThermostatSupervisor&type=star&count=true&size=large&v=2"
+  allowtransparency="true" frameborder="0" scrolling="0" width="200px" height="35px"></iframe>
+</p>
+
+
+
+
+
+
+<search id="searchbox" style="display: none" role="search">
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Search"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">API Documentation:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="overview.html">API Overview</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Thermostat API Module</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#src.thermostat_api.UserInputs"><code class="docutils literal notranslate"><span class="pre">UserInputs</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#src.thermostat_api.verify_required_env_variables"><code class="docutils literal notranslate"><span class="pre">verify_required_env_variables()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#src.thermostat_api.load_hardware_library"><code class="docutils literal notranslate"><span class="pre">load_hardware_library()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#src.thermostat_api.load_user_inputs"><code class="docutils literal notranslate"><span class="pre">load_user_inputs()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#key-functions">Key Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#classes">Classes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#configuration-data">Configuration Data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#input-field-definitions">Input Field Definitions</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="thermostat_classes.html">Thermostat Classes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="zone_classes.html">Zone Classes</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Module Reference:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../docs/src.html">src package</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="overview.html" title="previous chapter">API Overview</a></li>
+      <li>Next: <a href="thermostat_classes.html" title="next chapter">Thermostat Classes</a></li>
+  </ul></li>
+</ul>
+</div>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;2024, Christopher Krolak.
+      
+      |
+      <a href="../_sources/api/thermostat_api.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

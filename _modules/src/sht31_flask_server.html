@@ -1,0 +1,1562 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>src.sht31_flask_server &#8212; ThermostatSupervisor API Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=5ecbeea2" />
+    <link rel="stylesheet" type="text/css" href="../../_static/basic.css?v=b08954a9" />
+    <link rel="stylesheet" type="text/css" href="../../_static/alabaster.css?v=1c1df0c7" />
+    <script src="../../_static/documentation_options.js?v=8d563738"></script>
+    <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for src.sht31_flask_server</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot; &quot;</span>
+<span class="sd">flask API for raspberry pi</span>
+<span class="sd">example from http://www.pibits.net/code/raspberry-pi-sht31-sensor-example.php</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="c1"># built-in imports</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">secrets</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">statistics</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">subprocess</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">traceback</span>
+
+<span class="c1"># raspberry pi libraries</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">RPi</span><span class="w"> </span><span class="kn">import</span> <span class="n">GPIO</span>  <span class="c1"># noqa F405 raspberry pi GPIO library</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">smbus2</span>  <span class="c1"># noqa F405</span>
+
+    <span class="n">pi_library_exception</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># successful</span>
+<span class="k">except</span> <span class="p">(</span><span class="ne">ImportError</span><span class="p">,</span> <span class="ne">RuntimeError</span><span class="p">)</span> <span class="k">as</span> <span class="n">ex</span><span class="p">:</span>
+    <span class="c1"># hardware-related library, not needed in unittest mode</span>
+    <span class="c1"># RuntimeError is raised by RPi.GPIO when not on a Raspberry Pi</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">traceback</span><span class="o">.</span><span class="n">format_exc</span><span class="p">())</span>
+    <span class="nb">print</span><span class="p">(</span>
+        <span class="s2">&quot;WARNING: RPi or smbus library import error, &quot;</span>
+        <span class="s2">&quot;this is expected in unittest mode&quot;</span>
+    <span class="p">)</span>
+    <span class="n">pi_library_exception</span> <span class="o">=</span> <span class="n">ex</span>  <span class="c1"># unsuccessful</span>
+    <span class="c1"># Create a placeholder GPIO for testing</span>
+    <span class="n">GPIO</span> <span class="o">=</span> <span class="kc">None</span>
+
+<span class="c1"># third party imports</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">flask</span><span class="w"> </span><span class="kn">import</span> <span class="n">Flask</span><span class="p">,</span> <span class="n">jsonify</span><span class="p">,</span> <span class="n">request</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">flask_limiter</span><span class="w"> </span><span class="kn">import</span> <span class="n">Limiter</span>  <span class="c1"># noqa F405</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">flask_limiter.util</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_remote_address</span>  <span class="c1"># noqa F405</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">flask_restful</span><span class="w"> </span><span class="kn">import</span> <span class="n">Resource</span><span class="p">,</span> <span class="n">Api</span>  <span class="c1"># noqa F405</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">flask_wtf.csrf</span><span class="w"> </span><span class="kn">import</span> <span class="n">CSRFProtect</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">munch</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">str2bool</span><span class="w"> </span><span class="kn">import</span> <span class="n">str2bool</span>
+
+<span class="c1"># local imports</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">src</span><span class="w"> </span><span class="kn">import</span> <span class="n">environment</span> <span class="k">as</span> <span class="n">env</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">src</span><span class="w"> </span><span class="kn">import</span> <span class="n">flask_generic</span> <span class="k">as</span> <span class="n">flg</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">src</span><span class="w"> </span><span class="kn">import</span> <span class="n">sht31_config</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">src</span><span class="w"> </span><span class="kn">import</span> <span class="n">utilities</span> <span class="k">as</span> <span class="n">util</span>
+
+<span class="c1"># enable logging</span>
+<span class="n">limiter_logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">&quot;flask_limiter&quot;</span><span class="p">)</span>
+<span class="n">limiter_logger</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">)</span>
+<span class="n">limiter_logger</span><span class="o">.</span><span class="n">addHandler</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">StreamHandler</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="p">))</span>
+
+<span class="c1"># runtime override fields</span>
+<span class="n">input_flds</span> <span class="o">=</span> <span class="n">munch</span><span class="o">.</span><span class="n">Munch</span><span class="p">()</span>
+<span class="n">input_flds</span><span class="o">.</span><span class="n">debug_fld</span> <span class="o">=</span> <span class="s2">&quot;debug&quot;</span>
+
+<span class="n">uip</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># user inputs object</span>
+
+<span class="c1"># SHT31D write commands (register, [data])</span>
+<span class="c1"># spec: https://cdn-shop.adafruit.com/product-files/</span>
+<span class="c1"># 2857/Sensirion_Humidity_SHT3x_Datasheet_digital-767294.pdf</span>
+
+<span class="c1"># single shot mode: clock_stretching, repeatability</span>
+<span class="n">cs_enabled_high</span> <span class="o">=</span> <span class="p">(</span><span class="mh">0x2C</span><span class="p">,</span> <span class="p">[</span><span class="mh">0x06</span><span class="p">])</span>
+<span class="n">cs_enabled_med</span> <span class="o">=</span> <span class="p">(</span><span class="mh">0x2C</span><span class="p">,</span> <span class="p">[</span><span class="mh">0x0D</span><span class="p">])</span>
+<span class="n">cs_enabled_low</span> <span class="o">=</span> <span class="p">(</span><span class="mh">0x2C</span><span class="p">,</span> <span class="p">[</span><span class="mh">0x10</span><span class="p">])</span>
+<span class="n">cs_disabled_high</span> <span class="o">=</span> <span class="p">(</span><span class="mh">0x24</span><span class="p">,</span> <span class="p">[</span><span class="mh">0x00</span><span class="p">])</span>
+<span class="n">cs_disabled_med</span> <span class="o">=</span> <span class="p">(</span><span class="mh">0x24</span><span class="p">,</span> <span class="p">[</span><span class="mh">0x0B</span><span class="p">])</span>
+<span class="n">cs_disabled_low</span> <span class="o">=</span> <span class="p">(</span><span class="mh">0x24</span><span class="p">,</span> <span class="p">[</span><span class="mh">0x16</span><span class="p">])</span>
+
+<span class="c1"># periodic data acquisition modes: mps, repeatability</span>
+<span class="n">mps_0p5_high</span> <span class="o">=</span> <span class="p">(</span><span class="mh">0x20</span><span class="p">,</span> <span class="p">[</span><span class="mh">0x32</span><span class="p">])</span>
+<span class="n">mps_0p5_med</span> <span class="o">=</span> <span class="p">(</span><span class="mh">0x20</span><span class="p">,</span> <span class="p">[</span><span class="mh">0x24</span><span class="p">])</span>
+<span class="n">mps_0p5_low</span> <span class="o">=</span> <span class="p">(</span><span class="mh">0x20</span><span class="p">,</span> <span class="p">[</span><span class="mh">0x2F</span><span class="p">])</span>
+<span class="n">mps_1_high</span> <span class="o">=</span> <span class="p">(</span><span class="mh">0x21</span><span class="p">,</span> <span class="p">[</span><span class="mh">0x30</span><span class="p">])</span>
+<span class="n">mps_1_med</span> <span class="o">=</span> <span class="p">(</span><span class="mh">0x21</span><span class="p">,</span> <span class="p">[</span><span class="mh">0x26</span><span class="p">])</span>
+<span class="n">mps_1_low</span> <span class="o">=</span> <span class="p">(</span><span class="mh">0x21</span><span class="p">,</span> <span class="p">[</span><span class="mh">0x2D</span><span class="p">])</span>
+<span class="n">mps_2_high</span> <span class="o">=</span> <span class="p">(</span><span class="mh">0x22</span><span class="p">,</span> <span class="p">[</span><span class="mh">0x36</span><span class="p">])</span>
+<span class="n">mps_2_med</span> <span class="o">=</span> <span class="p">(</span><span class="mh">0x22</span><span class="p">,</span> <span class="p">[</span><span class="mh">0x20</span><span class="p">])</span>
+<span class="n">mps_2_low</span> <span class="o">=</span> <span class="p">(</span><span class="mh">0x22</span><span class="p">,</span> <span class="p">[</span><span class="mh">0x2B</span><span class="p">])</span>
+<span class="n">mps_4_high</span> <span class="o">=</span> <span class="p">(</span><span class="mh">0x23</span><span class="p">,</span> <span class="p">[</span><span class="mh">0x34</span><span class="p">])</span>
+<span class="n">mps_4_med</span> <span class="o">=</span> <span class="p">(</span><span class="mh">0x23</span><span class="p">,</span> <span class="p">[</span><span class="mh">0x22</span><span class="p">])</span>
+<span class="n">mps_4_low</span> <span class="o">=</span> <span class="p">(</span><span class="mh">0x23</span><span class="p">,</span> <span class="p">[</span><span class="mh">0x29</span><span class="p">])</span>
+<span class="n">mps_10_high</span> <span class="o">=</span> <span class="p">(</span><span class="mh">0x27</span><span class="p">,</span> <span class="p">[</span><span class="mh">0x37</span><span class="p">])</span>
+<span class="n">mps_10_med</span> <span class="o">=</span> <span class="p">(</span><span class="mh">0x27</span><span class="p">,</span> <span class="p">[</span><span class="mh">0x21</span><span class="p">])</span>
+<span class="n">mps_10_low</span> <span class="o">=</span> <span class="p">(</span><span class="mh">0x27</span><span class="p">,</span> <span class="p">[</span><span class="mh">0x2A</span><span class="p">])</span>
+
+<span class="c1"># misc commands</span>
+<span class="n">fetch_data</span> <span class="o">=</span> <span class="p">(</span><span class="mh">0xE0</span><span class="p">,</span> <span class="p">[</span><span class="mh">0x00</span><span class="p">])</span>
+<span class="n">period_meas_with_art</span> <span class="o">=</span> <span class="p">(</span><span class="mh">0x2B</span><span class="p">,</span> <span class="p">[</span><span class="mh">0x32</span><span class="p">])</span>
+<span class="n">break_periodic_data</span> <span class="o">=</span> <span class="p">(</span><span class="mh">0x30</span><span class="p">,</span> <span class="p">[</span><span class="mh">0x93</span><span class="p">])</span>
+<span class="n">soft_reset</span> <span class="o">=</span> <span class="p">(</span><span class="mh">0x30</span><span class="p">,</span> <span class="p">[</span><span class="mh">0xA2</span><span class="p">])</span>
+<span class="n">reset</span> <span class="o">=</span> <span class="p">(</span><span class="mh">0x00</span><span class="p">,</span> <span class="p">[</span><span class="mh">0x06</span><span class="p">])</span>
+<span class="n">enable_heater</span> <span class="o">=</span> <span class="p">(</span><span class="mh">0x30</span><span class="p">,</span> <span class="p">[</span><span class="mh">0x6D</span><span class="p">])</span>
+<span class="n">disable_heater</span> <span class="o">=</span> <span class="p">(</span><span class="mh">0x30</span><span class="p">,</span> <span class="p">[</span><span class="mh">0x66</span><span class="p">])</span>
+<span class="n">clear_status_register</span> <span class="o">=</span> <span class="p">(</span><span class="mh">0x30</span><span class="p">,</span> <span class="p">[</span><span class="mh">0x41</span><span class="p">])</span>
+<span class="n">read_status_register</span> <span class="o">=</span> <span class="p">(</span><span class="mh">0xF3</span><span class="p">,</span> <span class="p">[</span><span class="mh">0x2D</span><span class="p">])</span>
+
+<span class="n">i2c_data_length</span> <span class="o">=</span> <span class="mh">0x06</span>  <span class="c1"># 6 bytes of data</span>
+
+
+<div class="viewcode-block" id="Sensors">
+<a class="viewcode-back" href="../../docs/src.html#src.sht31_flask_server.Sensors">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Sensors</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Sensor data.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="Sensors.__init__">
+<a class="viewcode-back" href="../../docs/src.html#src.sht31_flask_server.Sensors.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># set debug flag</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span> <span class="o">=</span> <span class="n">app</span><span class="o">.</span><span class="n">debug</span></div>
+
+
+<div class="viewcode-block" id="Sensors.convert_data">
+<a class="viewcode-back" href="../../docs/src.html#src.sht31_flask_server.Sensors.convert_data">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">convert_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Convert data from bits to real units.</span>
+
+<span class="sd">        inputs:</span>
+<span class="sd">            data(class &#39;list&#39;): raw data structure</span>
+<span class="sd">        returns:</span>
+<span class="sd">            temp(int): raw temp data in bits.</span>
+<span class="sd">            temp_c(float): temp on °C</span>
+<span class="sd">            temp_f(float): temp in °F</span>
+<span class="sd">            humidity(float): humidity in %RH</span>
+<span class="sd">        data structure:</span>
+<span class="sd">        0 = temp MSB</span>
+<span class="sd">        1 = temp LSB</span>
+<span class="sd">        2 = temp CRC</span>
+<span class="sd">        3 = humidity MSB</span>
+<span class="sd">        4 = humidity LSB</span>
+<span class="sd">        5 = humidity CRC</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)</span> <span class="o">!=</span> <span class="n">i2c_data_length</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;ERROR: </span><span class="si">{</span><span class="n">util</span><span class="o">.</span><span class="n">get_function_name</span><span class="p">()</span><span class="si">}</span><span class="s2"> expects &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">i2c_data_length</span><span class="si">}</span><span class="s2"> bytes of data, &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;received </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)</span><span class="si">}</span><span class="s2">, raw data: </span><span class="si">{</span><span class="n">data</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
+
+        <span class="c1"># verify data CRC</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">validate_crc</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">2</span><span class="p">],</span> <span class="n">data</span><span class="p">[</span><span class="mi">2</span><span class="p">]):</span>
+            <span class="nb">print</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;WARNING: CRC validation failed for temperature data: </span><span class="si">{</span><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">2</span><span class="p">]</span><span class="si">}</span><span class="s2">, &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;Expected CRC: </span><span class="si">{</span><span class="n">data</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="si">}</span><span class="s2">, &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;Calculated CRC: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">calculate_crc</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">2</span><span class="p">])</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;temperature raw: </span><span class="si">{</span><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">2</span><span class="p">]</span><span class="si">}</span><span class="s2">, CRC: </span><span class="si">{</span><span class="n">data</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">validate_crc</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="mi">3</span><span class="p">:</span><span class="mi">5</span><span class="p">],</span> <span class="n">data</span><span class="p">[</span><span class="mi">5</span><span class="p">]):</span>
+            <span class="nb">print</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;WARNING: CRC validation failed for humidity data: </span><span class="si">{</span><span class="n">data</span><span class="p">[</span><span class="mi">3</span><span class="p">:</span><span class="mi">5</span><span class="p">]</span><span class="si">}</span><span class="s2">, &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;Expected CRC: </span><span class="si">{</span><span class="n">data</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span><span class="si">}</span><span class="s2">, &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;Calculated CRC: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">calculate_crc</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="mi">3</span><span class="p">:</span><span class="mi">5</span><span class="p">])</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;humidity raw: </span><span class="si">{</span><span class="n">data</span><span class="p">[</span><span class="mi">3</span><span class="p">:</span><span class="mi">5</span><span class="p">]</span><span class="si">}</span><span class="s2">, CRC: </span><span class="si">{</span><span class="n">data</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="c1"># convert the data</span>
+        <span class="n">temp</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="mi">256</span> <span class="o">+</span> <span class="n">data</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">temp_c</span> <span class="o">=</span> <span class="o">-</span><span class="mi">45</span> <span class="o">+</span> <span class="p">(</span><span class="mi">175</span> <span class="o">*</span> <span class="n">temp</span> <span class="o">/</span> <span class="mf">65535.0</span><span class="p">)</span>
+        <span class="n">temp_f</span> <span class="o">=</span> <span class="o">-</span><span class="mi">49</span> <span class="o">+</span> <span class="p">(</span><span class="mi">315</span> <span class="o">*</span> <span class="n">temp</span> <span class="o">/</span> <span class="mf">65535.0</span><span class="p">)</span>
+        <span class="n">humidity</span> <span class="o">=</span> <span class="mi">100</span> <span class="o">*</span> <span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="o">*</span> <span class="mi">256</span> <span class="o">+</span> <span class="n">data</span><span class="p">[</span><span class="mi">4</span><span class="p">])</span> <span class="o">/</span> <span class="mf">65535.0</span>
+        <span class="k">return</span> <span class="n">temp</span><span class="p">,</span> <span class="n">temp_c</span><span class="p">,</span> <span class="n">temp_f</span><span class="p">,</span> <span class="n">humidity</span></div>
+
+
+<div class="viewcode-block" id="Sensors.pack_data_structure">
+<a class="viewcode-back" href="../../docs/src.html#src.sht31_flask_server.Sensors.pack_data_structure">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">pack_data_structure</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">temp_f_lst</span><span class="p">,</span> <span class="n">temp_c_lst</span><span class="p">,</span> <span class="n">humidity_lst</span><span class="p">,</span> <span class="n">rssi_lst</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Calculate statistics and pack data structure.</span>
+
+<span class="sd">        inputs:</span>
+<span class="sd">            temp_f_lst(list): list of fehrenheit measurements</span>
+<span class="sd">            temp_c_lst(list): list of celcius measurements</span>
+<span class="sd">            humidity_lst(list): list of humidity measurements</span>
+<span class="sd">            rssi_lst(list): list of wifi rssi measurements</span>
+<span class="sd">        returns:</span>
+<span class="sd">            (dict): data structure.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="n">sht31_config</span><span class="o">.</span><span class="n">API_MEASUREMENT_CNT</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">temp_f_lst</span><span class="p">),</span>
+            <span class="n">sht31_config</span><span class="o">.</span><span class="n">API_TEMPC_MEAN</span><span class="p">:</span> <span class="n">statistics</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">temp_c_lst</span><span class="p">),</span>
+            <span class="n">sht31_config</span><span class="o">.</span><span class="n">API_TEMPC_STD</span><span class="p">:</span> <span class="n">statistics</span><span class="o">.</span><span class="n">pstdev</span><span class="p">(</span><span class="n">temp_c_lst</span><span class="p">),</span>
+            <span class="n">sht31_config</span><span class="o">.</span><span class="n">API_TEMPF_MEAN</span><span class="p">:</span> <span class="n">statistics</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">temp_f_lst</span><span class="p">),</span>
+            <span class="n">sht31_config</span><span class="o">.</span><span class="n">API_TEMPF_STD</span><span class="p">:</span> <span class="n">statistics</span><span class="o">.</span><span class="n">pstdev</span><span class="p">(</span><span class="n">temp_f_lst</span><span class="p">),</span>
+            <span class="n">sht31_config</span><span class="o">.</span><span class="n">API_HUMIDITY_MEAN</span><span class="p">:</span> <span class="n">statistics</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">humidity_lst</span><span class="p">),</span>
+            <span class="n">sht31_config</span><span class="o">.</span><span class="n">API_HUMIDITY_STD</span><span class="p">:</span> <span class="n">statistics</span><span class="o">.</span><span class="n">pstdev</span><span class="p">(</span><span class="n">humidity_lst</span><span class="p">),</span>
+            <span class="n">sht31_config</span><span class="o">.</span><span class="n">API_RSSI_MEAN</span><span class="p">:</span> <span class="n">statistics</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">rssi_lst</span><span class="p">),</span>
+            <span class="n">sht31_config</span><span class="o">.</span><span class="n">API_RSSI_STD</span><span class="p">:</span> <span class="n">statistics</span><span class="o">.</span><span class="n">pstdev</span><span class="p">(</span><span class="n">rssi_lst</span><span class="p">),</span>
+        <span class="p">}</span></div>
+
+
+<div class="viewcode-block" id="Sensors.set_sht31_address">
+<a class="viewcode-back" href="../../docs/src.html#src.sht31_flask_server.Sensors.set_sht31_address">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">set_sht31_address</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">i2c_addr</span><span class="p">,</span> <span class="n">addr_pin</span><span class="p">,</span> <span class="n">alert_pin</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Set the address for the sht31.</span>
+
+<span class="sd">        NOTE: This explains the i2cdetect vs configured address discrepancy.</span>
+<span class="sd">        The SHT31 sensor defaults to address 0x44 on power-up. When i2cdetect</span>
+<span class="sd">        runs before this method, it will show 0x44. This method configures</span>
+<span class="sd">        ADDR_PIN to switch the sensor to the desired address (typically 0x45).</span>
+
+<span class="sd">        inputs:</span>
+<span class="sd">            i2c_addr(int): bus address of SHT31 (0x44 or 0x45).</span>
+<span class="sd">            addr_pin(int): GPIO pin number controlling SHT31 address selection.</span>
+<span class="sd">            alert_pin(int): GPIO pin number for SHT31 alert functionality.</span>
+<span class="sd">        returns:</span>
+<span class="sd">            None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># set address pin on SHT31</span>
+        <span class="n">GPIO</span><span class="o">.</span><span class="n">setmode</span><span class="p">(</span><span class="n">GPIO</span><span class="o">.</span><span class="n">BCM</span><span class="p">)</span>  <span class="c1"># type: ignore[attr-defined]</span>
+        <span class="n">GPIO</span><span class="o">.</span><span class="n">setup</span><span class="p">(</span><span class="n">addr_pin</span><span class="p">,</span> <span class="n">GPIO</span><span class="o">.</span><span class="n">OUT</span><span class="p">)</span>  <span class="c1"># type: ignore[attr-defined]</span>
+        <span class="n">GPIO</span><span class="o">.</span><span class="n">setup</span><span class="p">(</span>  <span class="c1"># type: ignore[attr-defined]</span>
+            <span class="n">alert_pin</span><span class="p">,</span> <span class="n">GPIO</span><span class="o">.</span><span class="n">IN</span><span class="p">,</span> <span class="n">pull_up_down</span><span class="o">=</span><span class="n">GPIO</span><span class="o">.</span><span class="n">PUD_UP</span>  <span class="c1"># type: ignore[attr-defined]</span>
+        <span class="p">)</span>
+        <span class="c1"># Configure SHT31 address: 0x45 requires ADDR_PIN HIGH, 0x44 uses LOW</span>
+        <span class="k">if</span> <span class="n">i2c_addr</span> <span class="o">==</span> <span class="mh">0x45</span><span class="p">:</span>
+            <span class="n">GPIO</span><span class="o">.</span><span class="n">output</span><span class="p">(</span><span class="n">addr_pin</span><span class="p">,</span> <span class="n">GPIO</span><span class="o">.</span><span class="n">HIGH</span><span class="p">)</span>  <span class="c1"># type: ignore[attr-defined]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">GPIO</span><span class="o">.</span><span class="n">output</span><span class="p">(</span><span class="n">addr_pin</span><span class="p">,</span> <span class="n">GPIO</span><span class="o">.</span><span class="n">LOW</span><span class="p">)</span>  <span class="c1"># type: ignore[attr-defined]</span></div>
+
+
+<div class="viewcode-block" id="Sensors.send_i2c_cmd">
+<a class="viewcode-back" href="../../docs/src.html#src.sht31_flask_server.Sensors.send_i2c_cmd">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">send_i2c_cmd</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">bus</span><span class="p">,</span> <span class="n">i2c_addr</span><span class="p">,</span> <span class="n">i2c_command</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Send the i2c command to the sht31.</span>
+
+<span class="sd">        inputs:</span>
+<span class="sd">            bus(class &#39;SMBus&#39;): i2c bus object</span>
+<span class="sd">            i2c_addr(int):  bus address</span>
+<span class="sd">            i2c_command(tuple): command (register, [data])</span>
+<span class="sd">        returns:</span>
+<span class="sd">            None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">register</span> <span class="o">=</span> <span class="n">i2c_command</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">i2c_command</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">bus</span><span class="o">.</span><span class="n">write_i2c_block_data</span><span class="p">(</span><span class="n">i2c_addr</span><span class="p">,</span> <span class="n">register</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">OSError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;FATAL ERROR(</span><span class="si">{</span><span class="n">util</span><span class="o">.</span><span class="n">get_function_name</span><span class="p">()</span><span class="si">}</span><span class="s2">): i2c device at &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;address </span><span class="si">{</span><span class="nb">hex</span><span class="p">(</span><span class="n">i2c_addr</span><span class="p">)</span><span class="si">}</span><span class="s2"> is not responding&quot;</span>
+            <span class="p">)</span>
+            <span class="k">raise</span> <span class="n">exc</span>
+        <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mf">0.5</span><span class="p">)</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_process_crc_bit_reverse</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">crc</span><span class="p">,</span> <span class="n">poly</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Process CRC bit with reverse direction.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">crc</span> <span class="o">&amp;</span> <span class="mh">0x01</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">(</span><span class="n">crc</span> <span class="o">&gt;&gt;</span> <span class="mi">1</span><span class="p">)</span> <span class="o">^</span> <span class="n">poly</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">crc</span> <span class="o">&gt;&gt;</span> <span class="mi">1</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_process_crc_bit_normal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">crc</span><span class="p">,</span> <span class="n">poly</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Process CRC bit with normal direction.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">crc</span> <span class="o">&amp;</span> <span class="mh">0x80</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">(</span><span class="n">crc</span> <span class="o">&lt;&lt;</span> <span class="mi">1</span><span class="p">)</span> <span class="o">^</span> <span class="n">poly</span>  <span class="c1"># polynomial = 0x31</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">crc</span> <span class="o">&lt;&lt;</span> <span class="mi">1</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_process_crc_byte</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">crc</span><span class="p">,</span> <span class="n">byte</span><span class="p">,</span> <span class="n">poly</span><span class="p">,</span> <span class="n">reverse</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Process a single byte for CRC calculation.&quot;&quot;&quot;</span>
+        <span class="n">crc</span> <span class="o">^=</span> <span class="n">byte</span>
+        <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">reverse</span><span class="p">:</span>
+                <span class="n">crc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_process_crc_bit_reverse</span><span class="p">(</span><span class="n">crc</span><span class="p">,</span> <span class="n">poly</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">crc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_process_crc_bit_normal</span><span class="p">(</span><span class="n">crc</span><span class="p">,</span> <span class="n">poly</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">crc</span>
+
+<div class="viewcode-block" id="Sensors.calculate_crc">
+<a class="viewcode-back" href="../../docs/src.html#src.sht31_flask_server.Sensors.calculate_crc">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">calculate_crc</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">init</span><span class="o">=</span><span class="mh">0xFF</span><span class="p">,</span> <span class="n">poly</span><span class="o">=</span><span class="mh">0x131</span><span class="p">,</span> <span class="n">final_xor</span><span class="o">=</span><span class="mh">0x00</span><span class="p">,</span> <span class="n">reverse</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Calculate CRC checksum for SHT31 sensor data.</span>
+
+<span class="sd">        inputs:</span>
+<span class="sd">            data(bytes): 2 bytes of data to check</span>
+<span class="sd">            init(int): initial CRC value</span>
+<span class="sd">            poly(int): polynomial value, 0x131=x^8+x^5+x^4+1=100110001 for unsigned int</span>
+<span class="sd">            final_xor(int): final XOR value</span>
+<span class="sd">            reverse(bool): reverse the bits</span>
+<span class="sd">        returns:</span>
+<span class="sd">            (int): calculated CRC value</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">crc</span> <span class="o">=</span> <span class="n">init</span>  <span class="c1"># Initialize CRC with 0xFF</span>
+        <span class="k">for</span> <span class="n">byte</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+            <span class="n">crc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_process_crc_byte</span><span class="p">(</span><span class="n">crc</span><span class="p">,</span> <span class="n">byte</span><span class="p">,</span> <span class="n">poly</span><span class="p">,</span> <span class="n">reverse</span><span class="p">)</span>
+        <span class="n">crc</span> <span class="o">&amp;=</span> <span class="mh">0xFF</span>  <span class="c1"># Ensure result is 8-bit</span>
+        <span class="n">crc</span> <span class="o">^=</span> <span class="n">final_xor</span>
+        <span class="k">return</span> <span class="n">crc</span></div>
+
+
+<div class="viewcode-block" id="Sensors.validate_crc">
+<a class="viewcode-back" href="../../docs/src.html#src.sht31_flask_server.Sensors.validate_crc">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">validate_crc</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">checksum</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Validate CRC checksum from SHT31 sensor.</span>
+
+<span class="sd">        inputs:</span>
+<span class="sd">            data(bytes): 2 bytes of data to check</span>
+<span class="sd">            checksum(int): CRC value to verify against</span>
+<span class="sd">        returns:</span>
+<span class="sd">            (bool): True if checksum matches calculated CRC</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">calculate_crc</span><span class="p">(</span><span class="n">data</span><span class="p">)</span> <span class="o">==</span> <span class="n">checksum</span></div>
+
+
+<div class="viewcode-block" id="Sensors.read_i2c_data">
+<a class="viewcode-back" href="../../docs/src.html#src.sht31_flask_server.Sensors.read_i2c_data">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">read_i2c_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">bus</span><span class="p">,</span> <span class="n">i2c_addr</span><span class="p">,</span> <span class="n">register</span><span class="o">=</span><span class="mh">0x00</span><span class="p">,</span> <span class="n">length</span><span class="o">=</span><span class="n">i2c_data_length</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Read i2c data with retry logic for intermittent i2c failures.</span>
+
+<span class="sd">        inputs:</span>
+<span class="sd">            bus(class &#39;SMBus&#39;): i2c bus object</span>
+<span class="sd">            i2c_addr(int):  bus address</span>
+<span class="sd">            register(int): register to read from.</span>
+<span class="sd">            length(int):  number of blocks to read.</span>
+<span class="sd">        returns:</span>
+<span class="sd">            response(class &#39;list&#39;): raw data structure</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># 0=Temp MSB, 1=temp LSB, 2=temp CRC,</span>
+        <span class="c1"># 3=humidity MSB, 4=humidity LSB, 5=humidity CRC</span>
+        <span class="c1"># read_i2c_block_data(i2c_addr, register, length,</span>
+        <span class="c1">#                     force=None)</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">_perform_i2c_read</span><span class="p">():</span>
+<span class="w">            </span><span class="sd">&quot;&quot;&quot;Internal function to perform the actual i2c read operation.&quot;&quot;&quot;</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">response</span> <span class="o">=</span> <span class="n">bus</span><span class="o">.</span><span class="n">read_i2c_block_data</span><span class="p">(</span><span class="n">i2c_addr</span><span class="p">,</span> <span class="n">register</span><span class="p">,</span> <span class="n">length</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">OSError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;WARNING(</span><span class="si">{</span><span class="n">util</span><span class="o">.</span><span class="n">get_function_name</span><span class="p">()</span><span class="si">}</span><span class="s2">): i2c device at &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;address </span><span class="si">{</span><span class="nb">hex</span><span class="p">(</span><span class="n">i2c_addr</span><span class="p">)</span><span class="si">}</span><span class="s2"> is not responding, retrying...&quot;</span>
+                <span class="p">)</span>
+                <span class="k">raise</span> <span class="n">exc</span>
+
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">response</span><span class="p">)</span> <span class="o">!=</span> <span class="n">length</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;ERROR: i2c data read error, expected </span><span class="si">{</span><span class="n">length</span><span class="si">}</span><span class="s2"> &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;bytes, actual </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">response</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="p">)</span>
+
+            <span class="k">return</span> <span class="n">response</span>
+
+        <span class="c1"># Use retry logic for i2c operations with shorter delays</span>
+        <span class="k">return</span> <span class="n">util</span><span class="o">.</span><span class="n">execute_with_extended_retries</span><span class="p">(</span>
+            <span class="n">_perform_i2c_read</span><span class="p">,</span>
+            <span class="n">thermostat_type</span><span class="o">=</span><span class="s2">&quot;sht31&quot;</span><span class="p">,</span>
+            <span class="n">zone_name</span><span class="o">=</span><span class="s2">&quot;sensor&quot;</span><span class="p">,</span>
+            <span class="n">number_of_retries</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
+            <span class="n">initial_retry_delay_sec</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+            <span class="n">exception_types</span><span class="o">=</span><span class="p">(</span><span class="ne">OSError</span><span class="p">,),</span>
+            <span class="n">email_notification</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Sensors.parse_fault_register_data">
+<a class="viewcode-back" href="../../docs/src.html#src.sht31_flask_server.Sensors.parse_fault_register_data">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">parse_fault_register_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Parse the fault register data, if possible.</span>
+
+<span class="sd">        inputs:</span>
+<span class="sd">            data(): list containing at least 2 bytes.</span>
+<span class="sd">                    3rd byte (checksum) is not currently used.</span>
+<span class="sd">        returns:</span>
+<span class="sd">            (dict): fault register contents.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">date_val</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="mi">256</span> <span class="o">+</span> <span class="n">data</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">resp</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s2">&quot;raw&quot;</span><span class="p">:</span> <span class="n">data</span><span class="p">,</span>
+                <span class="s2">&quot;raw_binary&quot;</span><span class="p">:</span> <span class="nb">format</span><span class="p">(</span><span class="n">date_val</span><span class="p">,</span> <span class="s2">&quot;#018b&quot;</span><span class="p">)[</span><span class="mi">2</span><span class="p">:],</span>
+                <span class="s2">&quot;alert pending status(0=0,1=1+)&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">date_val</span> <span class="o">&gt;&gt;</span> <span class="mi">15</span><span class="p">)</span> <span class="o">&amp;</span> <span class="mi">1</span><span class="p">,</span>
+                <span class="c1"># bit 15: 0=None, 1=at least 1 pending alert</span>
+                <span class="s2">&quot;heater status(0=off,1=on)&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">date_val</span> <span class="o">&gt;&gt;</span> <span class="mi">13</span><span class="p">)</span> <span class="o">&amp;</span> <span class="mi">1</span><span class="p">,</span>
+                <span class="c1"># bit 13: 0=off, 1=on</span>
+                <span class="s2">&quot;RH tracking alert(0=no,1=yes)&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">date_val</span> <span class="o">&gt;&gt;</span> <span class="mi">11</span><span class="p">)</span> <span class="o">&amp;</span> <span class="mi">1</span><span class="p">,</span>
+                <span class="c1"># bit 11: 0=no, 1=yes</span>
+                <span class="s2">&quot;T tracking alert(0=no,1=yes)&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">date_val</span> <span class="o">&gt;&gt;</span> <span class="mi">10</span><span class="p">)</span> <span class="o">&amp;</span> <span class="mi">1</span><span class="p">,</span>
+                <span class="c1"># bit 10: 0=no, 1=yes</span>
+                <span class="s2">&quot;System reset detected(0=no,1=yes)&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">date_val</span> <span class="o">&gt;&gt;</span> <span class="mi">4</span><span class="p">)</span> <span class="o">&amp;</span> <span class="mi">1</span><span class="p">,</span>
+                <span class="c1"># bit 4</span>
+                <span class="c1"># 0=no reset since last clear cmd, 1=hard, soft, or supply fail</span>
+                <span class="s2">&quot;Command status(0=correct,1=failed)&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">date_val</span> <span class="o">&gt;&gt;</span> <span class="mi">1</span><span class="p">)</span> <span class="o">&amp;</span> <span class="mi">1</span><span class="p">,</span>
+                <span class="c1"># bit 1: 0=successful, 1=invalid or field checksum</span>
+                <span class="s2">&quot;Write data checksum status(0=correct,1=failed)&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">date_val</span> <span class="o">&gt;&gt;</span> <span class="mi">0</span><span class="p">)</span> <span class="o">&amp;</span> <span class="mi">1</span><span class="p">,</span>
+                <span class="c1"># bit 0: 0=correct, 1=failed</span>
+            <span class="p">}</span>
+        <span class="k">except</span> <span class="ne">IndexError</span><span class="p">:</span>
+            <span class="c1"># parsing error, just return raw data</span>
+            <span class="nb">print</span><span class="p">(</span>
+                <span class="s2">&quot;WARNING: fault register parsing error, just returning &quot;</span>
+                <span class="s2">&quot;raw fault register data&quot;</span>
+            <span class="p">)</span>
+            <span class="n">resp</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;raw&quot;</span><span class="p">:</span> <span class="n">data</span><span class="p">}</span>
+        <span class="k">return</span> <span class="n">resp</span></div>
+
+
+<div class="viewcode-block" id="Sensors.get_unit_test">
+<a class="viewcode-back" href="../../docs/src.html#src.sht31_flask_server.Sensors.get_unit_test">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_unit_test</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get fabricated data for unit testing at ip:port/unit.</span>
+
+<span class="sd">        syntax: http://ip:port/unit?seed=0x7E&amp;measurements=1</span>
+<span class="sd">        inputs:</span>
+<span class="sd">            None</span>
+<span class="sd">        returns:</span>
+<span class="sd">            (dict): fabricated unit test data.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># get runtime parameters</span>
+        <span class="n">measurements</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+            <span class="s2">&quot;measurements&quot;</span><span class="p">,</span> <span class="n">sht31_config</span><span class="o">.</span><span class="n">MEASUREMENTS</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span>
+        <span class="p">)</span>
+        <span class="n">seed</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;seed&quot;</span><span class="p">,</span> <span class="n">sht31_config</span><span class="o">.</span><span class="n">UNIT_TEST_SEED</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
+
+        <span class="c1"># data structure</span>
+        <span class="n">temp_f_lst</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">temp_c_lst</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">humidity_lst</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">rssi_lst</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="c1"># loop for n measurements</span>
+        <span class="k">for</span> <span class="n">measurement</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">measurements</span><span class="p">):</span>
+            <span class="c1"># fabricated data for unit testing</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="p">[</span><span class="n">seed</span> <span class="o">+</span> <span class="n">measurement</span> <span class="o">%</span> <span class="mi">2</span><span class="p">]</span> <span class="o">*</span> <span class="n">i2c_data_length</span>  <span class="c1"># almost mid range</span>
+
+            <span class="c1"># update CRC in fabricated data</span>
+            <span class="n">data</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">calculate_crc</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">2</span><span class="p">])</span>
+            <span class="n">data</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">calculate_crc</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="mi">3</span><span class="p">:</span><span class="mi">5</span><span class="p">])</span>
+
+            <span class="c1"># print(f&quot;DEBUG data: {data}, len: {len(data)}&quot;)</span>
+
+            <span class="c1"># convert the data</span>
+            <span class="n">_</span><span class="p">,</span> <span class="n">temp_c</span><span class="p">,</span> <span class="n">temp_f</span><span class="p">,</span> <span class="n">humidity</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">convert_data</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+            <span class="n">rssi</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_iwconfig_wifi_strength</span><span class="p">()</span>
+
+            <span class="c1"># add data to structure</span>
+            <span class="n">temp_f_lst</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">temp_f</span><span class="p">)</span>
+            <span class="n">temp_c_lst</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">temp_c</span><span class="p">)</span>
+            <span class="n">humidity_lst</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">humidity</span><span class="p">)</span>
+            <span class="n">rssi_lst</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">rssi</span><span class="p">)</span>
+
+        <span class="c1"># return data on API</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">pack_data_structure</span><span class="p">(</span><span class="n">temp_f_lst</span><span class="p">,</span> <span class="n">temp_c_lst</span><span class="p">,</span> <span class="n">humidity_lst</span><span class="p">,</span> <span class="n">rssi_lst</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Sensors.get">
+<a class="viewcode-back" href="../../docs/src.html#src.sht31_flask_server.Sensors.get">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get sensor data at ip:port.</span>
+
+<span class="sd">        inputs:</span>
+<span class="sd">            None</span>
+<span class="sd">        returns:</span>
+<span class="sd">            (dict): thermal data dictionary.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># get runtime parameters</span>
+        <span class="n">measurements</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">args</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;measurements&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
+
+        <span class="c1"># set address pin on SHT31</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_sht31_address</span><span class="p">(</span>
+            <span class="n">sht31_config</span><span class="o">.</span><span class="n">I2C_ADDRESS</span><span class="p">,</span> <span class="n">sht31_config</span><span class="o">.</span><span class="n">ADDR_PIN</span><span class="p">,</span> <span class="n">sht31_config</span><span class="o">.</span><span class="n">ALERT_PIN</span>
+        <span class="p">)</span>
+
+        <span class="c1"># activate smbus</span>
+        <span class="n">bus</span> <span class="o">=</span> <span class="n">smbus2</span><span class="o">.</span><span class="n">SMBus</span><span class="p">(</span><span class="n">sht31_config</span><span class="o">.</span><span class="n">I2C_BUS</span><span class="p">)</span>  <span class="c1"># type: ignore[attr-defined]</span>
+        <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mf">0.5</span><span class="p">)</span>
+
+        <span class="c1"># data structure</span>
+        <span class="n">temp_f_lst</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">temp_c_lst</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">humidity_lst</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">rssi_lst</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c1"># loop for n measurements</span>
+            <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">measurements</span><span class="p">):</span>
+                <span class="c1"># send single shot read command</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">send_i2c_cmd</span><span class="p">(</span><span class="n">bus</span><span class="p">,</span> <span class="n">sht31_config</span><span class="o">.</span><span class="n">I2C_ADDRESS</span><span class="p">,</span> <span class="n">cs_enabled_high</span><span class="p">)</span>
+
+                <span class="c1"># read the measurement data</span>
+                <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">read_i2c_data</span><span class="p">(</span>
+                    <span class="n">bus</span><span class="p">,</span> <span class="n">sht31_config</span><span class="o">.</span><span class="n">I2C_ADDRESS</span><span class="p">,</span> <span class="n">register</span><span class="o">=</span><span class="mh">0x00</span><span class="p">,</span> <span class="n">length</span><span class="o">=</span><span class="n">i2c_data_length</span>
+                <span class="p">)</span>
+
+                <span class="c1"># convert the data</span>
+                <span class="n">_</span><span class="p">,</span> <span class="n">temp_c</span><span class="p">,</span> <span class="n">temp_f</span><span class="p">,</span> <span class="n">humidity</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">convert_data</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+                <span class="n">rssi</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_iwconfig_wifi_strength</span><span class="p">()</span>
+
+                <span class="c1"># add data to structure</span>
+                <span class="n">temp_f_lst</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">temp_f</span><span class="p">)</span>
+                <span class="n">temp_c_lst</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">temp_c</span><span class="p">)</span>
+                <span class="n">humidity_lst</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">humidity</span><span class="p">)</span>
+                <span class="n">rssi_lst</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">rssi</span><span class="p">)</span>
+
+            <span class="c1"># return data on API</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">pack_data_structure</span><span class="p">(</span>
+                <span class="n">temp_f_lst</span><span class="p">,</span> <span class="n">temp_c_lst</span><span class="p">,</span> <span class="n">humidity_lst</span><span class="p">,</span> <span class="n">rssi_lst</span>
+            <span class="p">)</span>
+        <span class="k">finally</span><span class="p">:</span>
+            <span class="c1"># close the smbus connection</span>
+            <span class="n">bus</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+            <span class="n">GPIO</span><span class="o">.</span><span class="n">cleanup</span><span class="p">()</span>  <span class="c1"># type: ignore[attr-defined]</span></div>
+
+
+<div class="viewcode-block" id="Sensors.send_cmd_get_diag">
+<a class="viewcode-back" href="../../docs/src.html#src.sht31_flask_server.Sensors.send_cmd_get_diag">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">send_cmd_get_diag</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">i2c_command</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Send i2c command and read status register.</span>
+
+<span class="sd">        inputs:</span>
+<span class="sd">            i2c_command(int): i2c command to send</span>
+<span class="sd">        returns:</span>
+<span class="sd">            (dict): parsed fault register data.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># set address pin on SHT31</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_sht31_address</span><span class="p">(</span>
+            <span class="n">sht31_config</span><span class="o">.</span><span class="n">I2C_ADDRESS</span><span class="p">,</span> <span class="n">sht31_config</span><span class="o">.</span><span class="n">ADDR_PIN</span><span class="p">,</span> <span class="n">sht31_config</span><span class="o">.</span><span class="n">ALERT_PIN</span>
+        <span class="p">)</span>
+
+        <span class="c1"># activate smbus</span>
+        <span class="n">bus</span> <span class="o">=</span> <span class="n">smbus2</span><span class="o">.</span><span class="n">SMBus</span><span class="p">(</span><span class="n">sht31_config</span><span class="o">.</span><span class="n">I2C_BUS</span><span class="p">)</span>  <span class="c1"># type: ignore[attr-defined]</span>
+        <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mf">0.5</span><span class="p">)</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c1"># send single shot command</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">send_i2c_cmd</span><span class="p">(</span><span class="n">bus</span><span class="p">,</span> <span class="n">sht31_config</span><span class="o">.</span><span class="n">I2C_ADDRESS</span><span class="p">,</span> <span class="n">i2c_command</span><span class="p">)</span>
+
+            <span class="c1"># small delay</span>
+            <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mf">1.0</span><span class="p">)</span>
+
+            <span class="c1"># read the measurement data, 2 bytes data, 1 byte checksum</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">read_i2c_data</span><span class="p">(</span>
+                <span class="n">bus</span><span class="p">,</span> <span class="n">sht31_config</span><span class="o">.</span><span class="n">I2C_ADDRESS</span><span class="p">,</span> <span class="n">register</span><span class="o">=</span><span class="mh">0x00</span><span class="p">,</span> <span class="n">length</span><span class="o">=</span><span class="mh">0x03</span>
+            <span class="p">)</span>
+
+            <span class="c1"># parse data into registers</span>
+            <span class="n">parsed_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parse_fault_register_data</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">parsed_data</span>
+        <span class="k">finally</span><span class="p">:</span>
+            <span class="c1"># close the smbus connection</span>
+            <span class="n">bus</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+            <span class="n">GPIO</span><span class="o">.</span><span class="n">cleanup</span><span class="p">()</span>  <span class="c1"># type: ignore[attr-defined]</span></div>
+
+
+<div class="viewcode-block" id="Sensors.i2c_recovery">
+<a class="viewcode-back" href="../../docs/src.html#src.sht31_flask_server.Sensors.i2c_recovery">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">i2c_recovery</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Send 10 clock cycles on SCL IO pin to clear locked i2c bus.</span>
+
+<span class="sd">        inputs:</span>
+<span class="sd">             None</span>
+<span class="sd">        returns:</span>
+<span class="sd">            (dict): status message</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">addr_pin</span> <span class="o">=</span> <span class="n">sht31_config</span><span class="o">.</span><span class="n">SCL_PIN</span>
+        <span class="n">num_clock_cycles</span> <span class="o">=</span> <span class="mi">10</span>
+        <span class="n">recovery_freq_hz</span> <span class="o">=</span> <span class="mi">100000</span>  <span class="c1"># 100 KHz</span>
+        <span class="n">recovery_delay_sec</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="p">(</span><span class="mf">2.0</span> <span class="o">*</span> <span class="n">recovery_freq_hz</span><span class="p">)</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c1"># set SCL pin for output</span>
+            <span class="n">GPIO</span><span class="o">.</span><span class="n">setmode</span><span class="p">(</span><span class="n">GPIO</span><span class="o">.</span><span class="n">BCM</span><span class="p">)</span>  <span class="c1"># type: ignore[attr-defined]</span>
+            <span class="n">GPIO</span><span class="o">.</span><span class="n">setup</span><span class="p">(</span><span class="n">addr_pin</span><span class="p">,</span> <span class="n">GPIO</span><span class="o">.</span><span class="n">OUT</span><span class="p">)</span>  <span class="c1"># type: ignore[attr-defined]</span>
+
+            <span class="c1"># set pin high to start</span>
+            <span class="n">GPIO</span><span class="o">.</span><span class="n">output</span><span class="p">(</span><span class="n">addr_pin</span><span class="p">,</span> <span class="n">GPIO</span><span class="o">.</span><span class="n">HIGH</span><span class="p">)</span>  <span class="c1"># type: ignore[attr-defined]</span>
+
+            <span class="c1"># send clock cycles</span>
+            <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_clock_cycles</span><span class="p">):</span>
+                <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">recovery_delay_sec</span><span class="p">)</span>
+                <span class="n">GPIO</span><span class="o">.</span><span class="n">output</span><span class="p">(</span><span class="n">addr_pin</span><span class="p">,</span> <span class="n">GPIO</span><span class="o">.</span><span class="n">LOW</span><span class="p">)</span>  <span class="c1"># type: ignore[attr-defined]</span>
+                <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">recovery_delay_sec</span><span class="p">)</span>
+                <span class="n">GPIO</span><span class="o">.</span><span class="n">output</span><span class="p">(</span><span class="n">addr_pin</span><span class="p">,</span> <span class="n">GPIO</span><span class="o">.</span><span class="n">HIGH</span><span class="p">)</span>  <span class="c1"># type: ignore[attr-defined]</span>
+            <span class="c1"># status message</span>
+            <span class="n">msg_dict</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="n">msg_dict</span><span class="p">[</span><span class="s2">&quot;action_complete&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">num_clock_cycles</span><span class="si">}</span><span class="s2"> SCL clock &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;toggles completed at &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">recovery_freq_hz</span><span class="si">}</span><span class="s2"> Hz&quot;</span>
+            <span class="p">)</span>
+            <span class="n">msg_dict</span><span class="p">[</span><span class="s2">&quot;next_step&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="s2">&quot;please reboot pi, restart flask server, and test bus using the diag &quot;</span>
+                <span class="s2">&quot;command.  Reboot sequence may need to be repeated multiple times to &quot;</span>
+                <span class="s2">&quot;resolve a locked i2c bus.&quot;</span>
+            <span class="p">)</span>
+            <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;i2c_recovery&quot;</span><span class="p">:</span> <span class="n">msg_dict</span><span class="p">}</span>
+        <span class="k">finally</span><span class="p">:</span>
+            <span class="n">GPIO</span><span class="o">.</span><span class="n">cleanup</span><span class="p">()</span>  <span class="c1"># type: ignore[attr-defined]</span></div>
+
+
+<div class="viewcode-block" id="Sensors.i2c_detect">
+<a class="viewcode-back" href="../../docs/src.html#src.sht31_flask_server.Sensors.i2c_detect">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">i2c_detect</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">bus</span><span class="o">=</span><span class="n">sht31_config</span><span class="o">.</span><span class="n">I2C_BUS</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Detect i2c device on bus.</span>
+
+<span class="sd">        inputs:</span>
+<span class="sd">             bus(int): i2c bus number</span>
+<span class="sd">        returns:</span>
+<span class="sd">            (dict): parsed device dictionary.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Check if running on Windows - i2c operations are Linux-specific</span>
+        <span class="k">if</span> <span class="n">env</span><span class="o">.</span><span class="n">is_windows_environment</span><span class="p">():</span>
+            <span class="k">return</span> <span class="p">{</span>
+                <span class="s2">&quot;i2c_detect&quot;</span><span class="p">:</span> <span class="p">{</span>
+                    <span class="s2">&quot;bus_&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">bus</span><span class="p">):</span> <span class="p">{</span>
+                        <span class="s2">&quot;i2c_detect&quot;</span><span class="p">:</span> <span class="p">{</span>
+                            <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="s2">&quot;i2c detection is not supported on Windows&quot;</span>
+                        <span class="p">}</span>
+                    <span class="p">}</span>
+                <span class="p">}</span>
+            <span class="p">}</span>
+
+        <span class="c1"># send command using shell_cmd method for better testability</span>
+        <span class="n">scan_result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">shell_cmd</span><span class="p">([</span><span class="s2">&quot;sudo&quot;</span><span class="p">,</span> <span class="s2">&quot;i2cdetect&quot;</span><span class="p">,</span> <span class="s2">&quot;-y&quot;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">bus</span><span class="p">)])</span>
+
+        <span class="c1"># read in raw data</span>
+        <span class="n">parsed_device_dict</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;i2c_detect&quot;</span><span class="p">:</span> <span class="p">{}}</span>
+        <span class="n">bus_dict</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">lines</span> <span class="o">=</span> <span class="n">scan_result</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">lines</span><span class="p">[:</span><span class="mi">9</span><span class="p">]:</span>  <span class="c1"># limit to first 9 lines as original code</span>
+            <span class="n">line</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">line</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mi">5</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="n">addr_base</span> <span class="o">=</span> <span class="n">line</span><span class="p">[</span><span class="mi">2</span><span class="p">:</span><span class="mi">4</span><span class="p">]</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">line</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">4</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span>
+            <span class="n">addr_payload</span> <span class="o">=</span> <span class="n">line</span><span class="p">[</span><span class="mi">5</span><span class="p">:]</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">line</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">5</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span>
+
+            <span class="c1"># catch error condition</span>
+            <span class="k">if</span> <span class="s2">&quot;Error&quot;</span> <span class="ow">in</span> <span class="n">line</span><span class="p">:</span>
+                <span class="k">if</span> <span class="s2">&quot;i2c_detect&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">bus_dict</span><span class="p">:</span>
+                    <span class="n">bus_dict</span><span class="p">[</span><span class="s2">&quot;i2c_detect&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+                <span class="n">bus_dict</span><span class="p">[</span><span class="s2">&quot;i2c_detect&quot;</span><span class="p">][</span><span class="s2">&quot;error&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">line</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># find devices on bus</span>
+                <span class="n">device</span> <span class="o">=</span> <span class="mi">0</span>
+                <span class="n">device_dict</span> <span class="o">=</span> <span class="p">{}</span>
+                <span class="k">for</span> <span class="n">match</span> <span class="ow">in</span> <span class="n">re</span><span class="o">.</span><span class="n">finditer</span><span class="p">(</span><span class="s2">&quot;[0-9][0-9]&quot;</span><span class="p">,</span> <span class="n">addr_payload</span><span class="p">):</span>
+                    <span class="k">if</span> <span class="n">match</span><span class="p">:</span>
+                        <span class="n">device_addr</span> <span class="o">=</span> <span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+                        <span class="nb">print</span><span class="p">(</span><span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span>
+                        <span class="n">device_dict</span><span class="p">[</span><span class="s2">&quot;dev_&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">device</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;_addr&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span>
+                            <span class="n">device_addr</span>
+                        <span class="p">)</span>
+                        <span class="n">bus_dict</span><span class="p">[</span><span class="s2">&quot;addr_base_&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">addr_base</span><span class="p">)]</span> <span class="o">=</span> <span class="n">device_dict</span>
+                        <span class="n">device</span> <span class="o">+=</span> <span class="mi">1</span>
+
+        <span class="n">parsed_device_dict</span><span class="p">[</span><span class="s2">&quot;i2c_detect&quot;</span><span class="p">][</span><span class="s2">&quot;bus_&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">bus</span><span class="p">)]</span> <span class="o">=</span> <span class="n">bus_dict</span>
+        <span class="k">return</span> <span class="n">parsed_device_dict</span></div>
+
+
+<div class="viewcode-block" id="Sensors.i2c_read_logic_levels">
+<a class="viewcode-back" href="../../docs/src.html#src.sht31_flask_server.Sensors.i2c_read_logic_levels">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">i2c_read_logic_levels</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Read current logic levels of i2c SDA and SCL pins.</span>
+
+<span class="sd">        inputs:</span>
+<span class="sd">            None</span>
+<span class="sd">        returns:</span>
+<span class="sd">            (dict): current logic levels of SDA and SCL pins</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">pi_library_exception</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">{</span>
+                <span class="s2">&quot;i2c_logic_levels&quot;</span><span class="p">:</span> <span class="p">{</span>
+                    <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="s2">&quot;GPIO library not available in test environment&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;sda_pin&quot;</span><span class="p">:</span> <span class="n">sht31_config</span><span class="o">.</span><span class="n">SDA_PIN</span><span class="p">,</span>
+                    <span class="s2">&quot;scl_pin&quot;</span><span class="p">:</span> <span class="n">sht31_config</span><span class="o">.</span><span class="n">SCL_PIN</span><span class="p">,</span>
+                    <span class="s2">&quot;sda_level&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+                    <span class="s2">&quot;scl_level&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+                    <span class="s2">&quot;sda_state&quot;</span><span class="p">:</span> <span class="s2">&quot;UNKNOWN&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;scl_state&quot;</span><span class="p">:</span> <span class="s2">&quot;UNKNOWN&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;timestamp&quot;</span><span class="p">:</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">(),</span>
+                <span class="p">}</span>
+            <span class="p">}</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c1"># set GPIO mode and configure pins as inputs</span>
+            <span class="n">GPIO</span><span class="o">.</span><span class="n">setmode</span><span class="p">(</span><span class="n">GPIO</span><span class="o">.</span><span class="n">BCM</span><span class="p">)</span>  <span class="c1"># type: ignore[attr-defined]</span>
+            <span class="n">GPIO</span><span class="o">.</span><span class="n">setup</span><span class="p">(</span><span class="n">sht31_config</span><span class="o">.</span><span class="n">SDA_PIN</span><span class="p">,</span> <span class="n">GPIO</span><span class="o">.</span><span class="n">IN</span><span class="p">)</span>  <span class="c1"># type: ignore[attr-defined]</span>
+            <span class="n">GPIO</span><span class="o">.</span><span class="n">setup</span><span class="p">(</span><span class="n">sht31_config</span><span class="o">.</span><span class="n">SCL_PIN</span><span class="p">,</span> <span class="n">GPIO</span><span class="o">.</span><span class="n">IN</span><span class="p">)</span>  <span class="c1"># type: ignore[attr-defined]</span>
+
+            <span class="c1"># read current pin states</span>
+            <span class="n">sda_level</span> <span class="o">=</span> <span class="n">GPIO</span><span class="o">.</span><span class="n">input</span><span class="p">(</span><span class="n">sht31_config</span><span class="o">.</span><span class="n">SDA_PIN</span><span class="p">)</span>  <span class="c1"># type: ignore[attr-defined]</span>
+            <span class="n">scl_level</span> <span class="o">=</span> <span class="n">GPIO</span><span class="o">.</span><span class="n">input</span><span class="p">(</span><span class="n">sht31_config</span><span class="o">.</span><span class="n">SCL_PIN</span><span class="p">)</span>  <span class="c1"># type: ignore[attr-defined]</span>
+
+            <span class="c1"># create response dictionary</span>
+            <span class="n">logic_levels</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s2">&quot;sda_pin&quot;</span><span class="p">:</span> <span class="n">sht31_config</span><span class="o">.</span><span class="n">SDA_PIN</span><span class="p">,</span>
+                <span class="s2">&quot;scl_pin&quot;</span><span class="p">:</span> <span class="n">sht31_config</span><span class="o">.</span><span class="n">SCL_PIN</span><span class="p">,</span>
+                <span class="s2">&quot;sda_level&quot;</span><span class="p">:</span> <span class="n">sda_level</span><span class="p">,</span>
+                <span class="s2">&quot;scl_level&quot;</span><span class="p">:</span> <span class="n">scl_level</span><span class="p">,</span>
+                <span class="s2">&quot;sda_state&quot;</span><span class="p">:</span> <span class="s2">&quot;HIGH&quot;</span> <span class="k">if</span> <span class="n">sda_level</span> <span class="k">else</span> <span class="s2">&quot;LOW&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;scl_state&quot;</span><span class="p">:</span> <span class="s2">&quot;HIGH&quot;</span> <span class="k">if</span> <span class="n">scl_level</span> <span class="k">else</span> <span class="s2">&quot;LOW&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;timestamp&quot;</span><span class="p">:</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">(),</span>
+            <span class="p">}</span>
+
+            <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;i2c_logic_levels&quot;</span><span class="p">:</span> <span class="n">logic_levels</span><span class="p">}</span>
+        <span class="k">finally</span><span class="p">:</span>
+            <span class="n">GPIO</span><span class="o">.</span><span class="n">cleanup</span><span class="p">()</span>  <span class="c1"># type: ignore[attr-defined]</span></div>
+
+
+<div class="viewcode-block" id="Sensors.i2c_bus_health_check">
+<a class="viewcode-back" href="../../docs/src.html#src.sht31_flask_server.Sensors.i2c_bus_health_check">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">i2c_bus_health_check</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Comprehensive i2c bus health diagnostic.</span>
+
+<span class="sd">        Checks for stuck bus conditions by monitoring pin states and</span>
+<span class="sd">        combining with device detection results.</span>
+
+<span class="sd">        inputs:</span>
+<span class="sd">            None</span>
+<span class="sd">        returns:</span>
+<span class="sd">            (dict): comprehensive bus health status</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c1"># get current logic levels</span>
+            <span class="n">logic_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">i2c_read_logic_levels</span><span class="p">()</span>
+            <span class="n">logic_levels</span> <span class="o">=</span> <span class="n">logic_data</span><span class="p">[</span><span class="s2">&quot;i2c_logic_levels&quot;</span><span class="p">]</span>
+
+            <span class="c1"># get device detection results</span>
+            <span class="n">detect_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">i2c_detect</span><span class="p">()</span>
+
+            <span class="c1"># handle test environment where GPIO is not available</span>
+            <span class="k">if</span> <span class="s2">&quot;error&quot;</span> <span class="ow">in</span> <span class="n">logic_levels</span><span class="p">:</span>
+                <span class="k">return</span> <span class="p">{</span>
+                    <span class="s2">&quot;i2c_bus_health&quot;</span><span class="p">:</span> <span class="p">{</span>
+                        <span class="s2">&quot;bus_status&quot;</span><span class="p">:</span> <span class="s2">&quot;TEST_MODE&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;overall_health&quot;</span><span class="p">:</span> <span class="s2">&quot;UNKNOWN&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;health_issues&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;GPIO not available in test environment&quot;</span><span class="p">],</span>
+                        <span class="s2">&quot;logic_levels&quot;</span><span class="p">:</span> <span class="n">logic_levels</span><span class="p">,</span>
+                        <span class="s2">&quot;device_detection&quot;</span><span class="p">:</span> <span class="n">detect_data</span><span class="p">,</span>
+                        <span class="s2">&quot;timestamp&quot;</span><span class="p">:</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">(),</span>
+                        <span class="s2">&quot;recommendations&quot;</span><span class="p">:</span> <span class="p">[</span>
+                            <span class="s2">&quot;Run on actual hardware for GPIO diagnostics&quot;</span>
+                        <span class="p">],</span>
+                    <span class="p">}</span>
+                <span class="p">}</span>
+
+            <span class="c1"># analyze bus health</span>
+            <span class="n">sda_level</span> <span class="o">=</span> <span class="n">logic_levels</span><span class="p">[</span><span class="s2">&quot;sda_level&quot;</span><span class="p">]</span>
+            <span class="n">scl_level</span> <span class="o">=</span> <span class="n">logic_levels</span><span class="p">[</span><span class="s2">&quot;scl_level&quot;</span><span class="p">]</span>
+
+            <span class="c1"># determine bus status</span>
+            <span class="n">bus_status</span> <span class="o">=</span> <span class="s2">&quot;UNKNOWN&quot;</span>
+            <span class="n">health_issues</span> <span class="o">=</span> <span class="p">[]</span>
+
+            <span class="k">if</span> <span class="n">sda_level</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">scl_level</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">bus_status</span> <span class="o">=</span> <span class="s2">&quot;STUCK_LOW&quot;</span>
+                <span class="n">health_issues</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;Both SDA and SCL pins stuck LOW&quot;</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">sda_level</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">bus_status</span> <span class="o">=</span> <span class="s2">&quot;SDA_STUCK_LOW&quot;</span>
+                <span class="n">health_issues</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;SDA pin stuck LOW&quot;</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">scl_level</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">bus_status</span> <span class="o">=</span> <span class="s2">&quot;SCL_STUCK_LOW&quot;</span>
+                <span class="n">health_issues</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;SCL pin stuck LOW&quot;</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">sda_level</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">scl_level</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">bus_status</span> <span class="o">=</span> <span class="s2">&quot;IDLE&quot;</span>
+                <span class="n">health_issues</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;Bus appears idle (both pins HIGH)&quot;</span><span class="p">)</span>
+
+            <span class="c1"># check for device detection errors</span>
+            <span class="k">if</span> <span class="s2">&quot;error&quot;</span> <span class="ow">in</span> <span class="nb">str</span><span class="p">(</span><span class="n">detect_data</span><span class="p">):</span>
+                <span class="n">health_issues</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;Device detection reported errors&quot;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">bus_status</span> <span class="o">==</span> <span class="s2">&quot;IDLE&quot;</span><span class="p">:</span>
+                    <span class="n">bus_status</span> <span class="o">=</span> <span class="s2">&quot;ERROR_WITH_DETECTION&quot;</span>
+
+            <span class="c1"># determine overall health</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">health_issues</span><span class="p">:</span>
+                <span class="n">overall_health</span> <span class="o">=</span> <span class="s2">&quot;HEALTHY&quot;</span>
+            <span class="k">elif</span> <span class="n">bus_status</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;STUCK_LOW&quot;</span><span class="p">,</span> <span class="s2">&quot;SDA_STUCK_LOW&quot;</span><span class="p">,</span> <span class="s2">&quot;SCL_STUCK_LOW&quot;</span><span class="p">]:</span>
+                <span class="n">overall_health</span> <span class="o">=</span> <span class="s2">&quot;CRITICAL&quot;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">overall_health</span> <span class="o">=</span> <span class="s2">&quot;WARNING&quot;</span>
+
+            <span class="c1"># create comprehensive response</span>
+            <span class="n">health_check</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s2">&quot;bus_status&quot;</span><span class="p">:</span> <span class="n">bus_status</span><span class="p">,</span>
+                <span class="s2">&quot;overall_health&quot;</span><span class="p">:</span> <span class="n">overall_health</span><span class="p">,</span>
+                <span class="s2">&quot;health_issues&quot;</span><span class="p">:</span> <span class="n">health_issues</span><span class="p">,</span>
+                <span class="s2">&quot;logic_levels&quot;</span><span class="p">:</span> <span class="n">logic_levels</span><span class="p">,</span>
+                <span class="s2">&quot;device_detection&quot;</span><span class="p">:</span> <span class="n">detect_data</span><span class="p">,</span>
+                <span class="s2">&quot;timestamp&quot;</span><span class="p">:</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">(),</span>
+                <span class="s2">&quot;recommendations&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_health_recommendations</span><span class="p">(</span><span class="n">bus_status</span><span class="p">),</span>
+            <span class="p">}</span>
+
+            <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;i2c_bus_health&quot;</span><span class="p">:</span> <span class="n">health_check</span><span class="p">}</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">{</span>
+                <span class="s2">&quot;i2c_bus_health&quot;</span><span class="p">:</span> <span class="p">{</span>
+                    <span class="s2">&quot;bus_status&quot;</span><span class="p">:</span> <span class="s2">&quot;ERROR&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;overall_health&quot;</span><span class="p">:</span> <span class="s2">&quot;CRITICAL&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;error&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">exc</span><span class="p">),</span>
+                    <span class="s2">&quot;timestamp&quot;</span><span class="p">:</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">(),</span>
+                <span class="p">}</span>
+            <span class="p">}</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_health_recommendations</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">bus_status</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get recommendations based on bus health status.</span>
+
+<span class="sd">        inputs:</span>
+<span class="sd">            bus_status(str): current bus status</span>
+<span class="sd">        returns:</span>
+<span class="sd">            (list): list of recommended actions</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">recommendations</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">if</span> <span class="n">bus_status</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;STUCK_LOW&quot;</span><span class="p">,</span> <span class="s2">&quot;SDA_STUCK_LOW&quot;</span><span class="p">,</span> <span class="s2">&quot;SCL_STUCK_LOW&quot;</span><span class="p">]:</span>
+            <span class="n">recommendations</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span>
+                <span class="p">[</span>
+                    <span class="s2">&quot;Bus appears stuck - try i2c recovery sequence&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;Check physical connections to SHT31 sensor&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;Consider power cycling the system&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;Verify no short circuits on i2c lines&quot;</span><span class="p">,</span>
+                <span class="p">]</span>
+            <span class="p">)</span>
+        <span class="k">elif</span> <span class="n">bus_status</span> <span class="o">==</span> <span class="s2">&quot;ERROR_WITH_DETECTION&quot;</span><span class="p">:</span>
+            <span class="n">recommendations</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span>
+                <span class="p">[</span>
+                    <span class="s2">&quot;Device detection failed - check sensor connection&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;Verify sensor power supply&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;Try i2c bus recovery if issues persist&quot;</span><span class="p">,</span>
+                <span class="p">]</span>
+            <span class="p">)</span>
+        <span class="k">elif</span> <span class="n">bus_status</span> <span class="o">==</span> <span class="s2">&quot;IDLE&quot;</span><span class="p">:</span>
+            <span class="n">recommendations</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span>
+                <span class="p">[</span>
+                    <span class="s2">&quot;Bus appears idle - this is normal when not communicating&quot;</span><span class="p">,</span>
+                    <span class="s2">&quot;Run device detection to verify sensor connectivity&quot;</span><span class="p">,</span>
+                <span class="p">]</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">recommendations</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;Monitor bus status for any changes&quot;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">recommendations</span>
+
+<div class="viewcode-block" id="Sensors.get_iwlist_wifi_strength">
+<a class="viewcode-back" href="../../docs/src.html#src.sht31_flask_server.Sensors.get_iwlist_wifi_strength">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_iwlist_wifi_strength</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cell</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>  <span class="c1"># noqa R0201</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return the Raspberry pi wifi signal strength in dBm from iwlist.</span>
+
+<span class="sd">        Code from iancoleman/python-iwlist used.</span>
+
+<span class="sd">        inputs:</span>
+<span class="sd">            cell(int): cell number to return.</span>
+<span class="sd">        returns:</span>
+<span class="sd">            (float): wifi signal strength in dBm.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">env</span><span class="o">.</span><span class="n">is_windows_environment</span><span class="p">():</span>
+            <span class="k">raise</span> <span class="ne">EnvironmentError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;ERROR: </span><span class="si">{</span><span class="n">util</span><span class="o">.</span><span class="n">get_function_name</span><span class="p">()</span><span class="si">}</span><span class="s2"> is only supported on Linux&quot;</span>
+            <span class="p">)</span>
+
+        <span class="n">cell_number_re</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span>
+            <span class="sa">r</span><span class="s2">&quot;^Cell\s+(?P&lt;cellnumber&gt;.+)\s+-\s+Address:\s(?P&lt;mac&gt;.+)$&quot;</span>
+        <span class="p">)</span>
+        <span class="n">regexps</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;^ESSID:</span><span class="se">\&quot;</span><span class="s2">(?P&lt;essid&gt;.*)</span><span class="se">\&quot;</span><span class="s2">$&quot;</span><span class="p">),</span>
+            <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;^Protocol:(?P&lt;protocol&gt;.+)$&quot;</span><span class="p">),</span>
+            <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;^Mode:(?P&lt;mode&gt;.+)$&quot;</span><span class="p">),</span>
+            <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span>
+                <span class="sa">r</span><span class="s2">&quot;^Frequency:(?P&lt;frequency&gt;[\d.]+) &quot;</span>
+                <span class="sa">r</span><span class="s2">&quot;(?P&lt;frequency_units&gt;.+) \(Channel &quot;</span>
+                <span class="sa">r</span><span class="s2">&quot;(?P&lt;channel&gt;\d+)\)$&quot;</span>
+            <span class="p">),</span>
+            <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;^Encryption key:(?P&lt;encryption&gt;.+)$&quot;</span><span class="p">),</span>
+            <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span>
+                <span class="sa">r</span><span class="s2">&quot;^Quality=(?P&lt;signal_quality&gt;\d+)/(?P&lt;signal_total&gt;\d+)&quot;</span>
+                <span class="sa">r</span><span class="s2">&quot;\s+Signal level=(?P&lt;signal_level_dBm&gt;.+) d.+$&quot;</span>
+            <span class="p">),</span>
+            <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span>
+                <span class="sa">r</span><span class="s2">&quot;^Signal level=(?P&lt;signal_quality&gt;\d+)/(?P&lt;signal_total&gt;\d+).*$&quot;</span>
+            <span class="p">),</span>
+        <span class="p">]</span>
+
+        <span class="c1"># Detect encryption type</span>
+        <span class="n">wpa_re</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;IE:\ WPA\ Version\ 1$&quot;</span><span class="p">)</span>
+        <span class="n">wpa2_re</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;IE:\ IEEE\ 802\.11i/WPA2\ Version\ 1$&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Parses the response from the command &quot;iwlist scan&quot;</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">parse</span><span class="p">(</span><span class="n">content</span><span class="p">):</span>
+            <span class="n">cells</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">lines</span> <span class="o">=</span> <span class="n">content</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">lines</span><span class="p">:</span>
+                <span class="n">line</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+                <span class="n">cell_number</span> <span class="o">=</span> <span class="n">cell_number_re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">cell_number</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">cells</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cell_number</span><span class="o">.</span><span class="n">groupdict</span><span class="p">())</span>
+                    <span class="k">continue</span>
+                <span class="n">wpa</span> <span class="o">=</span> <span class="n">wpa_re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">wpa</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">cells</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s2">&quot;encryption&quot;</span><span class="p">:</span> <span class="s2">&quot;wpa&quot;</span><span class="p">})</span>
+                <span class="n">wpa2</span> <span class="o">=</span> <span class="n">wpa2_re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">wpa2</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">cells</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s2">&quot;encryption&quot;</span><span class="p">:</span> <span class="s2">&quot;wpa2&quot;</span><span class="p">})</span>
+                <span class="k">for</span> <span class="n">expression</span> <span class="ow">in</span> <span class="n">regexps</span><span class="p">:</span>
+                    <span class="n">result</span> <span class="o">=</span> <span class="n">expression</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">result</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="s2">&quot;encryption&quot;</span> <span class="ow">in</span> <span class="n">result</span><span class="o">.</span><span class="n">groupdict</span><span class="p">():</span>
+                            <span class="k">if</span> <span class="n">result</span><span class="o">.</span><span class="n">groupdict</span><span class="p">()[</span><span class="s2">&quot;encryption&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;on&quot;</span><span class="p">:</span>
+                                <span class="n">cells</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s2">&quot;encryption&quot;</span><span class="p">:</span> <span class="s2">&quot;wep&quot;</span><span class="p">})</span>
+                            <span class="k">else</span><span class="p">:</span>
+                                <span class="n">cells</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s2">&quot;encryption&quot;</span><span class="p">:</span> <span class="s2">&quot;off&quot;</span><span class="p">})</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="n">cells</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">groupdict</span><span class="p">())</span>
+                        <span class="k">continue</span>
+            <span class="k">return</span> <span class="n">cells</span>
+
+        <span class="c1"># call iwlist terminal command</span>
+        <span class="c1"># Runs the comnmand to scan the list of networks.</span>
+        <span class="c1"># Must run as super user.</span>
+        <span class="c1"># Does not specify a particular device, so will scan all</span>
+        <span class="c1"># network devices.</span>
+        <span class="n">scan_result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">shell_cmd</span><span class="p">([</span><span class="s2">&quot;iwlist&quot;</span><span class="p">,</span> <span class="s2">&quot;wlan0&quot;</span><span class="p">,</span> <span class="s2">&quot;scan&quot;</span><span class="p">])</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;iwlist scan results: </span><span class="si">{</span><span class="n">scan_result</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="c1"># parse out the RSSI result</span>
+        <span class="n">parse_result</span> <span class="o">=</span> <span class="n">parse</span><span class="p">(</span><span class="n">scan_result</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;iwlist parse results: </span><span class="si">{</span><span class="n">parse_result</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">parse_result</span><span class="p">[</span><span class="n">cell</span><span class="p">][</span><span class="s2">&quot;signal_level_dBm&quot;</span><span class="p">])</span></div>
+
+
+<div class="viewcode-block" id="Sensors.get_iwconfig_wifi_strength">
+<a class="viewcode-back" href="../../docs/src.html#src.sht31_flask_server.Sensors.get_iwconfig_wifi_strength">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_iwconfig_wifi_strength</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>  <span class="c1"># noqa R0201</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return the Raspberry pi wifi signal strength in dBm from iwconfig.</span>
+
+<span class="sd">        inputs:</span>
+<span class="sd">            None.</span>
+<span class="sd">        returns:</span>
+<span class="sd">            (float): wifi signal strength in dBm.</span>
+<span class="sd">                     Returns -40.0 (mock value) if command not available.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">regexps_iwconfig</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;^ESSID:</span><span class="se">\&quot;</span><span class="s2">(?P&lt;essid&gt;.*)</span><span class="se">\&quot;</span><span class="s2">$&quot;</span><span class="p">),</span>
+            <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span>
+                <span class="sa">r</span><span class="s2">&quot;^Frequency:(?P&lt;frequency&gt;[\d.]+) &quot;</span>
+                <span class="sa">r</span><span class="s2">&quot;(?P&lt;frequency_units&gt;.+)\s+ &quot;</span>
+                <span class="sa">r</span><span class="s2">&quot;Access Point:</span><span class="se">\&quot;</span><span class="s2">(?P&lt;mac_addr&gt;.*)</span><span class="se">\&quot;</span><span class="s2">$&quot;</span>
+            <span class="p">),</span>
+            <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span>
+                <span class="sa">r</span><span class="s2">&quot;^Link Quality=(?P&lt;signal_quality&gt;\d+)/&quot;</span>
+                <span class="sa">r</span><span class="s2">&quot;(?P&lt;signal_total&gt;\d+)&quot;</span>
+                <span class="sa">r</span><span class="s2">&quot;\s+Signal level=(?P&lt;signal_level_dBm&gt;.+) d.+$&quot;</span>
+            <span class="p">),</span>
+        <span class="p">]</span>
+
+        <span class="n">regexps_netsh</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;^\s*SSID\s*:\s(?P&lt;essid&gt;.*)\s*&quot;</span><span class="p">),</span>
+            <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;^\s*Channel\s*:(?P&lt;frequency&gt;[\d.])\s*&quot;</span><span class="p">),</span>
+            <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;^\s*BSSID\s*:\s(?P&lt;mac_addr&gt;.*)\s*&quot;</span><span class="p">),</span>
+            <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;^\s*Signal\s*:\s(?P&lt;signal_quality&gt;.*)%\s*&quot;</span><span class="p">),</span>
+        <span class="p">]</span>
+
+        <span class="c1"># Parses the response from the command &quot;iwconfig&quot;</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">parse</span><span class="p">(</span><span class="n">content</span><span class="p">,</span> <span class="n">regexps</span><span class="p">):</span>
+            <span class="n">parse_result</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="n">lines</span> <span class="o">=</span> <span class="n">content</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">lines</span><span class="p">:</span>
+                <span class="n">line</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+                <span class="k">for</span> <span class="n">expression</span> <span class="ow">in</span> <span class="n">regexps</span><span class="p">:</span>
+                    <span class="n">result</span> <span class="o">=</span> <span class="n">expression</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">result</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                        <span class="n">parse_result</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">groupdict</span><span class="p">())</span>
+            <span class="k">return</span> <span class="n">parse_result</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c1"># call iwconfig terminal command</span>
+            <span class="k">if</span> <span class="n">env</span><span class="o">.</span><span class="n">is_windows_environment</span><span class="p">():</span>
+                <span class="n">scan_cmd</span> <span class="o">=</span> <span class="s2">&quot;netsh&quot;</span>
+                <span class="n">scan_result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">shell_cmd</span><span class="p">(</span>
+                    <span class="p">[</span><span class="n">scan_cmd</span><span class="p">,</span> <span class="s2">&quot;wlan&quot;</span><span class="p">,</span> <span class="s2">&quot;show&quot;</span><span class="p">,</span> <span class="s2">&quot;interfaces&quot;</span><span class="p">]</span>
+                <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>  <span class="c1"># assume Linux</span>
+                <span class="n">scan_cmd</span> <span class="o">=</span> <span class="s2">&quot;iwconfig&quot;</span>
+                <span class="n">scan_result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">shell_cmd</span><span class="p">([</span><span class="n">scan_cmd</span><span class="p">])</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">scan_cmd</span><span class="si">}</span><span class="s2"> scan results: </span><span class="si">{</span><span class="n">scan_result</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+            <span class="c1"># parse out the RSSI result</span>
+            <span class="k">if</span> <span class="n">env</span><span class="o">.</span><span class="n">is_windows_environment</span><span class="p">():</span>
+                <span class="n">parse_result</span> <span class="o">=</span> <span class="n">parse</span><span class="p">(</span><span class="n">scan_result</span><span class="p">,</span> <span class="n">regexps_netsh</span><span class="p">)</span>
+                <span class="c1"># add calculation for dBm = quality / 2 - 100</span>
+                <span class="n">parse_result</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+                    <span class="p">{</span>
+                        <span class="s2">&quot;signal_level_dBm&quot;</span><span class="p">:</span> <span class="p">(</span>
+                            <span class="nb">int</span><span class="p">(</span><span class="n">parse_result</span><span class="p">[</span><span class="s2">&quot;signal_quality&quot;</span><span class="p">])</span> <span class="o">/</span> <span class="mi">2</span> <span class="o">-</span> <span class="mi">100</span>
+                        <span class="p">)</span>
+                    <span class="p">}</span>
+                <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>  <span class="c1"># assume Linux</span>
+                <span class="n">parse_result</span> <span class="o">=</span> <span class="n">parse</span><span class="p">(</span><span class="n">scan_result</span><span class="p">,</span> <span class="n">regexps_iwconfig</span><span class="p">)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">scan_cmd</span><span class="si">}</span><span class="s2"> parse results: </span><span class="si">{</span><span class="n">parse_result</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+            <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">parse_result</span><span class="p">[</span><span class="s2">&quot;signal_level_dBm&quot;</span><span class="p">])</span>
+        <span class="k">except</span> <span class="p">(</span><span class="ne">FileNotFoundError</span><span class="p">,</span> <span class="ne">KeyError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="c1"># Command not found or parsing failed - return mock value</span>
+            <span class="k">if</span> <span class="n">util</span><span class="o">.</span><span class="n">unit_test_mode</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Warning: Unable to get wifi strength &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;(</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">), using mock value -40.0 dBm&quot;</span>
+                <span class="p">)</span>
+            <span class="k">return</span> <span class="o">-</span><span class="mf">40.0</span></div>
+
+
+<div class="viewcode-block" id="Sensors.shell_cmd">
+<a class="viewcode-back" href="../../docs/src.html#src.sht31_flask_server.Sensors.shell_cmd">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">shell_cmd</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cmd_lst</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Send a shell command to the terminal and return results.</span>
+
+<span class="sd">        inputs:</span>
+<span class="sd">            cmd_lst(list):  list of one or more commands / parameters.</span>
+<span class="sd">        returns:</span>
+<span class="sd">            (str): result.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">with</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">Popen</span><span class="p">(</span>
+            <span class="n">cmd_lst</span><span class="p">,</span> <span class="n">stdout</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">PIPE</span><span class="p">,</span> <span class="n">stderr</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">PIPE</span>
+        <span class="p">)</span> <span class="k">as</span> <span class="n">proc</span><span class="p">:</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="n">proc</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">read</span><span class="p">()</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span>  <span class="c1"># type: ignore[union-attr]</span>
+        <span class="k">return</span> <span class="n">result</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="Controller">
+<a class="viewcode-back" href="../../docs/src.html#src.sht31_flask_server.Controller">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Controller</span><span class="p">(</span><span class="n">Resource</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Production controller.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="Controller.get">
+<a class="viewcode-back" href="../../docs/src.html#src.sht31_flask_server.Controller.get">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Map the get method.&quot;&quot;&quot;</span>
+        <span class="n">helper</span> <span class="o">=</span> <span class="n">Sensors</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">helper</span><span class="o">.</span><span class="n">get</span><span class="p">()</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="ControllerUnit">
+<a class="viewcode-back" href="../../docs/src.html#src.sht31_flask_server.ControllerUnit">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ControllerUnit</span><span class="p">(</span><span class="n">Resource</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Unit test Controller.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="ControllerUnit.get">
+<a class="viewcode-back" href="../../docs/src.html#src.sht31_flask_server.ControllerUnit.get">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Map the get method.&quot;&quot;&quot;</span>
+        <span class="n">helper</span> <span class="o">=</span> <span class="n">Sensors</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">helper</span><span class="o">.</span><span class="n">get_unit_test</span><span class="p">()</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="ReadFaultRegister">
+<a class="viewcode-back" href="../../docs/src.html#src.sht31_flask_server.ReadFaultRegister">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ReadFaultRegister</span><span class="p">(</span><span class="n">Resource</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Diagnostic Controller.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="ReadFaultRegister.get">
+<a class="viewcode-back" href="../../docs/src.html#src.sht31_flask_server.ReadFaultRegister.get">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Map the get method.&quot;&quot;&quot;</span>
+        <span class="n">helper</span> <span class="o">=</span> <span class="n">Sensors</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">helper</span><span class="o">.</span><span class="n">send_cmd_get_diag</span><span class="p">(</span><span class="n">read_status_register</span><span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="ClearFaultRegister">
+<a class="viewcode-back" href="../../docs/src.html#src.sht31_flask_server.ClearFaultRegister">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ClearFaultRegister</span><span class="p">(</span><span class="n">Resource</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Clear Diagnostic Controller.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="ClearFaultRegister.get">
+<a class="viewcode-back" href="../../docs/src.html#src.sht31_flask_server.ClearFaultRegister.get">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Map the get method.&quot;&quot;&quot;</span>
+        <span class="n">helper</span> <span class="o">=</span> <span class="n">Sensors</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">helper</span><span class="o">.</span><span class="n">send_cmd_get_diag</span><span class="p">(</span><span class="n">clear_status_register</span><span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="EnableHeater">
+<a class="viewcode-back" href="../../docs/src.html#src.sht31_flask_server.EnableHeater">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">EnableHeater</span><span class="p">(</span><span class="n">Resource</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Enable heater Controller.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="EnableHeater.get">
+<a class="viewcode-back" href="../../docs/src.html#src.sht31_flask_server.EnableHeater.get">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Map the get method.&quot;&quot;&quot;</span>
+        <span class="n">helper</span> <span class="o">=</span> <span class="n">Sensors</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">helper</span><span class="o">.</span><span class="n">send_cmd_get_diag</span><span class="p">(</span><span class="n">enable_heater</span><span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="DisableHeater">
+<a class="viewcode-back" href="../../docs/src.html#src.sht31_flask_server.DisableHeater">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">DisableHeater</span><span class="p">(</span><span class="n">Resource</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Disable heater Controller.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="DisableHeater.get">
+<a class="viewcode-back" href="../../docs/src.html#src.sht31_flask_server.DisableHeater.get">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Map the get method.&quot;&quot;&quot;</span>
+        <span class="n">helper</span> <span class="o">=</span> <span class="n">Sensors</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">helper</span><span class="o">.</span><span class="n">send_cmd_get_diag</span><span class="p">(</span><span class="n">disable_heater</span><span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="SoftReset">
+<a class="viewcode-back" href="../../docs/src.html#src.sht31_flask_server.SoftReset">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">SoftReset</span><span class="p">(</span><span class="n">Resource</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;i2C soft reset.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="SoftReset.get">
+<a class="viewcode-back" href="../../docs/src.html#src.sht31_flask_server.SoftReset.get">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Map the get method.&quot;&quot;&quot;</span>
+        <span class="n">helper</span> <span class="o">=</span> <span class="n">Sensors</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">helper</span><span class="o">.</span><span class="n">send_cmd_get_diag</span><span class="p">(</span><span class="n">soft_reset</span><span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="Reset">
+<a class="viewcode-back" href="../../docs/src.html#src.sht31_flask_server.Reset">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Reset</span><span class="p">(</span><span class="n">Resource</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;i2C hard reset.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="Reset.get">
+<a class="viewcode-back" href="../../docs/src.html#src.sht31_flask_server.Reset.get">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Map the get method.&quot;&quot;&quot;</span>
+        <span class="n">helper</span> <span class="o">=</span> <span class="n">Sensors</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">helper</span><span class="o">.</span><span class="n">send_cmd_get_diag</span><span class="p">(</span><span class="n">reset</span><span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="I2CRecovery">
+<a class="viewcode-back" href="../../docs/src.html#src.sht31_flask_server.I2CRecovery">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">I2CRecovery</span><span class="p">(</span><span class="n">Resource</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Issue i2c recovery sequence.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="I2CRecovery.get">
+<a class="viewcode-back" href="../../docs/src.html#src.sht31_flask_server.I2CRecovery.get">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Map the get method.&quot;&quot;&quot;</span>
+        <span class="n">helper</span> <span class="o">=</span> <span class="n">Sensors</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">helper</span><span class="o">.</span><span class="n">i2c_recovery</span><span class="p">()</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="I2CDetect">
+<a class="viewcode-back" href="../../docs/src.html#src.sht31_flask_server.I2CDetect">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">I2CDetect</span><span class="p">(</span><span class="n">Resource</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Issue i2c detect on default bus.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="I2CDetect.get">
+<a class="viewcode-back" href="../../docs/src.html#src.sht31_flask_server.I2CDetect.get">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Map the get method.&quot;&quot;&quot;</span>
+        <span class="n">helper</span> <span class="o">=</span> <span class="n">Sensors</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">helper</span><span class="o">.</span><span class="n">i2c_detect</span><span class="p">()</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="I2CDetectBus0">
+<a class="viewcode-back" href="../../docs/src.html#src.sht31_flask_server.I2CDetectBus0">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">I2CDetectBus0</span><span class="p">(</span><span class="n">Resource</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Issue i2c detect on bus 0.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="I2CDetectBus0.get">
+<a class="viewcode-back" href="../../docs/src.html#src.sht31_flask_server.I2CDetectBus0.get">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Map the get method.&quot;&quot;&quot;</span>
+        <span class="n">helper</span> <span class="o">=</span> <span class="n">Sensors</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">helper</span><span class="o">.</span><span class="n">i2c_detect</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="I2CDetectBus1">
+<a class="viewcode-back" href="../../docs/src.html#src.sht31_flask_server.I2CDetectBus1">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">I2CDetectBus1</span><span class="p">(</span><span class="n">Resource</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Issue i2c detect on bus 1.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="I2CDetectBus1.get">
+<a class="viewcode-back" href="../../docs/src.html#src.sht31_flask_server.I2CDetectBus1.get">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Map the get method.&quot;&quot;&quot;</span>
+        <span class="n">helper</span> <span class="o">=</span> <span class="n">Sensors</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">helper</span><span class="o">.</span><span class="n">i2c_detect</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="I2CLogicLevels">
+<a class="viewcode-back" href="../../docs/src.html#src.sht31_flask_server.I2CLogicLevels">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">I2CLogicLevels</span><span class="p">(</span><span class="n">Resource</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Read current i2c logic levels.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="I2CLogicLevels.get">
+<a class="viewcode-back" href="../../docs/src.html#src.sht31_flask_server.I2CLogicLevels.get">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Map the get method.&quot;&quot;&quot;</span>
+        <span class="n">helper</span> <span class="o">=</span> <span class="n">Sensors</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">helper</span><span class="o">.</span><span class="n">i2c_read_logic_levels</span><span class="p">()</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="I2CBusHealth">
+<a class="viewcode-back" href="../../docs/src.html#src.sht31_flask_server.I2CBusHealth">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">I2CBusHealth</span><span class="p">(</span><span class="n">Resource</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Comprehensive i2c bus health check.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="I2CBusHealth.get">
+<a class="viewcode-back" href="../../docs/src.html#src.sht31_flask_server.I2CBusHealth.get">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Map the get method.&quot;&quot;&quot;</span>
+        <span class="n">helper</span> <span class="o">=</span> <span class="n">Sensors</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">helper</span><span class="o">.</span><span class="n">i2c_bus_health_check</span><span class="p">()</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="PrintIPBanBlockList">
+<a class="viewcode-back" href="../../docs/src.html#src.sht31_flask_server.PrintIPBanBlockList">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">PrintIPBanBlockList</span><span class="p">(</span><span class="n">Resource</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Print IPBan block list to flask server console.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="PrintIPBanBlockList.get">
+<a class="viewcode-back" href="../../docs/src.html#src.sht31_flask_server.PrintIPBanBlockList.get">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Map the get method.&quot;&quot;&quot;</span>
+        <span class="c1"># print block list to server console</span>
+        <span class="n">flg</span><span class="o">.</span><span class="n">print_ipban_block_list_with_timestamp</span><span class="p">(</span><span class="n">ip_ban</span><span class="p">)</span>
+        <span class="c1"># return block list to API</span>
+        <span class="k">return</span> <span class="n">jsonify</span><span class="p">(</span><span class="n">ip_ban</span><span class="o">.</span><span class="n">get_block_list</span><span class="p">())</span></div>
+</div>
+
+        <span class="c1"># return {&quot;ipban_block_list&quot;: jsonify(ip_ban.get_block_list())}</span>
+
+
+<div class="viewcode-block" id="ClearIPBanBlockList">
+<a class="viewcode-back" href="../../docs/src.html#src.sht31_flask_server.ClearIPBanBlockList">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ClearIPBanBlockList</span><span class="p">(</span><span class="n">Resource</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Clear IPBan block list to flask server console.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="ClearIPBanBlockList.get">
+<a class="viewcode-back" href="../../docs/src.html#src.sht31_flask_server.ClearIPBanBlockList.get">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Map the get method.&quot;&quot;&quot;</span>
+        <span class="c1"># clear block list</span>
+        <span class="n">flg</span><span class="o">.</span><span class="n">clear_ipban_block_list</span><span class="p">(</span><span class="n">ip_ban</span><span class="p">)</span>
+        <span class="c1"># return block list to API</span>
+        <span class="k">return</span> <span class="n">jsonify</span><span class="p">(</span><span class="n">ip_ban</span><span class="o">.</span><span class="n">get_block_list</span><span class="p">())</span></div>
+</div>
+
+        <span class="c1"># return {&quot;ipban_block_list&quot;: jsonify(ip_ban.get_block_list())}</span>
+
+
+<div class="viewcode-block" id="create_app">
+<a class="viewcode-back" href="../../docs/src.html#src.sht31_flask_server.create_app">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">create_app</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Create the api object.&quot;&quot;&quot;</span>
+    <span class="n">app_</span> <span class="o">=</span> <span class="n">Flask</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+    <span class="c1"># Set a secret key for CSRF protection</span>
+    <span class="c1"># In production, this should be set via environment variable</span>
+    <span class="n">secret_key</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;SECRET_KEY&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">secret_key</span><span class="p">:</span>
+        <span class="c1"># Generate a random secret key for development/testing</span>
+        <span class="n">secret_key</span> <span class="o">=</span> <span class="n">secrets</span><span class="o">.</span><span class="n">token_hex</span><span class="p">(</span><span class="mi">32</span><span class="p">)</span>
+    <span class="n">app_</span><span class="o">.</span><span class="n">config</span><span class="p">[</span><span class="s2">&quot;SECRET_KEY&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">secret_key</span>
+
+    <span class="c1"># override JSONEncoder with custom JSON encoder</span>
+    <span class="c1"># Note: In Flask 2.2+, use app.json_encoder (deprecated) or app.json.encoder</span>
+    <span class="c1"># For compatibility, we add type ignore for the attribute assignment</span>
+    <span class="n">app_</span><span class="o">.</span><span class="n">json_encoder</span> <span class="o">=</span> <span class="n">flg</span><span class="o">.</span><span class="n">CustomJSONEncoder</span>  <span class="c1"># type: ignore[attr-defined]</span>
+
+    <span class="c1"># add API routes</span>
+    <span class="n">api</span> <span class="o">=</span> <span class="n">Api</span><span class="p">(</span><span class="n">app_</span><span class="p">)</span>
+
+    <span class="c1"># Initialize rate limiter</span>
+    <span class="n">Limiter</span><span class="p">(</span>
+        <span class="n">get_remote_address</span><span class="p">,</span>
+        <span class="n">app</span><span class="o">=</span><span class="n">app_</span><span class="p">,</span>
+        <span class="n">default_limits</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;200 per day&quot;</span><span class="p">,</span> <span class="s2">&quot;60 per hour&quot;</span><span class="p">],</span>
+        <span class="n">storage_uri</span><span class="o">=</span><span class="n">env</span><span class="o">.</span><span class="n">get_flask_limiter_storage_uri</span><span class="p">(),</span>
+    <span class="p">)</span>
+
+    <span class="c1"># add API functions</span>
+    <span class="n">api</span><span class="o">.</span><span class="n">add_resource</span><span class="p">(</span><span class="n">Controller</span><span class="p">,</span> <span class="n">sht31_config</span><span class="o">.</span><span class="n">flask_folder</span><span class="o">.</span><span class="n">production</span><span class="p">)</span>
+    <span class="n">api</span><span class="o">.</span><span class="n">add_resource</span><span class="p">(</span><span class="n">ControllerUnit</span><span class="p">,</span> <span class="n">sht31_config</span><span class="o">.</span><span class="n">flask_folder</span><span class="o">.</span><span class="n">unit_test</span><span class="p">)</span>
+    <span class="n">api</span><span class="o">.</span><span class="n">add_resource</span><span class="p">(</span><span class="n">ReadFaultRegister</span><span class="p">,</span> <span class="n">sht31_config</span><span class="o">.</span><span class="n">flask_folder</span><span class="o">.</span><span class="n">diag</span><span class="p">)</span>
+    <span class="n">api</span><span class="o">.</span><span class="n">add_resource</span><span class="p">(</span><span class="n">ClearFaultRegister</span><span class="p">,</span> <span class="n">sht31_config</span><span class="o">.</span><span class="n">flask_folder</span><span class="o">.</span><span class="n">clear_diag</span><span class="p">)</span>
+    <span class="n">api</span><span class="o">.</span><span class="n">add_resource</span><span class="p">(</span><span class="n">EnableHeater</span><span class="p">,</span> <span class="n">sht31_config</span><span class="o">.</span><span class="n">flask_folder</span><span class="o">.</span><span class="n">enable_heater</span><span class="p">)</span>
+    <span class="n">api</span><span class="o">.</span><span class="n">add_resource</span><span class="p">(</span><span class="n">DisableHeater</span><span class="p">,</span> <span class="n">sht31_config</span><span class="o">.</span><span class="n">flask_folder</span><span class="o">.</span><span class="n">disable_heater</span><span class="p">)</span>
+    <span class="n">api</span><span class="o">.</span><span class="n">add_resource</span><span class="p">(</span><span class="n">SoftReset</span><span class="p">,</span> <span class="n">sht31_config</span><span class="o">.</span><span class="n">flask_folder</span><span class="o">.</span><span class="n">soft_reset</span><span class="p">)</span>
+    <span class="n">api</span><span class="o">.</span><span class="n">add_resource</span><span class="p">(</span><span class="n">Reset</span><span class="p">,</span> <span class="n">sht31_config</span><span class="o">.</span><span class="n">flask_folder</span><span class="o">.</span><span class="n">reset</span><span class="p">)</span>
+    <span class="n">api</span><span class="o">.</span><span class="n">add_resource</span><span class="p">(</span><span class="n">I2CRecovery</span><span class="p">,</span> <span class="n">sht31_config</span><span class="o">.</span><span class="n">flask_folder</span><span class="o">.</span><span class="n">i2c_recovery</span><span class="p">)</span>
+    <span class="n">api</span><span class="o">.</span><span class="n">add_resource</span><span class="p">(</span><span class="n">I2CDetect</span><span class="p">,</span> <span class="n">sht31_config</span><span class="o">.</span><span class="n">flask_folder</span><span class="o">.</span><span class="n">i2c_detect</span><span class="p">)</span>
+    <span class="n">api</span><span class="o">.</span><span class="n">add_resource</span><span class="p">(</span><span class="n">I2CDetectBus0</span><span class="p">,</span> <span class="n">sht31_config</span><span class="o">.</span><span class="n">flask_folder</span><span class="o">.</span><span class="n">i2c_detect_0</span><span class="p">)</span>
+    <span class="n">api</span><span class="o">.</span><span class="n">add_resource</span><span class="p">(</span><span class="n">I2CDetectBus1</span><span class="p">,</span> <span class="n">sht31_config</span><span class="o">.</span><span class="n">flask_folder</span><span class="o">.</span><span class="n">i2c_detect_1</span><span class="p">)</span>
+    <span class="n">api</span><span class="o">.</span><span class="n">add_resource</span><span class="p">(</span><span class="n">I2CLogicLevels</span><span class="p">,</span> <span class="n">sht31_config</span><span class="o">.</span><span class="n">flask_folder</span><span class="o">.</span><span class="n">i2c_logic_levels</span><span class="p">)</span>
+    <span class="n">api</span><span class="o">.</span><span class="n">add_resource</span><span class="p">(</span><span class="n">I2CBusHealth</span><span class="p">,</span> <span class="n">sht31_config</span><span class="o">.</span><span class="n">flask_folder</span><span class="o">.</span><span class="n">i2c_bus_health</span><span class="p">)</span>
+    <span class="n">api</span><span class="o">.</span><span class="n">add_resource</span><span class="p">(</span><span class="n">PrintIPBanBlockList</span><span class="p">,</span> <span class="n">sht31_config</span><span class="o">.</span><span class="n">flask_folder</span><span class="o">.</span><span class="n">print_block_list</span><span class="p">)</span>
+    <span class="n">api</span><span class="o">.</span><span class="n">add_resource</span><span class="p">(</span><span class="n">ClearIPBanBlockList</span><span class="p">,</span> <span class="n">sht31_config</span><span class="o">.</span><span class="n">flask_folder</span><span class="o">.</span><span class="n">clear_block_list</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">app_</span></div>
+
+
+
+<span class="c1"># create the flask app</span>
+<span class="n">app</span> <span class="o">=</span> <span class="n">create_app</span><span class="p">()</span>
+<span class="n">csrf</span> <span class="o">=</span> <span class="n">CSRFProtect</span><span class="p">(</span><span class="n">app</span><span class="p">)</span>  <span class="c1"># enable CSRF protection</span>
+<span class="n">ip_ban</span> <span class="o">=</span> <span class="n">flg</span><span class="o">.</span><span class="n">initialize_ipban</span><span class="p">(</span><span class="n">app</span><span class="p">)</span>  <span class="c1"># hacker BlockListing agent</span>
+<span class="n">flg</span><span class="o">.</span><span class="n">set_flask_cookie_config</span><span class="p">(</span><span class="n">app</span><span class="p">)</span>
+<span class="n">flg</span><span class="o">.</span><span class="n">print_flask_config</span><span class="p">(</span><span class="n">app</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="favicon">
+<a class="viewcode-back" href="../../docs/src.html#src.sht31_flask_server.favicon">[docs]</a>
+<span class="nd">@app</span><span class="o">.</span><span class="n">route</span><span class="p">(</span><span class="s2">&quot;/favicon.ico&quot;</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">favicon</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Set favicon for browser tab.&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">app</span><span class="o">.</span><span class="n">send_static_file</span><span class="p">(</span><span class="s2">&quot;sht31.ico&quot;</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="UserInputs">
+<a class="viewcode-back" href="../../docs/src.html#src.sht31_flask_server.UserInputs">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">UserInputs</span><span class="p">(</span><span class="n">util</span><span class="o">.</span><span class="n">UserInputs</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Manage runtime arguments for sht31_flask_server.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="UserInputs.__init__">
+<a class="viewcode-back" href="../../docs/src.html#src.sht31_flask_server.UserInputs.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">argv_list</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">help_description</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">suppress_warnings</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        UserInputs constructor for sht31_flask_server.</span>
+
+<span class="sd">        inputs:</span>
+<span class="sd">            argv_list(list): override runtime values.</span>
+<span class="sd">            help_description(str): description field for help text.</span>
+<span class="sd">            suppress_warnings(bool): True to suppress warning msgs.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">argv_list</span> <span class="o">=</span> <span class="n">argv_list</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">help_description</span> <span class="o">=</span> <span class="n">help_description</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">suppress_warnings</span> <span class="o">=</span> <span class="n">suppress_warnings</span>
+
+        <span class="c1"># initialize parent class</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">argv_list</span><span class="p">,</span> <span class="n">help_description</span><span class="p">,</span> <span class="n">suppress_warnings</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="UserInputs.initialize_user_inputs">
+<a class="viewcode-back" href="../../docs/src.html#src.sht31_flask_server.UserInputs.initialize_user_inputs">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">initialize_user_inputs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parent_keys</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Populate user_inputs dict.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">parent_keys</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">parent_keys</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">default_parent_key</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">valid_sflags</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="c1"># define the user_inputs dict.</span>
+        <span class="k">for</span> <span class="n">parent_key</span> <span class="ow">in</span> <span class="n">parent_keys</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">user_inputs</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="n">parent_key</span><span class="p">:</span> <span class="p">{</span>
+                    <span class="n">input_flds</span><span class="o">.</span><span class="n">debug_fld</span><span class="p">:</span> <span class="p">{</span>
+                        <span class="s2">&quot;order&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>  <span class="c1"># index in the argv list</span>
+                        <span class="s2">&quot;value&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+                        <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="nb">bool</span><span class="p">(</span><span class="n">str2bool</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">())),</span>
+                        <span class="s2">&quot;default&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+                        <span class="s2">&quot;valid_range&quot;</span><span class="p">:</span> <span class="p">[</span><span class="kc">True</span><span class="p">,</span> <span class="kc">False</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
+                        <span class="s2">&quot;sflag&quot;</span><span class="p">:</span> <span class="s2">&quot;-d&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;lflag&quot;</span><span class="p">:</span> <span class="s2">&quot;--&quot;</span> <span class="o">+</span> <span class="n">input_flds</span><span class="o">.</span><span class="n">debug_fld</span><span class="p">,</span>
+                        <span class="s2">&quot;help&quot;</span><span class="p">:</span> <span class="s2">&quot;flask server debug mode&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;required&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+                    <span class="p">},</span>
+                <span class="p">},</span>
+            <span class="p">}</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">valid_sflags</span> <span class="o">+=</span> <span class="p">[</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">user_inputs</span><span class="p">[</span><span class="n">parent_key</span><span class="p">][</span><span class="n">k</span><span class="p">][</span><span class="s2">&quot;sflag&quot;</span><span class="p">]</span>
+                <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">user_inputs</span><span class="p">[</span><span class="n">parent_key</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+            <span class="p">]</span></div>
+</div>
+
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;SHT31 sensor Flask server&quot;</span><span class="p">)</span>
+
+    <span class="c1"># enable logging to STDERR for Flask</span>
+    <span class="n">util</span><span class="o">.</span><span class="n">log_stdout_to_stderr</span> <span class="o">=</span> <span class="kc">True</span>
+
+    <span class="c1"># verify environment (skip check if SKIP_RASPBERRY_PI_CHECK is set)</span>
+    <span class="n">env</span><span class="o">.</span><span class="n">get_python_version</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;SKIP_RASPBERRY_PI_CHECK&#39;</span><span class="p">)</span> <span class="o">!=</span> <span class="s1">&#39;1&#39;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">env</span><span class="o">.</span><span class="n">is_raspberrypi_environment</span><span class="p">(</span><span class="kc">True</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">EnvironmentError</span><span class="p">(</span>
+                <span class="s2">&quot;ERROR: SHT31 Flask server only supported on Raspberry PI environment&quot;</span>
+            <span class="p">)</span>
+
+    <span class="c1"># parse runtime parameters</span>
+    <span class="n">uip</span> <span class="o">=</span> <span class="n">UserInputs</span><span class="p">()</span>
+    <span class="n">debug</span> <span class="o">=</span> <span class="n">uip</span><span class="o">.</span><span class="n">get_user_inputs</span><span class="p">(</span><span class="n">uip</span><span class="o">.</span><span class="n">default_parent_key</span><span class="p">,</span> <span class="s2">&quot;debug&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Flask debug mode=</span><span class="si">{</span><span class="n">debug</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">file</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">)</span>
+
+    <span class="c1"># launch the Flask API on development server</span>
+    <span class="n">flg</span><span class="o">.</span><span class="n">schedule_ipban_block_list_report</span><span class="p">(</span><span class="n">ip_ban</span><span class="p">,</span> <span class="n">debug_mode</span><span class="o">=</span><span class="n">debug</span><span class="p">)</span>
+    <span class="n">app</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
+        <span class="n">host</span><span class="o">=</span><span class="s2">&quot;0.0.0.0&quot;</span><span class="p">,</span>
+        <span class="n">port</span><span class="o">=</span><span class="n">sht31_config</span><span class="o">.</span><span class="n">FLASK_PORT</span><span class="p">,</span>
+        <span class="n">debug</span><span class="o">=</span><span class="n">debug</span><span class="p">,</span>
+        <span class="n">threaded</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>  <span class="c1"># threaded=True may speed up rendering on web page</span>
+        <span class="n">ssl_context</span><span class="o">=</span><span class="n">sht31_config</span><span class="o">.</span><span class="n">FLASK_SSL_CERT</span><span class="p">,</span>
+    <span class="p">)</span>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../index.html">ThermostatSupervisor</a></h1>
+
+
+
+<p class="blurb">Monitor and control thermostats remotely</p>
+
+
+
+
+<p>
+<iframe src="https://ghbtns.com/github-btn.html?user=cjkrolak&repo=ThermostatSupervisor&type=star&count=true&size=large&v=2"
+  allowtransparency="true" frameborder="0" scrolling="0" width="200px" height="35px"></iframe>
+</p>
+
+
+
+
+
+
+<search id="searchbox" style="display: none" role="search">
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Search"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">API Documentation:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../api/overview.html">API Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/thermostat_api.html">Thermostat API Module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/thermostat_classes.html">Thermostat Classes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/zone_classes.html">Zone Classes</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Module Reference:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../docs/src.html">src package</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;2024, Christopher Krolak.
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

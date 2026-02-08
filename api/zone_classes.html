@@ -1,0 +1,2181 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Zone Classes &#8212; ThermostatSupervisor API Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=5ecbeea2" />
+    <link rel="stylesheet" type="text/css" href="../_static/basic.css?v=b08954a9" />
+    <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=1c1df0c7" />
+    <script src="../_static/documentation_options.js?v=8d563738"></script>
+    <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="src package" href="../docs/src.html" />
+    <link rel="prev" title="Thermostat Classes" href="thermostat_classes.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="zone-classes">
+<h1>Zone Classes<a class="headerlink" href="#zone-classes" title="Link to this heading">¶</a></h1>
+<p>Zone classes represent individual zones or rooms controlled by thermostats. Each zone
+has its own temperature settings, schedules, and operational modes.</p>
+<section id="required-api-methods">
+<h2>Required API Methods<a class="headerlink" href="#required-api-methods" title="Link to this heading">¶</a></h2>
+<p>All zone classes must implement the following methods as specified in the
+ThermostatSupervisor API contract:</p>
+<section id="get-current-mode">
+<h3>get_current_mode()<a class="headerlink" href="#get-current-mode" title="Link to this heading">¶</a></h3>
+<p><strong>Purpose:</strong> Determine whether the thermostat is following its schedule or has been
+deviated from the schedule.</p>
+<p><strong>Signature:</strong> <code class="docutils literal notranslate"><span class="pre">get_current_mode()</span> <span class="pre">-&gt;</span> <span class="pre">str</span></code></p>
+<dl class="simple">
+<dt><strong>Returns:</strong></dt><dd><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">str</span></code>: Current operational mode (e.g., ‘HEAT_MODE’, ‘COOL_MODE’, ‘AUTO_MODE’, ‘OFF_MODE’)</p></li>
+</ul>
+</dd>
+</dl>
+<p><strong>Description:</strong> This method returns the current operational mode of the zone. It
+distinguishes between scheduled operation and manual overrides.</p>
+</section>
+<section id="report-heating-parameters">
+<h3>report_heating_parameters()<a class="headerlink" href="#report-heating-parameters" title="Link to this heading">¶</a></h3>
+<p><strong>Purpose:</strong> Display critical thermostat settings and readings to the screen.</p>
+<p><strong>Signature:</strong> <code class="docutils literal notranslate"><span class="pre">report_heating_parameters()</span> <span class="pre">-&gt;</span> <span class="pre">None</span></code></p>
+<p><strong>Returns:</strong> None (prints to stdout)</p>
+<p><strong>Description:</strong> Provides a comprehensive report of the zone’s current heating/cooling
+parameters including temperatures, setpoints, and operational status.</p>
+</section>
+<section id="get-schedule-heat-sp">
+<h3>get_schedule_heat_sp()<a class="headerlink" href="#get-schedule-heat-sp" title="Link to this heading">¶</a></h3>
+<p><strong>Purpose:</strong> Retrieve the scheduled heat setpoint for the current time.</p>
+<p><strong>Signature:</strong> <code class="docutils literal notranslate"><span class="pre">get_schedule_heat_sp()</span> <span class="pre">-&gt;</span> <span class="pre">float</span></code></p>
+<dl class="simple">
+<dt><strong>Returns:</strong></dt><dd><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">float</span></code>: Scheduled heating setpoint in degrees Fahrenheit</p></li>
+</ul>
+</dd>
+</dl>
+<p><strong>Description:</strong> Returns the temperature that the zone should be heated to according
+to the programmed schedule.</p>
+</section>
+<section id="set-heat-setpoint">
+<h3>set_heat_setpoint()<a class="headerlink" href="#set-heat-setpoint" title="Link to this heading">¶</a></h3>
+<p><strong>Purpose:</strong> Set a new heat setpoint for the zone.</p>
+<p><strong>Signature:</strong> <code class="docutils literal notranslate"><span class="pre">set_heat_setpoint(temp:</span> <span class="pre">int)</span> <span class="pre">-&gt;</span> <span class="pre">None</span></code></p>
+<dl class="simple">
+<dt><strong>Parameters:</strong></dt><dd><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">temp</span></code> (int): Desired heating temperature in degrees Fahrenheit</p></li>
+</ul>
+</dd>
+</dl>
+<p><strong>Returns:</strong> None</p>
+<p><strong>Description:</strong> Changes the heating setpoint for the zone. This typically creates
+a temporary override of the programmed schedule.</p>
+</section>
+<section id="get-schedule-cool-sp">
+<h3>get_schedule_cool_sp()<a class="headerlink" href="#get-schedule-cool-sp" title="Link to this heading">¶</a></h3>
+<p><strong>Purpose:</strong> Retrieve the scheduled cool setpoint for the current time.</p>
+<p><strong>Signature:</strong> <code class="docutils literal notranslate"><span class="pre">get_schedule_cool_sp()</span> <span class="pre">-&gt;</span> <span class="pre">float</span></code></p>
+<dl class="simple">
+<dt><strong>Returns:</strong></dt><dd><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">float</span></code>: Scheduled cooling setpoint in degrees Fahrenheit</p></li>
+</ul>
+</dd>
+</dl>
+<p><strong>Description:</strong> Returns the temperature that the zone should be cooled to according
+to the programmed schedule.</p>
+</section>
+<section id="set-cool-setpoint">
+<h3>set_cool_setpoint()<a class="headerlink" href="#set-cool-setpoint" title="Link to this heading">¶</a></h3>
+<p><strong>Purpose:</strong> Set a new cool setpoint for the zone.</p>
+<p><strong>Signature:</strong> <code class="docutils literal notranslate"><span class="pre">set_cool_setpoint(temp:</span> <span class="pre">int)</span> <span class="pre">-&gt;</span> <span class="pre">None</span></code></p>
+<dl class="simple">
+<dt><strong>Parameters:</strong></dt><dd><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">temp</span></code> (int): Desired cooling temperature in degrees Fahrenheit</p></li>
+</ul>
+</dd>
+</dl>
+<p><strong>Returns:</strong> None</p>
+<p><strong>Description:</strong> Changes the cooling setpoint for the zone. This typically creates
+a temporary override of the programmed schedule.</p>
+</section>
+<section id="get-safety-temperature">
+<h3>get_safety_temperature()<a class="headerlink" href="#get-safety-temperature" title="Link to this heading">¶</a></h3>
+<p><strong>Purpose:</strong> Get the safety temperature setting for the zone.</p>
+<p><strong>Signature:</strong> <code class="docutils literal notranslate"><span class="pre">get_safety_temperature()</span> <span class="pre">-&gt;</span> <span class="pre">int</span></code></p>
+<dl class="simple">
+<dt><strong>Returns:</strong></dt><dd><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">int</span></code>: Safety temperature in degrees Fahrenheit</p></li>
+</ul>
+</dd>
+</dl>
+<p><strong>Description:</strong> Returns a safety temperature value that can be used when normal
+setpoints are unavailable (e.g., when thermostat is in OFF mode). For Nest thermostats,
+this returns configured values from nest_config.py since the Google Nest API does not
+expose safety temperature settings. Returns heat safety temperature for heat/auto modes,
+cool safety temperature for other modes.</p>
+</section>
+<section id="refresh-zone-info">
+<h3>refresh_zone_info()<a class="headerlink" href="#refresh-zone-info" title="Link to this heading">¶</a></h3>
+<p><strong>Purpose:</strong> Refresh the zone_info attribute with current data from the thermostat.</p>
+<p><strong>Signature:</strong> <code class="docutils literal notranslate"><span class="pre">refresh_zone_info(force_refresh:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False)</span> <span class="pre">-&gt;</span> <span class="pre">None</span></code></p>
+<dl class="simple">
+<dt><strong>Parameters:</strong></dt><dd><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">force_refresh</span></code> (bool): If True, forces a refresh regardless of cache age</p></li>
+</ul>
+</dd>
+</dl>
+<p><strong>Returns:</strong> None</p>
+<p><strong>Description:</strong> Updates the cached zone information by querying the thermostat device.
+This method implements intelligent caching to avoid excessive network requests.</p>
+</section>
+</section>
+<section id="common-base-class">
+<h2>Common Base Class<a class="headerlink" href="#common-base-class" title="Link to this heading">¶</a></h2>
+<section id="thermostatcommonzone">
+<h3>ThermostatCommonZone<a class="headerlink" href="#thermostatcommonzone" title="Link to this heading">¶</a></h3>
+<dl class="py class">
+<dt class="sig sig-object py" id="src.thermostat_common.ThermostatCommonZone">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">src.thermostat_common.</span></span><span class="sig-name descname"><span class="pre">ThermostatCommonZone</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">_</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">__</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/thermostat_common.html#ThermostatCommonZone"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.thermostat_common.ThermostatCommonZone" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Class methods common to all thermostat zones.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.thermostat_common.ThermostatCommonZone.OFF_MODE">
+<span class="sig-name descname"><span class="pre">OFF_MODE</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'OFF_MODE'</span></span><a class="headerlink" href="#src.thermostat_common.ThermostatCommonZone.OFF_MODE" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.thermostat_common.ThermostatCommonZone.HEAT_MODE">
+<span class="sig-name descname"><span class="pre">HEAT_MODE</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'HEAT_MODE'</span></span><a class="headerlink" href="#src.thermostat_common.ThermostatCommonZone.HEAT_MODE" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.thermostat_common.ThermostatCommonZone.COOL_MODE">
+<span class="sig-name descname"><span class="pre">COOL_MODE</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'COOL_MODE'</span></span><a class="headerlink" href="#src.thermostat_common.ThermostatCommonZone.COOL_MODE" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.thermostat_common.ThermostatCommonZone.AUTO_MODE">
+<span class="sig-name descname"><span class="pre">AUTO_MODE</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'AUTO_MODE'</span></span><a class="headerlink" href="#src.thermostat_common.ThermostatCommonZone.AUTO_MODE" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.thermostat_common.ThermostatCommonZone.DRY_MODE">
+<span class="sig-name descname"><span class="pre">DRY_MODE</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'DRY_MODE'</span></span><a class="headerlink" href="#src.thermostat_common.ThermostatCommonZone.DRY_MODE" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.thermostat_common.ThermostatCommonZone.FAN_MODE">
+<span class="sig-name descname"><span class="pre">FAN_MODE</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'FAN_MODE'</span></span><a class="headerlink" href="#src.thermostat_common.ThermostatCommonZone.FAN_MODE" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.thermostat_common.ThermostatCommonZone.ECO_MODE">
+<span class="sig-name descname"><span class="pre">ECO_MODE</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'MANUAL_ECO'</span></span><a class="headerlink" href="#src.thermostat_common.ThermostatCommonZone.ECO_MODE" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.thermostat_common.ThermostatCommonZone.UNKNOWN_MODE">
+<span class="sig-name descname"><span class="pre">UNKNOWN_MODE</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'UNKNOWN_MODE'</span></span><a class="headerlink" href="#src.thermostat_common.ThermostatCommonZone.UNKNOWN_MODE" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.thermostat_common.ThermostatCommonZone.heat_modes">
+<span class="sig-name descname"><span class="pre">heat_modes</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">['HEAT_MODE',</span> <span class="pre">'AUTO_MODE',</span> <span class="pre">'MANUAL_ECO']</span></span><a class="headerlink" href="#src.thermostat_common.ThermostatCommonZone.heat_modes" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.thermostat_common.ThermostatCommonZone.cool_modes">
+<span class="sig-name descname"><span class="pre">cool_modes</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">['COOL_MODE',</span> <span class="pre">'DRY_MODE',</span> <span class="pre">'AUTO_MODE',</span> <span class="pre">'MANUAL_ECO']</span></span><a class="headerlink" href="#src.thermostat_common.ThermostatCommonZone.cool_modes" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.thermostat_common.ThermostatCommonZone.controlled_modes">
+<span class="sig-name descname"><span class="pre">controlled_modes</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">['HEAT_MODE',</span> <span class="pre">'AUTO_MODE',</span> <span class="pre">'COOL_MODE']</span></span><a class="headerlink" href="#src.thermostat_common.ThermostatCommonZone.controlled_modes" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.thermostat_common.ThermostatCommonZone.system_switch_position">
+<span class="sig-name descname"><span class="pre">system_switch_position</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{'AUTO_MODE':</span> <span class="pre">-123456792,</span> <span class="pre">'COOL_MODE':</span> <span class="pre">-123456791,</span> <span class="pre">'DRY_MODE':</span> <span class="pre">-123456793,</span> <span class="pre">'FAN_MODE':</span> <span class="pre">-123456794,</span> <span class="pre">'HEAT_MODE':</span> <span class="pre">-123456790,</span> <span class="pre">'MANUAL_ECO':</span> <span class="pre">-123456796,</span> <span class="pre">'OFF_MODE':</span> <span class="pre">-123456795,</span> <span class="pre">'UNKNOWN_MODE':</span> <span class="pre">-123456789}</span></span><a class="headerlink" href="#src.thermostat_common.ThermostatCommonZone.system_switch_position" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.thermostat_common.ThermostatCommonZone.max_scheduled_heat_allowed">
+<span class="sig-name descname"><span class="pre">max_scheduled_heat_allowed</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">74</span></span><a class="headerlink" href="#src.thermostat_common.ThermostatCommonZone.max_scheduled_heat_allowed" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.thermostat_common.ThermostatCommonZone.min_scheduled_cool_allowed">
+<span class="sig-name descname"><span class="pre">min_scheduled_cool_allowed</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">68</span></span><a class="headerlink" href="#src.thermostat_common.ThermostatCommonZone.min_scheduled_cool_allowed" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="src.thermostat_common.ThermostatCommonZone.tolerance_degrees_default">
+<span class="sig-name descname"><span class="pre">tolerance_degrees_default</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">2</span></span><a class="headerlink" href="#src.thermostat_common.ThermostatCommonZone.tolerance_degrees_default" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.thermostat_common.ThermostatCommonZone.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">_</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">__</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/thermostat_common.html#ThermostatCommonZone.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.thermostat_common.ThermostatCommonZone.__init__" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.thermostat_common.ThermostatCommonZone.query_thermostat_zone">
+<span class="sig-name descname"><span class="pre">query_thermostat_zone</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/thermostat_common.html#ThermostatCommonZone.query_thermostat_zone"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.thermostat_common.ThermostatCommonZone.query_thermostat_zone" title="Link to this definition">¶</a></dt>
+<dd><p>Return the current mode and set mode-specific parameters.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.thermostat_common.ThermostatCommonZone.is_temp_deviated_from_schedule">
+<span class="sig-name descname"><span class="pre">is_temp_deviated_from_schedule</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/thermostat_common.html#ThermostatCommonZone.is_temp_deviated_from_schedule"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.thermostat_common.ThermostatCommonZone.is_temp_deviated_from_schedule" title="Link to this definition">¶</a></dt>
+<dd><p>Return True if temperature is deviated from current schedule.</p>
+<dl class="simple">
+<dt>inputs:</dt><dd><p>None:</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>True if temp is deviated from schedule.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>(<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)">bool</a>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.thermostat_common.ThermostatCommonZone.get_current_mode">
+<span class="sig-name descname"><span class="pre">get_current_mode</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">session_count</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">poll_count</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">print_status</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">flag_all_deviations</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/thermostat_common.html#ThermostatCommonZone.get_current_mode"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.thermostat_common.ThermostatCommonZone.get_current_mode" title="Link to this definition">¶</a></dt>
+<dd><p>Determine whether thermostat is following schedule or if it has been
+deviated from schedule.</p>
+<dl>
+<dt>inputs:</dt><dd><p>session_count(int): session number (connection #) for reporting
+poll_count(int): poll number for reporting
+print_status(bool):  True to print status line
+flag_all_deviations(bool):  True: flag all deviations</p>
+<blockquote>
+<div><dl class="simple">
+<dt>False(default): only flag energy</dt><dd><p>consuming deviations,
+e.g. heat setpoint
+above schedule,
+cool setpoint
+below schedule</p>
+</dd>
+</dl>
+</div></blockquote>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dictionary of heat/cool mode status, deviation status,
+and hold status</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.thermostat_common.ThermostatCommonZone.set_mode">
+<span class="sig-name descname"><span class="pre">set_mode</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target_mode</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/thermostat_common.html#ThermostatCommonZone.set_mode"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.thermostat_common.ThermostatCommonZone.set_mode" title="Link to this definition">¶</a></dt>
+<dd><p>Set the thermostat mode and apply the scheduled setpoint.</p>
+<p>This method sets the thermostat to the specified mode and applies
+the appropriate scheduled setpoint for that mode.</p>
+<dl class="simple">
+<dt>inputs:</dt><dd><dl class="simple">
+<dt>target_mode(str): target mode, one of the supported mode constants</dt><dd><p>(HEAT_MODE, COOL_MODE, AUTO_MODE, etc.)</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>True if successful, False otherwise</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.thermostat_common.ThermostatCommonZone.store_current_mode">
+<span class="sig-name descname"><span class="pre">store_current_mode</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/thermostat_common.html#ThermostatCommonZone.store_current_mode"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.thermostat_common.ThermostatCommonZone.store_current_mode" title="Link to this definition">¶</a></dt>
+<dd><p>Save the current mode to cache.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.thermostat_common.ThermostatCommonZone.validate_numeric">
+<span class="sig-name descname"><span class="pre">validate_numeric</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_val</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameter_name</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/thermostat_common.html#ThermostatCommonZone.validate_numeric"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.thermostat_common.ThermostatCommonZone.validate_numeric" title="Link to this definition">¶</a></dt>
+<dd><p>Validate value returned is numeric, otherwise raise exception.</p>
+<dl class="simple">
+<dt>inputs:</dt><dd><p>input_val: input value of unknown type.
+parameter_name(str): parameter name.</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>pass thru value if numeric, else raise exception.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>(<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)">int</a>, <a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)">float</a>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.thermostat_common.ThermostatCommonZone.warn_if_outside_global_limit">
+<span class="sig-name descname"><span class="pre">warn_if_outside_global_limit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">setpoint</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">limit_value</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">oper</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">label</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></span></span><a class="reference internal" href="../_modules/src/thermostat_common.html#ThermostatCommonZone.warn_if_outside_global_limit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.thermostat_common.ThermostatCommonZone.warn_if_outside_global_limit" title="Link to this definition">¶</a></dt>
+<dd><p>Send warning email if setpoint is outside of global limits.</p>
+<dl class="simple">
+<dt>inputs:</dt><dd><p>setpoint(int): setpoint value.
+limit_value(int): the limit value
+oper(operator):  the operator, either operator.gt or operator.lt
+label(str): label for warning message denoting the mode</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>result of check</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>(<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)">bool</a>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.thermostat_common.ThermostatCommonZone.is_heat_mode">
+<span class="sig-name descname"><span class="pre">is_heat_mode</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span></span><a class="reference internal" href="../_modules/src/thermostat_common.html#ThermostatCommonZone.is_heat_mode"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.thermostat_common.ThermostatCommonZone.is_heat_mode" title="Link to this definition">¶</a></dt>
+<dd><p>Return 1 if in heat mode.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.thermostat_common.ThermostatCommonZone.is_cool_mode">
+<span class="sig-name descname"><span class="pre">is_cool_mode</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span></span><a class="reference internal" href="../_modules/src/thermostat_common.html#ThermostatCommonZone.is_cool_mode"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.thermostat_common.ThermostatCommonZone.is_cool_mode" title="Link to this definition">¶</a></dt>
+<dd><p>Return 1 if in cool mode.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.thermostat_common.ThermostatCommonZone.is_dry_mode">
+<span class="sig-name descname"><span class="pre">is_dry_mode</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span></span><a class="reference internal" href="../_modules/src/thermostat_common.html#ThermostatCommonZone.is_dry_mode"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.thermostat_common.ThermostatCommonZone.is_dry_mode" title="Link to this definition">¶</a></dt>
+<dd><p>Return 1 if in dry mode.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.thermostat_common.ThermostatCommonZone.is_auto_mode">
+<span class="sig-name descname"><span class="pre">is_auto_mode</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span></span><a class="reference internal" href="../_modules/src/thermostat_common.html#ThermostatCommonZone.is_auto_mode"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.thermostat_common.ThermostatCommonZone.is_auto_mode" title="Link to this definition">¶</a></dt>
+<dd><p>Return 1 if in auto mode.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.thermostat_common.ThermostatCommonZone.is_eco_mode">
+<span class="sig-name descname"><span class="pre">is_eco_mode</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span></span><a class="reference internal" href="../_modules/src/thermostat_common.html#ThermostatCommonZone.is_eco_mode"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.thermostat_common.ThermostatCommonZone.is_eco_mode" title="Link to this definition">¶</a></dt>
+<dd><p>Return 1 if in eco mode.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.thermostat_common.ThermostatCommonZone.is_fan_mode">
+<span class="sig-name descname"><span class="pre">is_fan_mode</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span></span><a class="reference internal" href="../_modules/src/thermostat_common.html#ThermostatCommonZone.is_fan_mode"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.thermostat_common.ThermostatCommonZone.is_fan_mode" title="Link to this definition">¶</a></dt>
+<dd><p>Return 1 if fan mode enabled, else 0.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.thermostat_common.ThermostatCommonZone.is_off_mode">
+<span class="sig-name descname"><span class="pre">is_off_mode</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span></span><a class="reference internal" href="../_modules/src/thermostat_common.html#ThermostatCommonZone.is_off_mode"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.thermostat_common.ThermostatCommonZone.is_off_mode" title="Link to this definition">¶</a></dt>
+<dd><p>Return 1 if fan mode enabled, else 0.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.thermostat_common.ThermostatCommonZone.is_controlled_mode">
+<span class="sig-name descname"><span class="pre">is_controlled_mode</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span></span><a class="reference internal" href="../_modules/src/thermostat_common.html#ThermostatCommonZone.is_controlled_mode"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.thermostat_common.ThermostatCommonZone.is_controlled_mode" title="Link to this definition">¶</a></dt>
+<dd><p>Return True if mode is being controlled.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.thermostat_common.ThermostatCommonZone.is_heating">
+<span class="sig-name descname"><span class="pre">is_heating</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span></span><a class="reference internal" href="../_modules/src/thermostat_common.html#ThermostatCommonZone.is_heating"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.thermostat_common.ThermostatCommonZone.is_heating" title="Link to this definition">¶</a></dt>
+<dd><p>Return 1 if heating relay is active, else 0.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.thermostat_common.ThermostatCommonZone.is_cooling">
+<span class="sig-name descname"><span class="pre">is_cooling</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span></span><a class="reference internal" href="../_modules/src/thermostat_common.html#ThermostatCommonZone.is_cooling"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.thermostat_common.ThermostatCommonZone.is_cooling" title="Link to this definition">¶</a></dt>
+<dd><p>Return 1 if cooling relay is active, else 0.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.thermostat_common.ThermostatCommonZone.is_drying">
+<span class="sig-name descname"><span class="pre">is_drying</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span></span><a class="reference internal" href="../_modules/src/thermostat_common.html#ThermostatCommonZone.is_drying"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.thermostat_common.ThermostatCommonZone.is_drying" title="Link to this definition">¶</a></dt>
+<dd><p>Return 1 if drying relay is active, else 0.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.thermostat_common.ThermostatCommonZone.is_auto">
+<span class="sig-name descname"><span class="pre">is_auto</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span></span><a class="reference internal" href="../_modules/src/thermostat_common.html#ThermostatCommonZone.is_auto"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.thermostat_common.ThermostatCommonZone.is_auto" title="Link to this definition">¶</a></dt>
+<dd><p>Return 1 if auto relay is active, else 0.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.thermostat_common.ThermostatCommonZone.is_eco">
+<span class="sig-name descname"><span class="pre">is_eco</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span></span><a class="reference internal" href="../_modules/src/thermostat_common.html#ThermostatCommonZone.is_eco"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.thermostat_common.ThermostatCommonZone.is_eco" title="Link to this definition">¶</a></dt>
+<dd><p>Return 1 if eco relay is active, else 0.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.thermostat_common.ThermostatCommonZone.is_fanning">
+<span class="sig-name descname"><span class="pre">is_fanning</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span></span><a class="reference internal" href="../_modules/src/thermostat_common.html#ThermostatCommonZone.is_fanning"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.thermostat_common.ThermostatCommonZone.is_fanning" title="Link to this definition">¶</a></dt>
+<dd><p>Return 1 if fan relay is active, else 0.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.thermostat_common.ThermostatCommonZone.is_defrosting">
+<span class="sig-name descname"><span class="pre">is_defrosting</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span></span><a class="reference internal" href="../_modules/src/thermostat_common.html#ThermostatCommonZone.is_defrosting"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.thermostat_common.ThermostatCommonZone.is_defrosting" title="Link to this definition">¶</a></dt>
+<dd><p>Return 1 if defrosting relay is active, else 0.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.thermostat_common.ThermostatCommonZone.is_standby">
+<span class="sig-name descname"><span class="pre">is_standby</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span></span><a class="reference internal" href="../_modules/src/thermostat_common.html#ThermostatCommonZone.is_standby"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.thermostat_common.ThermostatCommonZone.is_standby" title="Link to this definition">¶</a></dt>
+<dd><p>Return 1 if standby relay is active, else 0.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.thermostat_common.ThermostatCommonZone.set_heat_setpoint">
+<span class="sig-name descname"><span class="pre">set_heat_setpoint</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">temp</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../_modules/src/thermostat_common.html#ThermostatCommonZone.set_heat_setpoint"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.thermostat_common.ThermostatCommonZone.set_heat_setpoint" title="Link to this definition">¶</a></dt>
+<dd><p>Set a new heat setpoint.</p>
+<p>This will also attempt to turn the thermostat to ‘Cool’
+inputs:</p>
+<blockquote>
+<div><p>temp(int): desired temperature in °F.</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.thermostat_common.ThermostatCommonZone.set_cool_setpoint">
+<span class="sig-name descname"><span class="pre">set_cool_setpoint</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">temp</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../_modules/src/thermostat_common.html#ThermostatCommonZone.set_cool_setpoint"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.thermostat_common.ThermostatCommonZone.set_cool_setpoint" title="Link to this definition">¶</a></dt>
+<dd><p>Set a new cool setpoint.</p>
+<p>This will also attempt to turn the thermostat to ‘Cool’
+inputs:</p>
+<blockquote>
+<div><p>temp(int): desired temperature in °F.</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.thermostat_common.ThermostatCommonZone.is_heat_deviation">
+<span class="sig-name descname"><span class="pre">is_heat_deviation</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></span></span><a class="reference internal" href="../_modules/src/thermostat_common.html#ThermostatCommonZone.is_heat_deviation"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.thermostat_common.ThermostatCommonZone.is_heat_deviation" title="Link to this definition">¶</a></dt>
+<dd><p>Return True if heat is deviated.</p>
+<dl class="simple">
+<dt>inputs:</dt><dd><p>None</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>True if deviation exists.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>(<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)">bool</a>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.thermostat_common.ThermostatCommonZone.is_cool_deviation">
+<span class="sig-name descname"><span class="pre">is_cool_deviation</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></span></span><a class="reference internal" href="../_modules/src/thermostat_common.html#ThermostatCommonZone.is_cool_deviation"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.thermostat_common.ThermostatCommonZone.is_cool_deviation" title="Link to this definition">¶</a></dt>
+<dd><p>Return True if cool is deviated.</p>
+<dl class="simple">
+<dt>inputs:</dt><dd><p>None</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>True if deviation exists.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>(<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)">bool</a>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.thermostat_common.ThermostatCommonZone.get_display_temp">
+<span class="sig-name descname"><span class="pre">get_display_temp</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span></span><a class="reference internal" href="../_modules/src/thermostat_common.html#ThermostatCommonZone.get_display_temp"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.thermostat_common.ThermostatCommonZone.get_display_temp" title="Link to this definition">¶</a></dt>
+<dd><p>Return the displayed temperature.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.thermostat_common.ThermostatCommonZone.get_display_humidity">
+<span class="sig-name descname"><span class="pre">get_display_humidity</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../_modules/src/thermostat_common.html#ThermostatCommonZone.get_display_humidity"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.thermostat_common.ThermostatCommonZone.get_display_humidity" title="Link to this definition">¶</a></dt>
+<dd><p>Return the displayed humidity.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.thermostat_common.ThermostatCommonZone.get_is_humidity_supported">
+<span class="sig-name descname"><span class="pre">get_is_humidity_supported</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></span></span><a class="reference internal" href="../_modules/src/thermostat_common.html#ThermostatCommonZone.get_is_humidity_supported"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.thermostat_common.ThermostatCommonZone.get_is_humidity_supported" title="Link to this definition">¶</a></dt>
+<dd><p>Return humidity sensor status.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.thermostat_common.ThermostatCommonZone.get_system_switch_position">
+<span class="sig-name descname"><span class="pre">get_system_switch_position</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></span><a class="reference internal" href="../_modules/src/thermostat_common.html#ThermostatCommonZone.get_system_switch_position"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.thermostat_common.ThermostatCommonZone.get_system_switch_position" title="Link to this definition">¶</a></dt>
+<dd><p>Return the ‘SystemSwitchPosition’.</p>
+<p>The system switch position can be an integer or string depending
+on the thermostat API implementation.
+‘SystemSwitchPosition’ = 1 for heat, 2 for off (for integer-based)
+‘SystemSwitchPosition’ = “heat”, “cool”, etc. (for string-based)</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.thermostat_common.ThermostatCommonZone.get_heat_setpoint_raw">
+<span class="sig-name descname"><span class="pre">get_heat_setpoint_raw</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span></span><a class="reference internal" href="../_modules/src/thermostat_common.html#ThermostatCommonZone.get_heat_setpoint_raw"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.thermostat_common.ThermostatCommonZone.get_heat_setpoint_raw" title="Link to this definition">¶</a></dt>
+<dd><p>Return raw heat set point(number only, no units).</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.thermostat_common.ThermostatCommonZone.get_heat_setpoint">
+<span class="sig-name descname"><span class="pre">get_heat_setpoint</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></span><a class="reference internal" href="../_modules/src/thermostat_common.html#ThermostatCommonZone.get_heat_setpoint"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.thermostat_common.ThermostatCommonZone.get_heat_setpoint" title="Link to this definition">¶</a></dt>
+<dd><p>Return raw heat set point(number and units).</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.thermostat_common.ThermostatCommonZone.get_schedule_program_heat">
+<span class="sig-name descname"><span class="pre">get_schedule_program_heat</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a></span></span><a class="reference internal" href="../_modules/src/thermostat_common.html#ThermostatCommonZone.get_schedule_program_heat"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.thermostat_common.ThermostatCommonZone.get_schedule_program_heat" title="Link to this definition">¶</a></dt>
+<dd><p>Return the heat setpoint schedule.</p>
+<dl class="simple">
+<dt>inputs:</dt><dd><p>None</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>scheduled heat set points and times in °F.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>(<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)">dict</a>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.thermostat_common.ThermostatCommonZone.get_schedule_heat_sp">
+<span class="sig-name descname"><span class="pre">get_schedule_heat_sp</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span></span><a class="reference internal" href="../_modules/src/thermostat_common.html#ThermostatCommonZone.get_schedule_heat_sp"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.thermostat_common.ThermostatCommonZone.get_schedule_heat_sp" title="Link to this definition">¶</a></dt>
+<dd><p>Return the heat setpoint.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.thermostat_common.ThermostatCommonZone.get_cool_setpoint_raw">
+<span class="sig-name descname"><span class="pre">get_cool_setpoint_raw</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span></span><a class="reference internal" href="../_modules/src/thermostat_common.html#ThermostatCommonZone.get_cool_setpoint_raw"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.thermostat_common.ThermostatCommonZone.get_cool_setpoint_raw" title="Link to this definition">¶</a></dt>
+<dd><p>Return raw cool set point (number only, no units).</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.thermostat_common.ThermostatCommonZone.get_cool_setpoint">
+<span class="sig-name descname"><span class="pre">get_cool_setpoint</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></span><a class="reference internal" href="../_modules/src/thermostat_common.html#ThermostatCommonZone.get_cool_setpoint"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.thermostat_common.ThermostatCommonZone.get_cool_setpoint" title="Link to this definition">¶</a></dt>
+<dd><p>Return raw cool set point (number and units).</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.thermostat_common.ThermostatCommonZone.get_schedule_program_cool">
+<span class="sig-name descname"><span class="pre">get_schedule_program_cool</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a></span></span><a class="reference internal" href="../_modules/src/thermostat_common.html#ThermostatCommonZone.get_schedule_program_cool"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.thermostat_common.ThermostatCommonZone.get_schedule_program_cool" title="Link to this definition">¶</a></dt>
+<dd><p>Return the cool setpoint schedule.</p>
+<dl class="simple">
+<dt>inputs:</dt><dd><p>None</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>scheduled cool set points and times in °F.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>(<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)">dict</a>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.thermostat_common.ThermostatCommonZone.get_schedule_cool_sp">
+<span class="sig-name descname"><span class="pre">get_schedule_cool_sp</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span></span><a class="reference internal" href="../_modules/src/thermostat_common.html#ThermostatCommonZone.get_schedule_cool_sp"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.thermostat_common.ThermostatCommonZone.get_schedule_cool_sp" title="Link to this definition">¶</a></dt>
+<dd><p>Return the cool setpoint.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.thermostat_common.ThermostatCommonZone.get_vacation_hold">
+<span class="sig-name descname"><span class="pre">get_vacation_hold</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></span></span><a class="reference internal" href="../_modules/src/thermostat_common.html#ThermostatCommonZone.get_vacation_hold"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.thermostat_common.ThermostatCommonZone.get_vacation_hold" title="Link to this definition">¶</a></dt>
+<dd><p>Return True if thermostat is in vacation hold mode.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.thermostat_common.ThermostatCommonZone.get_is_invacation_hold_mode">
+<span class="sig-name descname"><span class="pre">get_is_invacation_hold_mode</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></span></span><a class="reference internal" href="../_modules/src/thermostat_common.html#ThermostatCommonZone.get_is_invacation_hold_mode"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.thermostat_common.ThermostatCommonZone.get_is_invacation_hold_mode" title="Link to this definition">¶</a></dt>
+<dd><p>Return the ‘IsInVacationHoldMode’ setting.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.thermostat_common.ThermostatCommonZone.get_temporary_hold_until_time">
+<span class="sig-name descname"><span class="pre">get_temporary_hold_until_time</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span></span><a class="reference internal" href="../_modules/src/thermostat_common.html#ThermostatCommonZone.get_temporary_hold_until_time"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.thermostat_common.ThermostatCommonZone.get_temporary_hold_until_time" title="Link to this definition">¶</a></dt>
+<dd><p>Return the ‘TemporaryHoldUntilTime’</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.thermostat_common.ThermostatCommonZone.get_wifi_strength">
+<span class="sig-name descname"><span class="pre">get_wifi_strength</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span></span><a class="reference internal" href="../_modules/src/thermostat_common.html#ThermostatCommonZone.get_wifi_strength"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.thermostat_common.ThermostatCommonZone.get_wifi_strength" title="Link to this definition">¶</a></dt>
+<dd><p>Return the wifi signal strength in dBm.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.thermostat_common.ThermostatCommonZone.get_wifi_status">
+<span class="sig-name descname"><span class="pre">get_wifi_status</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></span></span><a class="reference internal" href="../_modules/src/thermostat_common.html#ThermostatCommonZone.get_wifi_status"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.thermostat_common.ThermostatCommonZone.get_wifi_status" title="Link to this definition">¶</a></dt>
+<dd><p>Return the wifi connection status.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.thermostat_common.ThermostatCommonZone.get_battery_voltage">
+<span class="sig-name descname"><span class="pre">get_battery_voltage</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span></span><a class="reference internal" href="../_modules/src/thermostat_common.html#ThermostatCommonZone.get_battery_voltage"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.thermostat_common.ThermostatCommonZone.get_battery_voltage" title="Link to this definition">¶</a></dt>
+<dd><p>Return the battery voltage in volts.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.thermostat_common.ThermostatCommonZone.get_battery_status">
+<span class="sig-name descname"><span class="pre">get_battery_status</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></span></span><a class="reference internal" href="../_modules/src/thermostat_common.html#ThermostatCommonZone.get_battery_status"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.thermostat_common.ThermostatCommonZone.get_battery_status" title="Link to this definition">¶</a></dt>
+<dd><p>Return the battery status.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.thermostat_common.ThermostatCommonZone.refresh_zone_info">
+<span class="sig-name descname"><span class="pre">refresh_zone_info</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">force_refresh</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../_modules/src/thermostat_common.html#ThermostatCommonZone.refresh_zone_info"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.thermostat_common.ThermostatCommonZone.refresh_zone_info" title="Link to this definition">¶</a></dt>
+<dd><p>Refresh zone info.</p>
+<dl class="simple">
+<dt>inputs:</dt><dd><p>force_refresh(bool): if True, ignore expiration timer.</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>None, cached data is refreshed.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.thermostat_common.ThermostatCommonZone.report_heating_parameters">
+<span class="sig-name descname"><span class="pre">report_heating_parameters</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">switch_position</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/thermostat_common.html#ThermostatCommonZone.report_heating_parameters"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.thermostat_common.ThermostatCommonZone.report_heating_parameters" title="Link to this definition">¶</a></dt>
+<dd><p>Display critical thermostat settings and reading to the screen.</p>
+<dl class="simple">
+<dt>inputs:</dt><dd><p>switch_position(int): switch position override, used for testing.</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.thermostat_common.ThermostatCommonZone.get_vacation_hold_until_time">
+<span class="sig-name descname"><span class="pre">get_vacation_hold_until_time</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span></span><a class="reference internal" href="../_modules/src/thermostat_common.html#ThermostatCommonZone.get_vacation_hold_until_time"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.thermostat_common.ThermostatCommonZone.get_vacation_hold_until_time" title="Link to this definition">¶</a></dt>
+<dd><p>Return the ‘VacationHoldUntilTime’.</p>
+<dl class="simple">
+<dt>inputs:</dt><dd><p>None</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>vacation hold time in minutes.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>(<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)">int</a>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.thermostat_common.ThermostatCommonZone.update_runtime_parameters">
+<span class="sig-name descname"><span class="pre">update_runtime_parameters</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/thermostat_common.html#ThermostatCommonZone.update_runtime_parameters"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.thermostat_common.ThermostatCommonZone.update_runtime_parameters" title="Link to this definition">¶</a></dt>
+<dd><p>use runtime parameter overrides.</p>
+<dl class="simple">
+<dt>inputs:</dt><dd><p>None</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>None, updates class variables.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.thermostat_common.ThermostatCommonZone.verify_current_mode">
+<span class="sig-name descname"><span class="pre">verify_current_mode</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target_mode</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/thermostat_common.html#ThermostatCommonZone.verify_current_mode"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.thermostat_common.ThermostatCommonZone.verify_current_mode" title="Link to this definition">¶</a></dt>
+<dd><p>Verify current mode matches target mode.</p>
+<dl class="simple">
+<dt>inputs:</dt><dd><p>target_mode(str): target mode override</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><dl class="simple">
+<dt>True if current mode matches target mode,</dt><dd><p>or target mode is not specified.</p>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>(<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)">bool</a>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.thermostat_common.ThermostatCommonZone.revert_thermostat_mode">
+<span class="sig-name descname"><span class="pre">revert_thermostat_mode</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target_mode</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/thermostat_common.html#ThermostatCommonZone.revert_thermostat_mode"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.thermostat_common.ThermostatCommonZone.revert_thermostat_mode" title="Link to this definition">¶</a></dt>
+<dd><p>Revert thermostat mode to target mode.</p>
+<dl class="simple">
+<dt>inputs:</dt><dd><p>target_mode(str): target mode override</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>target_mode(str) target_mode, which may get updated by
+this function.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.thermostat_common.ThermostatCommonZone.measure_thermostat_repeatability">
+<span class="sig-name descname"><span class="pre">measure_thermostat_repeatability</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">measurements</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">30</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">poll_interval_sec</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">func</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">measure_response_time</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/thermostat_common.html#ThermostatCommonZone.measure_thermostat_repeatability"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.thermostat_common.ThermostatCommonZone.measure_thermostat_repeatability" title="Link to this definition">¶</a></dt>
+<dd><p>Measure Thermostat repeatability and report statistics.</p>
+<dl>
+<dt>inputs:</dt><dd><p>measurements(int): number of measurements
+poll_interval_sec(int): delay between measurements
+func(obj): target function to run during repeatabilty measurement.
+measure_response_time(bool): measure stats on response time instead</p>
+<blockquote>
+<div><p>of function.</p>
+</div></blockquote>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>measurement statistics.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>(<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)">dict</a>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.thermostat_common.ThermostatCommonZone.display_basic_thermostat_summary">
+<span class="sig-name descname"><span class="pre">display_basic_thermostat_summary</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mode</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/thermostat_common.html#ThermostatCommonZone.display_basic_thermostat_summary"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.thermostat_common.ThermostatCommonZone.display_basic_thermostat_summary" title="Link to this definition">¶</a></dt>
+<dd><p>Display basic thermostat summary.</p>
+<dl class="simple">
+<dt>inputs:</dt><dd><p>mode(int): target log for data.</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>None, prints data to log and/or console.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.thermostat_common.ThermostatCommonZone.revert_temperature_deviation">
+<span class="sig-name descname"><span class="pre">revert_temperature_deviation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">setpoint</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">msg</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/thermostat_common.html#ThermostatCommonZone.revert_temperature_deviation"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.thermostat_common.ThermostatCommonZone.revert_temperature_deviation" title="Link to this definition">¶</a></dt>
+<dd><p>Revert the temperature deviation.</p>
+<dl class="simple">
+<dt>inputs:</dt><dd><p>setpoint(int or float): setpoint in °F
+msg(str): status message to display.</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.thermostat_common.ThermostatCommonZone.function_not_supported">
+<span class="sig-name descname"><span class="pre">function_not_supported</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">_</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">__</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/thermostat_common.html#ThermostatCommonZone.function_not_supported"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.thermostat_common.ThermostatCommonZone.function_not_supported" title="Link to this definition">¶</a></dt>
+<dd><p>Function for unsupported activities.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.thermostat_common.ThermostatCommonZone.display_runtime_settings">
+<span class="sig-name descname"><span class="pre">display_runtime_settings</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/thermostat_common.html#ThermostatCommonZone.display_runtime_settings"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.thermostat_common.ThermostatCommonZone.display_runtime_settings" title="Link to this definition">¶</a></dt>
+<dd><p>Display runtime settings to console.</p>
+<dl class="simple">
+<dt>inputs:</dt><dd><p>None</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.thermostat_common.ThermostatCommonZone.display_session_settings">
+<span class="sig-name descname"><span class="pre">display_session_settings</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/thermostat_common.html#ThermostatCommonZone.display_session_settings"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.thermostat_common.ThermostatCommonZone.display_session_settings" title="Link to this definition">¶</a></dt>
+<dd><p>Display session settings to console.</p>
+<dl class="simple">
+<dt>inputs:</dt><dd><p>None</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.thermostat_common.ThermostatCommonZone.supervisor_loop">
+<span class="sig-name descname"><span class="pre">supervisor_loop</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Thermostat</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">session_count</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">measurement</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">debug</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/thermostat_common.html#ThermostatCommonZone.supervisor_loop"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.thermostat_common.ThermostatCommonZone.supervisor_loop" title="Link to this definition">¶</a></dt>
+<dd><p>Loop through supervisor algorithm.</p>
+<dl class="simple">
+<dt>inputs:</dt><dd><p>Thermostat(obj):  Thermostat instance object
+session_count(int):  current session
+measurement(int):  current measurement index
+debug(bool): debug flag</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>current measurement count</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>measurement(<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)">int</a>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<p>Base class providing common functionality for all zone implementations.</p>
+</section>
+<section id="operational-modes">
+<h3>Operational Modes<a class="headerlink" href="#operational-modes" title="Link to this heading">¶</a></h3>
+<p>The following operational modes are supported:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">OFF_MODE</span> <span class="o">=</span> <span class="s2">&quot;OFF_MODE&quot;</span>           <span class="c1"># Thermostat is off</span>
+<span class="n">HEAT_MODE</span> <span class="o">=</span> <span class="s2">&quot;HEAT_MODE&quot;</span>         <span class="c1"># Heating only</span>
+<span class="n">COOL_MODE</span> <span class="o">=</span> <span class="s2">&quot;COOL_MODE&quot;</span>         <span class="c1"># Cooling only</span>
+<span class="n">AUTO_MODE</span> <span class="o">=</span> <span class="s2">&quot;AUTO_MODE&quot;</span>         <span class="c1"># Automatic heating/cooling</span>
+<span class="n">DRY_MODE</span> <span class="o">=</span> <span class="s2">&quot;DRY_MODE&quot;</span>           <span class="c1"># Dehumidification</span>
+<span class="n">FAN_MODE</span> <span class="o">=</span> <span class="s2">&quot;FAN_MODE&quot;</span>           <span class="c1"># Fan only</span>
+<span class="n">ECO_MODE</span> <span class="o">=</span> <span class="s2">&quot;MANUAL_ECO&quot;</span>         <span class="c1"># Energy saving mode</span>
+<span class="n">UNKNOWN_MODE</span> <span class="o">=</span> <span class="s2">&quot;UNKNOWN_MODE&quot;</span>   <span class="c1"># Unable to determine mode</span>
+</pre></div>
+</div>
+</section>
+<section id="key-properties">
+<h3>Key Properties<a class="headerlink" href="#key-properties" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">heat_modes</span></code>: List of modes that provide heating</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">cool_modes</span></code>: List of modes that provide cooling</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">controlled_modes</span></code>: List of modes where setpoints apply</p></li>
+</ul>
+</section>
+</section>
+<section id="implementation-examples">
+<h2>Implementation Examples<a class="headerlink" href="#implementation-examples" title="Link to this heading">¶</a></h2>
+<section id="honeywell-zone">
+<h3>Honeywell Zone<a class="headerlink" href="#honeywell-zone" title="Link to this heading">¶</a></h3>
+<dl class="py class">
+<dt class="sig sig-object py" id="src.honeywell.ThermostatZone">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">src.honeywell.</span></span><span class="sig-name descname"><span class="pre">ThermostatZone</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Thermostat_obj</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/honeywell.html#ThermostatZone"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.honeywell.ThermostatZone" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Zone</span></code>, <a class="reference internal" href="../docs/src.html#src.thermostat_common.ThermostatCommonZone" title="src.thermostat_common.ThermostatCommonZone"><code class="xref py py-class docutils literal notranslate"><span class="pre">ThermostatCommonZone</span></code></a></p>
+<p>Extend the Zone class with additional methods to get and set
+uiData parameters.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="src.honeywell.ThermostatZone.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Thermostat_obj</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/honeywell.html#ThermostatZone.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.honeywell.ThermostatZone.__init__" title="Link to this definition">¶</a></dt>
+<dd><p>Zone constructor.</p>
+<dl class="simple">
+<dt>inputs:</dt><dd><p>Thermostat_obj(obj): Thermostat class object instance.
+verbose(bool): debug flag.</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.honeywell.ThermostatZone.get_zone_name">
+<span class="sig-name descname"><span class="pre">get_zone_name</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></span><a class="reference internal" href="../_modules/src/honeywell.html#ThermostatZone.get_zone_name"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.honeywell.ThermostatZone.get_zone_name" title="Link to this definition">¶</a></dt>
+<dd><p>Refresh the cached zone information then return Name.</p>
+<dl class="simple">
+<dt>inputs:</dt><dd><p>None</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>zone name</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>(<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)">str</a>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.honeywell.ThermostatZone.get_display_temp">
+<span class="sig-name descname"><span class="pre">get_display_temp</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span></span><a class="reference internal" href="../_modules/src/honeywell.html#ThermostatZone.get_display_temp"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.honeywell.ThermostatZone.get_display_temp" title="Link to this definition">¶</a></dt>
+<dd><p>Refresh the cached zone information then return DispTemperature.</p>
+<dl class="simple">
+<dt>inputs:</dt><dd><p>None</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>display temperature in °F.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>(<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)">float</a>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.honeywell.ThermostatZone.get_display_humidity">
+<span class="sig-name descname"><span class="pre">get_display_humidity</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../_modules/src/honeywell.html#ThermostatZone.get_display_humidity"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.honeywell.ThermostatZone.get_display_humidity" title="Link to this definition">¶</a></dt>
+<dd><p>Refresh the cached zone information then return IndoorHumidity.</p>
+<dl class="simple">
+<dt>inputs:</dt><dd><p>None</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>indoor humidity in %RH, None if not supported.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>(<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)">float</a>, None)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.honeywell.ThermostatZone.get_is_humidity_supported">
+<span class="sig-name descname"><span class="pre">get_is_humidity_supported</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></span></span><a class="reference internal" href="../_modules/src/honeywell.html#ThermostatZone.get_is_humidity_supported"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.honeywell.ThermostatZone.get_is_humidity_supported" title="Link to this definition">¶</a></dt>
+<dd><dl class="simple">
+<dt>Refresh the cached zone information and return the</dt><dd><p>True if humidity sensor data is trustworthy.</p>
+</dd>
+<dt>inputs:</dt><dd><p>None</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>True if is in humidity sensor is available and not faulted.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>(booL)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.honeywell.ThermostatZone.is_heat_mode">
+<span class="sig-name descname"><span class="pre">is_heat_mode</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span></span><a class="reference internal" href="../_modules/src/honeywell.html#ThermostatZone.is_heat_mode"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.honeywell.ThermostatZone.is_heat_mode" title="Link to this definition">¶</a></dt>
+<dd><p>Refresh the cached zone information and return heat mode.</p>
+<dl class="simple">
+<dt>inputs:</dt><dd><p>None</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>1 heat mode, else 0</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>(<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)">int</a>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.honeywell.ThermostatZone.is_cool_mode">
+<span class="sig-name descname"><span class="pre">is_cool_mode</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span></span><a class="reference internal" href="../_modules/src/honeywell.html#ThermostatZone.is_cool_mode"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.honeywell.ThermostatZone.is_cool_mode" title="Link to this definition">¶</a></dt>
+<dd><p>Refresh the cached zone information and return the cool mode.</p>
+<dl class="simple">
+<dt>inputs:</dt><dd><p>None</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>1 if cool mode, else 0</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>(<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)">int</a>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.honeywell.ThermostatZone.is_dry_mode">
+<span class="sig-name descname"><span class="pre">is_dry_mode</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span></span><a class="reference internal" href="../_modules/src/honeywell.html#ThermostatZone.is_dry_mode"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.honeywell.ThermostatZone.is_dry_mode" title="Link to this definition">¶</a></dt>
+<dd><p>Return the dry mode.</p>
+<dl class="simple">
+<dt>inputs:</dt><dd><p>None</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>1 if dry mode, else 0</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>(<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)">int</a>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.honeywell.ThermostatZone.is_fan_mode">
+<span class="sig-name descname"><span class="pre">is_fan_mode</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span></span><a class="reference internal" href="../_modules/src/honeywell.html#ThermostatZone.is_fan_mode"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.honeywell.ThermostatZone.is_fan_mode" title="Link to this definition">¶</a></dt>
+<dd><p>Refresh the cached zone information and return the fan mode.</p>
+<p>Fan mode on Honeywell is defined as in off mode with fan set to
+on or circulate modes.
+inputs:</p>
+<blockquote>
+<div><p>None</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>fan mode, 1=enabled, 0=disabled.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>(<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)">int</a>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.honeywell.ThermostatZone.is_auto_mode">
+<span class="sig-name descname"><span class="pre">is_auto_mode</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span></span><a class="reference internal" href="../_modules/src/honeywell.html#ThermostatZone.is_auto_mode"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.honeywell.ThermostatZone.is_auto_mode" title="Link to this definition">¶</a></dt>
+<dd><p>Return the auto mode.</p>
+<dl class="simple">
+<dt>inputs:</dt><dd><p>None</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>1 if auto mode, else 0</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>(<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)">int</a>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.honeywell.ThermostatZone.is_eco_mode">
+<span class="sig-name descname"><span class="pre">is_eco_mode</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span></span><a class="reference internal" href="../_modules/src/honeywell.html#ThermostatZone.is_eco_mode"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.honeywell.ThermostatZone.is_eco_mode" title="Link to this definition">¶</a></dt>
+<dd><p>Return the eco mode.</p>
+<dl class="simple">
+<dt>inputs:</dt><dd><p>None</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>1 if auto mode, else 0</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>(<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)">int</a>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.honeywell.ThermostatZone.is_heating">
+<span class="sig-name descname"><span class="pre">is_heating</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span></span><a class="reference internal" href="../_modules/src/honeywell.html#ThermostatZone.is_heating"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.honeywell.ThermostatZone.is_heating" title="Link to this definition">¶</a></dt>
+<dd><p>Refresh the cached zone information and return the heat active mode.
+inputs:</p>
+<blockquote>
+<div><p>None</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>(int) 1 if heating is active, else 0.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.honeywell.ThermostatZone.is_cooling">
+<span class="sig-name descname"><span class="pre">is_cooling</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span></span><a class="reference internal" href="../_modules/src/honeywell.html#ThermostatZone.is_cooling"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.honeywell.ThermostatZone.is_cooling" title="Link to this definition">¶</a></dt>
+<dd><p>Refresh the cached zone information and return the cool active mode.
+inputs:</p>
+<blockquote>
+<div><p>None</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>1 if cooling is active, else 0.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>(<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)">int</a>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.honeywell.ThermostatZone.is_drying">
+<span class="sig-name descname"><span class="pre">is_drying</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/honeywell.html#ThermostatZone.is_drying"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.honeywell.ThermostatZone.is_drying" title="Link to this definition">¶</a></dt>
+<dd><p>Return 1 if drying relay is active, else 0.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.honeywell.ThermostatZone.is_auto">
+<span class="sig-name descname"><span class="pre">is_auto</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/honeywell.html#ThermostatZone.is_auto"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.honeywell.ThermostatZone.is_auto" title="Link to this definition">¶</a></dt>
+<dd><p>Return 1 if auto relay is active, else 0.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.honeywell.ThermostatZone.is_eco">
+<span class="sig-name descname"><span class="pre">is_eco</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/honeywell.html#ThermostatZone.is_eco"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.honeywell.ThermostatZone.is_eco" title="Link to this definition">¶</a></dt>
+<dd><p>Return 1 if eco relay is active, else 0.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.honeywell.ThermostatZone.is_fanning">
+<span class="sig-name descname"><span class="pre">is_fanning</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span></span><a class="reference internal" href="../_modules/src/honeywell.html#ThermostatZone.is_fanning"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.honeywell.ThermostatZone.is_fanning" title="Link to this definition">¶</a></dt>
+<dd><p>Return 1 if fan relay is active, else 0.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.honeywell.ThermostatZone.is_fan_circulate_mode">
+<span class="sig-name descname"><span class="pre">is_fan_circulate_mode</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span></span><a class="reference internal" href="../_modules/src/honeywell.html#ThermostatZone.is_fan_circulate_mode"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.honeywell.ThermostatZone.is_fan_circulate_mode" title="Link to this definition">¶</a></dt>
+<dd><p>Return 1 if fan is in circulate mode, else 0.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.honeywell.ThermostatZone.is_fan_auto_mode">
+<span class="sig-name descname"><span class="pre">is_fan_auto_mode</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span></span><a class="reference internal" href="../_modules/src/honeywell.html#ThermostatZone.is_fan_auto_mode"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.honeywell.ThermostatZone.is_fan_auto_mode" title="Link to this definition">¶</a></dt>
+<dd><p>Return 1 if fan is in auto mode, else 0.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.honeywell.ThermostatZone.is_fan_on_mode">
+<span class="sig-name descname"><span class="pre">is_fan_on_mode</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span></span><a class="reference internal" href="../_modules/src/honeywell.html#ThermostatZone.is_fan_on_mode"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.honeywell.ThermostatZone.is_fan_on_mode" title="Link to this definition">¶</a></dt>
+<dd><p>Return 1 if fan is in always on mode, else 0.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.honeywell.ThermostatZone.is_power_on">
+<span class="sig-name descname"><span class="pre">is_power_on</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span></span><a class="reference internal" href="../_modules/src/honeywell.html#ThermostatZone.is_power_on"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.honeywell.ThermostatZone.is_power_on" title="Link to this definition">¶</a></dt>
+<dd><p>Return 1 if power relay is active, else 0.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.honeywell.ThermostatZone.is_fan_on">
+<span class="sig-name descname"><span class="pre">is_fan_on</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span></span><a class="reference internal" href="../_modules/src/honeywell.html#ThermostatZone.is_fan_on"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.honeywell.ThermostatZone.is_fan_on" title="Link to this definition">¶</a></dt>
+<dd><p>Return 1 if fan relay is active, else 0.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.honeywell.ThermostatZone.get_wifi_strength">
+<span class="sig-name descname"><span class="pre">get_wifi_strength</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span></span><a class="reference internal" href="../_modules/src/honeywell.html#ThermostatZone.get_wifi_strength"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.honeywell.ThermostatZone.get_wifi_strength" title="Link to this definition">¶</a></dt>
+<dd><p>Return the wifi signal strength in dBm.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.honeywell.ThermostatZone.get_wifi_status">
+<span class="sig-name descname"><span class="pre">get_wifi_status</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></span></span><a class="reference internal" href="../_modules/src/honeywell.html#ThermostatZone.get_wifi_status"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.honeywell.ThermostatZone.get_wifi_status" title="Link to this definition">¶</a></dt>
+<dd><p>Return the wifi connection status.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.honeywell.ThermostatZone.get_battery_voltage">
+<span class="sig-name descname"><span class="pre">get_battery_voltage</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span></span><a class="reference internal" href="../_modules/src/honeywell.html#ThermostatZone.get_battery_voltage"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.honeywell.ThermostatZone.get_battery_voltage" title="Link to this definition">¶</a></dt>
+<dd><p>Return the battery voltage in volts.</p>
+<p>This tstat is on line power so any valid response
+from tstat returns line power value.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.honeywell.ThermostatZone.get_battery_status">
+<span class="sig-name descname"><span class="pre">get_battery_status</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></span></span><a class="reference internal" href="../_modules/src/honeywell.html#ThermostatZone.get_battery_status"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.honeywell.ThermostatZone.get_battery_status" title="Link to this definition">¶</a></dt>
+<dd><p>Return the battery status.</p>
+<p>For this tstat any positive number returns True.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.honeywell.ThermostatZone.get_schedule_heat_sp">
+<span class="sig-name descname"><span class="pre">get_schedule_heat_sp</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span></span><a class="reference internal" href="../_modules/src/honeywell.html#ThermostatZone.get_schedule_heat_sp"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.honeywell.ThermostatZone.get_schedule_heat_sp" title="Link to this definition">¶</a></dt>
+<dd><p>Refresh the cached zone information and return the
+schedule heat setpoint.</p>
+<dl class="simple">
+<dt>inputs:</dt><dd><p>None</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>heating set point in °F.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>(<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)">float</a>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.honeywell.ThermostatZone.get_schedule_cool_sp">
+<span class="sig-name descname"><span class="pre">get_schedule_cool_sp</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span></span><a class="reference internal" href="../_modules/src/honeywell.html#ThermostatZone.get_schedule_cool_sp"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.honeywell.ThermostatZone.get_schedule_cool_sp" title="Link to this definition">¶</a></dt>
+<dd><p>Refresh the cached zone information and return the
+schedule cool setpoint.</p>
+<dl class="simple">
+<dt>inputs:</dt><dd><p>None</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>cooling set point in °F.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>(<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)">float</a>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.honeywell.ThermostatZone.get_is_invacation_hold_mode">
+<span class="sig-name descname"><span class="pre">get_is_invacation_hold_mode</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></span></span><a class="reference internal" href="../_modules/src/honeywell.html#ThermostatZone.get_is_invacation_hold_mode"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.honeywell.ThermostatZone.get_is_invacation_hold_mode" title="Link to this definition">¶</a></dt>
+<dd><dl class="simple">
+<dt>Refresh the cached zone information and return the</dt><dd><p>‘IsInVacationHoldMode’ setting.</p>
+</dd>
+<dt>inputs:</dt><dd><p>None</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>True if is in vacation hold mode.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>(booL)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.honeywell.ThermostatZone.get_vacation_hold">
+<span class="sig-name descname"><span class="pre">get_vacation_hold</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></span></span><a class="reference internal" href="../_modules/src/honeywell.html#ThermostatZone.get_vacation_hold"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.honeywell.ThermostatZone.get_vacation_hold" title="Link to this definition">¶</a></dt>
+<dd><p>Refresh the cached zone information and return the
+VacationHold setting.</p>
+<dl class="simple">
+<dt>inputs:</dt><dd><p>None</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>True if vacation hold is set.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>(<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)">bool</a>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.honeywell.ThermostatZone.get_vacation_hold_until_time">
+<span class="sig-name descname"><span class="pre">get_vacation_hold_until_time</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span></span><a class="reference internal" href="../_modules/src/honeywell.html#ThermostatZone.get_vacation_hold_until_time"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.honeywell.ThermostatZone.get_vacation_hold_until_time" title="Link to this definition">¶</a></dt>
+<dd><p>Refresh the cached zone information and return
+the ‘VacationHoldUntilTime’.
+inputs:</p>
+<blockquote>
+<div><p>None</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>(int) vacation hold time until in minutes</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.honeywell.ThermostatZone.get_temporary_hold_until_time">
+<span class="sig-name descname"><span class="pre">get_temporary_hold_until_time</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span></span><a class="reference internal" href="../_modules/src/honeywell.html#ThermostatZone.get_temporary_hold_until_time"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.honeywell.ThermostatZone.get_temporary_hold_until_time" title="Link to this definition">¶</a></dt>
+<dd><p>Refresh the cached zone information and return the
+‘TemporaryHoldUntilTime’.</p>
+<dl class="simple">
+<dt>inputs:</dt><dd><p>None</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>(int) temporary hold time until in minutes.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.honeywell.ThermostatZone.get_setpoint_change_allowed">
+<span class="sig-name descname"><span class="pre">get_setpoint_change_allowed</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></span></span><a class="reference internal" href="../_modules/src/honeywell.html#ThermostatZone.get_setpoint_change_allowed"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.honeywell.ThermostatZone.get_setpoint_change_allowed" title="Link to this definition">¶</a></dt>
+<dd><p>Refresh the cached zone information and return the
+‘SetpointChangeAllowed’ setting.</p>
+<p>‘SetpointChangeAllowed’ will be True in heating mode,
+False in OFF mode (assume True in cooling mode too)
+inputs:</p>
+<blockquote>
+<div><p>None</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>True if set point changes are allowed.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>(<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)">bool</a>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.honeywell.ThermostatZone.get_system_switch_position">
+<span class="sig-name descname"><span class="pre">get_system_switch_position</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span></span><a class="reference internal" href="../_modules/src/honeywell.html#ThermostatZone.get_system_switch_position"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.honeywell.ThermostatZone.get_system_switch_position" title="Link to this definition">¶</a></dt>
+<dd><p>Refresh the cached zone information and return the
+‘SystemSwitchPosition’.</p>
+<p>‘SystemSwitchPosition’ = 1 for heat, 2 for off
+inputs:</p>
+<blockquote>
+<div><p>None</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><dl class="simple">
+<dt>(int) current mode for unit, should match value</dt><dd><p>in self.system_switch_position</p>
+</dd>
+</dl>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.honeywell.ThermostatZone.set_heat_setpoint">
+<span class="sig-name descname"><span class="pre">set_heat_setpoint</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">temp</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../_modules/src/honeywell.html#ThermostatZone.set_heat_setpoint"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.honeywell.ThermostatZone.set_heat_setpoint" title="Link to this definition">¶</a></dt>
+<dd><p>Set a new heat setpoint.</p>
+<p>This will also attempt to turn the thermostat to ‘Heat’
+inputs:</p>
+<blockquote>
+<div><p>temp(int): desired temperature.</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.honeywell.ThermostatZone.set_cool_setpoint">
+<span class="sig-name descname"><span class="pre">set_cool_setpoint</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">temp</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../_modules/src/honeywell.html#ThermostatZone.set_cool_setpoint"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.honeywell.ThermostatZone.set_cool_setpoint" title="Link to this definition">¶</a></dt>
+<dd><p>Set a new cool setpoint.</p>
+<p>This will also attempt to turn the thermostat to ‘Cool’
+inputs:</p>
+<blockquote>
+<div><p>temp(int): desired temperature.</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.honeywell.ThermostatZone.refresh_zone_info">
+<span class="sig-name descname"><span class="pre">refresh_zone_info</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">force_refresh</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../_modules/src/honeywell.html#ThermostatZone.refresh_zone_info"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.honeywell.ThermostatZone.refresh_zone_info" title="Link to this definition">¶</a></dt>
+<dd><p>Refresh the zone_info attribute.</p>
+<p>Method overridden from base class to add retry on connection errors.
+Retry up to 24 hours for extended internet outages.
+inputs:</p>
+<blockquote>
+<div><p>force_refresh(bool): not used in this method</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>None, populates self.zone_info dict.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<p>Full implementation for Honeywell TCC-compatible thermostats.</p>
+</section>
+<section id="emulator-zone">
+<h3>Emulator Zone<a class="headerlink" href="#emulator-zone" title="Link to this heading">¶</a></h3>
+<dl class="py class">
+<dt class="sig sig-object py" id="src.emulator.ThermostatZone">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">src.emulator.</span></span><span class="sig-name descname"><span class="pre">ThermostatZone</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Thermostat_obj</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/emulator.html#ThermostatZone"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.emulator.ThermostatZone" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="../docs/src.html#src.thermostat_common.ThermostatCommonZone" title="src.thermostat_common.ThermostatCommonZone"><code class="xref py py-class docutils literal notranslate"><span class="pre">ThermostatCommonZone</span></code></a></p>
+<p>Emulator thermostat zone functions.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="src.emulator.ThermostatZone.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Thermostat_obj</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/emulator.html#ThermostatZone.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.emulator.ThermostatZone.__init__" title="Link to this definition">¶</a></dt>
+<dd><p>Zone constructor.</p>
+<dl class="simple">
+<dt>inputs:</dt><dd><p>Thermostat(obj): Thermostat class instance.
+verbose(bool): debug flag.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.emulator.ThermostatZone.initialize_meta_data_dict">
+<span class="sig-name descname"><span class="pre">initialize_meta_data_dict</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/emulator.html#ThermostatZone.initialize_meta_data_dict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.emulator.ThermostatZone.initialize_meta_data_dict" title="Link to this definition">¶</a></dt>
+<dd><p>Initialize the meta data dict</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.emulator.ThermostatZone.get_parameter">
+<span class="sig-name descname"><span class="pre">get_parameter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">default_val</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/emulator.html#ThermostatZone.get_parameter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.emulator.ThermostatZone.get_parameter" title="Link to this definition">¶</a></dt>
+<dd><p>Get parameter from zone dictionary.</p>
+<dl class="simple">
+<dt>inputs:</dt><dd><p>key(str): target dict key
+default_val(str, int, float): default value on key errors</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.emulator.ThermostatZone.set_parameter">
+<span class="sig-name descname"><span class="pre">set_parameter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target_val</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/emulator.html#ThermostatZone.set_parameter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.emulator.ThermostatZone.set_parameter" title="Link to this definition">¶</a></dt>
+<dd><p>Set parameter in zone dictionary.</p>
+<dl class="simple">
+<dt>inputs:</dt><dd><p>key(str): target dict key
+target_val(str, int, float): value to set</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.emulator.ThermostatZone.get_zone_name">
+<span class="sig-name descname"><span class="pre">get_zone_name</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/emulator.html#ThermostatZone.get_zone_name"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.emulator.ThermostatZone.get_zone_name" title="Link to this definition">¶</a></dt>
+<dd><p>Return the name associated with the zone number.</p>
+<dl class="simple">
+<dt>inputs:</dt><dd><p>None</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>(str) zone name</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.emulator.ThermostatZone.get_display_temp">
+<span class="sig-name descname"><span class="pre">get_display_temp</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span></span><a class="reference internal" href="../_modules/src/emulator.html#ThermostatZone.get_display_temp"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.emulator.ThermostatZone.get_display_temp" title="Link to this definition">¶</a></dt>
+<dd><p>Refresh the cached zone information and return Indoor Temp in °F
+with +/- 1 degree noise value.</p>
+<dl class="simple">
+<dt>inputs:</dt><dd><p>None</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>indoor temp in °F.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>(<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)">float</a>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.emulator.ThermostatZone.get_display_humidity">
+<span class="sig-name descname"><span class="pre">get_display_humidity</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../_modules/src/emulator.html#ThermostatZone.get_display_humidity"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.emulator.ThermostatZone.get_display_humidity" title="Link to this definition">¶</a></dt>
+<dd><p>Refresh the cached zone information and return IndoorHumidity
+with random +/-1% noise value.</p>
+<dl class="simple">
+<dt>inputs:</dt><dd><p>None</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>indoor humidity in %RH, None if not supported.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>(<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)">float</a>, None)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.emulator.ThermostatZone.get_is_humidity_supported">
+<span class="sig-name descname"><span class="pre">get_is_humidity_supported</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></span></span><a class="reference internal" href="../_modules/src/emulator.html#ThermostatZone.get_is_humidity_supported"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.emulator.ThermostatZone.get_is_humidity_supported" title="Link to this definition">¶</a></dt>
+<dd><dl class="simple">
+<dt>Refresh the cached zone information and return the</dt><dd><p>True if humidity sensor data is trustworthy.</p>
+</dd>
+<dt>inputs:</dt><dd><p>None</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>True if is in humidity sensor is available and not faulted.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>(booL)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.emulator.ThermostatZone.set_mode">
+<span class="sig-name descname"><span class="pre">set_mode</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target_mode</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/emulator.html#ThermostatZone.set_mode"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.emulator.ThermostatZone.set_mode" title="Link to this definition">¶</a></dt>
+<dd><p>Set the thermostat mode.</p>
+<dl class="simple">
+<dt>inputs:</dt><dd><p>target_mode(str): target mode, refer to supported_configs[“modes”]</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>True if successful, else False</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.emulator.ThermostatZone.is_heat_mode">
+<span class="sig-name descname"><span class="pre">is_heat_mode</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span></span><a class="reference internal" href="../_modules/src/emulator.html#ThermostatZone.is_heat_mode"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.emulator.ThermostatZone.is_heat_mode" title="Link to this definition">¶</a></dt>
+<dd><p>Refresh the cached zone information and return the heat mode.</p>
+<dl class="simple">
+<dt>inputs:</dt><dd><p>None</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>(int) heat mode, 1=enabled, 0=disabled.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.emulator.ThermostatZone.is_cool_mode">
+<span class="sig-name descname"><span class="pre">is_cool_mode</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span></span><a class="reference internal" href="../_modules/src/emulator.html#ThermostatZone.is_cool_mode"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.emulator.ThermostatZone.is_cool_mode" title="Link to this definition">¶</a></dt>
+<dd><p>Refresh the cached zone information and return the cool mode.</p>
+<dl class="simple">
+<dt>inputs:</dt><dd><p>None</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>cool mode, 1=enabled, 0=disabled.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>(<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)">int</a>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.emulator.ThermostatZone.is_dry_mode">
+<span class="sig-name descname"><span class="pre">is_dry_mode</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span></span><a class="reference internal" href="../_modules/src/emulator.html#ThermostatZone.is_dry_mode"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.emulator.ThermostatZone.is_dry_mode" title="Link to this definition">¶</a></dt>
+<dd><p>Refresh the cached zone information and return the dry mode.</p>
+<dl class="simple">
+<dt>inputs:</dt><dd><p>None</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dry mode, 1=enabled, 0=disabled.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>(<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)">int</a>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.emulator.ThermostatZone.is_fan_mode">
+<span class="sig-name descname"><span class="pre">is_fan_mode</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span></span><a class="reference internal" href="../_modules/src/emulator.html#ThermostatZone.is_fan_mode"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.emulator.ThermostatZone.is_fan_mode" title="Link to this definition">¶</a></dt>
+<dd><p>Refresh the cached zone information and return the fan mode.</p>
+<dl class="simple">
+<dt>inputs:</dt><dd><p>None</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>fan mode, 1=enabled, 0=disabled.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>(<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)">int</a>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.emulator.ThermostatZone.is_auto_mode">
+<span class="sig-name descname"><span class="pre">is_auto_mode</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span></span><a class="reference internal" href="../_modules/src/emulator.html#ThermostatZone.is_auto_mode"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.emulator.ThermostatZone.is_auto_mode" title="Link to this definition">¶</a></dt>
+<dd><p>Refresh the cached zone information and return the auto mode.</p>
+<dl class="simple">
+<dt>inputs:</dt><dd><p>None</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>auto mode, 1=enabled, 0=disabled.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>(<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)">int</a>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.emulator.ThermostatZone.is_eco_mode">
+<span class="sig-name descname"><span class="pre">is_eco_mode</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span></span><a class="reference internal" href="../_modules/src/emulator.html#ThermostatZone.is_eco_mode"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.emulator.ThermostatZone.is_eco_mode" title="Link to this definition">¶</a></dt>
+<dd><p>Refresh the cached zone information and return the eco mode.</p>
+<dl class="simple">
+<dt>inputs:</dt><dd><p>None</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>eco mode, 1=enabled, 0=disabled.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>(<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)">int</a>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.emulator.ThermostatZone.is_off_mode">
+<span class="sig-name descname"><span class="pre">is_off_mode</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span></span><a class="reference internal" href="../_modules/src/emulator.html#ThermostatZone.is_off_mode"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.emulator.ThermostatZone.is_off_mode" title="Link to this definition">¶</a></dt>
+<dd><p>Refresh the cached zone information and return the off mode.</p>
+<dl class="simple">
+<dt>inputs:</dt><dd><p>None</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>off mode, 1=enabled, 0=disabled.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>(<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)">int</a>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.emulator.ThermostatZone.is_heating">
+<span class="sig-name descname"><span class="pre">is_heating</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/emulator.html#ThermostatZone.is_heating"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.emulator.ThermostatZone.is_heating" title="Link to this definition">¶</a></dt>
+<dd><p>Return 1 if heating relay is active, else 0.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.emulator.ThermostatZone.is_cooling">
+<span class="sig-name descname"><span class="pre">is_cooling</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/emulator.html#ThermostatZone.is_cooling"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.emulator.ThermostatZone.is_cooling" title="Link to this definition">¶</a></dt>
+<dd><p>Return 1 if cooling relay is active, else 0.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.emulator.ThermostatZone.is_drying">
+<span class="sig-name descname"><span class="pre">is_drying</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/emulator.html#ThermostatZone.is_drying"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.emulator.ThermostatZone.is_drying" title="Link to this definition">¶</a></dt>
+<dd><p>Return 1 if drying relay is active, else 0.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.emulator.ThermostatZone.is_auto">
+<span class="sig-name descname"><span class="pre">is_auto</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/emulator.html#ThermostatZone.is_auto"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.emulator.ThermostatZone.is_auto" title="Link to this definition">¶</a></dt>
+<dd><p>Return 1 if auto relay is active, else 0.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.emulator.ThermostatZone.is_eco">
+<span class="sig-name descname"><span class="pre">is_eco</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/emulator.html#ThermostatZone.is_eco"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.emulator.ThermostatZone.is_eco" title="Link to this definition">¶</a></dt>
+<dd><p>Return 1 if eco relay is active, else 0.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.emulator.ThermostatZone.is_fanning">
+<span class="sig-name descname"><span class="pre">is_fanning</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span></span><a class="reference internal" href="../_modules/src/emulator.html#ThermostatZone.is_fanning"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.emulator.ThermostatZone.is_fanning" title="Link to this definition">¶</a></dt>
+<dd><p>Return 1 if fan relay is active, else 0.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.emulator.ThermostatZone.is_power_on">
+<span class="sig-name descname"><span class="pre">is_power_on</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/emulator.html#ThermostatZone.is_power_on"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.emulator.ThermostatZone.is_power_on" title="Link to this definition">¶</a></dt>
+<dd><p>Return 1 if power relay is active, else 0.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.emulator.ThermostatZone.is_fan_on">
+<span class="sig-name descname"><span class="pre">is_fan_on</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/emulator.html#ThermostatZone.is_fan_on"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.emulator.ThermostatZone.is_fan_on" title="Link to this definition">¶</a></dt>
+<dd><p>Return 1 if fan relay is active, else 0.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.emulator.ThermostatZone.is_defrosting">
+<span class="sig-name descname"><span class="pre">is_defrosting</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/emulator.html#ThermostatZone.is_defrosting"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.emulator.ThermostatZone.is_defrosting" title="Link to this definition">¶</a></dt>
+<dd><p>Return 1 if defrosting is active, else 0.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.emulator.ThermostatZone.is_standby">
+<span class="sig-name descname"><span class="pre">is_standby</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/emulator.html#ThermostatZone.is_standby"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.emulator.ThermostatZone.is_standby" title="Link to this definition">¶</a></dt>
+<dd><p>Return 1 if standby is active, else 0.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.emulator.ThermostatZone.get_heat_setpoint_raw">
+<span class="sig-name descname"><span class="pre">get_heat_setpoint_raw</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span></span><a class="reference internal" href="../_modules/src/emulator.html#ThermostatZone.get_heat_setpoint_raw"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.emulator.ThermostatZone.get_heat_setpoint_raw" title="Link to this definition">¶</a></dt>
+<dd><p>Refresh the cached zone information and return the heat setpoint.</p>
+<dl class="simple">
+<dt>inputs:</dt><dd><p>None</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>heating set point in °F.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>(<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)">float</a>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.emulator.ThermostatZone.get_heat_setpoint">
+<span class="sig-name descname"><span class="pre">get_heat_setpoint</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></span><a class="reference internal" href="../_modules/src/emulator.html#ThermostatZone.get_heat_setpoint"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.emulator.ThermostatZone.get_heat_setpoint" title="Link to this definition">¶</a></dt>
+<dd><p>Return heat setpoint with units as a string.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.emulator.ThermostatZone.get_schedule_heat_sp">
+<span class="sig-name descname"><span class="pre">get_schedule_heat_sp</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span></span><a class="reference internal" href="../_modules/src/emulator.html#ThermostatZone.get_schedule_heat_sp"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.emulator.ThermostatZone.get_schedule_heat_sp" title="Link to this definition">¶</a></dt>
+<dd><p>Return the schedule heat setpoint.</p>
+<dl class="simple">
+<dt>inputs:</dt><dd><p>None</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>scheduled heating set point in °F.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>(<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)">int</a>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.emulator.ThermostatZone.get_schedule_cool_sp">
+<span class="sig-name descname"><span class="pre">get_schedule_cool_sp</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span></span><a class="reference internal" href="../_modules/src/emulator.html#ThermostatZone.get_schedule_cool_sp"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.emulator.ThermostatZone.get_schedule_cool_sp" title="Link to this definition">¶</a></dt>
+<dd><p>Return the schedule cool setpoint.</p>
+<dl class="simple">
+<dt>inputs:</dt><dd><p>None</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>scheduled cooling set point in °F.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>(<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)">float</a>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.emulator.ThermostatZone.get_cool_setpoint_raw">
+<span class="sig-name descname"><span class="pre">get_cool_setpoint_raw</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span></span><a class="reference internal" href="../_modules/src/emulator.html#ThermostatZone.get_cool_setpoint_raw"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.emulator.ThermostatZone.get_cool_setpoint_raw" title="Link to this definition">¶</a></dt>
+<dd><p>Return the cool setpoint.</p>
+<dl class="simple">
+<dt>inputs:</dt><dd><p>None</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>cooling set point in °F.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>(<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)">float</a>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.emulator.ThermostatZone.get_cool_setpoint">
+<span class="sig-name descname"><span class="pre">get_cool_setpoint</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></span><a class="reference internal" href="../_modules/src/emulator.html#ThermostatZone.get_cool_setpoint"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.emulator.ThermostatZone.get_cool_setpoint" title="Link to this definition">¶</a></dt>
+<dd><p>Return cool setpoint with units as a string.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.emulator.ThermostatZone.get_is_invacation_hold_mode">
+<span class="sig-name descname"><span class="pre">get_is_invacation_hold_mode</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></span></span><a class="reference internal" href="../_modules/src/emulator.html#ThermostatZone.get_is_invacation_hold_mode"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.emulator.ThermostatZone.get_is_invacation_hold_mode" title="Link to this definition">¶</a></dt>
+<dd><dl class="simple">
+<dt>Return the</dt><dd><p>‘IsInVacationHoldMode’ setting.</p>
+</dd>
+<dt>inputs:</dt><dd><p>None</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>True if is in vacation hold mode.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>(booL)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.emulator.ThermostatZone.get_vacation_hold">
+<span class="sig-name descname"><span class="pre">get_vacation_hold</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></span></span><a class="reference internal" href="../_modules/src/emulator.html#ThermostatZone.get_vacation_hold"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.emulator.ThermostatZone.get_vacation_hold" title="Link to this definition">¶</a></dt>
+<dd><p>Return the
+VacationHold setting.</p>
+<dl class="simple">
+<dt>inputs:</dt><dd><p>None</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>True if vacation hold is set.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>(<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)">bool</a>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.emulator.ThermostatZone.get_system_switch_position">
+<span class="sig-name descname"><span class="pre">get_system_switch_position</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></span><a class="reference internal" href="../_modules/src/emulator.html#ThermostatZone.get_system_switch_position"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.emulator.ThermostatZone.get_system_switch_position" title="Link to this definition">¶</a></dt>
+<dd><p>Return the system switch position.</p>
+<dl class="simple">
+<dt>inputs:</dt><dd><p>None</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><dl class="simple">
+<dt>(int or str) current mode for unit, should match value</dt><dd><p>in self.system_switch_position</p>
+</dd>
+</dl>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.emulator.ThermostatZone.set_heat_setpoint">
+<span class="sig-name descname"><span class="pre">set_heat_setpoint</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">temp</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../_modules/src/emulator.html#ThermostatZone.set_heat_setpoint"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.emulator.ThermostatZone.set_heat_setpoint" title="Link to this definition">¶</a></dt>
+<dd><p>Set a new heat setpoint.</p>
+<dl class="simple">
+<dt>inputs:</dt><dd><p>temp(int): desired temperature in F</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.emulator.ThermostatZone.set_cool_setpoint">
+<span class="sig-name descname"><span class="pre">set_cool_setpoint</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">temp</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../_modules/src/emulator.html#ThermostatZone.set_cool_setpoint"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.emulator.ThermostatZone.set_cool_setpoint" title="Link to this definition">¶</a></dt>
+<dd><p>Set a new cool setpoint.</p>
+<dl class="simple">
+<dt>inputs:</dt><dd><p>temp(int): desired temperature in °F.</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.emulator.ThermostatZone.create_deviation_file">
+<span class="sig-name descname"><span class="pre">create_deviation_file</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../_modules/src/emulator.html#ThermostatZone.create_deviation_file"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.emulator.ThermostatZone.create_deviation_file" title="Link to this definition">¶</a></dt>
+<dd><p>Create an empty deviation file for this thermostat zone.</p>
+<dl class="simple">
+<dt>inputs:</dt><dd><p>None</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.emulator.ThermostatZone.set_deviation_value">
+<span class="sig-name descname"><span class="pre">set_deviation_value</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../_modules/src/emulator.html#ThermostatZone.set_deviation_value"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.emulator.ThermostatZone.set_deviation_value" title="Link to this definition">¶</a></dt>
+<dd><p>Set a deviation value for a specific parameter.</p>
+<dl class="simple">
+<dt>inputs:</dt><dd><p>key(str): parameter name (e.g., ‘display_temp’, ‘display_humidity’)
+value: deviation value to set</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.emulator.ThermostatZone.get_deviation_value">
+<span class="sig-name descname"><span class="pre">get_deviation_value</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">default_val</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/emulator.html#ThermostatZone.get_deviation_value"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.emulator.ThermostatZone.get_deviation_value" title="Link to this definition">¶</a></dt>
+<dd><p>Get a deviation value for a specific parameter.</p>
+<dl class="simple">
+<dt>inputs:</dt><dd><p>key(str): parameter name
+default_val: default value if key not found or file doesn’t exist</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>deviation value or default_val</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.emulator.ThermostatZone.has_deviation_data">
+<span class="sig-name descname"><span class="pre">has_deviation_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></span></span><a class="reference internal" href="../_modules/src/emulator.html#ThermostatZone.has_deviation_data"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.emulator.ThermostatZone.has_deviation_data" title="Link to this definition">¶</a></dt>
+<dd><p>Check if deviation data exists.</p>
+<dl class="simple">
+<dt>inputs:</dt><dd><dl class="simple">
+<dt>key(str): if provided, check for specific key,</dt><dd><p>otherwise check if file exists</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>True if deviation data exists</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>(<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)">bool</a>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.emulator.ThermostatZone.clear_deviation_data">
+<span class="sig-name descname"><span class="pre">clear_deviation_data</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../_modules/src/emulator.html#ThermostatZone.clear_deviation_data"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.emulator.ThermostatZone.clear_deviation_data" title="Link to this definition">¶</a></dt>
+<dd><p>Clear all deviation data by removing the deviation file.</p>
+<dl class="simple">
+<dt>inputs:</dt><dd><p>None</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.emulator.ThermostatZone.refresh_zone_info">
+<span class="sig-name descname"><span class="pre">refresh_zone_info</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">force_refresh</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/emulator.html#ThermostatZone.refresh_zone_info"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.emulator.ThermostatZone.refresh_zone_info" title="Link to this definition">¶</a></dt>
+<dd><p>Refreshes the zone information if the current time exceeds the fetch interval
+or if the force_refresh flag is set to True.
+:param force_refresh: If True, forces the refresh of zone information</p>
+<blockquote>
+<div><p>regardless of the fetch interval. Default is False.</p>
+</div></blockquote>
+<dl class="field-list simple">
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<p>Testing implementation that simulates zone behavior.</p>
+</section>
+</section>
+<section id="optional-methods">
+<h2>Optional Methods<a class="headerlink" href="#optional-methods" title="Link to this heading">¶</a></h2>
+<p>Many zone classes implement additional methods for extended functionality:</p>
+<section id="temperature-monitoring">
+<h3>Temperature Monitoring<a class="headerlink" href="#temperature-monitoring" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">get_display_temp()</span></code>: Current temperature reading</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">get_display_humidity()</span></code>: Current humidity reading (if supported)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">get_is_humidity_supported()</span></code>: Check if humidity sensing is available</p></li>
+</ul>
+</section>
+<section id="schedule-management">
+<h3>Schedule Management<a class="headerlink" href="#schedule-management" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">get_hold_mode()</span></code>: Check if schedule is being overridden</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">get_temporary_hold_until_time()</span></code>: Get temporary override expiration</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">get_vacation_hold_until_time()</span></code>: Get vacation mode expiration</p></li>
+</ul>
+</section>
+<section id="setpoint-queries">
+<h3>Setpoint Queries<a class="headerlink" href="#setpoint-queries" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">get_heat_setpoint()</span></code>: Current heating setpoint</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">get_cool_setpoint()</span></code>: Current cooling setpoint</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">get_heat_setpoint_raw()</span></code>: Raw heating setpoint data</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">get_cool_setpoint_raw()</span></code>: Raw cooling setpoint data</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">get_safety_temperature()</span></code>: Safety temperature when normal setpoints unavailable</p></li>
+</ul>
+</section>
+<section id="system-status">
+<h3>System Status<a class="headerlink" href="#system-status" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">get_system_switch_position()</span></code>: Current system mode setting</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">get_setpoint_change_allowed()</span></code>: Check if setpoint changes are permitted</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">is_heat_mode()</span></code>: Check if currently in heating mode</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">is_cool_mode()</span></code>: Check if currently in cooling mode</p></li>
+</ul>
+</section>
+</section>
+<section id="data-validation">
+<h2>Data Validation<a class="headerlink" href="#data-validation" title="Link to this heading">¶</a></h2>
+<p>Zone classes include built-in validation for:</p>
+<ul class="simple">
+<li><p>Temperature range limits</p></li>
+<li><p>Setpoint change permissions</p></li>
+<li><p>Schedule override conflicts</p></li>
+<li><p>Network connectivity status</p></li>
+</ul>
+</section>
+<section id="error-handling">
+<h2>Error Handling<a class="headerlink" href="#error-handling" title="Link to this heading">¶</a></h2>
+<p>Proper error handling is implemented for:</p>
+<ul class="simple">
+<li><p>Network communication failures</p></li>
+<li><p>Invalid temperature requests</p></li>
+<li><p>Schedule conflicts</p></li>
+<li><p>Hardware limitations</p></li>
+</ul>
+</section>
+<section id="caching-strategy">
+<h2>Caching Strategy<a class="headerlink" href="#caching-strategy" title="Link to this heading">¶</a></h2>
+<p>Zone classes implement intelligent caching to:</p>
+<ul class="simple">
+<li><p>Minimize network requests</p></li>
+<li><p>Improve response times</p></li>
+<li><p>Handle temporary network outages</p></li>
+<li><p>Maintain data consistency</p></li>
+</ul>
+<p>The default cache expiration is 10 seconds, but can be configured per thermostat type.</p>
+</section>
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">ThermostatSupervisor</a></h1>
+
+
+
+<p class="blurb">Monitor and control thermostats remotely</p>
+
+
+
+
+<p>
+<iframe src="https://ghbtns.com/github-btn.html?user=cjkrolak&repo=ThermostatSupervisor&type=star&count=true&size=large&v=2"
+  allowtransparency="true" frameborder="0" scrolling="0" width="200px" height="35px"></iframe>
+</p>
+
+
+
+
+
+
+<search id="searchbox" style="display: none" role="search">
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Search"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">API Documentation:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="overview.html">API Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="thermostat_api.html">Thermostat API Module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="thermostat_classes.html">Thermostat Classes</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Zone Classes</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#required-api-methods">Required API Methods</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#common-base-class">Common Base Class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#implementation-examples">Implementation Examples</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#optional-methods">Optional Methods</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#data-validation">Data Validation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#error-handling">Error Handling</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#caching-strategy">Caching Strategy</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Module Reference:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../docs/src.html">src package</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="thermostat_classes.html" title="previous chapter">Thermostat Classes</a></li>
+      <li>Next: <a href="../docs/src.html" title="next chapter">src package</a></li>
+  </ul></li>
+</ul>
+</div>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;2024, Christopher Krolak.
+      
+      |
+      <a href="../_sources/api/zone_classes.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

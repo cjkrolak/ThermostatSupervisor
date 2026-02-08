@@ -1,0 +1,1053 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>src.emulator &#8212; ThermostatSupervisor API Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=5ecbeea2" />
+    <link rel="stylesheet" type="text/css" href="../../_static/basic.css?v=b08954a9" />
+    <link rel="stylesheet" type="text/css" href="../../_static/alabaster.css?v=1c1df0c7" />
+    <script src="../../_static/documentation_options.js?v=8d563738"></script>
+    <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for src.emulator</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;emulator integration&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pickle</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">random</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">traceback</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Union</span>
+
+<span class="c1"># local imports</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">src</span><span class="w"> </span><span class="kn">import</span> <span class="n">emulator_config</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">src</span><span class="w"> </span><span class="kn">import</span> <span class="n">environment</span> <span class="k">as</span> <span class="n">env</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">src</span><span class="w"> </span><span class="kn">import</span> <span class="n">thermostat_api</span> <span class="k">as</span> <span class="n">api</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">src</span><span class="w"> </span><span class="kn">import</span> <span class="n">thermostat_common</span> <span class="k">as</span> <span class="n">tc</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">src</span><span class="w"> </span><span class="kn">import</span> <span class="n">utilities</span> <span class="k">as</span> <span class="n">util</span>
+
+
+<div class="viewcode-block" id="ThermostatClass">
+<a class="viewcode-back" href="../../docs/src.html#src.emulator.ThermostatClass">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ThermostatClass</span><span class="p">(</span><span class="n">tc</span><span class="o">.</span><span class="n">ThermostatCommon</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Emulator thermostat functions.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="ThermostatClass.__init__">
+<a class="viewcode-back" href="../../docs/src.html#src.emulator.ThermostatClass.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">zone</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Constructor, connect to thermostat.</span>
+
+<span class="sd">        inputs:</span>
+<span class="sd">            zone(str):  zone of thermostat.</span>
+<span class="sd">            verbose(bool): debug flag.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># construct the superclass</span>
+        <span class="c1"># call both parent class __init__</span>
+        <span class="n">tc</span><span class="o">.</span><span class="n">ThermostatCommon</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+
+        <span class="c1"># set tstat type and debug flag</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">thermostat_type</span> <span class="o">=</span> <span class="n">emulator_config</span><span class="o">.</span><span class="n">ALIAS</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span> <span class="o">=</span> <span class="n">verbose</span>
+
+        <span class="c1"># configure zone info</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">zone_name</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">zone</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">device_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_target_zone_id</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">zone_name</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">serial_number</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># will be populated when unit is queried.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">meta_data_dict</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">initialize_meta_data_dict</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="ThermostatClass.initialize_meta_data_dict">
+<a class="viewcode-back" href="../../docs/src.html#src.emulator.ThermostatClass.initialize_meta_data_dict">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">initialize_meta_data_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize the meta data dict&quot;&quot;&quot;</span>
+        <span class="c1"># add zone keys</span>
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">emulator_config</span><span class="o">.</span><span class="n">supported_configs</span><span class="p">[</span><span class="s2">&quot;zones&quot;</span><span class="p">]:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">meta_data_dict</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span></div>
+
+
+<div class="viewcode-block" id="ThermostatClass.get_target_zone_id">
+<a class="viewcode-back" href="../../docs/src.html#src.emulator.ThermostatClass.get_target_zone_id">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_target_zone_id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">zone</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return the target zone ID.</span>
+
+<span class="sd">        inputs:</span>
+<span class="sd">            zone(int):  zone number.</span>
+<span class="sd">        returns:</span>
+<span class="sd">            (int): device_id</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">zone</span></div>
+
+
+<div class="viewcode-block" id="ThermostatClass.get_all_metadata">
+<a class="viewcode-back" href="../../docs/src.html#src.emulator.ThermostatClass.get_all_metadata">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_all_metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">zone</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">retry</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get all thermostat meta data for zone from emulator.</span>
+
+<span class="sd">        inputs:</span>
+<span class="sd">            zone(int): specified zone, if None will print all zones.</span>
+<span class="sd">            retry(bool): if True will retry with extended retry mechanism.</span>
+<span class="sd">        returns:</span>
+<span class="sd">            (dict): JSON dict</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_metadata</span><span class="p">(</span><span class="n">zone</span><span class="p">,</span> <span class="n">retry</span><span class="o">=</span><span class="n">retry</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ThermostatClass.get_metadata">
+<a class="viewcode-back" href="../../docs/src.html#src.emulator.ThermostatClass.get_metadata">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">zone</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">trait</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">parameter</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">retry</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get all thermostat meta data for zone from emulator.</span>
+
+<span class="sd">        inputs:</span>
+<span class="sd">            zone(int): specified zone, if None will print all zones.</span>
+<span class="sd">            trait(str): trait or parent key, if None will assume a non-nested</span>
+<span class="sd">            dict</span>
+<span class="sd">            parameter(str): target parameter, if None will return all.</span>
+<span class="sd">            retry(bool): if True will retry with extended retry mechanism</span>
+<span class="sd">        returns:</span>
+<span class="sd">            (int, float, str, dict): depends on parameter</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">del</span> <span class="n">trait</span>  <span class="c1"># unused on emulator</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">_get_metadata_internal</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">zone</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="c1"># returned cached raw data for all zones</span>
+                <span class="n">meta_data_dict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">meta_data_dict</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># return cached raw data for specified zone</span>
+                <span class="n">meta_data_dict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">meta_data_dict</span><span class="p">[</span><span class="n">zone</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">parameter</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">meta_data_dict</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="k">return</span> <span class="n">meta_data_dict</span><span class="p">[</span><span class="n">parameter</span><span class="p">]</span>
+                <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+                    <span class="nb">print</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;ERROR: parameter </span><span class="si">{</span><span class="n">parameter</span><span class="si">}</span><span class="s2"> does not exist in &quot;</span>
+                        <span class="sa">f</span><span class="s2">&quot;meta_data_dict: </span><span class="si">{</span><span class="n">meta_data_dict</span><span class="si">}</span><span class="s2">&quot;</span>
+                    <span class="p">)</span>
+                    <span class="k">raise</span>
+
+        <span class="k">if</span> <span class="n">retry</span><span class="p">:</span>
+            <span class="c1"># Use standardized extended retry mechanism</span>
+            <span class="k">return</span> <span class="n">util</span><span class="o">.</span><span class="n">execute_with_extended_retries</span><span class="p">(</span>
+                <span class="n">func</span><span class="o">=</span><span class="n">_get_metadata_internal</span><span class="p">,</span>
+                <span class="n">thermostat_type</span><span class="o">=</span><span class="s2">&quot;Emulator&quot;</span><span class="p">,</span>
+                <span class="n">zone_name</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">zone</span><span class="p">)</span> <span class="k">if</span> <span class="n">zone</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="s2">&quot;all&quot;</span><span class="p">,</span>
+                <span class="n">number_of_retries</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
+                <span class="n">initial_retry_delay_sec</span><span class="o">=</span><span class="mi">60</span><span class="p">,</span>
+                <span class="n">exception_types</span><span class="o">=</span><span class="p">(</span>
+                    <span class="ne">KeyError</span><span class="p">,</span>
+                    <span class="ne">AttributeError</span><span class="p">,</span>
+                    <span class="ne">ValueError</span><span class="p">,</span>
+                <span class="p">),</span>
+                <span class="n">email_notification</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>  <span class="c1"># Emulator doesn&#39;t import email_notification</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># Single attempt without retry</span>
+            <span class="k">return</span> <span class="n">_get_metadata_internal</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="ThermostatClass.print_all_thermostat_metadata">
+<a class="viewcode-back" href="../../docs/src.html#src.emulator.ThermostatClass.print_all_thermostat_metadata">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">print_all_thermostat_metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">zone</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Print all metadata for zone to the screen.</span>
+
+<span class="sd">        inputs:</span>
+<span class="sd">            zone(int): specified zone, if None will print all zones.</span>
+<span class="sd">        returns:</span>
+<span class="sd">            None, prints result to screen</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">exec_print_all_thermostat_metadata</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_all_metadata</span><span class="p">,</span> <span class="p">[</span><span class="n">zone</span><span class="p">])</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="ThermostatZone">
+<a class="viewcode-back" href="../../docs/src.html#src.emulator.ThermostatZone">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ThermostatZone</span><span class="p">(</span><span class="n">tc</span><span class="o">.</span><span class="n">ThermostatCommonZone</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Emulator thermostat zone functions.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="ThermostatZone.__init__">
+<a class="viewcode-back" href="../../docs/src.html#src.emulator.ThermostatZone.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Thermostat_obj</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Zone constructor.</span>
+
+<span class="sd">        inputs:</span>
+<span class="sd">            Thermostat(obj): Thermostat class instance.</span>
+<span class="sd">            verbose(bool): debug flag.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># construct the superclass, requires auth setup first</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+
+        <span class="c1"># runtime parameter defaults</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">poll_time_sec</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">*</span> <span class="mi">60</span>  <span class="c1"># default to 1 minutes</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connection_time_sec</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">*</span> <span class="mi">60</span> <span class="o">*</span> <span class="mi">60</span>  <span class="c1"># default to 1 hours</span>
+
+        <span class="c1"># server data cache expiration parameters</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fetch_interval_sec</span> <span class="o">=</span> <span class="mi">30</span>  <span class="c1"># age of server data before refresh</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">last_fetch_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="mi">2</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">fetch_interval_sec</span>
+
+        <span class="c1"># switch config for this thermostat, numbers are unique and arbitrary</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">system_switch_position</span><span class="p">[</span><span class="n">tc</span><span class="o">.</span><span class="n">ThermostatCommonZone</span><span class="o">.</span><span class="n">OFF_MODE</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">system_switch_position</span><span class="p">[</span><span class="n">tc</span><span class="o">.</span><span class="n">ThermostatCommonZone</span><span class="o">.</span><span class="n">HEAT_MODE</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">system_switch_position</span><span class="p">[</span><span class="n">tc</span><span class="o">.</span><span class="n">ThermostatCommonZone</span><span class="o">.</span><span class="n">COOL_MODE</span><span class="p">]</span> <span class="o">=</span> <span class="mi">2</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">system_switch_position</span><span class="p">[</span><span class="n">tc</span><span class="o">.</span><span class="n">ThermostatCommonZone</span><span class="o">.</span><span class="n">DRY_MODE</span><span class="p">]</span> <span class="o">=</span> <span class="mi">3</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">system_switch_position</span><span class="p">[</span><span class="n">tc</span><span class="o">.</span><span class="n">ThermostatCommonZone</span><span class="o">.</span><span class="n">AUTO_MODE</span><span class="p">]</span> <span class="o">=</span> <span class="mi">4</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">system_switch_position</span><span class="p">[</span><span class="n">tc</span><span class="o">.</span><span class="n">ThermostatCommonZone</span><span class="o">.</span><span class="n">FAN_MODE</span><span class="p">]</span> <span class="o">=</span> <span class="mi">5</span>
+
+        <span class="c1"># zone info</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span> <span class="o">=</span> <span class="n">verbose</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">thermostat_type</span> <span class="o">=</span> <span class="n">emulator_config</span><span class="o">.</span><span class="n">ALIAS</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">device_id</span> <span class="o">=</span> <span class="n">Thermostat_obj</span><span class="o">.</span><span class="n">device_id</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Thermostat</span> <span class="o">=</span> <span class="n">Thermostat_obj</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">zone_name</span> <span class="o">=</span> <span class="n">Thermostat_obj</span><span class="o">.</span><span class="n">zone_name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">zone_info</span> <span class="o">=</span> <span class="n">Thermostat_obj</span><span class="o">.</span><span class="n">get_all_metadata</span><span class="p">(</span><span class="n">Thermostat_obj</span><span class="o">.</span><span class="n">zone_name</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">zone_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_zone_name</span><span class="p">()</span>
+
+        <span class="c1"># deviation file support for testing</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">deviation_file_path</span> <span class="o">=</span> <span class="n">util</span><span class="o">.</span><span class="n">get_full_file_path</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;emulator_deviation_zone_</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">device_id</span><span class="si">}</span><span class="s2">.pkl&quot;</span>
+        <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">initialize_meta_data_dict</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="ThermostatZone.initialize_meta_data_dict">
+<a class="viewcode-back" href="../../docs/src.html#src.emulator.ThermostatZone.initialize_meta_data_dict">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">initialize_meta_data_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize the meta data dict&quot;&quot;&quot;</span>
+        <span class="c1"># add parameters and values</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_heat_setpoint</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">emulator_config</span><span class="o">.</span><span class="n">STARTING_TEMP</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_cool_setpoint</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">emulator_config</span><span class="o">.</span><span class="n">STARTING_TEMP</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_parameter</span><span class="p">(</span><span class="s2">&quot;display_temp&quot;</span><span class="p">,</span> <span class="n">emulator_config</span><span class="o">.</span><span class="n">STARTING_TEMP</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_parameter</span><span class="p">(</span><span class="s2">&quot;display_humidity&quot;</span><span class="p">,</span> <span class="n">emulator_config</span><span class="o">.</span><span class="n">STARTING_HUMIDITY</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_parameter</span><span class="p">(</span><span class="s2">&quot;humidity_support&quot;</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_parameter</span><span class="p">(</span><span class="s2">&quot;power_on&quot;</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_parameter</span><span class="p">(</span><span class="s2">&quot;fan_on&quot;</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_parameter</span><span class="p">(</span><span class="s2">&quot;fan_speed&quot;</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_parameter</span><span class="p">(</span><span class="s2">&quot;defrost&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_parameter</span><span class="p">(</span><span class="s2">&quot;standby&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_parameter</span><span class="p">(</span><span class="s2">&quot;vacation_hold&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_mode</span><span class="p">(</span><span class="n">emulator_config</span><span class="o">.</span><span class="n">STARTING_MODE</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ThermostatZone.get_parameter">
+<a class="viewcode-back" href="../../docs/src.html#src.emulator.ThermostatZone.get_parameter">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_parameter</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">default_val</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get parameter from zone dictionary.</span>
+
+<span class="sd">        inputs:</span>
+<span class="sd">            key(str): target dict key</span>
+<span class="sd">            default_val(str, int, float): default value on key errors</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">return_val</span> <span class="o">=</span> <span class="n">default_val</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">return_val</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">zone_info</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+        <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+            <span class="n">util</span><span class="o">.</span><span class="n">log_msg</span><span class="p">(</span><span class="n">traceback</span><span class="o">.</span><span class="n">format_exc</span><span class="p">(),</span> <span class="n">mode</span><span class="o">=</span><span class="n">util</span><span class="o">.</span><span class="n">BOTH_LOG</span><span class="p">,</span> <span class="n">func_name</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">return_val</span></div>
+
+
+<div class="viewcode-block" id="ThermostatZone.set_parameter">
+<a class="viewcode-back" href="../../docs/src.html#src.emulator.ThermostatZone.set_parameter">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">set_parameter</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">target_val</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Set parameter in zone dictionary.</span>
+
+<span class="sd">        inputs:</span>
+<span class="sd">            key(str): target dict key</span>
+<span class="sd">            target_val(str, int, float): value to set</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">zone_info</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">target_val</span></div>
+
+
+<div class="viewcode-block" id="ThermostatZone.get_zone_name">
+<a class="viewcode-back" href="../../docs/src.html#src.emulator.ThermostatZone.get_zone_name">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_zone_name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return the name associated with the zone number.</span>
+
+<span class="sd">        inputs:</span>
+<span class="sd">            None</span>
+<span class="sd">        returns:</span>
+<span class="sd">            (str) zone name</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">refresh_zone_info</span><span class="p">()</span>
+        <span class="k">return</span> <span class="s2">&quot;emulator_&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">zone_name</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ThermostatZone.get_display_temp">
+<a class="viewcode-back" href="../../docs/src.html#src.emulator.ThermostatZone.get_display_temp">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_display_temp</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>  <span class="c1"># used</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Refresh the cached zone information and return Indoor Temp in °F</span>
+<span class="sd">        with +/- 1 degree noise value.</span>
+
+<span class="sd">        inputs:</span>
+<span class="sd">            None</span>
+<span class="sd">        returns:</span>
+<span class="sd">            (float): indoor temp in °F.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Check for deviation data first</span>
+        <span class="n">deviation_temp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_deviation_value</span><span class="p">(</span><span class="s2">&quot;display_temp&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">deviation_temp</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">deviation_temp</span><span class="p">)</span>
+
+        <span class="c1"># Normal behavior if no deviation data</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">refresh_zone_info</span><span class="p">()</span>
+        <span class="n">temp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_parameter</span><span class="p">(</span><span class="s2">&quot;display_temp&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">temp</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="mf">0.0</span>
+        <span class="k">return</span> <span class="n">temp</span> <span class="o">+</span> <span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span>
+            <span class="o">-</span><span class="n">emulator_config</span><span class="o">.</span><span class="n">NORMAL_TEMP_VARIATION</span><span class="p">,</span>
+            <span class="n">emulator_config</span><span class="o">.</span><span class="n">NORMAL_TEMP_VARIATION</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ThermostatZone.get_display_humidity">
+<a class="viewcode-back" href="../../docs/src.html#src.emulator.ThermostatZone.get_display_humidity">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_display_humidity</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Refresh the cached zone information and return IndoorHumidity</span>
+<span class="sd">        with random +/-1% noise value.</span>
+
+<span class="sd">        inputs:</span>
+<span class="sd">            None</span>
+<span class="sd">        returns:</span>
+<span class="sd">            (float, None): indoor humidity in %RH, None if not supported.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_is_humidity_supported</span><span class="p">():</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+        <span class="c1"># Check for deviation data first</span>
+        <span class="n">deviation_humidity</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_deviation_value</span><span class="p">(</span><span class="s2">&quot;display_humidity&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">deviation_humidity</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">deviation_humidity</span><span class="p">)</span>
+
+        <span class="c1"># Normal behavior if no deviation data</span>
+        <span class="n">humidity</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_parameter</span><span class="p">(</span><span class="s2">&quot;display_humidity&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">humidity</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="mf">0.0</span>
+        <span class="k">return</span> <span class="n">humidity</span> <span class="o">+</span> <span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span>
+            <span class="o">-</span><span class="n">emulator_config</span><span class="o">.</span><span class="n">NORMAL_HUMIDITY_VARIATION</span><span class="p">,</span>
+            <span class="n">emulator_config</span><span class="o">.</span><span class="n">NORMAL_HUMIDITY_VARIATION</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ThermostatZone.get_is_humidity_supported">
+<a class="viewcode-back" href="../../docs/src.html#src.emulator.ThermostatZone.get_is_humidity_supported">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_is_humidity_supported</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>  <span class="c1"># used</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Refresh the cached zone information and return the</span>
+<span class="sd">          True if humidity sensor data is trustworthy.</span>
+
+<span class="sd">        inputs:</span>
+<span class="sd">            None</span>
+<span class="sd">        returns:</span>
+<span class="sd">            (booL): True if is in humidity sensor is available and not faulted.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">refresh_zone_info</span><span class="p">()</span>
+        <span class="k">return</span> <span class="nb">bool</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_parameter</span><span class="p">(</span><span class="s2">&quot;humidity_support&quot;</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="ThermostatZone.set_mode">
+<a class="viewcode-back" href="../../docs/src.html#src.emulator.ThermostatZone.set_mode">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">set_mode</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">target_mode</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Set the thermostat mode.</span>
+
+<span class="sd">        inputs:</span>
+<span class="sd">            target_mode(str): target mode, refer to supported_configs[&quot;modes&quot;]</span>
+<span class="sd">        returns:</span>
+<span class="sd">            True if successful, else False</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;setting mode to </span><span class="si">{</span><span class="n">target_mode</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_parameter</span><span class="p">(</span>
+            <span class="s2">&quot;switch_position&quot;</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">system_switch_position</span><span class="p">[</span><span class="nb">getattr</span><span class="p">(</span><span class="n">tc</span><span class="o">.</span><span class="n">ThermostatCommonZone</span><span class="p">,</span> <span class="n">target_mode</span><span class="p">)],</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="kc">True</span></div>
+
+
+<div class="viewcode-block" id="ThermostatZone.is_heat_mode">
+<a class="viewcode-back" href="../../docs/src.html#src.emulator.ThermostatZone.is_heat_mode">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_heat_mode</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Refresh the cached zone information and return the heat mode.</span>
+
+<span class="sd">        inputs:</span>
+<span class="sd">            None</span>
+<span class="sd">        returns:</span>
+<span class="sd">            (int) heat mode, 1=enabled, 0=disabled.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_is_mode</span><span class="p">(</span><span class="n">tc</span><span class="o">.</span><span class="n">ThermostatCommonZone</span><span class="o">.</span><span class="n">HEAT_MODE</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="ThermostatZone.is_cool_mode">
+<a class="viewcode-back" href="../../docs/src.html#src.emulator.ThermostatZone.is_cool_mode">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_cool_mode</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Refresh the cached zone information and return the cool mode.</span>
+
+<span class="sd">        inputs:</span>
+<span class="sd">            None</span>
+<span class="sd">        returns:</span>
+<span class="sd">            (int): cool mode, 1=enabled, 0=disabled.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_is_mode</span><span class="p">(</span><span class="n">tc</span><span class="o">.</span><span class="n">ThermostatCommonZone</span><span class="o">.</span><span class="n">COOL_MODE</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="ThermostatZone.is_dry_mode">
+<a class="viewcode-back" href="../../docs/src.html#src.emulator.ThermostatZone.is_dry_mode">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_dry_mode</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Refresh the cached zone information and return the dry mode.</span>
+
+<span class="sd">        inputs:</span>
+<span class="sd">            None</span>
+<span class="sd">        returns:</span>
+<span class="sd">            (int): dry mode, 1=enabled, 0=disabled.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_is_mode</span><span class="p">(</span><span class="n">tc</span><span class="o">.</span><span class="n">ThermostatCommonZone</span><span class="o">.</span><span class="n">DRY_MODE</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="ThermostatZone.is_fan_mode">
+<a class="viewcode-back" href="../../docs/src.html#src.emulator.ThermostatZone.is_fan_mode">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_fan_mode</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Refresh the cached zone information and return the fan mode.</span>
+
+<span class="sd">        inputs:</span>
+<span class="sd">            None</span>
+<span class="sd">        returns:</span>
+<span class="sd">            (int): fan mode, 1=enabled, 0=disabled.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_is_mode</span><span class="p">(</span><span class="n">tc</span><span class="o">.</span><span class="n">ThermostatCommonZone</span><span class="o">.</span><span class="n">FAN_MODE</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="ThermostatZone.is_auto_mode">
+<a class="viewcode-back" href="../../docs/src.html#src.emulator.ThermostatZone.is_auto_mode">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_auto_mode</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Refresh the cached zone information and return the auto mode.</span>
+
+<span class="sd">        inputs:</span>
+<span class="sd">            None</span>
+<span class="sd">        returns:</span>
+<span class="sd">            (int): auto mode, 1=enabled, 0=disabled.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_is_mode</span><span class="p">(</span><span class="n">tc</span><span class="o">.</span><span class="n">ThermostatCommonZone</span><span class="o">.</span><span class="n">AUTO_MODE</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="ThermostatZone.is_eco_mode">
+<a class="viewcode-back" href="../../docs/src.html#src.emulator.ThermostatZone.is_eco_mode">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_eco_mode</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Refresh the cached zone information and return the eco mode.</span>
+
+<span class="sd">        inputs:</span>
+<span class="sd">            None</span>
+<span class="sd">        returns:</span>
+<span class="sd">            (int): eco mode, 1=enabled, 0=disabled.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_is_mode</span><span class="p">(</span><span class="n">tc</span><span class="o">.</span><span class="n">ThermostatCommonZone</span><span class="o">.</span><span class="n">ECO_MODE</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="ThermostatZone.is_off_mode">
+<a class="viewcode-back" href="../../docs/src.html#src.emulator.ThermostatZone.is_off_mode">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_off_mode</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Refresh the cached zone information and return the off mode.</span>
+
+<span class="sd">        inputs:</span>
+<span class="sd">            None</span>
+<span class="sd">        returns:</span>
+<span class="sd">            (int): off mode, 1=enabled, 0=disabled.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_is_mode</span><span class="p">(</span><span class="n">tc</span><span class="o">.</span><span class="n">ThermostatCommonZone</span><span class="o">.</span><span class="n">OFF_MODE</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="ThermostatZone.is_heating">
+<a class="viewcode-back" href="../../docs/src.html#src.emulator.ThermostatZone.is_heating">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_heating</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return 1 if heating relay is active, else 0.&quot;&quot;&quot;</span>
+        <span class="n">heat_sp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_heat_setpoint_raw</span><span class="p">()</span>
+        <span class="n">display_temp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_display_temp</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">heat_sp</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">display_temp</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="mi">0</span>
+        <span class="k">return</span> <span class="nb">int</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">is_heat_mode</span><span class="p">()</span>
+            <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_power_on</span><span class="p">()</span>
+            <span class="ow">and</span> <span class="n">heat_sp</span> <span class="o">&gt;</span> <span class="n">display_temp</span>  <span class="c1"># type: ignore[arg-type]</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ThermostatZone.is_cooling">
+<a class="viewcode-back" href="../../docs/src.html#src.emulator.ThermostatZone.is_cooling">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_cooling</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return 1 if cooling relay is active, else 0.&quot;&quot;&quot;</span>
+        <span class="n">cool_sp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_cool_setpoint_raw</span><span class="p">()</span>
+        <span class="n">display_temp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_display_temp</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">cool_sp</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">display_temp</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="mi">0</span>
+        <span class="k">return</span> <span class="nb">int</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">is_cool_mode</span><span class="p">()</span>
+            <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_power_on</span><span class="p">()</span>
+            <span class="ow">and</span> <span class="n">cool_sp</span> <span class="o">&lt;</span> <span class="n">display_temp</span>  <span class="c1"># type: ignore[arg-type]</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ThermostatZone.is_drying">
+<a class="viewcode-back" href="../../docs/src.html#src.emulator.ThermostatZone.is_drying">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_drying</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return 1 if drying relay is active, else 0.&quot;&quot;&quot;</span>
+        <span class="n">cool_sp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_cool_setpoint_raw</span><span class="p">()</span>
+        <span class="n">display_temp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_display_temp</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">cool_sp</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">display_temp</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="mi">0</span>
+        <span class="k">return</span> <span class="nb">int</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">is_dry_mode</span><span class="p">()</span>
+            <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_power_on</span><span class="p">()</span>
+            <span class="ow">and</span> <span class="n">cool_sp</span> <span class="o">&lt;</span> <span class="n">display_temp</span>  <span class="c1"># type: ignore[arg-type]</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ThermostatZone.is_auto">
+<a class="viewcode-back" href="../../docs/src.html#src.emulator.ThermostatZone.is_auto">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_auto</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return 1 if auto relay is active, else 0.&quot;&quot;&quot;</span>
+        <span class="n">cool_sp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_cool_setpoint_raw</span><span class="p">()</span>
+        <span class="n">heat_sp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_heat_setpoint_raw</span><span class="p">()</span>
+        <span class="n">display_temp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_display_temp</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">cool_sp</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">heat_sp</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">display_temp</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="mi">0</span>
+        <span class="k">return</span> <span class="nb">int</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">is_auto_mode</span><span class="p">()</span>
+            <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_power_on</span><span class="p">()</span>
+            <span class="ow">and</span> <span class="p">(</span>
+                <span class="n">cool_sp</span> <span class="o">&lt;</span> <span class="n">display_temp</span>
+                <span class="ow">or</span> <span class="n">heat_sp</span> <span class="o">&gt;</span> <span class="n">display_temp</span>  <span class="c1"># type: ignore[arg-type]</span>
+            <span class="p">)</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ThermostatZone.is_eco">
+<a class="viewcode-back" href="../../docs/src.html#src.emulator.ThermostatZone.is_eco">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_eco</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return 1 if eco relay is active, else 0.&quot;&quot;&quot;</span>
+        <span class="n">cool_sp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_cool_setpoint_raw</span><span class="p">()</span>
+        <span class="n">heat_sp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_heat_setpoint_raw</span><span class="p">()</span>
+        <span class="n">display_temp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_display_temp</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">cool_sp</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">heat_sp</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">display_temp</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="mi">0</span>
+        <span class="k">return</span> <span class="nb">int</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">is_eco_mode</span><span class="p">()</span>
+            <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_power_on</span><span class="p">()</span>
+            <span class="ow">and</span> <span class="p">(</span>
+                <span class="n">cool_sp</span> <span class="o">&lt;</span> <span class="n">display_temp</span>
+                <span class="ow">or</span> <span class="n">heat_sp</span> <span class="o">&gt;</span> <span class="n">display_temp</span>  <span class="c1"># type: ignore[arg-type]</span>
+            <span class="p">)</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ThermostatZone.is_fanning">
+<a class="viewcode-back" href="../../docs/src.html#src.emulator.ThermostatZone.is_fanning">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_fanning</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return 1 if fan relay is active, else 0.&quot;&quot;&quot;</span>
+        <span class="n">fan_on</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_fan_on</span><span class="p">()</span>
+        <span class="n">power_on</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_power_on</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">fan_on</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">power_on</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="mi">0</span>
+        <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="n">fan_on</span> <span class="ow">and</span> <span class="n">power_on</span><span class="p">)</span>  <span class="c1"># type: ignore[arg-type]</span></div>
+
+
+<div class="viewcode-block" id="ThermostatZone.is_power_on">
+<a class="viewcode-back" href="../../docs/src.html#src.emulator.ThermostatZone.is_power_on">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_power_on</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return 1 if power relay is active, else 0.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">refresh_zone_info</span><span class="p">()</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_parameter</span><span class="p">(</span><span class="s2">&quot;power_on&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ThermostatZone.is_fan_on">
+<a class="viewcode-back" href="../../docs/src.html#src.emulator.ThermostatZone.is_fan_on">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_fan_on</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return 1 if fan relay is active, else 0.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">refresh_zone_info</span><span class="p">()</span>
+        <span class="n">fan_speed</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_parameter</span><span class="p">(</span><span class="s2">&quot;fan_speed&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">fan_speed</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">return</span> <span class="n">fan_speed</span> <span class="o">&gt;</span> <span class="mi">0</span></div>
+
+
+<div class="viewcode-block" id="ThermostatZone.is_defrosting">
+<a class="viewcode-back" href="../../docs/src.html#src.emulator.ThermostatZone.is_defrosting">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_defrosting</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return 1 if defrosting is active, else 0.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">refresh_zone_info</span><span class="p">()</span>
+        <span class="n">defrost</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_parameter</span><span class="p">(</span><span class="s2">&quot;defrost&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="n">defrost</span><span class="p">)</span> <span class="k">if</span> <span class="n">defrost</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="mi">0</span></div>
+
+
+<div class="viewcode-block" id="ThermostatZone.is_standby">
+<a class="viewcode-back" href="../../docs/src.html#src.emulator.ThermostatZone.is_standby">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_standby</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return 1 if standby is active, else 0.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">refresh_zone_info</span><span class="p">()</span>
+        <span class="n">standby</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_parameter</span><span class="p">(</span><span class="s2">&quot;standby&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="n">standby</span><span class="p">)</span> <span class="k">if</span> <span class="n">standby</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="mi">0</span></div>
+
+
+<div class="viewcode-block" id="ThermostatZone.get_heat_setpoint_raw">
+<a class="viewcode-back" href="../../docs/src.html#src.emulator.ThermostatZone.get_heat_setpoint_raw">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_heat_setpoint_raw</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>  <span class="c1"># used</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Refresh the cached zone information and return the heat setpoint.</span>
+
+<span class="sd">        inputs:</span>
+<span class="sd">            None</span>
+<span class="sd">        returns:</span>
+<span class="sd">            (float): heating set point in °F.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Check for deviation data first</span>
+        <span class="n">deviation_setpoint</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_deviation_value</span><span class="p">(</span><span class="s2">&quot;heat_setpoint&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">deviation_setpoint</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">deviation_setpoint</span><span class="p">)</span>
+
+        <span class="c1"># Normal behavior if no deviation data</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">refresh_zone_info</span><span class="p">()</span>
+        <span class="n">heat_sp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_parameter</span><span class="p">(</span><span class="s2">&quot;heat_setpoint&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">heat_sp</span><span class="p">)</span> <span class="k">if</span> <span class="n">heat_sp</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="mf">0.0</span></div>
+
+
+<div class="viewcode-block" id="ThermostatZone.get_heat_setpoint">
+<a class="viewcode-back" href="../../docs/src.html#src.emulator.ThermostatZone.get_heat_setpoint">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_heat_setpoint</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return heat setpoint with units as a string.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">util</span><span class="o">.</span><span class="n">temp_value_with_units</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_heat_setpoint_raw</span><span class="p">())</span></div>
+
+
+<div class="viewcode-block" id="ThermostatZone.get_schedule_heat_sp">
+<a class="viewcode-back" href="../../docs/src.html#src.emulator.ThermostatZone.get_schedule_heat_sp">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_schedule_heat_sp</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>  <span class="c1"># used</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return the schedule heat setpoint.</span>
+
+<span class="sd">        inputs:</span>
+<span class="sd">            None</span>
+<span class="sd">        returns:</span>
+<span class="sd">            (int): scheduled heating set point in °F.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">emulator_config</span><span class="o">.</span><span class="n">MAX_HEAT_SETPOINT</span><span class="p">)</span>  <span class="c1"># max heat set point allowed</span></div>
+
+
+<div class="viewcode-block" id="ThermostatZone.get_schedule_cool_sp">
+<a class="viewcode-back" href="../../docs/src.html#src.emulator.ThermostatZone.get_schedule_cool_sp">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_schedule_cool_sp</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return the schedule cool setpoint.</span>
+
+<span class="sd">        inputs:</span>
+<span class="sd">            None</span>
+<span class="sd">        returns:</span>
+<span class="sd">            (float): scheduled cooling set point in °F.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">emulator_config</span><span class="o">.</span><span class="n">MIN_COOL_SETPOINT</span><span class="p">)</span>  <span class="c1"># min cool set point allowed</span></div>
+
+
+<div class="viewcode-block" id="ThermostatZone.get_cool_setpoint_raw">
+<a class="viewcode-back" href="../../docs/src.html#src.emulator.ThermostatZone.get_cool_setpoint_raw">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_cool_setpoint_raw</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return the cool setpoint.</span>
+
+<span class="sd">        inputs:</span>
+<span class="sd">            None</span>
+<span class="sd">        returns:</span>
+<span class="sd">            (float): cooling set point in °F.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Check for deviation data first</span>
+        <span class="n">deviation_setpoint</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_deviation_value</span><span class="p">(</span><span class="s2">&quot;cool_setpoint&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">deviation_setpoint</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">deviation_setpoint</span><span class="p">)</span>
+
+        <span class="c1"># Normal behavior if no deviation data</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">refresh_zone_info</span><span class="p">()</span>
+        <span class="n">cool_sp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_parameter</span><span class="p">(</span><span class="s2">&quot;cool_setpoint&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">cool_sp</span><span class="p">)</span> <span class="k">if</span> <span class="n">cool_sp</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="mf">0.0</span></div>
+
+
+<div class="viewcode-block" id="ThermostatZone.get_cool_setpoint">
+<a class="viewcode-back" href="../../docs/src.html#src.emulator.ThermostatZone.get_cool_setpoint">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_cool_setpoint</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return cool setpoint with units as a string.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">util</span><span class="o">.</span><span class="n">temp_value_with_units</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_cool_setpoint_raw</span><span class="p">())</span></div>
+
+
+<div class="viewcode-block" id="ThermostatZone.get_is_invacation_hold_mode">
+<a class="viewcode-back" href="../../docs/src.html#src.emulator.ThermostatZone.get_is_invacation_hold_mode">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_is_invacation_hold_mode</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>  <span class="c1"># used</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return the</span>
+<span class="sd">          &#39;IsInVacationHoldMode&#39; setting.</span>
+
+<span class="sd">        inputs:</span>
+<span class="sd">            None</span>
+<span class="sd">        returns:</span>
+<span class="sd">            (booL): True if is in vacation hold mode.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">vacation_hold</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_parameter</span><span class="p">(</span><span class="s2">&quot;vacation_hold&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">bool</span><span class="p">(</span><span class="n">vacation_hold</span><span class="p">)</span> <span class="k">if</span> <span class="n">vacation_hold</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">False</span></div>
+
+
+<div class="viewcode-block" id="ThermostatZone.get_vacation_hold">
+<a class="viewcode-back" href="../../docs/src.html#src.emulator.ThermostatZone.get_vacation_hold">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_vacation_hold</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return the</span>
+<span class="sd">        VacationHold setting.</span>
+
+<span class="sd">        inputs:</span>
+<span class="sd">            None</span>
+<span class="sd">        returns:</span>
+<span class="sd">            (bool): True if vacation hold is set.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># TODO, are vacationhold unique fields?  what used for?</span>
+        <span class="n">vacation_hold</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_parameter</span><span class="p">(</span><span class="s2">&quot;vacation_hold&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">bool</span><span class="p">(</span><span class="n">vacation_hold</span><span class="p">)</span> <span class="k">if</span> <span class="n">vacation_hold</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">False</span></div>
+
+
+<div class="viewcode-block" id="ThermostatZone.get_system_switch_position">
+<a class="viewcode-back" href="../../docs/src.html#src.emulator.ThermostatZone.get_system_switch_position">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_system_switch_position</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>  <span class="c1"># used</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Return the system switch position.</span>
+
+<span class="sd">        inputs:</span>
+<span class="sd">            None</span>
+<span class="sd">        returns:</span>
+<span class="sd">            (int or str) current mode for unit, should match value</span>
+<span class="sd">                  in self.system_switch_position</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">refresh_zone_info</span><span class="p">()</span>
+        <span class="c1"># first check if power is on</span>
+        <span class="c1"># if power is off then operation_mode key may be missing.</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_power_on</span><span class="p">():</span>
+            <span class="n">off_mode_value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">system_switch_position</span><span class="p">[</span>  <span class="c1"># type: ignore[index]</span>
+                <span class="n">tc</span><span class="o">.</span><span class="n">ThermostatCommonZone</span><span class="o">.</span><span class="n">OFF_MODE</span>
+            <span class="p">]</span>
+            <span class="c1"># If the value is a list, return the first element</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">off_mode_value</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+                <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="n">off_mode_value</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>  <span class="c1"># type: ignore[index]</span>
+            <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="n">off_mode_value</span><span class="p">)</span>  <span class="c1"># type: ignore[arg-type]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">switch_pos</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_parameter</span><span class="p">(</span><span class="s2">&quot;switch_position&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">switch_pos</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">return</span> <span class="mi">0</span>
+            <span class="k">return</span> <span class="n">switch_pos</span></div>
+
+
+<div class="viewcode-block" id="ThermostatZone.set_heat_setpoint">
+<a class="viewcode-back" href="../../docs/src.html#src.emulator.ThermostatZone.set_heat_setpoint">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">set_heat_setpoint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">temp</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Set a new heat setpoint.</span>
+
+<span class="sd">        inputs:</span>
+<span class="sd">            temp(int): desired temperature in F</span>
+<span class="sd">        returns:</span>
+<span class="sd">            None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_parameter</span><span class="p">(</span><span class="s2">&quot;heat_setpoint&quot;</span><span class="p">,</span> <span class="n">temp</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ThermostatZone.set_cool_setpoint">
+<a class="viewcode-back" href="../../docs/src.html#src.emulator.ThermostatZone.set_cool_setpoint">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">set_cool_setpoint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">temp</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Set a new cool setpoint.</span>
+
+<span class="sd">        inputs:</span>
+<span class="sd">            temp(int): desired temperature in °F.</span>
+<span class="sd">        returns:</span>
+<span class="sd">            None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">set_parameter</span><span class="p">(</span><span class="s2">&quot;cool_setpoint&quot;</span><span class="p">,</span> <span class="n">temp</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ThermostatZone.create_deviation_file">
+<a class="viewcode-back" href="../../docs/src.html#src.emulator.ThermostatZone.create_deviation_file">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">create_deviation_file</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Create an empty deviation file for this thermostat zone.</span>
+
+<span class="sd">        inputs:</span>
+<span class="sd">            None</span>
+<span class="sd">        returns:</span>
+<span class="sd">            None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">deviation_data</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">deviation_file_path</span><span class="p">,</span> <span class="s2">&quot;wb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">handle</span><span class="p">:</span>
+            <span class="n">pickle</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">deviation_data</span><span class="p">,</span> <span class="n">handle</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span><span class="p">:</span>
+            <span class="n">util</span><span class="o">.</span><span class="n">log_msg</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Created deviation file: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">deviation_file_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                <span class="n">mode</span><span class="o">=</span><span class="n">util</span><span class="o">.</span><span class="n">BOTH_LOG</span><span class="p">,</span>
+                <span class="n">func_name</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+            <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ThermostatZone.set_deviation_value">
+<a class="viewcode-back" href="../../docs/src.html#src.emulator.ThermostatZone.set_deviation_value">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">set_deviation_value</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Set a deviation value for a specific parameter.</span>
+
+<span class="sd">        inputs:</span>
+<span class="sd">            key(str): parameter name (e.g., &#39;display_temp&#39;, &#39;display_humidity&#39;)</span>
+<span class="sd">            value: deviation value to set</span>
+<span class="sd">        returns:</span>
+<span class="sd">            None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Read existing deviation data or create empty dict</span>
+        <span class="n">deviation_data</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">deviation_file_path</span><span class="p">):</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">deviation_file_path</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">handle</span><span class="p">:</span>
+                    <span class="n">deviation_data</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">handle</span><span class="p">)</span>
+            <span class="k">except</span> <span class="p">(</span><span class="n">pickle</span><span class="o">.</span><span class="n">PickleError</span><span class="p">,</span> <span class="ne">EOFError</span><span class="p">):</span>
+                <span class="n">deviation_data</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="c1"># Update the value</span>
+        <span class="n">deviation_data</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+
+        <span class="c1"># Write back to file</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">deviation_file_path</span><span class="p">,</span> <span class="s2">&quot;wb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">handle</span><span class="p">:</span>
+            <span class="n">pickle</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">deviation_data</span><span class="p">,</span> <span class="n">handle</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span><span class="p">:</span>
+            <span class="n">util</span><span class="o">.</span><span class="n">log_msg</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Set deviation value </span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">=</span><span class="si">{</span><span class="n">value</span><span class="si">}</span><span class="s2"> in </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">deviation_file_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                <span class="n">mode</span><span class="o">=</span><span class="n">util</span><span class="o">.</span><span class="n">BOTH_LOG</span><span class="p">,</span>
+                <span class="n">func_name</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+            <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ThermostatZone.get_deviation_value">
+<a class="viewcode-back" href="../../docs/src.html#src.emulator.ThermostatZone.get_deviation_value">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_deviation_value</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">default_val</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get a deviation value for a specific parameter.</span>
+
+<span class="sd">        inputs:</span>
+<span class="sd">            key(str): parameter name</span>
+<span class="sd">            default_val: default value if key not found or file doesn&#39;t exist</span>
+<span class="sd">        returns:</span>
+<span class="sd">            deviation value or default_val</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">deviation_file_path</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">default_val</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">deviation_file_path</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">handle</span><span class="p">:</span>
+                <span class="n">deviation_data</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">handle</span><span class="p">)</span>
+                <span class="k">return</span> <span class="n">deviation_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">default_val</span><span class="p">)</span>
+        <span class="k">except</span> <span class="p">(</span><span class="n">pickle</span><span class="o">.</span><span class="n">PickleError</span><span class="p">,</span> <span class="ne">EOFError</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">default_val</span></div>
+
+
+<div class="viewcode-block" id="ThermostatZone.has_deviation_data">
+<a class="viewcode-back" href="../../docs/src.html#src.emulator.ThermostatZone.has_deviation_data">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">has_deviation_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>  <span class="c1"># type: ignore[assignment]</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Check if deviation data exists.</span>
+
+<span class="sd">        inputs:</span>
+<span class="sd">            key(str): if provided, check for specific key,</span>
+<span class="sd">                otherwise check if file exists</span>
+<span class="sd">        returns:</span>
+<span class="sd">            (bool): True if deviation data exists</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">deviation_file_path</span><span class="p">):</span>
+            <span class="k">return</span> <span class="kc">False</span>
+
+        <span class="k">if</span> <span class="n">key</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">True</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">deviation_file_path</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">handle</span><span class="p">:</span>
+                <span class="n">deviation_data</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">handle</span><span class="p">)</span>
+                <span class="k">return</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">deviation_data</span>
+        <span class="k">except</span> <span class="p">(</span><span class="n">pickle</span><span class="o">.</span><span class="n">PickleError</span><span class="p">,</span> <span class="ne">EOFError</span><span class="p">):</span>
+            <span class="k">return</span> <span class="kc">False</span></div>
+
+
+<div class="viewcode-block" id="ThermostatZone.clear_deviation_data">
+<a class="viewcode-back" href="../../docs/src.html#src.emulator.ThermostatZone.clear_deviation_data">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">clear_deviation_data</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Clear all deviation data by removing the deviation file.</span>
+
+<span class="sd">        inputs:</span>
+<span class="sd">            None</span>
+<span class="sd">        returns:</span>
+<span class="sd">            None</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">deviation_file_path</span><span class="p">):</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">deviation_file_path</span><span class="p">)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span><span class="p">:</span>
+                <span class="n">util</span><span class="o">.</span><span class="n">log_msg</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Cleared deviation file: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">deviation_file_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                    <span class="n">mode</span><span class="o">=</span><span class="n">util</span><span class="o">.</span><span class="n">BOTH_LOG</span><span class="p">,</span>
+                    <span class="n">func_name</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ThermostatZone.refresh_zone_info">
+<a class="viewcode-back" href="../../docs/src.html#src.emulator.ThermostatZone.refresh_zone_info">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">refresh_zone_info</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">force_refresh</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Refreshes the zone information if the current time exceeds the fetch interval</span>
+<span class="sd">        or if the force_refresh flag is set to True.</span>
+<span class="sd">        Args:</span>
+<span class="sd">            force_refresh (bool): If True, forces the refresh of zone information</span>
+<span class="sd">                                  regardless of the fetch interval. Default is False.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">now_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+        <span class="c1"># refresh if past expiration date or force_refresh option</span>
+        <span class="k">if</span> <span class="n">force_refresh</span> <span class="ow">or</span> <span class="p">(</span>
+            <span class="n">now_time</span> <span class="o">&gt;=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">last_fetch_time</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">fetch_interval_sec</span><span class="p">)</span>
+        <span class="p">):</span>
+            <span class="c1"># do nothing</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">last_fetch_time</span> <span class="o">=</span> <span class="n">now_time</span></div>
+</div>
+
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="c1"># verify environment</span>
+    <span class="n">env</span><span class="o">.</span><span class="n">get_python_version</span><span class="p">()</span>
+
+    <span class="c1"># get zone override</span>
+    <span class="n">api</span><span class="o">.</span><span class="n">uip</span> <span class="o">=</span> <span class="n">api</span><span class="o">.</span><span class="n">UserInputs</span><span class="p">(</span><span class="n">argv_list</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">thermostat_type</span><span class="o">=</span><span class="n">emulator_config</span><span class="o">.</span><span class="n">ALIAS</span><span class="p">)</span>
+    <span class="n">zone_number</span> <span class="o">=</span> <span class="n">api</span><span class="o">.</span><span class="n">uip</span><span class="o">.</span><span class="n">get_user_inputs</span><span class="p">(</span><span class="n">api</span><span class="o">.</span><span class="n">uip</span><span class="o">.</span><span class="n">zone_name</span><span class="p">,</span> <span class="n">api</span><span class="o">.</span><span class="n">input_flds</span><span class="o">.</span><span class="n">zone</span><span class="p">)</span>
+
+    <span class="n">tc</span><span class="o">.</span><span class="n">thermostat_basic_checkout</span><span class="p">(</span>
+        <span class="n">emulator_config</span><span class="o">.</span><span class="n">ALIAS</span><span class="p">,</span> <span class="n">zone_number</span><span class="p">,</span> <span class="n">ThermostatClass</span><span class="p">,</span> <span class="n">ThermostatZone</span>
+    <span class="p">)</span>
+
+    <span class="n">tc</span><span class="o">.</span><span class="n">print_select_data_from_all_zones</span><span class="p">(</span>
+        <span class="n">emulator_config</span><span class="o">.</span><span class="n">ALIAS</span><span class="p">,</span>
+        <span class="n">emulator_config</span><span class="o">.</span><span class="n">get_available_zones</span><span class="p">(),</span>
+        <span class="n">ThermostatClass</span><span class="p">,</span>
+        <span class="n">ThermostatZone</span><span class="p">,</span>
+        <span class="n">display_wifi</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">display_battery</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="p">)</span>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../index.html">ThermostatSupervisor</a></h1>
+
+
+
+<p class="blurb">Monitor and control thermostats remotely</p>
+
+
+
+
+<p>
+<iframe src="https://ghbtns.com/github-btn.html?user=cjkrolak&repo=ThermostatSupervisor&type=star&count=true&size=large&v=2"
+  allowtransparency="true" frameborder="0" scrolling="0" width="200px" height="35px"></iframe>
+</p>
+
+
+
+
+
+
+<search id="searchbox" style="display: none" role="search">
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Search"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">API Documentation:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../api/overview.html">API Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/thermostat_api.html">Thermostat API Module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/thermostat_classes.html">Thermostat Classes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/zone_classes.html">Zone Classes</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Module Reference:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../docs/src.html">src package</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;2024, Christopher Krolak.
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>
