@@ -37,12 +37,6 @@ try:
         if verbose:
             msg = "Mock: raspberry pi environment check bypassed for unit testing"
             print(msg, flush=True)
-        msg2 = 'DEBUG: mock_is_raspberrypi_environment called, returning True'
-        print(msg2, flush=True)
-        # Print call stack to see where it's being called from
-        print('DEBUG: Call stack:', flush=True)
-        for line in traceback.format_stack()[:-1]:
-            print(line.strip(), flush=True)
         return True
 
     # Patch in the environment module
