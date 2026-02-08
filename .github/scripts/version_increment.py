@@ -114,7 +114,8 @@ def get_main_branch_version(init_file_path: str) -> str:
         Version string from main branch
 
     Raises:
-        subprocess.CalledProcessError: If git command fails
+        RuntimeError: If version cannot be retrieved from any main branch
+            reference or path combination
     """
     # Try different ways to reference main branch
     main_refs = ["origin/main", "main"]

@@ -202,7 +202,10 @@ __version__ = "1.0.12"
                         1, cmd, stderr="path does not exist"
                     )
                 # Second call with thermostatsupervisor/ path succeeds
-                elif len(cmd) >= 3 and "thermostatsupervisor/__init__.py" in cmd[2]:
+                elif (
+                    len(cmd) >= 3
+                    and "thermostatsupervisor/__init__.py" in cmd[2]
+                ):
                     result = MagicMock()
                     result.stdout = self.sample_version_content
                     return result
