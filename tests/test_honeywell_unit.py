@@ -645,7 +645,8 @@ class Test(utc.UnitTest):
                     mock_session = mock.Mock()
                     tstat.session = mock_session  # type: ignore[assignment]
 
-                    # Test __del__
+                    # Test __del__ explicitly (necessary for testing cleanup logic)
+                    # pylint: disable=unnecessary-dunder-call
                     tstat.__del__()
 
                     # Verify close was called
@@ -669,7 +670,8 @@ class Test(utc.UnitTest):
                     with mock.patch.object(
                         tstat, "close", side_effect=AttributeError("test error")
                     ):
-                        # Should not raise exception
+                        # Should not raise exception when __del__ is called
+                        # pylint: disable=unnecessary-dunder-call
                         tstat.__del__()
 
     def test_get_metadata_with_parameter_index_error(self):
