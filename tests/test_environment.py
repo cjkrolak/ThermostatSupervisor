@@ -13,7 +13,7 @@ import unittest.mock
 # third-party imports
 
 # local imports
-import src
+import src  # Required as package reference for version tests
 from src import emulator_config
 from src import environment as env
 from src import utilities as util
