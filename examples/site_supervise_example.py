@@ -173,7 +173,7 @@ def example_disabled_thermostats():
 
 def main():
     """Run all examples."""
-    util.log_msg.debug = True
+    util.log_msg.debug = True  # type: ignore[attr-defined]
 
     print("\n" + "="*60)
     print("ThermostatSite Usage Examples")

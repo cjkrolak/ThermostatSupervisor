@@ -15,7 +15,7 @@ class Blink2FALoggingTests(utc.UnitTest):
 
     def setUp(self):
         super().setUp()
-        util.log_msg.file_name = "unit_test.txt"
+        util.log_msg.file_name = "unit_test.txt"  # type: ignore[attr-defined]
 
     def test_2fa_log_message_formatting(self):
         """
@@ -61,7 +61,7 @@ class Blink2FALoggingTests(utc.UnitTest):
         the 2FA is correct based on debug mode.
         """
         # Test masking in non-debug mode
-        util.log_msg.debug = False
+        util.log_msg.debug = False  # type: ignore[attr-defined]
         value = "123456"
         debug_enabled = getattr(util.log_msg, "debug", False)
 
@@ -80,7 +80,7 @@ class Blink2FALoggingTests(utc.UnitTest):
         )
 
         # Test showing in debug mode
-        util.log_msg.debug = True
+        util.log_msg.debug = True  # type: ignore[attr-defined]
         debug_enabled = getattr(util.log_msg, "debug", False)
 
         if debug_enabled:
@@ -98,7 +98,7 @@ class Blink2FALoggingTests(utc.UnitTest):
         )
 
         # Reset debug mode
-        util.log_msg.debug = False
+        util.log_msg.debug = False  # type: ignore[attr-defined]
 
     def test_2fa_source_message_formatting(self):
         """

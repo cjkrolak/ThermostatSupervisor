@@ -188,9 +188,12 @@ class Test(utc.UnitTest):
             print(f"testing mocked '{str(exception)} exception...")
 
             # mock the exception case
-            side_effect = lambda *_, **__: utc.mock_exception(  # noqa E731, C3001
-                exception, exception_args
-            )  # noqa E731, C3001
+            # Capture loop variables as default args to avoid late binding
+            side_effect = (
+                lambda *_, exc=exception, args=exception_args, **__: (
+                    utc.mock_exception(exc, args)
+                )
+            )
 
             # Mock SMTP_SSL and setup to reach the sendmail logic
             mock_server = mock.Mock()
@@ -221,5 +224,5 @@ class Test(utc.UnitTest):
 
 
 if __name__ == "__main__":
-    util.log_msg.debug = True
+    util.log_msg.debug = True  # type: ignore[attr-defined]
     unittest.main(verbosity=2)

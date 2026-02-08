@@ -80,8 +80,8 @@ class TestPackageVersionDetection(utc.UnitTest):
         self.assertEqual(minor, 5)
 
         # Test patch version
-        patch = env.get_package_version(mock_module, element="patch")
-        self.assertEqual(patch, 7)
+        patch_ver = env.get_package_version(mock_module, element="patch")
+        self.assertEqual(patch_ver, 7)
 
         # Test numeric element selection
         major_num = env.get_package_version(mock_module, element=0)
@@ -97,15 +97,16 @@ class TestPackageVersionDetection(utc.UnitTest):
 
             # Version should be a tuple of three integers
             self.assertIsInstance(version, tuple)
-            self.assertEqual(len(version), 3)
-            self.assertTrue(all(isinstance(v, int) for v in version))
+            if isinstance(version, tuple):
+                self.assertEqual(len(version), 3)
+                self.assertTrue(all(isinstance(v, int) for v in version))
 
-            # Version should be >= (0, 22, 0) for modern blinkpy
-            self.assertGreaterEqual(
-                version,
-                (0, 22, 0),
-                "blinkpy version should be >= 0.22.0 for async authentication",
-            )
+                # Version should be >= (0, 22, 0) for modern blinkpy
+                self.assertGreaterEqual(
+                    version,
+                    (0, 22, 0),
+                    "blinkpy version should be >= 0.22.0 for async authentication",
+                )
 
         except ImportError:
             self.skipTest("blinkpy not installed")

@@ -77,7 +77,7 @@ class PerformanceIntegrationTest(IntegrationTest, utc.PerformanceIntegrationTest
         # network timing measurement
         self.timeout_limit = 30
         self.timing_measurements = 30
-        self.timing_func = self.Zone.refresh_zone_info
+        self.timing_func = self.Zone.refresh_zone_info  # type: ignore[attr-defined]
 
         # temperature and humidity repeatability measurements
         # temperature and humidity data are int values
@@ -92,5 +92,5 @@ class PerformanceIntegrationTest(IntegrationTest, utc.PerformanceIntegrationTest
 
 
 if __name__ == "__main__":
-    util.log_msg.debug = True
+    util.log_msg.debug = True  # type: ignore[attr-defined]
     unittest.main(verbosity=2)
