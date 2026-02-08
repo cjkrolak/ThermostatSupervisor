@@ -43,7 +43,7 @@ class Test(utc.UnitTest):
         """
         Verify print_all_thermostat_metadata() runs without error.
         """
-        self.Thermostat.print_all_thermostat_metadata(
+        self.Thermostat.print_all_thermostat_metadata(  # type: ignore[attr-defined]
             api.uip.get_user_inputs(api.uip.zone_name, "zone")
         )
 
@@ -51,7 +51,7 @@ class Test(utc.UnitTest):
         """
         Verify set_mode() runs without error.
         """
-        result = self.Zone.set_mode("bogus_mode")
+        result = self.Zone.set_mode("bogus_mode")  # type: ignore[attr-defined]
         self.assertFalse(result, "Zone.set_mode() should have returned False")
 
     def test_store_current_mode(self):
@@ -65,15 +65,16 @@ class Test(utc.UnitTest):
             return 1
 
         test_cases = [
-            ["is_heat_mode", self.Zone.HEAT_MODE],
-            ["is_cool_mode", self.Zone.COOL_MODE],
-            ["is_dry_mode", self.Zone.DRY_MODE],
-            ["is_auto_mode", self.Zone.AUTO_MODE],
-            ["is_fan_mode", self.Zone.FAN_MODE],
-            ["is_off_mode", self.Zone.OFF_MODE],
-            ["is_eco_mode", self.Zone.ECO_MODE],
+            ["is_heat_mode", self.Zone.HEAT_MODE],  # type: ignore[attr-defined]
+            ["is_cool_mode", self.Zone.COOL_MODE],  # type: ignore[attr-defined]
+            ["is_dry_mode", self.Zone.DRY_MODE],  # type: ignore[attr-defined]
+            ["is_auto_mode", self.Zone.AUTO_MODE],  # type: ignore[attr-defined]
+            ["is_fan_mode", self.Zone.FAN_MODE],  # type: ignore[attr-defined]
+            ["is_off_mode", self.Zone.OFF_MODE],  # type: ignore[attr-defined]
+            ["is_eco_mode", self.Zone.ECO_MODE],  # type: ignore[attr-defined]
         ]
 
+        # type: ignore[attr-defined]
         print(f"thermostat_type={self.Zone.thermostat_type}")
 
         for test_case in test_cases:
@@ -83,27 +84,32 @@ class Test(utc.UnitTest):
                 if test_case[0]:
                     backup_func = getattr(self.Zone, test_case[0])
                     setattr(self.Zone, test_case[0], dummy_true)
+                # type: ignore[attr-defined]
                 print(f"current mode(pre)={self.Zone.current_mode}")
 
                 # store the current mode and check cache
-                self.Zone.store_current_mode()
+                self.Zone.store_current_mode()  # type: ignore[attr-defined]
+                # type: ignore[attr-defined]
                 print(f"current mode(post)={self.Zone.current_mode}")
                 self.assertEqual(
                     test_case[1],
-                    self.Zone.current_mode,
+                    self.Zone.current_mode,  # type: ignore[attr-defined]
                     f"Zone.store_current_mode() failed to cache"
                     f" mode={test_case[1]}",
                 )
 
                 # confirm verify_current_mode()
+                # type: ignore[attr-defined]
                 none_act = self.Zone.verify_current_mode(None)
                 self.assertTrue(
                     none_act, "verify_current_mode(None) failed to return True"
                 )
+                # type: ignore[attr-defined]
                 curr_act = self.Zone.verify_current_mode(test_case[1])
                 self.assertTrue(
                     curr_act, "verify_current_mode() doesn't match current test mode"
                 )
+                # type: ignore[attr-defined]
                 dummy_act = self.Zone.verify_current_mode("dummy_mode")
                 self.assertFalse(
                     dummy_act,
@@ -119,6 +125,7 @@ class Test(utc.UnitTest):
         """
         Verify return type of each function is as expected.
         """
+        # type: ignore[attr-defined]
         func_dict = {
             "is_temp_deviated_from_schedule": {
                 "key": self.Zone.is_temp_deviated_from_schedule,
@@ -329,6 +336,7 @@ class Test(utc.UnitTest):
             print(f"test case={type(test_case)}")
             if isinstance(test_case, (int, float)):
                 expected_val = test_case
+                # type: ignore[attr-defined]
                 actual_val = self.Zone.validate_numeric(test_case, "test_case")
                 self.assertEqual(
                     expected_val,
@@ -340,10 +348,12 @@ class Test(utc.UnitTest):
             else:
                 with self.assertRaises(TypeError):
                     print("attempting to input bad parameter type, expect exception...")
+                    # type: ignore[attr-defined]
                     self.Zone.validate_numeric(test_case, "test_case")
 
     def test_warn_if_outside_global_limit(self):
         """Test warn_if_outside_global_limit() function."""
+        # type: ignore[attr-defined]
         self.assertTrue(
             self.Zone.warn_if_outside_global_limit(
                 self.Zone.max_scheduled_heat_allowed + 1,
@@ -353,6 +363,7 @@ class Test(utc.UnitTest):
             ),
             "function result should have been True",
         )
+        # type: ignore[attr-defined]
         self.assertFalse(
             self.Zone.warn_if_outside_global_limit(
                 self.Zone.max_scheduled_heat_allowed - 1,
@@ -362,6 +373,7 @@ class Test(utc.UnitTest):
             ),
             "function result should have been False",
         )
+        # type: ignore[attr-defined]
         self.assertTrue(
             self.Zone.warn_if_outside_global_limit(
                 self.Zone.min_scheduled_cool_allowed - 1,
@@ -371,6 +383,7 @@ class Test(utc.UnitTest):
             ),
             "function result should have been True",
         )
+        # type: ignore[attr-defined]
         self.assertFalse(
             self.Zone.warn_if_outside_global_limit(
                 self.Zone.min_scheduled_cool_allowed + 1,
@@ -385,6 +398,7 @@ class Test(utc.UnitTest):
         """
         Test the revert_thermostat_mode() function.
         """
+        # type: ignore[attr-defined]
         test_cases = [
             self.Zone.HEAT_MODE,
             self.Zone.COOL_MODE,
@@ -422,6 +436,7 @@ class Test(utc.UnitTest):
         # measure thermostat response time
         measurements = 3
         print(f"Thermostat response times for {measurements} measurements...")
+        # type: ignore[attr-defined]
         meas_data = self.Zone.measure_thermostat_repeatability(
             measurements,
             measure_response_time=True,
@@ -451,6 +466,7 @@ class Test(utc.UnitTest):
         4. cool mode and cool deviation
         5. humidity is available
         """
+        # type: ignore[attr-defined]
         test_cases = {
             "heat mode and following schedule": {
                 "mode": self.Zone.HEAT_MODE,
@@ -591,6 +607,7 @@ class Test(utc.UnitTest):
         This tests the specific logic where flag_all_deviations=True changes
         the operator and tolerance behavior for heat and cool modes.
         """
+        # type: ignore[attr-defined]
         test_cases = {
             "heat mode with flag_all_deviations": {
                 "mode": self.Zone.HEAT_MODE,
@@ -669,6 +686,7 @@ class Test(utc.UnitTest):
 
         These modes have specific parameter settings that need to be verified.
         """
+        # type: ignore[attr-defined]
         test_cases = {
             self.Zone.AUTO_MODE: {
                 "expected_current_setpoint": util.BOGUS_INT,
@@ -769,6 +787,7 @@ class Test(utc.UnitTest):
         returns:
             None
         """
+        # type: ignore[attr-defined]
         if mock_mode == self.Zone.HEAT_MODE:
             self.Zone.is_heat_mode = lambda *_, **__: True
             self.Zone.is_cool_mode = lambda *_, **__: False
@@ -845,6 +864,7 @@ class Test(utc.UnitTest):
         returns:
             None
         """
+        # type: ignore[attr-defined]
         deviation_val = self.Zone.tolerance_degrees + 1
         heat_sched_sp = self.Zone.max_scheduled_heat_allowed - 13
         heat_sp = heat_sched_sp + [0, deviation_val][heat_deviation]
@@ -865,10 +885,12 @@ class Test(utc.UnitTest):
         returns:
             None
         """
+        # type: ignore[attr-defined]
         self.Zone.get_is_humidity_supported = lambda *_, **__: bool_val
 
     def backup_functions(self):
         """Backup functions prior to mocking return values."""
+        # type: ignore[attr-defined]
         self.switch_pos_bckup = self.Zone.get_system_switch_position
         self.is_heat_mode_bckup = self.Zone.is_heat_mode
         self.is_cool_mode_bckup = self.Zone.is_cool_mode
@@ -881,6 +903,7 @@ class Test(utc.UnitTest):
 
     def restore_functions(self):
         """Restore backed up functions."""
+        # type: ignore[attr-defined]
         self.Zone.get_system_switch_position = self.switch_pos_bckup
         self.Zone.is_heat_mode = self.is_heat_mode_bckup
         self.Zone.is_cool_mode = self.is_cool_mode_bckup
@@ -895,6 +918,7 @@ class Test(utc.UnitTest):
         """Confirm print_basic_thermostat_summary() works without error."""
 
         # override switch position function to be determinant
+        # type: ignore[attr-defined]
         self.switch_position_backup = self.Zone.get_system_switch_position
         try:
             self.Zone.get_system_switch_position = (
@@ -910,6 +934,7 @@ class Test(utc.UnitTest):
         """Verify thermostat_basic_checkout()."""
 
         # override switch position function to be determinant
+        # type: ignore[attr-defined]
         self.switch_position_backup = self.Zone.get_system_switch_position
         try:
             self.Zone.get_system_switch_position = (
@@ -934,8 +959,8 @@ class Test(utc.UnitTest):
                 thermostat, zone_number = tc.thermostat_basic_checkout(
                     thermostat_type,
                     zone_number,
-                    mod.ThermostatClass,
-                    mod.ThermostatZone,
+                    mod.ThermostatClass,  # type: ignore[union-attr]
+                    mod.ThermostatZone,  # type: ignore[union-attr]
                 )
             print(f"thermotat={type(thermostat)}")
             print(f"thermotat={type(zone_number)}")
@@ -946,6 +971,7 @@ class Test(utc.UnitTest):
         """Verify print_select_data_from_all_zones()."""
 
         # override switch position function to be determinant
+        # type: ignore[attr-defined]
         self.switch_position_backup = self.Zone.get_system_switch_position
         try:
             self.Zone.get_system_switch_position = (
@@ -970,8 +996,8 @@ class Test(utc.UnitTest):
                 tc.print_select_data_from_all_zones(
                     thermostat_type,
                     [zone_number],
-                    mod.ThermostatClass,
-                    mod.ThermostatZone,
+                    mod.ThermostatClass,  # type: ignore[union-attr]
+                    mod.ThermostatZone,  # type: ignore[union-attr]
                     display_wifi=True,
                     display_battery=True,
                 )
@@ -982,12 +1008,14 @@ class Test(utc.UnitTest):
         """Verify revert_temperature_deviation()."""
 
         def mock_revert_setpoint_func(setpoint):
-            self.Zone.current_setpoint = setpoint
+            self.Zone.current_setpoint = setpoint  # type: ignore[attr-defined]
 
         # backup functions that may be mocked
         self.backup_functions()
+        actual_setpoint = None
         try:
             # mock up the revert function for unit testing
+            # type: ignore[attr-defined]
             self.Zone.revert_setpoint_func = mock_revert_setpoint_func
 
             # mock the thermostat into heat mode
@@ -996,6 +1024,7 @@ class Test(utc.UnitTest):
 
             for new_setpoint in [13, 26, -4, 101]:
                 # get current setpoint
+                # type: ignore[attr-defined]
                 current_setpoint = self.Zone.current_setpoint
 
                 # revert setpoint
@@ -1004,9 +1033,11 @@ class Test(utc.UnitTest):
                     f"{util.temp_value_with_units(current_setpoint)} to "
                     f"{util.temp_value_with_units(new_setpoint)}"
                 )
+                # type: ignore[attr-defined]
                 self.Zone.revert_temperature_deviation(new_setpoint, msg)
 
                 # verify setpoint
+                # type: ignore[attr-defined]
                 actual_setpoint = self.Zone.current_setpoint
                 self.assertEqual(
                     new_setpoint,
@@ -1017,6 +1048,7 @@ class Test(utc.UnitTest):
                 )
 
             # verify function default behavior
+            # type: ignore[attr-defined]
             new_setpoint = self.Zone.current_setpoint = 56
 
             # revert setpoint
@@ -1025,9 +1057,11 @@ class Test(utc.UnitTest):
                 f"{util.temp_value_with_units(actual_setpoint)} to "
                 f"{util.temp_value_with_units(new_setpoint)}"
             )
+            # type: ignore[attr-defined]
             self.Zone.revert_temperature_deviation(msg=msg)
 
             # verify setpoint
+            # type: ignore[attr-defined]
             actual_setpoint = self.Zone.current_setpoint
             self.assertEqual(
                 new_setpoint,
@@ -1048,6 +1082,7 @@ class Test(utc.UnitTest):
         ]
         for test_case in test_cases:
             print(f"test_case={test_case}")
+            # type: ignore[attr-defined]
             self.Zone.report_heating_parameters(
                 switch_position=self.Zone.system_switch_position[test_case]
             )
@@ -1058,6 +1093,7 @@ class Test(utc.UnitTest):
         import io
 
         # Set known values for testing
+        # type: ignore[attr-defined]
         self.Zone.poll_time_sec = 600  # 10 minutes
         self.Zone.connection_time_sec = 86400  # 1440 minutes (24 hours)
 
@@ -1078,6 +1114,7 @@ class Test(utc.UnitTest):
         """
         Verify display_session_settings() with all permutations.
         """
+        # type: ignore[attr-defined]
         for self.Zone.revert_deviations in [False, True]:
             for self.Zone.revert_all_deviations in [False, True]:
                 print(f"{'-' * 60}")
@@ -1090,7 +1127,7 @@ class Test(utc.UnitTest):
     def test_update_runtime_parameters(self):
         """Verify update_runtime_parameters()."""
         # TODDO - set and verify runtime parameter overrides
-        self.Zone.update_runtime_parameters()
+        self.Zone.update_runtime_parameters()  # type: ignore[attr-defined]
 
     def test_set_mode_enhanced_functionality(self):
         """
@@ -1106,6 +1143,7 @@ class Test(utc.UnitTest):
         test_heat_setpoint = 70.0
         test_cool_setpoint = 75.0
 
+        # type: ignore[attr-defined]
         original_get_schedule_heat_sp = self.Zone.get_schedule_heat_sp
         original_get_schedule_cool_sp = self.Zone.get_schedule_cool_sp
         original_set_heat_setpoint = self.Zone.set_heat_setpoint
@@ -1237,6 +1275,7 @@ class Test(utc.UnitTest):
         from unittest.mock import Mock
 
         # Setup mock methods
+        # type: ignore[attr-defined]
         self.Zone.get_cool_setpoint_raw = Mock(return_value=72.0)
         self.Zone.get_schedule_cool_sp = Mock(return_value=74.0)
         self.Zone.function_not_supported = Mock()
@@ -1253,7 +1292,9 @@ class Test(utc.UnitTest):
 
         try:
             # Call the method
-            self.Zone._configure_dry_mode()
+            method = "_configure_dry_mode"
+            # type: ignore[attr-defined]
+            getattr(self.Zone, method)()
 
             # Verify the configuration was set correctly
             self.assertEqual(self.Zone.current_mode, self.Zone.DRY_MODE)
@@ -1299,6 +1340,7 @@ class Test(utc.UnitTest):
         from unittest.mock import patch, Mock
         import io
 
+        # type: ignore[attr-defined]
         # Configure test with known values
         test_argv = [
             "supervise.py",
@@ -1315,7 +1357,7 @@ class Test(utc.UnitTest):
         # Mock get_current_mode to avoid actual operations
         original_get_current_mode = self.Zone.get_current_mode
 
-        def mock_get_current_mode(*args, **kwargs):
+        def mock_get_current_mode(*_args, **_kwargs):
             return {
                 "heat_mode": False,
                 "cool_mode": False,
@@ -1355,6 +1397,7 @@ class Test(utc.UnitTest):
         import time
         from unittest.mock import Mock
 
+        # type: ignore[attr-defined]
         # Setup: Mock get_current_mode to simulate slow operation
         original_get_current_mode = self.Zone.get_current_mode
         original_refresh_zone_info = self.Zone.refresh_zone_info
@@ -1375,7 +1418,7 @@ class Test(utc.UnitTest):
             api.uip = api.UserInputs(test_argv)
 
             # Mock get_current_mode to simulate a slow operation (2 seconds)
-            def slow_get_current_mode(*args, **kwargs):
+            def slow_get_current_mode(*_args, **_kwargs):
                 time.sleep(2)  # Simulate slow network operation
                 return {
                     "heat_mode": False,
@@ -1441,6 +1484,7 @@ class Test(utc.UnitTest):
         import time
         from unittest.mock import Mock
 
+        # type: ignore[attr-defined]
         original_get_current_mode = self.Zone.get_current_mode
         original_refresh_zone_info = self.Zone.refresh_zone_info
 
@@ -1463,7 +1507,7 @@ class Test(utc.UnitTest):
             call_count = [0]
 
             # Mock get_current_mode to simulate a slow first operation
-            def very_slow_get_current_mode(*args, **kwargs):
+            def very_slow_get_current_mode(*_args, **_kwargs):
                 call_count[0] += 1
                 if call_count[0] == 1:
                     # First call: sleep longer than connection timeout

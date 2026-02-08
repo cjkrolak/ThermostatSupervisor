@@ -399,15 +399,13 @@ class Sht31FlaskServerSensorUnit(utc.UnitTest):
     def test_get_health_recommendations(self):
         """Test health recommendations generation."""
         # Test recommendations for stuck bus
-        # type: ignore[attr-defined]
-        recs = self.sensors._get_health_recommendations("STUCK_LOW")
+        recs = getattr(self.sensors, "_get_health_recommendations")("STUCK_LOW")
         self.assertIsInstance(recs, list)
         self.assertTrue(len(recs) > 0)
         self.assertTrue(any("recovery" in rec.lower() for rec in recs))
 
         # Test recommendations for idle bus
-        # type: ignore[attr-defined]
-        recs = self.sensors._get_health_recommendations("IDLE")
+        recs = getattr(self.sensors, "_get_health_recommendations")("IDLE")
         self.assertIsInstance(recs, list)
         self.assertTrue(len(recs) > 0)
 
@@ -577,12 +575,6 @@ class Sht31FlaskServerSensorUnit(utc.UnitTest):
         mock_bus = MagicMock()
         # Return fewer bytes than expected
         mock_bus.read_i2c_block_data.return_value = [0x4A, 0xEA]
-
-        def _failing_read():  # noqa: F841
-            response = mock_bus.read_i2c_block_data(0x44, 0x00, 6)
-            if len(response) != 6:
-                raise ValueError("Length mismatch")
-            return response
 
         with patch(
             "src.utilities.execute_with_extended_retries"

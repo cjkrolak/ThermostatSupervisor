@@ -14,21 +14,25 @@ import sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".github", "scripts"))
 
 try:
-    import version_increment
+    import version_increment  # type: ignore[import]
 except ImportError:
     # Create a mock module if it doesn't exist yet during development
     class MockVersionIncrement:
-        def get_version_from_file(self, file_path):
+        def get_version_from_file(self, _file_path):
             return "1.0.12"
 
         def parse_version(self, version_str):
             return tuple(map(int, version_str.split(".")))
 
         def increment_patch_version(self, version_str):
-            major, minor, patch = self.parse_version(version_str)
-            return f"{major}.{minor}.{patch + 1}"
+            major, minor, patch_ver = self.parse_version(version_str)
+            return f"{major}.{minor}.{patch_ver + 1}"
 
-    version_increment = MockVersionIncrement()
+        def update_version_in_file(self, _file_path, _new_version):
+            """Mock implementation of update_version_in_file."""
+            pass
+
+    version_increment = MockVersionIncrement()  # type: ignore[assignment]
 
 
 class TestVersionIncrement(unittest.TestCase):
@@ -183,7 +187,7 @@ __version__ = "1.0.12"
             self.assertEqual(updated_version, "1.0.13")
 
             # Verify file content
-            with open(temp_file_path, "r") as f:
+            with open(temp_file_path, "r", encoding="utf-8") as f:
                 updated_content = f.read()
                 self.assertIn('__version__ = "1.0.13"', updated_content)
                 self.assertNotIn('__version__ = "1.0.12"', updated_content)

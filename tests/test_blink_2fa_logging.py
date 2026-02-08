@@ -100,20 +100,23 @@ class Blink2FALoggingTests(utc.UnitTest):
         # Reset debug mode
         util.log_msg.debug = False  # type: ignore[attr-defined]
 
+    def _get_source_msg(self, source):
+        if source == "supervisor-env.txt":
+            return "using stored 2FA from supervisor-env.txt"
+        elif source == "environment_variable":
+            return "using stored 2FA from environment variable"
+        elif source == "default":
+            return "using default 2FA value (missing)"
+        else:
+            return f"using 2FA from {source}"
+
     def test_2fa_source_message_formatting(self):
         """
         Test that source messages are formatted correctly.
         """
         # Test supervisor-env.txt source
         source = "supervisor-env.txt"
-        if source == "supervisor-env.txt":
-            source_msg = "using stored 2FA from supervisor-env.txt"
-        elif source == "environment_variable":
-            source_msg = "using stored 2FA from environment variable"
-        elif source == "default":
-            source_msg = "using default 2FA value (missing)"
-        else:
-            source_msg = f"using 2FA from {source}"
+        source_msg = self._get_source_msg(source)
 
         self.assertEqual(
             source_msg,
@@ -122,14 +125,7 @@ class Blink2FALoggingTests(utc.UnitTest):
 
         # Test environment variable source
         source = "environment_variable"
-        if source == "supervisor-env.txt":
-            source_msg = "using stored 2FA from supervisor-env.txt"
-        elif source == "environment_variable":
-            source_msg = "using stored 2FA from environment variable"
-        elif source == "default":
-            source_msg = "using default 2FA value (missing)"
-        else:
-            source_msg = f"using 2FA from {source}"
+        source_msg = self._get_source_msg(source)
 
         self.assertEqual(
             source_msg,
@@ -138,14 +134,7 @@ class Blink2FALoggingTests(utc.UnitTest):
 
         # Test default source
         source = "default"
-        if source == "supervisor-env.txt":
-            source_msg = "using stored 2FA from supervisor-env.txt"
-        elif source == "environment_variable":
-            source_msg = "using stored 2FA from environment variable"
-        elif source == "default":
-            source_msg = "using default 2FA value (missing)"
-        else:
-            source_msg = f"using 2FA from {source}"
+        source_msg = self._get_source_msg(source)
 
         self.assertEqual(
             source_msg,
