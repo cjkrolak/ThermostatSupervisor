@@ -645,8 +645,9 @@ class Test(utc.UnitTest):
                     mock_session = mock.Mock()
                     tstat.session = mock_session  # type: ignore[assignment]
 
-                    # Test __del__ by triggering garbage collection
-                    del tstat
+                    # Test __del__ explicitly (necessary for testing cleanup logic)
+                    # pylint: disable=unnecessary-dunder-call
+                    tstat.__del__()
 
                     # Verify close was called
                     mock_session.close.assert_called_once()
@@ -670,7 +671,8 @@ class Test(utc.UnitTest):
                         tstat, "close", side_effect=AttributeError("test error")
                     ):
                         # Should not raise exception when __del__ is called
-                        del tstat
+                        # pylint: disable=unnecessary-dunder-call
+                        tstat.__del__()
 
     def test_get_metadata_with_parameter_index_error(self):
         """Test get_metadata with parameter and invalid zone index."""
