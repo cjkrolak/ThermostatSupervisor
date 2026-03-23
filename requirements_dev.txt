@@ -1,0 +1,8 @@
+# Development and testing requirements for ThermostatSupervisor
+# These packages are NOT required for runtime execution on production devices
+# (e.g. Raspberry Pi 0 with armv6 processor where Rust-based builds fail).
+# To install for development/CI: pip install -r requirements.txt -r requirements_dev.txt
+build>=1.0.0  # python package builds
+coverage>=7.2.5  # unit test coverage
+yamlfix>=1.0.0  # YAML formatting and fixing tool
+yamllint>=1.35.0  # YAML linting for CI/CD workflows
