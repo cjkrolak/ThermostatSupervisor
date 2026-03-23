@@ -24,7 +24,8 @@ jobs:
       - name: Install project dependencies
         run: |
           pip install -r requirements.txt
-          pip install flake8 pylint yamllint safety
+          pip install -r requirements_dev.txt
+          pip install flake8 pylint safety
       - name: Install test dependencies
         run: |
           pip install -r test-requirements.txt

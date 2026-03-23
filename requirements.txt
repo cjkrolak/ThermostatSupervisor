@@ -1,10 +1,9 @@
 
 # requirements for ThermostatSupervisor
 # to run: pip install -r requirements.txt
+# for development/testing also run: pip install -r requirements_dev.txt
 aiohttp>=3.9.0b0; python_version>='3.12'  # blinkpy py3.12 dependency
 blinkpy>=0.20.0  # blink cameras
-build>=1.0.0  # python package builds
-coverage>=7.2.5  # unit test coverage
 dnspython>=2.3.0  # DNS exception type
 Flask>=2.3.2  # flask servers
 Flask_APscheduler>=1.12.4  # flask scheduled apps
@@ -24,5 +23,3 @@ radiotherm>=2.1.0  # 3m50 library
 requests>=2.28.2  # used by Honeywell and mmm at least
 setuptools>=67.7.1  # not in repo but azdo native version has vulnerability
 str2bool>=1.1  # input parameter parsing
-yamlfix>=1.0.0  # YAML formatting and fixing tool
-yamllint>=1.35.0  # YAML linting for CI/CD workflows
