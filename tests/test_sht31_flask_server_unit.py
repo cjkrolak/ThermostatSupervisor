@@ -239,14 +239,14 @@ class Sht31FlaskServerSensorUnit(utc.UnitTest):
                     "src.sht31_flask_server.request"
                 ) as mock_request:
 
-                    def mock_args_get_repeat(key, default=None, type_=None):
+                    def mock_args_get_repeat(key, default=None, type=None):
                         values = {
                             "measurements": 1,
                             "seed": test_seeds[0],  # Use first seed again
                         }
                         value = values.get(key, default)
-                        if type_ is not None and value is not None:
-                            return type_(value)
+                        if type is not None and value is not None:
+                            return type(value)
                         return value
 
                     mock_request.args.get = mock_args_get_repeat
