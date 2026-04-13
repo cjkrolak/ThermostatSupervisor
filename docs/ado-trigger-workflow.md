@@ -74,7 +74,7 @@ Set in: **Settings** → **Secrets and variables** → **Actions** → **Secrets
 - Now only runs when triggered by GitHub workflow
 - Updated comments to reflect new trigger mechanism
 
-### `UNIT_TEST_TOGGLE.md` (Updated)
+### `docs/unit-test-toggle.md` (Updated)
 
 - Added documentation for ADO trigger workflow
 - Explained the new `USE_ADO_UNIT_TESTS` variable
@@ -167,7 +167,7 @@ The `reason: "pullRequest"` field is critical for proper PR association.
 
 ## References
 
-- Main documentation: `UNIT_TEST_TOGGLE.md`
+- Main documentation: `docs/unit-test-toggle.md`
 - Test file: `tests/test_yamllint_workflow.py`
 - Similar implementation: github.com/cjkrolak/fish_recognition/pull/1759
 - Azure DevOps Build API: https://learn.microsoft.com/en-us/rest/api/azure/devops/build/builds/queue

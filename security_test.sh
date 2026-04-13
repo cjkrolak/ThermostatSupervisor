@@ -31,7 +31,7 @@ fi
 
 echo ""
 echo "2. Checking security documentation..."
-if [[ -f "DOCKER_SECURITY.md" ]]; then
+if [[ -f "docs/docker-security.md" ]]; then
     echo "✓ Security documentation: PASS"
 else
     echo "✗ Security documentation: FAIL"
