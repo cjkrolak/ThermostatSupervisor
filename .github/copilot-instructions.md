@@ -287,7 +287,7 @@ This project is a **Thermostat Supervisor** application that:
 
 ### Docker and Containerization Best Practices
 - **MANDATORY**: All Docker changes MUST follow security best practices defined 
-  in `DOCKER_SECURITY.md`.
+  in `docs/docker-security.md`.
 - **ALWAYS run** `security_test.sh` to validate Docker security configurations 
   before committing.
 - Follow the existing secure Docker configurations:
