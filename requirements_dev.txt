@@ -4,5 +4,5 @@
 # To install for development/CI: pip install -r requirements.txt -r requirements_dev.txt
 build>=1.0.0  # python package builds
 coverage>=7.2.5  # unit test coverage
-yamlfix>=1.0.0  # YAML formatting and fixing tool
+yamlfix>=1.19.1  # YAML formatting and fixing tool
 yamllint>=1.35.0  # YAML linting for CI/CD workflows
