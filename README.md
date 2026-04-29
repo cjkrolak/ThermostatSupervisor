@@ -27,6 +27,8 @@ supervisor to detect and correct thermostat deviations<br/>
 4. supervisor_flask_server not currently working on Linux server.
 
 # Build Information:
+See [Build and Release Process](docs/build-and-release.md) for detailed release instructions.
+
 ## dependencies:
 pyhtcc for Honeywell thermostats (pip3 install pyhtcc)<br/>
 radiotherm for 3m50 thermostats (mhrivnak/radiotherm or pip3 install radiotherm)<br/>

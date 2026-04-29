@@ -6,7 +6,7 @@ This document outlines the complete process for building and releasing new versi
 
 ThermostatSupervisor follows GitFlow branching strategy with automated CI/CD pipelines. The project uses semantic versioning and publishes to both PyPI and Docker Hub.
 
-**New Feature**: The repository now includes **automatic version increment** functionality that prevents version conflicts when merging to main. See [Auto Version Increment Documentation](docs/auto-version-increment.md) for details.
+**New Feature**: The repository now includes **automatic version increment** functionality that prevents version conflicts when merging to main. See [Auto Version Increment Documentation](auto-version-increment.md) for details.
 
 ## Prerequisites
 
