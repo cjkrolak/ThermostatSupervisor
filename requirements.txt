@@ -3,7 +3,7 @@
 # to run: pip install -r requirements.txt
 # for development/testing also run: pip install -r requirements_dev.txt
 aiohttp>=3.9.0b0; python_version>='3.12'  # blinkpy py3.12 dependency
-blinkpy>=0.20.0  # blink cameras
+blinkpy>=0.25.5  # blink cameras
 dnspython>=2.3.0  # DNS exception type
 Flask>=2.3.2  # flask servers
 Flask_APscheduler>=1.12.4  # flask scheduled apps
