@@ -21,5 +21,5 @@ pytz>=2024.1  # timezone support for test metrics
 python-google-nest>=5.2.1  # nest thermostat access
 radiotherm>=2.1.0  # 3m50 library
 requests>=2.28.2  # used by Honeywell and mmm at least
-setuptools>=67.7.1  # not in repo but azdo native version has vulnerability
+setuptools>=82.0.1  # not in repo but azdo native version has vulnerability
 str2bool>=1.1  # input parameter parsing
