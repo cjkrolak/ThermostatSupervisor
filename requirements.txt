@@ -5,7 +5,7 @@
 aiohttp>=3.9.0b0; python_version>='3.12'  # blinkpy py3.12 dependency
 blinkpy>=0.25.5  # blink cameras
 dnspython>=2.8.0  # DNS exception type
-Flask>=2.3.2  # flask servers
+Flask>=3.1.3  # flask servers
 Flask_APscheduler>=1.12.4  # flask scheduled apps
 flask-ipban>=1.1.5  # blacklisting hacker ips
 Flask_Limiter>=4.1.1  # rate limiting
