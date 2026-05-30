@@ -1,10 +1,10 @@
 """
-kumocloudv3 config file.
+kumocloud config file for the KumoCloud v3 API.
 """
 
 from src import kumo_common_zones
 
-ALIAS = "kumocloudv3"
+ALIAS = "kumocloud"
 
 # thermostat zones
 # NOTE: Zone assignments are dynamically updated from v3 API at runtime
@@ -27,7 +27,7 @@ env_variables = {
 
 # supported thermostat configs
 supported_configs = {
-    "module": "kumocloudv3",
+    "module": "kumocloud",
     "type": 4,
     "zones": [MAIN_LIVING, KITCHEN, BASEMENT],
     "modes": [

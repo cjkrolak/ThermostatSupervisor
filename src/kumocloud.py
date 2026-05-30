@@ -12,7 +12,7 @@ import requests
 
 # local imports
 from src import environment as env
-from src import kumocloudv3_config
+from src import kumocloud_config
 from src import thermostat_api as api
 from src import thermostat_common as tc
 from src import utilities as util
@@ -43,7 +43,7 @@ class ThermostatClass(tc.ThermostatCommon):
         tc.ThermostatCommon.__init__(self)
 
         # set tstat type and debug flag
-        self.thermostat_type = kumocloudv3_config.ALIAS
+        self.thermostat_type = kumocloud_config.ALIAS
         self.verbose = verbose
 
         # v3 API endpoints and session
@@ -68,7 +68,7 @@ class ThermostatClass(tc.ThermostatCommon):
         # configure zone info
         self.zone_number = int(zone)
         # Note: zone_name will be updated after dynamic zone assignment
-        self.zone_name = kumocloudv3_config.metadata.get(
+        self.zone_name = kumocloud_config.metadata.get(
             self.zone_number, {"zone_name": f"Zone {self.zone_number}"}
         )["zone_name"]
         self.device_id = self.get_target_zone_id(self.zone_name)
@@ -94,7 +94,7 @@ class ThermostatClass(tc.ThermostatCommon):
             # After successful authentication, update zone assignments dynamically
             self._update_zone_assignments()
             # Update zone_name with the dynamically assigned name
-            self.zone_name = kumocloudv3_config.metadata.get(
+            self.zone_name = kumocloud_config.metadata.get(
                 self.zone_number, {"zone_name": f"Zone {self.zone_number}"}
             )["zone_name"]
         except tc.AuthenticationError as e:
@@ -367,24 +367,24 @@ class ThermostatClass(tc.ThermostatCommon):
         added_indices = set()
 
         if main_living_index is not None and main_living_index not in added_indices:
-            kumocloudv3_config.MAIN_LIVING = main_living_index
+            kumocloud_config.MAIN_LIVING = main_living_index
             discovered_zones.append(main_living_index)
             added_indices.add(main_living_index)
 
         if kitchen_index is not None and kitchen_index not in added_indices:
-            kumocloudv3_config.KITCHEN = kitchen_index
+            kumocloud_config.KITCHEN = kitchen_index
             discovered_zones.append(kitchen_index)
             added_indices.add(kitchen_index)
 
         if basement_index is not None and basement_index not in added_indices:
-            kumocloudv3_config.BASEMENT = basement_index
+            kumocloud_config.BASEMENT = basement_index
             discovered_zones.append(basement_index)
             added_indices.add(basement_index)
 
         # Only update the zones list if we discovered at least one zone
         # If no zones were discovered, keep the existing configuration as fallback
         if discovered_zones:
-            kumocloudv3_config.supported_configs["zones"] = discovered_zones
+            kumocloud_config.supported_configs["zones"] = discovered_zones
 
     def _rebuild_metadata_dict(
         self,
@@ -397,11 +397,11 @@ class ThermostatClass(tc.ThermostatCommon):
         if all(idx is not None for idx in
                (main_living_index, kitchen_index, basement_index)):
             # Clear existing metadata and rebuild with correct indices
-            kumocloudv3_config.metadata.clear()
+            kumocloud_config.metadata.clear()
 
             # Rebuild metadata with correct zone indices
             for zone_name, index in zone_name_to_index.items():
-                kumocloudv3_config.metadata[index] = {
+                kumocloud_config.metadata[index] = {
                     "zone_name": zone_name,
                     "host_name": "tbd",
                     "serial_number": None,
@@ -410,11 +410,11 @@ class ThermostatClass(tc.ThermostatCommon):
         if self.verbose:
             print(
                 f"Updated zone assignments - MAIN_LIVING: "
-                f"{kumocloudv3_config.MAIN_LIVING}, "
-                f"KITCHEN: {kumocloudv3_config.KITCHEN}, "
-                f"BASEMENT: {kumocloudv3_config.BASEMENT}"
+                f"{kumocloud_config.MAIN_LIVING}, "
+                f"KITCHEN: {kumocloud_config.KITCHEN}, "
+                f"BASEMENT: {kumocloud_config.BASEMENT}"
             )
-            print(f"Updated metadata: {kumocloudv3_config.metadata}")
+            print(f"Updated metadata: {kumocloud_config.metadata}")
 
     def _update_zone_assignments(self) -> None:
         """
@@ -712,24 +712,24 @@ class ThermostatClass(tc.ThermostatCommon):
         """
         if self.verbose:
             print(f"getting index for zone_name={self.zone_name}...")
-            print(f"metadata dict={kumocloudv3_config.metadata}")
+            print(f"metadata dict={kumocloud_config.metadata}")
         try:
             zone_index = [
                 i
-                for i in kumocloudv3_config.metadata
-                if kumocloudv3_config.metadata[i]["zone_name"] == self.zone_name
+                for i in kumocloud_config.metadata
+                if kumocloud_config.metadata[i]["zone_name"] == self.zone_name
             ][0]
         except IndexError:
             # Create a helpful error message with valid zone names
             valid_zone_names = [
-                kumocloudv3_config.metadata[i]["zone_name"]
-                for i in kumocloudv3_config.metadata
+                kumocloud_config.metadata[i]["zone_name"]
+                for i in kumocloud_config.metadata
             ]
             error_msg = (
-                f"zone_name='{self.zone_name}' not found in kumocloudv3 metadata. "
+                f"zone_name='{self.zone_name}' not found in kumocloud metadata. "
                 f"Valid zone names are: {valid_zone_names}. "
                 f"Available zone indices are: "
-                f"{list(kumocloudv3_config.metadata.keys())}"
+                f"{list(kumocloud_config.metadata.keys())}"
             )
             raise ValueError(error_msg) from None
         return zone_index
@@ -850,8 +850,8 @@ class ThermostatClass(tc.ThermostatCommon):
             serial_num_lst (list): List of serial numbers
         """
         for idx, serial_number in enumerate(serial_num_lst):
-            if idx in kumocloudv3_config.metadata:
-                kumocloudv3_config.metadata[idx]["serial_number"] = (
+            if idx in kumocloud_config.metadata:
+                kumocloud_config.metadata[idx]["serial_number"] = (
                     serial_number
                 )
 
@@ -863,7 +863,7 @@ class ThermostatClass(tc.ThermostatCommon):
         by using zone names from the API response, ensuring correct
         assignment regardless of API response order.
 
-        Modifies kumocloudv3_config.metadata in-place by setting the
+        Modifies kumocloud_config.metadata in-place by setting the
         'serial_number' field for each zone based on zone name matching.
         Falls back to sequential assignment on API errors.
 
@@ -903,7 +903,7 @@ class ThermostatClass(tc.ThermostatCommon):
             # This improves performance from O(n*m) to O(n+m)
             zone_name_to_idx = {
                 meta.get("zone_name"): idx
-                for idx, meta in kumocloudv3_config.metadata.items()
+                for idx, meta in kumocloud_config.metadata.items()
                 if meta.get("zone_name")
             }
 
@@ -914,7 +914,7 @@ class ThermostatClass(tc.ThermostatCommon):
                 if zone_name:
                     idx = zone_name_to_idx.get(zone_name)
                     if idx is not None:
-                        kumocloudv3_config.metadata[idx]["serial_number"] = (
+                        kumocloud_config.metadata[idx]["serial_number"] = (
                             serial_number
                         )
                         if self.verbose:
@@ -1026,7 +1026,7 @@ class ThermostatClass(tc.ThermostatCommon):
         # This ensures we use the correct serial for this zone_index
         # regardless of the order in serial_num_lst
         try:
-            self.serial_number = kumocloudv3_config.metadata[zone_index][
+            self.serial_number = kumocloud_config.metadata[zone_index][
                 "serial_number"
             ]
             if self.serial_number is None:
@@ -1036,7 +1036,7 @@ class ThermostatClass(tc.ThermostatCommon):
             raise IndexError(
                 f"ERROR: Invalid Zone, index ({zone_index}) does "
                 "not exist in metadata or serial number list "
-                f"(metadata keys: {list(kumocloudv3_config.metadata.keys())}, "
+                f"(metadata keys: {list(kumocloud_config.metadata.keys())}, "
                 f"serial_num_lst: {serial_num_lst})"
             ) from exc
 
@@ -1117,7 +1117,7 @@ class ThermostatClass(tc.ThermostatCommon):
         """Execute function with extended retry mechanism."""
         return util.execute_with_extended_retries(
             func=func,
-            thermostat_type=getattr(self, "thermostat_type", "KumoCloudv3"),
+            thermostat_type=getattr(self, "thermostat_type", "KumoCloud"),
             zone_name=str(getattr(self, "zone_name", str(zone))),
             number_of_retries=5,
             initial_retry_delay_sec=60,
@@ -1201,7 +1201,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
 
         # zone info
         self.verbose = verbose
-        self.thermostat_type = kumocloudv3_config.ALIAS
+        self.thermostat_type = kumocloud_config.ALIAS
         self.device_id = Thermostat_obj.device_id
         self.Thermostat = Thermostat_obj
         self.zone_info = Thermostat_obj.get_all_metadata(Thermostat_obj.zone_number)
@@ -1303,7 +1303,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         self.refresh_zone_info()
         zone_name = self.get_parameter("label")
         # update metadata dict.
-        kumocloudv3_config.metadata[self.zone_number]["zone_name"] = zone_name
+        kumocloud_config.metadata[self.zone_number]["zone_name"] = zone_name
         return zone_name
 
     def get_display_temp(self) -> float:  # used
@@ -1604,7 +1604,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         returns:
             (float): scheduled heating set point in °F.
         """
-        return float(kumocloudv3_config.MAX_HEAT_SETPOINT)  # max heat set point allowed
+        return float(kumocloud_config.MAX_HEAT_SETPOINT)  # max heat set point allowed
 
     def get_schedule_cool_sp(self) -> float:
         """
@@ -1615,7 +1615,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         returns:
             (float): scheduled cooling set point in °F.
         """
-        return kumocloudv3_config.MIN_COOL_SETPOINT  # min cool set point allowed
+        return kumocloud_config.MIN_COOL_SETPOINT  # min cool set point allowed
 
     def get_cool_setpoint_raw(self) -> float:
         """
@@ -1764,16 +1764,16 @@ if __name__ == "__main__":
     print("Using KumoCloud v3 API implementation")
 
     # get zone override
-    api.uip = api.UserInputs(argv_list=None, thermostat_type=kumocloudv3_config.ALIAS)
+    api.uip = api.UserInputs(argv_list=None, thermostat_type=kumocloud_config.ALIAS)
     zone_number = api.uip.get_user_inputs(api.uip.zone_name, api.input_flds.zone)
 
     _, Zone = tc.thermostat_basic_checkout(
-        kumocloudv3_config.ALIAS, zone_number, ThermostatClass, ThermostatZone
+        kumocloud_config.ALIAS, zone_number, ThermostatClass, ThermostatZone
     )
 
     tc.print_select_data_from_all_zones(
-        kumocloudv3_config.ALIAS,
-        kumocloudv3_config.get_available_zones(),
+        kumocloud_config.ALIAS,
+        kumocloud_config.get_available_zones(),
         ThermostatClass,
         ThermostatZone,
         display_wifi=True,
@@ -1781,7 +1781,7 @@ if __name__ == "__main__":
     )
 
     # measure thermostat response time
-    if kumocloudv3_config.check_response_time:
+    if kumocloud_config.check_response_time:
         MEASUREMENTS = 30
         meas_data = Zone.measure_thermostat_repeatability(
             MEASUREMENTS,

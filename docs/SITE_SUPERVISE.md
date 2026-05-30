@@ -104,7 +104,7 @@ config = {
             "measurements": 10,
         },
         {
-            "thermostat_type": "kumocloudv3",
+            "thermostat_type": "kumocloud",
             "zone": 1,
             "enabled": True,
             "poll_time": 30,
@@ -137,7 +137,7 @@ Create a JSON file (e.g., `mysite.json`) with your site configuration:
             "measurements": 10
         },
         {
-            "thermostat_type": "kumocloudv3",
+            "thermostat_type": "kumocloud",
             "zone": 1,
             "enabled": true,
             "poll_time": 30,
@@ -179,7 +179,7 @@ The site configuration is a Python dictionary with the following structure:
     "site_name": "string",  # Name of the site
     "thermostats": [        # List of thermostat configurations
         {
-            "thermostat_type": "string",  # Type (e.g., "honeywell", "kumocloudv3")
+            "thermostat_type": "string",  # Type (e.g., "honeywell", "kumocloud")
             "zone": int,                  # Zone number
             "enabled": bool,              # Include in supervision (default: True)
             "poll_time": int,             # Poll interval in seconds
@@ -201,7 +201,7 @@ The site configuration is a Python dictionary with the following structure:
 
 #### Per-Thermostat Fields
 - **thermostat_type** (str, required): Type of thermostat (must be in `SUPPORTED_THERMOSTATS`)
-  - Supported types: `emulator`, `honeywell`, `kumocloudv3`, `kumolocal`, `mmm`, `nest`, `sht31`, `blink`
+  - Supported types: `emulator`, `honeywell`, `kumocloud`, `kumolocal`, `mmm`, `nest`, `sht31`, `blink`
 - **zone** (int, required): Zone number for the thermostat
 - **enabled** (bool, optional): Whether to include this thermostat in supervision (default: `True`)
 - **poll_time** (int, optional): Polling interval in seconds (default varies by thermostat)
@@ -246,7 +246,7 @@ Site: my_home
     Tolerance: 2°F
 
   Thermostat 2: [DISABLED]
-    Type: kumocloudv3
+    Type: kumocloud
     Zone: 1
     Poll Time: 30s
     Tolerance: 3°F
@@ -275,7 +275,7 @@ Site Temperature Summary: my_home
     Mode: AUTO_MODE
 
   Thermostat 2:
-    Type: kumocloudv3
+    Type: kumocloud
     Zone: Bedroom
     Temperature: 68.5°F
     Humidity: 50%
@@ -386,7 +386,7 @@ config = {
             "enabled": True,  # This thermostat will be monitored
         },
         {
-            "thermostat_type": "kumocloudv3",
+            "thermostat_type": "kumocloud",
             "zone": 1,
             "enabled": False,  # This thermostat will be excluded
         },

@@ -12,7 +12,7 @@ import munch
 from src import blink_config
 from src import emulator_config
 from src import honeywell_config
-from src import kumocloudv3_config
+from src import kumocloud_config
 from src import kumolocal_config
 from src import mmm_config
 from src import nest_config
@@ -32,7 +32,7 @@ config_modules = [
     blink_config,
     emulator_config,
     honeywell_config,
-    kumocloudv3_config,
+    kumocloud_config,
     kumolocal_config,
     mmm_config,
     nest_config,

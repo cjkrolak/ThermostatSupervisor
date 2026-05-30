@@ -1,5 +1,5 @@
 """
-Integration test module for kumocloudv3.py.
+Integration test module for kumocloud.py.
 
 This test requires connection to Kumocloud thermostat using v3 API.
 """
@@ -8,17 +8,17 @@ This test requires connection to Kumocloud thermostat using v3 API.
 import unittest
 
 # local imports
-# conditionally import kumocloudv3 module to handle missing dependencies
+# conditionally import kumocloud module to handle missing dependencies
 try:
-    from src import kumocloudv3
-    from src import kumocloudv3_config
+    from src import kumocloud
+    from src import kumocloud_config
 
-    kumocloudv3_import_error = None
+    kumocloud_import_error = None
 except ImportError as ex:
     # requests library or other dependencies not available, tests will be skipped
-    kumocloudv3 = None
-    kumocloudv3_config = None
-    kumocloudv3_import_error = ex
+    kumocloud = None
+    kumocloud_config = None
+    kumocloud_import_error = ex
 
 from src import utilities as util
 from tests import unit_test_common as utc
@@ -26,7 +26,7 @@ from tests import unit_test_common as utc
 
 class IntegrationTest(utc.IntegrationTest):
     """
-    Test functions in kumocloudv3.py.
+    Test functions in kumocloud.py.
     """
 
     def setUpIntTest(self):
@@ -37,7 +37,7 @@ class IntegrationTest(utc.IntegrationTest):
         # argv list must be valid settings
         self.unit_test_argv = [
             "supervise.py",  # module
-            "kumocloudv3",  # thermostat
+            "kumocloud",  # thermostat
             "0",  # zone
             "30",  # poll time in sec
             "1000",  # reconnect time in sec
@@ -45,17 +45,17 @@ class IntegrationTest(utc.IntegrationTest):
             "UNKNOWN_MODE",  # thermostat mode, no target
             "3",  # number of measurements
         ]
-        self.mod = kumocloudv3
-        self.mod_config = kumocloudv3_config
+        self.mod = kumocloud
+        self.mod_config = kumocloud_config
 
 
 @unittest.skipIf(
-    not utc.ENABLE_KUMOCLOUDV3_TESTS or kumocloudv3_import_error,
-    "kumocloudv3 tests are disabled",
+    not utc.ENABLE_KUMOCLOUD_TESTS or kumocloud_import_error,
+    "kumocloud tests are disabled",
 )
 class FunctionalIntegrationTest(IntegrationTest, utc.FunctionalIntegrationTest):
     """
-    Test functional performance of kumocloudv3.py.
+    Test functional performance of kumocloud.py.
     """
 
     def setUp(self):
@@ -68,12 +68,12 @@ class FunctionalIntegrationTest(IntegrationTest, utc.FunctionalIntegrationTest):
 
 
 @unittest.skipIf(
-    not utc.ENABLE_KUMOCLOUDV3_TESTS or kumocloudv3_import_error,
-    "kumocloudv3 tests are disabled",
+    not utc.ENABLE_KUMOCLOUD_TESTS or kumocloud_import_error,
+    "kumocloud tests are disabled",
 )
 class SuperviseIntegrationTest(IntegrationTest, utc.SuperviseIntegrationTest):
     """
-    Test supervise functionality of kumocloudv3.py.
+    Test supervise functionality of kumocloud.py.
     """
 
     def setUp(self):
@@ -82,12 +82,12 @@ class SuperviseIntegrationTest(IntegrationTest, utc.SuperviseIntegrationTest):
 
 
 @unittest.skipIf(
-    not utc.ENABLE_KUMOCLOUDV3_TESTS or kumocloudv3_import_error,
-    "kumocloudv3 tests are disabled",
+    not utc.ENABLE_KUMOCLOUD_TESTS or kumocloud_import_error,
+    "kumocloud tests are disabled",
 )
 class PerformanceIntegrationTest(IntegrationTest, utc.PerformanceIntegrationTest):
     """
-    Test performance of kumocloudv3.py.
+    Test performance of kumocloud.py.
     """
 
     def setUp(self):
