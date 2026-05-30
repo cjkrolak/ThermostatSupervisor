@@ -84,18 +84,18 @@ src.honeywell\_config module
    :undoc-members:
    :show-inheritance:
 
-src.kumocloud module
--------------------------------------
+src.kumocloudv3 module
+---------------------------------------
 
-.. automodule:: src.kumocloud
+.. automodule:: src.kumocloudv3
    :members:
    :undoc-members:
    :show-inheritance:
 
-src.kumocloud\_config module
----------------------------------------------
+src.kumocloudv3\_config module
+-----------------------------------------------
 
-.. automodule:: src.kumocloud_config
+.. automodule:: src.kumocloudv3_config
    :members:
    :undoc-members:
    :show-inheritance:

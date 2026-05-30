@@ -33,9 +33,6 @@ The following thermostat types are currently supported:
    * - 3M-50
      - mmm
      - 3M Filtrete 3M-50 radio thermostats
-   * - KumoCloud
-     - kumocloud
-     - Mitsubishi KumoCloud service (legacy API)
    * - KumoCloudv3
      - kumocloudv3
      - Mitsubishi KumoCloud service (v3 API)

@@ -2,7 +2,7 @@
 Shared zone name constants for all Kumo thermostat types.
 
 This module provides standardized zone names to ensure consistency
-across kumocloud, kumocloudv3, and kumolocal configurations.
+across kumocloudv3 and kumolocal configurations.
 """
 
 # Standard zone names used across all Kumo thermostat types
