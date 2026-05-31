@@ -85,7 +85,7 @@ src.honeywell\_config module
    :show-inheritance:
 
 src.kumocloud module
--------------------------------------
+---------------------------------------
 
 .. automodule:: src.kumocloud
    :members:
@@ -93,7 +93,7 @@ src.kumocloud module
    :show-inheritance:
 
 src.kumocloud\_config module
----------------------------------------------
+-----------------------------------------------
 
 .. automodule:: src.kumocloud_config
    :members:

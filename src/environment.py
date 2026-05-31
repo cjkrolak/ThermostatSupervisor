@@ -17,7 +17,6 @@ from src import utilities as util
 
 # thermostat config files
 from src import honeywell_config
-from src import kumocloud_config
 from src import kumolocal_config
 from src import mmm_config
 from src import nest_config
@@ -33,7 +32,6 @@ env_variables = {
     "FLASK_LIMITER_STORAGE_URI": None,
 }
 env_variables.update(honeywell_config.env_variables)
-env_variables.update(kumocloud_config.env_variables)
 env_variables.update(kumolocal_config.env_variables)
 env_variables.update(mmm_config.env_variables)
 env_variables.update(nest_config.env_variables)
