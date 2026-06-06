@@ -6,6 +6,8 @@ any changes to thermostat configs.
 """
 
 # built ins
+import sys
+
 import munch
 
 # local imports
@@ -112,6 +114,40 @@ class UserInputs(util.UserInputs):
 
         # initialize parent class
         super().__init__(argv_list, help_description, suppress_warnings, zone_name)
+
+    def parse_runtime_parameters(self, argv_list=None):
+        """Parse runtime parameters, normalizing thermostat-specific argv input."""
+        normalized_argv = self._normalize_runtime_argv(argv_list)
+        return super().parse_runtime_parameters(normalized_argv)
+
+    def _normalize_runtime_argv(self, argv_list=None):
+        """Add the configured thermostat type for module entry-point argv."""
+        argv_inputs = list(sys.argv if argv_list is None else argv_list)
+        if not self._should_prepend_thermostat_type(argv_inputs):
+            return argv_list
+
+        argv_inputs.insert(1, self.thermostat_type)
+        return argv_inputs
+
+    def _should_prepend_thermostat_type(self, argv_inputs):
+        """Return True when argv omits a thermostat type but includes a zone."""
+        if len(argv_inputs) <= 1 or self.thermostat_type not in SUPPORTED_THERMOSTATS:
+            return False
+
+        first_arg = str(argv_inputs[1]).strip()
+        if first_arg in SUPPORTED_THERMOSTATS:
+            return False
+
+        return self._is_supported_zone(first_arg, self.thermostat_type)
+
+    def _is_supported_zone(self, zone_number, thermostat_type):
+        """Return True if zone_number matches a supported zone for thermostat_type."""
+        try:
+            parsed_zone = int(zone_number)
+        except (TypeError, ValueError):
+            return False
+
+        return parsed_zone in SUPPORTED_THERMOSTATS[thermostat_type]["zones"]
 
     def initialize_user_inputs(self, parent_keys=None):
         """Populate user_inputs dictionary with thermostat-specific parameters.
