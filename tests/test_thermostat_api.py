@@ -10,7 +10,6 @@ import unittest
 
 # local imports
 from src import emulator_config
-from src import honeywell_config
 from src import thermostat_api as api
 from src import utilities as util
 from tests import unit_test_common as utc
@@ -219,10 +218,12 @@ class Test(utc.UnitTest):
         """Verify module entry points keep the configured thermostat type."""
         from unittest.mock import patch
 
-        with patch.object(sys, "argv", ["honeywell.py", str(honeywell_config.default_zone)]):
+        with patch.object(
+            sys, "argv", ["emulator.py", str(emulator_config.default_zone)]
+        ):
             uip = api.UserInputs(
                 argv_list=None,
-                thermostat_type=honeywell_config.ALIAS,
+                thermostat_type=emulator_config.ALIAS,
                 suppress_warnings=True,
             )
 
@@ -231,9 +232,9 @@ class Test(utc.UnitTest):
             uip.zone_name, api.input_flds.thermostat_type
         )
 
-        self.assertEqual(honeywell_config.ALIAS, thermostat_type)
+        self.assertEqual(emulator_config.ALIAS, thermostat_type)
         self.assertIsInstance(zone_number, int)
-        self.assertEqual(honeywell_config.default_zone, zone_number)
+        self.assertEqual(emulator_config.default_zone, zone_number)
 
 
 class RuntimeParameterTest(utc.RuntimeParameterTest):
