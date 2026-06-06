@@ -8,7 +8,8 @@ ALIAS = "kumolocal"
 
 # thermostat zones
 MAIN_LEVEL = 0  # zone 0
-BASEMENT = 1  # zone 1
+KITCHEN = 1  # zone 1
+BASEMENT = 2  # zone 2
 
 # constants
 MAX_HEAT_SETPOINT = 68
@@ -24,7 +25,7 @@ env_variables = {
 supported_configs = {
     "module": "kumolocal",
     "type": 5,
-    "zones": [MAIN_LEVEL, BASEMENT],
+    "zones": [MAIN_LEVEL, KITCHEN, BASEMENT],
     "modes": [
         "OFF_MODE",
         "HEAT_MODE",
@@ -46,6 +47,12 @@ metadata = {
     MAIN_LEVEL: {
         "ip_address": "192.168.86.229",  # local IP, for ref only.
         "zone_name": kumo_common_zones.ZONE_NAME_MAIN_LEVEL,
+        "host_name": "tbd",  # used for DNS lookup
+        "local_net_available": None,  # updated by local network detection
+    },
+    KITCHEN: {
+        "ip_address": "192.168.86.233",  # local IP, for ref only.
+        "zone_name": kumo_common_zones.ZONE_NAME_KITCHEN,
         "host_name": "tbd",  # used for DNS lookup
         "local_net_available": None,  # updated by local network detection
     },

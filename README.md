@@ -107,8 +107,8 @@ runtime parameters can be specified to override defaults either via single dash 
   * honeywell = zone 0 only
   * 3m50 = zones [0,1] on local net
   * sht31: 0 = local net, 1 = remote URL
-* kumocloud, kumolocal: [0,1]
-  * kumocloud: [0,1] (dynamically assigned based on the v3 API response)
+* kumocloud, kumolocal: [0,1,2]
+  * kumocloud: [0,1,2] (dynamically assigned based on the v3 API response)
   * blink = [0,1,2,3,4,5,6,7,8]
   * emulator = zone 0 only
 * argv[3] or '-p'= poll time in seconds (default is thermostat-specific)
