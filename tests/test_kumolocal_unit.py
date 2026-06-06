@@ -12,6 +12,7 @@ import unittest
 
 # local imports
 from src import kumolocal
+from src import kumo_common_zones
 from src import kumolocal_config
 from tests import unit_test_common as utc
 
@@ -200,6 +201,37 @@ class LocalNetworkDetectionUnitTest(utc.UnitTest):
 
         except ImportError:
             self.skipTest("kumolocal module not available for testing")
+
+
+class KumolocalConfigUnitTest(utc.UnitTest):
+    """Unit tests for kumolocal config zone definitions."""
+
+    def test_kumolocal_supports_three_zones(self):
+        """Test kumolocal supports 3 configured zones."""
+        self.assertEqual(
+            kumolocal_config.supported_configs["zones"],
+            [
+                kumolocal_config.MAIN_LEVEL,
+                kumolocal_config.KITCHEN,
+                kumolocal_config.BASEMENT,
+            ],
+        )
+        self.assertEqual(len(kumolocal_config.metadata), 3)
+
+    def test_kumolocal_zone_names_include_kitchen(self):
+        """Test kumolocal metadata includes the kitchen zone."""
+        self.assertEqual(
+            kumolocal_config.metadata[kumolocal_config.MAIN_LEVEL]["zone_name"],
+            kumo_common_zones.ZONE_NAME_MAIN_LEVEL,
+        )
+        self.assertEqual(
+            kumolocal_config.metadata[kumolocal_config.KITCHEN]["zone_name"],
+            kumo_common_zones.ZONE_NAME_KITCHEN,
+        )
+        self.assertEqual(
+            kumolocal_config.metadata[kumolocal_config.BASEMENT]["zone_name"],
+            kumo_common_zones.ZONE_NAME_BASEMENT,
+        )
 
 
 class KeyErrorHandlingUnitTest(utc.UnitTest):
