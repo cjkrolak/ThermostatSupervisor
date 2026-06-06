@@ -236,6 +236,26 @@ class Test(utc.UnitTest):
         self.assertIsInstance(zone_number, int)
         self.assertEqual(emulator_config.default_zone, zone_number)
 
+    def test_verify_required_env_variables_blink_2fa_optional(self):
+        """Verify blink pre-check does not require BLINK_2FA."""
+        from unittest.mock import patch
+
+        with patch.dict(
+            "os.environ",
+            {"BLINK_USERNAME": "test_user", "BLINK_PASSWORD": "test_pass"},
+            clear=False,
+        ):
+            self.assertTrue(
+                api.verify_required_env_variables("blink", "0", verbose=False)
+            )
+
+    def test_verify_required_env_variables_sht31_deferred_validation(self):
+        """Verify sht31 env validation is deferred to module runtime logic."""
+        with unittest.mock.patch.dict("os.environ", {}, clear=False):
+            self.assertTrue(
+                api.verify_required_env_variables("sht31", "0", verbose=False)
+            )
+
 
 class RuntimeParameterTest(utc.RuntimeParameterTest):
     """API Runtime parameter tests."""

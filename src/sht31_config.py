@@ -94,10 +94,8 @@ env_variables = {
     UNIT_TEST_ENV_KEY: None,
 }
 
-# min required env variables on all runs
-required_env_variables = {
-    "SHT31_REMOTE_IP_ADDRESS_": None,  # prefix only, excludes zone
-}
+# SHT31 performs zone-specific env var validation in runtime logic.
+required_env_variables = {}
 
 # supported thermostat configs
 supported_configs = {
