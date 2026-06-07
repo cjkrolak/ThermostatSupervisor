@@ -211,7 +211,7 @@ class KumolocalConfigUnitTest(utc.UnitTest):
         self.assertEqual(
             kumolocal_config.supported_configs["zones"],
             [
-                kumolocal_config.MAIN_LEVEL,
+                kumolocal_config.LIVING_ROOM,
                 kumolocal_config.KITCHEN,
                 kumolocal_config.BASEMENT,
             ],
@@ -221,8 +221,8 @@ class KumolocalConfigUnitTest(utc.UnitTest):
     def test_kumolocal_zone_names_include_kitchen(self):
         """Test kumolocal metadata includes the kitchen zone."""
         self.assertEqual(
-            kumolocal_config.metadata[kumolocal_config.MAIN_LEVEL]["zone_name"],
-            kumo_common_zones.ZONE_NAME_MAIN_LEVEL,
+            kumolocal_config.metadata[kumolocal_config.LIVING_ROOM]["zone_name"],
+            kumo_common_zones.ZONE_NAME_LIVING_ROOM,
         )
         self.assertEqual(
             kumolocal_config.metadata[kumolocal_config.KITCHEN]["zone_name"],
@@ -261,7 +261,7 @@ class IniParsingUnitTest(utc.UnitTest):
         """Test load_ip_addresses_from_ini returns True when the INI file exists."""
         import tempfile
         content = (
-            "[Main Level]\nip_address = 10.0.0.1\n"
+            "[Living Room]\nip_address = 10.0.0.1\n"
             "[Kitchen]\nip_address = 10.0.0.2\n"
             "[Basement]\nip_address = 10.0.0.3\n"
         )
@@ -288,7 +288,7 @@ class IniParsingUnitTest(utc.UnitTest):
         """Test that IPs in the INI file are loaded into metadata."""
         import tempfile
         content = (
-            "[Main Level]\nip_address = 10.0.1.1\n"
+            "[Living Room]\nip_address = 10.0.1.1\n"
             "[Kitchen]\nip_address = 10.0.1.2\n"
             "[Basement]\nip_address = 10.0.1.3\n"
         )
@@ -300,7 +300,7 @@ class IniParsingUnitTest(utc.UnitTest):
         try:
             kumolocal_config.load_ip_addresses_from_ini(tmp_path)
             self.assertEqual(
-                kumolocal_config.metadata[kumolocal_config.MAIN_LEVEL]["ip_address"],
+                kumolocal_config.metadata[kumolocal_config.LIVING_ROOM]["ip_address"],
                 "10.0.1.1",
             )
             self.assertEqual(
@@ -333,7 +333,7 @@ class IniParsingUnitTest(utc.UnitTest):
         """Test that sections not matching any zone are silently ignored."""
         import tempfile
         content = (
-            "[Main Level]\nip_address = 10.0.2.1\n"
+            "[Living Room]\nip_address = 10.0.2.1\n"
             "[UnknownZone]\nip_address = 10.0.2.99\n"
         )
         with tempfile.NamedTemporaryFile(
@@ -344,7 +344,7 @@ class IniParsingUnitTest(utc.UnitTest):
         try:
             kumolocal_config.load_ip_addresses_from_ini(tmp_path)
             self.assertEqual(
-                kumolocal_config.metadata[kumolocal_config.MAIN_LEVEL]["ip_address"],
+                kumolocal_config.metadata[kumolocal_config.LIVING_ROOM]["ip_address"],
                 "10.0.2.1",
             )
         finally:
@@ -483,7 +483,7 @@ class TargetZoneIdResolutionUnitTest(utc.UnitTest):
     def test_get_target_zone_id_normalizes_zone_name(self):
         """Test get_target_zone_id matches zone names with format differences."""
         thermostat = kumolocal.ThermostatClass.__new__(kumolocal.ThermostatClass)
-        thermostat.zone_name = "Main Level"
+        thermostat.zone_name = "Living Room"
         thermostat.zone_number = 0
         thermostat.device_id = None
         thermostat.verbose = False
@@ -500,7 +500,7 @@ class TargetZoneIdResolutionUnitTest(utc.UnitTest):
     def test_get_target_zone_id_falls_back_to_zone_index(self):
         """Test get_target_zone_id falls back to zone index when names differ."""
         thermostat = kumolocal.ThermostatClass.__new__(kumolocal.ThermostatClass)
-        thermostat.zone_name = "Main Level"
+        thermostat.zone_name = "Living Room"
         thermostat.zone_number = 0
         thermostat.device_id = None
         thermostat.verbose = False
@@ -517,7 +517,7 @@ class TargetZoneIdResolutionUnitTest(utc.UnitTest):
     def test_get_target_zone_id_raises_informative_keyerror(self):
         """Test get_target_zone_id raises informative error when zone not found."""
         thermostat = kumolocal.ThermostatClass.__new__(kumolocal.ThermostatClass)
-        thermostat.zone_name = "Main Level"
+        thermostat.zone_name = "Living Room"
         thermostat.zone_number = 5
         thermostat.device_id = None
         thermostat.verbose = False
@@ -527,7 +527,7 @@ class TargetZoneIdResolutionUnitTest(utc.UnitTest):
 
         with self.assertRaisesRegex(
             KeyError,
-            r"Configured zone name 'Main Level' was not found.*"
+            r"Configured zone name 'Living Room' was not found.*"
             r"zone index 5 is out of valid range \[0\.\.0\]",
         ):
             thermostat.get_target_zone_id(5)
@@ -535,7 +535,7 @@ class TargetZoneIdResolutionUnitTest(utc.UnitTest):
     def test_get_target_zone_id_non_integer_zone_raises_keyerror(self):
         """Test non-integer zone values don't trigger TypeError in fallback logic."""
         thermostat = kumolocal.ThermostatClass.__new__(kumolocal.ThermostatClass)
-        thermostat.zone_name = "Main Level"
+        thermostat.zone_name = "Living Room"
         thermostat.zone_number = 0
         thermostat.device_id = None
         thermostat.verbose = False
@@ -563,7 +563,7 @@ class ThermostatZoneModeUnitTest(utc.UnitTest):
         class MockThermostat:
             device_id = MockDeviceId()
             zone_number = 0
-            zone_name = "Main Level"
+            zone_name = "Living Room"
 
             def get_target_zone_id(self_inner, zone_name):
                 return self_inner.device_id
@@ -571,7 +571,7 @@ class ThermostatZoneModeUnitTest(utc.UnitTest):
         zone = kumolocal.ThermostatZone.__new__(kumolocal.ThermostatZone)
         zone.verbose = False
         zone.zone_number = 0
-        zone.zone_name = "Main Level"
+        zone.zone_name = "Living Room"
         zone.fetch_interval_sec = 60
         import time
         zone.last_fetch_time = time.time() - 2 * zone.fetch_interval_sec
@@ -661,12 +661,12 @@ class LocalAddressUnitTest(utc.UnitTest):
         obj = self._make_thermostat_class()
         obj._units = {
             "SERIAL1": {
-                "label": kumo_common_zones.ZONE_NAME_MAIN_LEVEL,
+                "label": kumo_common_zones.ZONE_NAME_LIVING_ROOM,
                 "address": "10.0.0.99",  # stale/wrong address
             },
         }
         obj._apply_local_addresses()
-        expected_ip = kumolocal_config.metadata[kumolocal_config.MAIN_LEVEL]["ip_address"]
+        expected_ip = kumolocal_config.metadata[kumolocal_config.LIVING_ROOM]["ip_address"]
         self.assertEqual(obj._units["SERIAL1"]["address"], expected_ip)
 
     def test_apply_local_addresses_skips_zero_address(self):

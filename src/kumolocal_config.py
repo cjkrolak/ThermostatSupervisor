@@ -10,7 +10,7 @@ from src import kumo_common_zones
 ALIAS = "kumolocal"
 
 # thermostat zones
-MAIN_LEVEL = 0  # zone 0
+LIVING_ROOM = 0  # zone 0
 KITCHEN = 1  # zone 1
 BASEMENT = 2  # zone 2
 
@@ -28,7 +28,7 @@ env_variables = {
 supported_configs = {
     "module": "kumolocal",
     "type": 5,
-    "zones": [MAIN_LEVEL, KITCHEN, BASEMENT],
+    "zones": [LIVING_ROOM, KITCHEN, BASEMENT],
     "modes": [
         "OFF_MODE",
         "HEAT_MODE",
@@ -51,9 +51,9 @@ INI_FILE = "kumolocal.ini"
 # 'ip_address' is loaded from kumolocal.ini; falls back to defaults below.
 # 'local_net_available' is set by local network detection
 metadata = {
-    MAIN_LEVEL: {
+    LIVING_ROOM: {
         "ip_address": "192.168.86.84",  # default; overridden by kumolocal.ini
-        "zone_name": kumo_common_zones.ZONE_NAME_MAIN_LEVEL,
+        "zone_name": kumo_common_zones.ZONE_NAME_LIVING_ROOM,
         "host_name": "tbd",  # used for DNS lookup
         "local_net_available": None,  # updated by local network detection
     },
@@ -76,7 +76,7 @@ def load_ip_addresses_from_ini(ini_file=None):
     """Load IP addresses from kumolocal.ini and update the metadata dict.
 
     Each section name in the INI file must match the zone_name for a zone
-    (e.g. "Main Level", "Kitchen", "Basement").  If the file is not found,
+    (e.g. "Living Room", "Kitchen", "Basement").  If the file is not found,
     the default IP addresses already in the metadata dict are kept.
 
     inputs:

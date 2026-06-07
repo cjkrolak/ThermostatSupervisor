@@ -240,7 +240,7 @@ class ThermostatClass(
         matched_zone_name = self.zone_name
 
         # Backward-compatible fallback for name format mismatches
-        # (e.g., "Main Level" vs "MainLevel")
+        # (e.g., "Living Room" vs "LivingRoom")
         if device_id is None:
             target_zone_name = "".join(
                 c.lower() for c in self.zone_name if c.isalnum()

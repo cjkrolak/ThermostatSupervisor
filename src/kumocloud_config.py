@@ -9,9 +9,9 @@ ALIAS = "kumocloud"
 # thermostat zones
 # NOTE: Zone assignments are dynamically updated from v3 API at runtime
 # The values below are defaults/fallbacks in case dynamic assignment fails
-# v3 API zone assignments are not static - sometimes zone 0 is MAIN_LIVING,
-# other times zone 1 is MAIN_LIVING, depending on the actual installation
-MAIN_LIVING = 0  # zone 0 (default, updated dynamically at runtime)
+# v3 API zone assignments are not static - sometimes zone 0 is LIVING_ROOM,
+# other times zone 1 is LIVING_ROOM, depending on the actual installation
+LIVING_ROOM = 0  # zone 0 (default, updated dynamically at runtime)
 KITCHEN = 1  # zone 1 (default, updated dynamically at runtime)
 BASEMENT = 2  # zone 2 (default, updated dynamically at runtime)
 
@@ -29,7 +29,7 @@ env_variables = {
 supported_configs = {
     "module": "kumocloud",
     "type": 4,
-    "zones": [MAIN_LIVING, KITCHEN, BASEMENT],
+    "zones": [LIVING_ROOM, KITCHEN, BASEMENT],
     "modes": [
         "OFF_MODE",
         "HEAT_MODE",
@@ -45,8 +45,8 @@ supported_configs = {
 # 'zone_name' is updated by Zone.get_zone_name()
 # 'host_name' is just for reference
 metadata = {
-    MAIN_LIVING: {
-        "zone_name": kumo_common_zones.ZONE_NAME_MAIN_LEVEL,
+    LIVING_ROOM: {
+        "zone_name": kumo_common_zones.ZONE_NAME_LIVING_ROOM,
         "host_name": "tbd",
         "serial_number": None,
     },
