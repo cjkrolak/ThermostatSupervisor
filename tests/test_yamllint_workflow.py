@@ -5,6 +5,7 @@ Tests that yamllint configuration works and catches common YAML issues.
 """
 
 import os
+import re
 import shutil
 import subprocess
 import tempfile
@@ -190,20 +191,19 @@ class TestYamlLintWorkflow(unittest.TestCase):
             content,
             "github-unit-tests workflow should assign id 'lint' to the lint step",
         )
-        # Post-lint steps must not use 'if: always()' - they should check lint outcome
-        self.assertNotIn(
-            "if: always()",
-            content,
-            "github-unit-tests workflow should not use 'if: always()' "
-            "- post-lint steps must be gated on lint success",
-        )
-        # Post-lint steps must use lint outcome condition
-        self.assertIn(
-            "steps.lint.outcome == 'success'",
-            content,
-            "github-unit-tests workflow post-lint steps should check "
-            "steps.lint.outcome == 'success'",
-        )
+        post_lint_steps = [
+            "Upload coverage reports",
+            "Upload coverage to GitHub",
+            "Trigger SonarQube workflow",
+        ]
+        for step_name in post_lint_steps:
+            self.assertRegex(
+                content,
+                rf"- name: {re.escape(step_name)}\n"
+                r"(?:[ ]{8,}.*\n)*?[ ]{8,}if: steps\.lint\.outcome == 'success'",
+                f"github-unit-tests step '{step_name}' should be gated with "
+                "if: steps.lint.outcome == 'success'",
+            )
 
     def test_ado_pipeline_lint_bypass_conditions(self):
         """Test that ADO pipeline skips post-lint steps on lint failure."""
@@ -214,19 +214,21 @@ class TestYamlLintWorkflow(unittest.TestCase):
             content,
             "ADO pipeline lint step should set lintPassed variable on success",
         )
-        # Post-lint steps must not use 'condition: always()'
-        self.assertNotIn(
-            "condition: always()",
-            content,
-            "ADO pipeline should not use 'condition: always()' "
-            "- post-lint steps must be gated on lint success",
-        )
-        # Post-lint steps must check lintPassed variable
-        self.assertIn(
-            "eq(variables['lintPassed'], 'true')",
-            content,
-            "ADO pipeline post-lint steps should check lintPassed variable",
-        )
+        post_lint_steps = [
+            "Publish Code Coverage",
+            "Upload Coverage Data",
+            "Trigger SonarQube Workflow",
+        ]
+        for step_name in post_lint_steps:
+            self.assertRegex(
+                content,
+                rf"displayName: {re.escape(step_name)}\n"
+                r"(?:[ ]{4,}.*\n)*?[ ]{4,}condition: "
+                r"and\(succeededOrFailed\(\), eq\(variables\['lintPassed'\], 'true'\)\)",
+                f"ADO pipeline step '{step_name}' should be gated with "
+                "condition: and(succeededOrFailed(), "
+                "eq(variables['lintPassed'], 'true'))",
+            )
 
     def test_yamllint_catches_common_issues(self):
         """Test that yamllint catches common formatting issues."""
