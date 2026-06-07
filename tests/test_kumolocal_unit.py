@@ -432,5 +432,77 @@ class TargetZoneIdResolutionUnitTest(utc.UnitTest):
             thermostat.get_target_zone_id("invalid-zone")
 
 
+class ThermostatZoneModeUnitTest(utc.UnitTest):
+    """Unit tests for ThermostatZone mode methods when device data is unavailable."""
+
+    def _make_zone(self, mode_return_value):
+        """Create a ThermostatZone-like object with a mocked device_id."""
+
+        class MockDeviceId:
+            def get_mode(self_inner):
+                return mode_return_value
+
+        class MockThermostat:
+            device_id = MockDeviceId()
+            zone_number = 0
+            zone_name = "Main Level"
+
+            def get_target_zone_id(self_inner, zone_name):
+                return self_inner.device_id
+
+        zone = kumolocal.ThermostatZone.__new__(kumolocal.ThermostatZone)
+        zone.verbose = False
+        zone.zone_number = 0
+        zone.zone_name = "Main Level"
+        zone.fetch_interval_sec = 60
+        import time
+        zone.last_fetch_time = time.time() - 2 * zone.fetch_interval_sec
+        zone.device_id = MockDeviceId()
+        zone.Thermostat = MockThermostat()
+        # set up system_switch_position as the constructor would
+        from src import thermostat_common as tc
+        from src import utilities as util
+        zone.system_switch_position = dict(tc.ThermostatCommonZone.system_switch_position)
+        zone.system_switch_position[tc.ThermostatCommonZone.COOL_MODE] = "cool"
+        zone.system_switch_position[tc.ThermostatCommonZone.HEAT_MODE] = "heat"
+        zone.system_switch_position[tc.ThermostatCommonZone.OFF_MODE] = "off"
+        zone.system_switch_position[tc.ThermostatCommonZone.DRY_MODE] = "dry"
+        zone.system_switch_position[tc.ThermostatCommonZone.AUTO_MODE] = "auto"
+        zone.system_switch_position[tc.ThermostatCommonZone.FAN_MODE] = "vent"
+        # override refresh_zone_info to avoid network calls
+        zone.refresh_zone_info = lambda force_refresh=False: None
+        return zone
+
+    def test_get_system_switch_position_returns_off_when_mode_is_none(self):
+        """Test get_system_switch_position returns 'off' when get_mode() returns None."""
+        zone = self._make_zone(mode_return_value=None)
+        result = zone.get_system_switch_position()
+        self.assertEqual(result, "off")
+
+    def test_get_system_switch_position_returns_mode_when_available(self):
+        """Test get_system_switch_position returns actual mode when get_mode() succeeds."""
+        zone = self._make_zone(mode_return_value="heat")
+        result = zone.get_system_switch_position()
+        self.assertEqual(result, "heat")
+
+    def test_is_power_on_returns_0_when_mode_is_none(self):
+        """Test is_power_on returns 0 (device unreachable) when get_mode() returns None."""
+        zone = self._make_zone(mode_return_value=None)
+        result = zone.is_power_on()
+        self.assertEqual(result, 0)
+
+    def test_is_power_on_returns_0_when_mode_is_off(self):
+        """Test is_power_on returns 0 when mode is 'off'."""
+        zone = self._make_zone(mode_return_value="off")
+        result = zone.is_power_on()
+        self.assertEqual(result, 0)
+
+    def test_is_power_on_returns_1_when_mode_is_heat(self):
+        """Test is_power_on returns 1 when mode is 'heat'."""
+        zone = self._make_zone(mode_return_value="heat")
+        result = zone.is_power_on()
+        self.assertEqual(result, 1)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

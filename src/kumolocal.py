@@ -797,7 +797,10 @@ class ThermostatZone(tc.ThermostatCommonZone):
     def is_power_on(self):
         """Return 1 if power relay is active, else 0."""
         self.refresh_zone_info()
-        return int(self.device_id.get_mode() != "off")
+        mode = self.device_id.get_mode()
+        if mode is None:
+            return 0
+        return int(mode != "off")
 
     def is_fan_on(self):
         """Return 1 if fan relay is active, else 0."""
@@ -903,7 +906,11 @@ class ThermostatZone(tc.ThermostatCommonZone):
                   in self.system_switch_position
         """
         self.refresh_zone_info()
-        return self.device_id.get_mode()
+        mode = self.device_id.get_mode()
+        if mode is None:
+            # device data not available, return off mode as safe default
+            return self.system_switch_position[tc.ThermostatCommonZone.OFF_MODE]
+        return mode
 
     def set_heat_setpoint(self, temp: int) -> None:
         """
