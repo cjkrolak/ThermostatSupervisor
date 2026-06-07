@@ -359,5 +359,78 @@ class KeyErrorHandlingUnitTest(utc.UnitTest):
         return False
 
 
+class TargetZoneIdResolutionUnitTest(utc.UnitTest):
+    """Unit tests for kumolocal target zone ID resolution."""
+
+    def test_get_target_zone_id_normalizes_zone_name(self):
+        """Test get_target_zone_id matches zone names with format differences."""
+        thermostat = kumolocal.ThermostatClass.__new__(kumolocal.ThermostatClass)
+        thermostat.zone_name = "Main Level"
+        thermostat.zone_number = 0
+        thermostat.device_id = None
+        thermostat.verbose = False
+        thermostat.make_pykumos = lambda: {  # type: ignore[method-assign]
+            "MainLevel": "dev-main",
+            "Kitchen": "dev-kitchen",
+        }
+
+        device_id = thermostat.get_target_zone_id(0)
+
+        self.assertEqual(device_id, "dev-main")
+        self.assertEqual(thermostat.zone_name, "MainLevel")
+
+    def test_get_target_zone_id_falls_back_to_zone_index(self):
+        """Test get_target_zone_id falls back to zone index when names differ."""
+        thermostat = kumolocal.ThermostatClass.__new__(kumolocal.ThermostatClass)
+        thermostat.zone_name = "Main Level"
+        thermostat.zone_number = 0
+        thermostat.device_id = None
+        thermostat.verbose = False
+        thermostat.make_pykumos = lambda: {  # type: ignore[method-assign]
+            "Ground Floor": "dev-main",
+            "Kitchen": "dev-kitchen",
+        }
+
+        device_id = thermostat.get_target_zone_id(0)
+
+        self.assertEqual(device_id, "dev-main")
+        self.assertEqual(thermostat.zone_name, "Ground Floor")
+
+    def test_get_target_zone_id_raises_informative_keyerror(self):
+        """Test get_target_zone_id raises informative error when zone not found."""
+        thermostat = kumolocal.ThermostatClass.__new__(kumolocal.ThermostatClass)
+        thermostat.zone_name = "Main Level"
+        thermostat.zone_number = 5
+        thermostat.device_id = None
+        thermostat.verbose = False
+        thermostat.make_pykumos = lambda: {  # type: ignore[method-assign]
+            "Basement": "dev-basement"
+        }
+
+        with self.assertRaisesRegex(
+            KeyError,
+            r"Configured zone name 'Main Level' was not found.*"
+            r"zone index 5 is out of valid range \[0\.\.0\]",
+        ):
+            thermostat.get_target_zone_id(5)
+
+    def test_get_target_zone_id_non_integer_zone_raises_keyerror(self):
+        """Test non-integer zone values don't trigger TypeError in fallback logic."""
+        thermostat = kumolocal.ThermostatClass.__new__(kumolocal.ThermostatClass)
+        thermostat.zone_name = "Main Level"
+        thermostat.zone_number = 0
+        thermostat.device_id = None
+        thermostat.verbose = False
+        thermostat.make_pykumos = lambda: {  # type: ignore[method-assign]
+            "Basement": "dev-basement"
+        }
+
+        with self.assertRaisesRegex(
+            KeyError,
+            r"zone index 'invalid-zone' is out of valid range \[0\.\.0\]",
+        ):
+            thermostat.get_target_zone_id("invalid-zone")
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
