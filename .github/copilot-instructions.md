@@ -95,6 +95,10 @@ This project is a **Thermostat Supervisor** application that:
 - **MANDATORY**: All changes MUST be thoroughly tested before committing.
 - **ZERO tolerance for untested code**: Every change must be validated before
   commit.
+- **MANDATORY linting**: Run `flake8 --max-line-length=88` on all modified
+  Python files before every commit. **No commit may introduce new flake8
+  errors.** Fix all E501 (line too long), F401 (unused import), and other
+  violations before committing.
 - **Test workflows and scripts locally**:
   - For shell scripts: Run in a test shell to verify syntax and logic
   - For YAML workflows: Test bash scripts extracted from workflow files

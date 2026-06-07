@@ -615,8 +615,9 @@ class ThermostatZoneModeUnitTest(utc.UnitTest):
         zone.Thermostat = MockThermostat()
         # set up system_switch_position as the constructor would
         from src import thermostat_common as tc
-        from src import utilities as util
-        zone.system_switch_position = dict(tc.ThermostatCommonZone.system_switch_position)
+        zone.system_switch_position = dict(
+            tc.ThermostatCommonZone.system_switch_position
+        )
         zone.system_switch_position[tc.ThermostatCommonZone.COOL_MODE] = "cool"
         zone.system_switch_position[tc.ThermostatCommonZone.HEAT_MODE] = "heat"
         zone.system_switch_position[tc.ThermostatCommonZone.OFF_MODE] = "off"
@@ -628,19 +629,19 @@ class ThermostatZoneModeUnitTest(utc.UnitTest):
         return zone
 
     def test_get_system_switch_position_returns_off_when_mode_is_none(self):
-        """Test get_system_switch_position returns 'off' when get_mode() returns None."""
+        """get_system_switch_position returns 'off' when get_mode() returns None."""
         zone = self._make_zone(mode_return_value=None)
         result = zone.get_system_switch_position()
         self.assertEqual(result, "off")
 
     def test_get_system_switch_position_returns_mode_when_available(self):
-        """Test get_system_switch_position returns actual mode when get_mode() succeeds."""
+        """get_system_switch_position returns actual mode when get_mode() succeeds."""
         zone = self._make_zone(mode_return_value="heat")
         result = zone.get_system_switch_position()
         self.assertEqual(result, "heat")
 
     def test_is_power_on_returns_0_when_mode_is_none(self):
-        """Test is_power_on returns 0 (device unreachable) when get_mode() returns None."""
+        """is_power_on returns 0 (device unreachable) when get_mode() returns None."""
         zone = self._make_zone(mode_return_value=None)
         result = zone.is_power_on()
         self.assertEqual(result, 0)
@@ -692,7 +693,7 @@ class LocalAddressUnitTest(utc.UnitTest):
         self.assertEqual(obj._units["SERIAL1"]["address"], expected_ip)
 
     def test_apply_local_addresses_overwrites_stale_address(self):
-        """Test _apply_local_addresses overwrites a stale address for a matching unit."""
+        """_apply_local_addresses overwrites a stale address for a matching unit."""
         from src import kumo_common_zones
         obj = self._make_thermostat_class()
         obj._units = {
@@ -702,7 +703,8 @@ class LocalAddressUnitTest(utc.UnitTest):
             },
         }
         obj._apply_local_addresses()
-        expected_ip = kumolocal_config.metadata[kumolocal_config.LIVING_ROOM]["ip_address"]
+        expected_ip = kumolocal_config.metadata[
+            kumolocal_config.LIVING_ROOM]["ip_address"]
         self.assertEqual(obj._units["SERIAL1"]["address"], expected_ip)
 
     def test_apply_local_addresses_skips_zero_address(self):
@@ -730,7 +732,7 @@ class LocalAddressUnitTest(utc.UnitTest):
 
     def test_fetch_if_needed_calls_try_setup_then_apply_addresses(self):
         """Test _fetch_if_needed calls try_setup then _apply_local_addresses."""
-        from unittest.mock import MagicMock, patch
+        from unittest.mock import patch
         obj = self._make_thermostat_class()
         obj._need_fetch = True
         call_order = []
@@ -783,7 +785,7 @@ class LocalAddressUnitTest(utc.UnitTest):
 
     def test_fetch_if_needed_calls_try_setup_when_units_empty(self):
         """Test _fetch_if_needed calls try_setup on first init when _units is empty."""
-        from unittest.mock import MagicMock, patch
+        from unittest.mock import patch
         obj = self._make_thermostat_class()
         obj._need_fetch = True
         obj._units = {}  # empty — first initialization
@@ -819,7 +821,7 @@ class LocalAddressUnitTest(utc.UnitTest):
         return zone, mock_device, mock_thermostat
 
     def test_refresh_zone_info_calls_update_status_on_existing_device(self):
-        """Test refresh_zone_info calls update_status on existing device, not get_target_zone_id.
+        """refresh_zone_info reuses existing device, does not call get_target_zone_id.
 
         On periodic refreshes, the existing PyKumo device object should be reused
         and only update_status() called — no new PyKumo objects should be created

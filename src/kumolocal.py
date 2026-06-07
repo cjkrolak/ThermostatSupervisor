@@ -193,7 +193,8 @@ class ThermostatClass(
         if not name_to_ip:
             return
 
-        for unit in self._units.values():  # pylint: disable=access-member-before-definition
+        # pylint: disable=access-member-before-definition
+        for unit in self._units.values():
             label = unit.get("label", "")
             normalized_label = "".join(c.lower() for c in label if c.isalnum())
             ip = name_to_ip.get(normalized_label)
@@ -227,7 +228,8 @@ class ThermostatClass(
             None
         """
         if self._need_fetch:  # pylint: disable=access-member-before-definition
-            if not getattr(self, "_units", {}):  # pylint: disable=access-member-before-definition
+            # pylint: disable=access-member-before-definition
+            if not getattr(self, "_units", {}):
                 # First initialization or after reconnect: run full cloud setup.
                 # try_setup() fetches V3 credentials and calls probe_ip per device.
                 self.try_setup()  # sets self._need_fetch = False internally
@@ -235,7 +237,8 @@ class ThermostatClass(
                 self._apply_local_addresses()
             else:
                 # Credentials already loaded; skip try_setup/probe_ip on refresh.
-                self._need_fetch = False  # pylint: disable=access-member-before-definition
+                # pylint: disable=access-member-before-definition
+                self._need_fetch = False
 
     def get_target_zone_id(self, zone=0):
         """
