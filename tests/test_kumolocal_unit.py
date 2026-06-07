@@ -234,6 +234,124 @@ class KumolocalConfigUnitTest(utc.UnitTest):
         )
 
 
+class IniParsingUnitTest(utc.UnitTest):
+    """Unit tests for load_ip_addresses_from_ini()."""
+
+    def setUp(self):
+        """Save original metadata IPs before each test."""
+        super().setUp()
+        self.print_test_name()
+        self.original_ips = {
+            zone_id: meta["ip_address"]
+            for zone_id, meta in kumolocal_config.metadata.items()
+        }
+
+    def tearDown(self):
+        """Restore original metadata IPs after each test."""
+        for zone_id, ip in self.original_ips.items():
+            kumolocal_config.metadata[zone_id]["ip_address"] = ip
+        super().tearDown()
+
+    def _write_ini(self, path, content):
+        """Write content to a temp INI file."""
+        with open(path, "w") as f:
+            f.write(content)
+
+    def test_load_ip_addresses_returns_true_when_file_found(self):
+        """Test load_ip_addresses_from_ini returns True when the INI file exists."""
+        import tempfile
+        content = (
+            "[Main Level]\nip_address = 10.0.0.1\n"
+            "[Kitchen]\nip_address = 10.0.0.2\n"
+            "[Basement]\nip_address = 10.0.0.3\n"
+        )
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".ini", delete=False
+        ) as tmp:
+            tmp.write(content)
+            tmp_path = tmp.name
+        try:
+            result = kumolocal_config.load_ip_addresses_from_ini(tmp_path)
+            self.assertTrue(result)
+        finally:
+            import os
+            os.unlink(tmp_path)
+
+    def test_load_ip_addresses_returns_false_when_file_missing(self):
+        """Test load_ip_addresses_from_ini returns False when the file is missing."""
+        result = kumolocal_config.load_ip_addresses_from_ini(
+            "/tmp/nonexistent_kumolocal.ini"
+        )
+        self.assertFalse(result)
+
+    def test_load_ip_addresses_updates_metadata_from_ini(self):
+        """Test that IPs in the INI file are loaded into metadata."""
+        import tempfile
+        content = (
+            "[Main Level]\nip_address = 10.0.1.1\n"
+            "[Kitchen]\nip_address = 10.0.1.2\n"
+            "[Basement]\nip_address = 10.0.1.3\n"
+        )
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".ini", delete=False
+        ) as tmp:
+            tmp.write(content)
+            tmp_path = tmp.name
+        try:
+            kumolocal_config.load_ip_addresses_from_ini(tmp_path)
+            self.assertEqual(
+                kumolocal_config.metadata[kumolocal_config.MAIN_LEVEL]["ip_address"],
+                "10.0.1.1",
+            )
+            self.assertEqual(
+                kumolocal_config.metadata[kumolocal_config.KITCHEN]["ip_address"],
+                "10.0.1.2",
+            )
+            self.assertEqual(
+                kumolocal_config.metadata[kumolocal_config.BASEMENT]["ip_address"],
+                "10.0.1.3",
+            )
+        finally:
+            import os
+            os.unlink(tmp_path)
+
+    def test_load_ip_addresses_keeps_defaults_when_file_missing(self):
+        """Test that default IPs are preserved when the INI file is absent."""
+        defaults = {
+            zone_id: meta["ip_address"]
+            for zone_id, meta in kumolocal_config.metadata.items()
+        }
+        kumolocal_config.load_ip_addresses_from_ini(
+            "/tmp/nonexistent_kumolocal.ini"
+        )
+        for zone_id, ip in defaults.items():
+            self.assertEqual(
+                kumolocal_config.metadata[zone_id]["ip_address"], ip
+            )
+
+    def test_load_ip_addresses_ignores_unknown_sections(self):
+        """Test that sections not matching any zone are silently ignored."""
+        import tempfile
+        content = (
+            "[Main Level]\nip_address = 10.0.2.1\n"
+            "[UnknownZone]\nip_address = 10.0.2.99\n"
+        )
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".ini", delete=False
+        ) as tmp:
+            tmp.write(content)
+            tmp_path = tmp.name
+        try:
+            kumolocal_config.load_ip_addresses_from_ini(tmp_path)
+            self.assertEqual(
+                kumolocal_config.metadata[kumolocal_config.MAIN_LEVEL]["ip_address"],
+                "10.0.2.1",
+            )
+        finally:
+            import os
+            os.unlink(tmp_path)
+
+
 class KeyErrorHandlingUnitTest(utc.UnitTest):
     """
     Unit tests for enhanced KeyError handling in kumolocal.py.
