@@ -167,6 +167,43 @@ class ThermostatClass(
         """
         return kumolocal_config.metadata[self.zone_number]["zone_name"]
 
+    def _get_candidate_ips(self):
+        """Build candidate_ips dict from kumolocal_config.metadata.
+
+        Returns a dict mapping zone keys to IP addresses, for use as
+        candidate_ips in pykumo's try_setup() when cloud-provided addresses
+        are missing or empty.
+
+        inputs:
+            None
+        returns:
+            (dict or None): {key: ip_address} for each zone with a configured
+                IP, or None if no IPs are configured.
+        """
+        candidate_ips = {}
+        for zone_id, meta in kumolocal_config.metadata.items():
+            ip = meta.get("ip_address")
+            if ip and ip != "0.0.0.0":
+                # key is arbitrary; try_setup only uses the values (IPs) for probing
+                candidate_ips[f"zone_{zone_id}"] = ip
+        return candidate_ips if candidate_ips else None
+
+    def _fetch_if_needed(self):
+        """Fetch configuration from server if not already done.
+
+        Overrides KumoCloudAccount._fetch_if_needed to pass local IP addresses
+        from kumolocal_config.metadata as candidate_ips, so that devices whose
+        cloud-registered address is missing or stale can still be resolved via
+        the locally configured IPs.
+
+        inputs:
+            None
+        returns:
+            None
+        """
+        if self._need_fetch:  # pylint: disable=access-member-before-definition
+            self.try_setup(candidate_ips=self._get_candidate_ips())
+
     def get_target_zone_id(self, zone=0):
         """
         Return the target zone ID.

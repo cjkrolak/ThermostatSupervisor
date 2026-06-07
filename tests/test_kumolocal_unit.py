@@ -504,5 +504,83 @@ class ThermostatZoneModeUnitTest(utc.UnitTest):
         self.assertEqual(result, 1)
 
 
+class CandidateIpsUnitTest(utc.UnitTest):
+    """Unit tests for _get_candidate_ips and _fetch_if_needed override."""
+
+    def setUp(self):
+        """Setup for tests."""
+        super().setUp()
+        self.print_test_name()
+        import copy
+        self.original_metadata = copy.deepcopy(kumolocal_config.metadata)
+
+    def tearDown(self):
+        """Restore metadata after each test."""
+        kumolocal_config.metadata.clear()
+        kumolocal_config.metadata.update(self.original_metadata)
+        super().tearDown()
+
+    def _make_thermostat_class(self):
+        """Create a ThermostatClass instance without calling __init__."""
+        obj = kumolocal.ThermostatClass.__new__(kumolocal.ThermostatClass)
+        return obj
+
+    def test_get_candidate_ips_returns_configured_ips(self):
+        """Test _get_candidate_ips returns all configured IPs from metadata."""
+        obj = self._make_thermostat_class()
+        candidate_ips = obj._get_candidate_ips()
+        self.assertIsNotNone(candidate_ips)
+        # Should include an entry for each zone that has an ip_address
+        expected_ips = set(
+            meta["ip_address"]
+            for meta in kumolocal_config.metadata.values()
+            if meta.get("ip_address") and meta["ip_address"] != "0.0.0.0"
+        )
+        self.assertEqual(set(candidate_ips.values()), expected_ips)
+
+    def test_get_candidate_ips_excludes_zero_address(self):
+        """Test _get_candidate_ips excludes 0.0.0.0 entries."""
+        kumolocal_config.metadata[0]["ip_address"] = "0.0.0.0"
+        obj = self._make_thermostat_class()
+        candidate_ips = obj._get_candidate_ips()
+        if candidate_ips:
+            self.assertNotIn("0.0.0.0", candidate_ips.values())
+
+    def test_get_candidate_ips_returns_none_when_no_ips(self):
+        """Test _get_candidate_ips returns None when no IPs are configured."""
+        for meta in kumolocal_config.metadata.values():
+            meta["ip_address"] = None
+        obj = self._make_thermostat_class()
+        result = obj._get_candidate_ips()
+        self.assertIsNone(result)
+
+    def test_fetch_if_needed_calls_try_setup_with_candidate_ips(self):
+        """Test _fetch_if_needed calls try_setup with candidate_ips from metadata."""
+        from unittest.mock import MagicMock, patch
+        obj = self._make_thermostat_class()
+        obj._need_fetch = True
+
+        captured = {}
+
+        def mock_try_setup(candidate_ips=None):
+            captured["candidate_ips"] = candidate_ips
+
+        with patch.object(obj, "try_setup", side_effect=mock_try_setup):
+            obj._fetch_if_needed()
+
+        self.assertIn("candidate_ips", captured)
+        expected_ips = obj._get_candidate_ips()
+        self.assertEqual(captured["candidate_ips"], expected_ips)
+
+    def test_fetch_if_needed_skips_try_setup_when_not_needed(self):
+        """Test _fetch_if_needed does not call try_setup when _need_fetch is False."""
+        from unittest.mock import MagicMock
+        obj = self._make_thermostat_class()
+        obj._need_fetch = False
+        obj.try_setup = MagicMock()
+        obj._fetch_if_needed()
+        obj.try_setup.assert_not_called()
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
