@@ -487,7 +487,7 @@ class TargetZoneIdResolutionUnitTest(utc.UnitTest):
         thermostat.zone_number = 0
         thermostat.device_id = None
         thermostat.verbose = False
-        thermostat.make_pykumos = lambda: {  # type: ignore[method-assign]
+        thermostat.make_pykumos = lambda **kwargs: {  # type: ignore[method-assign]
             "MainLevel": "dev-main",
             "Kitchen": "dev-kitchen",
         }
@@ -504,7 +504,7 @@ class TargetZoneIdResolutionUnitTest(utc.UnitTest):
         thermostat.zone_number = 0
         thermostat.device_id = None
         thermostat.verbose = False
-        thermostat.make_pykumos = lambda: {  # type: ignore[method-assign]
+        thermostat.make_pykumos = lambda **kwargs: {  # type: ignore[method-assign]
             "Ground Floor": "dev-main",
             "Kitchen": "dev-kitchen",
         }
@@ -521,7 +521,7 @@ class TargetZoneIdResolutionUnitTest(utc.UnitTest):
         thermostat.zone_number = 5
         thermostat.device_id = None
         thermostat.verbose = False
-        thermostat.make_pykumos = lambda: {  # type: ignore[method-assign]
+        thermostat.make_pykumos = lambda **kwargs: {  # type: ignore[method-assign]
             "Basement": "dev-basement"
         }
 
@@ -539,7 +539,7 @@ class TargetZoneIdResolutionUnitTest(utc.UnitTest):
         thermostat.zone_number = 0
         thermostat.device_id = None
         thermostat.verbose = False
-        thermostat.make_pykumos = lambda: {  # type: ignore[method-assign]
+        thermostat.make_pykumos = lambda **kwargs: {  # type: ignore[method-assign]
             "Basement": "dev-basement"
         }
 
@@ -548,6 +548,42 @@ class TargetZoneIdResolutionUnitTest(utc.UnitTest):
             r"zone index 'invalid-zone' is out of valid range \[0\.\.0\]",
         ):
             thermostat.get_target_zone_id("invalid-zone")
+
+    def test_get_target_zone_id_calls_update_status_for_matched_zone_only(self):
+        """Test get_target_zone_id calls update_status only for the matched zone."""
+        from unittest.mock import MagicMock
+        thermostat = kumolocal.ThermostatClass.__new__(kumolocal.ThermostatClass)
+        thermostat.zone_name = "Basement"
+        thermostat.zone_number = 2
+        thermostat.device_id = None
+        thermostat.verbose = False
+        living_room_mock = MagicMock(name="LivingRoomPyKumo")
+        basement_mock = MagicMock(name="BasementPyKumo")
+        thermostat.make_pykumos = lambda **kwargs: {  # type: ignore[method-assign]
+            "Living Room": living_room_mock,
+            "Basement": basement_mock,
+        }
+
+        thermostat.get_target_zone_id(2)
+
+        basement_mock.update_status.assert_called_once()
+        living_room_mock.update_status.assert_not_called()
+
+    def test_get_target_zone_id_passes_init_update_status_false(self):
+        """Test get_target_zone_id calls make_pykumos with init_update_status=False."""
+        from unittest.mock import MagicMock
+        thermostat = kumolocal.ThermostatClass.__new__(kumolocal.ThermostatClass)
+        thermostat.zone_name = "Basement"
+        thermostat.zone_number = 2
+        thermostat.device_id = None
+        thermostat.verbose = False
+        basement_mock = MagicMock(name="BasementPyKumo")
+        mock_make_pykumos = MagicMock(return_value={"Basement": basement_mock})
+        thermostat.make_pykumos = mock_make_pykumos  # type: ignore[method-assign]
+
+        thermostat.get_target_zone_id(2)
+
+        mock_make_pykumos.assert_called_once_with(init_update_status=False)
 
 
 class ThermostatZoneModeUnitTest(utc.UnitTest):
@@ -721,6 +757,42 @@ class LocalAddressUnitTest(utc.UnitTest):
         obj.try_setup = MagicMock()
         obj._fetch_if_needed()
         obj.try_setup.assert_not_called()
+
+    def test_fetch_if_needed_skips_try_setup_when_units_already_loaded(self):
+        """Test _fetch_if_needed skips try_setup on refresh when _units is populated.
+
+        On periodic refreshes (_need_fetch set True by refresh_zone_info), try_setup
+        (which includes probe_ip for every device) is skipped to avoid unnecessary
+        connection attempts and timeout warnings for temporarily unreachable devices.
+        """
+        from unittest.mock import MagicMock, patch
+        obj = self._make_thermostat_class()
+        obj._need_fetch = True
+        # Simulate already-loaded units (credentials present from initial setup)
+        obj._units = {"SERIAL1": {"label": "Basement", "address": ""}}
+        obj.try_setup = MagicMock()
+
+        with patch.object(obj, "_apply_local_addresses"):
+            obj._fetch_if_needed()
+
+        obj.try_setup.assert_not_called()
+        self.assertFalse(obj._need_fetch)
+
+    def test_fetch_if_needed_calls_try_setup_when_units_empty(self):
+        """Test _fetch_if_needed calls try_setup on first init when _units is empty."""
+        from unittest.mock import MagicMock, patch
+        obj = self._make_thermostat_class()
+        obj._need_fetch = True
+        obj._units = {}  # empty — first initialization
+
+        def mock_try_setup():
+            pass  # try_setup sets _need_fetch=False in production
+
+        with patch.object(obj, "try_setup", side_effect=mock_try_setup) as mock_ts:
+            with patch.object(obj, "_apply_local_addresses"):
+                obj._fetch_if_needed()
+
+        mock_ts.assert_called_once()
 
 
 if __name__ == "__main__":

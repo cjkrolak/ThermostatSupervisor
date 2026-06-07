@@ -215,13 +215,25 @@ class ThermostatClass(
         configured local IPs, regardless of whether pykumo's probe_ip
         authentication succeeds.
 
+        try_setup() (which includes probe_ip for each device) is only called
+        on first initialization or after reconnect (when self._units is empty).
+        On periodic refreshes triggered by refresh_zone_info(), probe_ip is
+        skipped to avoid unnecessary connection attempts and timeout warnings
+        for devices that are temporarily unavailable.
+
         inputs:
             None
         returns:
             None
         """
         if self._need_fetch:  # pylint: disable=access-member-before-definition
-            self.try_setup()
+            if not getattr(self, "_units", {}):  # pylint: disable=access-member-before-definition
+                # First initialization or after reconnect: run full cloud setup.
+                # try_setup() fetches V3 credentials and calls probe_ip per device.
+                self.try_setup()  # sets self._need_fetch = False internally
+            else:
+                # Credentials already loaded; skip try_setup/probe_ip on refresh.
+                self._need_fetch = False  # pylint: disable=access-member-before-definition
             self._apply_local_addresses()
 
     def get_target_zone_id(self, zone=0):
@@ -235,7 +247,9 @@ class ThermostatClass(
         """
         # populate the zone dictionary
         # establish local interface to kumos, must be on local net
-        kumos = self.make_pykumos()
+        # init_update_status=False avoids calling update_status() for every
+        # zone at creation time; only the matched zone is updated below.
+        kumos = self.make_pykumos(init_update_status=False)
         device_id = kumos.get(self.zone_name)
         matched_zone_name = self.zone_name
 
@@ -279,6 +293,11 @@ class ThermostatClass(
                 func_name=1,
             )
         self.device_id = device_id
+
+        # Fetch status only for the matched zone, not every zone in the account.
+        # This prevents timeout warnings for unmonitored zones that are offline.
+        if hasattr(device_id, "update_status"):
+            device_id.update_status()
 
         # return the target zone object
         return self.device_id
