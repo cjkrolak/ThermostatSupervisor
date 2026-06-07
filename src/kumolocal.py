@@ -167,34 +167,53 @@ class ThermostatClass(
         """
         return kumolocal_config.metadata[self.zone_number]["zone_name"]
 
-    def _get_candidate_ips(self):
-        """Build candidate_ips dict from kumolocal_config.metadata.
+    def _apply_local_addresses(self):
+        """Apply IP addresses from kumolocal_config.metadata to pykumo units.
 
-        Returns a dict mapping zone keys to IP addresses, for use as
-        candidate_ips in pykumo's try_setup() when cloud-provided addresses
-        are missing or empty.
+        Matches each pykumo unit's label against zone names in
+        kumolocal_config.metadata and sets the unit's address directly.
+        This bypasses pykumo's probe_ip authentication, which may fail when
+        the cloud-provided credentials cannot authenticate against the local
+        device API.
 
         inputs:
             None
         returns:
-            (dict or None): {key: ip_address} for each zone with a configured
-                IP, or None if no IPs are configured.
+            None
         """
-        candidate_ips = {}
-        for zone_id, meta in kumolocal_config.metadata.items():
-            ip = meta.get("ip_address")
-            if ip and ip != "0.0.0.0":
-                # key is arbitrary; try_setup only uses the values (IPs) for probing
-                candidate_ips[f"zone_{zone_id}"] = ip
-        return candidate_ips if candidate_ips else None
+        # Build normalized zone_name -> ip_address mapping from config
+        name_to_ip = {}
+        for meta in kumolocal_config.metadata.values():
+            zone_name = meta.get("zone_name", "")
+            ip = meta.get("ip_address", "")
+            if zone_name and ip and ip != "0.0.0.0":
+                normalized = "".join(c.lower() for c in zone_name if c.isalnum())
+                name_to_ip[normalized] = ip
+
+        if not name_to_ip:
+            return
+
+        for unit in self._units.values():  # pylint: disable=access-member-before-definition
+            label = unit.get("label", "")
+            normalized_label = "".join(c.lower() for c in label if c.isalnum())
+            ip = name_to_ip.get(normalized_label)
+            if ip:
+                unit["address"] = ip
+                util.log_msg(
+                    f"Applied local address {ip} for unit '{label}'",
+                    mode=util.DEBUG_LOG + util.STDOUT_LOG,
+                    func_name=1,
+                )
 
     def _fetch_if_needed(self):
         """Fetch configuration from server if not already done.
 
-        Overrides KumoCloudAccount._fetch_if_needed to pass local IP addresses
-        from kumolocal_config.metadata as candidate_ips, so that devices whose
-        cloud-registered address is missing or stale can still be resolved via
-        the locally configured IPs.
+        Overrides KumoCloudAccount._fetch_if_needed to then apply
+        locally-configured IP addresses from kumolocal_config.metadata
+        directly to pykumo units. This ensures devices whose cloud-registered
+        address is missing, empty, or stale are always reachable via the
+        configured local IPs, regardless of whether pykumo's probe_ip
+        authentication succeeds.
 
         inputs:
             None
@@ -202,7 +221,8 @@ class ThermostatClass(
             None
         """
         if self._need_fetch:  # pylint: disable=access-member-before-definition
-            self.try_setup(candidate_ips=self._get_candidate_ips())
+            self.try_setup()
+            self._apply_local_addresses()
 
     def get_target_zone_id(self, zone=0):
         """

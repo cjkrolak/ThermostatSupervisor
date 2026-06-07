@@ -504,8 +504,8 @@ class ThermostatZoneModeUnitTest(utc.UnitTest):
         self.assertEqual(result, 1)
 
 
-class CandidateIpsUnitTest(utc.UnitTest):
-    """Unit tests for _get_candidate_ips and _fetch_if_needed override."""
+class LocalAddressUnitTest(utc.UnitTest):
+    """Unit tests for _apply_local_addresses and _fetch_if_needed override."""
 
     def setUp(self):
         """Setup for tests."""
@@ -525,52 +525,75 @@ class CandidateIpsUnitTest(utc.UnitTest):
         obj = kumolocal.ThermostatClass.__new__(kumolocal.ThermostatClass)
         return obj
 
-    def test_get_candidate_ips_returns_configured_ips(self):
-        """Test _get_candidate_ips returns all configured IPs from metadata."""
+    def test_apply_local_addresses_sets_address_for_matching_unit(self):
+        """Test _apply_local_addresses sets address for a unit whose label matches."""
+        from src import kumo_common_zones
         obj = self._make_thermostat_class()
-        candidate_ips = obj._get_candidate_ips()
-        self.assertIsNotNone(candidate_ips)
-        # Should include an entry for each zone that has an ip_address
-        expected_ips = set(
-            meta["ip_address"]
-            for meta in kumolocal_config.metadata.values()
-            if meta.get("ip_address") and meta["ip_address"] != "0.0.0.0"
-        )
-        self.assertEqual(set(candidate_ips.values()), expected_ips)
+        # Simulate a pykumo _units dict with a matching label but no address
+        obj._units = {
+            "SERIAL1": {"label": kumo_common_zones.ZONE_NAME_BASEMENT, "address": ""},
+        }
+        obj._apply_local_addresses()
+        expected_ip = kumolocal_config.metadata[kumolocal_config.BASEMENT]["ip_address"]
+        self.assertEqual(obj._units["SERIAL1"]["address"], expected_ip)
 
-    def test_get_candidate_ips_excludes_zero_address(self):
-        """Test _get_candidate_ips excludes 0.0.0.0 entries."""
-        kumolocal_config.metadata[0]["ip_address"] = "0.0.0.0"
+    def test_apply_local_addresses_overwrites_stale_address(self):
+        """Test _apply_local_addresses overwrites a stale address for a matching unit."""
+        from src import kumo_common_zones
         obj = self._make_thermostat_class()
-        candidate_ips = obj._get_candidate_ips()
-        if candidate_ips:
-            self.assertNotIn("0.0.0.0", candidate_ips.values())
+        obj._units = {
+            "SERIAL1": {
+                "label": kumo_common_zones.ZONE_NAME_MAIN_LEVEL,
+                "address": "10.0.0.99",  # stale/wrong address
+            },
+        }
+        obj._apply_local_addresses()
+        expected_ip = kumolocal_config.metadata[kumolocal_config.MAIN_LEVEL]["ip_address"]
+        self.assertEqual(obj._units["SERIAL1"]["address"], expected_ip)
 
-    def test_get_candidate_ips_returns_none_when_no_ips(self):
-        """Test _get_candidate_ips returns None when no IPs are configured."""
+    def test_apply_local_addresses_skips_zero_address(self):
+        """Test _apply_local_addresses skips zones with 0.0.0.0 IP."""
+        from src import kumo_common_zones
+        kumolocal_config.metadata[kumolocal_config.BASEMENT]["ip_address"] = "0.0.0.0"
+        obj = self._make_thermostat_class()
+        obj._units = {
+            "SERIAL1": {"label": kumo_common_zones.ZONE_NAME_BASEMENT, "address": ""},
+        }
+        obj._apply_local_addresses()
+        # Address should remain empty since config IP is 0.0.0.0
+        self.assertEqual(obj._units["SERIAL1"]["address"], "")
+
+    def test_apply_local_addresses_no_op_when_no_ips_configured(self):
+        """Test _apply_local_addresses does nothing when no IPs are configured."""
         for meta in kumolocal_config.metadata.values():
             meta["ip_address"] = None
         obj = self._make_thermostat_class()
-        result = obj._get_candidate_ips()
-        self.assertIsNone(result)
+        obj._units = {
+            "SERIAL1": {"label": "Basement", "address": ""},
+        }
+        obj._apply_local_addresses()
+        self.assertEqual(obj._units["SERIAL1"]["address"], "")
 
-    def test_fetch_if_needed_calls_try_setup_with_candidate_ips(self):
-        """Test _fetch_if_needed calls try_setup with candidate_ips from metadata."""
+    def test_fetch_if_needed_calls_try_setup_then_apply_addresses(self):
+        """Test _fetch_if_needed calls try_setup then _apply_local_addresses."""
         from unittest.mock import MagicMock, patch
         obj = self._make_thermostat_class()
         obj._need_fetch = True
+        call_order = []
 
-        captured = {}
+        def mock_try_setup():
+            call_order.append("try_setup")
 
-        def mock_try_setup(candidate_ips=None):
-            captured["candidate_ips"] = candidate_ips
+        def mock_apply():
+            call_order.append("_apply_local_addresses")
 
         with patch.object(obj, "try_setup", side_effect=mock_try_setup):
-            obj._fetch_if_needed()
+            with patch.object(
+                obj, "_apply_local_addresses", side_effect=mock_apply
+            ):
+                obj._fetch_if_needed()
 
-        self.assertIn("candidate_ips", captured)
-        expected_ips = obj._get_candidate_ips()
-        self.assertEqual(captured["candidate_ips"], expected_ips)
+        self.assertEqual(call_order, ["try_setup", "_apply_local_addresses"])
 
     def test_fetch_if_needed_skips_try_setup_when_not_needed(self):
         """Test _fetch_if_needed does not call try_setup when _need_fetch is False."""
