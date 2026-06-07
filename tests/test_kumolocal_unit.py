@@ -409,9 +409,27 @@ class TargetZoneIdResolutionUnitTest(utc.UnitTest):
 
         with self.assertRaisesRegex(
             KeyError,
-            "Configured zone name 'Main Level' was not found",
+            r"Configured zone name 'Main Level' was not found.*"
+            r"zone index 5 is out of valid range \[0\.\.0\]",
         ):
             thermostat.get_target_zone_id(5)
+
+    def test_get_target_zone_id_non_integer_zone_raises_keyerror(self):
+        """Test non-integer zone values don't trigger TypeError in fallback logic."""
+        thermostat = kumolocal.ThermostatClass.__new__(kumolocal.ThermostatClass)
+        thermostat.zone_name = "Main Level"
+        thermostat.zone_number = 0
+        thermostat.device_id = None
+        thermostat.verbose = False
+        thermostat.make_pykumos = lambda: {  # type: ignore[method-assign]
+            "Basement": "dev-basement"
+        }
+
+        with self.assertRaisesRegex(
+            KeyError,
+            r"zone index 'invalid-zone' is out of valid range \[0\.\.0\]",
+        ):
+            thermostat.get_target_zone_id("invalid-zone")
 
 
 if __name__ == "__main__":
