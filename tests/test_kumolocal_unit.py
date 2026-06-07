@@ -764,18 +764,21 @@ class LocalAddressUnitTest(utc.UnitTest):
         On periodic refreshes (_need_fetch set True by refresh_zone_info), try_setup
         (which includes probe_ip for every device) is skipped to avoid unnecessary
         connection attempts and timeout warnings for temporarily unreachable devices.
+        _apply_local_addresses is also skipped on refresh (addresses were already
+        applied during initialization and are stored on the existing PyKumo objects).
         """
-        from unittest.mock import MagicMock, patch
+        from unittest.mock import MagicMock
         obj = self._make_thermostat_class()
         obj._need_fetch = True
         # Simulate already-loaded units (credentials present from initial setup)
         obj._units = {"SERIAL1": {"label": "Basement", "address": ""}}
         obj.try_setup = MagicMock()
+        obj._apply_local_addresses = MagicMock()
 
-        with patch.object(obj, "_apply_local_addresses"):
-            obj._fetch_if_needed()
+        obj._fetch_if_needed()
 
         obj.try_setup.assert_not_called()
+        obj._apply_local_addresses.assert_not_called()
         self.assertFalse(obj._need_fetch)
 
     def test_fetch_if_needed_calls_try_setup_when_units_empty(self):
@@ -793,6 +796,71 @@ class LocalAddressUnitTest(utc.UnitTest):
                 obj._fetch_if_needed()
 
         mock_ts.assert_called_once()
+
+    def _make_zone_for_refresh(self):
+        """Create a ThermostatZone-like object with mocked Thermostat and device."""
+        import time
+        from unittest.mock import MagicMock
+
+        zone = kumolocal.ThermostatZone.__new__(kumolocal.ThermostatZone)
+        zone.verbose = False
+        zone.zone_number = 1
+        zone.zone_name = "Kitchen"
+        zone.fetch_interval_sec = 60
+        zone.last_fetch_time = time.time() - 2 * zone.fetch_interval_sec  # stale
+
+        mock_device = MagicMock()
+        zone.device_id = mock_device
+
+        mock_thermostat = MagicMock()
+        mock_thermostat._need_fetch = False
+        zone.Thermostat = mock_thermostat
+
+        return zone, mock_device, mock_thermostat
+
+    def test_refresh_zone_info_calls_update_status_on_existing_device(self):
+        """Test refresh_zone_info calls update_status on existing device, not get_target_zone_id.
+
+        On periodic refreshes, the existing PyKumo device object should be reused
+        and only update_status() called — no new PyKumo objects should be created
+        (which would trigger "Use default timeouts" and "Applied local address" log
+        noise on every poll cycle).
+        """
+        zone, mock_device, mock_thermostat = self._make_zone_for_refresh()
+
+        zone.refresh_zone_info()
+
+        mock_device.update_status.assert_called_once()
+        # get_target_zone_id must NOT be called on refresh
+        mock_thermostat.get_target_zone_id.assert_not_called()
+
+    def test_refresh_zone_info_skips_update_when_not_stale(self):
+        """Test refresh_zone_info does not call update_status when cache is fresh."""
+        import time
+        zone, mock_device, mock_thermostat = self._make_zone_for_refresh()
+        zone.last_fetch_time = time.time()  # fresh
+
+        zone.refresh_zone_info()
+
+        mock_device.update_status.assert_not_called()
+
+    def test_refresh_zone_info_force_refresh_calls_update_status(self):
+        """Test refresh_zone_info with force_refresh=True always calls update_status."""
+        import time
+        zone, mock_device, mock_thermostat = self._make_zone_for_refresh()
+        zone.last_fetch_time = time.time()  # would normally skip
+
+        zone.refresh_zone_info(force_refresh=True)
+
+        mock_device.update_status.assert_called_once()
+
+    def test_refresh_zone_info_handles_none_device_id_gracefully(self):
+        """Test refresh_zone_info does not crash when device_id is None."""
+        zone, mock_device, mock_thermostat = self._make_zone_for_refresh()
+        zone.device_id = None
+
+        # Should not raise
+        zone.refresh_zone_info()
 
 
 if __name__ == "__main__":

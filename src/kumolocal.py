@@ -231,10 +231,11 @@ class ThermostatClass(
                 # First initialization or after reconnect: run full cloud setup.
                 # try_setup() fetches V3 credentials and calls probe_ip per device.
                 self.try_setup()  # sets self._need_fetch = False internally
+                # Apply local IPs only after full setup, not on every refresh.
+                self._apply_local_addresses()
             else:
                 # Credentials already loaded; skip try_setup/probe_ip on refresh.
                 self._need_fetch = False  # pylint: disable=access-member-before-definition
-            self._apply_local_addresses()
 
     def get_target_zone_id(self, zone=0):
         """
@@ -1036,8 +1037,14 @@ class ThermostatZone(tc.ThermostatCommonZone):
                     func_name=1,
                 )
             self.last_fetch_time = now_time
-            # refresh device object
-            self.device_id = self.Thermostat.get_target_zone_id(self.zone_name)
+            # Update status for this zone only, reusing the existing device
+            # object to avoid recreating PyKumo objects (and the associated
+            # "Use default timeouts" / "Applied local address" log noise) on
+            # every 60-second poll cycle.
+            if self.device_id is not None and hasattr(
+                self.device_id, "update_status"
+            ):
+                self.device_id.update_status()
 
 
 if __name__ == "__main__":
