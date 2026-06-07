@@ -33,6 +33,10 @@ class TestYamlLintWorkflow(unittest.TestCase):
         self.trigger_ado_workflow = (
             self.repo_root / ".github" / "workflows" / "trigger-ado-tests.yml"
         )
+        self.github_unit_tests_workflow = (
+            self.repo_root / ".github" / "workflows" / "github-unit-tests.yml"
+        )
+        self.ado_pipeline = self.repo_root / ".github" / "azure-pipelines.yml"
 
     def test_yamllint_config_exists(self):
         """Test that yamllint configuration file exists."""
@@ -146,6 +150,82 @@ class TestYamlLintWorkflow(unittest.TestCase):
             result.returncode,
             0,
             f"trigger-ado-tests workflow should pass linting:\n{output}",
+        )
+
+    def test_github_unit_tests_workflow_exists(self):
+        """Test that github-unit-tests workflow file exists."""
+        self.assertTrue(
+            self.github_unit_tests_workflow.exists(),
+            "github-unit-tests workflow file should exist",
+        )
+
+    def test_github_unit_tests_workflow_is_valid(self):
+        """Test that github-unit-tests workflow file passes linting."""
+        result = subprocess.run(
+            [
+                "yamllint",
+                "--config-file",
+                str(self.yamllint_config),
+                "--format",
+                "parsable",
+                str(self.github_unit_tests_workflow),
+            ],
+            cwd=self.repo_root,
+            capture_output=True,
+            text=True,
+        )
+        output = result.stdout + result.stderr
+        self.assertEqual(
+            result.returncode,
+            0,
+            f"github-unit-tests workflow should pass linting:\n{output}",
+        )
+
+    def test_github_unit_tests_lint_bypass_conditions(self):
+        """Test that github-unit-tests workflow skips post-lint steps on lint failure."""
+        content = self.github_unit_tests_workflow.read_text()
+        # Lint step must have an id so subsequent steps can reference it
+        self.assertIn(
+            "id: lint",
+            content,
+            "github-unit-tests workflow should assign id 'lint' to the lint step",
+        )
+        # Post-lint steps must not use 'if: always()' - they should check lint outcome
+        self.assertNotIn(
+            "if: always()",
+            content,
+            "github-unit-tests workflow should not use 'if: always()' "
+            "- post-lint steps must be gated on lint success",
+        )
+        # Post-lint steps must use lint outcome condition
+        self.assertIn(
+            "steps.lint.outcome == 'success'",
+            content,
+            "github-unit-tests workflow post-lint steps should check "
+            "steps.lint.outcome == 'success'",
+        )
+
+    def test_ado_pipeline_lint_bypass_conditions(self):
+        """Test that ADO pipeline skips post-lint steps on lint failure."""
+        content = self.ado_pipeline.read_text()
+        # Lint step must set the lintPassed variable on success
+        self.assertIn(
+            "##vso[task.setvariable variable=lintPassed]true",
+            content,
+            "ADO pipeline lint step should set lintPassed variable on success",
+        )
+        # Post-lint steps must not use 'condition: always()'
+        self.assertNotIn(
+            "condition: always()",
+            content,
+            "ADO pipeline should not use 'condition: always()' "
+            "- post-lint steps must be gated on lint success",
+        )
+        # Post-lint steps must check lintPassed variable
+        self.assertIn(
+            "eq(variables['lintPassed'], 'true')",
+            content,
+            "ADO pipeline post-lint steps should check lintPassed variable",
         )
 
     def test_yamllint_catches_common_issues(self):

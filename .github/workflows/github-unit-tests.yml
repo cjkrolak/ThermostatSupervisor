@@ -65,6 +65,7 @@ jobs:
           pip install -r requirements_dev.txt
           pip list
       - name: Run lint tests
+        id: lint
         run: |
           python -m pip install flake8 --upgrade
           flake8 --config=setup.cfg .
@@ -88,7 +89,7 @@ jobs:
           python -m tests.unit_test_coverage
       - name: Upload coverage reports
         uses: actions/upload-artifact@v7
-        if: always()
+        if: steps.lint.outcome == 'success'
         with:
           name: coverage-reports-${{ matrix.python-version }}
           path: |
@@ -96,7 +97,7 @@ jobs:
             htmlcov/
           retention-days: 30
       - name: Upload coverage to GitHub
-        if: always()
+        if: steps.lint.outcome == 'success'
         env:
           THERMOSTATSUPERVISOR_PR: ${{ secrets.THERMOSTATSUPERVISOR_PR }}
         run: |
@@ -175,7 +176,7 @@ jobs:
             exit 1
           fi
       - name: Trigger SonarQube workflow
-        if: always()
+        if: steps.lint.outcome == 'success'
         env:
           THERMOSTATSUPERVISOR_PR: ${{ secrets.THERMOSTATSUPERVISOR_PR }}
         run: |-
