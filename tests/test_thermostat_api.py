@@ -251,8 +251,11 @@ class Test(utc.UnitTest):
 
     def test_verify_required_env_variables_sht31_deferred_validation(self):
         """Verify sht31 env validation is deferred to module runtime logic."""
-        with unittest.mock.patch.dict("os.environ", {}, clear=True), unittest.mock.patch(
-            "src.environment._read_supervisor_env_file", return_value={}
+        with unittest.mock.patch.dict(
+            "os.environ", {}, clear=True
+        ), unittest.mock.patch(
+            "src.environment._read_supervisor_env_file",
+            return_value={},
         ):
             self.assertTrue(
                 api.verify_required_env_variables("sht31", "0", verbose=False)
