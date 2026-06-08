@@ -6,6 +6,6 @@ across kumocloud (KumoCloud v3 API) and kumolocal configurations.
 """
 
 # Standard zone names used across all Kumo thermostat types
-ZONE_NAME_MAIN_LEVEL = "Main Level"
+ZONE_NAME_LIVING_ROOM = "Living Room"
 ZONE_NAME_KITCHEN = "Kitchen"
 ZONE_NAME_BASEMENT = "Basement"

@@ -314,8 +314,8 @@ class ThermostatClass(tc.ThermostatCommon):
         return zone_name_to_index
 
     def _find_zone_indices_by_patterns(self, zone_name_to_index):
-        """Find main level, kitchen, and basement indices based on naming patterns."""
-        main_living_index = None
+        """Find living room, kitchen, and basement indices based on naming patterns."""
+        living_room_index = None
         kitchen_index = None
         basement_index = None
 
@@ -334,7 +334,7 @@ class ThermostatClass(tc.ThermostatCommon):
                     "1st floor",
                 ]
             ):
-                main_living_index = index
+                living_room_index = index
 
             # Check for kitchen patterns
             if any(
@@ -352,10 +352,10 @@ class ThermostatClass(tc.ThermostatCommon):
             ):
                 basement_index = index
 
-        return main_living_index, kitchen_index, basement_index
+        return living_room_index, kitchen_index, basement_index
 
     def _update_config_with_indices(
-        self, main_living_index, kitchen_index, basement_index
+        self, living_room_index, kitchen_index, basement_index
     ):
         """Update config module with discovered zone indices."""
         # Rebuild zones list from scratch to avoid inconsistent indices
@@ -366,10 +366,10 @@ class ThermostatClass(tc.ThermostatCommon):
         # Use a set to track already-added indices to prevent duplicates
         added_indices = set()
 
-        if main_living_index is not None and main_living_index not in added_indices:
-            kumocloud_config.MAIN_LIVING = main_living_index
-            discovered_zones.append(main_living_index)
-            added_indices.add(main_living_index)
+        if living_room_index is not None and living_room_index not in added_indices:
+            kumocloud_config.LIVING_ROOM = living_room_index
+            discovered_zones.append(living_room_index)
+            added_indices.add(living_room_index)
 
         if kitchen_index is not None and kitchen_index not in added_indices:
             kumocloud_config.KITCHEN = kitchen_index
@@ -389,13 +389,13 @@ class ThermostatClass(tc.ThermostatCommon):
     def _rebuild_metadata_dict(
         self,
         zone_name_to_index,
-        main_living_index,
+        living_room_index,
         kitchen_index,
         basement_index
     ):
         """Rebuild metadata dict with discovered assignments."""
         if all(idx is not None for idx in
-               (main_living_index, kitchen_index, basement_index)):
+               (living_room_index, kitchen_index, basement_index)):
             # Clear existing metadata and rebuild with correct indices
             kumocloud_config.metadata.clear()
 
@@ -409,8 +409,8 @@ class ThermostatClass(tc.ThermostatCommon):
 
         if self.verbose:
             print(
-                f"Updated zone assignments - MAIN_LIVING: "
-                f"{kumocloud_config.MAIN_LIVING}, "
+                f"Updated zone assignments - LIVING_ROOM: "
+                f"{kumocloud_config.LIVING_ROOM}, "
                 f"KITCHEN: {kumocloud_config.KITCHEN}, "
                 f"BASEMENT: {kumocloud_config.BASEMENT}"
             )
@@ -423,7 +423,7 @@ class ThermostatClass(tc.ThermostatCommon):
         This method retrieves zone information from the API and updates the
         config module's zone assignments to match the actual API response.
         Zone assignments are not static in v3 API - sometimes zone 0 is
-        MAIN_LIVING and other times zone 1 is MAIN_LIVING.
+        LIVING_ROOM and other times zone 1 is LIVING_ROOM.
         """
         try:
             # Get sites and zones from API
@@ -435,18 +435,18 @@ class ThermostatClass(tc.ThermostatCommon):
             zone_name_to_index = self._build_zone_name_mapping(zones)
 
             # Find zone indices by patterns
-            main_living_index, kitchen_index, basement_index = \
+            living_room_index, kitchen_index, basement_index = \
                 self._find_zone_indices_by_patterns(zone_name_to_index)
 
             # Update config with discovered indices
             self._update_config_with_indices(
-                main_living_index, kitchen_index, basement_index
+                living_room_index, kitchen_index, basement_index
             )
 
             # Update metadata dict with discovered assignments
             self._rebuild_metadata_dict(
                 zone_name_to_index,
-                main_living_index,
+                living_room_index,
                 kitchen_index,
                 basement_index
             )

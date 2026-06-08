@@ -167,6 +167,79 @@ class ThermostatClass(
         """
         return kumolocal_config.metadata[self.zone_number]["zone_name"]
 
+    def _apply_local_addresses(self):
+        """Apply IP addresses from kumolocal_config.metadata to pykumo units.
+
+        Matches each pykumo unit's label against zone names in
+        kumolocal_config.metadata and sets the unit's address directly.
+        This bypasses pykumo's probe_ip authentication, which may fail when
+        the cloud-provided credentials cannot authenticate against the local
+        device API.
+
+        inputs:
+            None
+        returns:
+            None
+        """
+        # Build normalized zone_name -> ip_address mapping from config
+        name_to_ip = {}
+        for meta in kumolocal_config.metadata.values():
+            zone_name = meta.get("zone_name", "")
+            ip = meta.get("ip_address", "")
+            if zone_name and ip and ip != "0.0.0.0":
+                normalized = "".join(c.lower() for c in zone_name if c.isalnum())
+                name_to_ip[normalized] = ip
+
+        if not name_to_ip:
+            return
+
+        # pylint: disable=access-member-before-definition
+        for unit in self._units.values():
+            label = unit.get("label", "")
+            normalized_label = "".join(c.lower() for c in label if c.isalnum())
+            ip = name_to_ip.get(normalized_label)
+            if ip:
+                unit["address"] = ip
+                util.log_msg(
+                    f"Applied local address {ip} for unit '{label}'",
+                    mode=util.DEBUG_LOG + util.STDOUT_LOG,
+                    func_name=1,
+                )
+
+    def _fetch_if_needed(self):
+        """Fetch configuration from server if not already done.
+
+        Overrides KumoCloudAccount._fetch_if_needed to then apply
+        locally-configured IP addresses from kumolocal_config.metadata
+        directly to pykumo units. This ensures devices whose cloud-registered
+        address is missing, empty, or stale are always reachable via the
+        configured local IPs, regardless of whether pykumo's probe_ip
+        authentication succeeds.
+
+        try_setup() (which includes probe_ip for each device) is only called
+        on first initialization or after reconnect (when self._units is empty).
+        On periodic refreshes triggered by refresh_zone_info(), probe_ip is
+        skipped to avoid unnecessary connection attempts and timeout warnings
+        for devices that are temporarily unavailable.
+
+        inputs:
+            None
+        returns:
+            None
+        """
+        if self._need_fetch:  # pylint: disable=access-member-before-definition
+            # pylint: disable=access-member-before-definition
+            if not getattr(self, "_units", {}):
+                # First initialization or after reconnect: run full cloud setup.
+                # try_setup() fetches V3 credentials and calls probe_ip per device.
+                self.try_setup()  # sets self._need_fetch = False internally
+                # Apply local IPs only after full setup, not on every refresh.
+                self._apply_local_addresses()
+            else:
+                # Credentials already loaded; skip try_setup/probe_ip on refresh.
+                # pylint: disable=access-member-before-definition
+                self._need_fetch = False
+
     def get_target_zone_id(self, zone=0):
         """
         Return the target zone ID.
@@ -178,12 +251,14 @@ class ThermostatClass(
         """
         # populate the zone dictionary
         # establish local interface to kumos, must be on local net
-        kumos = self.make_pykumos()
+        # init_update_status=False avoids calling update_status() for every
+        # zone at creation time; only the matched zone is updated below.
+        kumos = self.make_pykumos(init_update_status=False)
         device_id = kumos.get(self.zone_name)
         matched_zone_name = self.zone_name
 
         # Backward-compatible fallback for name format mismatches
-        # (e.g., "Main Level" vs "MainLevel")
+        # (e.g., "Living Room" vs "LivingRoom")
         if device_id is None:
             target_zone_name = "".join(
                 c.lower() for c in self.zone_name if c.isalnum()
@@ -222,6 +297,11 @@ class ThermostatClass(
                 func_name=1,
             )
         self.device_id = device_id
+
+        # Fetch status only for the matched zone, not every zone in the account.
+        # This prevents timeout warnings for unmonitored zones that are offline.
+        if hasattr(device_id, "update_status"):
+            device_id.update_status()
 
         # return the target zone object
         return self.device_id
@@ -797,7 +877,10 @@ class ThermostatZone(tc.ThermostatCommonZone):
     def is_power_on(self):
         """Return 1 if power relay is active, else 0."""
         self.refresh_zone_info()
-        return int(self.device_id.get_mode() != "off")
+        mode = self.device_id.get_mode()
+        if mode is None:
+            return 0
+        return int(mode != "off")
 
     def is_fan_on(self):
         """Return 1 if fan relay is active, else 0."""
@@ -903,7 +986,11 @@ class ThermostatZone(tc.ThermostatCommonZone):
                   in self.system_switch_position
         """
         self.refresh_zone_info()
-        return self.device_id.get_mode()
+        mode = self.device_id.get_mode()
+        if mode is None:
+            # device data not available, return off mode as safe default
+            return self.system_switch_position[tc.ThermostatCommonZone.OFF_MODE]
+        return mode
 
     def set_heat_setpoint(self, temp: int) -> None:
         """
@@ -953,8 +1040,14 @@ class ThermostatZone(tc.ThermostatCommonZone):
                     func_name=1,
                 )
             self.last_fetch_time = now_time
-            # refresh device object
-            self.device_id = self.Thermostat.get_target_zone_id(self.zone_name)
+            # Update status for this zone only, reusing the existing device
+            # object to avoid recreating PyKumo objects (and the associated
+            # "Use default timeouts" / "Applied local address" log noise) on
+            # every 60-second poll cycle.
+            if self.device_id is not None and hasattr(
+                self.device_id, "update_status"
+            ):
+                self.device_id.update_status()
 
 
 if __name__ == "__main__":

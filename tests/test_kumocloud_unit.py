@@ -54,7 +54,7 @@ class ZoneMetadataPopulationUnitTest(utc.UnitTest):
 
         # Mock zone data that might come from API in different order
         # Simulating the scenario where API returns zones in this order:
-        # 0: Kitchen, 1: Basement, 2: Main Living
+        # 0: Kitchen, 1: Basement, 2: Living Room
         self.mock_zones_api_response = [
             {
                 "name": "Kitchen",
@@ -65,7 +65,7 @@ class ZoneMetadataPopulationUnitTest(utc.UnitTest):
                 "adapter": {"deviceSerial": "SERIAL_BASEMENT_002"},
             },
             {
-                "name": "Main Living",
+                "name": "Living Room",
                 "adapter": {"deviceSerial": "SERIAL_MAIN_003"},
             },
         ]
@@ -79,11 +79,11 @@ class ZoneMetadataPopulationUnitTest(utc.UnitTest):
 
         # Expected metadata after dynamic zone assignment
         # Note: After _update_zone_assignments, indices might be:
-        # MAIN_LIVING=2, KITCHEN=0, BASEMENT=1 (based on zone names)
+        # LIVING_ROOM=2, KITCHEN=0, BASEMENT=1 (based on zone names)
         self.expected_metadata_structure = {
             0: {"zone_name": "Kitchen", "serial_number": None},
             1: {"zone_name": "Basement", "serial_number": None},
-            2: {"zone_name": "Main Living", "serial_number": None},
+            2: {"zone_name": "Living Room", "serial_number": None},
         }
 
     def tearDown(self):
@@ -139,11 +139,11 @@ class ZoneMetadataPopulationUnitTest(utc.UnitTest):
                 "Basement zone should have Basement serial number",
             )
 
-            # Main Living (index 2) should get SERIAL_MAIN_003
+            # Living Room (index 2) should get SERIAL_MAIN_003
             self.assertEqual(
                 kumocloud_config.metadata[2]["serial_number"],
                 "SERIAL_MAIN_003",
-                "Main Living zone should have Main Living serial number",
+                "Living Room zone should have Living Room serial number",
             )
 
     def test_populate_metadata_fallback_on_api_error(self):
@@ -263,7 +263,7 @@ class ZoneMetadataPopulationUnitTest(utc.UnitTest):
         kumocloud_config.metadata[1]["serial_number"] = "SERIAL_BASEMENT_002"
         kumocloud_config.metadata[2]["serial_number"] = "SERIAL_MAIN_003"
 
-        # Create a mock thermostat instance for zone 2 (Main Living)
+        # Create a mock thermostat instance for zone 2 (Living Room)
         with patch.object(
             kumocloud.ThermostatClass, "_authenticate"
         ), patch.object(
@@ -288,7 +288,7 @@ class ZoneMetadataPopulationUnitTest(utc.UnitTest):
                                     "reportedCondition": {"room_temp": 18.0},
                                 },
                                 "SERIAL_MAIN_003": {
-                                    "label": "Main Living",
+                                    "label": "Living Room",
                                     "reportedCondition": {"room_temp": 22.0},
                                 },
                             }
@@ -299,22 +299,22 @@ class ZoneMetadataPopulationUnitTest(utc.UnitTest):
             ]
             thermostat.get_raw_json = MagicMock(return_value=mock_raw_json)
 
-            # Call _get_specific_zone_data for zone 2 (Main Living)
+            # Call _get_specific_zone_data for zone 2 (Living Room)
             # Pass serial_num_lst in API order (not zone index order)
             result = getattr(thermostat, "_get_specific_zone_data")(  # type: ignore
                 2, self.serial_num_lst
             )
 
-            # Verify it returned Main Living's data (temp 22.0), not Kitchen's
+            # Verify it returned Living Room's data (temp 22.0), not Kitchen's
             self.assertEqual(
                 result["label"],
-                "Main Living",
-                "Should return Main Living data for zone 2",
+                "Living Room",
+                "Should return Living Room data for zone 2",
             )
             self.assertEqual(
                 result["reportedCondition"]["room_temp"],
                 22.0,
-                "Should return correct temperature for Main Living",
+                "Should return correct temperature for Living Room",
             )
 
             # Verify the serial_number was set correctly
@@ -868,7 +868,7 @@ class ZoneAssignmentUnitTest(utc.UnitTest):
         zones = [
             {"name": "Kitchen"},
             {"name": "Basement"},
-            {"name": "Main Living"},
+            {"name": "Living Room"},
         ]
 
         with patch.object(
@@ -884,7 +884,7 @@ class ZoneAssignmentUnitTest(utc.UnitTest):
 
             self.assertEqual(mapping["Kitchen"], 0)
             self.assertEqual(mapping["Basement"], 1)
-            self.assertEqual(mapping["Main Living"], 2)
+            self.assertEqual(mapping["Living Room"], 2)
 
     def test_build_zone_name_mapping_empty_names(self):
         """Test mapping handles empty zone names."""
@@ -912,7 +912,7 @@ class ZoneAssignmentUnitTest(utc.UnitTest):
     def test_find_zone_indices_by_patterns(self):
         """Test finding zones by naming patterns."""
         zone_mapping = {
-            "Main Living Room": 0,
+            "Living Room Suite": 0,
             "Kitchen Area": 1,
             "Basement Suite": 2,
         }
@@ -978,7 +978,7 @@ class ZoneAssignmentUnitTest(utc.UnitTest):
 
         zones_response = Mock()
         zones_response.json.return_value = [
-            {"name": "Main Living"},
+            {"name": "Living Room"},
             {"name": "Kitchen"},
             {"name": "Basement"},
         ]
@@ -992,7 +992,7 @@ class ZoneAssignmentUnitTest(utc.UnitTest):
         _ = kumocloud.ThermostatClass(zone=0, verbose=False)
 
         # Verify zone assignments were updated
-        self.assertEqual(kumocloud_config.MAIN_LIVING, 0)
+        self.assertEqual(kumocloud_config.LIVING_ROOM, 0)
         self.assertEqual(kumocloud_config.KITCHEN, 1)
         self.assertEqual(kumocloud_config.BASEMENT, 2)
 
