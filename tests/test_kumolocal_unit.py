@@ -202,6 +202,32 @@ class LocalNetworkDetectionUnitTest(utc.UnitTest):
         except ImportError:
             self.skipTest("kumolocal module not available for testing")
 
+    def test_get_zone_name_does_not_mutate_global_metadata(self):
+        """get_zone_name returns device name without mutating config metadata."""
+        from unittest.mock import MagicMock
+
+        zone_number = kumolocal_config.LIVING_ROOM
+        original_name = kumolocal_config.metadata[zone_number]["zone_name"]
+
+        zone = kumolocal.ThermostatZone.__new__(kumolocal.ThermostatZone)
+        zone.zone_number = zone_number
+        zone.device_id = MagicMock()
+        zone.device_id.get_name.return_value = "Main Level"
+
+        def _noop_refresh(*args, **kwargs):
+            return None
+
+        zone.refresh_zone_info = _noop_refresh  # type: ignore[method-assign]
+
+        returned = zone.get_zone_name()
+
+        self.assertEqual(returned, "Main Level")
+        self.assertEqual(
+            kumolocal_config.metadata[zone_number]["zone_name"],
+            original_name,
+            "kumolocal_config.metadata['zone_name'] should remain configuration-only",
+        )
+
 
 class KumolocalConfigUnitTest(utc.UnitTest):
     """Unit tests for kumolocal config zone definitions."""
