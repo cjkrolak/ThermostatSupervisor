@@ -314,7 +314,7 @@ class ThermostatClass(tc.ThermostatCommon):
         return zone_name_to_index
 
     def _find_zone_indices_by_patterns(self, zone_name_to_index):
-        """Find main level, kitchen, and basement indices based on naming patterns."""
+        """Find living room, kitchen, and basement indices based on naming patterns."""
         living_room_index = None
         kitchen_index = None
         basement_index = None

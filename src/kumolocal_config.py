@@ -82,7 +82,7 @@ def load_ip_addresses_from_ini(ini_file=None):
     inputs:
         ini_file (str or None): path to the INI file.  When None, resolves
             to INI_FILE relative to the directory containing this module's
-            project root (two levels up from src/).
+            project root (one level up from src/).
     returns:
         (bool): True if the file was found and parsed, False otherwise.
     """
@@ -93,7 +93,10 @@ def load_ip_addresses_from_ini(ini_file=None):
         ini_file = os.path.join(project_root, INI_FILE)
 
     config = configparser.ConfigParser()
-    if not config.read(ini_file):
+    try:
+        if not config.read(ini_file):
+            return False
+    except configparser.Error:
         return False
 
     # Build a normalized-name -> zone_id reverse lookup
