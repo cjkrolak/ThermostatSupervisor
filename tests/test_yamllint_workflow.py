@@ -183,7 +183,7 @@ class TestYamlLintWorkflow(unittest.TestCase):
         )
 
     def test_github_unit_tests_lint_bypass_conditions(self):
-        """Test that github-unit-tests workflow skips post-lint steps on lint failure."""
+        """Test github-unit-tests workflow skips post-lint steps on lint failure."""
         content = self.github_unit_tests_workflow.read_text()
         # Lint step must have an id so subsequent steps can reference it
         self.assertIn(
@@ -224,7 +224,8 @@ class TestYamlLintWorkflow(unittest.TestCase):
                 content,
                 rf"displayName: {re.escape(step_name)}\n"
                 r"(?:[ ]{4,}.*\n)*?[ ]{4,}condition: "
-                r"and\(succeededOrFailed\(\), eq\(variables\['lintPassed'\], 'true'\)\)",
+                r"and\(succeededOrFailed\(\), "
+                r"eq\(variables\['lintPassed'\], 'true'\)\)",
                 f"ADO pipeline step '{step_name}' should be gated with "
                 "condition: and(succeededOrFailed(), "
                 "eq(variables['lintPassed'], 'true'))",

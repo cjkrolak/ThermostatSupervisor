@@ -109,6 +109,47 @@ class ThermostatClass(
         # detect local network availability for this zone
         self.detect_local_network_availability()
 
+    def _apply_configured_address_for_zone(self, zone_number, device_id):
+        """Apply the configured local IP address to a single PyKumo device.
+
+        The supervisor's zone numbering is configured in `kumolocal_config.metadata`.
+        During a run, `ThermostatZone.get_zone_name()` queries the device and returns
+        its name. Historically, this name was also written back into the global
+        metadata dict. That mutation can break label->IP matching (and cause
+        `device_authentication_error` responses) if a prior zone lookup mapped to a
+        different device than expected.
+
+        To keep address assignment deterministic and independent of any runtime name
+        mutations, we always apply the per-zone configured IP directly to the
+        selected device object.
+
+        inputs:
+            zone_number(int): supervisor zone number.
+            device_id(obj): PyKumo device instance.
+        returns:
+            None
+        """
+        if not isinstance(zone_number, int):
+            return
+        zone_meta = kumolocal_config.metadata.get(zone_number)
+        if not zone_meta:
+            return
+        ip_address = zone_meta.get("ip_address")
+        if not ip_address or ip_address == "0.0.0.0":
+            return
+        try:
+            # PyKumoBase stores the target address as a protected attribute.
+            # Setting it here ensures the status query uses the correct adapter.
+            if getattr(device_id, "_address", None) != ip_address:
+                setattr(device_id, "_address", ip_address)
+        except Exception as exc:
+            util.log_msg(
+                f"Warning: failed to apply configured IP {ip_address} for zone "
+                f"{zone_number}: {exc}",
+                mode=util.DEBUG_LOG + util.STDOUT_LOG,
+                func_name=1,
+            )
+
     def _setup_pykumo_logging(self):
         """
         Configure pykumo loggers to use supervisor logging system.
@@ -297,6 +338,9 @@ class ThermostatClass(
                 func_name=1,
             )
         self.device_id = device_id
+
+        # Ensure this zone's device uses the configured local IP address.
+        self._apply_configured_address_for_zone(zone, device_id)
 
         # Fetch status only for the matched zone, not every zone in the account.
         # This prevents timeout warnings for unmonitored zones that are offline.
@@ -707,8 +751,6 @@ class ThermostatZone(tc.ThermostatCommonZone):
         """
         self.refresh_zone_info()
         zone_name = self.device_id.get_name()
-        # update metadata dict
-        kumolocal_config.metadata[self.zone_number]["zone_name"] = zone_name
         return zone_name
 
     def get_display_temp(self) -> float:  # used
