@@ -683,7 +683,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
     def is_fanning(self) -> int:
         """Return 1 if fan relay is active, else 0."""
         self.refresh_zone_info()
-        return int(self.get_trait("Fan")["timerMode"] == "ON")
+        return int(self._get_fan_timer_mode() == "ON")
 
     def is_power_on(self) -> int:
         """Return 1 if power relay is active, else 0."""
@@ -693,7 +693,28 @@ class ThermostatZone(tc.ThermostatCommonZone):
     def is_fan_on(self) -> int:
         """Return 1 if fan relay is active, else 0."""
         self.refresh_zone_info()
-        return int(self.get_trait("Fan")["timerMode"] == "ON")
+        return int(self._get_fan_timer_mode() == "ON")
+
+    def _get_fan_timer_mode(self) -> Union[str, None]:
+        """
+        Return the Fan trait timer mode.
+
+        Nest responses may omit the Fan.timerMode key (or the Fan trait),
+        which should be treated as fan-off.
+
+        inputs:
+            None
+        returns:
+            (str, None): timerMode string (e.g. "ON") if present, else None.
+        """
+        try:
+            fan_trait = self.get_trait("Fan")
+        except KeyError:
+            return None
+        if not isinstance(fan_trait, dict):
+            return None
+        timer_mode = fan_trait.get("timerMode")
+        return str(timer_mode) if timer_mode is not None else None
 
     def get_wifi_strength(self) -> float:  # noqa R0201
         """Return the wifi signal strength in dBm."""
