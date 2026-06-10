@@ -34,6 +34,36 @@ class EnvironmentTests(utc.UnitTest):
         return_val = env.is_interactive_environment()
         self.assertIsInstance(return_val, bool, "return value is not a boolean")
 
+    @unittest.mock.patch("src.environment.psutil.Process")
+    def test_is_interactive_environment_powershell_not_interactive(self, mock_proc):
+        """
+        Verify PowerShell is treated as a non-interactive parent process.
+        """
+        mock_parent = unittest.mock.Mock()
+        mock_parent.name.return_value = "powershell.exe"
+        mock_proc.return_value.parent.return_value = mock_parent
+        self.assertFalse(env.is_interactive_environment())
+
+    @unittest.mock.patch("src.environment.psutil.Process")
+    def test_is_interactive_environment_unknown_parent_not_interactive(self, mock_proc):
+        """
+        Verify unknown parent processes do not raise and default to not interactive.
+        """
+        mock_parent = unittest.mock.Mock()
+        mock_parent.name.return_value = "some_unknown_parent.exe"
+        mock_proc.return_value.parent.return_value = mock_parent
+        self.assertFalse(env.is_interactive_environment())
+
+    @unittest.mock.patch("src.environment.psutil.Process")
+    def test_is_interactive_environment_pycharm_is_interactive(self, mock_proc):
+        """
+        Verify known IDE parent process is treated as interactive.
+        """
+        mock_parent = unittest.mock.Mock()
+        mock_parent.name.return_value = "pycharm.exe"
+        mock_proc.return_value.parent.return_value = mock_parent
+        self.assertTrue(env.is_interactive_environment())
+
     def test_get_env_variable_with_default(self):
         """
         Test get_env_variable() with default value parameter.

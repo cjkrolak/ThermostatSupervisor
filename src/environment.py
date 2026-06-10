@@ -187,17 +187,43 @@ def load_all_env_variables():
 
 def is_interactive_environment():
     """Return True if script is run through IDE."""
-    parent_process = psutil.Process(os.getpid()).parent()
-    if parent_process is None:
+    try:
+        parent_process = psutil.Process(os.getpid()).parent()
+        if parent_process is None:
+            return False
+        parent = parent_process.name().lower()
+    except (psutil.Error, OSError):
         return False
-    parent = parent_process.name()
-    if parent in ["cmd.exe", "py.exe", "bash", "sphinx-build.exe"]:
+
+    non_interactive_parents = {
+        "bash",
+        "cmd.exe",
+        "codex",
+        "dash",
+        "pwsh.exe",
+        "powershell.exe",
+        "py.exe",
+        "sh",
+        "sphinx-build.exe",
+        "zsh",
+    }
+    interactive_parents = {
+        "eclipse.exe",
+        "pycharm.exe",
+        "python.exe",
+    }
+
+    if parent in non_interactive_parents:
         return False
-    elif parent in ["eclipse.exe", "python.exe", "pycharm.exe"]:
+    if parent in interactive_parents:
         return True
-    else:
-        print(f"DEBUG: parent process={parent}")
-        raise OSError(f"unrecognized environment: {parent}")
+
+    util.log_msg(
+        f"unrecognized environment parent process '{parent}', "
+        "treating as non-interactive",
+        mode=util.DEBUG_LOG,
+    )
+    return False
 
 
 def get_local_ip():
