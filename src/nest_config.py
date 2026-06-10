@@ -109,12 +109,12 @@ argv = [
 
 # force use of credentials.json file for credentials
 use_credentials_file = False
-credentials_file_location = ".//credentials.json"
+credentials_file_location = "./credentials.json"
 
 # data caching parameters
 # 20 sec. cache period needed to avoid spamming nest server.
 cache_period_sec = 20.0  # cache period for data, min 5 sec.
-cache_file_location = ".//token_cache.json"  # oauth credentials
+cache_file_location = "./token_cache.json"  # oauth credentials
 
 # flag to check thermostat response time during basic checkout
 check_response_time = False
