@@ -12,8 +12,22 @@ authorization) and where/how to store it so the supervisor can run unattended.
 ThermostatSupervisor's Nest integration uses these local files by default:
 
 - `token_cache.json`: OAuth token cache (access + refresh token metadata)
-- `credentials.json` (optional): OAuth client credentials (client id/secret and
-  Device Access project id)
+- `credentials.json` (optional): OAuth client credentials. This file must use
+  the following schema (note the non-standard `dac_project_id` field required
+  by ThermostatSupervisor in addition to the standard Google fields):
+
+  ```json
+  {
+    "web": {
+      "client_id": "<your-oauth-client-id>",
+      "client_secret": "<your-oauth-client-secret>",
+      "dac_project_id": "<your-device-access-project-id>"
+    }
+  }
+  ```
+
+  This is **not** the unmodified file downloaded from the Google Cloud Console —
+  you must add the `dac_project_id` key manually.
 
 By default these paths are relative to the working directory where you start
 the process:
@@ -86,26 +100,40 @@ ThermostatSupervisor can create `token_cache.json` automatically on startup.
 
 ## Storing Tokens for Long-Running Use
 
-### Local development (`supervisor-env.txt`)
+### Local development (environment variables)
 
-For local development, create `supervisor-env.txt` in the project root (one
-`KEY=VALUE` per line). It is ignored by git and overrides system environment
-variables.
+`src/nest.py` reads `GCLOUD_CLIENT_ID`, `GCLOUD_CLIENT_SECRET`, and
+`DAC_PROJECT_ID` directly from the shell environment via `os.environ`.
+Unlike some other modules in this project, it does **not** load values from
+`supervisor-env.txt` automatically, so entries in that file have no effect
+on Nest credential resolution.
 
-At minimum for Nest:
+You must export the variables in your shell before running the Nest module:
 
-```text
-GCLOUD_CLIENT_ID=...
-GCLOUD_CLIENT_SECRET=...
-DAC_PROJECT_ID=...
+```bash
+export GCLOUD_CLIENT_ID=...
+export GCLOUD_CLIENT_SECRET=...
+export DAC_PROJECT_ID=...
 ```
+
+Alternatively, you can keep the values in `supervisor-env.txt` for reference
+and source the file into your shell before running:
+
+```bash
+set -o allexport && source supervisor-env.txt && set +o allexport
+python -m src.nest nest 0
+```
+
+If you prefer not to export credentials into the shell environment, use
+`credentials.json` instead (see Option B above and
+`nest_config.use_credentials_file` in `src/nest_config.py`).
 
 Optional (only needed to auto-create `token_cache.json` as in Option B):
 
-```text
-NEST_ACCESS_TOKEN=<access_token>
-NEST_REFRESH_TOKEN=<refresh_token>
-NEST_TOKEN_EXPIRES_IN=3600
+```bash
+export NEST_ACCESS_TOKEN=<access_token>
+export NEST_REFRESH_TOKEN=<refresh_token>
+export NEST_TOKEN_EXPIRES_IN=3600
 ```
 
 ### Production deployments
