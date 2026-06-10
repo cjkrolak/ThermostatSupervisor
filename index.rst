@@ -45,12 +45,6 @@ Key Features
    
    docs/src
 
-.. toctree::
-   :maxdepth: 2
-   :caption: User Guides:
-
-   docs/nest-token
-
 Indices and tables
 ==================
 
