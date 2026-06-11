@@ -79,6 +79,7 @@ Environment variables required depend on the thermostat being used.<br/>
   * 'BLINK_USERNAME': username for Blink account
   * 'BLINK_PASSWORD': password for Blink account
   * 'BLINK_2FA': 2 factor auth string for Blink account
+  * Setup details for credentials, 2FA, zone mapping, and precedence: [Blink User Setup](docs/blink-user.md)
 * Nest thermostat requires the 'NEST' env vars or env vars supplied via a json file:
   * 'GCLOUD_CLIENT_ID': client ID from Google Clout OAuth credentials
   * 'GCLOUD_CLIENT_SECRET': client secret from Google Clout OAuth credentials
@@ -216,6 +217,7 @@ Script will connect to Blink camera through Blink account.<br/>
 Default poll time is currently set to 10 minutes.<br/>
 Zone number refers to the thermostat order in Blink server, 0=first thermostat data returned, 1=second thermostat, etc.<br/><br/>
 command line usage:  "*python -m src.blink \<thermostat type\> \<zone\>*"
+Blink setup reference: [docs/blink-user.md](docs/blink-user.md)
 
 ## nest.py:
 Script will connect to nest thermostats through Google Device Access console account.<br/>
