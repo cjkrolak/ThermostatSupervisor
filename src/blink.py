@@ -33,7 +33,11 @@ else:
 
 # Import blinkpy exceptions for proper error handling
 try:
-    from blinkpy.auth import LoginError, UnauthorizedError  # type: ignore
+    from blinkpy.auth import (  # type: ignore
+        LoginError,
+        UnauthorizedError,
+        BlinkTwoFARequiredError,
+    )
     from aiohttp.client_exceptions import (  # type: ignore
         ClientConnectionError,
         ContentTypeError,
@@ -47,6 +51,11 @@ except ImportError:
 
     class UnauthorizedError(Exception):
         """Unauthorized error fallback."""
+
+        pass
+
+    class BlinkTwoFARequiredError(Exception):
+        """Two-factor authentication required error fallback."""
 
         pass
 
@@ -370,7 +379,12 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):  # type: ignore[misc]
             )
 
     async def _attempt_async_authentication(self, session):
-        """Attempt single async authentication process."""
+        """
+        Attempt single async authentication process.
+
+        Supports both blinkpy 0.25.x+ (OAuth v2, BlinkTwoFARequiredError /
+        send_2fa_code) and older 0.22.x APIs (send_auth_key).
+        """
         self.blink = blinkpy.Blink(session=session)  # type: ignore[misc]
         if self.blink is None:
             raise RuntimeError(
@@ -381,26 +395,66 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):  # type: ignore[misc]
         self.blink.auth = auth.Auth(  # type: ignore[misc]
             self.auth_dict, no_prompt=True, session=session
         )
-        await self.blink.start()
 
-        # Send 2FA key with proper error checking
-        # type: ignore on next line for dynamic auth attributes
-        auth_success = await self.blink.auth.send_auth_key(  # type: ignore
-            self.blink, self.bl_2fa
-        )
-        if not auth_success:
+        # blinkpy 0.25.x: start() raises BlinkTwoFARequiredError when
+        # 2FA is needed; earlier 0.22.x versions returned False and
+        # required a subsequent send_auth_key call.
+        try:
+            result = await self.blink.start()
+        except BlinkTwoFARequiredError:
+            result = await self._complete_2fa_auth()
+            if not result:
+                raise ValueError(
+                    "2FA verification failed. Please check your "
+                    "verification code."
+                )
+            return result
+
+        if not result:
             raise ValueError(
-                "2FA verification failed. Please check your verification code."
+                f"Blink authentication failed for zone {self.zone_number}. "
+                "Login returned False. Please verify your credentials "
+                "and ensure your Blink account is accessible."
             )
 
-        # Check if setup_post_verify succeeds with retry
-        setup_success = await self.blink.setup_post_verify()
-        return setup_success
+        return result
+
+    async def _complete_2fa_auth(self):
+        """
+        Complete 2FA authentication using the appropriate blinkpy API.
+
+        Uses send_2fa_code (blinkpy 0.25.x OAuth v2) when available,
+        falling back to the legacy send_auth_key API for 0.22.x.
+
+        returns:
+            (bool): True if 2FA completed successfully, False otherwise.
+        """
+        if hasattr(self.blink, "send_2fa_code"):
+            # New blinkpy 0.25.x API (OAuth v2)
+            return await self.blink.send_2fa_code(self.bl_2fa)
+
+        if hasattr(self.blink.auth, "send_auth_key"):
+            # Legacy blinkpy 0.22.x API
+            auth_success = await self.blink.auth.send_auth_key(  # type: ignore
+                self.blink, self.bl_2fa
+            )
+            if not auth_success:
+                return False
+            return await self.blink.setup_post_verify()
+
+        raise ValueError(
+            "Unsupported blinkpy version: no 2FA completion method found. "
+            "Please update blinkpy to a supported version."
+        )
 
     async def async_auth_start(self):
         """
-        blinkpy 0.22.0 introducted async start, this is the compatible
-        auth_start function with improved error handling and retry logic.
+        Async auth start, compatible with blinkpy 0.22.0+.
+
+        blinkpy 0.22.0 introduced the async start flow. blinkpy 0.25.x+
+        uses OAuth v2 (BlinkTwoFARequiredError / send_2fa_code). Older
+        0.22.x used send_auth_key for 2FA completion. Both are handled by
+        _attempt_async_authentication via _complete_2fa_auth.
         """
         async with ClientSession() as session:
             self._setup_auth_parameters()
@@ -424,6 +478,7 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):  # type: ignore[misc]
             UnauthorizedError: self._format_unauthorized_error,
             ClientConnectionError: self._format_connection_error,
             ContentTypeError: self._format_content_error,
+            BlinkTwoFARequiredError: self._format_2fa_required_error,
             ValueError: self._format_value_error,
             AttributeError: self._format_attribute_error,
         }
@@ -492,6 +547,16 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):  # type: ignore[misc]
             f"{self.zone_number} ({auth_type} mode). This may occur if the "
             f"initial login failed. Please verify your credentials and try "
             f"again. Error: {error_str}"
+        )
+
+    def _format_2fa_required_error(self, error_str, auth_type):
+        """Format two-factor authentication required error message."""
+        return (
+            f"ERROR: Blink 2FA required but could not be completed for zone "
+            f"{self.zone_number} ({auth_type} mode). Please ensure "
+            f"{self.BL_2FA_KEY} is set in your environment or "
+            f"supervisor-env.txt with a valid, current 2FA code. "
+            f"Error: {error_str}"
         )
 
     def _format_generic_error(self, error_type, error_str, auth_type):

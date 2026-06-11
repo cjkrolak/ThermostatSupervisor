@@ -1,10 +1,12 @@
 """
-Unit test module for blink.py 2FA logging functionality.
+Unit test module for blink.py 2FA logging functionality and auth flow.
 """
 
 # built-in imports
 import ast
+import asyncio
 from pathlib import Path
+from unittest.mock import AsyncMock, MagicMock, patch
 import unittest
 
 # local imports
@@ -199,6 +201,245 @@ class Blink2FALoggingTests(utc.UnitTest):
             zone_assignment_index,
             log_call_index,
             "self.zone_number must be assigned before 2FA source logging",
+        )
+
+
+class BlinkAsyncAuthFlowTests(utc.UnitTest):
+    """
+    Unit tests for the async authentication flow in ThermostatClass.
+
+    These tests verify that _attempt_async_authentication and
+    _complete_2fa_auth behave correctly for blinkpy 0.25.x (OAuth v2
+    flow with BlinkTwoFARequiredError / send_2fa_code) and older 0.22.x
+    APIs (send_auth_key).
+    """
+
+    def _make_thermostat_stub(self):
+        """
+        Build a minimal ThermostatClass stub without invoking __init__.
+
+        Returns a plain object whose async methods come from the real
+        ThermostatClass, but with only the attributes needed for auth
+        tests pre-set.
+        """
+        # Import here so blinkpy is already initialised by the module
+        from src import blink  # noqa: PLC0415
+
+        instance = object.__new__(blink.ThermostatClass)
+        instance.zone_number = 0
+        instance.bl_2fa = "123456"
+        instance.auth_dict = {"username": "user@example.com",
+                              "password": "secret"}
+        instance.blink = None
+        instance.verbose = False
+        instance.BL_2FA_KEY = "BLINK_2FA"
+        return instance
+
+    def _run_async(self, coro):
+        """Run a coroutine synchronously for testing."""
+        loop = asyncio.new_event_loop()
+        try:
+            return loop.run_until_complete(coro)
+        finally:
+            loop.close()
+
+    # ------------------------------------------------------------------
+    # _attempt_async_authentication: login succeeds without 2FA
+    # ------------------------------------------------------------------
+
+    def test_attempt_async_auth_success_no_2fa(self):
+        """
+        When blink.start() returns True, authentication succeeds without 2FA.
+        """
+        from src import blink  # noqa: PLC0415
+
+        stub = self._make_thermostat_stub()
+
+        mock_blink_obj = MagicMock()
+        mock_blink_obj.start = AsyncMock(return_value=True)
+
+        mock_auth_obj = MagicMock()
+
+        with patch.object(blink, "blinkpy") as mock_blinkpy_mod, \
+                patch.object(blink, "auth") as mock_auth_mod:
+            mock_blinkpy_mod.Blink.return_value = mock_blink_obj
+            mock_auth_mod.Auth.return_value = mock_auth_obj
+
+            result = self._run_async(
+                stub._attempt_async_authentication(MagicMock())
+            )
+
+        self.assertTrue(result, "Should return True when login succeeds")
+
+    # ------------------------------------------------------------------
+    # _attempt_async_authentication: start() returns False
+    # ------------------------------------------------------------------
+
+    def test_attempt_async_auth_start_returns_false_raises(self):
+        """
+        When blink.start() returns False, a ValueError is raised with
+        an informative message (no AttributeError on blink.urls).
+        """
+        from src import blink  # noqa: PLC0415
+
+        stub = self._make_thermostat_stub()
+
+        mock_blink_obj = MagicMock()
+        mock_blink_obj.start = AsyncMock(return_value=False)
+
+        with patch.object(blink, "blinkpy") as mock_blinkpy_mod, \
+                patch.object(blink, "auth") as mock_auth_mod:
+            mock_blinkpy_mod.Blink.return_value = mock_blink_obj
+            mock_auth_mod.Auth.return_value = MagicMock()
+
+            with self.assertRaises(ValueError) as ctx:
+                self._run_async(
+                    stub._attempt_async_authentication(MagicMock())
+                )
+
+        self.assertIn(
+            "Login returned False",
+            str(ctx.exception),
+            "ValueError message should indicate login returned False",
+        )
+
+    # ------------------------------------------------------------------
+    # _attempt_async_authentication: blinkpy 0.25.x - BlinkTwoFARequired
+    # ------------------------------------------------------------------
+
+    def test_attempt_async_auth_2fa_required_uses_send_2fa_code(self):
+        """
+        When blink.start() raises BlinkTwoFARequiredError and the Blink
+        object has send_2fa_code, that method is called (blinkpy 0.25.x).
+        """
+        from src import blink  # noqa: PLC0415
+
+        stub = self._make_thermostat_stub()
+
+        mock_blink_obj = MagicMock(spec=["start", "send_2fa_code"])
+        mock_blink_obj.start = AsyncMock(
+            side_effect=blink.BlinkTwoFARequiredError
+        )
+        mock_blink_obj.send_2fa_code = AsyncMock(return_value=True)
+
+        with patch.object(blink, "blinkpy") as mock_blinkpy_mod, \
+                patch.object(blink, "auth") as mock_auth_mod:
+            mock_blinkpy_mod.Blink.return_value = mock_blink_obj
+            mock_auth_mod.Auth.return_value = MagicMock()
+
+            result = self._run_async(
+                stub._attempt_async_authentication(MagicMock())
+            )
+
+        mock_blink_obj.send_2fa_code.assert_called_once_with(stub.bl_2fa)
+        self.assertTrue(result, "Should return True after successful 2FA")
+
+    # ------------------------------------------------------------------
+    # _attempt_async_authentication: legacy 0.22.x fallback
+    # ------------------------------------------------------------------
+
+    def test_attempt_async_auth_2fa_required_fallback_send_auth_key(self):
+        """
+        When BlinkTwoFARequiredError is raised and the Blink object does
+        NOT have send_2fa_code but auth has send_auth_key, the legacy
+        0.22.x path is used.
+        """
+        from src import blink  # noqa: PLC0415
+
+        stub = self._make_thermostat_stub()
+
+        mock_auth_obj = MagicMock(spec=["send_auth_key"])
+        mock_auth_obj.send_auth_key = AsyncMock(return_value=True)
+
+        mock_blink_obj = MagicMock(spec=["start", "setup_post_verify"])
+        mock_blink_obj.auth = mock_auth_obj
+        mock_blink_obj.start = AsyncMock(
+            side_effect=blink.BlinkTwoFARequiredError
+        )
+        mock_blink_obj.setup_post_verify = AsyncMock(return_value=True)
+
+        with patch.object(blink, "blinkpy") as mock_blinkpy_mod, \
+                patch.object(blink, "auth") as mock_auth_mod:
+            mock_blinkpy_mod.Blink.return_value = mock_blink_obj
+            mock_auth_mod.Auth.return_value = mock_auth_obj
+
+            result = self._run_async(
+                stub._attempt_async_authentication(MagicMock())
+            )
+
+        mock_auth_obj.send_auth_key.assert_called_once_with(
+            mock_blink_obj, stub.bl_2fa
+        )
+        self.assertTrue(result)
+
+    # ------------------------------------------------------------------
+    # _complete_2fa_auth: send_2fa_code fails
+    # ------------------------------------------------------------------
+
+    def test_complete_2fa_auth_send_2fa_code_failure_raises(self):
+        """
+        When send_2fa_code returns False, _attempt_async_authentication
+        raises a ValueError describing a failed 2FA verification.
+        """
+        from src import blink  # noqa: PLC0415
+
+        stub = self._make_thermostat_stub()
+
+        mock_blink_obj = MagicMock(spec=["start", "send_2fa_code"])
+        mock_blink_obj.start = AsyncMock(
+            side_effect=blink.BlinkTwoFARequiredError
+        )
+        mock_blink_obj.send_2fa_code = AsyncMock(return_value=False)
+
+        with patch.object(blink, "blinkpy") as mock_blinkpy_mod, \
+                patch.object(blink, "auth") as mock_auth_mod:
+            mock_blinkpy_mod.Blink.return_value = mock_blink_obj
+            mock_auth_mod.Auth.return_value = MagicMock()
+
+            with self.assertRaises(ValueError) as ctx:
+                self._run_async(
+                    stub._attempt_async_authentication(MagicMock())
+                )
+
+        self.assertIn(
+            "2FA verification failed",
+            str(ctx.exception),
+        )
+
+    # ------------------------------------------------------------------
+    # _complete_2fa_auth: no 2FA method available
+    # ------------------------------------------------------------------
+
+    def test_complete_2fa_auth_no_method_raises_value_error(self):
+        """
+        When BlinkTwoFARequiredError is raised but neither send_2fa_code
+        nor send_auth_key is available, a ValueError is raised with an
+        unsupported-version message.
+        """
+        from src import blink  # noqa: PLC0415
+
+        stub = self._make_thermostat_stub()
+
+        # spec=[] means the mock has no attributes matching either method
+        mock_blink_obj = MagicMock(spec=["start"])
+        mock_blink_obj.start = AsyncMock(
+            side_effect=blink.BlinkTwoFARequiredError
+        )
+        mock_blink_obj.auth = MagicMock(spec=[])
+
+        with patch.object(blink, "blinkpy") as mock_blinkpy_mod, \
+                patch.object(blink, "auth") as mock_auth_mod:
+            mock_blinkpy_mod.Blink.return_value = mock_blink_obj
+            mock_auth_mod.Auth.return_value = MagicMock(spec=[])
+
+            with self.assertRaises(ValueError) as ctx:
+                self._run_async(
+                    stub._attempt_async_authentication(MagicMock())
+                )
+
+        self.assertIn(
+            "Unsupported blinkpy version",
+            str(ctx.exception),
         )
 
 
