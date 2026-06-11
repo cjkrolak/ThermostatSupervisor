@@ -79,6 +79,7 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):  # type: ignore[misc]
         self.BL_UNAME_KEY = "BLINK_USERNAME"
         self.BL_PASSWORD_KEY = "BLINK_PASSWORD"
         self.BL_2FA_KEY = "BLINK_2FA"
+        self.zone_number = int(zone)
 
         # Get username
         uname_result = env.get_env_variable(
@@ -104,7 +105,6 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):  # type: ignore[misc]
 
         self.auth_dict = {"username": self.bl_uname, "password": self.bl_pwd}
         self.verbose = verbose
-        self.zone_number = int(zone)
 
         # connect to Blink server and authenticate
         self.args = None

@@ -3,6 +3,8 @@ Unit test module for blink.py 2FA logging functionality.
 """
 
 # built-in imports
+import ast
+from pathlib import Path
 import unittest
 
 # local imports
@@ -139,6 +141,64 @@ class Blink2FALoggingTests(utc.UnitTest):
         self.assertEqual(
             source_msg,
             "using default 2FA value (missing)"
+        )
+
+    def test_zone_initialized_before_2fa_logging(self):
+        """
+        Verify zone_number is assigned before _log_2fa_source() call.
+        """
+        blink_path = Path(__file__).resolve().parent.parent / "src" / "blink.py"
+        source = blink_path.read_text(encoding="utf-8")
+        tree = ast.parse(source)
+
+        init_func = None
+        for node in tree.body:
+            if isinstance(node, ast.ClassDef) and node.name == "ThermostatClass":
+                for class_node in node.body:
+                    if (
+                        isinstance(class_node, ast.FunctionDef)
+                        and class_node.name == "__init__"
+                    ):
+                        init_func = class_node
+                        break
+                break
+
+        self.assertIsNotNone(init_func, "ThermostatClass.__init__ not found")
+
+        zone_assignment_index = None
+        log_call_index = None
+        for index, stmt in enumerate(init_func.body):
+            if isinstance(stmt, ast.Assign):
+                for target in stmt.targets:
+                    if (
+                        isinstance(target, ast.Attribute)
+                        and isinstance(target.value, ast.Name)
+                        and target.value.id == "self"
+                        and target.attr == "zone_number"
+                    ):
+                        zone_assignment_index = index
+            if (
+                isinstance(stmt, ast.Expr)
+                and isinstance(stmt.value, ast.Call)
+                and isinstance(stmt.value.func, ast.Attribute)
+                and isinstance(stmt.value.func.value, ast.Name)
+                and stmt.value.func.value.id == "self"
+                and stmt.value.func.attr == "_log_2fa_source"
+            ):
+                log_call_index = index
+
+        self.assertIsNotNone(
+            zone_assignment_index,
+            "self.zone_number assignment not found in __init__",
+        )
+        self.assertIsNotNone(
+            log_call_index,
+            "self._log_2fa_source call not found in __init__",
+        )
+        self.assertLess(
+            zone_assignment_index,
+            log_call_index,
+            "self.zone_number must be assigned before 2FA source logging",
         )
 
 
