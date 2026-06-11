@@ -55,22 +55,55 @@ environment, `supervisor-env.txt` wins.
 
 ## Blink 2FA Generation and Refresh
 
-ThermostatSupervisor uses Blink authentication with `no_prompt=True`, so you
-must provide a current 2FA code before startup.
+Blink uses its own email- or SMS-based PIN system for two-factor
+authentication, **not** a TOTP authenticator app (e.g. Google Authenticator or
+Authy).  When `blinkpy` initiates a login, Blink's servers automatically send
+a one-time PIN to the email address or phone number registered to your Blink
+account.
 
-1. Open your Blink-linked authenticator app (or the Blink account 2FA source
-   configured for your account).
-2. Generate a fresh 2FA code.
-3. Update `BLINK_2FA` in `supervisor-env.txt` (or your exported env var).
-4. Start or restart the Blink module or supervisor process.
+### Step-by-step
 
-```bash
-python -m src.blink blink 0
-```
+1. **Trigger a login attempt.**  Run (or restart) the Blink module so that
+   `blinkpy` contacts the Blink servers:
 
-Important:
-- 2FA codes are short-lived and can expire in under a minute.
-- If authentication fails with 2FA errors, generate a new code and retry.
+   ```bash
+   python -m src.blink blink 0
+   ```
+
+2. **Retrieve the PIN from Blink.**  Check the email address (or SMS) linked to
+   your Blink account.  Blink will send a message with a subject similar to
+   *"Your Blink verification code"*.  The PIN is typically a 6-digit number
+   and is valid for only a few minutes.
+
+   You can also trigger a fresh PIN from the **Blink Home Monitor** mobile app
+   (available for
+   [iOS](https://apps.apple.com/us/app/blink-home-monitor/id1013961985) and
+   [Android](https://play.google.com/store/apps/details?id=com.immedia.videocamera))
+   by logging out of the app and logging back in.
+
+3. **Update `BLINK_2FA`.**  Place the PIN value in `supervisor-env.txt` (or
+   export it in your shell) before starting the supervisor:
+
+   ```text
+   BLINK_2FA=123456
+   ```
+
+4. **Start (or restart) the Blink module.**  The application reads `BLINK_2FA`
+   at startup and passes it to `blinkpy` using `send_auth_key()` with
+   `no_prompt=True`, so no interactive prompt is shown.
+
+   ```bash
+   python -m src.blink blink 0
+   ```
+
+### Important notes
+
+- PINs expire quickly (often within 1–2 minutes).  Update `BLINK_2FA` and
+  restart immediately after receiving the code.
+- `blinkpy` cannot request a new PIN on your behalf; only Blink's servers
+  initiate the delivery.
+- If authentication fails with a 2FA error, generate a fresh PIN (repeat
+  steps 1–4).
 
 ## Blink Zone Setup
 
