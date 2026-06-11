@@ -13,14 +13,16 @@ Blink support uses these environment variables:
   Blink accounts)
 
 `BLINK_USERNAME` and `BLINK_PASSWORD` are validated before startup for Blink.
-`BLINK_2FA` is loaded at runtime and can use a fallback value if missing, but
-Blink authentication will fail unless a valid current code is available.
+`BLINK_2FA` is loaded at runtime. If missing, the code uses a placeholder value
+for logging/diagnostics only, and authentication will still fail until a valid
+current code is provided.
 
 ## Where to Store Blink Login Information
 
-### Preferred: `supervisor-env.txt` in project root
+### Preferred: `supervisor-env.txt` in current working directory
 
-Create `supervisor-env.txt` in the repository root with key/value pairs:
+Create `supervisor-env.txt` in the directory where you run
+ThermostatSupervisor with key/value pairs:
 
 ```text
 BLINK_USERNAME=your_blink_username
@@ -28,7 +30,8 @@ BLINK_PASSWORD=your_blink_password
 BLINK_2FA=123456
 ```
 
-- Location: repository root (same directory where you run `python -m src.*`)
+- Location: current working directory used to run `python -m src.*` (this is
+  often the repository root)
 - This file is ignored by git (`supervisor-env.txt` is in `.gitignore`)
 - Use `supervisor-env.txt.example` as a template
 
@@ -55,11 +58,9 @@ environment, `supervisor-env.txt` wins.
 
 ## Blink 2FA Generation and Refresh
 
-Blink uses its own email- or SMS-based PIN system for two-factor
-authentication, **not** a TOTP authenticator app (e.g. Google Authenticator or
-Authy).  When `blinkpy` initiates a login, Blink's servers automatically send
-a one-time PIN to the email address or phone number registered to your Blink
-account.
+Blink requires a short-lived verification code for two-factor authentication.
+When `blinkpy` initiates a login, Blink sends this code through the account's
+configured 2FA delivery method.
 
 ### Step-by-step
 
@@ -89,8 +90,9 @@ account.
    ```
 
 4. **Start (or restart) the Blink module.**  The application reads `BLINK_2FA`
-   at startup and passes it to `blinkpy` using `send_auth_key()` with
-   `no_prompt=True`, so no interactive prompt is shown.
+   at startup and passes it to `blinkpy` via `send_auth_key()`. The
+   authentication object is created with `no_prompt=True`, so no interactive
+   prompt is shown.
 
    ```bash
    python -m src.blink blink 0
