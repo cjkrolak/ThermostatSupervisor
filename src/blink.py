@@ -2,13 +2,14 @@
 
 # built-in imports
 import asyncio
+import json
 import logging
+import os
 import pprint
 import sys
 import time
 import traceback
 from typing import Union
-from urllib.parse import urlencode as url_encode
 from aiohttp import ClientSession, TraceConfig
 
 # third party imports
@@ -70,6 +71,12 @@ except ImportError:
         """Content type error fallback."""
 
         pass
+
+
+# Path for token cache file used to persist refresh token across runs.
+# Storing the refresh token allows blinkpy to skip the PKCE web flow on
+# subsequent authentication attempts (auth.startup() tries refresh first).
+TOKEN_CACHE_FILE = "./data/blink_auth_cache.json"
 
 
 class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):  # type: ignore[misc]
@@ -454,44 +461,147 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):  # type: ignore[misc]
                 "retries. Camera list may not be available."
             )
 
+    def _load_token_cache(self) -> dict:
+        """
+        Load cached auth tokens from the token cache file.
+
+        If the file exists and contains a valid ``refresh_token`` and
+        ``hardware_id``, the cached data is returned so it can be merged
+        into the ``Auth`` initialisation dict.  When ``auth.startup()``
+        receives a non-empty ``refresh_token`` + ``hardware_id`` it tries
+        the OAuth v2 token-refresh path first, skipping the PKCE web flow
+        entirely.  The PKCE web flow is only attempted when the refresh
+        token is absent or has expired.
+
+        The cache file intentionally does **not** store username or
+        password — those are already held in ``supervisor-env.txt``.
+
+        returns:
+            (dict): Cached token data (may be empty if no valid cache).
+        """
+        if not os.path.exists(TOKEN_CACHE_FILE):
+            return {}
+        try:
+            with open(TOKEN_CACHE_FILE, "r", encoding="utf-8") as f:
+                cache = json.load(f)
+            if cache.get("refresh_token") and cache.get("hardware_id"):
+                if self.verbose:
+                    hw_suffix = cache["hardware_id"][-8:]
+                    print(
+                        f"[Blink zone {self.zone_number}] Loaded token "
+                        f"cache (hardware_id: ...{hw_suffix}). "
+                        f"Refresh token will be tried first."
+                    )
+                return cache
+        except (json.JSONDecodeError, OSError, KeyError) as exc:
+            if self.verbose:
+                print(
+                    f"[Blink zone {self.zone_number}] Could not load "
+                    f"token cache: {exc}"
+                )
+        return {}
+
+    async def _save_token_cache(self) -> None:
+        """
+        Save auth tokens to the token cache file after a successful login.
+
+        The cache stores the OAuth access token, refresh token,
+        ``hardware_id``, and related metadata produced by blinkpy after
+        successful authentication.  On the next run ``_load_token_cache``
+        returns this data so ``auth.startup()`` can use the refresh token
+        path instead of re-running the full PKCE web flow.
+
+        Username and password are **not** saved — they are already stored
+        in ``supervisor-env.txt`` and are merged back when creating
+        ``Auth`` for each run.
+
+        Silently skips saving if ``self.blink`` or ``self.blink.auth`` is
+        not yet initialised.
+        """
+        if self.blink is None or not hasattr(self.blink, "auth"):
+            return
+        if self.blink.auth is None:
+            return
+        try:
+            os.makedirs(os.path.dirname(TOKEN_CACHE_FILE) or ".", exist_ok=True)
+            # Obtain a copy of login attributes and strip credentials.
+            cache_data = dict(self.blink.auth.login_attributes)
+            cache_data.pop("username", None)
+            cache_data.pop("password", None)
+            with open(TOKEN_CACHE_FILE, "w", encoding="utf-8") as f:
+                json.dump(cache_data, f, indent=2)
+            if self.verbose:
+                print(
+                    f"[Blink zone {self.zone_number}] Token cache saved "
+                    f"to {TOKEN_CACHE_FILE}. "
+                    f"Future logins will use the refresh token."
+                )
+        except OSError as exc:
+            if self.verbose:
+                print(
+                    f"[Blink zone {self.zone_number}] Warning: could not "
+                    f"save token cache: {exc}"
+                )
+
     async def _attempt_async_authentication(self, session):
         """
         Attempt single async authentication process.
 
         Tries two authentication paths in order:
-        1. OAuth v2 web flow via blink.start() (blinkpy 0.25.x+, preferred).
-           If start() raises BlinkTwoFARequiredError, 2FA is completed via
-           send_2fa_code() or the legacy send_auth_key() API.
-        2. Password grant fallback via auth.login() (used when the OAuth v2
-           web flow returns False). If login() raises BlinkTwoFARequiredError,
-           the stored 2FA code is added to the request headers and login is
-           retried.
-        """
-        self.blink = blinkpy.Blink(session=session)  # type: ignore[misc]
-        if self.blink is None:
-            raise RuntimeError(
-                "ERROR: Blink object failed to instantiate "
-                f"for zone {self.zone_number}"
-            )
 
+        1. **Token refresh** (if a cached ``refresh_token`` and
+           ``hardware_id`` exist from a previous run): blinkpy's
+           ``auth.startup()`` tries an OAuth v2 token refresh first.
+           On success the full PKCE web flow is bypassed entirely.
+           If the cached token has expired, ``startup()`` automatically
+           falls through to the PKCE web flow.
+        2. **OAuth v2 PKCE web flow** (blinkpy 0.25.x+, preferred fresh
+           login): ``blink.start()`` orchestrates a full PKCE
+           authorization-code flow.  If ``BlinkTwoFARequiredError`` is
+           raised, 2FA is completed via ``send_2fa_code()`` or the legacy
+           ``send_auth_key()`` API.
+        3. **Password grant fallback** (``auth.login()``): used when the
+           PKCE web flow returns ``False`` (e.g. Blink's web signin page
+           returns an unexpected HTTP status such as 406).  This is the
+           legacy OAuth password-grant path (``client_id=android``) that
+           blinkpy uses for token refresh internally.
+
+        After any successful authentication the tokens are saved to the
+        cache file so the next run can use the refresh token path.
+        """
+        # Merge cached tokens into the auth-init dict so that
+        # auth.startup() will attempt token refresh before PKCE.
+        cached = self._load_token_cache()
+        auth_init_data = dict(self.auth_dict)
+        if cached:
+            auth_init_data.update(cached)
+
+        self.blink = blinkpy.Blink(session=session)  # type: ignore[misc]
         self.blink.auth = auth.Auth(  # type: ignore[misc]
-            self.auth_dict, no_prompt=True, session=session
+            auth_init_data, no_prompt=True, session=session
         )
 
-        # Path 1: OAuth v2 web flow (blink.start() with PKCE).
-        # BlinkTwoFARequiredError is raised when 2FA is required.
         if self.verbose:
-            print(
-                f"[Blink zone {self.zone_number}] Attempting OAuth v2 web "
-                f"flow via blink.start()..."
-            )
+            if cached:
+                print(
+                    f"[Blink zone {self.zone_number}] Attempting auth "
+                    f"(cached token present — refresh tried first)..."
+                )
+            else:
+                print(
+                    f"[Blink zone {self.zone_number}] Attempting OAuth v2 "
+                    f"PKCE web flow via blink.start()..."
+                )
+
+        # Path 1 + 2: token refresh (if cached) then PKCE web flow.
+        # BlinkTwoFARequiredError is only raised by the PKCE path.
         try:
             result = await self.blink.start()
         except BlinkTwoFARequiredError:
             if self.verbose:
                 print(
-                    f"[Blink zone {self.zone_number}] BlinkTwoFARequiredError "
-                    f"raised by start(). Completing 2FA via send_2fa_code()..."
+                    f"[Blink zone {self.zone_number}] 2FA required. "
+                    f"Completing via send_2fa_code()..."
                 )
             result = await self._complete_2fa_auth()
             if not result:
@@ -499,85 +609,103 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):  # type: ignore[misc]
                     "2FA verification failed. Please check your "
                     "verification code."
                 )
+            await self._save_token_cache()
             return result
 
         if result:
             if self.verbose:
                 print(
-                    f"[Blink zone {self.zone_number}] OAuth v2 web flow "
+                    f"[Blink zone {self.zone_number}] Authentication "
                     f"succeeded."
                 )
+            await self._save_token_cache()
             return result
 
-        # Path 2: Password grant fallback (auth.login() to /oauth/token).
-        # Used when the OAuth v2 web flow fails (e.g. Blink's web signin
-        # endpoint returns an unexpected status rather than a redirect/412).
+        # Path 3: Password grant fallback via auth.login().
+        # Used when the PKCE web flow returns False — e.g. Blink's
+        # OAuth web signin returns HTTP 406 (rate limiting / account
+        # lockout), which causes oauth_signin() to return None and
+        # blinkpy to log "Login failed".
         if self.verbose:
             print(
-                f"[Blink zone {self.zone_number}] OAuth v2 web flow returned "
-                f"False. Trying password grant fallback via auth.login()..."
+                f"[Blink zone {self.zone_number}] OAuth v2 web flow "
+                f"returned False. Trying password grant fallback via "
+                f"auth.login()..."
             )
-        return await self._attempt_password_grant_auth()
+        result = await self._attempt_password_grant_auth()
+        if result:
+            await self._save_token_cache()
+        return result
 
     async def _attempt_password_grant_auth(self):
         """
-        Fallback: authenticate via direct password grant (auth.login()).
+        Fallback: authenticate via the legacy OAuth password grant.
 
-        Tries the legacy android OAuth password grant first.  If Blink's
-        server rejects that with HTTP 401 (UnauthorizedError) — which
-        happens when the android client_id is deprecated — the method
-        falls back to an iOS-client password grant via
-        ``_attempt_ios_client_grant``.  Used when the OAuth v2 PKCE web
-        flow (blink.start()) fails.
+        Calls ``auth.login()`` which POSTs to the Blink OAuth token
+        endpoint (``/oauth/token``) with ``client_id=android`` and
+        ``grant_type=password``.  This is the pre-PKCE authentication
+        path still present in blinkpy for internal token-refresh use.
+        It is tried when the OAuth v2 PKCE web flow (``blink.start()``)
+        returns ``False`` — for example when Blink's PKCE signin page
+        returns an unexpected HTTP status such as 406.
+
+        If ``auth.login()`` raises ``BlinkTwoFARequiredError`` (HTTP 412)
+        the stored 2FA code is added to the next request and login is
+        retried via ``_complete_password_grant_2fa``.
+
+        If the server rejects the request with ``UnauthorizedError`` (401)
+        or ``LoginError`` (406 / other) it means all standard
+        authentication paths have failed — the account is likely
+        temporarily rate-limited or blocked by Blink's server after
+        repeated failed login attempts.  A ``ValueError`` is raised with
+        clear guidance to wait and sign into the official Blink app.
 
         returns:
-            (bool): True if authentication succeeded, False otherwise.
+            (bool): True if authentication succeeded.
         raises:
-            LoginError: if the login request fails at the network level.
-            UnauthorizedError: if all credential paths are rejected.
-            ValueError: if login returns no token data.
+            ValueError: if the server rejects the password grant or all
+                auth paths have failed (includes rate-limiting guidance).
         """
         try:
             login_data = await self.blink.auth.login()
         except BlinkTwoFARequiredError:
-            # Blink requires 2FA for this login attempt.
+            # Blink requires 2FA for this login attempt (HTTP 412).
             if self.verbose:
                 print(
                     f"[Blink zone {self.zone_number}] Password grant: "
-                    f"BlinkTwoFARequiredError raised, retrying with "
-                    f"stored 2FA code..."
+                    f"2FA required. Retrying with stored 2FA code..."
                 )
             return await self._complete_password_grant_2fa()
-        except UnauthorizedError:
-            # HTTP 401: android client_id may be deprecated by Blink.
-            # Fall back to the iOS-client password grant.
-            if self.verbose:
-                print(
-                    f"[Blink zone {self.zone_number}] Android password "
-                    f"grant rejected (HTTP 401). "
-                    f"Trying iOS client grant..."
-                )
-            return await self._attempt_ios_client_grant()
-        except LoginError as e:
-            # HTTP 406 or other non-401/412 rejection from the android
-            # client.  Blink's server may reject the android client_id
-            # with a non-standard 406 "Not Acceptable" instead of a
-            # 401.  Try the iOS client grant (different client_id and
-            # user agent) as a last-resort fallback before giving up.
+        except (UnauthorizedError, LoginError) as e:
+            # HTTP 401 or 406 / other: password grant also rejected.
+            # This means both the PKCE web flow AND the password grant
+            # have failed, which is consistent with server-side account
+            # lockout or IP rate-limiting from repeated failed attempts.
             error_type = type(e).__name__
             error_detail = str(e) if str(e) else "(no message)"
             if self.verbose:
                 print(
                     f"[Blink zone {self.zone_number}] Password grant "
-                    f"(android) failed: [{error_type}] {error_detail}"
+                    f"failed: [{error_type}] {error_detail}"
                 )
                 print(traceback.format_exc())
-                print(
-                    f"[Blink zone {self.zone_number}] Android password "
-                    f"grant rejected ({error_type}). "
-                    f"Trying iOS client grant as last-resort fallback..."
-                )
-            return await self._attempt_ios_client_grant()
+            raise ValueError(
+                f"Blink authentication failed for zone "
+                f"{self.zone_number}: all auth paths rejected. "
+                f"[{error_type}] Both the OAuth v2 PKCE web flow and "
+                f"the password grant fallback have been rejected by "
+                f"Blink's server. "
+                f"If you are seeing HTTP 406 or 401, your account may "
+                f"be temporarily rate-limited after repeated failed "
+                f"login attempts. Recommended actions: "
+                f"(1) Wait 30-60 minutes before retrying. "
+                f"(2) Sign into the official Blink mobile app to verify "
+                f"your credentials and unlock your account. "
+                f"(3) Ensure {self.BL_2FA_KEY} in supervisor-env.txt "
+                f"contains a fresh TOTP code (codes expire every 30s). "
+                f"(4) Delete {TOKEN_CACHE_FILE} if it exists to force a "
+                f"fresh login on the next run."
+            ) from e
 
         if not login_data:
             raise ValueError(
@@ -586,163 +714,6 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):  # type: ignore[misc]
             )
 
         return await self._setup_blink_after_login(login_data)
-
-    async def _attempt_ios_client_grant(self):
-        """
-        Last-resort fallback: iOS-client OAuth password grant.
-
-        POSTs credentials directly to the Blink token endpoint using
-        ``client_id=ios`` and the Blink iOS app user agent.  This matches
-        the authentication pattern used by the Blink iOS mobile app and
-        avoids the ``client_id=android`` endpoint that Blink has
-        deprecated.  Used when ``auth.login()`` (android client) returns
-        HTTP 401.
-
-        The stored 2FA code is sent as the ``2fa-code`` request header so
-        that one round-trip is sufficient when 2FA is enabled on the
-        account.
-
-        returns:
-            (bool): True if authentication succeeded, False otherwise.
-        raises:
-            LoginError: if the HTTP request fails or returns an
-                unexpected status code.
-            UnauthorizedError: if the server returns HTTP 401.
-            ValueError: if 2FA is required but the stored code is
-                rejected, or if no 2FA code is stored.
-        """
-        try:
-            from blinkpy.helpers.constants import (  # type: ignore
-                OAUTH_TOKEN_URL,
-                OAUTH_V2_CLIENT_ID,
-                OAUTH_TOKEN_USER_AGENT,
-                OAUTH_SCOPE,
-                OAUTH_REDIRECT_URI,
-            )
-        except ImportError:
-            # Fallback values matching blinkpy 0.25.x constants.
-            OAUTH_TOKEN_URL = "https://api.oauth.blink.com/oauth/token"
-            OAUTH_V2_CLIENT_ID = "ios"
-            OAUTH_TOKEN_USER_AGENT = (
-                "Blink/2511191620 CFNetwork/3860.200.71 Darwin/25.1.0"
-            )
-            OAUTH_SCOPE = "client"
-            OAUTH_REDIRECT_URI = (
-                "immedia-blink://applinks.blink.com/signin/callback"
-            )
-
-        headers = {
-            "User-Agent": OAUTH_TOKEN_USER_AGENT,
-            "Content-Type": "application/x-www-form-urlencoded",
-            "Accept": "*/*",
-        }
-
-        # Include the stored 2FA code upfront to avoid an extra
-        # round-trip when 2FA is enabled on the account.
-        has_2fa = self.bl_2fa and not self.bl_2fa.startswith("<")
-        if has_2fa:
-            headers["2fa-code"] = self.bl_2fa
-
-        form_data = {
-            "app_brand": "blink",
-            "client_id": OAUTH_V2_CLIENT_ID,
-            "grant_type": "password",
-            "username": self.bl_uname,
-            "password": self.bl_pwd,
-            "hardware_id": self.blink.auth.hardware_id,
-            "redirect_uri": OAUTH_REDIRECT_URI,
-            "scope": OAUTH_SCOPE,
-        }
-
-        if self.verbose:
-            print(
-                f"[Blink zone {self.zone_number}] Trying iOS client "
-                f"password grant to token endpoint..."
-            )
-
-        try:
-            response = await self.blink.auth.session.post(
-                OAUTH_TOKEN_URL,
-                headers=headers,
-                data=url_encode(form_data),
-            )
-        except Exception as exc:
-            raise LoginError(
-                f"iOS client grant request failed for zone "
-                f"{self.zone_number}: {exc}"
-            ) from exc
-
-        status = response.status
-
-        # Always read the response body before branching so we can log it
-        # for diagnostic purposes on any non-200 status.
-        try:
-            response_body = await response.text()
-        except Exception:
-            response_body = "(could not read response body)"
-
-        if self.verbose:
-            print(
-                f"[Blink zone {self.zone_number}] iOS client grant "
-                f"response: HTTP {status}"
-            )
-            if status != 200:
-                # Truncate to 500 chars to avoid flooding the console, but
-                # still show the error message returned by Blink's server.
-                snippet = response_body[:500].replace("\n", " ")
-                print(
-                    f"[Blink zone {self.zone_number}] iOS response body: "
-                    f"{snippet}"
-                )
-
-        if status == 200:
-            import json  # noqa: PLC0415
-            try:
-                token_data = json.loads(response_body)
-            except (json.JSONDecodeError, ValueError, TypeError):
-                raise LoginError(
-                    f"iOS client grant: could not parse success response "
-                    f"as JSON for zone {self.zone_number}."
-                )
-            if self.verbose:
-                print(
-                    f"[Blink zone {self.zone_number}] iOS client grant "
-                    f"succeeded."
-                )
-            return await self._setup_blink_after_login(token_data)
-
-        if status == 412:
-            # 2FA required.  If we already sent the stored code and the
-            # server still returns 412, the code is expired or wrong.
-            if has_2fa:
-                raise ValueError(
-                    f"iOS client grant: 2FA required but the stored "
-                    f"code was rejected for zone {self.zone_number}. "
-                    f"Please update {self.BL_2FA_KEY} in "
-                    f"supervisor-env.txt with a fresh code and restart."
-                )
-            raise ValueError(
-                f"iOS client grant requires 2FA but no code is stored "
-                f"for zone {self.zone_number}. "
-                f"Please add {self.BL_2FA_KEY} to supervisor-env.txt."
-            )
-
-        if status == 401:
-            if self.verbose:
-                print(
-                    f"[Blink zone {self.zone_number}] iOS client grant: "
-                    f"HTTP 401 — credentials rejected by Blink's server. "
-                    f"Possible causes: invalid username/password, account "
-                    f"locked after too many failed attempts, or the "
-                    f"password-grant flow is no longer accepted. "
-                    f"Server detail: {response_body[:200]}"
-                )
-            raise UnauthorizedError
-
-        raise LoginError(
-            f"iOS client grant failed with HTTP {status} for zone "
-            f"{self.zone_number}."
-        )
 
     async def _complete_password_grant_2fa(self):
         """
