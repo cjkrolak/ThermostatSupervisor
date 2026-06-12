@@ -16,7 +16,6 @@ import json
 import os
 import threading
 import time
-from typing import Union
 
 # third party imports
 import requests
@@ -540,7 +539,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         temp_value = self.get_metadata(parameter=self.tempfield)
         return float(temp_value) if temp_value is not None else 0.0
 
-    def get_display_humidity(self) -> Union[float, None]:
+    def get_display_humidity(self) -> float | None:
         """
         Return Humidity.
 

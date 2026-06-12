@@ -9,7 +9,6 @@ import pprint
 import statistics
 import time
 import traceback
-from typing import Union
 
 # local imports
 from src import email_notification as eml
@@ -770,7 +769,7 @@ class ThermostatCommonZone:
         """Return the displayed temperature."""
         return float(util.BOGUS_INT)  # placeholder
 
-    def get_display_humidity(self) -> Union[float, None]:  # noqa R0201
+    def get_display_humidity(self) -> float | None:  # noqa R0201
         """Return the displayed humidity."""
         return float(util.BOGUS_INT)  # placeholder
 
@@ -778,7 +777,7 @@ class ThermostatCommonZone:
         """Return humidity sensor status."""
         return util.BOGUS_BOOL  # placeholder
 
-    def get_system_switch_position(self) -> Union[int, str]:  # noqa R0201
+    def get_system_switch_position(self) -> int | str:  # noqa R0201
         """Return the 'SystemSwitchPosition'.
 
         The system switch position can be an integer or string depending

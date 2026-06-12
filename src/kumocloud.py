@@ -5,7 +5,7 @@ import os
 import pprint
 import time
 import traceback
-from typing import Union, Dict, Any, List
+from typing import Dict, Any, List
 
 # third party imports
 import requests
@@ -1293,7 +1293,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
             )
         )
 
-    def get_display_humidity(self) -> Union[float, None]:
+    def get_display_humidity(self) -> float | None:
         """
         Refresh the cached zone information and return IndoorHumidity.
 
@@ -1631,7 +1631,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         """
         return False  # no schedule, hold not implemented
 
-    def get_system_switch_position(self) -> Union[int, str]:  # used
+    def get_system_switch_position(self) -> int | str:  # used
         """
         Return the system switch position.
 
