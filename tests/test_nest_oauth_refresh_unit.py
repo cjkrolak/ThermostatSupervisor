@@ -272,6 +272,7 @@ class TestNestOAuthRefresh(utc.UnitTest):
         result = thermostat.get_device_data(force_refresh=True)
         self.assertEqual(result, fallback_devices)
         self.assertEqual(thermostat.thermostat_obj.get_devices.call_count, 3)
+        self.assertGreater(nest.ThermostatClass._shared_devices_cache_time, 0)
 
 
 if __name__ == "__main__":

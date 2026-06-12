@@ -279,6 +279,7 @@ class ThermostatClass(tc.ThermostatCommon):
                         "device data."
                     )
                     self.devices = ThermostatClass._shared_devices_cache
+                    ThermostatClass._shared_devices_cache_time = time.time()
                     return self.devices
                 print(traceback.format_exc())
                 raise
