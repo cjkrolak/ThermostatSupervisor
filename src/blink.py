@@ -626,6 +626,13 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):  # type: ignore[misc]
         # OAuth web signin returns HTTP 406 (rate limiting / account
         # lockout), which causes oauth_signin() to return None and
         # blinkpy to log "Login failed".
+        #
+        # However, if the PKCE failure was caused by a 2FA rate limit
+        # (HTTP 429 "2fa_rate_limit_exceeded") the password grant will
+        # not help either — stop retrying immediately and inform the
+        # user of the lockout period.
+        if getattr(self, "_rate_limit_detected", False):
+            self._handle_rate_limit_error()  # never returns
         if self.verbose:
             print(
                 f"[Blink zone {self.zone_number}] OAuth v2 web flow "
@@ -636,6 +643,52 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):  # type: ignore[misc]
         if result:
             await self._save_token_cache()
         return result
+
+    def _handle_rate_limit_error(self) -> None:
+        """
+        Display a clear 2FA rate-limit error message and exit.
+
+        Called when the HTTP trace detects a 429
+        ``2fa_rate_limit_exceeded`` response during the OAuth v2 PKCE
+        sign-in step.  Blink enforces this limit when too many 2FA
+        verification requests are made in a short period — for example
+        when repeated login runs each trigger a new 2FA code delivery
+        to the user's phone or email.
+
+        The account is locked for the period reported in the server
+        response ``next_time_in_secs`` (typically 86400 s = 24 hours).
+
+        This method **never returns** — it calls ``sys.exit(1)`` after
+        printing the error banner so the retry loop cannot continue and
+        worsen the rate-limit situation.
+        """
+        wait_secs = self._rate_limit_next_time_secs or 86400
+        wait_hours = wait_secs // 3600
+        wait_mins = (wait_secs % 3600) // 60
+        error_lines = [
+            f"ERROR: Blink 2FA rate limit exceeded for zone "
+            f"{self.zone_number}.",
+            f"Blink has locked your account's 2FA for approximately "
+            f"{wait_hours} hour(s) {wait_mins} minute(s) "
+            f"({wait_secs} seconds).",
+            "This happens when too many 2FA-login requests are made "
+            "in a short period (e.g. repeated runs with a stale code).",
+            "Recommended actions:",
+            f"  1. Wait {wait_hours} hour(s) before retrying.",
+            "  2. Sign into the official Blink mobile app to verify "
+            "your account is accessible.",
+            f"  3. When the lockout expires, update {self.BL_2FA_KEY} "
+            f"in supervisor-env.txt with a fresh 2FA code sent by Blink.",
+            f"  4. Delete {TOKEN_CACHE_FILE} (if present) to force a "
+            f"clean login on the next run.",
+        ]
+        banner_len = max(len(line) for line in error_lines)
+        banner = "*" * banner_len
+        print(banner)
+        for line in error_lines:
+            print(line)
+        print(banner)
+        sys.exit(1)
 
     async def _attempt_password_grant_auth(self):
         """
@@ -649,16 +702,15 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):  # type: ignore[misc]
         returns ``False`` — for example when Blink's PKCE signin page
         returns an unexpected HTTP status such as 406.
 
+        Note: Blink's server may return HTTP 401 with
+        ``"error": "unsupported_grant_type"`` indicating that the
+        password grant flow has been permanently disabled on their
+        end.  When this occurs ``UnauthorizedError`` is raised and a
+        ``ValueError`` is propagated with targeted guidance.
+
         If ``auth.login()`` raises ``BlinkTwoFARequiredError`` (HTTP 412)
         the stored 2FA code is added to the next request and login is
         retried via ``_complete_password_grant_2fa``.
-
-        If the server rejects the request with ``UnauthorizedError`` (401)
-        or ``LoginError`` (406 / other) it means all standard
-        authentication paths have failed — the account is likely
-        temporarily rate-limited or blocked by Blink's server after
-        repeated failed login attempts.  A ``ValueError`` is raised with
-        clear guidance to wait and sign into the official Blink app.
 
         returns:
             (bool): True if authentication succeeded.
@@ -677,10 +729,11 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):  # type: ignore[misc]
                 )
             return await self._complete_password_grant_2fa()
         except (UnauthorizedError, LoginError) as e:
-            # HTTP 401 or 406 / other: password grant also rejected.
-            # This means both the PKCE web flow AND the password grant
-            # have failed, which is consistent with server-side account
-            # lockout or IP rate-limiting from repeated failed attempts.
+            # HTTP 401 ("unsupported_grant_type") or other 4xx rejection.
+            # Blink has removed password grant support in recent API
+            # versions.  HTTP 401 with "unsupported_grant_type" is the
+            # documented server response when this grant type is
+            # permanently disabled.
             error_type = type(e).__name__
             error_detail = str(e) if str(e) else "(no message)"
             if self.verbose:
@@ -690,21 +743,21 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):  # type: ignore[misc]
                 )
                 print(traceback.format_exc())
             raise ValueError(
-                f"Blink authentication failed for zone "
-                f"{self.zone_number}: all auth paths rejected. "
-                f"[{error_type}] Both the OAuth v2 PKCE web flow and "
-                f"the password grant fallback have been rejected by "
-                f"Blink's server. "
-                f"If you are seeing HTTP 406 or 401, your account may "
-                f"be temporarily rate-limited after repeated failed "
-                f"login attempts. Recommended actions: "
-                f"(1) Wait 30-60 minutes before retrying. "
-                f"(2) Sign into the official Blink mobile app to verify "
-                f"your credentials and unlock your account. "
-                f"(3) Ensure {self.BL_2FA_KEY} in supervisor-env.txt "
-                f"contains a fresh TOTP code (codes expire every 30s). "
-                f"(4) Delete {TOKEN_CACHE_FILE} if it exists to force a "
-                f"fresh login on the next run."
+                f"Blink password grant rejected for zone "
+                f"{self.zone_number}. [{error_type}] "
+                f"Blink's server returned HTTP 401 "
+                f"'unsupported_grant_type', which means the password "
+                f"grant authentication path has been permanently "
+                f"disabled by Blink. "
+                f"The only supported login path is the OAuth v2 PKCE "
+                f"web flow (blink.start()). "
+                f"Recommended actions: "
+                f"(1) Ensure your credentials in supervisor-env.txt "
+                f"are correct (username, password). "
+                f"(2) Update {self.BL_2FA_KEY} with a fresh 2FA code "
+                f"received from Blink. "
+                f"(3) Sign into the official Blink app to verify your "
+                f"account is accessible before retrying."
             ) from e
 
         if not login_data:
@@ -853,14 +906,20 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):  # type: ignore[misc]
 
     def _create_http_trace_config(self) -> TraceConfig:
         """
-        Build an aiohttp TraceConfig that logs every HTTP request and
-        response made during authentication.
+        Build an aiohttp TraceConfig for HTTP monitoring during auth.
 
-        Each log line shows the HTTP method, host, and path for the
-        outgoing request (no query parameters, to avoid leaking tokens)
-        and the HTTP status code for the response.  Network exceptions
-        are also caught and printed so transient connectivity failures
-        are visible.
+        Always runs (regardless of ``self.verbose``) to enable server-side
+        rate-limit detection.  When a HTTP 429 response body contains
+        ``"error_cause": "2fa_rate_limit_exceeded"``, the instance
+        attributes ``_rate_limit_detected`` (True) and
+        ``_rate_limit_next_time_secs`` are set so that
+        ``_attempt_async_authentication`` can abort retrying immediately
+        and show a clear wait-time message.
+
+        When ``self.verbose`` is True, each request URL and response
+        status code are also printed to stdout so the caller can trace
+        exactly which authentication step fails.  Network exceptions
+        are printed as well.
 
         returns:
             (TraceConfig): configured trace config object ready to attach
@@ -869,59 +928,84 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):  # type: ignore[misc]
         zone = self.zone_number
 
         async def _on_request_start(_session, _ctx, params) -> None:
-            host = params.url.host or ""
-            path = params.url.path or ""
-            print(
-                f"[Blink zone {zone}][HTTP→] "
-                f"{params.method} {host}{path}"
-            )
+            if self.verbose:
+                host = params.url.host or ""
+                path = params.url.path or ""
+                print(
+                    f"[Blink zone {zone}][HTTP→] "
+                    f"{params.method} {host}{path}"
+                )
 
         async def _on_request_end(_session, _ctx, params) -> None:
             status = params.response.status
-            host = params.url.host or ""
-            path = params.url.path or ""
-            print(
-                f"[Blink zone {zone}][HTTP←] "
-                f"{status} {host}{path}"
-            )
+            if self.verbose:
+                host = params.url.host or ""
+                path = params.url.path or ""
+                print(
+                    f"[Blink zone {zone}][HTTP←] "
+                    f"{status} {host}{path}"
+                )
             if status >= 400:
-                # Read and log the response body for all 4xx/5xx responses
-                # so the exact server error message is visible in the log.
-                # aiohttp caches the body after the first read(), so
-                # blinkpy can still read it afterwards.
+                # Read and cache the response body. aiohttp caches the
+                # body after the first read() so blinkpy can still
+                # consume it afterwards.
+                body_bytes = b""
                 try:
                     body_bytes = await params.response.read()
-                    snippet = (
-                        body_bytes.decode("utf-8", errors="replace")[:500]
-                        .replace("\n", " ")
-                    )
-                    print(
-                        f"[Blink zone {zone}][HTTP {status} body] {snippet}"
-                    )
                 except Exception as exc:
-                    print(
-                        f"[Blink zone {zone}][HTTP {status} body] "
-                        f"(could not read: {exc})"
-                    )
-                if status == 406:
+                    if self.verbose:
+                        print(
+                            f"[Blink zone {zone}][HTTP {status} body] "
+                            f"(could not read: {exc})"
+                        )
+
+                if body_bytes:
+                    if self.verbose:
+                        snippet = (
+                            body_bytes.decode("utf-8", errors="replace")[
+                                :500
+                            ].replace("\n", " ")
+                        )
+                        print(
+                            f"[Blink zone {zone}]"
+                            f"[HTTP {status} body] {snippet}"
+                        )
+
+                    # Detect 2FA rate limit (HTTP 429) unconditionally
+                    # so we can stop retrying even when verbose=False.
+                    if status == 429:
+                        try:
+                            body_json = json.loads(body_bytes)
+                            if (
+                                body_json.get("error_cause")
+                                == "2fa_rate_limit_exceeded"
+                            ):
+                                self._rate_limit_detected = True
+                                self._rate_limit_next_time_secs = (
+                                    body_json.get("next_time_in_secs")
+                                )
+                        except Exception:
+                            pass
+
+                if self.verbose and status == 406:
                     print(
                         f"[Blink zone {zone}] NOTE: HTTP 406 may "
                         f"indicate temporary account lockout or IP "
                         f"rate-limiting by Blink's server. "
                         f"If all auth paths fail, try waiting 15-30 "
                         f"minutes and signing into the official Blink "
-                        f"mobile app to unlock your account before "
-                        f"retrying."
+                        f"mobile app before retrying."
                     )
 
         async def _on_request_exception(_session, _ctx, params) -> None:
-            exc = params.exception
-            host = params.url.host or ""
-            path = params.url.path or ""
-            print(
-                f"[Blink zone {zone}][HTTP✗] "
-                f"{type(exc).__name__}: {exc} {host}{path}"
-            )
+            if self.verbose:
+                exc = params.exception
+                host = params.url.host or ""
+                path = params.url.path or ""
+                print(
+                    f"[Blink zone {zone}][HTTP✗] "
+                    f"{type(exc).__name__}: {exc} {host}{path}"
+                )
 
         tc = TraceConfig()
         tc.on_request_start.append(_on_request_start)
@@ -938,16 +1022,23 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):  # type: ignore[misc]
         0.22.x used send_auth_key for 2FA completion. Both are handled by
         _attempt_async_authentication via _complete_2fa_auth.
 
-        When ``self.verbose`` is True, enables DEBUG-level Python logging
-        for all blinkpy modules and attaches an aiohttp TraceConfig that
-        prints every HTTP request URL and response status code so the
-        caller can trace exactly which authentication step fails.
+        An aiohttp TraceConfig is **always** attached (regardless of
+        ``self.verbose``) so that HTTP 429 ``2fa_rate_limit_exceeded``
+        responses are detected and the retry loop is aborted immediately.
+        When ``self.verbose`` is True, DEBUG-level blinkpy logging is
+        also enabled and per-request log lines are printed to stdout.
         """
         self._configure_blink_logging()
-        trace_configs = (
-            [self._create_http_trace_config()] if self.verbose else []
-        )
-        async with ClientSession(trace_configs=trace_configs) as session:
+        # Initialise rate-limit detection state; set by the TraceConfig
+        # callback when a HTTP 429 2fa_rate_limit_exceeded is received.
+        self._rate_limit_detected = False
+        self._rate_limit_next_time_secs = None
+        # Always attach trace config — needed for rate-limit detection
+        # even when verbose=False.  Verbose output is gated inside the
+        # trace callbacks on self.verbose.
+        async with ClientSession(
+            trace_configs=[self._create_http_trace_config()]
+        ) as session:
             self._setup_auth_parameters()
             await self._execute_async_auth_with_retry(session)
 

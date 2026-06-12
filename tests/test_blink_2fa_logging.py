@@ -338,8 +338,8 @@ class BlinkAsyncAuthFlowTests(utc.UnitTest):
     def test_attempt_async_auth_start_false_fallback_login_error(self):
         """
         When blink.start() returns False and auth.login() raises LoginError
-        (e.g. HTTP 406 "Not Acceptable"), a ValueError is raised with
-        rate-limiting guidance since all auth paths have failed.
+        (e.g. HTTP 406), a ValueError is raised indicating the password grant
+        path has been permanently disabled or rejected by Blink's server.
         """
         from src import blink  # noqa: PLC0415
 
@@ -358,8 +358,14 @@ class BlinkAsyncAuthFlowTests(utc.UnitTest):
                     stub._attempt_async_authentication(MagicMock())
                 )
 
-        # Error must mention rate-limiting guidance
-        self.assertIn("rate-limited", str(ctx.exception).lower())
+        # Error must mention that password grant is disabled or rejected
+        error_msg = str(ctx.exception).lower()
+        self.assertTrue(
+            "permanently disabled" in error_msg
+            or "rejected" in error_msg
+            or "unsupported_grant_type" in error_msg,
+            f"Expected password-grant-disabled guidance in: {error_msg}",
+        )
         mock_auth_obj.login.assert_called_once()
 
     def test_attempt_async_auth_login_error_unauthorized_raises_value_error(
@@ -367,8 +373,8 @@ class BlinkAsyncAuthFlowTests(utc.UnitTest):
     ):
         """
         When blink.start() returns False and auth.login() raises
-        UnauthorizedError (HTTP 401), a ValueError is raised with
-        rate-limiting guidance since all auth paths have failed.
+        UnauthorizedError (HTTP 401 / unsupported_grant_type), a ValueError
+        is raised indicating the password grant path is disabled.
         """
         from src import blink  # noqa: PLC0415
 
@@ -387,7 +393,13 @@ class BlinkAsyncAuthFlowTests(utc.UnitTest):
                     stub._attempt_async_authentication(MagicMock())
                 )
 
-        self.assertIn("rate-limited", str(ctx.exception).lower())
+        error_msg = str(ctx.exception).lower()
+        self.assertTrue(
+            "permanently disabled" in error_msg
+            or "rejected" in error_msg
+            or "unsupported_grant_type" in error_msg,
+            f"Expected password-grant-disabled guidance in: {error_msg}",
+        )
         mock_auth_obj.login.assert_called_once()
 
     def test_attempt_async_auth_start_false_fallback_2fa_required(self):
@@ -460,8 +472,8 @@ class BlinkAsyncAuthFlowTests(utc.UnitTest):
     def test_attempt_async_auth_ios_grant_fallback_on_unauthorized(self):
         """
         When blink.start() returns False and auth.login() raises
-        UnauthorizedError (HTTP 401 from the android client), a ValueError
-        is raised with rate-limiting guidance since all auth paths failed.
+        UnauthorizedError (HTTP 401 / unsupported_grant_type), a ValueError
+        is raised indicating the password grant path is disabled.
         Previously this fell through to an iOS grant; that path has been
         removed since ``client_id=ios`` only supports PKCE, not password
         grant.
@@ -483,7 +495,13 @@ class BlinkAsyncAuthFlowTests(utc.UnitTest):
                     stub._attempt_async_authentication(MagicMock())
                 )
 
-        self.assertIn("rate-limited", str(ctx.exception).lower())
+        error_msg = str(ctx.exception).lower()
+        self.assertTrue(
+            "permanently disabled" in error_msg
+            or "rejected" in error_msg
+            or "unsupported_grant_type" in error_msg,
+            f"Expected password-grant-disabled guidance in: {error_msg}",
+        )
         mock_auth_obj.login.assert_called_once()
 
     # ------------------------------------------------------------------
@@ -932,6 +950,176 @@ class BlinkDiagnosticsTests(utc.UnitTest):
     # ------------------------------------------------------------------
     # iOS grant verbose response body logging
     # ------------------------------------------------------------------
+
+    # ------------------------------------------------------------------
+    # _handle_rate_limit_error and 429 trace detection
+    # ------------------------------------------------------------------
+
+    def test_handle_rate_limit_error_exits_with_clear_message(self):
+        """
+        _handle_rate_limit_error() prints a banner with wait-time info
+        and calls sys.exit(1).  The message must include the lockout
+        duration, zone number, and actionable guidance.
+        """
+        import io  # noqa: PLC0415
+        import sys  # noqa: PLC0415
+
+        stub = self._make_thermostat_stub()
+        stub._rate_limit_next_time_secs = 86400
+
+        captured = io.StringIO()
+        old_stdout = sys.stdout
+        sys.stdout = captured
+        try:
+            with self.assertRaises(SystemExit) as ctx:
+                stub._handle_rate_limit_error()
+        finally:
+            sys.stdout = old_stdout
+
+        self.assertEqual(ctx.exception.code, 1)
+        output = captured.getvalue()
+        # Must mention the lockout duration
+        self.assertIn("86400", output)
+        self.assertIn("24", output)   # 86400 s = 24 hours
+        # Must mention zone number
+        self.assertIn("zone 0", output.lower())
+        # Must include guidance steps
+        self.assertIn("2FA", output)
+
+    def test_handle_rate_limit_error_uses_default_when_secs_none(self):
+        """
+        When _rate_limit_next_time_secs is None (body not parsed), the
+        method falls back to 86400 seconds (24 hours).
+        """
+        import io  # noqa: PLC0415
+        import sys  # noqa: PLC0415
+
+        stub = self._make_thermostat_stub()
+        stub._rate_limit_next_time_secs = None
+
+        captured = io.StringIO()
+        old_stdout = sys.stdout
+        sys.stdout = captured
+        try:
+            with self.assertRaises(SystemExit):
+                stub._handle_rate_limit_error()
+        finally:
+            sys.stdout = old_stdout
+
+        output = captured.getvalue()
+        self.assertIn("86400", output)
+
+    def test_trace_config_detects_429_rate_limit(self):
+        """
+        When on_request_end fires for a HTTP 429 response whose body
+        contains "error_cause":"2fa_rate_limit_exceeded", the trace
+        callback sets _rate_limit_detected=True and captures
+        next_time_in_secs on the stub.
+        """
+        import json  # noqa: PLC0415
+        import yarl  # noqa: PLC0415
+
+        stub = self._make_thermostat_stub(verbose=False)
+        stub._rate_limit_detected = False
+        stub._rate_limit_next_time_secs = None
+        tc = stub._create_http_trace_config()
+
+        body = json.dumps({
+            "error": "too_many_requests",
+            "error_cause": "2fa_rate_limit_exceeded",
+            "error_description": "2FA rate limit exceeded.",
+            "next_time_in_secs": 86400,
+        }).encode()
+
+        async def run():
+            params = MagicMock()
+            params.url = yarl.URL(
+                "https://api.oauth.blink.com/oauth/v2/signin"
+            )
+            params.response = MagicMock()
+            params.response.status = 429
+            params.response.read = AsyncMock(return_value=body)
+            await tc.on_request_end[0](None, None, params)
+
+        self._run_async(run())
+
+        self.assertTrue(stub._rate_limit_detected)
+        self.assertEqual(stub._rate_limit_next_time_secs, 86400)
+
+    def test_trace_config_no_false_positive_on_non_rate_limit_429(self):
+        """
+        A HTTP 429 response whose body does NOT contain the
+        "2fa_rate_limit_exceeded" error_cause must NOT set
+        _rate_limit_detected.
+        """
+        import json  # noqa: PLC0415
+        import yarl  # noqa: PLC0415
+
+        stub = self._make_thermostat_stub(verbose=False)
+        stub._rate_limit_detected = False
+        stub._rate_limit_next_time_secs = None
+        tc = stub._create_http_trace_config()
+
+        body = json.dumps({
+            "error": "too_many_requests",
+            "error_cause": "some_other_limit",
+        }).encode()
+
+        async def run():
+            params = MagicMock()
+            params.url = yarl.URL(
+                "https://api.oauth.blink.com/oauth/v2/signin"
+            )
+            params.response = MagicMock()
+            params.response.status = 429
+            params.response.read = AsyncMock(return_value=body)
+            await tc.on_request_end[0](None, None, params)
+
+        self._run_async(run())
+
+        self.assertFalse(stub._rate_limit_detected)
+        self.assertIsNone(stub._rate_limit_next_time_secs)
+
+    def test_attempt_async_auth_rate_limited_exits_immediately(self):
+        """
+        When blink.start() returns False and _rate_limit_detected is True,
+        _attempt_async_authentication calls _handle_rate_limit_error()
+        and never reaches the password grant fallback.
+        """
+        from src import blink  # noqa: PLC0415
+        import io  # noqa: PLC0415
+        import sys  # noqa: PLC0415
+
+        stub = self._make_thermostat_stub()
+        stub._rate_limit_detected = True
+        stub._rate_limit_next_time_secs = 86400
+
+        mock_blink_obj = MagicMock()
+        mock_blink_obj.start = AsyncMock(return_value=False)
+        mock_auth_obj = MagicMock()
+        mock_auth_obj.login = AsyncMock()  # must NOT be called
+
+        with patch.object(blink, "blinkpy") as mock_blinkpy_mod, \
+                patch.object(blink, "auth") as mock_auth_mod:
+            mock_blinkpy_mod.Blink.return_value = mock_blink_obj
+            mock_auth_mod.Auth.return_value = mock_auth_obj
+
+            captured = io.StringIO()
+            old_stdout = sys.stdout
+            sys.stdout = captured
+            try:
+                with self.assertRaises(SystemExit) as ctx:
+                    self._run_async(
+                        stub._attempt_async_authentication(MagicMock())
+                    )
+            finally:
+                sys.stdout = old_stdout
+
+        self.assertEqual(ctx.exception.code, 1)
+        output = captured.getvalue()
+        self.assertIn("rate limit", output.lower())
+        # Password grant must NOT be tried
+        mock_auth_obj.login.assert_not_called()
 
 
 if __name__ == "__main__":
