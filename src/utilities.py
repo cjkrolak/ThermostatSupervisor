@@ -206,58 +206,64 @@ def _create_summary_message(msg):
         (str): summarized message for console output
     """
     if "WARNING: exception on trial" in msg:
-        # Extract trial information
         parts = msg.split()
-        trial_info = ""
-        for i, part in enumerate(parts):
-            if part == "trial" and i + 1 < len(parts):
-                trial_info = f" (trial {parts[i + 1]})"
-                break
+        trial_num = _extract_token_after(parts, "trial", offset=1)
+        trial_info = f" (trial {trial_num})" if trial_num else ""
         return f"[Retry] Connection error{trial_info} - details in log file"
 
-    elif "Traceback" in msg:
+    if "Traceback" in msg:
         return "[Error] Exception occurred - full traceback in log file"
 
-    elif "pyhtcc.pyhtcc.UnauthorizedError" in msg:
+    if "pyhtcc.pyhtcc.UnauthorizedError" in msg:
         return "[Auth] Authorization error - retrying..."
 
-    elif "execute_with_extended_retries" in msg:
-        if "starting" in msg:
-            return "[Retry] Starting retry sequence - progress tracked in log file"
-        elif "trial" in msg:
-            # Extract trial info for progress tracking
-            parts = msg.split()
-            trial_info = ""
-            for i, part in enumerate(parts):
-                if part == "trial" and i + 2 < len(parts):
-                    trial_info = f" {parts[i + 1]} of {parts[i + 3]}"
-                    break
-            return f"[Retry] Progress{trial_info} - details in log file"
-        else:
-            return "[Retry] Operation in progress - details in log file"
+    if "execute_with_extended_retries" in msg:
+        return _summarize_retry_progress(msg)
 
-    elif "Delaying" in msg and "prior to retry" in msg:
-        # Extract delay time
+    if "Delaying" in msg and "prior to retry" in msg:
         parts = msg.split()
-        delay_time = ""
-        for i, part in enumerate(parts):
-            if part == "Delaying" and i + 1 < len(parts):
-                delay_time = parts[i + 1]
-                break
+        delay_time = _extract_token_after(parts, "Delaying", offset=1)
         return f"[Retry] Waiting {delay_time}s before next attempt..."
 
-    elif "ERROR: exhausted" in msg and "retries" in msg:
+    if "ERROR: exhausted" in msg and "retries" in msg:
         return "[Error] All retry attempts failed - check log for details"
 
-    elif "<html" in msg or "<!DOCTYPE html" in msg:
+    if "<html" in msg or "<!DOCTYPE html" in msg:
         return "[Response] HTML error response received - details in log file"
 
-    else:
-        # For other verbose messages, show first line only
-        first_line = msg.split("\n")[0]
-        if len(first_line) > 80:
-            return first_line[:77] + "..."
-        return first_line
+    return _first_line_summary(msg)
+
+
+def _extract_token_after(parts, marker, offset=1):
+    """Extract token after marker, if present."""
+    for idx, part in enumerate(parts):
+        if part == marker and idx + offset < len(parts):
+            return parts[idx + offset]
+    return ""
+
+
+def _summarize_retry_progress(summary_text):
+    """Summarize execute_with_extended_retries progress lines."""
+    if "starting" in summary_text:
+        return "[Retry] Starting retry sequence - progress tracked in log file"
+    if "trial" in summary_text:
+        parts = summary_text.split()
+        trial_num = _extract_token_after(parts, "trial", offset=1)
+        trial_total = _extract_token_after(parts, "of", offset=1)
+        if trial_num and trial_total:
+            return (
+                "[Retry] Progress "
+                f"{trial_num} of {trial_total} - details in log file"
+            )
+    return "[Retry] Operation in progress - details in log file"
+
+
+def _first_line_summary(summary_text):
+    """Return the first line, truncating long lines for concise output."""
+    first_line = summary_text.split("\n")[0]
+    if len(first_line) > 80:
+        return first_line[:77] + "..."
+    return first_line
 
 
 def get_file_size_bytes(full_path):
