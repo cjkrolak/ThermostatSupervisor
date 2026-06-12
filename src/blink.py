@@ -2,13 +2,14 @@
 
 # built-in imports
 import asyncio
+import logging
 import pprint
 import sys
 import time
 import traceback
 from typing import Union
 from urllib.parse import urlencode as url_encode
-from aiohttp import ClientSession
+from aiohttp import ClientSession, TraceConfig
 
 # third party imports
 
@@ -596,14 +597,37 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):  # type: ignore[misc]
             ) from exc
 
         status = response.status
+
+        # Always read the response body before branching so we can log it
+        # for diagnostic purposes on any non-200 status.
+        try:
+            response_body = await response.text()
+        except Exception:
+            response_body = "(could not read response body)"
+
         if self.verbose:
             print(
                 f"[Blink zone {self.zone_number}] iOS client grant "
                 f"response: HTTP {status}"
             )
+            if status != 200:
+                # Truncate to 500 chars to avoid flooding the console, but
+                # still show the error message returned by Blink's server.
+                snippet = response_body[:500].replace("\n", " ")
+                print(
+                    f"[Blink zone {self.zone_number}] iOS response body: "
+                    f"{snippet}"
+                )
 
         if status == 200:
-            token_data = await response.json()
+            import json  # noqa: PLC0415
+            try:
+                token_data = json.loads(response_body)
+            except (json.JSONDecodeError, ValueError, TypeError):
+                raise LoginError(
+                    f"iOS client grant: could not parse success response "
+                    f"as JSON for zone {self.zone_number}."
+                )
             if self.verbose:
                 print(
                     f"[Blink zone {self.zone_number}] iOS client grant "
@@ -628,6 +652,15 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):  # type: ignore[misc]
             )
 
         if status == 401:
+            if self.verbose:
+                print(
+                    f"[Blink zone {self.zone_number}] iOS client grant: "
+                    f"HTTP 401 — credentials rejected by Blink's server. "
+                    f"Possible causes: invalid username/password, account "
+                    f"locked after too many failed attempts, or the "
+                    f"password-grant flow is no longer accepted. "
+                    f"Server detail: {response_body[:200]}"
+                )
             raise UnauthorizedError
 
         raise LoginError(
@@ -730,6 +763,87 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):  # type: ignore[misc]
             "Please update blinkpy to a supported version."
         )
 
+    def _configure_blink_logging(self) -> None:
+        """
+        Enable DEBUG-level Python logging for blinkpy when verbose mode
+        is active.
+
+        This surfaces every internal blinkpy log message (HTTP step
+        outcomes, PKCE flow progress, token refresh attempts, etc.) on
+        stdout so the caller can see exactly where authentication stalls.
+        The handler is idempotent — calling this method multiple times
+        will not duplicate handlers.
+        """
+        if not self.verbose:
+            return
+
+        handler = logging.StreamHandler(sys.stdout)
+        handler.setFormatter(
+            logging.Formatter("[blinkpy] %(name)s %(levelname)s: %(message)s")
+        )
+        for name in (
+            "blinkpy",
+            "blinkpy.auth",
+            "blinkpy.blinkpy",
+            "blinkpy.api",
+        ):
+            logger = logging.getLogger(name)
+            if not any(
+                isinstance(h, logging.StreamHandler) and h.stream is sys.stdout
+                for h in logger.handlers
+            ):
+                logger.addHandler(handler)
+            logger.setLevel(logging.DEBUG)
+
+    def _create_http_trace_config(self) -> TraceConfig:
+        """
+        Build an aiohttp TraceConfig that logs every HTTP request and
+        response made during authentication.
+
+        Each log line shows the HTTP method, host, and path for the
+        outgoing request (no query parameters, to avoid leaking tokens)
+        and the HTTP status code for the response.  Network exceptions
+        are also caught and printed so transient connectivity failures
+        are visible.
+
+        returns:
+            (TraceConfig): configured trace config object ready to attach
+                to a ClientSession.
+        """
+        zone = self.zone_number
+
+        async def _on_request_start(_session, _ctx, params) -> None:
+            host = params.url.host or ""
+            path = params.url.path or ""
+            print(
+                f"[Blink zone {zone}][HTTP→] "
+                f"{params.method} {host}{path}"
+            )
+
+        async def _on_request_end(_session, _ctx, params) -> None:
+            status = params.response.status
+            host = params.url.host or ""
+            path = params.url.path or ""
+            print(
+                f"[Blink zone {zone}][HTTP←] "
+                f"{status} {host}{path}"
+            )
+
+        async def _on_request_exception(_session, _ctx, params) -> None:
+            exc = params.exception
+            host = params.url.host or ""
+            path = params.url.path or ""
+            print(
+                f"[Blink zone {zone}][HTTP✗] "
+                f"{type(exc).__name__}: {exc} {host}{path}"
+            )
+
+        tc = TraceConfig()
+        tc.on_request_start.append(_on_request_start)
+        tc.on_request_end.append(_on_request_end)
+        tc.on_request_exception.append(_on_request_exception)
+        return tc
+
     async def async_auth_start(self):
         """
         Async auth start, compatible with blinkpy 0.22.0+.
@@ -738,8 +852,17 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):  # type: ignore[misc]
         uses OAuth v2 (BlinkTwoFARequiredError / send_2fa_code). Older
         0.22.x used send_auth_key for 2FA completion. Both are handled by
         _attempt_async_authentication via _complete_2fa_auth.
+
+        When ``self.verbose`` is True, enables DEBUG-level Python logging
+        for all blinkpy modules and attaches an aiohttp TraceConfig that
+        prints every HTTP request URL and response status code so the
+        caller can trace exactly which authentication step fails.
         """
-        async with ClientSession() as session:
+        self._configure_blink_logging()
+        trace_configs = (
+            [self._create_http_trace_config()] if self.verbose else []
+        )
+        async with ClientSession(trace_configs=trace_configs) as session:
             self._setup_auth_parameters()
             await self._execute_async_auth_with_retry(session)
 

@@ -245,16 +245,21 @@ class BlinkAsyncAuthFlowTests(utc.UnitTest):
             status(int): HTTP status code to return.
             token_data(dict): token payload; defaults to a valid token.
         returns:
-            mock_response MagicMock with .status and .json() set.
+            mock_response MagicMock with .status, .json(), and .text() set.
         """
         payload = token_data or {
             "access_token": "ios_tok",
             "refresh_token": "ios_rtok",
             "expires_in": 3600,
         }
+        # Build a JSON text body for 200 responses (production code reads
+        # response.text() once and then parses it as JSON for status 200).
+        import json  # noqa: PLC0415
+        body_text = json.dumps(payload) if status == 200 else ""
         mock_response = MagicMock()
         mock_response.status = status
         mock_response.json = AsyncMock(return_value=payload)
+        mock_response.text = AsyncMock(return_value=body_text)
         return mock_response
 
     def _make_blink_obj_for_password_grant(
@@ -671,6 +676,194 @@ class BlinkAsyncAuthFlowTests(utc.UnitTest):
             "Unsupported blinkpy version",
             str(ctx.exception),
         )
+
+
+class BlinkDiagnosticsTests(utc.UnitTest):
+    """
+    Tests for enhanced diagnostic methods added to ThermostatClass:
+    _configure_blink_logging, _create_http_trace_config, and the
+    verbose iOS grant response body logging.
+    """
+
+    def _make_thermostat_stub(self, verbose=False):
+        """Build a minimal ThermostatClass stub for diagnostics tests."""
+        from src import blink  # noqa: PLC0415
+
+        instance = object.__new__(blink.ThermostatClass)
+        instance.zone_number = 0
+        instance.bl_2fa = "123456"
+        instance.bl_uname = "user@example.com"
+        instance.bl_pwd = "secret"
+        instance.auth_dict = {
+            "username": "user@example.com",
+            "password": "secret",
+        }
+        instance.blink = None
+        instance.verbose = verbose
+        instance.BL_2FA_KEY = "BLINK_2FA"
+        return instance
+
+    def _run_async(self, coro):
+        """Run a coroutine synchronously for testing."""
+        loop = asyncio.new_event_loop()
+        try:
+            return loop.run_until_complete(coro)
+        finally:
+            loop.close()
+
+    # ------------------------------------------------------------------
+    # _configure_blink_logging
+    # ------------------------------------------------------------------
+
+    def test_configure_blink_logging_verbose_adds_handler(self):
+        """
+        _configure_blink_logging() adds a StreamHandler to blinkpy loggers
+        when verbose=True and sets each logger to DEBUG level.
+        """
+        import logging  # noqa: PLC0415
+        stub = self._make_thermostat_stub(verbose=True)
+
+        # Remove any existing handlers on blinkpy loggers first to
+        # ensure the method adds them cleanly.
+        for name in ("blinkpy", "blinkpy.auth", "blinkpy.blinkpy",
+                     "blinkpy.api"):
+            logging.getLogger(name).handlers = []
+
+        stub._configure_blink_logging()
+
+        for name in ("blinkpy", "blinkpy.auth"):
+            logger = logging.getLogger(name)
+            self.assertEqual(logger.level, logging.DEBUG)
+            self.assertTrue(
+                any(isinstance(h, logging.StreamHandler)
+                    for h in logger.handlers),
+                f"Expected StreamHandler on {name!r} logger"
+            )
+
+    def test_configure_blink_logging_noop_when_not_verbose(self):
+        """
+        _configure_blink_logging() does nothing when verbose=False,
+        so blinkpy loggers keep their current handlers.
+        """
+        import logging  # noqa: PLC0415
+        stub = self._make_thermostat_stub(verbose=False)
+        # Capture current handler count
+        initial = len(logging.getLogger("blinkpy").handlers)
+        stub._configure_blink_logging()
+        after = len(logging.getLogger("blinkpy").handlers)
+        self.assertEqual(initial, after)
+
+    def test_configure_blink_logging_idempotent(self):
+        """
+        Calling _configure_blink_logging() twice should not duplicate
+        the stdout StreamHandler on a logger.
+        """
+        import logging  # noqa: PLC0415
+        stub = self._make_thermostat_stub(verbose=True)
+        logging.getLogger("blinkpy").handlers = []
+
+        stub._configure_blink_logging()
+        count_after_first = len(logging.getLogger("blinkpy").handlers)
+        stub._configure_blink_logging()
+        count_after_second = len(logging.getLogger("blinkpy").handlers)
+
+        self.assertEqual(count_after_first, count_after_second,
+                         "Handler count must not increase on second call")
+
+    # ------------------------------------------------------------------
+    # _create_http_trace_config
+    # ------------------------------------------------------------------
+
+    def test_create_http_trace_config_returns_trace_config(self):
+        """
+        _create_http_trace_config() returns an aiohttp TraceConfig with
+        on_request_start and on_request_end signals attached.
+        """
+        from aiohttp import TraceConfig  # noqa: PLC0415
+        stub = self._make_thermostat_stub(verbose=True)
+        tc = stub._create_http_trace_config()
+        self.assertIsInstance(tc, TraceConfig)
+        self.assertTrue(len(tc.on_request_start) > 0,
+                        "on_request_start must have at least one callback")
+        self.assertTrue(len(tc.on_request_end) > 0,
+                        "on_request_end must have at least one callback")
+
+    def test_http_trace_config_callbacks_print_request(self):
+        """
+        The on_request_start callback prints the HTTP method and path.
+        """
+        import io  # noqa: PLC0415
+        import sys  # noqa: PLC0415
+        from unittest.mock import MagicMock  # noqa: PLC0415
+        import yarl  # noqa: PLC0415
+
+        stub = self._make_thermostat_stub(verbose=True)
+        tc = stub._create_http_trace_config()
+
+        async def run():
+            params = MagicMock()
+            params.method = "GET"
+            params.url = yarl.URL("https://api.oauth.blink.com/oauth/v2/signin")
+            await tc.on_request_start[0](None, None, params)
+
+        captured = io.StringIO()
+        old_stdout = sys.stdout
+        sys.stdout = captured
+        try:
+            self._run_async(run())
+        finally:
+            sys.stdout = old_stdout
+
+        output = captured.getvalue()
+        self.assertIn("GET", output)
+        self.assertIn("/oauth/v2/signin", output)
+
+    # ------------------------------------------------------------------
+    # iOS grant verbose response body logging
+    # ------------------------------------------------------------------
+
+    def test_ios_grant_401_logs_response_body_when_verbose(self):
+        """
+        When _attempt_ios_client_grant() receives HTTP 401 and verbose is
+        True, the response body snippet is printed before raising
+        UnauthorizedError.
+        """
+        import io  # noqa: PLC0415
+        import sys  # noqa: PLC0415
+        from src import blink  # noqa: PLC0415
+        from unittest.mock import AsyncMock, MagicMock  # noqa: PLC0415
+
+        stub = self._make_thermostat_stub(verbose=True)
+
+        mock_response = MagicMock()
+        mock_response.status = 401
+        mock_response.text = AsyncMock(
+            return_value='{"error":"invalid_client","message":"Client rejected"}'
+        )
+
+        mock_session = MagicMock()
+        mock_session.post = AsyncMock(return_value=mock_response)
+
+        mock_auth_obj = MagicMock()
+        mock_auth_obj.session = mock_session
+        mock_auth_obj.hardware_id = "TEST-HWID"
+
+        mock_blink_obj = MagicMock()
+        mock_blink_obj.auth = mock_auth_obj
+        stub.blink = mock_blink_obj
+
+        captured = io.StringIO()
+        old_stdout = sys.stdout
+        sys.stdout = captured
+        try:
+            with self.assertRaises(blink.UnauthorizedError):
+                self._run_async(stub._attempt_ios_client_grant())
+        finally:
+            sys.stdout = old_stdout
+
+        output = captured.getvalue()
+        # Body text must appear in the diagnostic output
+        self.assertIn("invalid_client", output)
 
 
 if __name__ == "__main__":
