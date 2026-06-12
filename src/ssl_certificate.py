@@ -407,13 +407,12 @@ def download_ssl_certificate(hostname: str, port: int = 443) -> pathlib.Path:
         # Extract the certificate from the output
         output = result.stdout
         cert_start = output.find(PEM_BEGIN_CERTIFICATE_MARKER)
-        cert_end = output.find(PEM_END_CERTIFICATE_MARKER) + len(
-            PEM_END_CERTIFICATE_MARKER
-        )
+        cert_end_pos = output.find(PEM_END_CERTIFICATE_MARKER)
 
-        if cert_start == -1 or cert_end == -1:
+        if cert_start == -1 or cert_end_pos == -1:
             raise RuntimeError("Could not find certificate in OpenSSL output")
 
+        cert_end = cert_end_pos + len(PEM_END_CERTIFICATE_MARKER)
         cert_pem = output[cert_start:cert_end]
 
         # Write certificate to file
