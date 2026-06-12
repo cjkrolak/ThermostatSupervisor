@@ -855,6 +855,70 @@ class ThermostatClass(tc.ThermostatCommon):
                     serial_number
                 )
 
+    def _log_serial_match_warning(self, message):
+        """Log serial matching warnings only in verbose mode."""
+        if self.verbose:
+            util.log_msg(
+                message,
+                mode=util.DEBUG_LOG + util.STDOUT_LOG,
+                func_name=1,
+            )
+
+    def _get_serial_to_zone_name_map(self):
+        """Build serial-number-to-zone-name map from API responses."""
+        sites = self._get_sites()
+        if not sites:
+            return {}
+
+        site_id = sites[0].get("id")
+        if not site_id:
+            return {}
+
+        zones = self._get_zones(site_id)
+        if not zones:
+            return {}
+
+        serial_to_zone_name = {}
+        for zone in zones:
+            adapter = zone.get("adapter", {})
+            device_serial = adapter.get("deviceSerial")
+            zone_name = zone.get("name", "").strip()
+            if device_serial and zone_name:
+                serial_to_zone_name[device_serial] = zone_name
+        return serial_to_zone_name
+
+    def _assign_serials_by_zone_name(self, serial_num_lst, serial_to_zone_name):
+        """Assign serial numbers to metadata entries by matching zone names."""
+        zone_name_to_idx = {
+            meta.get("zone_name"): idx
+            for idx, meta in kumocloud_config.metadata.items()
+            if meta.get("zone_name")
+        }
+
+        for serial_number in serial_num_lst:
+            zone_name = serial_to_zone_name.get(serial_number)
+            if not zone_name:
+                self._log_serial_match_warning(
+                    "Warning: Serial number from indoor units could not be "
+                    "matched to any zone name from API: "
+                    f"serial_number={serial_number}"
+                )
+                continue
+
+            idx = zone_name_to_idx.get(zone_name)
+            if idx is None:
+                self._log_serial_match_warning(
+                    "Warning: Zone name from API not found in metadata: "
+                    f"zone_name={zone_name!r}, serial_number={serial_number}"
+                )
+                continue
+
+            kumocloud_config.metadata[idx]["serial_number"] = serial_number
+            self._log_serial_match_warning(
+                f"zone index={idx}, name={zone_name}, "
+                f"serial_number={serial_number}"
+            )
+
     def _populate_metadata(self, serial_num_lst):
         """
         Populate metadata with serial numbers matched by zone name.
@@ -871,127 +935,38 @@ class ThermostatClass(tc.ThermostatCommon):
             serial_num_lst (list): List of serial numbers from API
         """
         try:
-            # Get zones data to match zone names with serial numbers
-            sites = self._get_sites()
-            if not sites:
-                # Fallback to sequential assignment if no sites data
+            serial_to_zone_name = self._get_serial_to_zone_name_map()
+            if not serial_to_zone_name:
                 self._assign_serials_sequentially(serial_num_lst)
                 return
-
-            site_id = sites[0].get("id")
-            if not site_id:
-                # Fallback to sequential assignment
-                self._assign_serials_sequentially(serial_num_lst)
-                return
-
-            zones = self._get_zones(site_id)
-            if not zones:
-                # Fallback to sequential assignment if no zones data
-                self._assign_serials_sequentially(serial_num_lst)
-                return
-
-            # Build mapping of serial number to zone name
-            serial_to_zone_name = {}
-            for zone in zones:
-                adapter = zone.get("adapter", {})
-                device_serial = adapter.get("deviceSerial")
-                zone_name = zone.get("name", "").strip()
-                if device_serial and zone_name:
-                    serial_to_zone_name[device_serial] = zone_name
-
-            # Build reverse lookup: zone_name -> metadata index
-            # This improves performance from O(n*m) to O(n+m)
-            zone_name_to_idx = {
-                meta.get("zone_name"): idx
-                for idx, meta in kumocloud_config.metadata.items()
-                if meta.get("zone_name")
-            }
-
-            # Assign serial numbers to correct metadata indices
-            # by matching zone names
-            for serial_number in serial_num_lst:
-                zone_name = serial_to_zone_name.get(serial_number)
-                if zone_name:
-                    idx = zone_name_to_idx.get(zone_name)
-                    if idx is not None:
-                        kumocloud_config.metadata[idx]["serial_number"] = (
-                            serial_number
-                        )
-                        if self.verbose:
-                            util.log_msg(
-                                f"zone index={idx}, "
-                                f"name={zone_name}, "
-                                f"serial_number={serial_number}",
-                                mode=util.DEBUG_LOG + util.STDOUT_LOG,
-                                func_name=1,
-                            )
-                    elif self.verbose:
-                        # Log a warning when a zone name from the API
-                        # cannot be mapped to a metadata index. This
-                        # helps debug configuration mismatches.
-                        util.log_msg(
-                            "Warning: Zone name from API not found in "
-                            f"metadata: zone_name={zone_name!r}, "
-                            f"serial_number={serial_number}",
-                            mode=util.DEBUG_LOG + util.STDOUT_LOG,
-                            func_name=1,
-                        )
-                elif self.verbose:
-                    # Log a warning when a serial number from the indoor
-                    # units list cannot be matched to any zone name from
-                    # the zones API response. This condition is silent
-                    # otherwise and may cause issues later when specific
-                    # zone data is requested.
-                    util.log_msg(
-                        "Warning: Serial number from indoor units could "
-                        "not be matched to any zone name from API: "
-                        f"serial_number={serial_number}",
-                        mode=util.DEBUG_LOG + util.STDOUT_LOG,
-                        func_name=1,
-                    )
+            self._assign_serials_by_zone_name(
+                serial_num_lst, serial_to_zone_name
+            )
 
         except requests.exceptions.RequestException as exc:
-            # API communication errors - fallback to sequential assignment
-            if self.verbose:
-                util.log_msg(
-                    f"Warning: API request failed during serial matching: {exc}",
-                    mode=util.DEBUG_LOG + util.STDOUT_LOG,
-                    func_name=1,
-                )
-                util.log_msg(
-                    "Using sequential assignment as fallback",
-                    mode=util.DEBUG_LOG + util.STDOUT_LOG,
-                    func_name=1,
-                )
+            self._log_serial_match_warning(
+                f"Warning: API request failed during serial matching: {exc}"
+            )
+            self._log_serial_match_warning(
+                "Using sequential assignment as fallback"
+            )
             self._assign_serials_sequentially(serial_num_lst)
         except (KeyError, TypeError, AttributeError) as exc:
-            # Data structure issues - fallback to sequential assignment
-            if self.verbose:
-                util.log_msg(
-                    f"Warning: Unexpected data structure during serial "
-                    f"matching: {exc}",
-                    mode=util.DEBUG_LOG + util.STDOUT_LOG,
-                    func_name=1,
-                )
-                util.log_msg(
-                    "Using sequential assignment as fallback",
-                    mode=util.DEBUG_LOG + util.STDOUT_LOG,
-                    func_name=1,
-                )
+            self._log_serial_match_warning(
+                "Warning: Unexpected data structure during serial "
+                f"matching: {exc}"
+            )
+            self._log_serial_match_warning(
+                "Using sequential assignment as fallback"
+            )
             self._assign_serials_sequentially(serial_num_lst)
         except Exception as exc:
-            # Unexpected errors - log and fallback to sequential assignment
-            if self.verbose:
-                util.log_msg(
-                    f"Warning: Failed to match serial numbers by name: {exc}",
-                    mode=util.DEBUG_LOG + util.STDOUT_LOG,
-                    func_name=1,
-                )
-                util.log_msg(
-                    "Using sequential assignment as fallback",
-                    mode=util.DEBUG_LOG + util.STDOUT_LOG,
-                    func_name=1,
-                )
+            self._log_serial_match_warning(
+                f"Warning: Failed to match serial numbers by name: {exc}"
+            )
+            self._log_serial_match_warning(
+                "Using sequential assignment as fallback"
+            )
             self._assign_serials_sequentially(serial_num_lst)
 
     def _get_specific_zone_data(self, zone, serial_num_lst):
