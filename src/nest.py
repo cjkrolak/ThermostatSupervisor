@@ -40,6 +40,8 @@ else:
 
 class ThermostatClass(tc.ThermostatCommon):
     """Nest Thermostat class."""
+    _shared_devices_cache = None
+    _shared_devices_cache_time = 0.0
 
     def __init__(self, zone, verbose=True):
         """
@@ -176,15 +178,69 @@ class ThermostatClass(tc.ThermostatCommon):
             print(f"ERROR: Failed to create token cache file: {e}")
             # Don't raise exception - fall back to manual authorization
 
-    def get_device_data(self):
+    @classmethod
+    def _is_shared_device_cache_valid(cls, cache_period_sec: int) -> bool:
+        """
+        Check whether the shared device cache is still valid.
+
+        Args:
+            cache_period_sec (int): Maximum cache age in seconds.
+        Returns:
+            bool: True when cache exists and is not expired.
+        """
+        if cls._shared_devices_cache is None:
+            return False
+        return (time.time() - cls._shared_devices_cache_time) < cache_period_sec
+
+    @staticmethod
+    def _is_rate_limit_error(error: Exception) -> bool:
+        """
+        Determine whether an exception indicates a Nest rate-limit response.
+
+        Args:
+            error (Exception): Exception raised by Nest API access.
+        Returns:
+            bool: True when the error payload indicates rate limiting.
+        """
+        payload = error.args[0] if error.args else None
+        if isinstance(payload, dict):
+            message = str(payload.get("message", "")).lower()
+            return (
+                payload.get("code") == 429
+                or payload.get("status") == "RESOURCE_EXHAUSTED"
+                or "rate limit" in message
+            )
+        error_text = str(error).lower()
+        return "resource_exhausted" in error_text or "rate limit" in error_text
+
+    def _store_shared_device_cache(self) -> None:
+        """
+        Store the latest fetched device list in a class-level cache.
+
+        Args:
+            None
+        Returns:
+            None
+        """
+        ThermostatClass._shared_devices_cache = self.devices
+        ThermostatClass._shared_devices_cache_time = time.time()
+
+    def get_device_data(self, force_refresh: bool = False):
         """
         get device data from network.
 
         inputs:
-            None
+            force_refresh(bool): bypass shared cache and force API request.
         returns:
             (list) list of device objects
         """
+        cache_period_sec = getattr(self, "cache_period", nest_config.cache_period_sec)
+        if not force_refresh and ThermostatClass._is_shared_device_cache_valid(
+            cache_period_sec
+        ):
+            self.devices = ThermostatClass._shared_devices_cache
+            return self.devices
+
         try:
             self.devices = self.thermostat_obj.get_devices()
         except oauthlib.oauth2.rfc6749.errors.InvalidGrantError as e:
@@ -198,9 +254,38 @@ class ThermostatClass(tc.ThermostatCommon):
             self._reload_token_from_cache()
             print("Retrying get_devices() with refreshed token...")
             self.devices = self.thermostat_obj.get_devices()
-        except Exception:
+        except Exception as e:
+            if self._is_rate_limit_error(e):
+                max_retries = 2
+                retry_delay_sec = 1
+                for _ in range(max_retries):
+                    print(
+                        "Nest ListDevices is rate limited, retrying in "
+                        f"{retry_delay_sec} second(s)..."
+                    )
+                    time.sleep(retry_delay_sec)
+                    retry_delay_sec *= 2
+                    try:
+                        self.devices = self.thermostat_obj.get_devices()
+                        self._store_shared_device_cache()
+                        return self.devices
+                    except Exception as retry_error:
+                        if not self._is_rate_limit_error(retry_error):
+                            print(traceback.format_exc())
+                            raise
+                if ThermostatClass._shared_devices_cache is not None:
+                    print(
+                        "Nest ListDevices remains rate limited; using cached "
+                        "device data."
+                    )
+                    self.devices = ThermostatClass._shared_devices_cache
+                    ThermostatClass._shared_devices_cache_time = time.time()
+                    return self.devices
+                print(traceback.format_exc())
+                raise
             print(traceback.format_exc())
             raise
+        self._store_shared_device_cache()
         # TODO is there a chance that meta data changes?
         return self.devices
 
