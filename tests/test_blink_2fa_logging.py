@@ -230,8 +230,10 @@ class BlinkAsyncAuthFlowTests(utc.UnitTest):
         instance.bl_2fa = "123456"
         instance.bl_uname = "user@example.com"
         instance.bl_pwd = "secret"
-        instance.auth_dict = {"username": "user@example.com",
-                              "password": "secret"}
+        instance.auth_dict = {
+            "username": "user@example.com",
+            "password": "secret",
+        }
         instance.blink = None
         instance.verbose = False
         instance.BL_2FA_KEY = "BLINK_2FA"

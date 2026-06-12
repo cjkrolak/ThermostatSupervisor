@@ -151,11 +151,14 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):  # type: ignore[misc]
         """
         Validate that required credentials are present and non-empty.
 
-        Checks the username, password, and (optionally) 2FA code loaded from
-        the environment.  If any required field is blank, empty, or is still
-        the placeholder sentinel value produced when the env key is missing,
-        a descriptive ``ValueError`` is raised immediately so the caller sees
-        a targeted error message instead of a cryptic Blink server rejection.
+        Checks the username and password loaded from the environment.
+        If any required field is blank, empty, or is still the placeholder
+        sentinel value produced when the env key is missing, a descriptive
+        ``ValueError`` is raised immediately so the caller sees a targeted
+        error message instead of a cryptic Blink server rejection.
+
+        Note: BLINK_2FA is optional and is not validated here; it is
+        consumed directly by the async auth flow when present.
 
         Common causes of a missing/blank value on Windows:
         - The ``supervisor-env.txt`` file was saved with a UTF-8 BOM by
@@ -167,7 +170,9 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):  # type: ignore[misc]
             ValueError: with a specific message identifying which credential
                 is missing or blank and where to set it.
         """
-        missing_sentinel_prefix = "<"
+        # Build the exact sentinel strings used when an env key is missing.
+        uname_sentinel = "<" + self.BL_UNAME_KEY + api.KEY_MISSING_SUFFIX
+        pwd_sentinel = "<" + self.BL_PASSWORD_KEY + api.KEY_MISSING_SUFFIX
         issues = []
 
         # Validate username
@@ -177,7 +182,7 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):  # type: ignore[misc]
                 f"Check that {self.BL_UNAME_KEY} is set in "
                 f"supervisor-env.txt or as an environment variable."
             )
-        elif self.bl_uname.startswith(missing_sentinel_prefix):
+        elif self.bl_uname == uname_sentinel:
             issues.append(
                 f"BLINK_USERNAME is missing. "
                 f"Set {self.BL_UNAME_KEY} in supervisor-env.txt "
@@ -191,7 +196,7 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):  # type: ignore[misc]
                 f"Check that {self.BL_PASSWORD_KEY} is set in "
                 f"supervisor-env.txt or as an environment variable."
             )
-        elif self.bl_pwd.startswith(missing_sentinel_prefix):
+        elif self.bl_pwd == pwd_sentinel:
             issues.append(
                 f"BLINK_PASSWORD is missing. "
                 f"Set {self.BL_PASSWORD_KEY} in supervisor-env.txt "
@@ -524,11 +529,23 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):  # type: ignore[misc]
             return
         try:
             os.makedirs(os.path.dirname(TOKEN_CACHE_FILE) or ".", exist_ok=True)
-            # Obtain a copy of login attributes and strip credentials.
-            cache_data = dict(self.blink.auth.login_attributes)
+            # Guard: login_attributes may be absent or not dict-like in some
+            # blinkpy versions; convert defensively to avoid AttributeError.
+            try:
+                cache_data = dict(self.blink.auth.login_attributes)
+            except (AttributeError, TypeError, ValueError):
+                if self.verbose:
+                    print(
+                        f"[Blink zone {self.zone_number}] Warning: "
+                        f"login_attributes unavailable; skipping token cache."
+                    )
+                return
             cache_data.pop("username", None)
             cache_data.pop("password", None)
-            with open(TOKEN_CACHE_FILE, "w", encoding="utf-8") as f:
+            # Write with mode 0o600 (owner read/write only) on POSIX systems
+            # because the cache may contain a refresh token.
+            fd = os.open(TOKEN_CACHE_FILE, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+            with os.fdopen(fd, "w", encoding="utf-8") as f:
                 json.dump(cache_data, f, indent=2)
             if self.verbose:
                 print(
@@ -729,11 +746,10 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):  # type: ignore[misc]
                 )
             return await self._complete_password_grant_2fa()
         except (UnauthorizedError, LoginError) as e:
-            # HTTP 401 ("unsupported_grant_type") or other 4xx rejection.
-            # Blink has removed password grant support in recent API
-            # versions.  HTTP 401 with "unsupported_grant_type" is the
-            # documented server response when this grant type is
-            # permanently disabled.
+            # 4xx/5xx rejection from the password grant endpoint.
+            # HTTP 401 with "unsupported_grant_type" is a common response
+            # when Blink has disabled password grant, but other errors are
+            # also possible (invalid credentials, account locked, etc.).
             error_type = type(e).__name__
             error_detail = str(e) if str(e) else "(no message)"
             if self.verbose:
@@ -742,15 +758,18 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):  # type: ignore[misc]
                     f"failed: [{error_type}] {error_detail}"
                 )
                 print(traceback.format_exc())
+            extra_hint = ""
+            if "unsupported_grant_type" in error_detail:
+                extra_hint = (
+                    " The 'unsupported_grant_type' error indicates the "
+                    "password grant path has been permanently disabled by "
+                    "Blink; the only supported login path is the OAuth v2 "
+                    "PKCE web flow (blink.start()). "
+                )
             raise ValueError(
                 f"Blink password grant rejected for zone "
-                f"{self.zone_number}. [{error_type}] "
-                f"Blink's server returned HTTP 401 "
-                f"'unsupported_grant_type', which means the password "
-                f"grant authentication path has been permanently "
-                f"disabled by Blink. "
-                f"The only supported login path is the OAuth v2 PKCE "
-                f"web flow (blink.start()). "
+                f"{self.zone_number}. [{error_type}] {error_detail}."
+                f"{extra_hint}"
                 f"Recommended actions: "
                 f"(1) Ensure your credentials in supervisor-env.txt "
                 f"are correct (username, password). "
