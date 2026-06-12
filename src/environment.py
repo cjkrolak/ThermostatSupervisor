@@ -51,7 +51,7 @@ def _read_supervisor_env_file():
         # Look for supervisor-env.txt in the current working directory
         env_file_path = os.path.join(os.getcwd(), "supervisor-env.txt")
         if os.path.exists(env_file_path):
-            with open(env_file_path, "r", encoding="utf-8") as f:
+            with open(env_file_path, "r", encoding="utf-8-sig") as f:
                 for line_num, line in enumerate(f, 1):
                     line = line.strip()
                     # Skip empty lines and comments
