@@ -382,8 +382,14 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):  # type: ignore[misc]
         """
         Attempt single async authentication process.
 
-        Supports both blinkpy 0.25.x+ (OAuth v2, BlinkTwoFARequiredError /
-        send_2fa_code) and older 0.22.x APIs (send_auth_key).
+        Tries two authentication paths in order:
+        1. OAuth v2 web flow via blink.start() (blinkpy 0.25.x+, preferred).
+           If start() raises BlinkTwoFARequiredError, 2FA is completed via
+           send_2fa_code() or the legacy send_auth_key() API.
+        2. Password grant fallback via auth.login() (used when the OAuth v2
+           web flow returns False). If login() raises BlinkTwoFARequiredError,
+           the stored 2FA code is added to the request headers and login is
+           retried.
         """
         self.blink = blinkpy.Blink(session=session)  # type: ignore[misc]
         if self.blink is None:
@@ -396,9 +402,8 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):  # type: ignore[misc]
             self.auth_dict, no_prompt=True, session=session
         )
 
-        # blinkpy 0.25.x: start() raises BlinkTwoFARequiredError when
-        # 2FA is needed; earlier 0.22.x versions returned False and
-        # required a subsequent send_auth_key call.
+        # Path 1: OAuth v2 web flow (blink.start() with PKCE).
+        # BlinkTwoFARequiredError is raised when 2FA is required.
         try:
             result = await self.blink.start()
         except BlinkTwoFARequiredError:
@@ -410,18 +415,115 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):  # type: ignore[misc]
                 )
             return result
 
-        if not result:
+        if result:
+            return result
+
+        # Path 2: Password grant fallback (auth.login() to /oauth/token).
+        # Used when the OAuth v2 web flow fails (e.g. Blink's web signin
+        # endpoint returns an unexpected status rather than a redirect/412).
+        return await self._attempt_password_grant_auth()
+
+    async def _attempt_password_grant_auth(self):
+        """
+        Fallback: authenticate via direct password grant (auth.login()).
+
+        POSTs credentials to the Blink token endpoint using the OAuth 2.0
+        Resource Owner Password Credentials (ROPC) grant.  Used when the
+        OAuth v2 web flow (blink.start()) fails.
+
+        returns:
+            (bool): True if authentication succeeded, False otherwise.
+        raises:
+            LoginError: if the login request fails at the network level.
+            UnauthorizedError: if credentials are rejected (HTTP 401).
+            ValueError: if login returns no token data.
+        """
+        try:
+            login_data = await self.blink.auth.login()
+        except BlinkTwoFARequiredError:
+            # Blink requires 2FA for this login attempt.
+            return await self._complete_password_grant_2fa()
+        except (LoginError, UnauthorizedError):
+            raise
+
+        if not login_data:
             raise ValueError(
-                f"Blink authentication failed for zone {self.zone_number}. "
-                "Login returned False. Please verify your credentials "
-                "and ensure your Blink account is accessible."
+                f"Blink password grant returned no token data for zone "
+                f"{self.zone_number}. Please verify your credentials."
             )
 
-        return result
+        return await self._setup_blink_after_login(login_data)
+
+    async def _complete_password_grant_2fa(self):
+        """
+        Complete 2FA for the password grant authentication path.
+
+        After auth.login() raises BlinkTwoFARequiredError (HTTP 412), Blink
+        sends a new code to the user.  This method adds the stored 2FA code
+        to the auth data and retries the password grant so that the code is
+        sent in the '2fa-code' request header.
+
+        returns:
+            (bool): True if authentication completed, False otherwise.
+        raises:
+            ValueError: if the 2FA code is rejected or login returns no data.
+        """
+        # Include the stored 2FA code in the next login request headers.
+        self.blink.auth.data["2fa_code"] = self.bl_2fa
+        try:
+            login_data = await self.blink.auth.login()
+        except BlinkTwoFARequiredError:
+            raise ValueError(
+                "2FA verification failed for password grant. "
+                "The stored 2FA code may be expired or incorrect. "
+                f"Please update {self.BL_2FA_KEY} in supervisor-env.txt "
+                "with a fresh code and restart the application."
+            )
+        finally:
+            # Always remove the 2FA code to avoid leaking it into future
+            # requests or retries.
+            self.blink.auth.data.pop("2fa_code", None)
+
+        if not login_data:
+            raise ValueError(
+                "2FA completion returned no token data for zone "
+                f"{self.zone_number}."
+            )
+
+        return await self._setup_blink_after_login(login_data)
+
+    async def _setup_blink_after_login(self, login_data):
+        """
+        Complete Blink setup after a successful password grant login.
+
+        Processes the token response and runs the same setup steps that
+        blink.start() would normally execute after auth.startup():
+        token processing, URL setup, homescreen fetch, and post-verify.
+
+        inputs:
+            login_data (dict): token response from auth.login().
+        returns:
+            (bool): True if setup completed successfully, False otherwise.
+        """
+        await self.blink.auth._process_token_data(login_data)
+
+        try:
+            self.blink.setup_urls()
+            await self.blink.get_homescreen()
+        except blinkpy.BlinkSetupError:
+            self.blink.available = False
+            return False
+
+        if not self.blink.last_refresh:
+            self.blink.last_refresh = int(
+                time.time() - self.blink.refresh_rate * 1.05
+            )
+
+        return await self.blink.setup_post_verify()
 
     async def _complete_2fa_auth(self):
         """
-        Complete 2FA authentication using the appropriate blinkpy API.
+        Complete 2FA for the OAuth v2 web flow (blink.start() path).
 
         Uses send_2fa_code (blinkpy 0.25.x OAuth v2) when available,
         falling back to the legacy send_auth_key API for 0.22.x.
