@@ -559,15 +559,25 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):  # type: ignore[misc]
                 )
             return await self._attempt_ios_client_grant()
         except LoginError as e:
+            # HTTP 406 or other non-401/412 rejection from the android
+            # client.  Blink's server may reject the android client_id
+            # with a non-standard 406 "Not Acceptable" instead of a
+            # 401.  Try the iOS client grant (different client_id and
+            # user agent) as a last-resort fallback before giving up.
             error_type = type(e).__name__
             error_detail = str(e) if str(e) else "(no message)"
             if self.verbose:
                 print(
-                    f"[Blink zone {self.zone_number}] Password grant failed: "
-                    f"[{error_type}] {error_detail}"
+                    f"[Blink zone {self.zone_number}] Password grant "
+                    f"(android) failed: [{error_type}] {error_detail}"
                 )
                 print(traceback.format_exc())
-            raise
+                print(
+                    f"[Blink zone {self.zone_number}] Android password "
+                    f"grant rejected ({error_type}). "
+                    f"Trying iOS client grant as last-resort fallback..."
+                )
+            return await self._attempt_ios_client_grant()
 
         if not login_data:
             raise ValueError(
@@ -839,6 +849,12 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):  # type: ignore[misc]
         stdout so the caller can see exactly where authentication stalls.
         The handler is idempotent — calling this method multiple times
         will not duplicate handlers.
+
+        The StreamHandler is added only to the root ``blinkpy`` logger.
+        Child loggers (``blinkpy.auth``, ``blinkpy.blinkpy``, etc.)
+        propagate to the parent by default in Python's logging hierarchy,
+        so attaching the handler only to the parent ensures each message
+        is emitted exactly once rather than once per ancestor.
         """
         if not self.verbose:
             return
@@ -847,19 +863,22 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):  # type: ignore[misc]
         handler.setFormatter(
             logging.Formatter("[blinkpy] %(name)s %(levelname)s: %(message)s")
         )
-        for name in (
-            "blinkpy",
-            "blinkpy.auth",
-            "blinkpy.blinkpy",
-            "blinkpy.api",
+
+        # Add handler to the root blinkpy logger only; child loggers
+        # propagate to it naturally, preventing duplicate log entries.
+        root_logger = logging.getLogger("blinkpy")
+        if not any(
+            isinstance(h, logging.StreamHandler) and h.stream is sys.stdout
+            for h in root_logger.handlers
         ):
-            logger = logging.getLogger(name)
-            if not any(
-                isinstance(h, logging.StreamHandler) and h.stream is sys.stdout
-                for h in logger.handlers
-            ):
-                logger.addHandler(handler)
-            logger.setLevel(logging.DEBUG)
+            root_logger.addHandler(handler)
+        root_logger.setLevel(logging.DEBUG)
+
+        # Set child loggers to DEBUG so their messages are not filtered
+        # before reaching the parent handler, but do not add separate
+        # handlers to avoid double-logging via propagation.
+        for name in ("blinkpy.auth", "blinkpy.blinkpy", "blinkpy.api"):
+            logging.getLogger(name).setLevel(logging.DEBUG)
 
     def _create_http_trace_config(self) -> TraceConfig:
         """
@@ -894,6 +913,35 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):  # type: ignore[misc]
                 f"[Blink zone {zone}][HTTP←] "
                 f"{status} {host}{path}"
             )
+            if status >= 400:
+                # Read and log the response body for all 4xx/5xx responses
+                # so the exact server error message is visible in the log.
+                # aiohttp caches the body after the first read(), so
+                # blinkpy can still read it afterwards.
+                try:
+                    body_bytes = await params.response.read()
+                    snippet = (
+                        body_bytes.decode("utf-8", errors="replace")[:500]
+                        .replace("\n", " ")
+                    )
+                    print(
+                        f"[Blink zone {zone}][HTTP {status} body] {snippet}"
+                    )
+                except Exception as exc:
+                    print(
+                        f"[Blink zone {zone}][HTTP {status} body] "
+                        f"(could not read: {exc})"
+                    )
+                if status == 406:
+                    print(
+                        f"[Blink zone {zone}] NOTE: HTTP 406 may "
+                        f"indicate temporary account lockout or IP "
+                        f"rate-limiting by Blink's server. "
+                        f"If all auth paths fail, try waiting 15-30 "
+                        f"minutes and signing into the official Blink "
+                        f"mobile app to unlock your account before "
+                        f"retrying."
+                    )
 
         async def _on_request_exception(_session, _ctx, params) -> None:
             exc = params.exception

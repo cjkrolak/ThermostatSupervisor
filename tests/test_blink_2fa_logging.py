@@ -371,13 +371,17 @@ class BlinkAsyncAuthFlowTests(utc.UnitTest):
 
     def test_attempt_async_auth_start_false_fallback_login_error(self):
         """
-        When blink.start() returns False and auth.login() raises LoginError,
-        the LoginError propagates so the retry loop can handle it.
+        When blink.start() returns False and auth.login() raises LoginError
+        (e.g. HTTP 406 "Not Acceptable"), the iOS client grant fallback is
+        tried.  If the iOS grant succeeds (HTTP 200), True is returned.
         """
         from src import blink  # noqa: PLC0415
 
         stub = self._make_thermostat_stub()
-        mock_blink_obj, mock_auth_obj = self._make_blink_obj_for_password_grant()
+        # android login raises LoginError; iOS response is 200 (success)
+        mock_blink_obj, mock_auth_obj = self._make_blink_obj_for_password_grant(
+            ios_response_status=200
+        )
         mock_auth_obj.login = AsyncMock(side_effect=blink.LoginError)
 
         with patch.object(blink, "blinkpy") as mock_blinkpy_mod, \
@@ -386,7 +390,37 @@ class BlinkAsyncAuthFlowTests(utc.UnitTest):
             mock_blinkpy_mod.BlinkSetupError = Exception
             mock_auth_mod.Auth.return_value = mock_auth_obj
 
-            with self.assertRaises(blink.LoginError):
+            result = self._run_async(
+                stub._attempt_async_authentication(MagicMock())
+            )
+
+        self.assertTrue(result, "iOS grant fallback should succeed")
+        # android login attempted once; iOS grant used session.post
+        mock_auth_obj.login.assert_called_once()
+        mock_auth_obj.session.post.assert_called_once()
+
+    def test_attempt_async_auth_login_error_ios_also_unauthorized(self):
+        """
+        When blink.start() returns False, auth.login() raises LoginError,
+        and the iOS client grant also returns HTTP 401, UnauthorizedError
+        propagates so the retry loop can handle it.
+        """
+        from src import blink  # noqa: PLC0415
+
+        stub = self._make_thermostat_stub()
+        # android login raises LoginError; iOS response is 401 (rejected)
+        mock_blink_obj, mock_auth_obj = self._make_blink_obj_for_password_grant(
+            ios_response_status=401
+        )
+        mock_auth_obj.login = AsyncMock(side_effect=blink.LoginError)
+
+        with patch.object(blink, "blinkpy") as mock_blinkpy_mod, \
+                patch.object(blink, "auth") as mock_auth_mod:
+            mock_blinkpy_mod.Blink.return_value = mock_blink_obj
+            mock_blinkpy_mod.BlinkSetupError = Exception
+            mock_auth_mod.Auth.return_value = mock_auth_obj
+
+            with self.assertRaises(blink.UnauthorizedError):
                 self._run_async(
                     stub._attempt_async_authentication(MagicMock())
                 )
@@ -717,27 +751,42 @@ class BlinkDiagnosticsTests(utc.UnitTest):
 
     def test_configure_blink_logging_verbose_adds_handler(self):
         """
-        _configure_blink_logging() adds a StreamHandler to blinkpy loggers
-        when verbose=True and sets each logger to DEBUG level.
+        _configure_blink_logging() adds a StreamHandler only to the parent
+        ``blinkpy`` logger and sets all blinkpy loggers to DEBUG level.
+        Child loggers propagate to the parent naturally, so each message
+        is emitted exactly once.
         """
         import logging  # noqa: PLC0415
         stub = self._make_thermostat_stub(verbose=True)
 
-        # Remove any existing handlers on blinkpy loggers first to
-        # ensure the method adds them cleanly.
+        # Remove any existing handlers to start clean.
         for name in ("blinkpy", "blinkpy.auth", "blinkpy.blinkpy",
                      "blinkpy.api"):
             logging.getLogger(name).handlers = []
 
         stub._configure_blink_logging()
 
-        for name in ("blinkpy", "blinkpy.auth"):
-            logger = logging.getLogger(name)
-            self.assertEqual(logger.level, logging.DEBUG)
-            self.assertTrue(
+        # Parent logger must have the StreamHandler and be at DEBUG level.
+        parent = logging.getLogger("blinkpy")
+        self.assertEqual(parent.level, logging.DEBUG)
+        self.assertTrue(
+            any(isinstance(h, logging.StreamHandler)
+                for h in parent.handlers),
+            "Expected StreamHandler on 'blinkpy' parent logger"
+        )
+
+        # Child loggers must be at DEBUG but must NOT have their own
+        # StreamHandler (they propagate to the parent to avoid double-
+        # logging each message).
+        for name in ("blinkpy.auth", "blinkpy.blinkpy", "blinkpy.api"):
+            child = logging.getLogger(name)
+            self.assertEqual(child.level, logging.DEBUG,
+                             f"{name!r} must be at DEBUG level")
+            self.assertFalse(
                 any(isinstance(h, logging.StreamHandler)
-                    for h in logger.handlers),
-                f"Expected StreamHandler on {name!r} logger"
+                    for h in child.handlers),
+                f"Child logger {name!r} must not have its own "
+                f"StreamHandler (would cause double-logging)"
             )
 
     def test_configure_blink_logging_noop_when_not_verbose(self):
@@ -817,6 +866,49 @@ class BlinkDiagnosticsTests(utc.UnitTest):
         output = captured.getvalue()
         self.assertIn("GET", output)
         self.assertIn("/oauth/v2/signin", output)
+
+    def test_http_trace_config_4xx_body_logged_on_request_end(self):
+        """
+        The on_request_end callback reads and prints the response body
+        for 4xx status codes, and prints a specific 406 guidance note.
+        """
+        import io  # noqa: PLC0415
+        import sys  # noqa: PLC0415
+        import yarl  # noqa: PLC0415
+        from unittest.mock import AsyncMock, MagicMock  # noqa: PLC0415
+
+        stub = self._make_thermostat_stub(verbose=True)
+        tc = stub._create_http_trace_config()
+
+        async def run():
+            params = MagicMock()
+            params.url = yarl.URL(
+                "https://api.oauth.blink.com/oauth/v2/signin"
+            )
+            params.response = MagicMock()
+            params.response.status = 406
+            params.response.read = AsyncMock(
+                return_value=b'{"error":"blocked","message":"Rate limited"}'
+            )
+            await tc.on_request_end[0](None, None, params)
+
+        captured = io.StringIO()
+        old_stdout = sys.stdout
+        sys.stdout = captured
+        try:
+            self._run_async(run())
+        finally:
+            sys.stdout = old_stdout
+
+        output = captured.getvalue()
+        # Status and path must appear
+        self.assertIn("406", output)
+        self.assertIn("/oauth/v2/signin", output)
+        # Response body snippet must appear
+        self.assertIn("blocked", output)
+        # 406-specific guidance note must appear
+        self.assertIn("406", output)
+        self.assertIn("rate", output.lower())
 
     # ------------------------------------------------------------------
     # _validate_credentials
