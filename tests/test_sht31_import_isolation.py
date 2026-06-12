@@ -84,7 +84,7 @@ class TestSHT31ImportIsolation(utc.UnitTest):
                 "flask_restful should not be loaded for regular zone"
             )
             self.assertModuleNotIn(
-                'src.sht31_flask_server',
+                sht31.SHT31_FLASK_SERVER_MODULE,
                 "sht31_flask_server should not be loaded for regular zone"
             )
 
@@ -127,7 +127,7 @@ class TestSHT31ImportIsolation(utc.UnitTest):
                 'flask', "Flask should be loaded for unit test zone 99"
             )
             self.assertModuleIn(
-                'src.sht31_flask_server',
+                sht31.SHT31_FLASK_SERVER_MODULE,
                 "sht31_flask_server should be loaded for unit test zone 99"
             )
 

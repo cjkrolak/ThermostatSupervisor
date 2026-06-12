@@ -2302,8 +2302,17 @@ class ErrorHandlingUnitTest(utc.UnitTest):
 
         thermostat = kumocloud.ThermostatClass(zone=0, verbose=True)
 
-        # Should fall back to sequential assignment
-        getattr(thermostat, "_populate_metadata")(["SERIAL1"])  # type: ignore
+        # Should fall back to sequential assignment and log fallback constant
+        with patch("src.kumocloud.util.log_msg") as mock_log_msg:
+            getattr(thermostat, "_populate_metadata")(["SERIAL1"])  # type: ignore
+
+        logged_messages = [
+            call.args[0] for call in mock_log_msg.call_args_list if call.args
+        ]
+        self.assertIn(
+            kumocloud.SEQUENTIAL_ASSIGNMENT_FALLBACK_MSG,
+            logged_messages
+        )
 
         # Should have assigned sequentially
         self.assertEqual(

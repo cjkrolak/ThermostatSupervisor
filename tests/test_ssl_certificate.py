@@ -44,6 +44,17 @@ class TestSSLCertificate(unittest.TestCase):
         self.assertTrue(ssl_dir.exists())
         self.assertTrue(ssl_dir.is_dir())
 
+    def test_pem_marker_constants(self):
+        """Test PEM marker constants use expected certificate delimiters."""
+        self.assertEqual(
+            ssl_certificate.PEM_BEGIN_CERTIFICATE_MARKER,
+            "-----BEGIN CERTIFICATE-----",
+        )
+        self.assertEqual(
+            ssl_certificate.PEM_END_CERTIFICATE_MARKER,
+            "-----END CERTIFICATE-----",
+        )
+
     def test_generate_self_signed_certificate(self):
         """Test self-signed certificate generation."""
         cert_path, key_path = ssl_certificate.generate_self_signed_certificate(

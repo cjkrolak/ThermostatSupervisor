@@ -17,6 +17,8 @@ from src import thermostat_api as api
 from src import thermostat_common as tc
 from src import utilities as util
 
+SEQUENTIAL_ASSIGNMENT_FALLBACK_MSG = "Using sequential assignment as fallback"
+
 
 class ThermostatClass(tc.ThermostatCommon):
     """KumoCloud v3 API thermostat functions."""
@@ -947,26 +949,20 @@ class ThermostatClass(tc.ThermostatCommon):
             self._log_serial_match_warning(
                 f"Warning: API request failed during serial matching: {exc}"
             )
-            self._log_serial_match_warning(
-                "Using sequential assignment as fallback"
-            )
+            self._log_serial_match_warning(SEQUENTIAL_ASSIGNMENT_FALLBACK_MSG)
             self._assign_serials_sequentially(serial_num_lst)
         except (KeyError, TypeError, AttributeError) as exc:
             self._log_serial_match_warning(
                 "Warning: Unexpected data structure during serial "
                 f"matching: {exc}"
             )
-            self._log_serial_match_warning(
-                "Using sequential assignment as fallback"
-            )
+            self._log_serial_match_warning(SEQUENTIAL_ASSIGNMENT_FALLBACK_MSG)
             self._assign_serials_sequentially(serial_num_lst)
         except Exception as exc:
             self._log_serial_match_warning(
                 f"Warning: Failed to match serial numbers by name: {exc}"
             )
-            self._log_serial_match_warning(
-                "Using sequential assignment as fallback"
-            )
+            self._log_serial_match_warning(SEQUENTIAL_ASSIGNMENT_FALLBACK_MSG)
             self._assign_serials_sequentially(serial_num_lst)
 
     def _get_specific_zone_data(self, zone, serial_num_lst):
