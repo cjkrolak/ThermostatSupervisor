@@ -176,12 +176,16 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):  # type: ignore[misc]
 
     def _handle_auth_retry(self, attempt, max_retries, retry_delay, error):
         """Handle authentication retry logic."""
+        error_type = type(error).__name__
+        error_detail = str(error) if str(error) else "(no message)"
         if attempt < max_retries - 1:
             if self.verbose:
                 print(
-                    f"Authentication attempt {attempt + 1} failed: {str(error)}. "
+                    f"Authentication attempt {attempt + 1} failed: "
+                    f"[{error_type}] {error_detail}. "
                     f"Retrying in {retry_delay} seconds..."
                 )
+                print(traceback.format_exc())
             time.sleep(retry_delay)
             return retry_delay * 2  # exponential backoff
         else:
@@ -345,12 +349,16 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):  # type: ignore[misc]
 
     async def _handle_async_auth_retry(self, attempt, max_retries, retry_delay, error):
         """Handle async authentication retry logic."""
+        error_type = type(error).__name__
+        error_detail = str(error) if str(error) else "(no message)"
         if attempt < max_retries - 1:
             if self.verbose:
                 print(
                     f"Authentication attempt {attempt + 1} failed: "
-                    f"{str(error)}. Retrying in {retry_delay} seconds..."
+                    f"[{error_type}] {error_detail}. "
+                    f"Retrying in {retry_delay} seconds..."
                 )
+                print(traceback.format_exc())
             await asyncio.sleep(retry_delay)
             return retry_delay * 2  # exponential backoff
         else:
@@ -404,9 +412,19 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):  # type: ignore[misc]
 
         # Path 1: OAuth v2 web flow (blink.start() with PKCE).
         # BlinkTwoFARequiredError is raised when 2FA is required.
+        if self.verbose:
+            print(
+                f"[Blink zone {self.zone_number}] Attempting OAuth v2 web "
+                f"flow via blink.start()..."
+            )
         try:
             result = await self.blink.start()
         except BlinkTwoFARequiredError:
+            if self.verbose:
+                print(
+                    f"[Blink zone {self.zone_number}] BlinkTwoFARequiredError "
+                    f"raised by start(). Completing 2FA via send_2fa_code()..."
+                )
             result = await self._complete_2fa_auth()
             if not result:
                 raise ValueError(
@@ -416,11 +434,21 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):  # type: ignore[misc]
             return result
 
         if result:
+            if self.verbose:
+                print(
+                    f"[Blink zone {self.zone_number}] OAuth v2 web flow "
+                    f"succeeded."
+                )
             return result
 
         # Path 2: Password grant fallback (auth.login() to /oauth/token).
         # Used when the OAuth v2 web flow fails (e.g. Blink's web signin
         # endpoint returns an unexpected status rather than a redirect/412).
+        if self.verbose:
+            print(
+                f"[Blink zone {self.zone_number}] OAuth v2 web flow returned "
+                f"False. Trying password grant fallback via auth.login()..."
+            )
         return await self._attempt_password_grant_auth()
 
     async def _attempt_password_grant_auth(self):
@@ -442,8 +470,22 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):  # type: ignore[misc]
             login_data = await self.blink.auth.login()
         except BlinkTwoFARequiredError:
             # Blink requires 2FA for this login attempt.
+            if self.verbose:
+                print(
+                    f"[Blink zone {self.zone_number}] Password grant: "
+                    f"BlinkTwoFARequiredError raised, retrying with "
+                    f"stored 2FA code..."
+                )
             return await self._complete_password_grant_2fa()
-        except (LoginError, UnauthorizedError):
+        except (LoginError, UnauthorizedError) as e:
+            error_type = type(e).__name__
+            error_detail = str(e) if str(e) else "(no message)"
+            if self.verbose:
+                print(
+                    f"[Blink zone {self.zone_number}] Password grant failed: "
+                    f"[{error_type}] {error_detail}"
+                )
+                print(traceback.format_exc())
             raise
 
         if not login_data:
@@ -602,10 +644,11 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):  # type: ignore[misc]
 
     def _format_unauthorized_error(self, error_str, auth_type):
         """Format unauthorized error message."""
+        detail = error_str if error_str else "UnauthorizedError (no detail)"
         return (
             f"ERROR: Blink authorization failed for zone {self.zone_number} "
             f"({auth_type} mode). Your account may be locked or credentials "
-            f"may be invalid. Error: {error_str}"
+            f"may be invalid. Error: {detail}"
         )
 
     def _format_connection_error(self, error_str, auth_type):
