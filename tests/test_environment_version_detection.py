@@ -5,6 +5,7 @@ Unit tests for environment.py package version detection.
 import unittest
 from unittest.mock import MagicMock, patch
 
+import src
 from src import environment as env
 from tests import unit_test_common as utc
 
@@ -40,6 +41,47 @@ class TestPackageVersionDetection(utc.UnitTest):
             version = env.get_package_version(mock_module)
             self.assertEqual(version, (0, 23, 0))
             mock_version.assert_called_once_with("blinkpy")
+
+    def test_get_package_version_uses_distribution_mapping(self):
+        """Test metadata lookup works when dist name differs from module name."""
+        mock_module = MagicMock()
+        mock_module.__name__ = "pykumo"
+        mock_module.__package__ = "pykumo"
+        del mock_module.__version__
+
+        with patch("importlib.metadata.version") as mock_version, patch(
+            "importlib.metadata.packages_distributions"
+        ) as mock_packages_distributions:
+            import importlib.metadata
+
+            mock_version.side_effect = [
+                importlib.metadata.PackageNotFoundError(),
+                "0.5.0",
+            ]
+            mock_packages_distributions.return_value = {"pykumo": ["pykumo-lib"]}
+
+            version = env.get_package_version(mock_module)
+            self.assertEqual(version, (0, 5, 0))
+            self.assertEqual(mock_version.call_args_list[0].args[0], "pykumo")
+            self.assertEqual(mock_version.call_args_list[1].args[0], "pykumo-lib")
+
+    def test_get_package_version_uses_top_level_package_version(self):
+        """Test dotted module names fallback to top-level package __version__."""
+        mock_module = MagicMock()
+        mock_module.__name__ = "src.blink"
+        mock_module.__package__ = "src"
+        del mock_module.__version__
+
+        with patch("importlib.metadata.version") as mock_version, patch(
+            "importlib.metadata.packages_distributions"
+        ) as mock_packages_distributions:
+            import importlib.metadata
+
+            mock_version.side_effect = importlib.metadata.PackageNotFoundError()
+            mock_packages_distributions.return_value = {}
+            version = env.get_package_version(mock_module)
+            expected_version = tuple(map(int, src.__version__.split(".")[:3]))
+            self.assertEqual(version, expected_version)
 
     def test_get_package_version_fallback_to_zero(self):
         """Test version detection fallback to 0.0.0 when all methods fail."""
