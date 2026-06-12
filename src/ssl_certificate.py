@@ -532,7 +532,7 @@ def _import_cert_linux(cert_path: pathlib.Path) -> bool:
     if not imported:
         # Fallback: set environment variable
         util.log_msg(
-            "Could not import to system store, using environment variable " "fallback",
+            "Could not import to system store, using environment variable fallback",
             mode=util.STDOUT_LOG,
         )
         # This would typically be set by the calling script

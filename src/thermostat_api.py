@@ -329,7 +329,7 @@ class UserInputs(util.UserInputs):
         """Check if user_inputs has already been populated."""
         return (
             self.get_user_inputs(
-                list(self.user_inputs.keys())[0], input_flds.thermostat_type
+                next(iter(self.user_inputs.keys())), input_flds.thermostat_type
             )
             is not None
         )
@@ -360,7 +360,7 @@ class UserInputs(util.UserInputs):
     def _handle_unpopulated_inputs(self):
         """Handle case where inputs haven't been populated yet."""
         runtime_args = self.get_user_inputs(
-            list(self.user_inputs.keys())[0], input_flds.thermostat_type
+            next(iter(self.user_inputs.keys())), input_flds.thermostat_type
         )
         print(f"runtime args: {runtime_args}")
 
