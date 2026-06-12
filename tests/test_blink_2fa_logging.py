@@ -228,6 +228,8 @@ class BlinkAsyncAuthFlowTests(utc.UnitTest):
         instance = object.__new__(blink.ThermostatClass)
         instance.zone_number = 0
         instance.bl_2fa = "123456"
+        instance.bl_uname = "user@example.com"
+        instance.bl_pwd = "secret"
         instance.auth_dict = {"username": "user@example.com",
                               "password": "secret"}
         instance.blink = None
@@ -235,15 +237,45 @@ class BlinkAsyncAuthFlowTests(utc.UnitTest):
         instance.BL_2FA_KEY = "BLINK_2FA"
         return instance
 
-    def _make_blink_obj_for_password_grant(self, login_result=None):
+    def _make_ios_response_mock(self, status=200, token_data=None):
+        """
+        Build a mock HTTP response for iOS client grant tests.
+
+        inputs:
+            status(int): HTTP status code to return.
+            token_data(dict): token payload; defaults to a valid token.
+        returns:
+            mock_response MagicMock with .status and .json() set.
+        """
+        payload = token_data or {
+            "access_token": "ios_tok",
+            "refresh_token": "ios_rtok",
+            "expires_in": 3600,
+        }
+        mock_response = MagicMock()
+        mock_response.status = status
+        mock_response.json = AsyncMock(return_value=payload)
+        return mock_response
+
+    def _make_blink_obj_for_password_grant(
+        self, login_result=None, ios_response_status=200
+    ):
         """
         Build a mock Blink object pre-wired for password grant tests.
 
+        The object also includes a session mock used by the iOS client
+        grant fallback path (_attempt_ios_client_grant).
+
         inputs:
             login_result: return value for auth.login() (dict or None).
+            ios_response_status(int): HTTP status for the iOS grant POST.
         returns:
             (mock_blink_obj, mock_auth_obj) tuple.
         """
+        ios_response = self._make_ios_response_mock(ios_response_status)
+        mock_session = MagicMock()
+        mock_session.post = AsyncMock(return_value=ios_response)
+
         mock_auth_obj = MagicMock()
         mock_auth_obj.login = AsyncMock(return_value=login_result or {
             "access_token": "tok", "refresh_token": "rtok",
@@ -251,6 +283,8 @@ class BlinkAsyncAuthFlowTests(utc.UnitTest):
         })
         mock_auth_obj._process_token_data = AsyncMock()
         mock_auth_obj.data = {}
+        mock_auth_obj.session = mock_session
+        mock_auth_obj.hardware_id = "TEST-HARDWARE-UUID"
 
         mock_blink_obj = MagicMock()
         mock_blink_obj.start = AsyncMock(return_value=False)
@@ -414,6 +448,90 @@ class BlinkAsyncAuthFlowTests(utc.UnitTest):
         self.assertIn("2FA verification failed", str(ctx.exception))
         # 2FA code must be cleaned up even on failure
         self.assertNotIn("2fa_code", mock_blink_obj.auth.data)
+
+    # ------------------------------------------------------------------
+    # _attempt_password_grant_auth: UnauthorizedError → iOS client grant
+    # ------------------------------------------------------------------
+
+    def test_attempt_async_auth_ios_grant_fallback_on_unauthorized(self):
+        """
+        When blink.start() returns False and auth.login() raises
+        UnauthorizedError (HTTP 401 from the android client), the iOS
+        client grant fallback is tried and should succeed.
+        """
+        from src import blink  # noqa: PLC0415
+
+        stub = self._make_thermostat_stub()
+        mock_blink_obj, mock_auth_obj = self._make_blink_obj_for_password_grant(
+            ios_response_status=200
+        )
+        mock_auth_obj.login = AsyncMock(side_effect=blink.UnauthorizedError)
+
+        with patch.object(blink, "blinkpy") as mock_blinkpy_mod, \
+                patch.object(blink, "auth") as mock_auth_mod:
+            mock_blinkpy_mod.Blink.return_value = mock_blink_obj
+            mock_blinkpy_mod.BlinkSetupError = Exception
+            mock_auth_mod.Auth.return_value = mock_auth_obj
+
+            result = self._run_async(
+                stub._attempt_async_authentication(MagicMock())
+            )
+
+        self.assertTrue(result, "iOS grant fallback should return True")
+        # android login was attempted once; iOS grant used session.post
+        mock_auth_obj.login.assert_called_once()
+        mock_auth_obj.session.post.assert_called_once()
+
+    def test_attempt_ios_client_grant_success(self):
+        """
+        _attempt_ios_client_grant() returns True when the token
+        endpoint responds with HTTP 200.
+        """
+        stub = self._make_thermostat_stub()
+        mock_blink_obj, mock_auth_obj = self._make_blink_obj_for_password_grant(
+            ios_response_status=200
+        )
+        stub.blink = mock_blink_obj
+
+        result = self._run_async(stub._attempt_ios_client_grant())
+
+        self.assertTrue(result)
+        mock_auth_obj.session.post.assert_called_once()
+
+    def test_attempt_ios_client_grant_unauthorized(self):
+        """
+        _attempt_ios_client_grant() raises UnauthorizedError when the
+        token endpoint responds with HTTP 401.
+        """
+        from src import blink  # noqa: PLC0415
+
+        stub = self._make_thermostat_stub()
+        mock_blink_obj, mock_auth_obj = self._make_blink_obj_for_password_grant(
+            ios_response_status=401
+        )
+        stub.blink = mock_blink_obj
+
+        with self.assertRaises(blink.UnauthorizedError):
+            self._run_async(stub._attempt_ios_client_grant())
+
+    def test_attempt_ios_client_grant_2fa_rejected(self):
+        """
+        _attempt_ios_client_grant() raises ValueError with a helpful
+        message when the token endpoint returns HTTP 412 and a 2FA code
+        was already included in the request (code was rejected).
+        """
+        stub = self._make_thermostat_stub()
+        # bl_2fa is set to "123456" so has_2fa=True
+        mock_blink_obj, mock_auth_obj = self._make_blink_obj_for_password_grant(
+            ios_response_status=412
+        )
+        stub.blink = mock_blink_obj
+
+        with self.assertRaises(ValueError) as ctx:
+            self._run_async(stub._attempt_ios_client_grant())
+
+        self.assertIn("2FA required but the stored code was rejected",
+                      str(ctx.exception))
 
     # ------------------------------------------------------------------
     # _attempt_async_authentication: blinkpy 0.25.x - BlinkTwoFARequired

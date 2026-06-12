@@ -7,6 +7,7 @@ import sys
 import time
 import traceback
 from typing import Union
+from urllib.parse import urlencode as url_encode
 from aiohttp import ClientSession
 
 # third party imports
@@ -455,15 +456,18 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):  # type: ignore[misc]
         """
         Fallback: authenticate via direct password grant (auth.login()).
 
-        POSTs credentials to the Blink token endpoint using the OAuth 2.0
-        Resource Owner Password Credentials (ROPC) grant.  Used when the
-        OAuth v2 web flow (blink.start()) fails.
+        Tries the legacy android OAuth password grant first.  If Blink's
+        server rejects that with HTTP 401 (UnauthorizedError) — which
+        happens when the android client_id is deprecated — the method
+        falls back to an iOS-client password grant via
+        ``_attempt_ios_client_grant``.  Used when the OAuth v2 PKCE web
+        flow (blink.start()) fails.
 
         returns:
             (bool): True if authentication succeeded, False otherwise.
         raises:
             LoginError: if the login request fails at the network level.
-            UnauthorizedError: if credentials are rejected (HTTP 401).
+            UnauthorizedError: if all credential paths are rejected.
             ValueError: if login returns no token data.
         """
         try:
@@ -477,7 +481,17 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):  # type: ignore[misc]
                     f"stored 2FA code..."
                 )
             return await self._complete_password_grant_2fa()
-        except (LoginError, UnauthorizedError) as e:
+        except UnauthorizedError:
+            # HTTP 401: android client_id may be deprecated by Blink.
+            # Fall back to the iOS-client password grant.
+            if self.verbose:
+                print(
+                    f"[Blink zone {self.zone_number}] Android password "
+                    f"grant rejected (HTTP 401). "
+                    f"Trying iOS client grant..."
+                )
+            return await self._attempt_ios_client_grant()
+        except LoginError as e:
             error_type = type(e).__name__
             error_detail = str(e) if str(e) else "(no message)"
             if self.verbose:
@@ -495,6 +509,131 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):  # type: ignore[misc]
             )
 
         return await self._setup_blink_after_login(login_data)
+
+    async def _attempt_ios_client_grant(self):
+        """
+        Last-resort fallback: iOS-client OAuth password grant.
+
+        POSTs credentials directly to the Blink token endpoint using
+        ``client_id=ios`` and the Blink iOS app user agent.  This matches
+        the authentication pattern used by the Blink iOS mobile app and
+        avoids the ``client_id=android`` endpoint that Blink has
+        deprecated.  Used when ``auth.login()`` (android client) returns
+        HTTP 401.
+
+        The stored 2FA code is sent as the ``2fa-code`` request header so
+        that one round-trip is sufficient when 2FA is enabled on the
+        account.
+
+        returns:
+            (bool): True if authentication succeeded, False otherwise.
+        raises:
+            LoginError: if the HTTP request fails or returns an
+                unexpected status code.
+            UnauthorizedError: if the server returns HTTP 401.
+            ValueError: if 2FA is required but the stored code is
+                rejected, or if no 2FA code is stored.
+        """
+        try:
+            from blinkpy.helpers.constants import (  # type: ignore
+                OAUTH_TOKEN_URL,
+                OAUTH_V2_CLIENT_ID,
+                OAUTH_TOKEN_USER_AGENT,
+                OAUTH_SCOPE,
+                OAUTH_REDIRECT_URI,
+            )
+        except ImportError:
+            # Fallback values matching blinkpy 0.25.x constants.
+            OAUTH_TOKEN_URL = "https://api.oauth.blink.com/oauth/token"
+            OAUTH_V2_CLIENT_ID = "ios"
+            OAUTH_TOKEN_USER_AGENT = (
+                "Blink/2511191620 CFNetwork/3860.200.71 Darwin/25.1.0"
+            )
+            OAUTH_SCOPE = "client"
+            OAUTH_REDIRECT_URI = (
+                "immedia-blink://applinks.blink.com/signin/callback"
+            )
+
+        headers = {
+            "User-Agent": OAUTH_TOKEN_USER_AGENT,
+            "Content-Type": "application/x-www-form-urlencoded",
+            "Accept": "*/*",
+        }
+
+        # Include the stored 2FA code upfront to avoid an extra
+        # round-trip when 2FA is enabled on the account.
+        has_2fa = self.bl_2fa and not self.bl_2fa.startswith("<")
+        if has_2fa:
+            headers["2fa-code"] = self.bl_2fa
+
+        form_data = {
+            "app_brand": "blink",
+            "client_id": OAUTH_V2_CLIENT_ID,
+            "grant_type": "password",
+            "username": self.bl_uname,
+            "password": self.bl_pwd,
+            "hardware_id": self.blink.auth.hardware_id,
+            "redirect_uri": OAUTH_REDIRECT_URI,
+            "scope": OAUTH_SCOPE,
+        }
+
+        if self.verbose:
+            print(
+                f"[Blink zone {self.zone_number}] Trying iOS client "
+                f"password grant to token endpoint..."
+            )
+
+        try:
+            response = await self.blink.auth.session.post(
+                OAUTH_TOKEN_URL,
+                headers=headers,
+                data=url_encode(form_data),
+            )
+        except Exception as exc:
+            raise LoginError(
+                f"iOS client grant request failed for zone "
+                f"{self.zone_number}: {exc}"
+            ) from exc
+
+        status = response.status
+        if self.verbose:
+            print(
+                f"[Blink zone {self.zone_number}] iOS client grant "
+                f"response: HTTP {status}"
+            )
+
+        if status == 200:
+            token_data = await response.json()
+            if self.verbose:
+                print(
+                    f"[Blink zone {self.zone_number}] iOS client grant "
+                    f"succeeded."
+                )
+            return await self._setup_blink_after_login(token_data)
+
+        if status == 412:
+            # 2FA required.  If we already sent the stored code and the
+            # server still returns 412, the code is expired or wrong.
+            if has_2fa:
+                raise ValueError(
+                    f"iOS client grant: 2FA required but the stored "
+                    f"code was rejected for zone {self.zone_number}. "
+                    f"Please update {self.BL_2FA_KEY} in "
+                    f"supervisor-env.txt with a fresh code and restart."
+                )
+            raise ValueError(
+                f"iOS client grant requires 2FA but no code is stored "
+                f"for zone {self.zone_number}. "
+                f"Please add {self.BL_2FA_KEY} to supervisor-env.txt."
+            )
+
+        if status == 401:
+            raise UnauthorizedError
+
+        raise LoginError(
+            f"iOS client grant failed with HTTP {status} for zone "
+            f"{self.zone_number}."
+        )
 
     async def _complete_password_grant_2fa(self):
         """
