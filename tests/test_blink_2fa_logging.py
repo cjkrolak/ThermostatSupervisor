@@ -819,6 +819,107 @@ class BlinkDiagnosticsTests(utc.UnitTest):
         self.assertIn("/oauth/v2/signin", output)
 
     # ------------------------------------------------------------------
+    # _validate_credentials
+    # ------------------------------------------------------------------
+
+    def test_validate_credentials_passes_for_valid_inputs(self):
+        """
+        _validate_credentials() does not raise when username and password
+        are both populated with real (non-sentinel) values.
+        """
+        stub = self._make_thermostat_stub()
+        stub.BL_UNAME_KEY = "BLINK_USERNAME"
+        stub.BL_PASSWORD_KEY = "BLINK_PASSWORD"
+        stub.bl_uname = "user@example.com"
+        stub.bl_pwd = "mypassword"
+        # Should not raise
+        stub._validate_credentials()
+
+    def test_validate_credentials_raises_on_missing_username(self):
+        """
+        _validate_credentials() raises ValueError when bl_uname contains
+        the sentinel placeholder that indicates the env key was not found.
+        """
+        stub = self._make_thermostat_stub()
+        stub.BL_UNAME_KEY = "BLINK_USERNAME"
+        stub.BL_PASSWORD_KEY = "BLINK_PASSWORD"
+        stub.bl_uname = "<BLINK_USERNAME_KEY_MISSING>"
+        stub.bl_pwd = "mypassword"
+
+        with self.assertRaises(ValueError) as ctx:
+            stub._validate_credentials()
+
+        self.assertIn("BLINK_USERNAME is missing", str(ctx.exception))
+        self.assertIn("supervisor-env.txt", str(ctx.exception))
+        # The BOM tip must appear to guide Windows users.
+        self.assertIn("BOM", str(ctx.exception))
+
+    def test_validate_credentials_raises_on_blank_username(self):
+        """
+        _validate_credentials() raises ValueError when bl_uname is an empty
+        string or whitespace-only (e.g. caused by a blank value in the file).
+        """
+        stub = self._make_thermostat_stub()
+        stub.BL_UNAME_KEY = "BLINK_USERNAME"
+        stub.BL_PASSWORD_KEY = "BLINK_PASSWORD"
+        stub.bl_uname = "   "
+        stub.bl_pwd = "mypassword"
+
+        with self.assertRaises(ValueError) as ctx:
+            stub._validate_credentials()
+
+        self.assertIn("BLINK_USERNAME is blank", str(ctx.exception))
+
+    def test_validate_credentials_raises_on_missing_password(self):
+        """
+        _validate_credentials() raises ValueError when bl_pwd is the missing
+        sentinel placeholder.
+        """
+        stub = self._make_thermostat_stub()
+        stub.BL_UNAME_KEY = "BLINK_USERNAME"
+        stub.BL_PASSWORD_KEY = "BLINK_PASSWORD"
+        stub.bl_uname = "user@example.com"
+        stub.bl_pwd = "<BLINK_PASSWORD_KEY_MISSING>"
+
+        with self.assertRaises(ValueError) as ctx:
+            stub._validate_credentials()
+
+        self.assertIn("BLINK_PASSWORD is missing", str(ctx.exception))
+
+    def test_validate_credentials_raises_on_blank_password(self):
+        """
+        _validate_credentials() raises ValueError when bl_pwd is blank.
+        """
+        stub = self._make_thermostat_stub()
+        stub.BL_UNAME_KEY = "BLINK_USERNAME"
+        stub.BL_PASSWORD_KEY = "BLINK_PASSWORD"
+        stub.bl_uname = "user@example.com"
+        stub.bl_pwd = ""
+
+        with self.assertRaises(ValueError) as ctx:
+            stub._validate_credentials()
+
+        self.assertIn("BLINK_PASSWORD is blank", str(ctx.exception))
+
+    def test_validate_credentials_reports_both_issues(self):
+        """
+        _validate_credentials() includes both username and password problems
+        in a single error when both fields are invalid.
+        """
+        stub = self._make_thermostat_stub()
+        stub.BL_UNAME_KEY = "BLINK_USERNAME"
+        stub.BL_PASSWORD_KEY = "BLINK_PASSWORD"
+        stub.bl_uname = ""
+        stub.bl_pwd = ""
+
+        with self.assertRaises(ValueError) as ctx:
+            stub._validate_credentials()
+
+        msg = str(ctx.exception)
+        self.assertIn("BLINK_USERNAME", msg)
+        self.assertIn("BLINK_PASSWORD", msg)
+
+    # ------------------------------------------------------------------
     # iOS grant verbose response body logging
     # ------------------------------------------------------------------
 

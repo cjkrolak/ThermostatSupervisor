@@ -117,6 +117,10 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):  # type: ignore[misc]
         self.auth_dict = {"username": self.bl_uname, "password": self.bl_pwd}
         self.verbose = verbose
 
+        # Validate credentials early: catch blank/missing values before
+        # attempting network auth so the error message pinpoints the cause.
+        self._validate_credentials()
+
         # connect to Blink server and authenticate
         self.args = None
         self.thermostat_type = None
@@ -135,6 +139,68 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):  # type: ignore[misc]
         self.device_id = None  # initialize
         self.device_id = self.get_target_zone_id(self.zone_number)
         self.serial_number = None  # will be populated when unit is queried.
+
+    def _validate_credentials(self):
+        """
+        Validate that required credentials are present and non-empty.
+
+        Checks the username, password, and (optionally) 2FA code loaded from
+        the environment.  If any required field is blank, empty, or is still
+        the placeholder sentinel value produced when the env key is missing,
+        a descriptive ``ValueError`` is raised immediately so the caller sees
+        a targeted error message instead of a cryptic Blink server rejection.
+
+        Common causes of a missing/blank value on Windows:
+        - The ``supervisor-env.txt`` file was saved with a UTF-8 BOM by
+          Notepad or another editor; the BOM prefix corrupts the first key
+          name so the lookup silently returns the sentinel default.
+        - The environment variable is not set in the shell or the file.
+
+        raises:
+            ValueError: with a specific message identifying which credential
+                is missing or blank and where to set it.
+        """
+        missing_sentinel_prefix = "<"
+        issues = []
+
+        # Validate username
+        if not self.bl_uname or not self.bl_uname.strip():
+            issues.append(
+                f"BLINK_USERNAME is blank or empty. "
+                f"Check that {self.BL_UNAME_KEY} is set in "
+                f"supervisor-env.txt or as an environment variable."
+            )
+        elif self.bl_uname.startswith(missing_sentinel_prefix):
+            issues.append(
+                f"BLINK_USERNAME is missing. "
+                f"Set {self.BL_UNAME_KEY} in supervisor-env.txt "
+                f"or as an environment variable."
+            )
+
+        # Validate password
+        if not self.bl_pwd or not self.bl_pwd.strip():
+            issues.append(
+                f"BLINK_PASSWORD is blank or empty. "
+                f"Check that {self.BL_PASSWORD_KEY} is set in "
+                f"supervisor-env.txt or as an environment variable."
+            )
+        elif self.bl_pwd.startswith(missing_sentinel_prefix):
+            issues.append(
+                f"BLINK_PASSWORD is missing. "
+                f"Set {self.BL_PASSWORD_KEY} in supervisor-env.txt "
+                f"or as an environment variable."
+            )
+
+        if issues:
+            details = "; ".join(issues)
+            raise ValueError(
+                f"[Blink zone {self.zone_number}] Credential validation "
+                f"failed — authentication cannot proceed. {details} "
+                f"Tip: if supervisor-env.txt was saved on Windows, "
+                f"ensure the file is encoded as UTF-8 WITHOUT BOM "
+                f"(in Notepad, choose 'Save As' and select 'UTF-8' "
+                f"instead of 'UTF-8 with BOM')."
+            )
 
     def _log_2fa_source(self, twofa_result):
         """
