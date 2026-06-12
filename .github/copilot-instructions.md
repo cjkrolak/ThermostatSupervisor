@@ -18,6 +18,8 @@ This project is a **Thermostat Supervisor** application that:
 - Use the `typing` module for type annotations (e.g., `List[str]`,
   `Dict[str, int]`).
 - Break down complex functions into smaller, more manageable functions.
+- Keep cyclomatic complexity for every new or modified function at **15 or
+  lower** (use helper functions instead of adding nested branches).
 
 ### General Instructions
 - Always prioritize readability and clarity.
@@ -366,4 +368,3 @@ especially important when:
   bash)
 - Chained commands where later parameters depend on earlier results
 - Interactive bash sessions using write_bash/read_bash
-

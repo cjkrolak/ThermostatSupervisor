@@ -643,6 +643,103 @@ class MiscTests(utc.UnitTest):
                 mock_print.assert_called_with(expected_msg)
 
 
+class SummaryMessageHelperTests(utc.UnitTest):
+    """Tests for helper functions extracted from _create_summary_message."""
+
+    def test_extract_token_after_found(self):
+        """_extract_token_after returns token when marker is present."""
+        parts = ["WARNING:", "exception", "on", "trial", "3", "of", "5"]
+        result = util._extract_token_after(parts, "trial", offset=1)
+        self.assertEqual(result, "3")
+
+    def test_extract_token_after_not_found(self):
+        """_extract_token_after returns empty string when marker is absent."""
+        parts = ["no", "marker", "here"]
+        result = util._extract_token_after(parts, "trial", offset=1)
+        self.assertEqual(result, "")
+
+    def test_extract_token_after_marker_at_end(self):
+        """_extract_token_after returns empty string when marker is the last token."""
+        parts = ["word", "trial"]
+        result = util._extract_token_after(parts, "trial", offset=1)
+        self.assertEqual(result, "")
+
+    def test_extract_token_after_offset_two(self):
+        """_extract_token_after supports arbitrary offset values."""
+        parts = ["Delaying", "30", "seconds", "prior"]
+        result = util._extract_token_after(parts, "Delaying", offset=2)
+        self.assertEqual(result, "seconds")
+
+    def test_summarize_retry_progress_starting(self):
+        """_summarize_retry_progress handles 'starting' messages."""
+        msg = "execute_with_extended_retries starting"
+        result = util._summarize_retry_progress(msg)
+        self.assertIn("Starting retry sequence", result)
+
+    def test_summarize_retry_progress_trial_with_total(self):
+        """_summarize_retry_progress formats trial progress with total."""
+        msg = "execute_with_extended_retries trial 2 of 5 ..."
+        result = util._summarize_retry_progress(msg)
+        self.assertIn("2 of 5", result)
+
+    def test_summarize_retry_progress_trial_without_total(self):
+        """_summarize_retry_progress falls back when 'of' total is missing."""
+        msg = "execute_with_extended_retries trial 2"
+        result = util._summarize_retry_progress(msg)
+        self.assertIn("[Retry] Operation in progress", result)
+
+    def test_summarize_retry_progress_generic(self):
+        """_summarize_retry_progress returns generic message otherwise."""
+        msg = "execute_with_extended_retries something_else"
+        result = util._summarize_retry_progress(msg)
+        self.assertIn("[Retry] Operation in progress", result)
+
+    def test_first_line_summary_short(self):
+        """_first_line_summary returns first line unchanged when short."""
+        msg = "short message"
+        result = util._first_line_summary(msg)
+        self.assertEqual(result, "short message")
+
+    def test_first_line_summary_multiline(self):
+        """_first_line_summary returns only the first line."""
+        msg = "first line\nsecond line\nthird line"
+        result = util._first_line_summary(msg)
+        self.assertEqual(result, "first line")
+
+    def test_first_line_summary_long_line_truncated(self):
+        """_first_line_summary truncates lines longer than 80 characters."""
+        long_line = "x" * 90
+        result = util._first_line_summary(long_line)
+        self.assertTrue(result.endswith("..."))
+        self.assertEqual(len(result), 80)
+
+    def test_first_line_summary_exactly_80_chars(self):
+        """_first_line_summary does not truncate exactly 80-character lines."""
+        line = "y" * 80
+        result = util._first_line_summary(line)
+        self.assertEqual(result, line)
+        self.assertFalse(result.endswith("..."))
+
+    def test_create_summary_message_retry_exception(self):
+        """_create_summary_message handles 'WARNING: exception on trial'."""
+        msg = "WARNING: exception on trial 3 something"
+        result = util._create_summary_message(msg)
+        self.assertIn("[Retry]", result)
+        self.assertIn("trial 3", result)
+
+    def test_create_summary_message_traceback(self):
+        """_create_summary_message summarizes Traceback messages."""
+        msg = "Traceback (most recent call last):\n  File ...\nException"
+        result = util._create_summary_message(msg)
+        self.assertIn("[Error]", result)
+
+    def test_create_summary_message_html(self):
+        """_create_summary_message summarizes HTML error responses."""
+        msg = "<html><body>Error</body></html>"
+        result = util._create_summary_message(msg)
+        self.assertIn("[Response]", result)
+
+
 if __name__ == "__main__":
     util.log_msg.debug = True  # type: ignore[attr-defined]
     unittest.main(verbosity=2)

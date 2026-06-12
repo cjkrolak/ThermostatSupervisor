@@ -253,6 +253,46 @@ KEY4=value4=with=equals
             os.chdir(original_cwd)
             shutil.rmtree(test_dir, ignore_errors=True)
 
+    def test_read_supervisor_env_file_bom(self):
+        """
+        Test that _read_supervisor_env_file() handles UTF-8 BOM correctly.
+
+        Windows Notepad and many Windows editors save UTF-8 files with a
+        Byte Order Mark (BOM: \\xef\\xbb\\xbf / \\ufeff) prepended.  When the
+        file is opened with ``encoding='utf-8'`` the BOM is not stripped,
+        causing the first key to become ``\\ufeffKEY`` instead of ``KEY`` and
+        silently producing a lookup miss.  Opening with ``encoding='utf-8-sig'``
+        strips the BOM automatically.
+        """
+        test_dir = tempfile.mkdtemp()
+        original_cwd = os.getcwd()
+
+        try:
+            os.chdir(test_dir)
+
+            # Write the file with an explicit UTF-8 BOM prefix so the test
+            # works on both Windows and Linux.
+            bom = b"\xef\xbb\xbf"
+            content = b"BLINK_USERNAME=user@example.com\nBLINK_PASSWORD=secret\n"
+            with open("supervisor-env.txt", "wb") as f:
+                f.write(bom + content)
+
+            result = getattr(env, "_read_supervisor_env_file")()
+
+            # With utf-8-sig encoding the BOM must be stripped, so the keys
+            # must match exactly.
+            self.assertIn(
+                "BLINK_USERNAME",
+                result,
+                "BLINK_USERNAME key not found; BOM may not have been stripped",
+            )
+            self.assertEqual(result["BLINK_USERNAME"], "user@example.com")
+            self.assertEqual(result["BLINK_PASSWORD"], "secret")
+
+        finally:
+            os.chdir(original_cwd)
+            shutil.rmtree(test_dir, ignore_errors=True)
+
     def test_load_all_env_variables(self):
         """
         Confirm all env variables can be loaded.

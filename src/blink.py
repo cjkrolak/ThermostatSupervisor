@@ -2,12 +2,15 @@
 
 # built-in imports
 import asyncio
+import json
+import logging
+import os
 import pprint
 import sys
 import time
 import traceback
 from typing import Union
-from aiohttp import ClientSession
+from aiohttp import ClientSession, TraceConfig
 
 # third party imports
 
@@ -19,7 +22,7 @@ from src import thermostat_common as tc
 from src import utilities as util
 
 # Blink library
-BLINK_DEBUG = True  # debug uses local blink repo instead of pkg
+BLINK_DEBUG = False  # debug uses local blink repo instead of pkg
 if BLINK_DEBUG and not env.is_azure_environment():
     pkg = "blinkpy.blinkpy"
     mod_path = "..\\blinkpy"
@@ -33,7 +36,11 @@ else:
 
 # Import blinkpy exceptions for proper error handling
 try:
-    from blinkpy.auth import LoginError, UnauthorizedError  # type: ignore
+    from blinkpy.auth import (  # type: ignore
+        LoginError,
+        UnauthorizedError,
+        BlinkTwoFARequiredError,
+    )
     from aiohttp.client_exceptions import (  # type: ignore
         ClientConnectionError,
         ContentTypeError,
@@ -50,6 +57,11 @@ except ImportError:
 
         pass
 
+    class BlinkTwoFARequiredError(Exception):
+        """Two-factor authentication required error fallback."""
+
+        pass
+
     class ClientConnectionError(Exception):
         """Client connection error fallback."""
 
@@ -59,6 +71,12 @@ except ImportError:
         """Content type error fallback."""
 
         pass
+
+
+# Path for token cache file used to persist refresh token across runs.
+# Storing the refresh token allows blinkpy to skip the PKCE web flow on
+# subsequent authentication attempts (auth.startup() tries refresh first).
+TOKEN_CACHE_FILE = "./data/blink_auth_cache.json"
 
 
 class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):  # type: ignore[misc]
@@ -79,6 +97,7 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):  # type: ignore[misc]
         self.BL_UNAME_KEY = "BLINK_USERNAME"
         self.BL_PASSWORD_KEY = "BLINK_PASSWORD"
         self.BL_2FA_KEY = "BLINK_2FA"
+        self.zone_number = int(zone)
 
         # Get username
         uname_result = env.get_env_variable(
@@ -104,7 +123,10 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):  # type: ignore[misc]
 
         self.auth_dict = {"username": self.bl_uname, "password": self.bl_pwd}
         self.verbose = verbose
-        self.zone_number = int(zone)
+
+        # Validate credentials early: catch blank/missing values before
+        # attempting network auth so the error message pinpoints the cause.
+        self._validate_credentials()
 
         # connect to Blink server and authenticate
         self.args = None
@@ -124,6 +146,73 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):  # type: ignore[misc]
         self.device_id = None  # initialize
         self.device_id = self.get_target_zone_id(self.zone_number)
         self.serial_number = None  # will be populated when unit is queried.
+
+    def _validate_credentials(self):
+        """
+        Validate that required credentials are present and non-empty.
+
+        Checks the username and password loaded from the environment.
+        If any required field is blank, empty, or is still the placeholder
+        sentinel value produced when the env key is missing, a descriptive
+        ``ValueError`` is raised immediately so the caller sees a targeted
+        error message instead of a cryptic Blink server rejection.
+
+        Note: BLINK_2FA is optional and is not validated here; it is
+        consumed directly by the async auth flow when present.
+
+        Common causes of a missing/blank value on Windows:
+        - The ``supervisor-env.txt`` file was saved with a UTF-8 BOM by
+          Notepad or another editor; the BOM prefix corrupts the first key
+          name so the lookup silently returns the sentinel default.
+        - The environment variable is not set in the shell or the file.
+
+        raises:
+            ValueError: with a specific message identifying which credential
+                is missing or blank and where to set it.
+        """
+        # Build the exact sentinel strings used when an env key is missing.
+        uname_sentinel = "<" + self.BL_UNAME_KEY + api.KEY_MISSING_SUFFIX
+        pwd_sentinel = "<" + self.BL_PASSWORD_KEY + api.KEY_MISSING_SUFFIX
+        issues = []
+
+        # Validate username
+        if not self.bl_uname or not self.bl_uname.strip():
+            issues.append(
+                f"BLINK_USERNAME is blank or empty. "
+                f"Check that {self.BL_UNAME_KEY} is set in "
+                f"supervisor-env.txt or as an environment variable."
+            )
+        elif self.bl_uname == uname_sentinel:
+            issues.append(
+                f"BLINK_USERNAME is missing. "
+                f"Set {self.BL_UNAME_KEY} in supervisor-env.txt "
+                f"or as an environment variable."
+            )
+
+        # Validate password
+        if not self.bl_pwd or not self.bl_pwd.strip():
+            issues.append(
+                f"BLINK_PASSWORD is blank or empty. "
+                f"Check that {self.BL_PASSWORD_KEY} is set in "
+                f"supervisor-env.txt or as an environment variable."
+            )
+        elif self.bl_pwd == pwd_sentinel:
+            issues.append(
+                f"BLINK_PASSWORD is missing. "
+                f"Set {self.BL_PASSWORD_KEY} in supervisor-env.txt "
+                f"or as an environment variable."
+            )
+
+        if issues:
+            details = "; ".join(issues)
+            raise ValueError(
+                f"[Blink zone {self.zone_number}] Credential validation "
+                f"failed — authentication cannot proceed. {details} "
+                f"Tip: if supervisor-env.txt was saved on Windows, "
+                f"ensure the file is encoded as UTF-8 WITHOUT BOM "
+                f"(in Notepad, choose 'Save As' and select 'UTF-8' "
+                f"instead of 'UTF-8 with BOM')."
+            )
 
     def _log_2fa_source(self, twofa_result):
         """
@@ -167,12 +256,16 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):  # type: ignore[misc]
 
     def _handle_auth_retry(self, attempt, max_retries, retry_delay, error):
         """Handle authentication retry logic."""
+        error_type = type(error).__name__
+        error_detail = str(error) if str(error) else "(no message)"
         if attempt < max_retries - 1:
             if self.verbose:
                 print(
-                    f"Authentication attempt {attempt + 1} failed: {str(error)}. "
+                    f"Authentication attempt {attempt + 1} failed: "
+                    f"[{error_type}] {error_detail}. "
                     f"Retrying in {retry_delay} seconds..."
                 )
+                print(traceback.format_exc())
             time.sleep(retry_delay)
             return retry_delay * 2  # exponential backoff
         else:
@@ -336,12 +429,16 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):  # type: ignore[misc]
 
     async def _handle_async_auth_retry(self, attempt, max_retries, retry_delay, error):
         """Handle async authentication retry logic."""
+        error_type = type(error).__name__
+        error_detail = str(error) if str(error) else "(no message)"
         if attempt < max_retries - 1:
             if self.verbose:
                 print(
                     f"Authentication attempt {attempt + 1} failed: "
-                    f"{str(error)}. Retrying in {retry_delay} seconds..."
+                    f"[{error_type}] {error_detail}. "
+                    f"Retrying in {retry_delay} seconds..."
                 )
+                print(traceback.format_exc())
             await asyncio.sleep(retry_delay)
             return retry_delay * 2  # exponential backoff
         else:
@@ -369,40 +466,598 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):  # type: ignore[misc]
                 "retries. Camera list may not be available."
             )
 
+    def _load_token_cache(self) -> dict:
+        """
+        Load cached auth tokens from the token cache file.
+
+        If the file exists and contains a valid ``refresh_token`` and
+        ``hardware_id``, the cached data is returned so it can be merged
+        into the ``Auth`` initialisation dict.  When ``auth.startup()``
+        receives a non-empty ``refresh_token`` + ``hardware_id`` it tries
+        the OAuth v2 token-refresh path first, skipping the PKCE web flow
+        entirely.  The PKCE web flow is only attempted when the refresh
+        token is absent or has expired.
+
+        The cache file intentionally does **not** store username or
+        password — those are already held in ``supervisor-env.txt``.
+
+        returns:
+            (dict): Cached token data (may be empty if no valid cache).
+        """
+        if not os.path.exists(TOKEN_CACHE_FILE):
+            return {}
+        try:
+            with open(TOKEN_CACHE_FILE, "r", encoding="utf-8") as f:
+                cache = json.load(f)
+            if cache.get("refresh_token") and cache.get("hardware_id"):
+                if self.verbose:
+                    hw_suffix = cache["hardware_id"][-8:]
+                    print(
+                        f"[Blink zone {self.zone_number}] Loaded token "
+                        f"cache (hardware_id: ...{hw_suffix}). "
+                        f"Refresh token will be tried first."
+                    )
+                return cache
+        except (json.JSONDecodeError, OSError, KeyError) as exc:
+            if self.verbose:
+                print(
+                    f"[Blink zone {self.zone_number}] Could not load "
+                    f"token cache: {exc}"
+                )
+        return {}
+
+    async def _save_token_cache(self) -> None:
+        """
+        Save auth tokens to the token cache file after a successful login.
+
+        The cache stores the OAuth access token, refresh token,
+        ``hardware_id``, and related metadata produced by blinkpy after
+        successful authentication.  On the next run ``_load_token_cache``
+        returns this data so ``auth.startup()`` can use the refresh token
+        path instead of re-running the full PKCE web flow.
+
+        Username and password are **not** saved — they are already stored
+        in ``supervisor-env.txt`` and are merged back when creating
+        ``Auth`` for each run.
+
+        Silently skips saving if ``self.blink`` or ``self.blink.auth`` is
+        not yet initialised.
+        """
+        if self.blink is None or not hasattr(self.blink, "auth"):
+            return
+        if self.blink.auth is None:
+            return
+        try:
+            os.makedirs(os.path.dirname(TOKEN_CACHE_FILE) or ".", exist_ok=True)
+            # Guard: login_attributes may be absent or not dict-like in some
+            # blinkpy versions; convert defensively to avoid AttributeError.
+            try:
+                cache_data = dict(self.blink.auth.login_attributes)
+            except (AttributeError, TypeError, ValueError):
+                if self.verbose:
+                    print(
+                        f"[Blink zone {self.zone_number}] Warning: "
+                        f"login_attributes unavailable; skipping token cache."
+                    )
+                return
+            cache_data.pop("username", None)
+            cache_data.pop("password", None)
+            # Write with mode 0o600 (owner read/write only) on POSIX systems
+            # because the cache may contain a refresh token.
+            fd = os.open(TOKEN_CACHE_FILE, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+            with os.fdopen(fd, "w", encoding="utf-8") as f:
+                json.dump(cache_data, f, indent=2)
+            if self.verbose:
+                print(
+                    f"[Blink zone {self.zone_number}] Token cache saved "
+                    f"to {TOKEN_CACHE_FILE}. "
+                    f"Future logins will use the refresh token."
+                )
+        except OSError as exc:
+            if self.verbose:
+                print(
+                    f"[Blink zone {self.zone_number}] Warning: could not "
+                    f"save token cache: {exc}"
+                )
+
     async def _attempt_async_authentication(self, session):
-        """Attempt single async authentication process."""
+        """
+        Attempt single async authentication process.
+
+        Tries two authentication paths in order:
+
+        1. **Token refresh** (if a cached ``refresh_token`` and
+           ``hardware_id`` exist from a previous run): blinkpy's
+           ``auth.startup()`` tries an OAuth v2 token refresh first.
+           On success the full PKCE web flow is bypassed entirely.
+           If the cached token has expired, ``startup()`` automatically
+           falls through to the PKCE web flow.
+        2. **OAuth v2 PKCE web flow** (blinkpy 0.25.x+, preferred fresh
+           login): ``blink.start()`` orchestrates a full PKCE
+           authorization-code flow.  If ``BlinkTwoFARequiredError`` is
+           raised, 2FA is completed via ``send_2fa_code()`` or the legacy
+           ``send_auth_key()`` API.
+        3. **Password grant fallback** (``auth.login()``): used when the
+           PKCE web flow returns ``False`` (e.g. Blink's web signin page
+           returns an unexpected HTTP status such as 406).  This is the
+           legacy OAuth password-grant path (``client_id=android``) that
+           blinkpy uses for token refresh internally.
+
+        After any successful authentication the tokens are saved to the
+        cache file so the next run can use the refresh token path.
+        """
+        # Merge cached tokens into the auth-init dict so that
+        # auth.startup() will attempt token refresh before PKCE.
+        cached = self._load_token_cache()
+        auth_init_data = dict(self.auth_dict)
+        if cached:
+            auth_init_data.update(cached)
+
         self.blink = blinkpy.Blink(session=session)  # type: ignore[misc]
-        if self.blink is None:
-            raise RuntimeError(
-                "ERROR: Blink object failed to instantiate "
-                f"for zone {self.zone_number}"
-            )
-
         self.blink.auth = auth.Auth(  # type: ignore[misc]
-            self.auth_dict, no_prompt=True, session=session
+            auth_init_data, no_prompt=True, session=session
         )
-        await self.blink.start()
 
-        # Send 2FA key with proper error checking
-        # type: ignore on next line for dynamic auth attributes
-        auth_success = await self.blink.auth.send_auth_key(  # type: ignore
-            self.blink, self.bl_2fa
-        )
-        if not auth_success:
+        if self.verbose:
+            if cached:
+                print(
+                    f"[Blink zone {self.zone_number}] Attempting auth "
+                    f"(cached token present — refresh tried first)..."
+                )
+            else:
+                print(
+                    f"[Blink zone {self.zone_number}] Attempting OAuth v2 "
+                    f"PKCE web flow via blink.start()..."
+                )
+
+        # Path 1 + 2: token refresh (if cached) then PKCE web flow.
+        # BlinkTwoFARequiredError is only raised by the PKCE path.
+        try:
+            result = await self.blink.start()
+        except BlinkTwoFARequiredError:
+            if self.verbose:
+                print(
+                    f"[Blink zone {self.zone_number}] 2FA required. "
+                    f"Completing via send_2fa_code()..."
+                )
+            result = await self._complete_2fa_auth()
+            if not result:
+                raise ValueError(
+                    "2FA verification failed. Please check your "
+                    "verification code."
+                )
+            await self._save_token_cache()
+            return result
+
+        if result:
+            if self.verbose:
+                print(
+                    f"[Blink zone {self.zone_number}] Authentication "
+                    f"succeeded."
+                )
+            await self._save_token_cache()
+            return result
+
+        # Path 3: Password grant fallback via auth.login().
+        # Used when the PKCE web flow returns False — e.g. Blink's
+        # OAuth web signin returns HTTP 406 (rate limiting / account
+        # lockout), which causes oauth_signin() to return None and
+        # blinkpy to log "Login failed".
+        #
+        # However, if the PKCE failure was caused by a 2FA rate limit
+        # (HTTP 429 "2fa_rate_limit_exceeded") the password grant will
+        # not help either — stop retrying immediately and inform the
+        # user of the lockout period.
+        if getattr(self, "_rate_limit_detected", False):
+            self._handle_rate_limit_error()  # never returns
+        if self.verbose:
+            print(
+                f"[Blink zone {self.zone_number}] OAuth v2 web flow "
+                f"returned False. Trying password grant fallback via "
+                f"auth.login()..."
+            )
+        result = await self._attempt_password_grant_auth()
+        if result:
+            await self._save_token_cache()
+        return result
+
+    def _handle_rate_limit_error(self) -> None:
+        """
+        Display a clear 2FA rate-limit error message and exit.
+
+        Called when the HTTP trace detects a 429
+        ``2fa_rate_limit_exceeded`` response during the OAuth v2 PKCE
+        sign-in step.  Blink enforces this limit when too many 2FA
+        verification requests are made in a short period — for example
+        when repeated login runs each trigger a new 2FA code delivery
+        to the user's phone or email.
+
+        The account is locked for the period reported in the server
+        response ``next_time_in_secs`` (typically 86400 s = 24 hours).
+
+        This method **never returns** — it calls ``sys.exit(1)`` after
+        printing the error banner so the retry loop cannot continue and
+        worsen the rate-limit situation.
+        """
+        wait_secs = self._rate_limit_next_time_secs or 86400
+        wait_hours = wait_secs // 3600
+        wait_mins = (wait_secs % 3600) // 60
+        error_lines = [
+            f"ERROR: Blink 2FA rate limit exceeded for zone "
+            f"{self.zone_number}.",
+            f"Blink has locked your account's 2FA for approximately "
+            f"{wait_hours} hour(s) {wait_mins} minute(s) "
+            f"({wait_secs} seconds).",
+            "This happens when too many 2FA-login requests are made "
+            "in a short period (e.g. repeated runs with a stale code).",
+            "Recommended actions:",
+            f"  1. Wait {wait_hours} hour(s) before retrying.",
+            "  2. Sign into the official Blink mobile app to verify "
+            "your account is accessible.",
+            f"  3. When the lockout expires, update {self.BL_2FA_KEY} "
+            f"in supervisor-env.txt with a fresh 2FA code sent by Blink.",
+            f"  4. Delete {TOKEN_CACHE_FILE} (if present) to force a "
+            f"clean login on the next run.",
+        ]
+        banner_len = max(len(line) for line in error_lines)
+        banner = "*" * banner_len
+        print(banner)
+        for line in error_lines:
+            print(line)
+        print(banner)
+        sys.exit(1)
+
+    async def _attempt_password_grant_auth(self):
+        """
+        Fallback: authenticate via the legacy OAuth password grant.
+
+        Calls ``auth.login()`` which POSTs to the Blink OAuth token
+        endpoint (``/oauth/token``) with ``client_id=android`` and
+        ``grant_type=password``.  This is the pre-PKCE authentication
+        path still present in blinkpy for internal token-refresh use.
+        It is tried when the OAuth v2 PKCE web flow (``blink.start()``)
+        returns ``False`` — for example when Blink's PKCE signin page
+        returns an unexpected HTTP status such as 406.
+
+        Note: Blink's server may return HTTP 401 with
+        ``"error": "unsupported_grant_type"`` indicating that the
+        password grant flow has been permanently disabled on their
+        end.  When this occurs ``UnauthorizedError`` is raised and a
+        ``ValueError`` is propagated with targeted guidance.
+
+        If ``auth.login()`` raises ``BlinkTwoFARequiredError`` (HTTP 412)
+        the stored 2FA code is added to the next request and login is
+        retried via ``_complete_password_grant_2fa``.
+
+        returns:
+            (bool): True if authentication succeeded.
+        raises:
+            ValueError: if the server rejects the password grant or all
+                auth paths have failed (includes rate-limiting guidance).
+        """
+        try:
+            login_data = await self.blink.auth.login()
+        except BlinkTwoFARequiredError:
+            # Blink requires 2FA for this login attempt (HTTP 412).
+            if self.verbose:
+                print(
+                    f"[Blink zone {self.zone_number}] Password grant: "
+                    f"2FA required. Retrying with stored 2FA code..."
+                )
+            return await self._complete_password_grant_2fa()
+        except (UnauthorizedError, LoginError) as e:
+            # 4xx/5xx rejection from the password grant endpoint.
+            # HTTP 401 with "unsupported_grant_type" is a common response
+            # when Blink has disabled password grant, but other errors are
+            # also possible (invalid credentials, account locked, etc.).
+            error_type = type(e).__name__
+            error_detail = str(e) if str(e) else "(no message)"
+            if self.verbose:
+                print(
+                    f"[Blink zone {self.zone_number}] Password grant "
+                    f"failed: [{error_type}] {error_detail}"
+                )
+                print(traceback.format_exc())
+            extra_hint = ""
+            if "unsupported_grant_type" in error_detail:
+                extra_hint = (
+                    " The 'unsupported_grant_type' error indicates the "
+                    "password grant path has been permanently disabled by "
+                    "Blink; the only supported login path is the OAuth v2 "
+                    "PKCE web flow (blink.start()). "
+                )
             raise ValueError(
-                "2FA verification failed. Please check your verification code."
+                f"Blink password grant rejected for zone "
+                f"{self.zone_number}. [{error_type}] {error_detail}."
+                f"{extra_hint}"
+                f"Recommended actions: "
+                f"(1) Ensure your credentials in supervisor-env.txt "
+                f"are correct (username, password). "
+                f"(2) Update {self.BL_2FA_KEY} with a fresh 2FA code "
+                f"received from Blink. "
+                f"(3) Sign into the official Blink app to verify your "
+                f"account is accessible before retrying."
+            ) from e
+
+        if not login_data:
+            raise ValueError(
+                f"Blink password grant returned no token data for zone "
+                f"{self.zone_number}. Please verify your credentials."
             )
 
-        # Check if setup_post_verify succeeds with retry
-        setup_success = await self.blink.setup_post_verify()
-        return setup_success
+        return await self._setup_blink_after_login(login_data)
+
+    async def _complete_password_grant_2fa(self):
+        """
+        Complete 2FA for the password grant authentication path.
+
+        After auth.login() raises BlinkTwoFARequiredError (HTTP 412), Blink
+        sends a new code to the user.  This method adds the stored 2FA code
+        to the auth data and retries the password grant so that the code is
+        sent in the '2fa-code' request header.
+
+        returns:
+            (bool): True if authentication completed, False otherwise.
+        raises:
+            ValueError: if the 2FA code is rejected or login returns no data.
+        """
+        # Include the stored 2FA code in the next login request headers.
+        self.blink.auth.data["2fa_code"] = self.bl_2fa
+        try:
+            login_data = await self.blink.auth.login()
+        except BlinkTwoFARequiredError:
+            raise ValueError(
+                "2FA verification failed for password grant. "
+                "The stored 2FA code may be expired or incorrect. "
+                f"Please update {self.BL_2FA_KEY} in supervisor-env.txt "
+                "with a fresh code and restart the application."
+            )
+        finally:
+            # Always remove the 2FA code to avoid leaking it into future
+            # requests or retries.
+            self.blink.auth.data.pop("2fa_code", None)
+
+        if not login_data:
+            raise ValueError(
+                "2FA completion returned no token data for zone "
+                f"{self.zone_number}."
+            )
+
+        return await self._setup_blink_after_login(login_data)
+
+    async def _setup_blink_after_login(self, login_data):
+        """
+        Complete Blink setup after a successful password grant login.
+
+        Processes the token response and runs the same setup steps that
+        blink.start() would normally execute after auth.startup():
+        token processing, URL setup, homescreen fetch, and post-verify.
+
+        inputs:
+            login_data (dict): token response from auth.login().
+        returns:
+            (bool): True if setup completed successfully, False otherwise.
+        """
+        await self.blink.auth._process_token_data(login_data)
+
+        try:
+            self.blink.setup_urls()
+            await self.blink.get_homescreen()
+        except blinkpy.BlinkSetupError:
+            self.blink.available = False
+            return False
+
+        if not self.blink.last_refresh:
+            self.blink.last_refresh = int(
+                time.time() - self.blink.refresh_rate * 1.05
+            )
+
+        return await self.blink.setup_post_verify()
+
+    async def _complete_2fa_auth(self):
+        """
+        Complete 2FA for the OAuth v2 web flow (blink.start() path).
+
+        Uses send_2fa_code (blinkpy 0.25.x OAuth v2) when available,
+        falling back to the legacy send_auth_key API for 0.22.x.
+
+        returns:
+            (bool): True if 2FA completed successfully, False otherwise.
+        """
+        if hasattr(self.blink, "send_2fa_code"):
+            # New blinkpy 0.25.x API (OAuth v2)
+            return await self.blink.send_2fa_code(self.bl_2fa)
+
+        if hasattr(self.blink.auth, "send_auth_key"):
+            # Legacy blinkpy 0.22.x API
+            auth_success = await self.blink.auth.send_auth_key(  # type: ignore
+                self.blink, self.bl_2fa
+            )
+            if not auth_success:
+                return False
+            return await self.blink.setup_post_verify()
+
+        raise ValueError(
+            "Unsupported blinkpy version: no 2FA completion method found. "
+            "Please update blinkpy to a supported version."
+        )
+
+    def _configure_blink_logging(self) -> None:
+        """
+        Enable DEBUG-level Python logging for blinkpy when verbose mode
+        is active.
+
+        This surfaces every internal blinkpy log message (HTTP step
+        outcomes, PKCE flow progress, token refresh attempts, etc.) on
+        stdout so the caller can see exactly where authentication stalls.
+        The handler is idempotent — calling this method multiple times
+        will not duplicate handlers.
+
+        The StreamHandler is added only to the root ``blinkpy`` logger.
+        Child loggers (``blinkpy.auth``, ``blinkpy.blinkpy``, etc.)
+        propagate to the parent by default in Python's logging hierarchy,
+        so attaching the handler only to the parent ensures each message
+        is emitted exactly once rather than once per ancestor.
+        """
+        if not self.verbose:
+            return
+
+        handler = logging.StreamHandler(sys.stdout)
+        handler.setFormatter(
+            logging.Formatter("[blinkpy] %(name)s %(levelname)s: %(message)s")
+        )
+
+        # Add handler to the root blinkpy logger only; child loggers
+        # propagate to it naturally, preventing duplicate log entries.
+        root_logger = logging.getLogger("blinkpy")
+        if not any(
+            isinstance(h, logging.StreamHandler) and h.stream is sys.stdout
+            for h in root_logger.handlers
+        ):
+            root_logger.addHandler(handler)
+        root_logger.setLevel(logging.DEBUG)
+
+        # Set child loggers to DEBUG so their messages are not filtered
+        # before reaching the parent handler, but do not add separate
+        # handlers to avoid double-logging via propagation.
+        for name in ("blinkpy.auth", "blinkpy.blinkpy", "blinkpy.api"):
+            logging.getLogger(name).setLevel(logging.DEBUG)
+
+    def _create_http_trace_config(self) -> TraceConfig:
+        """
+        Build an aiohttp TraceConfig for HTTP monitoring during auth.
+
+        Always runs (regardless of ``self.verbose``) to enable server-side
+        rate-limit detection.  When a HTTP 429 response body contains
+        ``"error_cause": "2fa_rate_limit_exceeded"``, the instance
+        attributes ``_rate_limit_detected`` (True) and
+        ``_rate_limit_next_time_secs`` are set so that
+        ``_attempt_async_authentication`` can abort retrying immediately
+        and show a clear wait-time message.
+
+        When ``self.verbose`` is True, each request URL and response
+        status code are also printed to stdout so the caller can trace
+        exactly which authentication step fails.  Network exceptions
+        are printed as well.
+
+        returns:
+            (TraceConfig): configured trace config object ready to attach
+                to a ClientSession.
+        """
+        zone = self.zone_number
+
+        async def _on_request_start(_session, _ctx, params) -> None:
+            if self.verbose:
+                host = params.url.host or ""
+                path = params.url.path or ""
+                print(
+                    f"[Blink zone {zone}][HTTP→] "
+                    f"{params.method} {host}{path}"
+                )
+
+        async def _on_request_end(_session, _ctx, params) -> None:
+            status = params.response.status
+            if self.verbose:
+                host = params.url.host or ""
+                path = params.url.path or ""
+                print(
+                    f"[Blink zone {zone}][HTTP←] "
+                    f"{status} {host}{path}"
+                )
+            if status >= 400:
+                # Read and cache the response body. aiohttp caches the
+                # body after the first read() so blinkpy can still
+                # consume it afterwards.
+                body_bytes = b""
+                try:
+                    body_bytes = await params.response.read()
+                except Exception as exc:
+                    if self.verbose:
+                        print(
+                            f"[Blink zone {zone}][HTTP {status} body] "
+                            f"(could not read: {exc})"
+                        )
+
+                if body_bytes:
+                    if self.verbose:
+                        snippet = (
+                            body_bytes.decode("utf-8", errors="replace")[
+                                :500
+                            ].replace("\n", " ")
+                        )
+                        print(
+                            f"[Blink zone {zone}]"
+                            f"[HTTP {status} body] {snippet}"
+                        )
+
+                    # Detect 2FA rate limit (HTTP 429) unconditionally
+                    # so we can stop retrying even when verbose=False.
+                    if status == 429:
+                        try:
+                            body_json = json.loads(body_bytes)
+                            if (
+                                body_json.get("error_cause")
+                                == "2fa_rate_limit_exceeded"
+                            ):
+                                self._rate_limit_detected = True
+                                self._rate_limit_next_time_secs = (
+                                    body_json.get("next_time_in_secs")
+                                )
+                        except Exception:
+                            pass
+
+                if self.verbose and status == 406:
+                    print(
+                        f"[Blink zone {zone}] NOTE: HTTP 406 may "
+                        f"indicate temporary account lockout or IP "
+                        f"rate-limiting by Blink's server. "
+                        f"If all auth paths fail, try waiting 15-30 "
+                        f"minutes and signing into the official Blink "
+                        f"mobile app before retrying."
+                    )
+
+        async def _on_request_exception(_session, _ctx, params) -> None:
+            if self.verbose:
+                exc = params.exception
+                host = params.url.host or ""
+                path = params.url.path or ""
+                print(
+                    f"[Blink zone {zone}][HTTP✗] "
+                    f"{type(exc).__name__}: {exc} {host}{path}"
+                )
+
+        tc = TraceConfig()
+        tc.on_request_start.append(_on_request_start)
+        tc.on_request_end.append(_on_request_end)
+        tc.on_request_exception.append(_on_request_exception)
+        return tc
 
     async def async_auth_start(self):
         """
-        blinkpy 0.22.0 introducted async start, this is the compatible
-        auth_start function with improved error handling and retry logic.
+        Async auth start, compatible with blinkpy 0.22.0+.
+
+        blinkpy 0.22.0 introduced the async start flow. blinkpy 0.25.x+
+        uses OAuth v2 (BlinkTwoFARequiredError / send_2fa_code). Older
+        0.22.x used send_auth_key for 2FA completion. Both are handled by
+        _attempt_async_authentication via _complete_2fa_auth.
+
+        An aiohttp TraceConfig is **always** attached (regardless of
+        ``self.verbose``) so that HTTP 429 ``2fa_rate_limit_exceeded``
+        responses are detected and the retry loop is aborted immediately.
+        When ``self.verbose`` is True, DEBUG-level blinkpy logging is
+        also enabled and per-request log lines are printed to stdout.
         """
-        async with ClientSession() as session:
+        self._configure_blink_logging()
+        # Initialise rate-limit detection state; set by the TraceConfig
+        # callback when a HTTP 429 2fa_rate_limit_exceeded is received.
+        self._rate_limit_detected = False
+        self._rate_limit_next_time_secs = None
+        # Always attach trace config — needed for rate-limit detection
+        # even when verbose=False.  Verbose output is gated inside the
+        # trace callbacks on self.verbose.
+        async with ClientSession(
+            trace_configs=[self._create_http_trace_config()]
+        ) as session:
             self._setup_auth_parameters()
             await self._execute_async_auth_with_retry(session)
 
@@ -424,6 +1079,7 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):  # type: ignore[misc]
             UnauthorizedError: self._format_unauthorized_error,
             ClientConnectionError: self._format_connection_error,
             ContentTypeError: self._format_content_error,
+            BlinkTwoFARequiredError: self._format_2fa_required_error,
             ValueError: self._format_value_error,
             AttributeError: self._format_attribute_error,
         }
@@ -445,10 +1101,11 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):  # type: ignore[misc]
 
     def _format_unauthorized_error(self, error_str, auth_type):
         """Format unauthorized error message."""
+        detail = error_str if error_str else "UnauthorizedError (no detail)"
         return (
             f"ERROR: Blink authorization failed for zone {self.zone_number} "
             f"({auth_type} mode). Your account may be locked or credentials "
-            f"may be invalid. Error: {error_str}"
+            f"may be invalid. Error: {detail}"
         )
 
     def _format_connection_error(self, error_str, auth_type):
@@ -492,6 +1149,16 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):  # type: ignore[misc]
             f"{self.zone_number} ({auth_type} mode). This may occur if the "
             f"initial login failed. Please verify your credentials and try "
             f"again. Error: {error_str}"
+        )
+
+    def _format_2fa_required_error(self, error_str, auth_type):
+        """Format two-factor authentication required error message."""
+        return (
+            f"ERROR: Blink 2FA required but could not be completed for zone "
+            f"{self.zone_number} ({auth_type} mode). Please ensure "
+            f"{self.BL_2FA_KEY} is set in your environment or "
+            f"supervisor-env.txt with a valid, current 2FA code. "
+            f"Error: {error_str}"
         )
 
     def _format_generic_error(self, error_type, error_str, auth_type):

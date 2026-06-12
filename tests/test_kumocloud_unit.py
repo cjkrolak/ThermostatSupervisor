@@ -2405,5 +2405,191 @@ class ErrorHandlingUnitTest(utc.UnitTest):
         )
 
 
+@unittest.skipIf(
+    kumocloud_import_error,
+    "kumocloud import failed, tests are disabled",
+)
+class SerialMatchHelperUnitTest(utc.UnitTest):
+    """
+    Unit tests for the helper methods extracted from _populate_metadata.
+
+    These tests directly exercise _log_serial_match_warning,
+    _get_serial_to_zone_name_map, and _assign_serials_by_zone_name
+    to ensure the refactored helpers preserve the original behaviour.
+    """
+
+    def _make_thermostat(self, verbose=False):
+        """Return a ThermostatClass instance with auth/zone-assign mocked."""
+        with patch.object(
+            kumocloud.ThermostatClass, "_authenticate"
+        ), patch.object(
+            kumocloud.ThermostatClass, "_update_zone_assignments"
+        ):
+            return kumocloud.ThermostatClass(zone=0, verbose=verbose)
+
+    def setUp(self):
+        """Save original metadata for restoration after each test."""
+        super().setUp()
+        self.print_test_name()
+        self.original_metadata = copy.deepcopy(kumocloud_config.metadata)
+
+    def tearDown(self):
+        """Restore original metadata."""
+        kumocloud_config.metadata.clear()
+        kumocloud_config.metadata.update(self.original_metadata)
+        super().tearDown()
+
+    # ------------------------------------------------------------------
+    # _log_serial_match_warning
+    # ------------------------------------------------------------------
+
+    def test_log_serial_match_warning_verbose_true(self):
+        """_log_serial_match_warning logs when verbose=True."""
+        thermostat = self._make_thermostat(verbose=True)
+        with patch.object(util, "log_msg") as mock_log:
+            getattr(thermostat, "_log_serial_match_warning")(
+                "test warning"
+            )  # type: ignore
+            mock_log.assert_called_once()
+            call_args = mock_log.call_args
+            self.assertIn("test warning", call_args[0])
+
+    def test_log_serial_match_warning_verbose_false(self):
+        """_log_serial_match_warning is silent when verbose=False."""
+        thermostat = self._make_thermostat(verbose=False)
+        with patch.object(util, "log_msg") as mock_log:
+            getattr(thermostat, "_log_serial_match_warning")(
+                "test warning"
+            )  # type: ignore
+            mock_log.assert_not_called()
+
+    # ------------------------------------------------------------------
+    # _get_serial_to_zone_name_map
+    # ------------------------------------------------------------------
+
+    def test_get_serial_to_zone_name_map_success(self):
+        """_get_serial_to_zone_name_map builds correct map from API data."""
+        thermostat = self._make_thermostat()
+
+        mock_zones = [
+            {"name": "Living Room", "adapter": {"deviceSerial": "SN001"}},
+            {"name": "Kitchen", "adapter": {"deviceSerial": "SN002"}},
+        ]
+        with patch.object(
+            thermostat, "_get_sites", return_value=[{"id": "site1"}]
+        ), patch.object(thermostat, "_get_zones", return_value=mock_zones):
+            result = getattr(
+                thermostat, "_get_serial_to_zone_name_map"
+            )()  # type: ignore
+
+        self.assertEqual(result, {"SN001": "Living Room", "SN002": "Kitchen"})
+
+    def test_get_serial_to_zone_name_map_no_sites(self):
+        """_get_serial_to_zone_name_map returns {} when sites list is empty."""
+        thermostat = self._make_thermostat()
+        with patch.object(thermostat, "_get_sites", return_value=[]):
+            result = getattr(
+                thermostat, "_get_serial_to_zone_name_map"
+            )()  # type: ignore
+        self.assertEqual(result, {})
+
+    def test_get_serial_to_zone_name_map_no_site_id(self):
+        """_get_serial_to_zone_name_map returns {} when site has no id."""
+        thermostat = self._make_thermostat()
+        with patch.object(
+            thermostat, "_get_sites", return_value=[{"name": "no-id"}]
+        ):
+            result = getattr(
+                thermostat, "_get_serial_to_zone_name_map"
+            )()  # type: ignore
+        self.assertEqual(result, {})
+
+    def test_get_serial_to_zone_name_map_no_zones(self):
+        """_get_serial_to_zone_name_map returns {} when zones list is empty."""
+        thermostat = self._make_thermostat()
+        with patch.object(
+            thermostat, "_get_sites", return_value=[{"id": "site1"}]
+        ), patch.object(thermostat, "_get_zones", return_value=[]):
+            result = getattr(
+                thermostat, "_get_serial_to_zone_name_map"
+            )()  # type: ignore
+        self.assertEqual(result, {})
+
+    def test_get_serial_to_zone_name_map_skips_missing_serial(self):
+        """_get_serial_to_zone_name_map skips zones with no deviceSerial."""
+        thermostat = self._make_thermostat()
+        mock_zones = [
+            {"name": "Living Room", "adapter": {}},  # no deviceSerial
+            {"name": "Kitchen", "adapter": {"deviceSerial": "SN002"}},
+        ]
+        with patch.object(
+            thermostat, "_get_sites", return_value=[{"id": "site1"}]
+        ), patch.object(thermostat, "_get_zones", return_value=mock_zones):
+            result = getattr(
+                thermostat, "_get_serial_to_zone_name_map"
+            )()  # type: ignore
+        self.assertEqual(result, {"SN002": "Kitchen"})
+
+    # ------------------------------------------------------------------
+    # _assign_serials_by_zone_name
+    # ------------------------------------------------------------------
+
+    def test_assign_serials_by_zone_name_success(self):
+        """_assign_serials_by_zone_name assigns serials to correct indices."""
+        kumocloud_config.metadata.clear()
+        kumocloud_config.metadata.update({
+            0: {"zone_name": "Living Room", "serial_number": None},
+            1: {"zone_name": "Kitchen", "serial_number": None},
+        })
+        thermostat = self._make_thermostat()
+
+        serial_to_zone_name = {"SN001": "Living Room", "SN002": "Kitchen"}
+        getattr(thermostat, "_assign_serials_by_zone_name")(
+            ["SN001", "SN002"], serial_to_zone_name
+        )  # type: ignore
+
+        self.assertEqual(kumocloud_config.metadata[0]["serial_number"], "SN001")
+        self.assertEqual(kumocloud_config.metadata[1]["serial_number"], "SN002")
+
+    def test_assign_serials_by_zone_name_unknown_serial(self):
+        """_assign_serials_by_zone_name logs warning for unmatched serial."""
+        kumocloud_config.metadata.clear()
+        kumocloud_config.metadata.update({
+            0: {"zone_name": "Living Room", "serial_number": None},
+        })
+        thermostat = self._make_thermostat(verbose=True)
+
+        with patch.object(util, "log_msg") as mock_log:
+            getattr(thermostat, "_assign_serials_by_zone_name")(
+                ["UNKNOWN_SN"], {}
+            )  # type: ignore
+            mock_log.assert_called_once()
+            warning_msg = mock_log.call_args[0][0]
+            self.assertIn("could not be matched", warning_msg)
+
+        # Metadata should remain unmodified
+        self.assertIsNone(kumocloud_config.metadata[0]["serial_number"])
+
+    def test_assign_serials_by_zone_name_unknown_zone_in_api(self):
+        """_assign_serials_by_zone_name logs warning for API zone not in metadata."""
+        kumocloud_config.metadata.clear()
+        kumocloud_config.metadata.update({
+            0: {"zone_name": "Living Room", "serial_number": None},
+        })
+        thermostat = self._make_thermostat(verbose=True)
+
+        # API returns a zone name that does not exist in metadata
+        serial_to_zone_name = {"SN001": "Garage"}
+        with patch.object(util, "log_msg") as mock_log:
+            getattr(thermostat, "_assign_serials_by_zone_name")(
+                ["SN001"], serial_to_zone_name
+            )  # type: ignore
+            mock_log.assert_called_once()
+            warning_msg = mock_log.call_args[0][0]
+            self.assertIn("not found in metadata", warning_msg)
+
+        self.assertIsNone(kumocloud_config.metadata[0]["serial_number"])
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
