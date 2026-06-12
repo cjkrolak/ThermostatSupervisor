@@ -670,7 +670,9 @@ class UserInputs:
         sysargv_sflags = [str(elem)[:2] for elem in sys.argv[1:]]
         if self.user_inputs is None:
             raise ValueError("user_inputs cannot be None")
-        parent_key = next(iter(self.user_inputs.keys()))
+        if not self.user_inputs:
+            raise ValueError("user_inputs cannot be empty")
+        parent_key = next(iter(self.user_inputs))
         valid_sflags = self.get_sflag_list()
         valid_lflags = self.get_lflag_list()
         valid_flags = valid_sflags + valid_lflags + ["-h", "--"]  # combine all flags

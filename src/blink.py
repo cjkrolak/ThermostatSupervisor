@@ -92,7 +92,12 @@ def _write_cache_file_sync(cache_data: dict) -> None:
         cache_data (dict): Token data to serialise as JSON.
     """
     fd = os.open(TOKEN_CACHE_FILE, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
-    with os.fdopen(fd, "w", encoding="utf-8") as f:
+    try:
+        f = os.fdopen(fd, "w", encoding="utf-8")
+    except Exception:
+        os.close(fd)
+        raise
+    with f:
         json.dump(cache_data, f, indent=2)
 
 
