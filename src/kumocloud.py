@@ -17,6 +17,8 @@ from src import thermostat_api as api
 from src import thermostat_common as tc
 from src import utilities as util
 
+SEQUENTIAL_ASSIGNMENT_FALLBACK_MSG = "Using sequential assignment as fallback"
+
 
 class ThermostatClass(tc.ThermostatCommon):
     """KumoCloud v3 API thermostat functions."""
@@ -959,7 +961,7 @@ class ThermostatClass(tc.ThermostatCommon):
                     func_name=1,
                 )
                 util.log_msg(
-                    "Using sequential assignment as fallback",
+                    SEQUENTIAL_ASSIGNMENT_FALLBACK_MSG,
                     mode=util.DEBUG_LOG + util.STDOUT_LOG,
                     func_name=1,
                 )
@@ -974,7 +976,7 @@ class ThermostatClass(tc.ThermostatCommon):
                     func_name=1,
                 )
                 util.log_msg(
-                    "Using sequential assignment as fallback",
+                    SEQUENTIAL_ASSIGNMENT_FALLBACK_MSG,
                     mode=util.DEBUG_LOG + util.STDOUT_LOG,
                     func_name=1,
                 )
@@ -988,7 +990,7 @@ class ThermostatClass(tc.ThermostatCommon):
                     func_name=1,
                 )
                 util.log_msg(
-                    "Using sequential assignment as fallback",
+                    SEQUENTIAL_ASSIGNMENT_FALLBACK_MSG,
                     mode=util.DEBUG_LOG + util.STDOUT_LOG,
                     func_name=1,
                 )
