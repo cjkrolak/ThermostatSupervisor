@@ -777,8 +777,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
 
     def is_fan_on(self) -> int:
         """Return 1 if fan relay is active, else 0."""
-        self.refresh_zone_info()
-        return int(self._get_fan_timer_mode() == "ON")
+        return self.is_fanning()
 
     def _get_fan_timer_mode(self) -> Union[str, None]:
         """

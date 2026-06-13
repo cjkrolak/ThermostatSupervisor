@@ -695,10 +695,11 @@ class BlinkDiagnosticsTests(utc.UnitTest):
         is emitted exactly once.
         """
         import logging  # noqa: PLC0415
+        from src.blink import BLINKPY_BLINKPY_MODULE  # noqa: PLC0415
         stub = self._make_thermostat_stub(verbose=True)
 
         # Remove any existing handlers to start clean.
-        for name in ("blinkpy", "blinkpy.auth", "blinkpy.blinkpy",
+        for name in ("blinkpy", "blinkpy.auth", BLINKPY_BLINKPY_MODULE,
                      "blinkpy.api"):
             logging.getLogger(name).handlers = []
 
@@ -716,7 +717,7 @@ class BlinkDiagnosticsTests(utc.UnitTest):
         # Child loggers must be at DEBUG but must NOT have their own
         # StreamHandler (they propagate to the parent to avoid double-
         # logging each message).
-        for name in ("blinkpy.auth", "blinkpy.blinkpy", "blinkpy.api"):
+        for name in ("blinkpy.auth", BLINKPY_BLINKPY_MODULE, "blinkpy.api"):
             child = logging.getLogger(name)
             self.assertEqual(child.level, logging.DEBUG,
                              f"{name!r} must be at DEBUG level")

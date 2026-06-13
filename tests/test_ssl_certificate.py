@@ -228,7 +228,7 @@ MQswCQYDVQQGEwJBVTETMBEGA1UECAwKU29tZS1TdGF0ZTEhMB8GA1UECgwYSW50
         with open(cert_path, "r") as f:
             content = f.read()
             self.assertIn("-----BEGIN CERTIFICATE-----", content)
-            self.assertIn("-----END CERTIFICATE-----", content)
+            self.assertIn(ssl_certificate.PEM_END_CERTIFICATE_MARKER, content)
 
     @patch("src.ssl_certificate.subprocess.run")
     def test_download_ssl_certificate_failure(self, mock_subprocess):

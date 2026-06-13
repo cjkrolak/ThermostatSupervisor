@@ -23,12 +23,14 @@ from src import utilities as util
 
 # Blink library
 BLINK_DEBUG = False  # debug uses local blink repo instead of pkg
+BLINKPY_BLINKPY_MODULE = "blinkpy.blinkpy"  # module path constant
+NO_ERROR_MSG = "(no message)"  # fallback when exception has no message text
 if BLINK_DEBUG and not env.is_azure_environment():
-    pkg = "blinkpy.blinkpy"
+    pkg = BLINKPY_BLINKPY_MODULE
     mod_path = "..\\blinkpy"
     if env.is_interactive_environment():
         mod_path = "..\\" + mod_path
-    blinkpy = env.dynamic_module_import("blinkpy.blinkpy", mod_path, pkg)
+    blinkpy = env.dynamic_module_import(BLINKPY_BLINKPY_MODULE, mod_path, pkg)
     auth = env.dynamic_module_import("blinkpy.auth", mod_path, pkg)
 else:
     from blinkpy import auth  # noqa E402, from path / site packages
@@ -77,6 +79,26 @@ except ImportError:
 # Storing the refresh token allows blinkpy to skip the PKCE web flow on
 # subsequent authentication attempts (auth.startup() tries refresh first).
 TOKEN_CACHE_FILE = "./data/blink_auth_cache.json"
+
+
+def _write_cache_file_sync(cache_data: dict) -> None:
+    """Write cache data to TOKEN_CACHE_FILE with restricted permissions.
+
+    This sync helper is called via asyncio.to_thread() to avoid blocking the
+    event loop.  Using os.open() with mode 0o600 ensures the cache file
+    (which may contain a refresh token) is owner-readable only on POSIX.
+
+    Args:
+        cache_data (dict): Token data to serialise as JSON.
+    """
+    fd = os.open(TOKEN_CACHE_FILE, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    try:
+        f = os.fdopen(fd, "w", encoding="utf-8")
+    except Exception:
+        os.close(fd)
+        raise
+    with f:
+        json.dump(cache_data, f, indent=2)
 
 
 class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):  # type: ignore[misc]
@@ -257,7 +279,7 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):  # type: ignore[misc]
     def _handle_auth_retry(self, attempt, max_retries, retry_delay, error):
         """Handle authentication retry logic."""
         error_type = type(error).__name__
-        error_detail = str(error) if str(error) else "(no message)"
+        error_detail = str(error) if str(error) else NO_ERROR_MSG
         if attempt < max_retries - 1:
             if self.verbose:
                 print(
@@ -430,7 +452,7 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):  # type: ignore[misc]
     async def _handle_async_auth_retry(self, attempt, max_retries, retry_delay, error):
         """Handle async authentication retry logic."""
         error_type = type(error).__name__
-        error_detail = str(error) if str(error) else "(no message)"
+        error_detail = str(error) if str(error) else NO_ERROR_MSG
         if attempt < max_retries - 1:
             if self.verbose:
                 print(
@@ -542,11 +564,10 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):  # type: ignore[misc]
                 return
             cache_data.pop("username", None)
             cache_data.pop("password", None)
-            # Write with mode 0o600 (owner read/write only) on POSIX systems
-            # because the cache may contain a refresh token.
-            fd = os.open(TOKEN_CACHE_FILE, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
-            with os.fdopen(fd, "w", encoding="utf-8") as f:
-                json.dump(cache_data, f, indent=2)
+            # Offload blocking file I/O to a thread to avoid blocking the
+            # event loop.  _write_cache_file_sync uses os.open() with mode
+            # 0o600 to restrict read/write access to the owner only.
+            await asyncio.to_thread(_write_cache_file_sync, cache_data)
             if self.verbose:
                 print(
                     f"[Blink zone {self.zone_number}] Token cache saved "
@@ -751,7 +772,7 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):  # type: ignore[misc]
             # when Blink has disabled password grant, but other errors are
             # also possible (invalid credentials, account locked, etc.).
             error_type = type(e).__name__
-            error_detail = str(e) if str(e) else "(no message)"
+            error_detail = str(e) if str(e) else NO_ERROR_MSG
             if self.verbose:
                 print(
                     f"[Blink zone {self.zone_number}] Password grant "
@@ -920,7 +941,7 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):  # type: ignore[misc]
         # Set child loggers to DEBUG so their messages are not filtered
         # before reaching the parent handler, but do not add separate
         # handlers to avoid double-logging via propagation.
-        for name in ("blinkpy.auth", "blinkpy.blinkpy", "blinkpy.api"):
+        for name in ("blinkpy.auth", BLINKPY_BLINKPY_MODULE, "blinkpy.api"):
             logging.getLogger(name).setLevel(logging.DEBUG)
 
     def _create_http_trace_config(self) -> TraceConfig:
@@ -954,6 +975,8 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):  # type: ignore[misc]
                     f"[Blink zone {zone}][HTTP→] "
                     f"{params.method} {host}{path}"
                 )
+            # Yield to the event loop; aiohttp trace callbacks must be async.
+            await asyncio.sleep(0)
 
         async def _on_request_end(_session, _ctx, params) -> None:
             status = params.response.status
@@ -1025,6 +1048,8 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):  # type: ignore[misc]
                     f"[Blink zone {zone}][HTTP✗] "
                     f"{type(exc).__name__}: {exc} {host}{path}"
                 )
+            # Yield to the event loop; aiohttp trace callbacks must be async.
+            await asyncio.sleep(0)
 
         tc = TraceConfig()
         tc.on_request_start.append(_on_request_start)
