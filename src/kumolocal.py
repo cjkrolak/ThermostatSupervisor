@@ -187,6 +187,42 @@ class ThermostatClass(
 
         return None, None
 
+    def _normalize_zone_name(self, zone_name) -> str:
+        """Return a normalized zone label for deterministic comparisons.
+
+        inputs:
+            zone_name(str | None): zone label to normalize.
+        returns:
+            (str): lowercase alphanumeric-only label.
+        """
+        if zone_name is None:
+            return ""
+        return "".join(c.lower() for c in str(zone_name) if c.isalnum())
+
+    def _resolve_zone_number_for_device(self, device_name, local_address):
+        """Resolve a discovered device back to the configured supervisor zone.
+
+        inputs:
+            device_name(str): zone label returned by Kumo Cloud.
+            local_address(str | None): device address currently associated
+                with the serial number.
+        returns:
+            (int | None): configured zone number, or None if no match exists.
+        """
+        if local_address:
+            for zone_number, zone_meta in kumolocal_config.metadata.items():
+                if zone_meta.get("ip_address") == local_address:
+                    return zone_number
+
+        normalized_device_name = self._normalize_zone_name(device_name)
+        for zone_number, zone_meta in kumolocal_config.metadata.items():
+            if self._normalize_zone_name(zone_meta.get("zone_name")) == (
+                normalized_device_name
+            ):
+                return zone_number
+
+        return None
+
     def _setup_pykumo_logging(self):
         """
         Configure pykumo loggers to use supervisor logging system.
@@ -424,17 +460,24 @@ class ThermostatClass(
         return serial_num_lst
 
     def _check_zones_availability(self, serial_num_lst):
-        """Check availability for each zone."""
-        for zone_idx, serial_number in enumerate(serial_num_lst):
-            if zone_idx not in kumolocal_config.metadata:
-                continue
+        """Check availability for each discovered device."""
+        for serial_number in serial_num_lst:
+            self._process_zone_availability(serial_number)
 
-            self._process_zone_availability(zone_idx, serial_number)
-
-    def _process_zone_availability(self, zone_idx, serial_number):
+    def _process_zone_availability(self, serial_number):
         """Process availability check for a single zone."""
         local_address = self.get_address(serial_number)
         device_name = self.get_name(serial_number)
+        zone_idx = self._resolve_zone_number_for_device(device_name, local_address)
+        if zone_idx is None:
+            if self.verbose:
+                util.log_msg(
+                    f"Warning: could not map Kumo device '{device_name}' at "
+                    f"{local_address} to a configured zone",
+                    mode=util.DEBUG_LOG + util.STDOUT_LOG,
+                    func_name=1,
+                )
+            return
 
         if self._has_valid_local_address(local_address):
             self._check_and_update_available_zone(zone_idx, device_name, local_address)
@@ -461,7 +504,6 @@ class ThermostatClass(
     def _update_zone_metadata(self, zone_idx, device_name, local_address, is_available):
         """Update zone metadata with detection results."""
         zone_meta = kumolocal_config.metadata[zone_idx]
-        zone_meta["ip_address"] = local_address
         zone_meta["host_name"] = device_name
         zone_meta["local_net_available"] = is_available
 

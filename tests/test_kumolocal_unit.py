@@ -228,6 +228,77 @@ class LocalNetworkDetectionUnitTest(utc.UnitTest):
             "kumolocal_config.metadata['zone_name'] should remain configuration-only",
         )
 
+    def test_detect_local_network_availability_preserves_configured_ips(self):
+        """Availability detection must not rewrite configured IPs by cloud order."""
+        thermostat = kumolocal.ThermostatClass.__new__(kumolocal.ThermostatClass)
+        thermostat.verbose = False
+
+        living_room_ip = kumolocal_config.metadata[kumolocal_config.LIVING_ROOM][
+            "ip_address"
+        ]
+        kitchen_ip = kumolocal_config.metadata[kumolocal_config.KITCHEN]["ip_address"]
+        basement_ip = kumolocal_config.metadata[kumolocal_config.BASEMENT]["ip_address"]
+
+        serials = ["serial-basement", "serial-kitchen", "serial-living"]
+        thermostat.get_indoor_units = lambda: serials  # type: ignore[method-assign]
+        thermostat.get_name = lambda serial: {  # type: ignore[method-assign]
+            "serial-basement": "Basement",
+            "serial-kitchen": "Kitchen",
+            "serial-living": "Living Room",
+        }[serial]
+        thermostat.get_address = lambda serial: {  # type: ignore[method-assign]
+            "serial-basement": basement_ip,
+            "serial-kitchen": kitchen_ip,
+            "serial-living": living_room_ip,
+        }[serial]
+
+        original_is_host_on_local_net = kumolocal.util.is_host_on_local_net
+        kumolocal.util.is_host_on_local_net = lambda **kwargs: (False, None)
+        try:
+            thermostat.detect_local_network_availability()
+        finally:
+            kumolocal.util.is_host_on_local_net = original_is_host_on_local_net
+
+        self.assertEqual(
+            kumolocal_config.metadata[kumolocal_config.LIVING_ROOM]["ip_address"],
+            living_room_ip,
+        )
+        self.assertEqual(
+            kumolocal_config.metadata[kumolocal_config.KITCHEN]["ip_address"],
+            kitchen_ip,
+        )
+        self.assertEqual(
+            kumolocal_config.metadata[kumolocal_config.BASEMENT]["ip_address"],
+            basement_ip,
+        )
+
+    def test_process_zone_availability_matches_zone_by_name_when_ip_missing(self):
+        """Availability detection should still update the right zone by device name."""
+        thermostat = kumolocal.ThermostatClass.__new__(kumolocal.ThermostatClass)
+        thermostat.verbose = False
+        thermostat.get_name = (  # type: ignore[method-assign]
+            lambda serial: "Living Room"
+        )
+        thermostat.get_address = lambda serial: None  # type: ignore[method-assign]
+
+        kumolocal_config.metadata[kumolocal_config.LIVING_ROOM][
+            "local_net_available"
+        ] = None
+        kumolocal_config.metadata[kumolocal_config.KITCHEN][
+            "local_net_available"
+        ] = None
+
+        thermostat._process_zone_availability("serial-living")
+
+        self.assertFalse(
+            kumolocal_config.metadata[kumolocal_config.LIVING_ROOM][
+                "local_net_available"
+            ]
+        )
+        self.assertIsNone(
+            kumolocal_config.metadata[kumolocal_config.KITCHEN]["local_net_available"]
+        )
+
 
 class KumolocalConfigUnitTest(utc.UnitTest):
     """Unit tests for kumolocal config zone definitions."""
