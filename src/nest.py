@@ -12,7 +12,6 @@ import os
 import pprint
 import time
 import traceback
-from typing import Union
 
 # thrid party libaries
 import oauthlib.oauth2.rfc6749.errors
@@ -624,7 +623,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         display_temp_f = util.c_to_f(display_temp_c)
         return display_temp_f
 
-    def get_display_humidity(self) -> Union[float, None]:
+    def get_display_humidity(self) -> float | None:
         """
         Refresh the cached zone information and return IndoorHumidity.
 
@@ -779,7 +778,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         """Return 1 if fan relay is active, else 0."""
         return self.is_fanning()
 
-    def _get_fan_timer_mode(self) -> Union[str, None]:
+    def _get_fan_timer_mode(self) -> str | None:
         """
         Return the Fan trait timer mode.
 
@@ -940,7 +939,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         """
         return False  # no hold mode
 
-    def get_system_switch_position(self) -> Union[int, str]:  # used
+    def get_system_switch_position(self) -> int | str:  # used
         """
         Return the system switch position, same as mode.
 

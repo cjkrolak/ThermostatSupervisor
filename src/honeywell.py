@@ -11,7 +11,6 @@ import logging
 import os
 import pprint
 import time
-from typing import Union
 
 # third-party imports
 import requests.exceptions
@@ -228,7 +227,7 @@ class ThermostatClass(pyhtcc.PyHTCC, tc.ThermostatCommon):  # type: ignore[name-
         trait=None,
         parameter=None,
         retry=False,
-    ) -> Union[dict, str]:
+    ) -> dict | str:
         """
         Return the current thermostat metadata settings.
 
@@ -305,7 +304,7 @@ class ThermostatClass(pyhtcc.PyHTCC, tc.ThermostatCommon):  # type: ignore[name-
 
     def get_latestdata(
         self, zone=honeywell_config.default_zone, debug=False
-    ) -> Union[dict, None]:
+    ) -> dict | None:
         """
         Return the current thermostat latest data.
 
@@ -329,7 +328,7 @@ class ThermostatClass(pyhtcc.PyHTCC, tc.ThermostatCommon):  # type: ignore[name-
             )
         return latest_data_dict
 
-    def get_ui_data(self, zone=honeywell_config.default_zone) -> Union[dict, None]:
+    def get_ui_data(self, zone=honeywell_config.default_zone) -> dict | None:
         """
         Return the latest thermostat ui data.
 
@@ -351,7 +350,7 @@ class ThermostatClass(pyhtcc.PyHTCC, tc.ThermostatCommon):  # type: ignore[name-
 
     def get_ui_data_param(
         self, zone=honeywell_config.default_zone, parameter=None
-    ) -> Union[dict, None]:
+    ) -> dict | None:
         """
         Return the latest thermostat ui data for one specific parameter.
 
@@ -506,7 +505,7 @@ class ThermostatZone(
         """
         return float(self.get_indoor_temperature_raw())
 
-    def get_display_humidity(self) -> Union[float, None]:
+    def get_display_humidity(self) -> float | None:
         """
         Refresh the cached zone information then return IndoorHumidity.
 

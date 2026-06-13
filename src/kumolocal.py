@@ -5,7 +5,6 @@ import logging
 import os
 import pprint
 import time
-from typing import Union
 
 # third party imports
 
@@ -766,7 +765,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         self.refresh_zone_info()
         return util.c_to_f(self.device_id.get_current_temperature())
 
-    def get_display_humidity(self) -> Union[float, None]:
+    def get_display_humidity(self) -> float | None:
         """
         Refresh the cached zone information and return IndoorHumidity.
 
@@ -1018,7 +1017,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         """
         return False  # no schedule, hold not implemented
 
-    def get_system_switch_position(self) -> Union[int, str]:  # used
+    def get_system_switch_position(self) -> int | str:  # used
         """
         Return the system switch position, same as mode.
 

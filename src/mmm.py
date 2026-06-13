@@ -9,7 +9,6 @@ import socket
 import time
 import traceback
 import urllib
-from typing import Union
 
 # third-party imports
 from dns.exception import DNSException
@@ -155,7 +154,7 @@ class ThermostatClass(tc.ThermostatCommon):
 
     def get_metadata(
         self, zone=mmm_config.default_zone, trait=None, parameter=None, retry=False
-    ) -> Union[dict, str]:
+    ) -> dict | str:
         """
         Get the current thermostat metadata settings.
 
@@ -204,7 +203,7 @@ class ThermostatClass(tc.ThermostatCommon):
             # Single attempt without retry
             return _get_metadata_internal()
 
-    def get_latestdata(self, zone, debug=False) -> Union[dict, str]:
+    def get_latestdata(self, zone, debug=False) -> dict | str:
         """
         Get the current thermostat latest data.
 
@@ -313,7 +312,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         """
         return float(self.device_id.temp["raw"])
 
-    def get_display_humidity(self) -> Union[float, None]:
+    def get_display_humidity(self) -> float | None:
         """
         Return Humidity.
 
@@ -750,7 +749,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         """
         return False  # not implemented
 
-    def get_system_switch_position(self) -> Union[int, str]:
+    def get_system_switch_position(self) -> int | str:
         """Return the thermostat mode.
 
         inputs:

@@ -5,7 +5,6 @@ import pickle
 import random
 import time
 import traceback
-from typing import Union
 
 # local imports
 from src import emulator_config
@@ -256,7 +255,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
             emulator_config.NORMAL_TEMP_VARIATION,
         )
 
-    def get_display_humidity(self) -> Union[float, None]:
+    def get_display_humidity(self) -> float | None:
         """
         Refresh the cached zone information and return IndoorHumidity
         with random +/-1% noise value.
@@ -586,7 +585,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         vacation_hold = self.get_parameter("vacation_hold")
         return bool(vacation_hold) if vacation_hold is not None else False
 
-    def get_system_switch_position(self) -> Union[int, str]:  # used
+    def get_system_switch_position(self) -> int | str:  # used
         """
         Return the system switch position.
 

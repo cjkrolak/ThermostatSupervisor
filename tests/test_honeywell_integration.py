@@ -8,6 +8,8 @@ This test requires connection to Honeywell thermostat.
 import unittest
 
 # local imports
+from src import emulator
+from src import emulator_config
 from src import honeywell
 from src import honeywell_config
 from src import thermostat_common as tc
@@ -76,8 +78,19 @@ class FunctionalIntegrationTest(IntegrationTest, utc.FunctionalIntegrationTest):
 )
 class SuperviseIntegrationTest(IntegrationTest, utc.SuperviseIntegrationTest):
     """
-    Test supervise functionality of honeywell.py.
+    Test supervise functionality using emulator for CI reliability.
+
+    Supervise logic is thermostat-agnostic, so the emulator is used here
+    to avoid flaky Honeywell network connectivity failures in CI.
     """
+
+    def setUpIntTest(self):
+        """Override to use emulator; supervise is thermostat-agnostic."""
+        self.setup_common()
+        self.print_test_name()
+        self.unit_test_argv = utc.unit_test_emulator
+        self.mod = emulator
+        self.mod_config = emulator_config
 
     def setUp(self):
         super().setUp()
