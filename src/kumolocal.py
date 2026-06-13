@@ -150,6 +150,43 @@ class ThermostatClass(
                 func_name=1,
             )
 
+    def _get_configured_zone_ip_address(self, zone_number) -> Union[str, None]:
+        """Return the configured local IP address for a zone when available.
+
+        inputs:
+            zone_number(int): supervisor zone number.
+        returns:
+            (str, None): configured IP address or None when unavailable.
+        """
+        if not isinstance(zone_number, int):
+            return None
+        zone_meta = kumolocal_config.metadata.get(zone_number)
+        if not zone_meta:
+            return None
+        ip_address = zone_meta.get("ip_address")
+        if not ip_address or ip_address == "0.0.0.0":
+            return None
+        return str(ip_address)
+
+    def _get_device_by_configured_ip(self, kumos, zone_number):
+        """Return the device whose current address matches the configured zone IP.
+
+        inputs:
+            kumos(dict): mapping of zone names to PyKumo device objects.
+            zone_number(int): supervisor zone number.
+        returns:
+            (tuple[str, object] | tuple[None, None]): matched zone name and device.
+        """
+        configured_ip = self._get_configured_zone_ip_address(zone_number)
+        if configured_ip is None:
+            return None, None
+
+        for candidate_zone_name, candidate_device_id in kumos.items():
+            if getattr(candidate_device_id, "_address", None) == configured_ip:
+                return candidate_zone_name, candidate_device_id
+
+        return None, None
+
     def _setup_pykumo_logging(self):
         """
         Configure pykumo loggers to use supervisor logging system.
@@ -295,8 +332,10 @@ class ThermostatClass(
         # init_update_status=False avoids calling update_status() for every
         # zone at creation time; only the matched zone is updated below.
         kumos = self.make_pykumos(init_update_status=False)
-        device_id = kumos.get(self.zone_name)
-        matched_zone_name = self.zone_name
+        matched_zone_name, device_id = self._get_device_by_configured_ip(kumos, zone)
+        if device_id is None:
+            device_id = kumos.get(self.zone_name)
+            matched_zone_name = self.zone_name
 
         # Backward-compatible fallback for name format mismatches
         # (e.g., "Living Room" vs "LivingRoom")

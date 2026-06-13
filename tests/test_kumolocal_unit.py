@@ -611,6 +611,58 @@ class TargetZoneIdResolutionUnitTest(utc.UnitTest):
 
         mock_make_pykumos.assert_called_once_with(init_update_status=False)
 
+    def test_get_target_zone_id_prefers_configured_ip_over_zone_order(self):
+        """Configured IP matching should win before fallback to zone ordering."""
+        from unittest.mock import MagicMock
+
+        thermostat = kumolocal.ThermostatClass.__new__(kumolocal.ThermostatClass)
+        thermostat.zone_name = "Living Room"
+        thermostat.zone_number = kumolocal_config.LIVING_ROOM
+        thermostat.device_id = None
+        thermostat.verbose = False
+
+        expected_ip = kumolocal_config.metadata[kumolocal_config.LIVING_ROOM][
+            "ip_address"
+        ]
+        first_device = MagicMock(name="FirstPyKumo")
+        first_device._address = "10.0.0.99"
+        second_device = MagicMock(name="SecondPyKumo")
+        second_device._address = expected_ip
+        thermostat.make_pykumos = lambda **kwargs: {  # type: ignore[method-assign]
+            "Ground Floor": first_device,
+            "Upstairs": second_device,
+        }
+
+        device_id = thermostat.get_target_zone_id(kumolocal_config.LIVING_ROOM)
+
+        self.assertIs(device_id, second_device)
+        self.assertEqual(thermostat.zone_name, "Upstairs")
+        second_device.update_status.assert_called_once()
+        first_device.update_status.assert_not_called()
+
+    def test_get_target_zone_id_reapplies_configured_address(self):
+        """Selected device should be updated to the configured per-zone address."""
+        from unittest.mock import MagicMock
+
+        thermostat = kumolocal.ThermostatClass.__new__(kumolocal.ThermostatClass)
+        thermostat.zone_name = "Basement"
+        thermostat.zone_number = kumolocal_config.BASEMENT
+        thermostat.device_id = None
+        thermostat.verbose = False
+
+        basement_device = MagicMock(name="BasementPyKumo")
+        basement_device._address = "10.0.0.99"
+        thermostat.make_pykumos = lambda **kwargs: {  # type: ignore[method-assign]
+            "Basement": basement_device
+        }
+
+        thermostat.get_target_zone_id(kumolocal_config.BASEMENT)
+
+        self.assertEqual(
+            basement_device._address,
+            kumolocal_config.metadata[kumolocal_config.BASEMENT]["ip_address"],
+        )
+
 
 class ThermostatZoneModeUnitTest(utc.UnitTest):
     """Unit tests for ThermostatZone mode methods when device data is unavailable."""

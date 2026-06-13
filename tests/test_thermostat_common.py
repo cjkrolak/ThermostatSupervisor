@@ -1004,6 +1004,36 @@ class Test(utc.UnitTest):
         finally:
             self.Zone.get_system_switch_position = self.switch_position_backup
 
+    def test_print_select_data_from_all_zones_handles_none_temperature(self):
+        """Verify all-zones output uses N/A when a zone temperature is unavailable."""
+        from unittest.mock import MagicMock
+        from unittest.mock import patch
+
+        fake_thermostat = object()
+        fake_zone = MagicMock()
+        fake_zone.zone_name = "Living Room"
+        fake_zone.get_display_temp.return_value = None
+
+        with patch.object(
+            tc,
+            "create_thermostat_instance",
+            return_value=(fake_thermostat, fake_zone),
+        ):
+            with patch("builtins.print") as mock_print:
+                thermostat, zone = tc.print_select_data_from_all_zones(
+                    thermostat_type="kumolocal",
+                    zone_lst=[0],
+                    ThermostatClass=object,
+                    ThermostatZone=object,
+                    display_wifi=False,
+                    display_battery=False,
+                    display_outdoor_weather=False,
+                )
+
+        self.assertIs(thermostat, fake_thermostat)
+        self.assertIs(zone, fake_zone)
+        mock_print.assert_any_call("zone: 0, name: Living Room, temp: N/A")
+
     def test_revert_temperature_deviation(self):
         """Verify revert_temperature_deviation()."""
 
