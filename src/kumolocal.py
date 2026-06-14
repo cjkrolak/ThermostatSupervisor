@@ -465,7 +465,7 @@ class ThermostatClass(
             self._process_zone_availability(serial_number)
 
     def _process_zone_availability(self, serial_number):
-        """Process availability check for a single zone."""
+        """Process availability check for a single discovered device."""
         local_address = self.get_address(serial_number)
         device_name = self.get_name(serial_number)
         zone_idx = self._resolve_zone_number_for_device(device_name, local_address)
