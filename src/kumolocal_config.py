@@ -46,7 +46,6 @@ INI_FILE = "kumolocal.ini"
 
 # metadata dict
 # 'zone_name' is a placeholder, used at Thermostat class level.
-# 'zone_name' is updated by device memory via Zone.get_zone_name()
 # 'host_name' is used for DNS lookup to determine if device
 # 'ip_address' is loaded from kumolocal.ini; falls back to defaults below.
 # 'local_net_available' is set by local network detection

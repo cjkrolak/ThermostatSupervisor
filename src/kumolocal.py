@@ -149,7 +149,7 @@ class ThermostatClass(
                 func_name=1,
             )
 
-    def _get_configured_zone_ip_address(self, zone_number) -> Union[str, None]:
+    def _get_configured_zone_ip_address(self, zone_number) -> str | None:
         """Return the configured local IP address for a zone when available.
 
         inputs:

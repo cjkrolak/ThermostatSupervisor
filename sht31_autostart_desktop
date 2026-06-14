@@ -1,11 +1,13 @@
 # SHT31 flask server autostart script
 # copy this code to ~/.config/autostart/lxterm-autostart.desktop
 # to enable autostart upon reboot.
+# Note: for updating dependencies or pulling latest code, run
+# sht31_update_and_install.sh manually before restarting.
 
 [Desktop Entry]
 Encoding=UTF-8
 Name=SHT31 server autostart
-Comment=Start a terminal, start DNS service, pull latest dev branch, and launch sht31 server
-Exec=/usr/bin/lxterm -hold -e 'cd /home/pi/github/ThermostatSupervisor && sudo /usr/local/bin/noip2 && sudo /usr/local/bin/noip2 -S && git checkout develop && git pull && mkdir -p /home/pi/.config/autostart && cp /home/pi/github/ThermostatSupervisor/sht31_autostart_desktop /home/pi/.config/autostart/lxterm-autostart.desktop && pip install -r requirements.txt -r requirements_sht31.txt && python -m src.sht31_flask_server'
+Comment=Start a terminal, start DNS service, and launch sht31 server
+Exec=/usr/bin/lxterm -hold -e 'cd /home/pi/github/ThermostatSupervisor && sudo /usr/local/bin/noip2 && sudo /usr/local/bin/noip2 -S && python -m src.sht31_flask_server'
 Terminal=true
 X-KeepTerminal=true
