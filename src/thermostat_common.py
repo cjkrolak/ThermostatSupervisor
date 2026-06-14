@@ -1658,7 +1658,10 @@ def print_select_data_from_all_zones(
         )
         # zone temperature
         display_temp = Zone.get_display_temp()
-        msg = f"zone: {zone}, name: {Zone.zone_name}, temp: {display_temp:.1f} °F"
+        temp_display = (
+            f"{display_temp:.1f} °F" if display_temp is not None else "N/A"
+        )
+        msg = f"zone: {zone}, name: {Zone.zone_name}, temp: {temp_display}"
 
         # zone wifi strength
         if display_wifi:
