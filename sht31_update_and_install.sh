@@ -6,19 +6,23 @@
 # network or PyPI outages during updates do not prevent the server from
 # starting on login.
 
-set -e
+set -euo pipefail
 
 cd /home/pi/github/ThermostatSupervisor
 
 echo "Checking out develop branch and pulling latest changes..."
 git checkout develop
-git pull
+if ! git diff --quiet || ! git diff --cached --quiet; then
+    echo "Error: working tree is dirty. Commit or stash changes before updating." >&2
+    exit 1
+fi
+git pull --ff-only
 
 echo "Updating autostart desktop entry..."
 mkdir -p /home/pi/.config/autostart
 cp sht31_autostart_desktop /home/pi/.config/autostart/lxterm-autostart.desktop
 
 echo "Installing/updating Python dependencies..."
-pip install -r requirements.txt -r requirements_sht31.txt
+python -m pip install -r requirements.txt -r requirements_sht31.txt
 
 echo "Update complete. Restart the SHT31 server to apply changes."
