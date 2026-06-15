@@ -20,7 +20,7 @@ from src.sht31_flask_server import app
 from tests import unit_test_common as utc
 
 
-@unittest.skipIf(not utc.ENABLE_SHT31_TESTS, "sht31 tests are disabled")
+@unittest.skipIf(not utc.ENABLE_SHT31_UNIT_TESTS, "sht31 unit tests are disabled")
 class RuntimeParameterTest(utc.RuntimeParameterTest):
     """sht31 flask server Runtime parameter tests."""
 
@@ -36,7 +36,7 @@ class RuntimeParameterTest(utc.RuntimeParameterTest):
     ]
 
 
-@unittest.skipIf(not utc.ENABLE_SHT31_TESTS, "sht31 tests are disabled")
+@unittest.skipIf(not utc.ENABLE_SHT31_UNIT_TESTS, "sht31 unit tests are disabled")
 class Sht31FlaskServerSensorUnit(utc.UnitTest):
     """Test suite for SHT31 Flask Server Sensors class."""
 
@@ -690,7 +690,7 @@ class Sht31FlaskServerSensorUnit(utc.UnitTest):
         self.assertIsInstance(result, int)
 
 
-@unittest.skipIf(not utc.ENABLE_SHT31_TESTS, "sht31 tests are disabled")
+@unittest.skipIf(not utc.ENABLE_SHT31_UNIT_TESTS, "sht31 unit tests are disabled")
 class TestSht31FlaskEndpoints(utc.UnitTest):
     """Test suite for SHT31 Flask endpoint classes."""
 
