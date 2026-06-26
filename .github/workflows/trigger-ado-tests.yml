@@ -151,7 +151,7 @@ jobs:
             "definition": {
               "id": ${ADO_PIPELINE_ID}
             },
-            "sourceBranch": "refs/pull/${PR_NUMBER}/merge",
+            "sourceBranch": "refs/heads/${PR_BRANCH}",
             "sourceVersion": "${PR_COMMIT}",
             "reason": "pullRequest",
             "parameters": "{}",
@@ -168,7 +168,7 @@ jobs:
             "definition": {
               "id": ${ADO_PIPELINE_ID}
             },
-            "sourceBranch": "refs/pull/${PR_NUMBER}/merge",
+            "sourceBranch": "refs/heads/${PR_BRANCH}",
             "sourceVersion": "${PR_COMMIT}",
             "reason": "pullRequest",
             "parameters": "{}"
