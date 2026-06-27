@@ -6,7 +6,7 @@ This module provides functions to fetch outdoor weather data using zip codes.
 
 # built-in imports
 import os
-from typing import Dict, Optional, Union
+from typing import Dict, Optional
 
 # third-party imports
 import requests
@@ -23,7 +23,7 @@ class WeatherError(Exception):
 
 def get_outdoor_weather(
     zip_code: str, api_key: Optional[str] = None
-) -> Dict[str, Union[float, str]]:
+) -> Dict[str, float | str]:
     """
     Get outdoor temperature and humidity data for a given zip code.
 
@@ -35,7 +35,7 @@ def get_outdoor_weather(
         api_key (str, optional): OpenWeatherMap API key
 
     Returns:
-        Dict[str, Union[float, str]]: Dictionary containing:
+        Dict[str, float | str]: Dictionary containing:
             - outdoor_temp: Temperature in Fahrenheit
             - outdoor_humidity: Relative humidity in %
             - outdoor_conditions: Weather conditions description
@@ -107,7 +107,7 @@ def get_weather_api_key() -> Optional[str]:
     return os.environ.get("WEATHER_API_KEY")
 
 
-def format_weather_display(weather_data: Dict[str, Union[float, str]]) -> str:
+def format_weather_display(weather_data: Dict[str, float | str]) -> str:
     """
     Format weather data for display in thermostat reporting.
 

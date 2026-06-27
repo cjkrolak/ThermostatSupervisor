@@ -44,6 +44,17 @@ class TestSSLCertificate(unittest.TestCase):
         self.assertTrue(ssl_dir.exists())
         self.assertTrue(ssl_dir.is_dir())
 
+    def test_pem_marker_constants(self):
+        """Test PEM marker constants use expected certificate delimiters."""
+        self.assertEqual(
+            ssl_certificate.PEM_BEGIN_CERTIFICATE_MARKER,
+            "-----BEGIN CERTIFICATE-----",
+        )
+        self.assertEqual(
+            ssl_certificate.PEM_END_CERTIFICATE_MARKER,
+            "-----END CERTIFICATE-----",
+        )
+
     def test_generate_self_signed_certificate(self):
         """Test self-signed certificate generation."""
         cert_path, key_path = ssl_certificate.generate_self_signed_certificate(
@@ -217,7 +228,7 @@ MQswCQYDVQQGEwJBVTETMBEGA1UECAwKU29tZS1TdGF0ZTEhMB8GA1UECgwYSW50
         with open(cert_path, "r") as f:
             content = f.read()
             self.assertIn("-----BEGIN CERTIFICATE-----", content)
-            self.assertIn("-----END CERTIFICATE-----", content)
+            self.assertIn(ssl_certificate.PEM_END_CERTIFICATE_MARKER, content)
 
     @patch("src.ssl_certificate.subprocess.run")
     def test_download_ssl_certificate_failure(self, mock_subprocess):

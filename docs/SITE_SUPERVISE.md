@@ -201,7 +201,7 @@ The site configuration is a Python dictionary with the following structure:
 
 #### Per-Thermostat Fields
 - **thermostat_type** (str, required): Type of thermostat (must be in `SUPPORTED_THERMOSTATS`)
-  - Supported types: `emulator`, `honeywell`, `kumocloud`, `kumocloudv3`, `kumolocal`, `mmm`, `nest`, `sht31`, `blink`
+  - Supported types: `emulator`, `honeywell`, `kumocloud`, `kumolocal`, `mmm`, `nest`, `sht31`, `blink`
 - **zone** (int, required): Zone number for the thermostat
 - **enabled** (bool, optional): Whether to include this thermostat in supervision (default: `True`)
 - **poll_time** (int, optional): Polling interval in seconds (default varies by thermostat)

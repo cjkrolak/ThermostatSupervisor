@@ -214,6 +214,53 @@ class Test(utc.UnitTest):
         # The zone_name gets modified to include thermostat type and zone number
         self.assertTrue(api.uip.zone_name.startswith("emulator"))
 
+    def test_module_entry_point_parses_zone_from_sys_argv(self):
+        """Verify module entry points keep the configured thermostat type."""
+        from unittest.mock import patch
+
+        with patch.object(
+            sys, "argv", ["emulator.py", str(emulator_config.default_zone)]
+        ):
+            uip = api.UserInputs(
+                argv_list=None,
+                thermostat_type=emulator_config.ALIAS,
+                suppress_warnings=True,
+            )
+
+        zone_number = uip.get_user_inputs(uip.zone_name, api.input_flds.zone)
+        thermostat_type = uip.get_user_inputs(
+            uip.zone_name, api.input_flds.thermostat_type
+        )
+
+        self.assertEqual(emulator_config.ALIAS, thermostat_type)
+        self.assertIsInstance(zone_number, int)
+        self.assertEqual(emulator_config.default_zone, zone_number)
+
+    def test_verify_required_env_variables_blink_2fa_optional(self):
+        """Verify blink pre-check does not require BLINK_2FA."""
+        from unittest.mock import patch
+
+        with patch.dict(
+            "os.environ",
+            {"BLINK_USERNAME": "test_user", "BLINK_PASSWORD": "test_pass"},
+            clear=True,
+        ), patch("src.environment._read_supervisor_env_file", return_value={}):
+            self.assertTrue(
+                api.verify_required_env_variables("blink", "0", verbose=False)
+            )
+
+    def test_verify_required_env_variables_sht31_deferred_validation(self):
+        """Verify sht31 env validation is deferred to module runtime logic."""
+        with unittest.mock.patch.dict(
+            "os.environ", {}, clear=True
+        ), unittest.mock.patch(
+            "src.environment._read_supervisor_env_file",
+            return_value={},
+        ):
+            self.assertTrue(
+                api.verify_required_env_variables("sht31", "0", verbose=False)
+            )
+
 
 class RuntimeParameterTest(utc.RuntimeParameterTest):
     """API Runtime parameter tests."""

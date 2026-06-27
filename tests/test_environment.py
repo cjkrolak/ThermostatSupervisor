@@ -34,6 +34,36 @@ class EnvironmentTests(utc.UnitTest):
         return_val = env.is_interactive_environment()
         self.assertIsInstance(return_val, bool, "return value is not a boolean")
 
+    @unittest.mock.patch("src.environment.psutil.Process")
+    def test_is_interactive_environment_powershell_not_interactive(self, mock_proc):
+        """
+        Verify PowerShell is treated as a non-interactive parent process.
+        """
+        mock_parent = unittest.mock.Mock()
+        mock_parent.name.return_value = "powershell.exe"
+        mock_proc.return_value.parent.return_value = mock_parent
+        self.assertFalse(env.is_interactive_environment())
+
+    @unittest.mock.patch("src.environment.psutil.Process")
+    def test_is_interactive_environment_unknown_parent_not_interactive(self, mock_proc):
+        """
+        Verify unknown parent processes do not raise and default to not interactive.
+        """
+        mock_parent = unittest.mock.Mock()
+        mock_parent.name.return_value = "some_unknown_parent.exe"
+        mock_proc.return_value.parent.return_value = mock_parent
+        self.assertFalse(env.is_interactive_environment())
+
+    @unittest.mock.patch("src.environment.psutil.Process")
+    def test_is_interactive_environment_pycharm_is_interactive(self, mock_proc):
+        """
+        Verify known IDE parent process is treated as interactive.
+        """
+        mock_parent = unittest.mock.Mock()
+        mock_parent.name.return_value = "pycharm.exe"
+        mock_proc.return_value.parent.return_value = mock_parent
+        self.assertTrue(env.is_interactive_environment())
+
     def test_get_env_variable_with_default(self):
         """
         Test get_env_variable() with default value parameter.
@@ -220,6 +250,46 @@ KEY4=value4=with=equals
 
         finally:
             # Cleanup
+            os.chdir(original_cwd)
+            shutil.rmtree(test_dir, ignore_errors=True)
+
+    def test_read_supervisor_env_file_bom(self):
+        """
+        Test that _read_supervisor_env_file() handles UTF-8 BOM correctly.
+
+        Windows Notepad and many Windows editors save UTF-8 files with a
+        Byte Order Mark (BOM: \\xef\\xbb\\xbf / \\ufeff) prepended.  When the
+        file is opened with ``encoding='utf-8'`` the BOM is not stripped,
+        causing the first key to become ``\\ufeffKEY`` instead of ``KEY`` and
+        silently producing a lookup miss.  Opening with ``encoding='utf-8-sig'``
+        strips the BOM automatically.
+        """
+        test_dir = tempfile.mkdtemp()
+        original_cwd = os.getcwd()
+
+        try:
+            os.chdir(test_dir)
+
+            # Write the file with an explicit UTF-8 BOM prefix so the test
+            # works on both Windows and Linux.
+            bom = b"\xef\xbb\xbf"
+            content = b"BLINK_USERNAME=user@example.com\nBLINK_PASSWORD=secret\n"
+            with open("supervisor-env.txt", "wb") as f:
+                f.write(bom + content)
+
+            result = getattr(env, "_read_supervisor_env_file")()
+
+            # With utf-8-sig encoding the BOM must be stripped, so the keys
+            # must match exactly.
+            self.assertIn(
+                "BLINK_USERNAME",
+                result,
+                "BLINK_USERNAME key not found; BOM may not have been stripped",
+            )
+            self.assertEqual(result["BLINK_USERNAME"], "user@example.com")
+            self.assertEqual(result["BLINK_PASSWORD"], "secret")
+
+        finally:
             os.chdir(original_cwd)
             shutil.rmtree(test_dir, ignore_errors=True)
 

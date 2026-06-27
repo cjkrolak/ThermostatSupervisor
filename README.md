@@ -15,8 +15,7 @@ supervisor to detect and correct thermostat deviations<br/>
 2. 3M50 thermostat on local net (user must provide local IP address of each 3m50 thermostat zone).
 3. SHT31 temperature sensor either locally or remote (user must provide local/remote IP address in environment variables and setup firewall port routing if remote).
 4. Mitsubishi ductless thermostat through KumoCloud on remote network (monitoring) or local network (monitoring and control).
-   - KumoCloud (legacy API) - static zone assignments
-   - KumoCloudv3 (new v3 API) - dynamic zone assignments with improved functionality
+   - KumoCloud (v3 API) - dynamic zone assignments with improved functionality
 5. Blink camera temperature sensors.
 6. Nest thermostats.
 
@@ -27,12 +26,14 @@ supervisor to detect and correct thermostat deviations<br/>
 4. supervisor_flask_server not currently working on Linux server.
 
 # Build Information:
+See [Build and Release Process](docs/build-and-release.md) for detailed release instructions.
+
 ## dependencies:
 pyhtcc for Honeywell thermostats (pip3 install pyhtcc)<br/>
 radiotherm for 3m50 thermostats (mhrivnak/radiotherm or pip3 install radiotherm)<br/>
 flask, flask-resful, and fask-wtf for sht31 flask server<br/>
 flask and flask-wtf for supervisor flask server<br/>
-pykumo for kumocloud<br/>
+pykumo for kumocloud (KumoCloud v3 API) and kumolocal<br/>
 blinkpy for blink camera temp sensor support<br/>
 python-google-nest for nest temp sensor support<br/>
 coverage for code coverage analysis<br/>
@@ -47,7 +48,7 @@ docker run --rm -it --privileged --env-file 'envfile' 'username'/src:'tag' src.'
 * '--privileged' runs in privileged mode, this may be required to avoid PermissionErrors with device objects<br/>
 * 'username' is your DockerHub username<br/>
 * 'tag' is the Docker image tag (e.g. 'develop', 'main', etc.)<br/>
-* 'module' is the module to run, (e.g. 'supervise', 'honeywell', 'kumocloud', 'kumocloudv3', etc.).<br/>
+* 'module' is the module to run, (e.g. 'supervise', 'honeywell', 'kumocloud', etc.).<br/>
 * 'runtime parameters' are supervise runtime parameters as specified below.<br/>
 
 **Note:** The Docker container is configured to use the timezone specified in the `timezone` file (currently America/Chicago). This ensures that time-based functions display the correct local time instead of UTC.
@@ -78,6 +79,7 @@ Environment variables required depend on the thermostat being used.<br/>
   * 'BLINK_USERNAME': username for Blink account
   * 'BLINK_PASSWORD': password for Blink account
   * 'BLINK_2FA': 2 factor auth string for Blink account
+  * Setup details for credentials, 2FA, zone mapping, and precedence: [Blink User Setup](docs/blink-user.md)
 * Nest thermostat requires the 'NEST' env vars or env vars supplied via a json file:
   * 'GCLOUD_CLIENT_ID': client ID from Google Clout OAuth credentials
   * 'GCLOUD_CLIENT_SECRET': client secret from Google Clout OAuth credentials
@@ -101,13 +103,13 @@ Environment variables required depend on the thermostat being used.<br/>
 This is the main entry point script.<br/>
 runtime parameters can be specified to override defaults either via single dash named parameters or values in order:<br/>
 * '-h'= help screen
-* argv[1] or '-t'= Thermostat type, currently support "honeywell", "mmm50", "sht31", "kumocloud", "kumocloudv3", "kumolocal" and "blink".  Default is "honeywell".
+* argv[1] or '-t'= Thermostat type, currently support "honeywell", "mmm50", "sht31", "kumocloud", "kumolocal" and "blink".  Default is "honeywell".
 * argv[2] or '-z'= zone, currently support:
   * honeywell = zone 0 only
   * 3m50 = zones [0,1] on local net
   * sht31: 0 = local net, 1 = remote URL
-  * kumocloud, kumolocal: [0,1]
-  * kumocloudv3: [0,1] (dynamically assigned based on v3 API response)
+* kumocloud, kumolocal: [0,1,2]
+  * kumocloud: [0,1,2] (dynamically assigned based on the v3 API response)
   * blink = [0,1,2,3,4,5,6,7,8]
   * emulator = zone 0 only
 * argv[3] or '-p'= poll time in seconds (default is thermostat-specific)
@@ -198,17 +200,11 @@ measurements=number of measurements to average (default=10)<br/>
 seed=seed value for fabricated data in unit test mode (default=0x7F)<br/>
 
 ## kumocloud.py:
-Script will connect to Mitsubishi ductless thermostat through kumocloud account only.<br/>
-Default poll time is currently set to 10 minutes.<br/>
-Zone number refers to the thermostat order in kumocloud, 0=first thermostat data returned, 1=second thermostat, etc.<br/><br/>
-command line usage:  "*python -m src.kumocloud \<thermostat type\> \<zone\>*"
-
-## kumocloudv3.py:
 Script will connect to Mitsubishi ductless thermostat through the new KumoCloud v3 API.<br/>
 Default poll time is currently set to 18 seconds.<br/>
 Zone assignments are dynamically discovered from the v3 API and can vary between installations.<br/>
 Uses the same login credentials as legacy kumocloud but provides improved functionality and dynamic zone management.<br/><br/>
-command line usage:  "*python -m src.kumocloudv3 \<thermostat type\> \<zone\>*"
+command line usage:  "*python -m src.kumocloud \<thermostat type\> \<zone\>*"
 
 ## kumolocal.py:
 Script will connect to Mitsubishi ductless thermostat through kumocloud account and local network.<br/>
@@ -221,6 +217,7 @@ Script will connect to Blink camera through Blink account.<br/>
 Default poll time is currently set to 10 minutes.<br/>
 Zone number refers to the thermostat order in Blink server, 0=first thermostat data returned, 1=second thermostat, etc.<br/><br/>
 command line usage:  "*python -m src.blink \<thermostat type\> \<zone\>*"
+Blink setup reference: [docs/blink-user.md](docs/blink-user.md)
 
 ## nest.py:
 Script will connect to nest thermostats through Google Device Access console account.<br/>

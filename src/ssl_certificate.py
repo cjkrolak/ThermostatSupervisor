@@ -17,6 +17,9 @@ from typing import Tuple, Optional, List
 # local imports
 from src import utilities as util
 
+PEM_BEGIN_CERTIFICATE_MARKER = "-----BEGIN CERTIFICATE-----"
+PEM_END_CERTIFICATE_MARKER = "-----END CERTIFICATE-----"
+
 
 def get_ssl_cert_directory() -> pathlib.Path:
     """Get the directory where SSL certificates should be stored.
@@ -290,8 +293,8 @@ def validate_ssl_certificate(cert_path: pathlib.Path) -> bool:
             )
             return False
         # Check if certificate has proper PEM markers
-        has_begin = "-----BEGIN CERTIFICATE-----" in cert_content
-        has_end = "-----END CERTIFICATE-----" in cert_content
+        has_begin = PEM_BEGIN_CERTIFICATE_MARKER in cert_content
+        has_end = PEM_END_CERTIFICATE_MARKER in cert_content
         if not has_begin or not has_end:
             util.log_msg(
                 f"Certificate validation failed: missing PEM markers "
@@ -403,14 +406,13 @@ def download_ssl_certificate(hostname: str, port: int = 443) -> pathlib.Path:
 
         # Extract the certificate from the output
         output = result.stdout
-        cert_start = output.find("-----BEGIN CERTIFICATE-----")
-        cert_end = output.find("-----END CERTIFICATE-----") + len(
-            "-----END CERTIFICATE-----"
-        )
+        cert_start = output.find(PEM_BEGIN_CERTIFICATE_MARKER)
+        cert_end_pos = output.find(PEM_END_CERTIFICATE_MARKER)
 
-        if cert_start == -1 or cert_end == -1:
+        if cert_start == -1 or cert_end_pos == -1:
             raise RuntimeError("Could not find certificate in OpenSSL output")
 
+        cert_end = cert_end_pos + len(PEM_END_CERTIFICATE_MARKER)
         cert_pem = output[cert_start:cert_end]
 
         # Write certificate to file
@@ -530,7 +532,7 @@ def _import_cert_linux(cert_path: pathlib.Path) -> bool:
     if not imported:
         # Fallback: set environment variable
         util.log_msg(
-            "Could not import to system store, using environment variable " "fallback",
+            "Could not import to system store, using environment variable fallback",
             mode=util.STDOUT_LOG,
         )
         # This would typically be set by the calling script

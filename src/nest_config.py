@@ -7,6 +7,8 @@ ALIAS = "nest"
 # thermostat zones
 MAIN_LEVEL = 0  # zone 0
 BASEMENT = 1  # zone 1
+PORCH = 2  # zone 2
+GARAGE = 3  # zone 3
 
 # constants
 MAX_HEAT_SETPOINT = 69.0
@@ -35,7 +37,7 @@ required_env_variables = {}
 supported_configs = {
     "module": "nest",
     "type": 7,
-    "zones": [MAIN_LEVEL, BASEMENT],
+    "zones": [MAIN_LEVEL, BASEMENT, PORCH, GARAGE],
     "modes": [
         "OFF_MODE",
         "HEAT_MODE",
@@ -62,6 +64,16 @@ metadata = {
     BASEMENT: {
         "ip_address": "192.168.86.236",  # local IP, for ref only.
         "zone_name": "Basement Thermostat",  # customize for your site.
+        "host_name": "tbd",  # used for DNS lookup
+    },
+    PORCH: {
+        "ip_address": "tbd",  # local IP, for ref only.
+        "zone_name": "Porch Thermostat",  # customize for your site.
+        "host_name": "tbd",  # used for DNS lookup
+    },
+    GARAGE: {
+        "ip_address": "tbd",  # local IP, for ref only.
+        "zone_name": "Garage Thermostat",  # customize for your site.
         "host_name": "tbd",  # used for DNS lookup
     },
 }
@@ -97,12 +109,12 @@ argv = [
 
 # force use of credentials.json file for credentials
 use_credentials_file = False
-credentials_file_location = ".//credentials.json"
+credentials_file_location = "./credentials.json"
 
 # data caching parameters
 # 20 sec. cache period needed to avoid spamming nest server.
 cache_period_sec = 20.0  # cache period for data, min 5 sec.
-cache_file_location = ".//token_cache.json"  # oauth credentials
+cache_file_location = "./token_cache.json"  # oauth credentials
 
 # flag to check thermostat response time during basic checkout
 check_response_time = False

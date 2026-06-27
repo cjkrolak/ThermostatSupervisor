@@ -37,9 +37,9 @@ ENABLE_SITE2_TESTS = True  # site2 tests enabled
 ENABLE_HONEYWELL_TESTS = ENABLE_SITE1_TESTS  # noqa: PLR0133
 ENABLE_KUMOLOCAL_TESTS = False  # noqa: PLR0133
 ENABLE_KUMOCLOUD_TESTS = ENABLE_SITE2_TESTS  # noqa: PLR0133
-ENABLE_KUMOCLOUDV3_TESTS = ENABLE_SITE2_TESTS  # noqa: PLR0133
 ENABLE_MMM_TESTS = False  # noqa: PLR0133
-ENABLE_SHT31_TESTS = False  # noqa: PLR0133
+ENABLE_SHT31_UNIT_TESTS = True  # unit tests use mocks, no hardware required
+ENABLE_SHT31_TESTS = False  # noqa: PLR0133  # integration tests require hardware
 ENABLE_BLINK_TESTS = False  # Blink cameras, TODO #638
 # nest thermostats
 ENABLE_NEST_TESTS = False  # Nest thermostats, TODO #638

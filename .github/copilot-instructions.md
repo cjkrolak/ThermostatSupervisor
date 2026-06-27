@@ -18,6 +18,8 @@ This project is a **Thermostat Supervisor** application that:
 - Use the `typing` module for type annotations (e.g., `List[str]`,
   `Dict[str, int]`).
 - Break down complex functions into smaller, more manageable functions.
+- Keep cyclomatic complexity for every new or modified function at **15 or
+  lower** (use helper functions instead of adding nested branches).
 
 ### General Instructions
 - Always prioritize readability and clarity.
@@ -95,6 +97,10 @@ This project is a **Thermostat Supervisor** application that:
 - **MANDATORY**: All changes MUST be thoroughly tested before committing.
 - **ZERO tolerance for untested code**: Every change must be validated before
   commit.
+- **MANDATORY linting**: Run `flake8 --max-line-length=88` on all modified
+  Python files before every commit. **No commit may introduce new flake8
+  errors.** Fix all E501 (line too long), F401 (unused import), and other
+  violations before committing.
 - **Test workflows and scripts locally**:
   - For shell scripts: Run in a test shell to verify syntax and logic
   - For YAML workflows: Test bash scripts extracted from workflow files
@@ -287,7 +293,7 @@ This project is a **Thermostat Supervisor** application that:
 
 ### Docker and Containerization Best Practices
 - **MANDATORY**: All Docker changes MUST follow security best practices defined 
-  in `DOCKER_SECURITY.md`.
+  in `docs/docker-security.md`.
 - **ALWAYS run** `security_test.sh` to validate Docker security configurations 
   before committing.
 - Follow the existing secure Docker configurations:
@@ -362,4 +368,3 @@ especially important when:
   bash)
 - Chained commands where later parameters depend on earlier results
 - Interactive bash sessions using write_bash/read_bash
-

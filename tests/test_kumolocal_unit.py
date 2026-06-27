@@ -12,6 +12,7 @@ import unittest
 
 # local imports
 from src import kumolocal
+from src import kumo_common_zones
 from src import kumolocal_config
 from tests import unit_test_common as utc
 
@@ -201,6 +202,252 @@ class LocalNetworkDetectionUnitTest(utc.UnitTest):
         except ImportError:
             self.skipTest("kumolocal module not available for testing")
 
+    def test_get_zone_name_does_not_mutate_global_metadata(self):
+        """get_zone_name returns device name without mutating config metadata."""
+        from unittest.mock import MagicMock
+
+        zone_number = kumolocal_config.LIVING_ROOM
+        original_name = kumolocal_config.metadata[zone_number]["zone_name"]
+
+        zone = kumolocal.ThermostatZone.__new__(kumolocal.ThermostatZone)
+        zone.zone_number = zone_number
+        zone.device_id = MagicMock()
+        zone.device_id.get_name.return_value = "Main Level"
+
+        def _noop_refresh(*args, **kwargs):
+            return None
+
+        zone.refresh_zone_info = _noop_refresh  # type: ignore[method-assign]
+
+        returned = zone.get_zone_name()
+
+        self.assertEqual(returned, "Main Level")
+        self.assertEqual(
+            kumolocal_config.metadata[zone_number]["zone_name"],
+            original_name,
+            "kumolocal_config.metadata['zone_name'] should remain configuration-only",
+        )
+
+    def test_detect_local_network_availability_preserves_configured_ips(self):
+        """Availability detection must not rewrite configured IPs by cloud order."""
+        thermostat = kumolocal.ThermostatClass.__new__(kumolocal.ThermostatClass)
+        thermostat.verbose = False
+
+        living_room_ip = kumolocal_config.metadata[kumolocal_config.LIVING_ROOM][
+            "ip_address"
+        ]
+        kitchen_ip = kumolocal_config.metadata[kumolocal_config.KITCHEN]["ip_address"]
+        basement_ip = kumolocal_config.metadata[kumolocal_config.BASEMENT]["ip_address"]
+
+        serials = ["serial-basement", "serial-kitchen", "serial-living"]
+        thermostat.get_indoor_units = lambda: serials  # type: ignore[method-assign]
+        thermostat.get_name = lambda serial: {  # type: ignore[method-assign]
+            "serial-basement": "Basement",
+            "serial-kitchen": "Kitchen",
+            "serial-living": "Living Room",
+        }[serial]
+        thermostat.get_address = lambda serial: {  # type: ignore[method-assign]
+            "serial-basement": basement_ip,
+            "serial-kitchen": kitchen_ip,
+            "serial-living": living_room_ip,
+        }[serial]
+
+        original_is_host_on_local_net = kumolocal.util.is_host_on_local_net
+        kumolocal.util.is_host_on_local_net = lambda **kwargs: (False, None)
+        try:
+            thermostat.detect_local_network_availability()
+        finally:
+            kumolocal.util.is_host_on_local_net = original_is_host_on_local_net
+
+        self.assertEqual(
+            kumolocal_config.metadata[kumolocal_config.LIVING_ROOM]["ip_address"],
+            living_room_ip,
+        )
+        self.assertEqual(
+            kumolocal_config.metadata[kumolocal_config.KITCHEN]["ip_address"],
+            kitchen_ip,
+        )
+        self.assertEqual(
+            kumolocal_config.metadata[kumolocal_config.BASEMENT]["ip_address"],
+            basement_ip,
+        )
+
+    def test_process_zone_availability_matches_zone_by_name_when_ip_missing(self):
+        """Availability detection should still update the right zone by device name."""
+        thermostat = kumolocal.ThermostatClass.__new__(kumolocal.ThermostatClass)
+        thermostat.verbose = False
+        thermostat.get_name = (  # type: ignore[method-assign]
+            lambda serial: "Living Room"
+        )
+        thermostat.get_address = lambda serial: None  # type: ignore[method-assign]
+
+        kumolocal_config.metadata[kumolocal_config.LIVING_ROOM][
+            "local_net_available"
+        ] = None
+        kumolocal_config.metadata[kumolocal_config.KITCHEN][
+            "local_net_available"
+        ] = None
+
+        thermostat._process_zone_availability("serial-living")
+
+        self.assertFalse(
+            kumolocal_config.metadata[kumolocal_config.LIVING_ROOM][
+                "local_net_available"
+            ]
+        )
+        self.assertIsNone(
+            kumolocal_config.metadata[kumolocal_config.KITCHEN]["local_net_available"]
+        )
+
+
+class KumolocalConfigUnitTest(utc.UnitTest):
+    """Unit tests for kumolocal config zone definitions."""
+
+    def test_kumolocal_supports_three_zones(self):
+        """Test kumolocal supports 3 configured zones."""
+        self.assertEqual(
+            kumolocal_config.supported_configs["zones"],
+            [
+                kumolocal_config.LIVING_ROOM,
+                kumolocal_config.KITCHEN,
+                kumolocal_config.BASEMENT,
+            ],
+        )
+        self.assertEqual(len(kumolocal_config.metadata), 3)
+
+    def test_kumolocal_zone_names_include_kitchen(self):
+        """Test kumolocal metadata includes the kitchen zone."""
+        self.assertEqual(
+            kumolocal_config.metadata[kumolocal_config.LIVING_ROOM]["zone_name"],
+            kumo_common_zones.ZONE_NAME_LIVING_ROOM,
+        )
+        self.assertEqual(
+            kumolocal_config.metadata[kumolocal_config.KITCHEN]["zone_name"],
+            kumo_common_zones.ZONE_NAME_KITCHEN,
+        )
+        self.assertEqual(
+            kumolocal_config.metadata[kumolocal_config.BASEMENT]["zone_name"],
+            kumo_common_zones.ZONE_NAME_BASEMENT,
+        )
+
+
+class IniParsingUnitTest(utc.UnitTest):
+    """Unit tests for load_ip_addresses_from_ini()."""
+
+    def setUp(self):
+        """Save original metadata IPs before each test."""
+        super().setUp()
+        self.print_test_name()
+        self.original_ips = {
+            zone_id: meta["ip_address"]
+            for zone_id, meta in kumolocal_config.metadata.items()
+        }
+
+    def tearDown(self):
+        """Restore original metadata IPs after each test."""
+        for zone_id, ip in self.original_ips.items():
+            kumolocal_config.metadata[zone_id]["ip_address"] = ip
+        super().tearDown()
+
+    def _write_ini(self, path, content):
+        """Write content to a temp INI file."""
+        with open(path, "w") as f:
+            f.write(content)
+
+    def test_load_ip_addresses_returns_true_when_file_found(self):
+        """Test load_ip_addresses_from_ini returns True when the INI file exists."""
+        import tempfile
+        content = (
+            "[Living Room]\nip_address = 10.0.0.1\n"
+            "[Kitchen]\nip_address = 10.0.0.2\n"
+            "[Basement]\nip_address = 10.0.0.3\n"
+        )
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".ini", delete=False
+        ) as tmp:
+            tmp.write(content)
+            tmp_path = tmp.name
+        try:
+            result = kumolocal_config.load_ip_addresses_from_ini(tmp_path)
+            self.assertTrue(result)
+        finally:
+            import os
+            os.unlink(tmp_path)
+
+    def test_load_ip_addresses_returns_false_when_file_missing(self):
+        """Test load_ip_addresses_from_ini returns False when the file is missing."""
+        result = kumolocal_config.load_ip_addresses_from_ini(
+            "/tmp/nonexistent_kumolocal.ini"
+        )
+        self.assertFalse(result)
+
+    def test_load_ip_addresses_updates_metadata_from_ini(self):
+        """Test that IPs in the INI file are loaded into metadata."""
+        import tempfile
+        content = (
+            "[Living Room]\nip_address = 10.0.1.1\n"
+            "[Kitchen]\nip_address = 10.0.1.2\n"
+            "[Basement]\nip_address = 10.0.1.3\n"
+        )
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".ini", delete=False
+        ) as tmp:
+            tmp.write(content)
+            tmp_path = tmp.name
+        try:
+            kumolocal_config.load_ip_addresses_from_ini(tmp_path)
+            self.assertEqual(
+                kumolocal_config.metadata[kumolocal_config.LIVING_ROOM]["ip_address"],
+                "10.0.1.1",
+            )
+            self.assertEqual(
+                kumolocal_config.metadata[kumolocal_config.KITCHEN]["ip_address"],
+                "10.0.1.2",
+            )
+            self.assertEqual(
+                kumolocal_config.metadata[kumolocal_config.BASEMENT]["ip_address"],
+                "10.0.1.3",
+            )
+        finally:
+            import os
+            os.unlink(tmp_path)
+
+    def test_load_ip_addresses_keeps_defaults_when_file_missing(self):
+        """Test that default IPs are preserved when the INI file is absent."""
+        defaults = {
+            zone_id: meta["ip_address"]
+            for zone_id, meta in kumolocal_config.metadata.items()
+        }
+        kumolocal_config.load_ip_addresses_from_ini(
+            "/tmp/nonexistent_kumolocal.ini"
+        )
+        for zone_id, ip in defaults.items():
+            self.assertEqual(
+                kumolocal_config.metadata[zone_id]["ip_address"], ip
+            )
+
+    def test_load_ip_addresses_ignores_unknown_sections(self):
+        """Test that sections not matching any zone are silently ignored."""
+        import tempfile
+        content = (
+            "[Living Room]\nip_address = 10.0.2.1\n"
+            "[UnknownZone]\nip_address = 10.0.2.99\n"
+        )
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".ini", delete=False
+        ) as tmp:
+            tmp.write(content)
+            tmp_path = tmp.name
+        try:
+            kumolocal_config.load_ip_addresses_from_ini(tmp_path)
+            self.assertEqual(
+                kumolocal_config.metadata[kumolocal_config.LIVING_ROOM]["ip_address"],
+                "10.0.2.1",
+            )
+        finally:
+            import os
+            os.unlink(tmp_path)
+
 
 class KeyErrorHandlingUnitTest(utc.UnitTest):
     """
@@ -325,6 +572,446 @@ class KeyErrorHandlingUnitTest(utc.UnitTest):
             return expected_msg in error_msg
 
         return False
+
+
+class TargetZoneIdResolutionUnitTest(utc.UnitTest):
+    """Unit tests for kumolocal target zone ID resolution."""
+
+    def test_get_target_zone_id_normalizes_zone_name(self):
+        """Test get_target_zone_id matches zone names with format differences."""
+        thermostat = kumolocal.ThermostatClass.__new__(kumolocal.ThermostatClass)
+        thermostat.zone_name = "Living Room"
+        thermostat.zone_number = 0
+        thermostat.device_id = None
+        thermostat.verbose = False
+        thermostat.make_pykumos = lambda **kwargs: {  # type: ignore[method-assign]
+            "MainLevel": "dev-main",
+            "Kitchen": "dev-kitchen",
+        }
+
+        device_id = thermostat.get_target_zone_id(0)
+
+        self.assertEqual(device_id, "dev-main")
+        self.assertEqual(thermostat.zone_name, "MainLevel")
+
+    def test_get_target_zone_id_falls_back_to_zone_index(self):
+        """Test get_target_zone_id falls back to zone index when names differ."""
+        thermostat = kumolocal.ThermostatClass.__new__(kumolocal.ThermostatClass)
+        thermostat.zone_name = "Living Room"
+        thermostat.zone_number = 0
+        thermostat.device_id = None
+        thermostat.verbose = False
+        thermostat.make_pykumos = lambda **kwargs: {  # type: ignore[method-assign]
+            "Ground Floor": "dev-main",
+            "Kitchen": "dev-kitchen",
+        }
+
+        device_id = thermostat.get_target_zone_id(0)
+
+        self.assertEqual(device_id, "dev-main")
+        self.assertEqual(thermostat.zone_name, "Ground Floor")
+
+    def test_get_target_zone_id_raises_informative_keyerror(self):
+        """Test get_target_zone_id raises informative error when zone not found."""
+        thermostat = kumolocal.ThermostatClass.__new__(kumolocal.ThermostatClass)
+        thermostat.zone_name = "Living Room"
+        thermostat.zone_number = 5
+        thermostat.device_id = None
+        thermostat.verbose = False
+        thermostat.make_pykumos = lambda **kwargs: {  # type: ignore[method-assign]
+            "Basement": "dev-basement"
+        }
+
+        with self.assertRaisesRegex(
+            KeyError,
+            r"Configured zone name 'Living Room' was not found.*"
+            r"zone index 5 is out of valid range \[0\.\.0\]",
+        ):
+            thermostat.get_target_zone_id(5)
+
+    def test_get_target_zone_id_non_integer_zone_raises_keyerror(self):
+        """Test non-integer zone values don't trigger TypeError in fallback logic."""
+        thermostat = kumolocal.ThermostatClass.__new__(kumolocal.ThermostatClass)
+        thermostat.zone_name = "Living Room"
+        thermostat.zone_number = 0
+        thermostat.device_id = None
+        thermostat.verbose = False
+        thermostat.make_pykumos = lambda **kwargs: {  # type: ignore[method-assign]
+            "Basement": "dev-basement"
+        }
+
+        with self.assertRaisesRegex(
+            KeyError,
+            r"zone index 'invalid-zone' is out of valid range \[0\.\.0\]",
+        ):
+            thermostat.get_target_zone_id("invalid-zone")
+
+    def test_get_target_zone_id_calls_update_status_for_matched_zone_only(self):
+        """Test get_target_zone_id calls update_status only for the matched zone."""
+        from unittest.mock import MagicMock
+        thermostat = kumolocal.ThermostatClass.__new__(kumolocal.ThermostatClass)
+        thermostat.zone_name = "Basement"
+        thermostat.zone_number = 2
+        thermostat.device_id = None
+        thermostat.verbose = False
+        living_room_mock = MagicMock(name="LivingRoomPyKumo")
+        basement_mock = MagicMock(name="BasementPyKumo")
+        thermostat.make_pykumos = lambda **kwargs: {  # type: ignore[method-assign]
+            "Living Room": living_room_mock,
+            "Basement": basement_mock,
+        }
+
+        thermostat.get_target_zone_id(2)
+
+        basement_mock.update_status.assert_called_once()
+        living_room_mock.update_status.assert_not_called()
+
+    def test_get_target_zone_id_passes_init_update_status_false(self):
+        """Test get_target_zone_id calls make_pykumos with init_update_status=False."""
+        from unittest.mock import MagicMock
+        thermostat = kumolocal.ThermostatClass.__new__(kumolocal.ThermostatClass)
+        thermostat.zone_name = "Basement"
+        thermostat.zone_number = 2
+        thermostat.device_id = None
+        thermostat.verbose = False
+        basement_mock = MagicMock(name="BasementPyKumo")
+        mock_make_pykumos = MagicMock(return_value={"Basement": basement_mock})
+        thermostat.make_pykumos = mock_make_pykumos  # type: ignore[method-assign]
+
+        thermostat.get_target_zone_id(2)
+
+        mock_make_pykumos.assert_called_once_with(init_update_status=False)
+
+    def test_get_target_zone_id_prefers_configured_ip_over_zone_order(self):
+        """Configured IP matching should win before fallback to zone ordering."""
+        from unittest.mock import MagicMock
+
+        thermostat = kumolocal.ThermostatClass.__new__(kumolocal.ThermostatClass)
+        thermostat.zone_name = "Living Room"
+        thermostat.zone_number = kumolocal_config.LIVING_ROOM
+        thermostat.device_id = None
+        thermostat.verbose = False
+
+        expected_ip = kumolocal_config.metadata[kumolocal_config.LIVING_ROOM][
+            "ip_address"
+        ]
+        first_device = MagicMock(name="FirstPyKumo")
+        first_device._address = "10.0.0.99"
+        second_device = MagicMock(name="SecondPyKumo")
+        second_device._address = expected_ip
+        thermostat.make_pykumos = lambda **kwargs: {  # type: ignore[method-assign]
+            "Ground Floor": first_device,
+            "Upstairs": second_device,
+        }
+
+        device_id = thermostat.get_target_zone_id(kumolocal_config.LIVING_ROOM)
+
+        self.assertIs(device_id, second_device)
+        self.assertEqual(thermostat.zone_name, "Upstairs")
+        second_device.update_status.assert_called_once()
+        first_device.update_status.assert_not_called()
+
+    def test_get_target_zone_id_reapplies_configured_address(self):
+        """Selected device should be updated to the configured per-zone address."""
+        from unittest.mock import MagicMock
+
+        thermostat = kumolocal.ThermostatClass.__new__(kumolocal.ThermostatClass)
+        thermostat.zone_name = "Basement"
+        thermostat.zone_number = kumolocal_config.BASEMENT
+        thermostat.device_id = None
+        thermostat.verbose = False
+
+        basement_device = MagicMock(name="BasementPyKumo")
+        basement_device._address = "10.0.0.99"
+        thermostat.make_pykumos = lambda **kwargs: {  # type: ignore[method-assign]
+            "Basement": basement_device
+        }
+
+        thermostat.get_target_zone_id(kumolocal_config.BASEMENT)
+
+        self.assertEqual(
+            basement_device._address,
+            kumolocal_config.metadata[kumolocal_config.BASEMENT]["ip_address"],
+        )
+
+
+class ThermostatZoneModeUnitTest(utc.UnitTest):
+    """Unit tests for ThermostatZone mode methods when device data is unavailable."""
+
+    def _make_zone(self, mode_return_value):
+        """Create a ThermostatZone-like object with a mocked device_id."""
+
+        class MockDeviceId:
+            def get_mode(self_inner):
+                return mode_return_value
+
+        class MockThermostat:
+            device_id = MockDeviceId()
+            zone_number = 0
+            zone_name = "Living Room"
+
+            def get_target_zone_id(self_inner, zone_name):
+                return self_inner.device_id
+
+        zone = kumolocal.ThermostatZone.__new__(kumolocal.ThermostatZone)
+        zone.verbose = False
+        zone.zone_number = 0
+        zone.zone_name = "Living Room"
+        zone.fetch_interval_sec = 60
+        import time
+        zone.last_fetch_time = time.time() - 2 * zone.fetch_interval_sec
+        zone.device_id = MockDeviceId()
+        zone.Thermostat = MockThermostat()
+        # set up system_switch_position as the constructor would
+        from src import thermostat_common as tc
+        zone.system_switch_position = dict(
+            tc.ThermostatCommonZone.system_switch_position
+        )
+        zone.system_switch_position[tc.ThermostatCommonZone.COOL_MODE] = "cool"
+        zone.system_switch_position[tc.ThermostatCommonZone.HEAT_MODE] = "heat"
+        zone.system_switch_position[tc.ThermostatCommonZone.OFF_MODE] = "off"
+        zone.system_switch_position[tc.ThermostatCommonZone.DRY_MODE] = "dry"
+        zone.system_switch_position[tc.ThermostatCommonZone.AUTO_MODE] = "auto"
+        zone.system_switch_position[tc.ThermostatCommonZone.FAN_MODE] = "vent"
+        # override refresh_zone_info to avoid network calls
+        zone.refresh_zone_info = lambda force_refresh=False: None
+        return zone
+
+    def test_get_system_switch_position_returns_off_when_mode_is_none(self):
+        """get_system_switch_position returns 'off' when get_mode() returns None."""
+        zone = self._make_zone(mode_return_value=None)
+        result = zone.get_system_switch_position()
+        self.assertEqual(result, "off")
+
+    def test_get_system_switch_position_returns_mode_when_available(self):
+        """get_system_switch_position returns actual mode when get_mode() succeeds."""
+        zone = self._make_zone(mode_return_value="heat")
+        result = zone.get_system_switch_position()
+        self.assertEqual(result, "heat")
+
+    def test_is_power_on_returns_0_when_mode_is_none(self):
+        """is_power_on returns 0 (device unreachable) when get_mode() returns None."""
+        zone = self._make_zone(mode_return_value=None)
+        result = zone.is_power_on()
+        self.assertEqual(result, 0)
+
+    def test_is_power_on_returns_0_when_mode_is_off(self):
+        """Test is_power_on returns 0 when mode is 'off'."""
+        zone = self._make_zone(mode_return_value="off")
+        result = zone.is_power_on()
+        self.assertEqual(result, 0)
+
+    def test_is_power_on_returns_1_when_mode_is_heat(self):
+        """Test is_power_on returns 1 when mode is 'heat'."""
+        zone = self._make_zone(mode_return_value="heat")
+        result = zone.is_power_on()
+        self.assertEqual(result, 1)
+
+
+class LocalAddressUnitTest(utc.UnitTest):
+    """Unit tests for _apply_local_addresses and _fetch_if_needed override."""
+
+    def setUp(self):
+        """Setup for tests."""
+        super().setUp()
+        self.print_test_name()
+        import copy
+        self.original_metadata = copy.deepcopy(kumolocal_config.metadata)
+
+    def tearDown(self):
+        """Restore metadata after each test."""
+        kumolocal_config.metadata.clear()
+        kumolocal_config.metadata.update(self.original_metadata)
+        super().tearDown()
+
+    def _make_thermostat_class(self):
+        """Create a ThermostatClass instance without calling __init__."""
+        obj = kumolocal.ThermostatClass.__new__(kumolocal.ThermostatClass)
+        return obj
+
+    def test_apply_local_addresses_sets_address_for_matching_unit(self):
+        """Test _apply_local_addresses sets address for a unit whose label matches."""
+        from src import kumo_common_zones
+        obj = self._make_thermostat_class()
+        # Simulate a pykumo _units dict with a matching label but no address
+        obj._units = {
+            "SERIAL1": {"label": kumo_common_zones.ZONE_NAME_BASEMENT, "address": ""},
+        }
+        obj._apply_local_addresses()
+        expected_ip = kumolocal_config.metadata[kumolocal_config.BASEMENT]["ip_address"]
+        self.assertEqual(obj._units["SERIAL1"]["address"], expected_ip)
+
+    def test_apply_local_addresses_overwrites_stale_address(self):
+        """_apply_local_addresses overwrites a stale address for a matching unit."""
+        from src import kumo_common_zones
+        obj = self._make_thermostat_class()
+        obj._units = {
+            "SERIAL1": {
+                "label": kumo_common_zones.ZONE_NAME_LIVING_ROOM,
+                "address": "10.0.0.99",  # stale/wrong address
+            },
+        }
+        obj._apply_local_addresses()
+        expected_ip = kumolocal_config.metadata[
+            kumolocal_config.LIVING_ROOM]["ip_address"]
+        self.assertEqual(obj._units["SERIAL1"]["address"], expected_ip)
+
+    def test_apply_local_addresses_skips_zero_address(self):
+        """Test _apply_local_addresses skips zones with 0.0.0.0 IP."""
+        from src import kumo_common_zones
+        kumolocal_config.metadata[kumolocal_config.BASEMENT]["ip_address"] = "0.0.0.0"
+        obj = self._make_thermostat_class()
+        obj._units = {
+            "SERIAL1": {"label": kumo_common_zones.ZONE_NAME_BASEMENT, "address": ""},
+        }
+        obj._apply_local_addresses()
+        # Address should remain empty since config IP is 0.0.0.0
+        self.assertEqual(obj._units["SERIAL1"]["address"], "")
+
+    def test_apply_local_addresses_no_op_when_no_ips_configured(self):
+        """Test _apply_local_addresses does nothing when no IPs are configured."""
+        for meta in kumolocal_config.metadata.values():
+            meta["ip_address"] = None
+        obj = self._make_thermostat_class()
+        obj._units = {
+            "SERIAL1": {"label": "Basement", "address": ""},
+        }
+        obj._apply_local_addresses()
+        self.assertEqual(obj._units["SERIAL1"]["address"], "")
+
+    def test_fetch_if_needed_calls_try_setup_then_apply_addresses(self):
+        """Test _fetch_if_needed calls try_setup then _apply_local_addresses."""
+        from unittest.mock import patch
+        obj = self._make_thermostat_class()
+        obj._need_fetch = True
+        call_order = []
+
+        def mock_try_setup():
+            call_order.append("try_setup")
+
+        def mock_apply():
+            call_order.append("_apply_local_addresses")
+
+        with patch.object(obj, "try_setup", side_effect=mock_try_setup):
+            with patch.object(
+                obj, "_apply_local_addresses", side_effect=mock_apply
+            ):
+                obj._fetch_if_needed()
+
+        self.assertEqual(call_order, ["try_setup", "_apply_local_addresses"])
+
+    def test_fetch_if_needed_skips_try_setup_when_not_needed(self):
+        """Test _fetch_if_needed does not call try_setup when _need_fetch is False."""
+        from unittest.mock import MagicMock
+        obj = self._make_thermostat_class()
+        obj._need_fetch = False
+        obj.try_setup = MagicMock()
+        obj._fetch_if_needed()
+        obj.try_setup.assert_not_called()
+
+    def test_fetch_if_needed_skips_try_setup_when_units_already_loaded(self):
+        """Test _fetch_if_needed skips try_setup on refresh when _units is populated.
+
+        On periodic refreshes (_need_fetch set True by refresh_zone_info), try_setup
+        (which includes probe_ip for every device) is skipped to avoid unnecessary
+        connection attempts and timeout warnings for temporarily unreachable devices.
+        _apply_local_addresses is also skipped on refresh (addresses were already
+        applied during initialization and are stored on the existing PyKumo objects).
+        """
+        from unittest.mock import MagicMock
+        obj = self._make_thermostat_class()
+        obj._need_fetch = True
+        # Simulate already-loaded units (credentials present from initial setup)
+        obj._units = {"SERIAL1": {"label": "Basement", "address": ""}}
+        obj.try_setup = MagicMock()
+        obj._apply_local_addresses = MagicMock()
+
+        obj._fetch_if_needed()
+
+        obj.try_setup.assert_not_called()
+        obj._apply_local_addresses.assert_not_called()
+        self.assertFalse(obj._need_fetch)
+
+    def test_fetch_if_needed_calls_try_setup_when_units_empty(self):
+        """Test _fetch_if_needed calls try_setup on first init when _units is empty."""
+        from unittest.mock import patch
+        obj = self._make_thermostat_class()
+        obj._need_fetch = True
+        obj._units = {}  # empty — first initialization
+
+        def mock_try_setup():
+            pass  # try_setup sets _need_fetch=False in production
+
+        with patch.object(obj, "try_setup", side_effect=mock_try_setup) as mock_ts:
+            with patch.object(obj, "_apply_local_addresses"):
+                obj._fetch_if_needed()
+
+        mock_ts.assert_called_once()
+
+    def _make_zone_for_refresh(self):
+        """Create a ThermostatZone-like object with mocked Thermostat and device."""
+        import time
+        from unittest.mock import MagicMock
+
+        zone = kumolocal.ThermostatZone.__new__(kumolocal.ThermostatZone)
+        zone.verbose = False
+        zone.zone_number = 1
+        zone.zone_name = "Kitchen"
+        zone.fetch_interval_sec = 60
+        zone.last_fetch_time = time.time() - 2 * zone.fetch_interval_sec  # stale
+
+        mock_device = MagicMock()
+        zone.device_id = mock_device
+
+        mock_thermostat = MagicMock()
+        mock_thermostat._need_fetch = False
+        zone.Thermostat = mock_thermostat
+
+        return zone, mock_device, mock_thermostat
+
+    def test_refresh_zone_info_calls_update_status_on_existing_device(self):
+        """refresh_zone_info reuses existing device, does not call get_target_zone_id.
+
+        On periodic refreshes, the existing PyKumo device object should be reused
+        and only update_status() called — no new PyKumo objects should be created
+        (which would trigger "Use default timeouts" and "Applied local address" log
+        noise on every poll cycle).
+        """
+        zone, mock_device, mock_thermostat = self._make_zone_for_refresh()
+
+        zone.refresh_zone_info()
+
+        mock_device.update_status.assert_called_once()
+        # get_target_zone_id must NOT be called on refresh
+        mock_thermostat.get_target_zone_id.assert_not_called()
+
+    def test_refresh_zone_info_skips_update_when_not_stale(self):
+        """Test refresh_zone_info does not call update_status when cache is fresh."""
+        import time
+        zone, mock_device, mock_thermostat = self._make_zone_for_refresh()
+        zone.last_fetch_time = time.time()  # fresh
+
+        zone.refresh_zone_info()
+
+        mock_device.update_status.assert_not_called()
+
+    def test_refresh_zone_info_force_refresh_calls_update_status(self):
+        """Test refresh_zone_info with force_refresh=True always calls update_status."""
+        import time
+        zone, mock_device, mock_thermostat = self._make_zone_for_refresh()
+        zone.last_fetch_time = time.time()  # would normally skip
+
+        zone.refresh_zone_info(force_refresh=True)
+
+        mock_device.update_status.assert_called_once()
+
+    def test_refresh_zone_info_handles_none_device_id_gracefully(self):
+        """Test refresh_zone_info does not crash when device_id is None."""
+        zone, mock_device, mock_thermostat = self._make_zone_for_refresh()
+        zone.device_id = None
+
+        # Should not raise
+        zone.refresh_zone_info()
 
 
 if __name__ == "__main__":

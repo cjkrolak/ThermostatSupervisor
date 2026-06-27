@@ -35,12 +35,14 @@ steps:
   - script: |
       python -m pip install --upgrade pip
       pip install -r requirements.txt
+      pip install -r requirements_dev.txt
       pip list
     displayName: Install dependencies
   # line length and extend-ignore options added for compatibility with black
   - script: |
       python -m pip install flake8 --upgrade
       flake8 --config=setup.cfg .
+      echo "##vso[task.setvariable variable=lintPassed]true"
     displayName: Run lint tests
   # python unit tests
   - script: |
@@ -79,7 +81,7 @@ steps:
     inputs:
       summaryFileLocation: coverage.xml
     displayName: Publish Code Coverage
-    condition: always()
+    condition: and(succeededOrFailed(), eq(variables['lintPassed'], 'true'))
   # Upload coverage.xml as GitHub artifact for SonarQube workflow
   - script: |
       set -e
@@ -165,7 +167,7 @@ steps:
       fi
     name: uploadCoverage
     displayName: Upload Coverage Data
-    condition: always()
+    condition: and(succeededOrFailed(), eq(variables['lintPassed'], 'true'))
     env:
       THERMOSTATSUPERVISOR_PR: $(THERMOSTATSUPERVISOR_PR)
   # trigger SonarQube workflow on successful completion
@@ -285,7 +287,7 @@ steps:
         exit 1
       fi
     displayName: Trigger SonarQube Workflow
-    condition: always()
+    condition: and(succeededOrFailed(), eq(variables['lintPassed'], 'true'))
     env:
       THERMOSTATSUPERVISOR_PR: $(THERMOSTATSUPERVISOR_PR)
       # Azure DevOps pipeline variable - must be Personal Access Token

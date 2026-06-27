@@ -13,7 +13,7 @@ jobs:
       contents: read
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - name: Set up Python 3.13
         uses: actions/setup-python@v6
         with:
@@ -24,7 +24,8 @@ jobs:
       - name: Install project dependencies
         run: |
           pip install -r requirements.txt
-          pip install flake8 pylint yamllint safety
+          pip install -r requirements_dev.txt
+          pip install flake8 pylint safety
       - name: Install test dependencies
         run: |
           pip install -r test-requirements.txt

@@ -1,21 +1,21 @@
 """
 Integration test module for kumocloud.py.
 
-This test requires connection to Kumocloud thermostat.
+This test requires connection to Kumocloud thermostat using v3 API.
 """
 
 # built-in imports
 import unittest
 
 # local imports
-# conditionally import kumocloud module to handle missing pykumo dependency
+# conditionally import kumocloud module to handle missing dependencies
 try:
     from src import kumocloud
     from src import kumocloud_config
 
     kumocloud_import_error = None
 except ImportError as ex:
-    # pykumo library not available, tests will be skipped
+    # requests library or other dependencies not available, tests will be skipped
     kumocloud = None
     kumocloud_config = None
     kumocloud_import_error = ex

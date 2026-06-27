@@ -16,7 +16,6 @@ import json
 import os
 import threading
 import time
-from typing import Union
 
 # third party imports
 import requests
@@ -27,6 +26,8 @@ from src import sht31_config
 from src import thermostat_api as api
 from src import thermostat_common as tc
 from src import utilities as util
+
+SHT31_FLASK_SERVER_MODULE = "src.sht31_flask_server"
 
 
 class ThermostatClass(tc.ThermostatCommon):
@@ -205,15 +206,15 @@ class ThermostatClass(tc.ThermostatCommon):
 
         # Force reload of sht31_flask_server to ensure Flask is imported
         # This handles Python 3.13's module caching behavior
-        if 'src.sht31_flask_server' in sys.modules:
+        if SHT31_FLASK_SERVER_MODULE in sys.modules:
             sht31_fs = importlib.reload(
-                sys.modules['src.sht31_flask_server']
+                sys.modules[SHT31_FLASK_SERVER_MODULE]
             )
         else:
             from src import sht31_flask_server as sht31_fs
             # Explicitly register the module in sys.modules for Python 3.13
             # The 'from X import Y' syntax doesn't always register the module
-            sys.modules['src.sht31_flask_server'] = sht31_fs
+            sys.modules[SHT31_FLASK_SERVER_MODULE] = sht31_fs
 
         # Explicitly import flask to ensure it's in sys.modules
         # In Python 3.13, importlib.reload() doesn't always propagate
@@ -538,7 +539,7 @@ class ThermostatZone(tc.ThermostatCommonZone):
         temp_value = self.get_metadata(parameter=self.tempfield)
         return float(temp_value) if temp_value is not None else 0.0
 
-    def get_display_humidity(self) -> Union[float, None]:
+    def get_display_humidity(self) -> float | None:
         """
         Return Humidity.
 

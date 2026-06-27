@@ -5,6 +5,7 @@ Tests that yamllint configuration works and catches common YAML issues.
 """
 
 import os
+import re
 import shutil
 import subprocess
 import tempfile
@@ -33,6 +34,10 @@ class TestYamlLintWorkflow(unittest.TestCase):
         self.trigger_ado_workflow = (
             self.repo_root / ".github" / "workflows" / "trigger-ado-tests.yml"
         )
+        self.github_unit_tests_workflow = (
+            self.repo_root / ".github" / "workflows" / "github-unit-tests.yml"
+        )
+        self.ado_pipeline = self.repo_root / ".github" / "azure-pipelines.yml"
 
     def test_yamllint_config_exists(self):
         """Test that yamllint configuration file exists."""
@@ -147,6 +152,84 @@ class TestYamlLintWorkflow(unittest.TestCase):
             0,
             f"trigger-ado-tests workflow should pass linting:\n{output}",
         )
+
+    def test_github_unit_tests_workflow_exists(self):
+        """Test that github-unit-tests workflow file exists."""
+        self.assertTrue(
+            self.github_unit_tests_workflow.exists(),
+            "github-unit-tests workflow file should exist",
+        )
+
+    def test_github_unit_tests_workflow_is_valid(self):
+        """Test that github-unit-tests workflow file passes linting."""
+        result = subprocess.run(
+            [
+                "yamllint",
+                "--config-file",
+                str(self.yamllint_config),
+                "--format",
+                "parsable",
+                str(self.github_unit_tests_workflow),
+            ],
+            cwd=self.repo_root,
+            capture_output=True,
+            text=True,
+        )
+        output = result.stdout + result.stderr
+        self.assertEqual(
+            result.returncode,
+            0,
+            f"github-unit-tests workflow should pass linting:\n{output}",
+        )
+
+    def test_github_unit_tests_lint_bypass_conditions(self):
+        """Test github-unit-tests workflow skips post-lint steps on lint failure."""
+        content = self.github_unit_tests_workflow.read_text()
+        # Lint step must have an id so subsequent steps can reference it
+        self.assertIn(
+            "id: lint",
+            content,
+            "github-unit-tests workflow should assign id 'lint' to the lint step",
+        )
+        post_lint_steps = [
+            "Upload coverage reports",
+            "Upload coverage to GitHub",
+            "Trigger SonarQube workflow",
+        ]
+        for step_name in post_lint_steps:
+            self.assertRegex(
+                content,
+                rf"- name: {re.escape(step_name)}\n"
+                r"(?:[ ]{8,}.*\n)*?[ ]{8,}if: steps\.lint\.outcome == 'success'",
+                f"github-unit-tests step '{step_name}' should be gated with "
+                "if: steps.lint.outcome == 'success'",
+            )
+
+    def test_ado_pipeline_lint_bypass_conditions(self):
+        """Test that ADO pipeline skips post-lint steps on lint failure."""
+        content = self.ado_pipeline.read_text()
+        # Lint step must set the lintPassed variable on success
+        self.assertIn(
+            "##vso[task.setvariable variable=lintPassed]true",
+            content,
+            "ADO pipeline lint step should set lintPassed variable on success",
+        )
+        post_lint_steps = [
+            "Publish Code Coverage",
+            "Upload Coverage Data",
+            "Trigger SonarQube Workflow",
+        ]
+        for step_name in post_lint_steps:
+            self.assertRegex(
+                content,
+                rf"displayName: {re.escape(step_name)}\n"
+                r"(?:[ ]{4,}.*\n)*?[ ]{4,}condition: "
+                r"and\(succeededOrFailed\(\), "
+                r"eq\(variables\['lintPassed'\], 'true'\)\)",
+                f"ADO pipeline step '{step_name}' should be gated with "
+                "condition: and(succeededOrFailed(), "
+                "eq(variables['lintPassed'], 'true'))",
+            )
 
     def test_yamllint_catches_common_issues(self):
         """Test that yamllint catches common formatting issues."""

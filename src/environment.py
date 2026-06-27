@@ -17,7 +17,6 @@ from src import utilities as util
 
 # thermostat config files
 from src import honeywell_config
-from src import kumocloud_config
 from src import kumolocal_config
 from src import mmm_config
 from src import nest_config
@@ -33,7 +32,6 @@ env_variables = {
     "FLASK_LIMITER_STORAGE_URI": None,
 }
 env_variables.update(honeywell_config.env_variables)
-env_variables.update(kumocloud_config.env_variables)
 env_variables.update(kumolocal_config.env_variables)
 env_variables.update(mmm_config.env_variables)
 env_variables.update(nest_config.env_variables)
@@ -53,7 +51,7 @@ def _read_supervisor_env_file():
         # Look for supervisor-env.txt in the current working directory
         env_file_path = os.path.join(os.getcwd(), "supervisor-env.txt")
         if os.path.exists(env_file_path):
-            with open(env_file_path, "r", encoding="utf-8") as f:
+            with open(env_file_path, "r", encoding="utf-8-sig") as f:
                 for line_num, line in enumerate(f, 1):
                     line = line.strip()
                     # Skip empty lines and comments
@@ -189,17 +187,43 @@ def load_all_env_variables():
 
 def is_interactive_environment():
     """Return True if script is run through IDE."""
-    parent_process = psutil.Process(os.getpid()).parent()
-    if parent_process is None:
+    try:
+        parent_process = psutil.Process(os.getpid()).parent()
+        if parent_process is None:
+            return False
+        parent = parent_process.name().lower()
+    except (psutil.Error, OSError):
         return False
-    parent = parent_process.name()
-    if parent in ["cmd.exe", "py.exe", "bash", "sphinx-build.exe"]:
+
+    non_interactive_parents = {
+        "bash",
+        "cmd.exe",
+        "codex",
+        "dash",
+        "pwsh.exe",
+        "powershell.exe",
+        "py.exe",
+        "sh",
+        "sphinx-build.exe",
+        "zsh",
+    }
+    interactive_parents = {
+        "eclipse.exe",
+        "pycharm.exe",
+        "python.exe",
+    }
+
+    if parent in non_interactive_parents:
         return False
-    elif parent in ["eclipse.exe", "python.exe", "pycharm.exe"]:
+    if parent in interactive_parents:
         return True
-    else:
-        print(f"DEBUG: parent process={parent}")
-        raise OSError(f"unrecognized environment: {parent}")
+
+    util.log_msg(
+        f"unrecognized environment parent process '{parent}', "
+        "treating as non-interactive",
+        mode=util.DEBUG_LOG,
+    )
+    return False
 
 
 def get_local_ip():
@@ -456,23 +480,7 @@ def get_package_version(module, element=None, verbose=False):
     if isinstance(element, str):
         element = element.lower()
 
-    # trim off any dev suffixes from module version
-    try:
-        module_version = ".".join(module.__version__.split(".")[:3])
-    except AttributeError:
-        # __version__ attribute not available, try importlib.metadata
-        try:
-            import importlib.metadata  # type: ignore[no-redef]
-
-            module_version = ".".join(
-                importlib.metadata.version(module.__name__).split(".")[:3]
-            )
-        except (
-            ImportError,
-            importlib.metadata.PackageNotFoundError,  # type: ignore[possibly-unbound]
-        ):
-            # fallback to dummy version
-            module_version = "0.0.0"
+    module_version = _resolve_module_version_string(module)
 
     # parse the version string into a tuple of ints
     ver_tuple = tuple(map(int, module_version.split(".")))
@@ -492,6 +500,106 @@ def get_package_version(module, element=None, verbose=False):
     else:
         raise AttributeError(f"{element} is not a valid choice for element input")
     return return_val
+
+
+def _resolve_module_version_string(module):
+    """
+    Resolve a package version string from module metadata.
+
+    This prefers module.__version__ when available, then attempts metadata-based
+    distribution lookup, and finally falls back to a parent package __version__
+    for dotted module names.
+
+    inputs:
+        module(obj): imported module object.
+    returns:
+        (str): version string in the form "x.y.z".
+    """
+    module_attr_version = getattr(module, "__version__", None)
+    if isinstance(module_attr_version, str) and module_attr_version:
+        return ".".join(module_attr_version.split(".")[:3])
+
+    try:
+        import importlib.metadata  # type: ignore[no-redef]
+    except ImportError:
+        return "0.0.0"
+
+    for package_name in _metadata_name_candidates(module):
+        try:
+            metadata_version = importlib.metadata.version(package_name)
+            return ".".join(metadata_version.split(".")[:3])
+        except importlib.metadata.PackageNotFoundError:
+            continue
+
+    parent_version = _get_top_level_package_version(module)
+    if parent_version is not None:
+        return ".".join(parent_version.split(".")[:3])
+
+    return "0.0.0"
+
+
+def _metadata_name_candidates(module):
+    """
+    Build likely metadata package names for a module.
+
+    inputs:
+        module(obj): imported module object.
+    returns:
+        (list[str]): ordered unique package/distribution names.
+    """
+    module_name = getattr(module, "__name__", "")
+    module_package = getattr(module, "__package__", "")
+    top_level_name = module_name.split(".")[0] if module_name else ""
+
+    import_names = [module_name, module_package, top_level_name]
+    candidates = []
+    seen = set()
+    for import_name in import_names:
+        if import_name and import_name not in seen:
+            candidates.append(import_name)
+            seen.add(import_name)
+
+    try:
+        import importlib.metadata  # type: ignore[no-redef]
+
+        distribution_map = importlib.metadata.packages_distributions()
+        for import_name in list(candidates):
+            for dist_name in distribution_map.get(import_name, []):
+                if dist_name and dist_name not in seen:
+                    candidates.append(dist_name)
+                    seen.add(dist_name)
+    except Exception:
+        # best effort only; retain import-name candidates
+        pass
+
+    return candidates
+
+
+def _get_top_level_package_version(module):
+    """
+    Return top-level package __version__ for dotted module names.
+
+    inputs:
+        module(obj): imported module object.
+    returns:
+        (str|None): top-level package version or None if unavailable.
+    """
+    module_name = getattr(module, "__name__", "")
+    if "." not in module_name:
+        return None
+
+    top_level_name = module_name.split(".")[0]
+    parent_module = sys.modules.get(top_level_name)
+    if parent_module is None:
+        try:
+            parent_module = importlib.import_module(top_level_name)
+        except Exception:
+            return None
+
+    parent_version = getattr(parent_module, "__version__", None)
+    if isinstance(parent_version, str) and parent_version:
+        return parent_version
+    return None
 
 
 def show_package_version(module):
