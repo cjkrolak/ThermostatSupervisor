@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Thermostat Classes &#8212; ThermostatSupervisor API Documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=5ecbeea2" />
+    <link rel="stylesheet" type="text/css" href="../_static/basic.css?v=b08954a9" />
+    <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=1c1df0c7" />
+    <script src="../_static/documentation_options.js?v=8d563738"></script>
+    <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Zone Classes" href="zone_classes.html" />
+    <link rel="prev" title="Thermostat API Module" href="thermostat_api.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="thermostat-classes">
+<h1>Thermostat Classes<a class="headerlink" href="#thermostat-classes" title="Link to this heading">¶</a></h1>
+<p>Thermostat classes represent the physical thermostat devices and provide methods for
+device-level operations such as retrieving metadata and managing device connections.</p>
+<section id="required-api-methods">
+<h2>Required API Methods<a class="headerlink" href="#required-api-methods" title="Link to this heading">¶</a></h2>
+<p>All thermostat classes must implement the following methods as specified in the
+ThermostatSupervisor API contract:</p>
+<section id="print-all-thermostat-metadata">
+<h3>print_all_thermostat_metadata()<a class="headerlink" href="#print-all-thermostat-metadata" title="Link to this heading">¶</a></h3>
+<p><strong>Purpose:</strong> Print all thermostat metadata to the console for debugging and inspection.</p>
+<p><strong>Signature:</strong> <code class="docutils literal notranslate"><span class="pre">print_all_thermostat_metadata(zone:</span> <span class="pre">int)</span> <span class="pre">-&gt;</span> <span class="pre">None</span></code></p>
+<dl class="simple">
+<dt><strong>Parameters:</strong></dt><dd><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">zone</span></code> (int): Target zone number</p></li>
+</ul>
+</dd>
+</dl>
+<p><strong>Returns:</strong> None (prints to stdout)</p>
+<p><strong>Description:</strong> This method retrieves and displays comprehensive metadata about the
+thermostat device, including current settings, capabilities, and status information.</p>
+</section>
+<section id="get-target-zone-id">
+<h3>get_target_zone_id()<a class="headerlink" href="#get-target-zone-id" title="Link to this heading">¶</a></h3>
+<p><strong>Purpose:</strong> Return the target zone ID for the specified zone.</p>
+<p><strong>Signature:</strong> <code class="docutils literal notranslate"><span class="pre">get_target_zone_id(zone:</span> <span class="pre">int)</span> <span class="pre">-&gt;</span> <span class="pre">int</span></code></p>
+<dl class="simple">
+<dt><strong>Parameters:</strong></dt><dd><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">zone</span></code> (int): Zone number to look up</p></li>
+</ul>
+</dd>
+<dt><strong>Returns:</strong></dt><dd><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">int</span></code>: Device-specific zone identifier</p></li>
+</ul>
+</dd>
+</dl>
+<p><strong>Description:</strong> Maps logical zone numbers to device-specific zone identifiers. This
+is necessary because different thermostat brands use different zone numbering schemes.</p>
+<dl class="simple">
+<dt><strong>Raises:</strong></dt><dd><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">ValueError</span></code>: If the specified zone is not valid for this thermostat</p></li>
+</ul>
+</dd>
+</dl>
+</section>
+</section>
+<section id="common-base-class">
+<h2>Common Base Class<a class="headerlink" href="#common-base-class" title="Link to this heading">¶</a></h2>
+<section id="thermostatcommon">
+<h3>ThermostatCommon<a class="headerlink" href="#thermostatcommon" title="Link to this heading">¶</a></h3>
+<dl class="py class">
+<dt class="sig sig-object py" id="src.thermostat_common.ThermostatCommon">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">src.thermostat_common.</span></span><span class="sig-name descname"><span class="pre">ThermostatCommon</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">_</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">__</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/thermostat_common.html#ThermostatCommon"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.thermostat_common.ThermostatCommon" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Class methods common to all thermostat objects.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="src.thermostat_common.ThermostatCommon.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">_</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">__</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/thermostat_common.html#ThermostatCommon.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.thermostat_common.ThermostatCommon.__init__" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.thermostat_common.ThermostatCommon.get_all_metadata">
+<span class="sig-name descname"><span class="pre">get_all_metadata</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">zone</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">retry</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/thermostat_common.html#ThermostatCommon.get_all_metadata"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.thermostat_common.ThermostatCommon.get_all_metadata" title="Link to this definition">¶</a></dt>
+<dd><p>Get all the current thermostat metadata.</p>
+<dl class="simple">
+<dt>inputs:</dt><dd><p>zone(int): target zone
+retry(bool): if True will retry once.</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>(dict) results dict.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.thermostat_common.ThermostatCommon.get_metadata">
+<span class="sig-name descname"><span class="pre">get_metadata</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">zone</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">trait</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/thermostat_common.html#ThermostatCommon.get_metadata"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.thermostat_common.ThermostatCommon.get_metadata" title="Link to this definition">¶</a></dt>
+<dd><p>Get thermostat meta data for zone.</p>
+<dl>
+<dt>inputs:</dt><dd><p>zone(str or int): specified zone
+trait(str): trait or parent key, if None will assume a non-nested</p>
+<blockquote>
+<div><p>dict.</p>
+</div></blockquote>
+<p>parameter(str): target parameter, if None will return all.</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dictionary of meta data.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>(<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)">dict</a>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.thermostat_common.ThermostatCommon.print_all_thermostat_metadata">
+<span class="sig-name descname"><span class="pre">print_all_thermostat_metadata</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">zone</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/thermostat_common.html#ThermostatCommon.print_all_thermostat_metadata"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.thermostat_common.ThermostatCommon.print_all_thermostat_metadata" title="Link to this definition">¶</a></dt>
+<dd><p>Print initial meta data queried from thermostat for specified zone.</p>
+<dl class="simple">
+<dt>inputs:</dt><dd><p>zone(int): zone number</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.thermostat_common.ThermostatCommon.exec_print_all_thermostat_metadata">
+<span class="sig-name descname"><span class="pre">exec_print_all_thermostat_metadata</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">func</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">args</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/thermostat_common.html#ThermostatCommon.exec_print_all_thermostat_metadata"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.thermostat_common.ThermostatCommon.exec_print_all_thermostat_metadata" title="Link to this definition">¶</a></dt>
+<dd><p>Print all metadata to screen.</p>
+<dl class="simple">
+<dt>inputs:</dt><dd><p>func(obj): function get metadata.
+args(list): argument list</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>return data</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>(<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)">dict</a>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<p>Base class providing common functionality for all thermostat implementations.</p>
+<p>Key Methods:</p>
+<section id="get-all-metadata">
+<h4>get_all_metadata()<a class="headerlink" href="#get-all-metadata" title="Link to this heading">¶</a></h4>
+<dl class="py method">
+<dt class="sig sig-object py" id="id0">
+<span class="sig-prename descclassname"><span class="pre">ThermostatCommon.</span></span><span class="sig-name descname"><span class="pre">get_all_metadata</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">zone</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">retry</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/thermostat_common.html#ThermostatCommon.get_all_metadata"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#id0" title="Link to this definition">¶</a></dt>
+<dd><p>Get all the current thermostat metadata.</p>
+<dl class="simple">
+<dt>inputs:</dt><dd><p>zone(int): target zone
+retry(bool): if True will retry once.</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>(dict) results dict.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<p>Retrieves complete metadata for the specified zone.</p>
+</section>
+<section id="get-metadata">
+<h4>get_metadata()<a class="headerlink" href="#get-metadata" title="Link to this heading">¶</a></h4>
+<dl class="py method">
+<dt class="sig sig-object py" id="id1">
+<span class="sig-prename descclassname"><span class="pre">ThermostatCommon.</span></span><span class="sig-name descname"><span class="pre">get_metadata</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">zone</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">trait</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/thermostat_common.html#ThermostatCommon.get_metadata"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#id1" title="Link to this definition">¶</a></dt>
+<dd><p>Get thermostat meta data for zone.</p>
+<dl>
+<dt>inputs:</dt><dd><p>zone(str or int): specified zone
+trait(str): trait or parent key, if None will assume a non-nested</p>
+<blockquote>
+<div><p>dict.</p>
+</div></blockquote>
+<p>parameter(str): target parameter, if None will return all.</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dictionary of meta data.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>(<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)">dict</a>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<p>Retrieves specific metadata parameters for a zone.</p>
+</section>
+</section>
+</section>
+<section id="implementation-examples">
+<h2>Implementation Examples<a class="headerlink" href="#implementation-examples" title="Link to this heading">¶</a></h2>
+<section id="honeywell-thermostat">
+<h3>Honeywell Thermostat<a class="headerlink" href="#honeywell-thermostat" title="Link to this heading">¶</a></h3>
+<dl class="py class">
+<dt class="sig sig-object py" id="src.honeywell.ThermostatClass">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">src.honeywell.</span></span><span class="sig-name descname"><span class="pre">ThermostatClass</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">zone</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/honeywell.html#ThermostatClass"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.honeywell.ThermostatClass" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">PyHTCC</span></code>, <a class="reference internal" href="../docs/src.html#src.thermostat_common.ThermostatCommon" title="src.thermostat_common.ThermostatCommon"><code class="xref py py-class docutils literal notranslate"><span class="pre">ThermostatCommon</span></code></a></p>
+<p>Extend the PyHTCC class with additional methods.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="src.honeywell.ThermostatClass.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">zone</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/honeywell.html#ThermostatClass.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.honeywell.ThermostatClass.__init__" title="Link to this definition">¶</a></dt>
+<dd><dl class="simple">
+<dt>inputs:</dt><dd><p>zone(str):  zone number.
+verbose(bool): debug flag.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.honeywell.ThermostatClass.close">
+<span class="sig-name descname"><span class="pre">close</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/honeywell.html#ThermostatClass.close"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.honeywell.ThermostatClass.close" title="Link to this definition">¶</a></dt>
+<dd><p>Explicitly close the session created in pyhtcc.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.honeywell.ThermostatClass.__del__">
+<span class="sig-name descname"><span class="pre">__del__</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/honeywell.html#ThermostatClass.__del__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.honeywell.ThermostatClass.__del__" title="Link to this definition">¶</a></dt>
+<dd><p>Clean-up session created in pyhtcc (fallback).</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.honeywell.ThermostatClass.get_target_zone_id">
+<span class="sig-name descname"><span class="pre">get_target_zone_id</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">zone</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span></span><a class="reference internal" href="../_modules/src/honeywell.html#ThermostatClass.get_target_zone_id"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.honeywell.ThermostatClass.get_target_zone_id" title="Link to this definition">¶</a></dt>
+<dd><p>Return the target zone ID.</p>
+<dl class="simple">
+<dt>inputs:</dt><dd><p>zone(int):  zone number.</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>zone device id number</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>(<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)">int</a>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.honeywell.ThermostatClass.print_all_thermostat_metadata">
+<span class="sig-name descname"><span class="pre">print_all_thermostat_metadata</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">zone</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/honeywell.html#ThermostatClass.print_all_thermostat_metadata"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.honeywell.ThermostatClass.print_all_thermostat_metadata" title="Link to this definition">¶</a></dt>
+<dd><p>Return initial meta data queried from thermostat.</p>
+<dl class="simple">
+<dt>inputs:</dt><dd><p>zone(int): zone number</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>None, prints data to the stdout.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.honeywell.ThermostatClass.get_all_metadata">
+<span class="sig-name descname"><span class="pre">get_all_metadata</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">zone</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">retry</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a></span></span><a class="reference internal" href="../_modules/src/honeywell.html#ThermostatClass.get_all_metadata"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.honeywell.ThermostatClass.get_all_metadata" title="Link to this definition">¶</a></dt>
+<dd><p>Return all the current thermostat metadata.</p>
+<dl class="simple">
+<dt>inputs:</dt><dd><p>zone(int): zone number, default=honeywell_config.default_zone
+retry(bool): if True will retry with extended retry mechanism.</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>(dict) thermostat meta data.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.honeywell.ThermostatClass.get_metadata">
+<span class="sig-name descname"><span class="pre">get_metadata</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">zone</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">trait</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">retry</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span></span><a class="reference internal" href="../_modules/src/honeywell.html#ThermostatClass.get_metadata"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.honeywell.ThermostatClass.get_metadata" title="Link to this definition">¶</a></dt>
+<dd><p>Return the current thermostat metadata settings.</p>
+<dl>
+<dt>inputs:</dt><dd><p>zone(int): zone number, default=honeywell_config.default_zone
+trait(str): trait or parent key, if None will assume a non-nested</p>
+<blockquote>
+<div><p>dict</p>
+</div></blockquote>
+<p>parameter(str): target parameter, None = all settings
+retry(bool): if True will retry with extended retry mechanism</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>(dict) if parameter=None
+(str) if parameter != None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.honeywell.ThermostatClass.get_latestdata">
+<span class="sig-name descname"><span class="pre">get_latestdata</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">zone</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">debug</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../_modules/src/honeywell.html#ThermostatClass.get_latestdata"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.honeywell.ThermostatClass.get_latestdata" title="Link to this definition">¶</a></dt>
+<dd><p>Return the current thermostat latest data.</p>
+<dl class="simple">
+<dt>inputs:</dt><dd><p>zone(int): zone number, default=honeywell_config.default_zone
+debug(bool): debug flag</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>(dict, None) latest data from thermostat, or None if not available.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.honeywell.ThermostatClass.get_ui_data">
+<span class="sig-name descname"><span class="pre">get_ui_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">zone</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../_modules/src/honeywell.html#ThermostatClass.get_ui_data"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.honeywell.ThermostatClass.get_ui_data" title="Link to this definition">¶</a></dt>
+<dd><p>Return the latest thermostat ui data.</p>
+<dl class="simple">
+<dt>inputs:</dt><dd><p>zone(int): zone, default=honeywell_config.default_zone</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>(dict) ui data from thermostat, or None if not available.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.honeywell.ThermostatClass.get_ui_data_param">
+<span class="sig-name descname"><span class="pre">get_ui_data_param</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">zone</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../_modules/src/honeywell.html#ThermostatClass.get_ui_data_param"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.honeywell.ThermostatClass.get_ui_data_param" title="Link to this definition">¶</a></dt>
+<dd><p>Return the latest thermostat ui data for one specific parameter.</p>
+<dl class="simple">
+<dt>inputs:</dt><dd><p>zone(int): zone, default=honeywell_config.default_zone
+parameter(str): paramenter name</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>parameter data dict, or None if not available.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>(<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)">dict</a>, None)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.honeywell.ThermostatClass.get_zones_info">
+<span class="sig-name descname"><span class="pre">get_zones_info</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><span class="pre">list</span></a></span></span><a class="reference internal" href="../_modules/src/honeywell.html#ThermostatClass.get_zones_info"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.honeywell.ThermostatClass.get_zones_info" title="Link to this definition">¶</a></dt>
+<dd><p>Return a list of dicts corresponding with each one corresponding to a
+particular zone.</p>
+<p>Method overridden from base class to add exception handling.
+inputs:</p>
+<blockquote>
+<div><p>None.</p>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>list of zone info.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<p>The Honeywell implementation provides full support for TCC-compatible thermostats.</p>
+</section>
+<section id="emulator-thermostat">
+<h3>Emulator Thermostat<a class="headerlink" href="#emulator-thermostat" title="Link to this heading">¶</a></h3>
+<dl class="py class">
+<dt class="sig sig-object py" id="src.emulator.ThermostatClass">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">src.emulator.</span></span><span class="sig-name descname"><span class="pre">ThermostatClass</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">zone</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/emulator.html#ThermostatClass"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.emulator.ThermostatClass" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="../docs/src.html#src.thermostat_common.ThermostatCommon" title="src.thermostat_common.ThermostatCommon"><code class="xref py py-class docutils literal notranslate"><span class="pre">ThermostatCommon</span></code></a></p>
+<p>Emulator thermostat functions.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="src.emulator.ThermostatClass.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">zone</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/emulator.html#ThermostatClass.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.emulator.ThermostatClass.__init__" title="Link to this definition">¶</a></dt>
+<dd><p>Constructor, connect to thermostat.</p>
+<dl class="simple">
+<dt>inputs:</dt><dd><p>zone(str):  zone of thermostat.
+verbose(bool): debug flag.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.emulator.ThermostatClass.initialize_meta_data_dict">
+<span class="sig-name descname"><span class="pre">initialize_meta_data_dict</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/emulator.html#ThermostatClass.initialize_meta_data_dict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.emulator.ThermostatClass.initialize_meta_data_dict" title="Link to this definition">¶</a></dt>
+<dd><p>Initialize the meta data dict</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.emulator.ThermostatClass.get_target_zone_id">
+<span class="sig-name descname"><span class="pre">get_target_zone_id</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">zone</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/emulator.html#ThermostatClass.get_target_zone_id"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.emulator.ThermostatClass.get_target_zone_id" title="Link to this definition">¶</a></dt>
+<dd><p>Return the target zone ID.</p>
+<dl class="simple">
+<dt>inputs:</dt><dd><p>zone(int):  zone number.</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>device_id</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>(<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)">int</a>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.emulator.ThermostatClass.get_all_metadata">
+<span class="sig-name descname"><span class="pre">get_all_metadata</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">zone</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">retry</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/emulator.html#ThermostatClass.get_all_metadata"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.emulator.ThermostatClass.get_all_metadata" title="Link to this definition">¶</a></dt>
+<dd><p>Get all thermostat meta data for zone from emulator.</p>
+<dl class="simple">
+<dt>inputs:</dt><dd><p>zone(int): specified zone, if None will print all zones.
+retry(bool): if True will retry with extended retry mechanism.</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>JSON dict</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>(<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)">dict</a>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.emulator.ThermostatClass.get_metadata">
+<span class="sig-name descname"><span class="pre">get_metadata</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">zone</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">trait</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">retry</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/emulator.html#ThermostatClass.get_metadata"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.emulator.ThermostatClass.get_metadata" title="Link to this definition">¶</a></dt>
+<dd><p>Get all thermostat meta data for zone from emulator.</p>
+<dl class="simple">
+<dt>inputs:</dt><dd><p>zone(int): specified zone, if None will print all zones.
+trait(str): trait or parent key, if None will assume a non-nested
+dict
+parameter(str): target parameter, if None will return all.
+retry(bool): if True will retry with extended retry mechanism</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>depends on parameter</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>(<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)">int</a>, <a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)">float</a>, <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)">str</a>, <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)">dict</a>)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="src.emulator.ThermostatClass.print_all_thermostat_metadata">
+<span class="sig-name descname"><span class="pre">print_all_thermostat_metadata</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">zone</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/src/emulator.html#ThermostatClass.print_all_thermostat_metadata"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#src.emulator.ThermostatClass.print_all_thermostat_metadata" title="Link to this definition">¶</a></dt>
+<dd><p>Print all metadata for zone to the screen.</p>
+<dl class="simple">
+<dt>inputs:</dt><dd><p>zone(int): specified zone, if None will print all zones.</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>None, prints result to screen</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<p>The emulator provides a testing implementation that simulates thermostat behavior
+without requiring actual hardware.</p>
+</section>
+</section>
+<section id="optional-methods">
+<h2>Optional Methods<a class="headerlink" href="#optional-methods" title="Link to this heading">¶</a></h2>
+<p>While not required, many thermostat classes implement additional methods for
+extended functionality:</p>
+<section id="connection-management">
+<h3>Connection Management<a class="headerlink" href="#connection-management" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">close()</span></code>: Explicitly close network connections</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">__del__()</span></code>: Cleanup method for proper resource deallocation</p></li>
+</ul>
+</section>
+<section id="data-retrieval">
+<h3>Data Retrieval<a class="headerlink" href="#data-retrieval" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">get_latestdata()</span></code>: Retrieve the most recent thermostat data</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">get_zones_info()</span></code>: Get information about all zones</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">get_zone_device_ids()</span></code>: Get device IDs for all zones</p></li>
+</ul>
+</section>
+<section id="configuration-access">
+<h3>Configuration Access<a class="headerlink" href="#configuration-access" title="Link to this heading">¶</a></h3>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">get_system_info()</span></code>: Retrieve system-level configuration</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">get_device_info()</span></code>: Get device-specific information</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">get_capabilities()</span></code>: Query supported features</p></li>
+</ul>
+</section>
+</section>
+<section id="error-handling">
+<h2>Error Handling<a class="headerlink" href="#error-handling" title="Link to this heading">¶</a></h2>
+<p>All thermostat classes should implement proper error handling:</p>
+<ul class="simple">
+<li><p>Network connectivity issues</p></li>
+<li><p>Authentication failures</p></li>
+<li><p>Invalid zone/parameter requests</p></li>
+<li><p>Hardware communication errors</p></li>
+</ul>
+<p>Connection timeouts and retries are handled automatically by the base classes.</p>
+</section>
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">ThermostatSupervisor</a></h1>
+
+
+
+<p class="blurb">Monitor and control thermostats remotely</p>
+
+
+
+
+<p>
+<iframe src="https://ghbtns.com/github-btn.html?user=cjkrolak&repo=ThermostatSupervisor&type=star&count=true&size=large&v=2"
+  allowtransparency="true" frameborder="0" scrolling="0" width="200px" height="35px"></iframe>
+</p>
+
+
+
+
+
+
+<search id="searchbox" style="display: none" role="search">
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Search"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">API Documentation:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="overview.html">API Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="thermostat_api.html">Thermostat API Module</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Thermostat Classes</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#required-api-methods">Required API Methods</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#common-base-class">Common Base Class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#implementation-examples">Implementation Examples</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#optional-methods">Optional Methods</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#error-handling">Error Handling</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="zone_classes.html">Zone Classes</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Module Reference:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../docs/src.html">src package</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="thermostat_api.html" title="previous chapter">Thermostat API Module</a></li>
+      <li>Next: <a href="zone_classes.html" title="next chapter">Zone Classes</a></li>
+  </ul></li>
+</ul>
+</div>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;2024, Christopher Krolak.
+      
+      |
+      <a href="../_sources/api/thermostat_classes.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
