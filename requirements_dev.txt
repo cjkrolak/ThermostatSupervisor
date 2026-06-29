@@ -3,6 +3,6 @@
 # (e.g. Raspberry Pi 0 with armv6 processor where Rust-based builds fail).
 # To install for development/CI: pip install -r requirements.txt -r requirements_dev.txt
 build>=1.5.0  # python package builds
-coverage>=7.14.2  # unit test coverage
+coverage>=7.14.3  # unit test coverage
 yamlfix>=1.19.1  # YAML formatting and fixing tool
 yamllint>=1.38.0  # YAML linting for CI/CD workflows
