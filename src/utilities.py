@@ -177,7 +177,8 @@ def _write_dual_stream(msg: str, mode: int, filter_debug_msg: bool) -> None:
         manage_stdout_capture_file(msg)
         # Print only summary/reduced message to console for certain verbose cases
         if _is_verbose_retry_message(msg):
-            print(_create_summary_message(msg))
+            summary_msg = _create_summary_message(msg)
+            print(summary_msg)
         else:
             # Print full message for non-verbose cases
             print(msg)
@@ -196,7 +197,8 @@ def _write_quiet_log(msg: str, mode: int, filter_debug_msg: bool) -> None:
     """
     if (mode & QUIET_LOG) and not filter_debug_msg and not (mode & DUAL_STREAM_LOG):
         if _is_verbose_retry_message(msg):
-            print(_create_summary_message(msg))
+            summary_msg = _create_summary_message(msg)
+            print(summary_msg)
         else:
             print(msg)
 
