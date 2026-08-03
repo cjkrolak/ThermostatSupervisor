@@ -224,6 +224,71 @@ class ThermostatClass(tc.ThermostatCommon):
         ThermostatClass._shared_devices_cache = self.devices
         ThermostatClass._shared_devices_cache_time = time.time()
 
+    def _get_devices_with_token_refresh(self) -> list:
+        """
+        Refresh an expired OAuth token and retry get_devices().
+
+        Called when an InvalidGrantError indicates the access token has
+        expired.  Refreshes the token, reloads it into memory, then retries
+        the API call once.
+
+        inputs:
+            None
+        returns:
+            (list): list of device objects from the retried API call
+        """
+        print(
+            "access token has expired, attempting to refresh the "
+            "access token..."
+        )
+        self.refresh_oauth_token()
+        # After successful refresh, reload token and retry
+        self._reload_token_from_cache()
+        print("Retrying get_devices() with refreshed token...")
+        return self.thermostat_obj.get_devices()
+
+    def _get_devices_rate_limited_retry(self) -> list:
+        """
+        Retry get_devices() with exponential back-off when rate limited.
+
+        Attempts up to 2 retries before falling back to the shared cache.
+        Raises if retries are exhausted and no cache is available.
+
+        inputs:
+            None
+        returns:
+            (list): list of device objects
+        raises:
+            Exception: re-raised when retries exhausted and cache unavailable
+        """
+        max_retries = 2
+        retry_delay_sec = 1
+        for _ in range(max_retries):
+            print(
+                "Nest ListDevices is rate limited, retrying in "
+                f"{retry_delay_sec} second(s)..."
+            )
+            time.sleep(retry_delay_sec)
+            retry_delay_sec *= 2
+            try:
+                self.devices = self.thermostat_obj.get_devices()
+                self._store_shared_device_cache()
+                return self.devices
+            except Exception as retry_error:
+                if not self._is_rate_limit_error(retry_error):
+                    print(traceback.format_exc())
+                    raise
+        if ThermostatClass._shared_devices_cache is not None:
+            print(
+                "Nest ListDevices remains rate limited; using cached "
+                "device data."
+            )
+            self.devices = ThermostatClass._shared_devices_cache
+            ThermostatClass._shared_devices_cache_time = time.time()
+            return self.devices
+        print(traceback.format_exc())
+        raise  # re-raise the last exception from the retry loop
+
     def get_device_data(self, force_refresh: bool = False):
         """
         get device data from network.
@@ -244,44 +309,10 @@ class ThermostatClass(tc.ThermostatCommon):
             self.devices = self.thermostat_obj.get_devices()
         except oauthlib.oauth2.rfc6749.errors.InvalidGrantError as e:
             print(f"ERROR: {e}")
-            print(
-                "access token has expired, attempting to refresh the "
-                "access token..."
-            )
-            self.refresh_oauth_token()
-            # After successful refresh, reload token and retry
-            self._reload_token_from_cache()
-            print("Retrying get_devices() with refreshed token...")
-            self.devices = self.thermostat_obj.get_devices()
+            self.devices = self._get_devices_with_token_refresh()
         except Exception as e:
             if self._is_rate_limit_error(e):
-                max_retries = 2
-                retry_delay_sec = 1
-                for _ in range(max_retries):
-                    print(
-                        "Nest ListDevices is rate limited, retrying in "
-                        f"{retry_delay_sec} second(s)..."
-                    )
-                    time.sleep(retry_delay_sec)
-                    retry_delay_sec *= 2
-                    try:
-                        self.devices = self.thermostat_obj.get_devices()
-                        self._store_shared_device_cache()
-                        return self.devices
-                    except Exception as retry_error:
-                        if not self._is_rate_limit_error(retry_error):
-                            print(traceback.format_exc())
-                            raise
-                if ThermostatClass._shared_devices_cache is not None:
-                    print(
-                        "Nest ListDevices remains rate limited; using cached "
-                        "device data."
-                    )
-                    self.devices = ThermostatClass._shared_devices_cache
-                    ThermostatClass._shared_devices_cache_time = time.time()
-                    return self.devices
-                print(traceback.format_exc())
-                raise
+                return self._get_devices_rate_limited_retry()
             print(traceback.format_exc())
             raise
         self._store_shared_device_cache()

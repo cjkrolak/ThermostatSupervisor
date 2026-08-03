@@ -381,6 +381,79 @@ class ThermostatSite:
                 func_name=1,
             )
 
+    def _run_threaded_supervision(
+        self, measurement_count: int
+    ) -> None:
+        """
+        Launch and join supervision threads for all thermostats.
+
+        Creates one daemon thread per thermostat, starts them in parallel,
+        then waits for all to finish using a calculated per-thermostat
+        timeout.
+
+        inputs:
+            measurement_count(int): default number of measurements if not
+                specified in the per-thermostat config
+        returns:
+            None
+        """
+        threads = []
+        thread_configs = []
+        for idx, tstat_config in enumerate(self.thermostats, 1):
+            measurements = tstat_config.get("measurements", measurement_count)
+            thread_configs.append((tstat_config, measurements))
+            thread = threading.Thread(
+                target=self._supervise_single_thermostat,
+                args=(tstat_config, idx, measurements),
+                daemon=False,
+            )
+            threads.append(thread)
+            thread.start()
+
+        # Calculate timeout: max(connection_time + poll_time * measurements)
+        max_timeout = 0
+        for tstat_config, measurements in thread_configs:
+            conn_time = tstat_config.get("connection_time", 300)
+            poll_time = tstat_config.get("poll_time", 60)
+            safety_margin = 60  # Extra time for processing
+            timeout = (
+                conn_time + (poll_time * measurements) + safety_margin
+            )
+            max_timeout = max(max_timeout, timeout)
+
+        for thread in threads:
+            thread.join(timeout=max_timeout)
+            if thread.is_alive():
+                util.log_msg(
+                    f"WARNING: Thread {thread.name} did not complete "
+                    f"within timeout ({max_timeout}s)",
+                    mode=util.BOTH_LOG,
+                    func_name=1,
+                )
+
+        util.log_msg(
+            f"All {len(threads)} supervision threads completed",
+            mode=util.BOTH_LOG,
+            func_name=1,
+        )
+
+    def _run_sequential_supervision(self, measurement_count: int) -> None:
+        """
+        Supervise all thermostats sequentially (no threading).
+
+        Intended for testing or debugging scenarios where thread isolation
+        is not desired.
+
+        inputs:
+            measurement_count(int): default number of measurements if not
+                specified in the per-thermostat config
+        returns:
+            None
+        """
+        for idx, tstat_config in enumerate(self.thermostats, 1):
+            measurements = tstat_config.get("measurements", measurement_count)
+            self._supervise_single_thermostat(tstat_config, idx, measurements)
+
     def supervise_all_zones(
         self,
         measurement_count: int = 1,
@@ -429,60 +502,10 @@ class ThermostatSite:
 
         try:
             if use_threading:
-                # Multi-threaded approach for parallel supervision
-                threads = []
-                thread_configs = []
-                for idx, tstat_config in enumerate(self.thermostats, 1):
-                    # Use measurement count from config if available
-                    measurements = tstat_config.get(
-                        "measurements", measurement_count
-                    )
-                    thread_configs.append((tstat_config, measurements))
-                    thread = threading.Thread(
-                        target=self._supervise_single_thermostat,
-                        args=(tstat_config, idx, measurements),
-                        daemon=False,
-                    )
-                    threads.append(thread)
-                    thread.start()
-
-                # Wait for all threads to complete with timeout
-                # Calculate timeout: max(connection_time +
-                # poll_time * measurements)
-                max_timeout = 0
-                for tstat_config, measurements in thread_configs:
-                    conn_time = tstat_config.get("connection_time", 300)
-                    poll_time = tstat_config.get("poll_time", 60)
-                    safety_margin = 60  # Extra time for processing
-                    timeout = (
-                        conn_time + (poll_time * measurements) + safety_margin
-                    )
-                    max_timeout = max(max_timeout, timeout)
-
-                for thread in threads:
-                    thread.join(timeout=max_timeout)
-                    if thread.is_alive():
-                        util.log_msg(
-                            f"WARNING: Thread {thread.name} did not complete "
-                            f"within timeout ({max_timeout}s)",
-                            mode=util.BOTH_LOG,
-                            func_name=1,
-                        )
-
-                util.log_msg(
-                    f"All {len(threads)} supervision threads completed",
-                    mode=util.BOTH_LOG,
-                    func_name=1,
-                )
+                self._run_threaded_supervision(measurement_count)
             else:
                 # Sequential approach (for testing or debugging)
-                for idx, tstat_config in enumerate(self.thermostats, 1):
-                    measurements = tstat_config.get(
-                        "measurements", measurement_count
-                    )
-                    self._supervise_single_thermostat(
-                        tstat_config, idx, measurements
-                    )
+                self._run_sequential_supervision(measurement_count)
         except KeyboardInterrupt:
             util.log_msg(
                 "\nKeyboardInterrupt received, aborting site supervision",
