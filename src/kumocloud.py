@@ -120,15 +120,26 @@ class ThermostatClass(tc.ThermostatCommon):
         """
         self._authentication_attempted = True
 
+        V3_APP_VERSION = "3.2.4"
+        V3_CLOUD_TIMEOUT = (10, 30)  # (connect, read)
         login_url = f"{self.base_url}/v3/login"
         login_data = {
             "username": self.kc_uname,
             "password": self.kc_pwd,
-            "appVersion": "3.0.9",
+            "appVersion": V3_APP_VERSION,
+        }
+        login_headers = {
+            "Accept": "application/json",
+            "Accept-Encoding": "gzip, deflate, br",
+            "x-app-version": V3_APP_VERSION,
+            "Content-Type": "application/json",
         }
 
         try:
-            response = self.session.post(login_url, json=login_data, timeout=30)
+            response = self.session.post(login_url,
+                                         headers=login_headers,
+                                         json=login_data,
+                                         timeout=V3_CLOUD_TIMEOUT)
             response.raise_for_status()
 
             auth_response = response.json()
