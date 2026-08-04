@@ -130,16 +130,18 @@ class ThermostatClass(tc.ThermostatCommon):
         }
         login_headers = {
             "Accept": "application/json",
-            "Accept-Encoding": "gzip, deflate, br",
+            "Accept-Encoding": "gzip, deflate",
             "x-app-version": V3_APP_VERSION,
             "Content-Type": "application/json",
         }
 
         try:
-            response = self.session.post(login_url,
-                                         headers=login_headers,
-                                         json=login_data,
-                                         timeout=V3_CLOUD_TIMEOUT)
+            response = self.session.post(
+                login_url,
+                headers=login_headers,
+                json=login_data,
+                timeout=V3_CLOUD_TIMEOUT,
+            )
             response.raise_for_status()
 
             auth_response = response.json()
