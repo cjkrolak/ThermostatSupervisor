@@ -215,15 +215,17 @@ class TestYamlLintWorkflow(unittest.TestCase):
             "ADO pipeline lint step should set lintPassed variable on success",
         )
         post_lint_steps = [
-            "Publish Code Coverage",
-            "Upload Coverage Data",
-            "Trigger SonarQube Workflow",
+            "Publish Code Coverage Results to ADO",
+            "Upload Coverage Data to GitHub Gist",
+            "Trigger SonarQube GitHub Workflow",
         ]
         for step_name in post_lint_steps:
+            # condition may be inline or a multiline block scalar (>-)
             self.assertRegex(
                 content,
                 rf"displayName: {re.escape(step_name)}\n"
                 r"(?:[ ]{4,}.*\n)*?[ ]{4,}condition: "
+                r"(?:>-\n[ ]{14,}|)"
                 r"and\(succeededOrFailed\(\), "
                 r"eq\(variables\['lintPassed'\], 'true'\)\)",
                 f"ADO pipeline step '{step_name}' should be gated with "
