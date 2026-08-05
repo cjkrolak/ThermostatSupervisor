@@ -50,7 +50,9 @@ stages:
               python -m pip install flake8 --upgrade
               flake8 --config=setup.cfg .
               echo "##vso[task.setvariable variable=lintPassed]true"
+              echo "##vso[task.setvariable variable=lintPassed;isOutput=true]true"
             displayName: Run Flake8 Lint Checks
+            name: runLint
           # python unit tests
           - script: |
               # python -m unittest discover -v
@@ -90,6 +92,14 @@ stages:
             displayName: Publish Code Coverage Results to ADO
             condition: >-
               and(succeededOrFailed(), eq(variables['lintPassed'], 'true'))
+          # publish coverage.xml as pipeline artifact for Stage 2
+          - task: PublishPipelineArtifact@1
+            inputs:
+              targetPath: coverage.xml
+              artifact: coverage-xml
+            displayName: Publish Coverage XML Artifact for Stage 2
+            condition: >-
+              and(succeededOrFailed(), eq(variables['lintPassed'], 'true'))
 
   # Stage 2: Upload coverage artifact and trigger SonarQube analysis
   - stage: SonarQube
@@ -105,7 +115,16 @@ stages:
           testExitCode: >-
             $[ stageDependencies.PythonUnitTests.RunUnitTests.outputs
             ['Python313.runTests.testExitCode'] ]
+          lintPassed: >-
+            $[ stageDependencies.PythonUnitTests.RunUnitTests.outputs
+            ['Python313.runLint.lintPassed'] ]
         steps:
+          # Download coverage.xml artifact published by Stage 1
+          - task: DownloadPipelineArtifact@2
+            inputs:
+              artifactName: coverage-xml
+              targetPath: $(System.DefaultWorkingDirectory)
+            displayName: Download Coverage XML Artifact from Stage 1
           # Upload coverage.xml as GitHub gist artifact for SonarQube workflow
           - script: |
               set -e
