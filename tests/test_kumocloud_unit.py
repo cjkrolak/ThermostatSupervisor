@@ -370,6 +370,15 @@ class AuthenticationUnitTest(utc.UnitTest):
         ):
             thermostat = kumocloud.ThermostatClass(zone=0, verbose=False)
 
+            # Verify session.post was called with expected headers and timeout
+            mock_session.post.assert_called_once()
+            call_kwargs = mock_session.post.call_args.kwargs
+            self.assertEqual(
+                call_kwargs["headers"].get("Accept-Encoding"), "gzip, deflate"
+            )
+            self.assertIsInstance(call_kwargs["timeout"], tuple)
+            self.assertEqual(len(call_kwargs["timeout"]), 2)
+
             # Verify authentication succeeded
             self.assertTrue(getattr(thermostat, "_authenticated"))  # type: ignore
             self.assertEqual(thermostat.auth_token, "test_access_token_123")
