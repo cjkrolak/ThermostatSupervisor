@@ -563,6 +563,40 @@ class Sensors:
         finally:
             GPIO.cleanup()  # type: ignore[attr-defined]
 
+    def _parse_i2c_scan_line(self, line: str, bus_dict: dict) -> None:
+        """
+        Parse a single line from i2cdetect output into bus_dict.
+
+        Detects error conditions and extracts device addresses from
+        the address payload.
+
+        inputs:
+            line(str): raw output line from i2cdetect command
+            bus_dict(dict): dictionary to populate with parsed results
+        returns:
+            None; modifies bus_dict in place
+        """
+        line = str(line)
+        if len(line) < 5:
+            return
+        addr_base = line[2:4] if len(line) >= 4 else ""
+        addr_payload = line[5:] if len(line) > 5 else ""
+
+        if "Error" in line:
+            if "i2c_detect" not in bus_dict:
+                bus_dict["i2c_detect"] = {}
+            bus_dict["i2c_detect"]["error"] = line
+        else:
+            device = 0
+            device_dict = {}
+            for match in re.finditer("[0-9][0-9]", addr_payload):
+                if match:
+                    device_addr = match.group(0)
+                    print(match.group(0))
+                    device_dict["dev_" + str(device) + "_addr"] = str(device_addr)
+                    bus_dict["addr_base_" + str(addr_base)] = device_dict
+                    device += 1
+
     def i2c_detect(self, bus=sht31_config.I2C_BUS):
         """
         Detect i2c device on bus.
@@ -593,30 +627,7 @@ class Sensors:
         lines = scan_result.split('\n')
 
         for line in lines[:9]:  # limit to first 9 lines as original code
-            line = str(line)
-            if len(line) < 5:
-                continue
-            addr_base = line[2:4] if len(line) >= 4 else ""
-            addr_payload = line[5:] if len(line) > 5 else ""
-
-            # catch error condition
-            if "Error" in line:
-                if "i2c_detect" not in bus_dict:
-                    bus_dict["i2c_detect"] = {}
-                bus_dict["i2c_detect"]["error"] = line
-            else:
-                # find devices on bus
-                device = 0
-                device_dict = {}
-                for match in re.finditer("[0-9][0-9]", addr_payload):
-                    if match:
-                        device_addr = match.group(0)
-                        print(match.group(0))
-                        device_dict["dev_" + str(device) + "_addr"] = str(
-                            device_addr
-                        )
-                        bus_dict["addr_base_" + str(addr_base)] = device_dict
-                        device += 1
+            self._parse_i2c_scan_line(line, bus_dict)
 
         parsed_device_dict["i2c_detect"]["bus_" + str(bus)] = bus_dict
         return parsed_device_dict
@@ -802,6 +813,28 @@ class Sensors:
 
         return recommendations
 
+    def _process_iwlist_regexp_match(
+        self, result, cells: list
+    ) -> None:
+        """
+        Update the last cell entry with data from a regex match.
+
+        Handles the ``encryption`` field specially: when present, maps the
+        "on"/"off" string to "wep"/"off" respectively.  All other fields are
+        copied directly from the match's group dictionary.
+
+        inputs:
+            result: compiled regex match object (non-None)
+            cells(list): list of cell dictionaries built from iwlist output
+        returns:
+            None; modifies cells[-1] in place
+        """
+        if "encryption" in result.groupdict():
+            enc = "wep" if result.groupdict()["encryption"] == "on" else "off"
+            cells[-1].update({"encryption": enc})
+        else:
+            cells[-1].update(result.groupdict())
+
     def get_iwlist_wifi_strength(self, cell=0) -> float:  # noqa R0201
         """
         Return the Raspberry pi wifi signal strength in dBm from iwlist.
@@ -854,22 +887,14 @@ class Sensors:
                 if cell_number is not None:
                     cells.append(cell_number.groupdict())
                     continue
-                wpa = wpa_re.search(line)
-                if wpa is not None:
+                if wpa_re.search(line) is not None:
                     cells[-1].update({"encryption": "wpa"})
-                wpa2 = wpa2_re.search(line)
-                if wpa2 is not None:
+                if wpa2_re.search(line) is not None:
                     cells[-1].update({"encryption": "wpa2"})
                 for expression in regexps:
                     result = expression.search(line)
                     if result is not None:
-                        if "encryption" in result.groupdict():
-                            if result.groupdict()["encryption"] == "on":
-                                cells[-1].update({"encryption": "wep"})
-                            else:
-                                cells[-1].update({"encryption": "off"})
-                        else:
-                            cells[-1].update(result.groupdict())
+                        self._process_iwlist_regexp_match(result, cells)
                         continue
             return cells
 

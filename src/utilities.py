@@ -76,6 +76,133 @@ def get_function_name(stack_value=1):
     return inspect.stack()[stack_value][3]
 
 
+def _apply_flask_stderr_cast(mode: int) -> int:
+    """
+    Cast STDOUT_LOG to STDERR_LOG in flask server mode.
+
+    In flask server mode stdout is redirected; replace STDOUT_LOG with
+    STDERR_LOG so messages reach the log without being silently dropped.
+
+    inputs:
+        mode(int): current log mode flags
+    returns:
+        (int): updated mode with STDOUT replaced by STDERR when applicable
+    """
+    if log_stdout_to_stderr and (mode & STDOUT_LOG):
+        if not (mode & STDERR_LOG):
+            # Convert STDOUT to STDERR when not already present
+            return mode + STDERR_LOG - STDOUT_LOG
+        # Remove STDOUT when STDERR is already present to avoid duplicates
+        return mode - STDOUT_LOG
+    return mode
+
+
+def _write_to_data_log(msg: str, mode: int, filter_debug_msg: bool) -> None:
+    """
+    Write msg to the rotating data log file when DATA_LOG flag is set.
+
+    inputs:
+        msg(str): message to write
+        mode(int): log mode flags
+        filter_debug_msg(bool): True when debug messages should be suppressed
+    returns:
+        None
+    """
+    if (mode & DATA_LOG) and not filter_debug_msg:
+        # create directory if needed
+        if not os.path.exists(FILE_PATH):
+            # Log directory creation to stderr to avoid polluting stdout
+            print(f"data folder '{FILE_PATH}' created.", file=sys.stderr)
+            os.makedirs(FILE_PATH)
+
+        # build full file name
+        full_path = get_full_file_path(log_msg.file_name)  # type: ignore[attr-defined]
+
+        # check file size and rotate if necessary
+        file_size_bytes = get_file_size_bytes(full_path)
+        file_size_bytes = log_rotate_file(
+            full_path, file_size_bytes, MAX_LOG_SIZE_BYTES
+        )
+
+        # write to file
+        write_to_file(full_path, file_size_bytes, msg)
+
+
+def _write_to_stdout(msg: str, mode: int, filter_debug_msg: bool) -> None:
+    """
+    Print msg to stdout when STDOUT_LOG is set and not in dual-stream mode.
+
+    inputs:
+        msg(str): message to print
+        mode(int): log mode flags
+        filter_debug_msg(bool): True when debug messages should be suppressed
+    returns:
+        None
+    """
+    if (mode & STDOUT_LOG) and not filter_debug_msg and not (mode & DUAL_STREAM_LOG):
+        print(msg)
+
+
+def _write_to_stderr(msg: str, mode: int, filter_debug_msg: bool) -> None:
+    """
+    Print msg to stderr when STDERR_LOG flag is set.
+
+    inputs:
+        msg(str): message to print
+        mode(int): log mode flags
+        filter_debug_msg(bool): True when debug messages should be suppressed
+    returns:
+        None
+    """
+    if (mode & STDERR_LOG) and not filter_debug_msg:
+        print(msg, file=sys.stderr)
+
+
+def _write_dual_stream(msg: str, mode: int, filter_debug_msg: bool) -> None:
+    """
+    Handle dual-stream logging: capture to file and print to console.
+
+    In dual-stream mode, verbose retry messages are summarised for console
+    output while the full message is captured to the stdout capture file.
+
+    inputs:
+        msg(str): message to log
+        mode(int): log mode flags
+        filter_debug_msg(bool): True when debug messages should be suppressed
+    returns:
+        None
+    """
+    if (mode & DUAL_STREAM_LOG) and not filter_debug_msg:
+        # Capture full message to stdout capture file
+        manage_stdout_capture_file(msg)
+        # Print only summary/reduced message to console for certain verbose cases
+        if _is_verbose_retry_message(msg):
+            summary_msg = _create_summary_message(msg)
+            print(summary_msg)
+        else:
+            # Print full message for non-verbose cases
+            print(msg)
+
+
+def _write_quiet_log(msg: str, mode: int, filter_debug_msg: bool) -> None:
+    """
+    Handle quiet logging: print a summary for verbose retry messages.
+
+    inputs:
+        msg(str): message to log
+        mode(int): log mode flags
+        filter_debug_msg(bool): True when debug messages should be suppressed
+    returns:
+        None
+    """
+    if (mode & QUIET_LOG) and not filter_debug_msg and not (mode & DUAL_STREAM_LOG):
+        if _is_verbose_retry_message(msg):
+            summary_msg = _create_summary_message(msg)
+            print(summary_msg)
+        else:
+            print(msg)
+
+
 def log_msg(msg, mode, func_name=-1, file_name=None):
     """
     Log message to file, console, etc.
@@ -98,13 +225,7 @@ def log_msg(msg, mode, func_name=-1, file_name=None):
     filter_debug_msg = debug_msg and not debug_enabled
 
     # cast STDOUT_LOG to STDERR_LOG in flask server mode
-    if log_stdout_to_stderr and (mode & STDOUT_LOG):
-        if not (mode & STDERR_LOG):
-            # Convert STDOUT to STDERR when not already present
-            mode = mode + STDERR_LOG - STDOUT_LOG
-        else:
-            # Remove STDOUT when STDERR is already present to avoid duplicates
-            mode = mode - STDOUT_LOG
+    mode = _apply_flask_stderr_cast(mode)
 
     # define filename
     if file_name is not None:
@@ -114,54 +235,11 @@ def log_msg(msg, mode, func_name=-1, file_name=None):
     if func_name > 0:
         msg = f"[{get_function_name(func_name)}]: {msg}"
 
-    # log to data file
-    if (mode & DATA_LOG) and not filter_debug_msg:
-        # create directory if needed
-        if not os.path.exists(FILE_PATH):
-            # Log directory creation to stderr to avoid polluting stdout
-            print(f"data folder '{FILE_PATH}' created.", file=sys.stderr)
-            os.makedirs(FILE_PATH)
-
-        # build full file name
-        full_path = get_full_file_path(log_msg.file_name)  # type: ignore[attr-defined]
-
-        # check file size and rotate if necessary
-        file_size_bytes = get_file_size_bytes(full_path)
-        file_size_bytes = log_rotate_file(
-            full_path, file_size_bytes, MAX_LOG_SIZE_BYTES
-        )
-
-        # write to file
-        write_to_file(full_path, file_size_bytes, msg)
-
-    # print to console
-    if (mode & STDOUT_LOG) and not filter_debug_msg and not (mode & DUAL_STREAM_LOG):
-        print(msg)
-
-    # print to error stream
-    if (mode & STDERR_LOG) and not filter_debug_msg:
-        print(msg, file=sys.stderr)
-
-    # handle dual stream logging (quiet console + full file + stdout capture)
-    if (mode & DUAL_STREAM_LOG) and not filter_debug_msg:
-        # Capture full message to stdout capture file
-        manage_stdout_capture_file(msg)
-
-        # Print only summary/reduced message to console for certain verbose cases
-        if _is_verbose_retry_message(msg):
-            summary_msg = _create_summary_message(msg)
-            print(summary_msg)
-        else:
-            # Print full message for non-verbose cases
-            print(msg)
-
-    # handle quiet logging (reduced verbosity)
-    if (mode & QUIET_LOG) and not filter_debug_msg and not (mode & DUAL_STREAM_LOG):
-        if _is_verbose_retry_message(msg):
-            summary_msg = _create_summary_message(msg)
-            print(summary_msg)
-        else:
-            print(msg)
+    _write_to_data_log(msg, mode, filter_debug_msg)
+    _write_to_stdout(msg, mode, filter_debug_msg)
+    _write_to_stderr(msg, mode, filter_debug_msg)
+    _write_dual_stream(msg, mode, filter_debug_msg)
+    _write_quiet_log(msg, mode, filter_debug_msg)
 
     return return_buffer
 

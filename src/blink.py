@@ -943,6 +943,156 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):  # type: ignore[misc]
         for name in ("blinkpy.auth", BLINKPY_BLINKPY_MODULE, "blinkpy.api"):
             logging.getLogger(name).setLevel(logging.DEBUG)
 
+    def _log_http_request_verbose(self, zone: int, params) -> None:
+        """
+        Print request start details to stdout in verbose mode.
+
+        inputs:
+            zone(int): zone number for log prefix
+            params: aiohttp TraceRequestStartParams
+        returns:
+            None
+        """
+        host = params.url.host or ""
+        path = params.url.path or ""
+        print(
+            f"[Blink zone {zone}][HTTP→] "
+            f"{params.method} {host}{path}"
+        )
+
+    def _log_http_response_verbose(self, zone: int, params, status: int) -> None:
+        """
+        Print response details to stdout in verbose mode.
+
+        inputs:
+            zone(int): zone number for log prefix
+            params: aiohttp TraceRequestEndParams
+            status(int): HTTP response status code
+        returns:
+            None
+        """
+        host = params.url.host or ""
+        path = params.url.path or ""
+        print(
+            f"[Blink zone {zone}][HTTP←] "
+            f"{status} {host}{path}"
+        )
+
+    async def _read_http_body_safe(self, params, status: int, zone: int) -> bytes:
+        """
+        Read the HTTP response body, logging any read error in verbose mode.
+
+        aiohttp caches the body after the first read() call so blinkpy can
+        still consume it afterwards.
+
+        inputs:
+            params: aiohttp TraceRequestEndParams
+            status(int): HTTP response status code
+            zone(int): zone number for log prefix
+        returns:
+            (bytes): response body, or b"" if the read failed
+        """
+        try:
+            return await params.response.read()
+        except Exception as exc:
+            if self.verbose:
+                print(
+                    f"[Blink zone {zone}][HTTP {status} body] "
+                    f"(could not read: {exc})"
+                )
+            return b""
+
+    def _detect_and_store_rate_limit(self, body_bytes: bytes) -> None:
+        """
+        Parse a 429 response body and set rate-limit instance attributes.
+
+        Sets ``_rate_limit_detected`` and ``_rate_limit_next_time_secs``
+        when the body contains ``"error_cause": "2fa_rate_limit_exceeded"``.
+
+        inputs:
+            body_bytes(bytes): raw response body from a HTTP 429 response
+        returns:
+            None
+        """
+        try:
+            body_json = json.loads(body_bytes)
+            if body_json.get("error_cause") == "2fa_rate_limit_exceeded":
+                self._rate_limit_detected = True
+                self._rate_limit_next_time_secs = body_json.get(
+                    "next_time_in_secs"
+                )
+        except Exception:
+            pass
+
+    def _process_error_body(
+        self, body_bytes: bytes, status: int, zone: int
+    ) -> None:
+        """
+        Log the error response body snippet and check for rate limits.
+
+        Logs a short body snippet in verbose mode and unconditionally
+        checks for 2FA rate-limit signals in HTTP 429 bodies.
+
+        inputs:
+            body_bytes(bytes): raw response body
+            status(int): HTTP response status code
+            zone(int): zone number for log prefix
+        returns:
+            None
+        """
+        if self.verbose:
+            snippet = (
+                body_bytes.decode("utf-8", errors="replace")[:500].replace(
+                    "\n", " "
+                )
+            )
+            print(f"[Blink zone {zone}][HTTP {status} body] {snippet}")
+        # Detect 2FA rate limit (HTTP 429) unconditionally so we can stop
+        # retrying even when verbose=False.
+        if status == 429:
+            self._detect_and_store_rate_limit(body_bytes)
+
+    def _log_406_note(self, zone: int) -> None:
+        """
+        Print a verbose note about a HTTP 406 response.
+
+        inputs:
+            zone(int): zone number for log prefix
+        returns:
+            None
+        """
+        print(
+            f"[Blink zone {zone}] NOTE: HTTP 406 may "
+            f"indicate temporary account lockout or IP "
+            f"rate-limiting by Blink's server. "
+            f"If all auth paths fail, try waiting 15-30 "
+            f"minutes and signing into the official Blink "
+            f"mobile app before retrying."
+        )
+
+    async def _handle_error_response(
+        self, params, status: int, zone: int
+    ) -> None:
+        """
+        Handle an HTTP error response: read and log the body, check limits.
+
+        Reads the response body safely, logs a body snippet when verbose,
+        checks for a 2FA rate-limit signal in HTTP 429 responses, and
+        prints a specific note for HTTP 406 responses.
+
+        inputs:
+            params: aiohttp TraceRequestEndParams
+            status(int): HTTP response status code (assumed >= 400)
+            zone(int): zone number for log prefix
+        returns:
+            None
+        """
+        body_bytes = await self._read_http_body_safe(params, status, zone)
+        if body_bytes:
+            self._process_error_body(body_bytes, status, zone)
+        if self.verbose and status == 406:
+            self._log_406_note(zone)
+
     def _create_http_trace_config(self) -> TraceConfig:
         """
         Build an aiohttp TraceConfig for HTTP monitoring during auth.
@@ -968,75 +1118,17 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):  # type: ignore[misc]
 
         async def _on_request_start(_session, _ctx, params) -> None:
             if self.verbose:
-                host = params.url.host or ""
-                path = params.url.path or ""
-                print(
-                    f"[Blink zone {zone}][HTTP→] "
-                    f"{params.method} {host}{path}"
-                )
+                self._log_http_request_verbose(zone, params)
             # Yield to the event loop; aiohttp trace callbacks must be async.
             await asyncio.sleep(0)
 
         async def _on_request_end(_session, _ctx, params) -> None:
             status = params.response.status
             if self.verbose:
-                host = params.url.host or ""
-                path = params.url.path or ""
-                print(
-                    f"[Blink zone {zone}][HTTP←] "
-                    f"{status} {host}{path}"
-                )
+                self._log_http_response_verbose(zone, params, status)
             if status >= 400:
-                # Read and cache the response body. aiohttp caches the
-                # body after the first read() so blinkpy can still
-                # consume it afterwards.
-                body_bytes = b""
-                try:
-                    body_bytes = await params.response.read()
-                except Exception as exc:
-                    if self.verbose:
-                        print(
-                            f"[Blink zone {zone}][HTTP {status} body] "
-                            f"(could not read: {exc})"
-                        )
-
-                if body_bytes:
-                    if self.verbose:
-                        snippet = (
-                            body_bytes.decode("utf-8", errors="replace")[
-                                :500
-                            ].replace("\n", " ")
-                        )
-                        print(
-                            f"[Blink zone {zone}]"
-                            f"[HTTP {status} body] {snippet}"
-                        )
-
-                    # Detect 2FA rate limit (HTTP 429) unconditionally
-                    # so we can stop retrying even when verbose=False.
-                    if status == 429:
-                        try:
-                            body_json = json.loads(body_bytes)
-                            if (
-                                body_json.get("error_cause")
-                                == "2fa_rate_limit_exceeded"
-                            ):
-                                self._rate_limit_detected = True
-                                self._rate_limit_next_time_secs = (
-                                    body_json.get("next_time_in_secs")
-                                )
-                        except Exception:
-                            pass
-
-                if self.verbose and status == 406:
-                    print(
-                        f"[Blink zone {zone}] NOTE: HTTP 406 may "
-                        f"indicate temporary account lockout or IP "
-                        f"rate-limiting by Blink's server. "
-                        f"If all auth paths fail, try waiting 15-30 "
-                        f"minutes and signing into the official Blink "
-                        f"mobile app before retrying."
-                    )
+                await self._handle_error_response(params, status, zone)
+            await asyncio.sleep(0)
 
         async def _on_request_exception(_session, _ctx, params) -> None:
             if self.verbose:

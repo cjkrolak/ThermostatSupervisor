@@ -20,6 +20,9 @@ This project is a **Thermostat Supervisor** application that:
 - Break down complex functions into smaller, more manageable functions.
 - Keep cyclomatic complexity for every new or modified function at **15 or
   lower** (use helper functions instead of adding nested branches).
+- Keep **cognitive complexity** (as measured by SonarQube) for every new or
+  modified function at **15 or lower**.  Extract helper functions to reduce
+  nested branching and improve readability.
 
 ### General Instructions
 - Always prioritize readability and clarity.

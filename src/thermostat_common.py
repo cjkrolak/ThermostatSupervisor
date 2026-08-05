@@ -1329,6 +1329,163 @@ class ThermostatCommonZone:
             mode=util.BOTH_LOG,
         )
 
+    def _init_loop_timing(self, max_measurements):
+        """
+        Compute the maximum loop time and log it.
+
+        inputs:
+            max_measurements(int | None): total number of measurements planned
+        returns:
+            (tuple): (max_loop_time_sec, loop_start_time) where both are None
+                     when max_measurements is falsy.
+        """
+        if max_measurements:
+            # Calculate max time: (measurements * poll_time) + generous buffer
+            # for network operations and retries
+            max_loop_time_sec = (max_measurements * self.poll_time_sec) + (
+                max_measurements * 300
+            )  # 5 min buffer per measurement
+            loop_start_time = time.time()
+            util.log_msg(
+                f"supervisor_loop: max_loop_time="
+                f"{max_loop_time_sec / 86400.0:.1f} days "
+                f"for {max_measurements} measurements",
+                mode=util.DUAL_STREAM_LOG,
+                func_name=1,
+            )
+            return max_loop_time_sec, loop_start_time
+        return None, None
+
+    def _check_loop_timed_out(
+        self,
+        max_loop_time_sec,
+        loop_start_time,
+        measurement,
+        max_measurements,
+        context: str = "",
+    ):
+        """
+        Check whether the overall loop wall-clock time has been exceeded.
+
+        Logs a warning and sets measurement beyond max_measurements when
+        the timeout is reached so the outer loop terminates gracefully.
+
+        inputs:
+            max_loop_time_sec(float | None): maximum allowed elapsed seconds
+            loop_start_time(float | None): epoch time when loop started
+            measurement(int): current measurement index
+            max_measurements(int): total measurements planned
+            context(str): optional description added to the log message
+        returns:
+            (tuple): (timed_out: bool, measurement: int)
+        """
+        if max_loop_time_sec and loop_start_time:
+            elapsed_time = time.time() - loop_start_time
+            if elapsed_time > max_loop_time_sec:
+                suffix = f" {context}" if context else ""
+                util.log_msg(
+                    f"supervisor_loop: exceeded max loop time{suffix} "
+                    f"({elapsed_time:.1f}s > {max_loop_time_sec}s), "
+                    f"exiting loop at measurement {measurement}",
+                    mode=util.BOTH_LOG,
+                    func_name=1,
+                )
+                return True, max_measurements + 1
+        return False, measurement
+
+    def _warn_slow_iteration(
+        self,
+        iteration_elapsed: float,
+        max_loop_time_sec,
+        max_measurements,
+    ) -> None:
+        """
+        Log a warning when a single get_current_mode() call takes too long.
+
+        inputs:
+            iteration_elapsed(float): seconds the iteration took
+            max_loop_time_sec(float | None): maximum loop time budget
+            max_measurements(int | None): total measurements planned
+        returns:
+            None
+        """
+        if max_loop_time_sec and iteration_elapsed > (
+            max_loop_time_sec / max_measurements
+        ):
+            util.log_msg(
+                f"supervisor_loop: single iteration took "
+                f"{iteration_elapsed:.1f}s "
+                f"(exceeds "
+                f"{max_loop_time_sec / max_measurements:.1f}s threshold), "
+                "may indicate network issues",
+                mode=util.BOTH_LOG,
+                func_name=1,
+            )
+
+    def _update_mode_state(
+        self,
+        current_mode_dict: dict,
+        previous_mode_dict: dict,
+        debug: bool,
+    ) -> dict:
+        """
+        Report heating parameters when mode changes and latch new state.
+
+        inputs:
+            current_mode_dict(dict): mode dict from this poll cycle
+            previous_mode_dict(dict): mode dict from the previous cycle
+            debug(bool): debug flag
+        returns:
+            (dict): updated previous_mode_dict (equals current_mode_dict
+                    if a change was detected, unchanged otherwise)
+        """
+        if current_mode_dict != previous_mode_dict:
+            if debug:
+                self.report_heating_parameters()
+            return current_mode_dict  # latch
+        return previous_mode_dict
+
+    def _revert_mode_if_needed(self) -> None:
+        """
+        Revert the thermostat mode to target if it doesn't match.
+
+        inputs:
+            None
+        returns:
+            None
+        """
+        if not self.verify_current_mode(
+            api.uip.get_user_inputs(api.uip.zone_name, api.input_flds.target_mode)
+        ):
+            api.uip.set_user_inputs(
+                api.uip.zone_name,
+                api.input_flds.target_mode,
+                self.revert_thermostat_mode(
+                    api.uip.get_user_inputs(
+                        api.uip.zone_name, api.input_flds.target_mode
+                    )
+                ),
+            )
+
+    def _revert_temp_if_needed(self, current_mode_dict: dict) -> None:
+        """
+        Revert the temperature setpoint if a schedule deviation is detected.
+
+        inputs:
+            current_mode_dict(dict): current mode information including
+                status_msg
+        returns:
+            None
+        """
+        if (
+            self.revert_deviations
+            and self.is_controlled_mode()
+            and self.is_temp_deviated_from_schedule()
+        ):
+            self.revert_temperature_deviation(
+                self.schedule_setpoint, current_mode_dict["status_msg"]
+            )
+
     def supervisor_loop(self, Thermostat, session_count, measurement, debug):
         """
         Loop through supervisor algorithm.
@@ -1348,52 +1505,24 @@ class ThermostatCommonZone:
         previous_mode_dict = {}
 
         # Calculate maximum loop time based on expected measurements
-        # Allow enough time for all measurements plus network operations
         max_measurements = api.uip.get_user_inputs(
             api.uip.zone_name, api.input_flds.measurements
         )
-        if max_measurements:
-            # Calculate max time: (measurements * poll_time) + generous buffer
-            # for network operations and retries
-            max_loop_time_sec = (max_measurements * self.poll_time_sec) + (
-                max_measurements * 300
-            )  # 5 min buffer per measurement
-            loop_start_time = time.time()
-            util.log_msg(
-                f"supervisor_loop: max_loop_time="
-                f"{max_loop_time_sec / 86400.0:.1f} days "
-                f"for {max_measurements} measurements",
-                mode=util.DUAL_STREAM_LOG,
-                func_name=1,
-            )
-        else:
-            max_loop_time_sec = None
-            loop_start_time = None
+        max_loop_time_sec, loop_start_time = self._init_loop_timing(
+            max_measurements
+        )
 
         # poll thermostat settings
         while not api.uip.max_measurement_count_exceeded(measurement):
-            # Check for overall loop timeout to prevent indefinite hanging
-            # This check must happen BEFORE potentially blocking operations
-            if max_loop_time_sec and loop_start_time:
-                elapsed_time = time.time() - loop_start_time
-                if elapsed_time > max_loop_time_sec:
-                    util.log_msg(
-                        f"supervisor_loop: exceeded max loop time "
-                        f"({elapsed_time:.1f}s > {max_loop_time_sec}s), "
-                        f"exiting loop at measurement {measurement}",
-                        mode=util.BOTH_LOG,
-                        func_name=1,
-                    )
-                    # Set measurement to exceed max to exit outer loop in
-                    # supervise.py The outer loop will terminate when
-                    # measurement > max_measurements
-                    measurement = max_measurements + 1
-                    break
+            # Check for overall loop timeout before any blocking operations
+            timed_out, measurement = self._check_loop_timed_out(
+                max_loop_time_sec, loop_start_time, measurement, max_measurements
+            )
+            if timed_out:
+                break
 
             # query thermostat for current settings and set points
-            # Record start time for this iteration
             iteration_start_time = time.time()
-            # Wrap in try/except to catch any unexpected hangs/exceptions
             try:
                 current_mode_dict = self.get_current_mode(
                     session_count,
@@ -1407,66 +1536,35 @@ class ThermostatCommonZone:
                     func_name=1,
                 )
                 # Check if we've exceeded max time due to retries
-                if max_loop_time_sec and loop_start_time:
-                    elapsed_time = time.time() - loop_start_time
-                    if elapsed_time > max_loop_time_sec:
-                        util.log_msg(
-                            f"supervisor_loop: exceeded max loop time after "
-                            f"exception ({elapsed_time:.1f}s > "
-                            f"{max_loop_time_sec}s), exiting loop",
-                            mode=util.BOTH_LOG,
-                            func_name=1,
-                        )
-                        # Set measurement to exceed max to exit outer loop
-                        measurement = max_measurements + 1
-                        break
+                timed_out, measurement = self._check_loop_timed_out(
+                    max_loop_time_sec,
+                    loop_start_time,
+                    measurement,
+                    max_measurements,
+                    context="after exception",
+                )
+                if timed_out:
+                    break
                 # Re-raise to maintain existing error handling behavior
                 raise
 
-            # Check if get_current_mode took too long
-            iteration_elapsed = time.time() - iteration_start_time
-            if max_loop_time_sec and iteration_elapsed > (
-                max_loop_time_sec / max_measurements
-            ):
-                util.log_msg(
-                    f"supervisor_loop: single iteration took {iteration_elapsed:.1f}s "
-                    f"(exceeds {max_loop_time_sec / max_measurements:.1f}s threshold), "
-                    "may indicate network issues",
-                    mode=util.BOTH_LOG,
-                    func_name=1,
-                )
+            # Warn if single iteration was unusually slow
+            self._warn_slow_iteration(
+                time.time() - iteration_start_time,
+                max_loop_time_sec,
+                max_measurements,
+            )
 
             # debug data on change from previous poll
-            # note this check is probably hyper-sensitive, since status msg
-            # change could trigger this extra report.
-            if current_mode_dict != previous_mode_dict:
-                if debug:
-                    self.report_heating_parameters()
-                previous_mode_dict = current_mode_dict  # latch
+            previous_mode_dict = self._update_mode_state(
+                current_mode_dict, previous_mode_dict, debug
+            )
 
             # revert thermostat mode if not matching target
-            if not self.verify_current_mode(
-                api.uip.get_user_inputs(api.uip.zone_name, api.input_flds.target_mode)
-            ):
-                api.uip.set_user_inputs(
-                    api.uip.zone_name,
-                    api.input_flds.target_mode,
-                    self.revert_thermostat_mode(
-                        api.uip.get_user_inputs(
-                            api.uip.zone_name, api.input_flds.target_mode
-                        )
-                    ),
-                )
+            self._revert_mode_if_needed()
 
             # revert thermostat to schedule if heat override is detected
-            if (
-                self.revert_deviations
-                and self.is_controlled_mode()
-                and self.is_temp_deviated_from_schedule()
-            ):
-                self.revert_temperature_deviation(
-                    self.schedule_setpoint, current_mode_dict["status_msg"]
-                )
+            self._revert_temp_if_needed(current_mode_dict)
 
             # increment poll count
             poll_count += 1
