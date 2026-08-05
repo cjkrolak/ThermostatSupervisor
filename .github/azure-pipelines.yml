@@ -258,12 +258,14 @@ stages:
               fi
               echo "SUCCESS: GitHub API authentication successful"
 
-              # Get the coverage gist ID from the uploadCoverage step
-              coverage_gist_id="$(uploadCoverage.coverageGistId)"
+              # Get the coverage gist ID set by the uploadCoverage step
+              # (passed via env variable to avoid bash command-substitution issues)
+              coverage_gist_id="${COVERAGE_GIST_ID}"
               echo "Coverage gist ID: ${coverage_gist_id}"
 
               # Determine test result status from Stage 1 output variable
-              test_exit_code="$(testExitCode)"
+              # (passed via env variable from the ADO job-level variable)
+              test_exit_code="${TEST_EXIT_CODE}"
               echo "Test exit code: ${test_exit_code}"
               if [[ "${test_exit_code}" == "0" ]]; then
                 result_status="success"
@@ -339,3 +341,5 @@ stages:
               THERMOSTATSUPERVISOR_PR: $(THERMOSTATSUPERVISOR_PR)
               # Azure DevOps pipeline variable - must be a Personal Access Token
               # with 'repo' and 'workflow' scopes
+              COVERAGE_GIST_ID: $(uploadCoverage.coverageGistId)
+              TEST_EXIT_CODE: $(testExitCode)
