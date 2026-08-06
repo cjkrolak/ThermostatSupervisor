@@ -1731,61 +1731,93 @@ def print_select_data_from_all_zones(
         print("No zones to query")
         return None, None
 
-    # Get outdoor weather data once if enabled (same for all zones)
-    outdoor_weather_data = None
-    if display_outdoor_weather:
-        try:
-            # Get zip code from thermostat configuration
-            zip_code = api.SUPPORTED_THERMOSTATS.get(thermostat_type, {}).get(
-                "zip_code"
-            )
-            if zip_code:
-                api_key = weather.get_weather_api_key()
-                outdoor_weather_data = weather.get_outdoor_weather(zip_code, api_key)
-        except Exception as e:
-            util.log_msg(
-                f"Failed to get outdoor weather data: {e}",
-                mode=util.BOTH_LOG,
-                func_name=1,
-            )
+    outdoor_weather_data = _get_outdoor_weather_data(
+        thermostat_type, display_outdoor_weather
+    )
 
+    Thermostat = None
+    Zone = None
     for zone in zone_lst:
         # create class instances
         Thermostat, Zone = create_thermostat_instance(
             thermostat_type, zone, ThermostatClass, ThermostatZone, verbose=False
         )
-        # zone temperature
-        display_temp = Zone.get_display_temp()
-        temp_display = (
-            f"{display_temp:.1f} °F" if display_temp is not None else "N/A"
+        msg = _build_zone_select_data_message(
+            zone,
+            Zone,
+            display_wifi,
+            display_battery,
+            display_outdoor_weather,
+            outdoor_weather_data,
         )
-        msg = f"zone: {zone}, name: {Zone.zone_name}, temp: {temp_display}"
-
-        # zone wifi strength
-        if display_wifi:
-            wifi_strength = Zone.get_wifi_strength()
-            wifi_status = Zone.get_wifi_status()
-            wifi_status_display = get_wifi_status_display(wifi_status)
-            msg += f", wifi strength: {wifi_strength} dBm ({wifi_status_display})"
-
-        # zone battery stats
-        if display_battery:
-            battery_voltage = Zone.get_battery_voltage()
-            battery_status = Zone.get_battery_status()
-            battery_status_display = get_battery_status_display(battery_status)
-            msg += (
-                f", battery voltage: {battery_voltage:.2f} volts "
-                f"({battery_status_display})"
-            )
-
-        # outdoor weather data
-        if display_outdoor_weather and outdoor_weather_data:
-            weather_display = weather.format_weather_display(outdoor_weather_data)
-            msg += f", {weather_display}"
-
         print(msg)
 
     return Thermostat, Zone
+
+
+def _get_outdoor_weather_data(thermostat_type, display_outdoor_weather):
+    """Return outdoor weather data once for all zone status lines."""
+    if not display_outdoor_weather:
+        return None
+
+    try:
+        # Get zip code from thermostat configuration
+        zip_code = api.SUPPORTED_THERMOSTATS.get(thermostat_type, {}).get("zip_code")
+        if not zip_code:
+            return None
+        api_key = weather.get_weather_api_key()
+        return weather.get_outdoor_weather(zip_code, api_key)
+    except Exception as e:
+        util.log_msg(
+            f"Failed to get outdoor weather data: {e}",
+            mode=util.BOTH_LOG,
+            func_name=1,
+        )
+        return None
+
+
+def _build_zone_select_data_message(
+    zone,
+    zone_obj,
+    display_wifi,
+    display_battery,
+    display_outdoor_weather,
+    outdoor_weather_data,
+):
+    """Build one select-data output line for a single zone."""
+    display_temp = zone_obj.get_display_temp()
+    temp_display = f"{display_temp:.1f} °F" if display_temp is not None else "N/A"
+    msg = f"zone: {zone}, name: {zone_obj.zone_name}, temp: {temp_display}"
+
+    if display_wifi:
+        msg = _append_wifi_status_message(msg, zone_obj)
+
+    if display_battery:
+        msg = _append_battery_status_message(msg, zone_obj)
+
+    if display_outdoor_weather and outdoor_weather_data:
+        weather_display = weather.format_weather_display(outdoor_weather_data)
+        msg += f", {weather_display}"
+    return msg
+
+
+def _append_wifi_status_message(msg, zone_obj):
+    """Append Wi-Fi status details to a zone output line."""
+    wifi_strength = zone_obj.get_wifi_strength()
+    wifi_status = zone_obj.get_wifi_status()
+    wifi_status_display = get_wifi_status_display(wifi_status)
+    return f"{msg}, wifi strength: {wifi_strength} dBm ({wifi_status_display})"
+
+
+def _append_battery_status_message(msg, zone_obj):
+    """Append battery status details to a zone output line."""
+    battery_voltage = zone_obj.get_battery_voltage()
+    battery_status = zone_obj.get_battery_status()
+    battery_status_display = get_battery_status_display(battery_status)
+    return (
+        f"{msg}, battery voltage: {battery_voltage:.2f} volts "
+        f"({battery_status_display})"
+    )
 
 
 class AuthenticationError(ValueError):

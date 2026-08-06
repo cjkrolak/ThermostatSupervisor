@@ -367,41 +367,9 @@ class ThermostatClass(
         # init_update_status=False avoids calling update_status() for every
         # zone at creation time; only the matched zone is updated below.
         kumos = self.make_pykumos(init_update_status=False)
-        matched_zone_name, device_id = self._get_device_by_configured_ip(kumos, zone)
+        matched_zone_name, device_id = self._resolve_zone_device(kumos, zone)
         if device_id is None:
-            device_id = kumos.get(self.zone_name)
-            matched_zone_name = self.zone_name
-
-        # Backward-compatible fallback for name format mismatches
-        # (e.g., "Living Room" vs "LivingRoom")
-        if device_id is None:
-            target_zone_name = "".join(
-                c.lower() for c in self.zone_name if c.isalnum()
-            )
-            for candidate_zone_name, candidate_device_id in kumos.items():
-                normalized_candidate = "".join(
-                    c.lower() for c in candidate_zone_name if c.isalnum()
-                )
-                if normalized_candidate == target_zone_name:
-                    matched_zone_name = candidate_zone_name
-                    device_id = candidate_device_id
-                    break
-
-        # Final fallback to zone order (0=first thermostat, 1=second, etc.)
-        if device_id is None and isinstance(zone, int) and 0 <= zone < len(kumos):
-            matched_zone_name, device_id = list(kumos.items())[zone]
-
-        if device_id is None:
-            available_zone_names = list(kumos.keys())
-            if available_zone_names:
-                valid_range = f"[0..{len(available_zone_names) - 1}]"
-            else:
-                valid_range = "[]"
-            raise KeyError(
-                f"Configured zone name '{self.zone_name}' was not found in available "
-                f"kumolocal zones: {available_zone_names}, and zone index {zone!r} "
-                f"is out of valid range {valid_range}."
-            )
+            self._raise_zone_lookup_error(kumos, zone)
 
         self.zone_name = matched_zone_name
         # print zone name the first time it is known
@@ -423,6 +391,46 @@ class ThermostatClass(
 
         # return the target zone object
         return self.device_id
+
+    def _resolve_zone_device(self, kumos, zone):
+        """Resolve a device with compatibility fallbacks."""
+        matched_zone_name, device_id = self._get_device_by_configured_ip(kumos, zone)
+        if device_id is not None:
+            return matched_zone_name, device_id
+
+        device_id = kumos.get(self.zone_name)
+        if device_id is not None:
+            return self.zone_name, device_id
+
+        matched_zone_name, device_id = self._get_device_by_normalized_zone_name(kumos)
+        if device_id is not None:
+            return matched_zone_name, device_id
+
+        # Final fallback to zone order (0=first thermostat, 1=second, etc.)
+        if isinstance(zone, int) and 0 <= zone < len(kumos):
+            return list(kumos.items())[zone]
+        return self.zone_name, None
+
+    def _get_device_by_normalized_zone_name(self, kumos):
+        """Return a matching zone using normalized zone labels."""
+        target_zone_name = self._normalize_zone_name(self.zone_name)
+        for candidate_zone_name, candidate_device_id in kumos.items():
+            if self._normalize_zone_name(candidate_zone_name) == target_zone_name:
+                return candidate_zone_name, candidate_device_id
+        return self.zone_name, None
+
+    def _raise_zone_lookup_error(self, kumos, zone) -> None:
+        """Raise an informative error for unresolved zone lookups."""
+        available_zone_names = list(kumos.keys())
+        if available_zone_names:
+            valid_range = f"[0..{len(available_zone_names) - 1}]"
+        else:
+            valid_range = "[]"
+        raise KeyError(
+            f"Configured zone name '{self.zone_name}' was not found in available "
+            f"kumolocal zones: {available_zone_names}, and zone index {zone!r} "
+            f"is out of valid range {valid_range}."
+        )
 
     def detect_local_network_availability(self):
         """
