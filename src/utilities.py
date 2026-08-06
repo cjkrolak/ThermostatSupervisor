@@ -98,6 +98,30 @@ def _apply_flask_stderr_cast(mode: int) -> int:
     return mode
 
 
+# Compiled once at module level to avoid per-call regex compilation overhead.
+_AUTHORIZATION_PATTERN = re.compile(
+    r"(?i)\bAuthorization\b\s*[:=]\s*(?:['\"])?Bearer\s+"
+    r"[A-Za-z0-9._~+/=-]+(?:['\"])?"
+)
+_SENSITIVE_KEY_PATTERN = re.compile(
+    r"(?i)(?P<prefix>['\"]?(?:password|passwd|pwd|secret|client[_ -]?secret|"
+    r"access[_ -]?token|refresh[_ -]?token|auth(?:entication)?[_ -]?token|"
+    r"api[_ -]?key|token|2fa(?:[_ -]?code)?|otp)['\"]?\s*[:=]\s*)"
+    r"(?P<quote>['\"]?)(?P<value>[^,\s'\"}\]]+)(?P=quote)"
+)
+_BEARER_TOKEN_PATTERN = re.compile(
+    r"(?i)(?P<prefix>\bBearer\s+)(?P<value>[A-Za-z0-9._~+/=-]+)"
+)
+
+
+def _mask_sensitive_key_value(match: re.Match) -> str:
+    """Return the original key and separator with the value redacted."""
+    return (
+        f"{match.group('prefix')}{match.group('quote')}"
+        f"******{match.group('quote')}"
+    )
+
+
 def _sanitize_log_message(msg) -> str:
     """
     Redact sensitive values before writing a message to any log sink.
@@ -109,34 +133,15 @@ def _sanitize_log_message(msg) -> str:
     """
     sanitized_msg = str(msg)
 
-    authorization_pattern = re.compile(
-        r"(?i)\bAuthorization\b\s*[:=]\s*(?:['\"])?Bearer\s+"
-        r"[A-Za-z0-9._~+/=-]+(?:['\"])?"
+    sanitized_msg = _AUTHORIZATION_PATTERN.sub(
+        "Authorization: ******", sanitized_msg
     )
-    sanitized_msg = authorization_pattern.sub("Authorization: ******", sanitized_msg)
-
-    sensitive_key_pattern = re.compile(
-        r"(?i)(?P<prefix>['\"]?(?:password|passwd|pwd|secret|client[_ -]?secret|"
-        r"access[_ -]?token|refresh[_ -]?token|auth(?:entication)?[_ -]?token|"
-        r"api[_ -]?key|token|2fa(?:[_ -]?code)?|otp)['\"]?\s*[:=]\s*)"
-        r"(?P<quote>['\"]?)(?P<value>[^,\s'\"}\]]+)(?P=quote)"
-    )
-
-    def _mask_sensitive_key_value(match: re.Match[str]) -> str:
-        """Return the original key and separator with the value redacted."""
-        return (
-            f"{match.group('prefix')}{match.group('quote')}"
-            f"******{match.group('quote')}"
-        )
-
-    sanitized_msg = sensitive_key_pattern.sub(
+    sanitized_msg = _SENSITIVE_KEY_PATTERN.sub(
         _mask_sensitive_key_value, sanitized_msg
     )
-
-    bearer_token_pattern = re.compile(
-        r"(?i)(?P<prefix>\bBearer\s+)(?P<value>[A-Za-z0-9._~+/=-]+)"
+    sanitized_msg = _BEARER_TOKEN_PATTERN.sub(
+        r"\g<prefix>******", sanitized_msg
     )
-    sanitized_msg = bearer_token_pattern.sub(r"\g<prefix>******", sanitized_msg)
 
     return sanitized_msg
 
