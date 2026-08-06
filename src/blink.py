@@ -671,7 +671,7 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):  # type: ignore[misc]
             return await self._handle_primary_flow_2fa()
 
     async def _handle_primary_flow_2fa(self):
-        """Complete 2FA for PKCE path and persist tokens on success."""
+        """Complete 2FA for PKCE path and return the result."""
         if self.verbose:
             print(
                 f"[Blink zone {self.zone_number}] 2FA required. "
@@ -683,7 +683,6 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):  # type: ignore[misc]
                 "2FA verification failed. Please check your "
                 "verification code."
             )
-        await self._save_token_cache()
         return result
 
     async def _run_password_grant_fallback(self):
