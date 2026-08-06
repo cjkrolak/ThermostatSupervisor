@@ -103,17 +103,9 @@ jobs:
         env:
           THERMOSTATSUPERVISOR_PR: ${{ secrets.THERMOSTATSUPERVISOR_PR }}
       - name: Regenerate Coverage Data since it does not exist
-        if: >
-          ${{
-            steps.Download_coverage_data_from_Azure_DevOps.outcome == 'success' &&
-            (
-              steps.Download_coverage_data_from_Azure_DevOps.outputs.coverage_gist_id
-                == '' ||
-              steps.Download_coverage_data_from_Azure_DevOps.outputs.coverage_gist_id
-                == 'null' ||
-              hashFiles('coverage.xml') == ''
-            )
-          }}
+        if: >-
+          steps.Download_coverage_data_from_Azure_DevOps.outcome == 'success' &&
+          hashFiles('coverage.xml') == ''
         run: |
           echo "⚠️  No coverage gist ID provided or download failed,
           generating coverage data as fallback..."
