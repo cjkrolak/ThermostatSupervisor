@@ -3,8 +3,12 @@ Unit test module for utilities.py.
 """
 
 # built-in imports
+from contextlib import redirect_stderr
+from contextlib import redirect_stdout
+from io import StringIO
 import os
 import shutil
+import tempfile
 import unittest
 
 # local imports
@@ -19,6 +23,14 @@ class FileAndLoggingTests(utc.UnitTest):
     def setUp(self):
         super().setUp()
         util.log_msg.file_name = "unit_test.txt"  # type: ignore[attr-defined]
+
+    def _capture_streams(self, callback):
+        """Capture stdout and stderr while running a callback."""
+        stdout_buffer = StringIO()
+        stderr_buffer = StringIO()
+        with redirect_stdout(stdout_buffer), redirect_stderr(stderr_buffer):
+            callback()
+        return stdout_buffer.getvalue(), stderr_buffer.getvalue()
 
     def test_log_msg_create_folder(self):
         """
@@ -94,6 +106,124 @@ class FileAndLoggingTests(utc.UnitTest):
             log_msg = f"to log mode '{mode}': {mode_msg}"
             print(f"printing '{log_msg}' to console")
             util.log_msg(f"logging '{log_msg}'", mode, func_name=1)
+
+    def test_sanitize_log_message_redacts_sensitive_values(self):
+        """_sanitize_log_message masks common secret-bearing fields."""
+        bearer_token = "abc" + "123"
+        password_value = "secret" + "123"
+        refresh_token = "rtok" + "456"
+        twofa_code = "123" + "456"
+        access_token = "tok" + "789"
+        msg = (
+            "Authorization"
+            + ": Bearer "
+            + bearer_token
+            + " "
+            + "password"
+            + "="
+            + password_value
+            + ' refresh_token: "'
+            + refresh_token
+            + '" 2FA code: '
+            + twofa_code
+            + ' "access_token": "'
+            + access_token
+            + '"'
+        )
+
+        sanitized_msg = util._sanitize_log_message(msg)
+
+        self.assertNotIn(bearer_token, sanitized_msg)
+        self.assertNotIn(password_value, sanitized_msg)
+        self.assertNotIn(refresh_token, sanitized_msg)
+        self.assertNotIn(twofa_code, sanitized_msg)
+        self.assertNotIn(access_token, sanitized_msg)
+        self.assertIn("Authorization: ******", sanitized_msg)
+        self.assertIn("******", sanitized_msg)
+        self.assertIn('refresh_token: "******"', sanitized_msg)
+        self.assertIn('2FA code: ******', sanitized_msg)
+        self.assertIn('"access_token": "******"', sanitized_msg)
+
+    def test_log_msg_redacts_sensitive_values_in_stdout_and_file(self):
+        """log_msg writes redacted sensitive values to stdout and data logs."""
+        file_name = "unit_test_redacted.txt"
+        original_file_path = util.FILE_PATH
+        temp_dir = tempfile.mkdtemp()
+        util.FILE_PATH = temp_dir
+        full_path = util.get_full_file_path(file_name)
+        password_value = "secret" + "123"
+        refresh_token = "rtok" + "456"
+        msg = (
+            "password"
+            + "="
+            + password_value
+            + " "
+            + "refresh_token"
+            + "="
+            + refresh_token
+        )
+
+        try:
+            stdout, stderr = self._capture_streams(
+                lambda: util.log_msg(msg, mode=util.BOTH_LOG, file_name=file_name)
+            )
+
+            self.assertIn("******", stdout)
+            self.assertIn("refresh_token=******", stdout)
+            self.assertNotIn(password_value, stdout)
+            self.assertNotIn(refresh_token, stdout)
+            self.assertEqual("", stderr)
+
+            with open(full_path, encoding="utf-8") as file_handle:
+                file_contents = file_handle.read()
+
+            self.assertIn("******", file_contents)
+            self.assertIn("refresh_token=******", file_contents)
+            self.assertNotIn(password_value, file_contents)
+            self.assertNotIn(refresh_token, file_contents)
+        finally:
+            util.FILE_PATH = original_file_path
+            shutil.rmtree(temp_dir)
+
+    def test_dual_stream_capture_file_redacts_sensitive_values(self):
+        """DUAL_STREAM_LOG stores redacted values in the capture file."""
+        original_file_path = util.FILE_PATH
+        temp_dir = tempfile.mkdtemp()
+        util.FILE_PATH = temp_dir
+        capture_file = util.get_full_file_path(util.STDOUT_CAPTURE_FILE)
+        bearer_token = "abc" + "123"
+        client_secret = "secret" + "789"
+        msg = (
+            "Authorization"
+            + ": Bearer "
+            + bearer_token
+            + " "
+            + "client_secret"
+            + "="
+            + client_secret
+        )
+
+        try:
+            stdout, stderr = self._capture_streams(
+                lambda: util.log_msg(msg, mode=util.DUAL_STREAM_LOG)
+            )
+
+            self.assertIn("Authorization: ******", stdout)
+            self.assertIn("client_secret=******", stdout)
+            self.assertNotIn(bearer_token, stdout)
+            self.assertNotIn(client_secret, stdout)
+            self.assertEqual("", stderr)
+
+            with open(capture_file, encoding="utf-8") as file_handle:
+                file_contents = file_handle.read()
+
+            self.assertIn("Authorization: ******", file_contents)
+            self.assertIn("client_secret=******", file_contents)
+            self.assertNotIn(bearer_token, file_contents)
+            self.assertNotIn(client_secret, file_contents)
+        finally:
+            util.FILE_PATH = original_file_path
+            shutil.rmtree(temp_dir)
 
     def test_get_file_size_bytes(self):
         """
