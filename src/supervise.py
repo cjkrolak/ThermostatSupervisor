@@ -38,82 +38,28 @@ def supervisor(thermostat_type, zone_str):
     # connection timer loop
     session_count = 1
     measurement = 1
-
-    # Calculate maximum total time for entire supervisor run
-    # This is a safety limit to prevent infinite loops
-    max_measurements = api.uip.get_user_inputs(
-        api.uip.parent_keys[0], api.input_flds.measurements
-    )
-    if max_measurements:
-        poll_time = api.uip.get_user_inputs(
-            api.uip.parent_keys[0], api.input_flds.poll_time
-        )
-        # Allow generous time: (measurements * poll_time * 2) +
-        # (measurements * 600s buffer) Max of 2 sessions
-        max_total_time_sec = (max_measurements * poll_time * 2) + (
-            max_measurements * 600
-        )
-        max_total_time_sec = min(
-            max_total_time_sec, 7200
-        )  # Cap at 2 hours max
-        supervisor_start_time = time.time()
-        util.log_msg(
-            f"supervisor: max_total_time={max_total_time_sec}s "
-            f"for {max_measurements} measurements",
-            mode=util.DUAL_STREAM_LOG,
-            func_name=1,
-        )
-    else:
-        max_total_time_sec = None
-        supervisor_start_time = None
+    thermostat_obj = None
+    zone_obj = None
+    max_total_time_sec, supervisor_start_time = _get_supervisor_timeout_limits()
 
     # outer loop: sessions
     while not api.uip.max_measurement_count_exceeded(measurement):
-        # Check for overall supervisor timeout
-        if max_total_time_sec and supervisor_start_time:
-            elapsed_time = time.time() - supervisor_start_time
-            if elapsed_time > max_total_time_sec:
-                util.log_msg(
-                    f"supervisor: exceeded max total time "
-                    f"({elapsed_time:.1f}s > {max_total_time_sec}s), "
-                    f"exiting at measurement {measurement}, session {session_count}",
-                    mode=util.BOTH_LOG,
-                    func_name=1,
-                )
-                break
-        # make connection to thermostat
+        if _supervisor_timed_out(
+            max_total_time_sec,
+            supervisor_start_time,
+            measurement,
+            session_count,
+        ):
+            break
+
         zone_num = api.uip.get_user_inputs(api.uip.zone_name, api.input_flds.zone)
-        util.log_msg(
-            f"connecting to thermostat zone {zone_num} "
-            f"(session:{session_count})...",
-            mode=util.BOTH_LOG,
+        thermostat_obj, zone_obj = _initialize_supervisor_session(
+            mod, zone_num, session_count, debug
         )
-        Thermostat = mod.ThermostatClass(zone_num)  # type: ignore[attr-defined]
-
-        # dump all meta data
-        if debug:
-            util.log_msg("thermostat meta data:", mode=util.BOTH_LOG, func_name=1)
-            Thermostat.print_all_thermostat_metadata(zone_num)
-
-        # get Zone object based on deviceID
-        Zone = mod.ThermostatZone(Thermostat)  # type: ignore[attr-defined]
-        util.log_msg(f"zone name={Zone.zone_name}", mode=util.BOTH_LOG, func_name=1)
-
-        # display banner and session settings
-        Zone.display_session_settings()
-
-        # set start time for poll
-        Zone.session_start_time_sec = time.time()
-
-        # update runtime overrides
-        Zone.update_runtime_parameters()
-
-        # display runtime settings
-        Zone.display_runtime_settings()
 
         # supervisor inner loop
-        measurement = Zone.supervisor_loop(
-            Thermostat, session_count, measurement, debug
+        measurement = zone_obj.supervisor_loop(
+            thermostat_obj, session_count, measurement, debug
         )
 
         # increment connection count
@@ -126,17 +72,98 @@ def supervisor(thermostat_type, zone_str):
     )
 
     # clean-up sessions and delete packages if necessary
-    if (
-        "Thermostat" in locals()
-        and hasattr(Thermostat, "close")  # type: ignore[possibly-unbound]
-    ):
-        Thermostat.close()  # type: ignore[possibly-unbound]
-    if "Zone" in locals():
-        del Zone  # type: ignore[possibly-unbound]
-    if "Thermostat" in locals():
-        del Thermostat  # type: ignore[possibly-unbound]
-    if "mod" in locals():
-        del mod
+    _cleanup_supervisor_objects(thermostat_obj, zone_obj, mod)
+
+
+def _get_supervisor_timeout_limits():
+    """Return configured supervisor timeout settings."""
+    max_measurements = api.uip.get_user_inputs(
+        api.uip.parent_keys[0], api.input_flds.measurements
+    )
+    if not max_measurements:
+        return None, None
+
+    poll_time = api.uip.get_user_inputs(
+        api.uip.parent_keys[0], api.input_flds.poll_time
+    )
+    # Allow generous time: (measurements * poll_time * 2) +
+    # (measurements * 600s buffer) Max of 2 sessions
+    max_total_time_sec = (max_measurements * poll_time * 2) + (max_measurements * 600)
+    max_total_time_sec = min(max_total_time_sec, 7200)  # Cap at 2 hours max
+    supervisor_start_time = time.time()
+    util.log_msg(
+        f"supervisor: max_total_time={max_total_time_sec}s "
+        f"for {max_measurements} measurements",
+        mode=util.DUAL_STREAM_LOG,
+        func_name=1,
+    )
+    return max_total_time_sec, supervisor_start_time
+
+
+def _supervisor_timed_out(
+    max_total_time_sec,
+    supervisor_start_time,
+    measurement,
+    session_count,
+) -> bool:
+    """Return whether the overall supervisor runtime limit has been exceeded."""
+    if not max_total_time_sec or not supervisor_start_time:
+        return False
+
+    elapsed_time = time.time() - supervisor_start_time
+    if elapsed_time <= max_total_time_sec:
+        return False
+
+    util.log_msg(
+        f"supervisor: exceeded max total time "
+        f"({elapsed_time:.1f}s > {max_total_time_sec}s), "
+        f"exiting at measurement {measurement}, session {session_count}",
+        mode=util.BOTH_LOG,
+        func_name=1,
+    )
+    return True
+
+
+def _initialize_supervisor_session(mod, zone_num, session_count, debug):
+    """Build thermostat/zone objects and initialize session runtime state."""
+    util.log_msg(
+        f"connecting to thermostat zone {zone_num} (session:{session_count})...",
+        mode=util.BOTH_LOG,
+    )
+    thermostat_obj = mod.ThermostatClass(zone_num)  # type: ignore[attr-defined]
+
+    # dump all meta data
+    if debug:
+        util.log_msg("thermostat meta data:", mode=util.BOTH_LOG, func_name=1)
+        thermostat_obj.print_all_thermostat_metadata(zone_num)
+
+    # get Zone object based on deviceID
+    zone_obj = mod.ThermostatZone(thermostat_obj)  # type: ignore[attr-defined]
+    util.log_msg(f"zone name={zone_obj.zone_name}", mode=util.BOTH_LOG, func_name=1)
+
+    # display banner and session settings
+    zone_obj.display_session_settings()
+
+    # set start time for poll
+    zone_obj.session_start_time_sec = time.time()
+
+    # update runtime overrides
+    zone_obj.update_runtime_parameters()
+
+    # display runtime settings
+    zone_obj.display_runtime_settings()
+    return thermostat_obj, zone_obj
+
+
+def _cleanup_supervisor_objects(thermostat_obj, zone_obj, mod) -> None:
+    """Close and release objects created during supervisor execution."""
+    if hasattr(thermostat_obj, "close"):
+        thermostat_obj.close()
+    if zone_obj is not None:
+        del zone_obj
+    if thermostat_obj is not None:
+        del thermostat_obj
+    del mod
 
 
 def exec_supervise(debug=True, argv_list=None):

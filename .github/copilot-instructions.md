@@ -23,6 +23,8 @@ This project is a **Thermostat Supervisor** application that:
 - Keep **cognitive complexity** (as measured by SonarQube) for every new or
   modified function at **15 or lower**.  Extract helper functions to reduce
   nested branching and improve readability.
+- **Verify** cognitive complexity is **<=15** for every new or modified Python
+  function before committing changes.
 
 ### General Instructions
 - Always prioritize readability and clarity.

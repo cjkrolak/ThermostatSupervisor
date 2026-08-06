@@ -165,57 +165,83 @@ def site_supervisor(args):
     Args:
         args (argparse.Namespace): Parsed command-line arguments.
     """
-    # Load configuration
-    if args.config:
-        site_config_dict = load_site_config_from_file(args.config)
-    else:
-        util.log_msg(
-            "Using default site configuration",
-            mode=util.BOTH_LOG,
-            func_name=1,
-        )
-        site_config_dict = site_config.get_default_site_config()
-
-    # Override measurement count if specified
-    if args.measurements is not None:
-        util.log_msg(
-            f"Overriding measurement count to {args.measurements}",
-            mode=util.BOTH_LOG,
-            func_name=1,
-        )
-        for tstat in site_config_dict.get("thermostats", []):
-            tstat["measurements"] = args.measurements
+    site_config_dict = _get_site_config(args)
+    _apply_measurement_override(site_config_dict, args)
 
     # Create site object
-    site = ts.ThermostatSite(
-        site_config_dict=site_config_dict,
-        verbose=args.verbose
-    )
+    site = ts.ThermostatSite(site_config_dict=site_config_dict, verbose=args.verbose)
 
     # Handle display-only modes
-    if args.display_zones:
-        site.display_all_zones()
-        return
-
-    if args.display_temps:
-        site.display_all_temps()
+    if _handle_display_only_mode(site, args):
         return
 
     # Display site configuration
     site.display_all_zones()
 
     # Run site supervision
+    _log_supervision_start(args)
+    result = _run_site_supervision(site, args)
+    _display_supervision_results(result)
+
     util.log_msg(
-        f"\nStarting site supervision with "
-        f"{'multi-threading' if args.use_threading else 'sequential mode'}",
+        "\nSite supervision completed successfully",
         mode=util.BOTH_LOG,
         func_name=1,
     )
 
+
+def _get_site_config(args):
+    """Return site configuration from file or defaults."""
+    if args.config:
+        return load_site_config_from_file(args.config)
+    util.log_msg(
+        "Using default site configuration",
+        mode=util.BOTH_LOG,
+        func_name=1,
+    )
+    return site_config.get_default_site_config()
+
+
+def _apply_measurement_override(site_config_dict, args) -> None:
+    """Apply a global measurement override to all thermostats."""
+    if args.measurements is None:
+        return
+    util.log_msg(
+        f"Overriding measurement count to {args.measurements}",
+        mode=util.BOTH_LOG,
+        func_name=1,
+    )
+    for tstat in site_config_dict.get("thermostats", []):
+        tstat["measurements"] = args.measurements
+
+
+def _handle_display_only_mode(site, args) -> bool:
+    """Handle display-only commands and return whether execution is complete."""
+    if args.display_zones:
+        site.display_all_zones()
+        return True
+    if args.display_temps:
+        site.display_all_temps()
+        return True
+    return False
+
+
+def _log_supervision_start(args) -> None:
+    """Log supervision mode before site execution."""
+    mode_name = "multi-threading" if args.use_threading else "sequential mode"
+    util.log_msg(
+        f"\nStarting site supervision with {mode_name}",
+        mode=util.BOTH_LOG,
+        func_name=1,
+    )
+
+
+def _run_site_supervision(site, args):
+    """Run site supervision and handle keyboard interruption gracefully."""
     try:
-        result = site.supervise_all_zones(
+        return site.supervise_all_zones(
             measurement_count=args.measurements if args.measurements else 1,
-            use_threading=args.use_threading
+            use_threading=args.use_threading,
         )
     except KeyboardInterrupt:
         util.log_msg(
@@ -230,7 +256,9 @@ def site_supervisor(args):
         )
         sys.exit(0)
 
-    # Display results summary
+
+def _display_supervision_results(result) -> None:
+    """Display supervision summaries for successful and failed thermostats."""
     results = result.get("results", {})
     errors = result.get("errors", {})
 
@@ -245,7 +273,6 @@ def site_supervisor(args):
                 mode=util.BOTH_LOG,
             )
 
-    # Display any errors
     if errors:
         util.log_msg(
             f"\n{'='*60}\nErrors\n{'='*60}",
@@ -256,12 +283,6 @@ def site_supervisor(args):
                 f"\n{tstat_key}: {error_info.get('error', 'Unknown error')}",
                 mode=util.BOTH_LOG,
             )
-
-    util.log_msg(
-        "\nSite supervision completed successfully",
-        mode=util.BOTH_LOG,
-        func_name=1,
-    )
 
 
 def exec_site_supervise(debug=None, argv_list=None):

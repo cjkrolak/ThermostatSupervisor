@@ -606,49 +606,10 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):  # type: ignore[misc]
         After any successful authentication the tokens are saved to the
         cache file so the next run can use the refresh token path.
         """
-        # Merge cached tokens into the auth-init dict so that
-        # auth.startup() will attempt token refresh before PKCE.
-        cached = self._load_token_cache()
-        auth_init_data = dict(self.auth_dict)
-        if cached:
-            auth_init_data.update(cached)
+        cached = self._configure_auth_session(session)
+        self._log_auth_start(cached)
 
-        self.blink = blinkpy.Blink(session=session)  # type: ignore[misc]
-        self.blink.auth = auth.Auth(  # type: ignore[misc]
-            auth_init_data, no_prompt=True, session=session
-        )
-
-        if self.verbose:
-            if cached:
-                print(
-                    f"[Blink zone {self.zone_number}] Attempting auth "
-                    f"(cached token present — refresh tried first)..."
-                )
-            else:
-                print(
-                    f"[Blink zone {self.zone_number}] Attempting OAuth v2 "
-                    f"PKCE web flow via blink.start()..."
-                )
-
-        # Path 1 + 2: token refresh (if cached) then PKCE web flow.
-        # BlinkTwoFARequiredError is only raised by the PKCE path.
-        try:
-            result = await self.blink.start()
-        except BlinkTwoFARequiredError:
-            if self.verbose:
-                print(
-                    f"[Blink zone {self.zone_number}] 2FA required. "
-                    f"Completing via send_2fa_code()..."
-                )
-            result = await self._complete_2fa_auth()
-            if not result:
-                raise ValueError(
-                    "2FA verification failed. Please check your "
-                    "verification code."
-                )
-            await self._save_token_cache()
-            return result
-
+        result = await self._run_primary_auth_flow()
         if result:
             if self.verbose:
                 print(
@@ -668,8 +629,67 @@ class ThermostatClass(blinkpy.Blink, tc.ThermostatCommon):  # type: ignore[misc]
         # (HTTP 429 "2fa_rate_limit_exceeded") the password grant will
         # not help either — stop retrying immediately and inform the
         # user of the lockout period.
+        return await self._run_password_grant_fallback()
+
+    def _configure_auth_session(self, session):
+        """Initialize blink/auth objects with optional cached token metadata."""
+        # Merge cached tokens into the auth-init dict so that
+        # auth.startup() will attempt token refresh before PKCE.
+        cached = self._load_token_cache()
+        auth_init_data = dict(self.auth_dict)
+        if cached:
+            auth_init_data.update(cached)
+
+        self.blink = blinkpy.Blink(session=session)  # type: ignore[misc]
+        self.blink.auth = auth.Auth(  # type: ignore[misc]
+            auth_init_data, no_prompt=True, session=session
+        )
+        return cached
+
+    def _log_auth_start(self, cached) -> None:
+        """Log the selected authentication entry path."""
+        if not self.verbose:
+            return
+        if cached:
+            print(
+                f"[Blink zone {self.zone_number}] Attempting auth "
+                f"(cached token present — refresh tried first)..."
+            )
+            return
+        print(
+            f"[Blink zone {self.zone_number}] Attempting OAuth v2 "
+            f"PKCE web flow via blink.start()..."
+        )
+
+    async def _run_primary_auth_flow(self):
+        """Run the token-refresh/PKCE flow and handle PKCE 2FA."""
+        # Path 1 + 2: token refresh (if cached) then PKCE web flow.
+        # BlinkTwoFARequiredError is only raised by the PKCE path.
+        try:
+            return await self.blink.start()
+        except BlinkTwoFARequiredError:
+            return await self._handle_primary_flow_2fa()
+
+    async def _handle_primary_flow_2fa(self):
+        """Complete 2FA for PKCE path and return the result."""
+        if self.verbose:
+            print(
+                f"[Blink zone {self.zone_number}] 2FA required. "
+                f"Completing via send_2fa_code()..."
+            )
+        result = await self._complete_2fa_auth()
+        if not result:
+            raise ValueError(
+                "2FA verification failed. Please check your "
+                "verification code."
+            )
+        return result
+
+    async def _run_password_grant_fallback(self):
+        """Run password-grant fallback unless a rate limit lockout is detected."""
         if getattr(self, "_rate_limit_detected", False):
             self._handle_rate_limit_error()  # never returns
+
         if self.verbose:
             print(
                 f"[Blink zone {self.zone_number}] OAuth v2 web flow "
@@ -1771,54 +1791,65 @@ class ThermostatZone(tc.ThermostatCommonZone):
             None, updates self.zone_metadata with fresh data from server
         """
         now_time = time.time()
-        # refresh if past expiration date or force_refresh option
-        if force_refresh or (
+        if self._should_refresh_zone_info(now_time, force_refresh):
+            self._refresh_zone_metadata(now_time)
+            return
+        self._log_cached_zone_metadata(now_time)
+
+    def _should_refresh_zone_info(self, now_time: float, force_refresh: bool) -> bool:
+        """Return whether zone metadata should be refreshed."""
+        return force_refresh or (
             now_time >= (self.last_fetch_time + self.fetch_interval_sec)
-        ):
+        )
+
+    def _refresh_zone_metadata(self, now_time: float) -> None:
+        """Refresh zone metadata and emit verbose status logs."""
+        if self.verbose:
+            util.log_msg(
+                f"Refreshing zone metadata for {self.zone_name} "
+                f"(last refresh: {now_time - self.last_fetch_time:.1f}s ago)",
+                mode=util.STDOUT_LOG,
+                func_name=1,
+            )
+
+        # Get fresh metadata from blink server
+        try:
+            self.zone_metadata = self.Thermostat.get_metadata(zone=self.zone_number)
+            self.last_fetch_time = now_time
             if self.verbose:
                 util.log_msg(
-                    f"Refreshing zone metadata for {self.zone_name} "
-                    f"(last refresh: {now_time - self.last_fetch_time:.1f}s ago)",
+                    f"Zone metadata refreshed successfully for {self.zone_name}",
                     mode=util.STDOUT_LOG,
                     func_name=1,
                 )
-
-            # Get fresh metadata from blink server
-            try:
-                self.zone_metadata = self.Thermostat.get_metadata(zone=self.zone_number)
-                self.last_fetch_time = now_time
-                if self.verbose:
-                    util.log_msg(
-                        f"Zone metadata refreshed successfully for {self.zone_name}",
-                        mode=util.STDOUT_LOG,
-                        func_name=1,
-                    )
-            except Exception as e:
-                if self.verbose:
-                    util.log_msg(
-                        f"Failed to refresh zone metadata for {self.zone_name}: {e}",
-                        mode=util.STDOUT_LOG,
-                        func_name=1,
-                    )
-                # Don't update last_fetch_time on failure to retry sooner
-                raise
-        else:
+        except Exception as e:
             if self.verbose:
-                time_until_refresh = (
-                    self.last_fetch_time + self.fetch_interval_sec - now_time
+                util.log_msg(
+                    f"Failed to refresh zone metadata for {self.zone_name}: {e}",
+                    mode=util.STDOUT_LOG,
+                    func_name=1,
                 )
-                # Only log if refresh time has changed significantly from last print
-                rounded_refresh_time = round(time_until_refresh)
-                if (self.last_printed_refresh_time is None or
-                        abs(rounded_refresh_time -
-                            self.last_printed_refresh_time) >= 1):
-                    util.log_msg(
-                        f"Using cached data for {self.zone_name} "
-                        f"(refresh in {time_until_refresh:.1f}s)",
-                        mode=util.STDOUT_LOG,
-                        func_name=1,
-                    )
-                    self.last_printed_refresh_time = rounded_refresh_time
+            # Don't update last_fetch_time on failure to retry sooner
+            raise
+
+    def _log_cached_zone_metadata(self, now_time: float) -> None:
+        """Log cache usage while reducing repeated messages."""
+        if not self.verbose:
+            return
+        time_until_refresh = self.last_fetch_time + self.fetch_interval_sec - now_time
+        # Only log if refresh time has changed significantly from last print
+        rounded_refresh_time = round(time_until_refresh)
+        if self.last_printed_refresh_time is not None and (
+            abs(rounded_refresh_time - self.last_printed_refresh_time) < 1
+        ):
+            return
+        util.log_msg(
+            f"Using cached data for {self.zone_name} "
+            f"(refresh in {time_until_refresh:.1f}s)",
+            mode=util.STDOUT_LOG,
+            func_name=1,
+        )
+        self.last_printed_refresh_time = rounded_refresh_time
 
 
 if __name__ == "__main__":

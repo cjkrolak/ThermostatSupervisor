@@ -97,57 +97,59 @@ def get_env_variable(env_key, default=None):
     }
 
     try:
-        # unit test key is not required to be in env var list
-        if env_key == sht31_config.UNIT_TEST_ENV_KEY:
-            return_buffer["value"] = get_local_ip()
-            return_buffer["source"] = "unit_test"
-        else:
-            # First try to get from supervisor-env.txt file
-            file_env_vars = _read_supervisor_env_file()
-            # Handle None return from mocked function
-            if file_env_vars is None:
-                file_env_vars = {}
-            if env_key in file_env_vars:
-                return_buffer["value"] = file_env_vars[env_key]
-                return_buffer["source"] = "supervisor-env.txt"
-                util.log_msg(
-                    f"Environment variable '{env_key}' loaded from "
-                    "supervisor-env.txt",
-                    mode=util.DEBUG_LOG,
-                )
-            else:
-                # Fall back to system environment variables
-                return_buffer["value"] = os.environ[env_key]
-                return_buffer["source"] = "environment_variable"
-
-        # mask off any password keys or 2FA keys
-        if "PASSWORD" in return_buffer["key"] or "2FA" in return_buffer["key"]:
-            value_shown = "(hidden)"
-        else:
-            value_shown = return_buffer["value"]
-
-        util.log_msg(f"{env_key}={value_shown}", mode=util.DEBUG_LOG)
+        env_value, env_source = _get_env_value_and_source(env_key)
     except KeyError:
-        if default is not None:
-            return_buffer["value"] = default
-            return_buffer["source"] = "default"
-            # mask off any password keys or 2FA keys
-            if "PASSWORD" in return_buffer["key"] or "2FA" in return_buffer["key"]:
-                value_shown = "(hidden)"
-            else:
-                value_shown = return_buffer["value"]
-            util.log_msg(
-                f"{env_key}={value_shown} (using default value)",
-                mode=util.DEBUG_LOG
-            )
-        else:
+        if default is None:
             util.log_msg(
                 f"FATAL ERROR: required environment variable '{env_key}'"
                 " is missing.",
                 mode=util.STDOUT_LOG + util.DATA_LOG,
             )
             return_buffer["status"] = util.ENVIRONMENT_ERROR
+            return return_buffer
+        return_buffer["value"] = default
+        return_buffer["source"] = "default"
+        value_shown = _mask_sensitive_env_value(env_key, default)
+        util.log_msg(
+            f"{env_key}={value_shown} (using default value)",
+            mode=util.DEBUG_LOG,
+        )
+        return return_buffer
+
+    return_buffer["value"] = env_value
+    return_buffer["source"] = env_source
+    value_shown = _mask_sensitive_env_value(env_key, env_value)
+    util.log_msg(f"{env_key}={value_shown}", mode=util.DEBUG_LOG)
     return return_buffer
+
+
+def _get_env_value_and_source(env_key):
+    """Return environment value and source for the provided key."""
+    # unit test key is not required to be in env var list
+    if env_key == sht31_config.UNIT_TEST_ENV_KEY:
+        return get_local_ip(), "unit_test"
+
+    # First try to get from supervisor-env.txt file
+    file_env_vars = _read_supervisor_env_file()
+    # Handle None return from mocked function
+    if file_env_vars is None:
+        file_env_vars = {}
+    if env_key in file_env_vars:
+        util.log_msg(
+            f"Environment variable '{env_key}' loaded from supervisor-env.txt",
+            mode=util.DEBUG_LOG,
+        )
+        return file_env_vars[env_key], "supervisor-env.txt"
+
+    # Fall back to system environment variables
+    return os.environ[env_key], "environment_variable"
+
+
+def _mask_sensitive_env_value(env_key, env_value):
+    """Return masked display text for sensitive environment values."""
+    if "PASSWORD" in env_key or "2FA" in env_key:
+        return "(hidden)"
+    return env_value
 
 
 def set_env_variable(key, val):

@@ -1025,54 +1025,65 @@ class ThermostatZone(tc.ThermostatCommonZone):
             None, device object is refreshed.
         """
         now_time = time.time()
-        # refresh if past expiration date or force_refresh option
-        if force_refresh or (
+        if self._should_refresh_zone_info(now_time, force_refresh):
+            self._refresh_zone_data(now_time)
+            return
+        self._log_cached_zone_data(now_time)
+
+    def _should_refresh_zone_info(self, now_time: float, force_refresh: bool) -> bool:
+        """Return whether zone data should be refreshed."""
+        return force_refresh or (
             now_time >= (self.last_fetch_time + self.fetch_interval_sec)
-        ):
+        )
+
+    def _refresh_zone_data(self, now_time: float) -> None:
+        """Refresh zone data from the Nest API and update cache timing."""
+        if self.verbose:
+            util.log_msg(
+                f"Refreshing zone data for {self.zone_name} "
+                f"(last refresh: {now_time - self.last_fetch_time:.1f}s ago)",
+                mode=util.STDOUT_LOG,
+                func_name=1,
+            )
+
+        # Get fresh data from Nest server
+        try:
+            self.Thermostat.get_device_data()
+            self.last_fetch_time = now_time
             if self.verbose:
                 util.log_msg(
-                    f"Refreshing zone data for {self.zone_name} "
-                    f"(last refresh: {now_time - self.last_fetch_time:.1f}s ago)",
+                    f"Zone data refreshed successfully for {self.zone_name}",
                     mode=util.STDOUT_LOG,
                     func_name=1,
                 )
-
-            # Get fresh data from Nest server
-            try:
-                self.Thermostat.get_device_data()
-                self.last_fetch_time = now_time
-                if self.verbose:
-                    util.log_msg(
-                        f"Zone data refreshed successfully for {self.zone_name}",
-                        mode=util.STDOUT_LOG,
-                        func_name=1,
-                    )
-            except Exception as e:
-                if self.verbose:
-                    util.log_msg(
-                        f"Failed to refresh zone data for {self.zone_name}: {e}",
-                        mode=util.STDOUT_LOG,
-                        func_name=1,
-                    )
-                # Don't update last_fetch_time on failure to retry sooner
-                raise
-        else:
+        except Exception as e:
             if self.verbose:
-                time_until_refresh = (
-                    self.last_fetch_time + self.fetch_interval_sec - now_time
+                util.log_msg(
+                    f"Failed to refresh zone data for {self.zone_name}: {e}",
+                    mode=util.STDOUT_LOG,
+                    func_name=1,
                 )
-                # Only log if refresh time has changed significantly from last print
-                rounded_refresh_time = round(time_until_refresh)
-                if (self.last_printed_refresh_time is None or
-                        abs(rounded_refresh_time -
-                            self.last_printed_refresh_time) >= 1):
-                    util.log_msg(
-                        f"Using cached data for {self.zone_name} "
-                        f"(refresh in {time_until_refresh:.1f}s)",
-                        mode=util.STDOUT_LOG,
-                        func_name=1,
-                    )
-                    self.last_printed_refresh_time = rounded_refresh_time
+            # Don't update last_fetch_time on failure to retry sooner
+            raise
+
+    def _log_cached_zone_data(self, now_time: float) -> None:
+        """Log cache usage while suppressing repetitive messages."""
+        if not self.verbose:
+            return
+        time_until_refresh = self.last_fetch_time + self.fetch_interval_sec - now_time
+        # Only log if refresh time has changed significantly from last print
+        rounded_refresh_time = round(time_until_refresh)
+        if self.last_printed_refresh_time is not None and (
+            abs(rounded_refresh_time - self.last_printed_refresh_time) < 1
+        ):
+            return
+        util.log_msg(
+            f"Using cached data for {self.zone_name} "
+            f"(refresh in {time_until_refresh:.1f}s)",
+            mode=util.STDOUT_LOG,
+            func_name=1,
+        )
+        self.last_printed_refresh_time = rounded_refresh_time
 
 
 if __name__ == "__main__":
