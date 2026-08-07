@@ -44,7 +44,7 @@ jobs:
 
       # Install the cosign tool except on PR
       # https://github.com/sigstore/cosign-installer
-      # Temporary workaround for #1441: use the installer default cosign version.
+      # Temporary workaround for  # 1441: use the installer default cosign version.
       # TODO: Pin to a known-good cosign release after validating root cause.
       - name: Install cosign
         uses: sigstore/cosign-installer@v3
