@@ -6,6 +6,11 @@ on:
 #  pull_request:
 #    branches: [ main, develop ]
 # docker build should run on push after code is merged into branch
+# Prevent concurrent docker builds on the same branch to avoid OIDC token
+# contention between simultaneous cosign signing steps.
+concurrency:
+  group: docker-build-${{ github.ref }}
+  cancel-in-progress: false
 env:
   # Use docker.io for Docker Hub if empty
   REGISTRY: docker.io
@@ -39,10 +44,10 @@ jobs:
 
       # Install the cosign tool except on PR
       # https://github.com/sigstore/cosign-installer
+      # Temporary workaround for  # 1441: use the installer default cosign version.
+      # TODO: Pin to a known-good cosign release after validating root cause.
       - name: Install cosign
         uses: sigstore/cosign-installer@v3
-        with:
-          cosign-release: v2.2.4
 
       # log in to DockerHub
       - name: Log in to Docker Hub
