@@ -44,9 +44,8 @@ jobs:
 
       # Install the cosign tool except on PR
       # https://github.com/sigstore/cosign-installer
-      # Use latest cosign to ensure compatibility with GitHub OIDC token service.
-      # Pinning to v2.2.4 caused "invalid character 'u'" errors when the OIDC
-      # service returned non-JSON responses under certain conditions.
+      # Temporary workaround for #1441: use the installer default cosign version.
+      # TODO: Pin to a known-good cosign release after validating root cause.
       - name: Install cosign
         uses: sigstore/cosign-installer@v3
 
@@ -66,12 +65,6 @@ jobs:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
 
       # build and push the docker image
-      # provenance: false disables the built-in SLSA provenance attestation in
-      # docker/build-push-action@v7 (enabled by default). Provenance attestation
-      # also requests a GitHub OIDC token, which can contend with the cosign
-      # signing step's OIDC token request when two workflow runs execute
-      # concurrently, causing "invalid character 'u'" JSON parse failures.
-      # Cosign handles image signing separately in the step below.
       - name: Build and Push the multi-platform Docker image
         id: build-and-push
         uses: docker/build-push-action@v7
@@ -81,7 +74,6 @@ jobs:
           platforms: linux/amd64,linux/arm/v6,linux/arm/v7,linux/arm64
           push: true
           tags: ${{ steps.meta.outputs.tags }}
-          provenance: false
 
       # Docker Scout CVE scanning with enhanced security checks
       - name: Find CVEs on image with Docker Scout
