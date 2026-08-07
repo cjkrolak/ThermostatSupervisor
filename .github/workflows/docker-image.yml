@@ -6,6 +6,11 @@ on:
 #  pull_request:
 #    branches: [ main, develop ]
 # docker build should run on push after code is merged into branch
+# Prevent concurrent docker builds on the same branch to avoid OIDC token
+# contention between simultaneous cosign signing steps.
+concurrency:
+  group: docker-build-${{ github.ref }}
+  cancel-in-progress: false
 env:
   # Use docker.io for Docker Hub if empty
   REGISTRY: docker.io
@@ -39,10 +44,11 @@ jobs:
 
       # Install the cosign tool except on PR
       # https://github.com/sigstore/cosign-installer
+      # Use latest cosign to ensure compatibility with GitHub OIDC token service.
+      # Pinning to v2.2.4 caused "invalid character 'u'" errors when the OIDC
+      # service returned non-JSON responses under certain conditions.
       - name: Install cosign
         uses: sigstore/cosign-installer@v3
-        with:
-          cosign-release: v2.2.4
 
       # log in to DockerHub
       - name: Log in to Docker Hub
@@ -60,6 +66,12 @@ jobs:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
 
       # build and push the docker image
+      # provenance: false disables the built-in SLSA provenance attestation in
+      # docker/build-push-action@v7 (enabled by default). Provenance attestation
+      # also requests a GitHub OIDC token, which can contend with the cosign
+      # signing step's OIDC token request when two workflow runs execute
+      # concurrently, causing "invalid character 'u'" JSON parse failures.
+      # Cosign handles image signing separately in the step below.
       - name: Build and Push the multi-platform Docker image
         id: build-and-push
         uses: docker/build-push-action@v7
@@ -69,6 +81,7 @@ jobs:
           platforms: linux/amd64,linux/arm/v6,linux/arm/v7,linux/arm64
           push: true
           tags: ${{ steps.meta.outputs.tags }}
+          provenance: false
 
       # Docker Scout CVE scanning with enhanced security checks
       - name: Find CVEs on image with Docker Scout
