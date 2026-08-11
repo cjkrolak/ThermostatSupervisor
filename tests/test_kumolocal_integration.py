@@ -56,10 +56,11 @@ class LocalNetworkDetectionTest(IntegrationTest):
             thermostat = self.mod.ThermostatClass(zone=0, verbose=False)
             # Test that the method exists and returns a boolean
             result = thermostat.is_local_network_available()
-            self.assertIsInstance(result, bool)
         except Exception as e:
             # If kumolocal isn't available, just verify the method signature
             self.skipTest(f"Kumolocal not available for testing: {e}")
+        else:
+            self.assertIsInstance(result, bool)
 
 
 @unittest.skipIf(not utc.ENABLE_KUMOLOCAL_TESTS, "kumolocal tests are disabled")

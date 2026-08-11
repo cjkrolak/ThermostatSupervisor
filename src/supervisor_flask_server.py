@@ -143,7 +143,6 @@ def index():
             stderr=STDOUT,
             bufsize=1,
             universal_newlines=True,
-            shell=True,
         ) as p_out:
             if p_out.stdout is not None:
                 for i, line in enumerate(p_out.stdout):
