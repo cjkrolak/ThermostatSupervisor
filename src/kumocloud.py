@@ -18,6 +18,7 @@ from src import thermostat_common as tc
 from src import utilities as util
 
 SEQUENTIAL_ASSIGNMENT_FALLBACK_MSG = "Using sequential assignment as fallback"
+APPLICATION_JSON = "application/json"
 
 
 class ThermostatClass(tc.ThermostatCommon):
@@ -55,11 +56,11 @@ class ThermostatClass(tc.ThermostatCommon):
         # Set base headers required by v3 API
         self.session.headers.update(
             {
-                "Accept": "application/json, text/plain, */*",
+                "Accept": f"{APPLICATION_JSON}, text/plain, */*",
                 "Accept-Encoding": "gzip, deflate, br",
                 "Accept-Language": "en-US, en",
                 "x-app-version": "3.0.9",
-                "Content-Type": "application/json",
+                "Content-Type": APPLICATION_JSON,
             }
         )
         self.auth_token = None
@@ -129,10 +130,10 @@ class ThermostatClass(tc.ThermostatCommon):
             "appVersion": V3_APP_VERSION,
         }
         login_headers = {
-            "Accept": "application/json",
+            "Accept": APPLICATION_JSON,
             "Accept-Encoding": "gzip, deflate",
             "x-app-version": V3_APP_VERSION,
-            "Content-Type": "application/json",
+            "Content-Type": APPLICATION_JSON,
         }
 
         try:

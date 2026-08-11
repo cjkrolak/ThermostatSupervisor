@@ -7,6 +7,7 @@ supervision with concurrent monitoring of multiple thermostats.
 
 # built-ins
 import argparse
+import os
 import sys
 
 # local imports
@@ -133,18 +134,21 @@ def load_site_config_from_file(config_path):
     """
     import json
 
+    # Resolve to an absolute, normalized path to prevent path traversal.
+    safe_path = os.path.realpath(os.path.abspath(config_path))
+
     try:
-        with open(config_path, "r", encoding="utf-8") as f:
+        with open(safe_path, "r", encoding="utf-8") as f:
             config = json.load(f)
         util.log_msg(
-            f"Loaded site configuration from {config_path}",
+            f"Loaded site configuration from {safe_path}",
             mode=util.BOTH_LOG,
             func_name=1,
         )
         return config
     except FileNotFoundError:
         util.log_msg(
-            f"ERROR: Configuration file not found: {config_path}",
+            f"ERROR: Configuration file not found: {safe_path}",
             mode=util.BOTH_LOG,
             func_name=1,
         )

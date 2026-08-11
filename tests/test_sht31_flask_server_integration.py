@@ -220,8 +220,18 @@ class TestSht31FlaskClientAzure(utc.UnitTest):
 
         for endpoint, test_name in test_endpoints:
             with self.subTest(endpoint=endpoint, test_name=test_name):
+                response = None
                 try:
                     response = self.client.get(endpoint)
+                except Exception as e:
+                    # In test environment, some endpoints may fail due to
+                    # missing hardware. This is acceptable as we're testing
+                    # the Flask routing, not hardware
+                    print(
+                        f"Warning: Endpoint {endpoint} failed with {e}, "
+                        f"this may be expected in test environment"
+                    )
+                if response is not None:
                     # Check that we get a valid response
                     self.assertIn(
                         response.status_code,
@@ -233,21 +243,16 @@ class TestSht31FlaskClientAzure(utc.UnitTest):
                     # For successful responses, check that we get JSON data
                     if response.status_code == 200:
                         self.assertTrue(
-                            response.is_json or response.mimetype == "application/json",
+                            response.is_json
+                            or response.mimetype == "application/json",
                             f"Endpoint {endpoint} should return JSON data",
                         )
                         data = response.get_json()
                         self.assertIsInstance(
-                            data, dict, f"Endpoint {endpoint} should return dict data"
+                            data,
+                            dict,
+                            f"Endpoint {endpoint} should return dict data",
                         )
-                except Exception as e:
-                    # In test environment, some endpoints may fail due to
-                    # missing hardware. This is acceptable as we're testing
-                    # the Flask routing, not hardware
-                    print(
-                        f"Warning: Endpoint {endpoint} failed with {e}, "
-                        f"this may be expected in test environment"
-                    )
 
     def test_sht31_flask_server_unit_test_endpoint(self):
         """Test the unit_test endpoint specifically."""
