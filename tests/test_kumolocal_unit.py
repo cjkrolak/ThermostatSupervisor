@@ -259,8 +259,11 @@ class LocalNetworkDetectionUnitTest(utc.UnitTest):
             finally:
                 util.log_msg.debug = original_debug  # type: ignore[attr-defined]
                 # Restore logger levels to avoid side-effects
+                restore_level = (
+                    logging.DEBUG if original_debug else logging.WARNING
+                )
                 for mod in pykumo_modules:
-                    logging.getLogger(mod).setLevel(logging.WARNING)
+                    logging.getLogger(mod).setLevel(restore_level)
                     logging.getLogger(mod).handlers.clear()
 
         except ImportError:

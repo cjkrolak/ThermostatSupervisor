@@ -259,7 +259,8 @@ class ThermostatClass(
 
                 # Match pykumo log level to the main application's level:
                 # DEBUG when debug mode is enabled, WARNING otherwise to
-                # suppress INFO/WARNING floods from pykumo.
+                # suppress INFO-level chatter from pykumo while still
+                # surfacing warnings and errors.
                 app_debug = getattr(util.log_msg, "debug", False)
                 pykumo_log_level = (
                     logging.DEBUG if app_debug else logging.WARNING
