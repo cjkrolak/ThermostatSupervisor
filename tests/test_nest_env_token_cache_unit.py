@@ -49,7 +49,7 @@ class TestNestEnvTokenCache(utc.UnitTest):
             "NEST_REFRESH_TOKEN": self.env_refresh_token,
             "NEST_TOKEN_EXPIRES_IN": self.env_expires_in,
         }
-        with patch.dict(os.environ, env_vars, clear=False):
+        with patch.dict(os.environ, env_vars, clear=True):
             # Create a minimal thermostat instance
             thermostat = nest.ThermostatClass.__new__(nest.ThermostatClass)
             thermostat.access_token_cache_file = self.cache_file_path
@@ -86,7 +86,7 @@ class TestNestEnvTokenCache(utc.UnitTest):
             "NEST_ACCESS_TOKEN": self.env_access_token,
             "NEST_REFRESH_TOKEN": self.env_refresh_token,
         }
-        with patch.dict(os.environ, env_vars, clear=False):
+        with patch.dict(os.environ, env_vars, clear=True):
             # Create a minimal thermostat instance
             thermostat = nest.ThermostatClass.__new__(nest.ThermostatClass)
             thermostat.access_token_cache_file = self.cache_file_path
@@ -112,7 +112,7 @@ class TestNestEnvTokenCache(utc.UnitTest):
             "NEST_REFRESH_TOKEN": self.env_refresh_token,
             "NEST_TOKEN_EXPIRES_IN": self.env_expires_in,
         }
-        with patch.dict(os.environ, env_vars, clear=False):
+        with patch.dict(os.environ, env_vars, clear=True):
             # Create a minimal thermostat instance
             thermostat = nest.ThermostatClass.__new__(nest.ThermostatClass)
             thermostat.access_token_cache_file = self.cache_file_path
@@ -130,7 +130,7 @@ class TestNestEnvTokenCache(utc.UnitTest):
             "NEST_ACCESS_TOKEN": self.env_access_token,
             "NEST_TOKEN_EXPIRES_IN": self.env_expires_in,
         }
-        with patch.dict(os.environ, env_vars, clear=False):
+        with patch.dict(os.environ, env_vars, clear=True):
             # Create a minimal thermostat instance
             thermostat = nest.ThermostatClass.__new__(nest.ThermostatClass)
             thermostat.access_token_cache_file = self.cache_file_path
@@ -153,7 +153,7 @@ class TestNestEnvTokenCache(utc.UnitTest):
             "NEST_ACCESS_TOKEN": self.env_access_token,
             "NEST_REFRESH_TOKEN": self.env_refresh_token,
         }
-        with patch.dict(os.environ, env_vars, clear=False):
+        with patch.dict(os.environ, env_vars, clear=True):
             # Create a minimal thermostat instance
             thermostat = nest.ThermostatClass.__new__(nest.ThermostatClass)
             thermostat.access_token_cache_file = self.cache_file_path
@@ -176,7 +176,7 @@ class TestNestEnvTokenCache(utc.UnitTest):
         }
         # Use invalid file path to trigger write error
         invalid_cache_path = "/invalid/directory/token_cache.json"
-        with patch.dict(os.environ, env_vars, clear=False):
+        with patch.dict(os.environ, env_vars, clear=True):
             # Create a minimal thermostat instance
             thermostat = nest.ThermostatClass.__new__(nest.ThermostatClass)
             thermostat.access_token_cache_file = invalid_cache_path

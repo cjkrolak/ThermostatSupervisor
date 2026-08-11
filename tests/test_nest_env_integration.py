@@ -45,10 +45,9 @@ class TestNestEnvIntegration(utc.UnitTest):
             os.unlink(self.cache_file_path)
         os.rmdir(self.temp_dir)
 
-    @patch.dict(os.environ, {}, clear=False)
     def test_integration_token_cache_creation(self):
         """Test integration of token cache creation with environment variables."""
-        with patch.dict(os.environ, self.mock_env_vars, clear=False):
+        with patch.dict(os.environ, self.mock_env_vars, clear=True):
             # Verify cache file doesn't exist initially
             self.assertFalse(os.path.exists(self.cache_file_path))
 
@@ -78,7 +77,6 @@ class TestNestEnvIntegration(utc.UnitTest):
                 int(self.mock_env_vars["NEST_TOKEN_EXPIRES_IN"]),
             )
 
-    @patch.dict(os.environ, {}, clear=False)
     def test_no_env_vars_no_cache_created(self):
         """Test no cache file created when environment variables missing."""
         oauth_vars = {
@@ -86,7 +84,7 @@ class TestNestEnvIntegration(utc.UnitTest):
             "GCLOUD_CLIENT_SECRET": "test_client_secret",
             "DAC_PROJECT_ID": "test_project_id",
         }
-        with patch.dict(os.environ, oauth_vars, clear=False):
+        with patch.dict(os.environ, oauth_vars, clear=True):
             # Create minimal thermostat instance
             thermostat = nest.ThermostatClass.__new__(nest.ThermostatClass)
             thermostat.access_token_cache_file = self.cache_file_path
