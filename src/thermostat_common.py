@@ -1014,18 +1014,12 @@ class ThermostatCommonZone:
             target_mode(str) target_mode, which may get updated by
             this function.
         """
-        # do not switch directly from hot to cold
-        if self.current_mode in self.heat_modes and target_mode in self.cool_modes:
-            util.log_msg(
-                f"WARNING: target mode={target_mode}, switching from "
-                f"{self.current_mode} to OFF_MODE to prevent damage to HVAC",
-                mode=util.BOTH_LOG,
-                func_name=1,
-            )
-            target_mode = self.OFF_MODE
-
-        # do not switch directly from cold to hot
-        elif self.current_mode in self.cool_modes and target_mode in self.heat_modes:
+        # do not switch directly between hot and cold modes
+        if (
+            self.current_mode in self.heat_modes and target_mode in self.cool_modes
+        ) or (
+            self.current_mode in self.cool_modes and target_mode in self.heat_modes
+        ):
             util.log_msg(
                 f"WARNING: target mode={target_mode}, switching from "
                 f"{self.current_mode} to OFF_MODE to prevent damage to HVAC",

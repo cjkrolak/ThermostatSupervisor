@@ -66,15 +66,10 @@ class Test(utc.UnitTest):
         )
         # Mock SMTP_SSL to raise an OSError for bad port
         with mock.patch("smtplib.SMTP_SSL", side_effect=OSError("Connection refused")):
-            # Temporarily disable unit test mode to test connection error
-            original_unit_test_mode = util.unit_test_mode
-            util.unit_test_mode = False
-            try:
+            with mock.patch.object(util, "unit_test_mode", False):
                 return_status, return_status_msg = eml.send_email_alert(
                     server_port=13, subject="test email alert (bad port)", body=body
                 )
-            finally:
-                util.unit_test_mode = original_unit_test_mode
         fail_msg = (
             f"send email with bad server port failed for status code: "
             f"{return_status}: {return_status_msg}"
@@ -93,15 +88,10 @@ class Test(utc.UnitTest):
             535, "Authentication failed"
         )
         with mock.patch("smtplib.SMTP_SSL", return_value=mock_server):
-            # Temporarily disable unit test mode to test authorization error
-            original_unit_test_mode = util.unit_test_mode
-            util.unit_test_mode = False
-            try:
+            with mock.patch.object(util, "unit_test_mode", False):
                 return_status, return_status_msg = eml.send_email_alert(
                     subject="test email alert (bad auth)", body=body
                 )
-            finally:
-                util.unit_test_mode = original_unit_test_mode
 
         fail_msg = (
             f"send email with bad from address failed for status "
@@ -135,9 +125,7 @@ class Test(utc.UnitTest):
 
                 # Temporarily disable unit_test_mode to test environment error
                 # conditions
-                original_unit_test_mode = util.unit_test_mode
-                util.unit_test_mode = False
-                try:
+                with mock.patch.object(util, "unit_test_mode", False):
                     # Mock both os.environ and supervisor-env.txt file reading
                     # to ensure the test doesn't get credentials from the file
                     with mock.patch.dict(
@@ -159,9 +147,6 @@ class Test(utc.UnitTest):
                         f"{return_status_msg}"
                     )
                     self.assertEqual(return_status, util.ENVIRONMENT_ERROR, fail_msg)
-                finally:
-                    # Restore original unit_test_mode
-                    util.unit_test_mode = original_unit_test_mode
 
     @mock.patch.dict(
         os.environ, {"GMAIL_USERNAME": "test@gmail.com", "GMAIL_PASSWORD": "testpass"}
@@ -205,16 +190,12 @@ class Test(utc.UnitTest):
                     "this is a test of the email notification alert for exception "
                     f"type {str(exception)}."
                 )
-                # Temporarily disable unit test mode to test SMTP exceptions
-                original_unit_test_mode = util.unit_test_mode
-                util.unit_test_mode = False
-                try:
+                # Disable unit test mode to test SMTP exceptions
+                with mock.patch.object(util, "unit_test_mode", False):
                     return_status, return_status_msg = eml.send_email_alert(
                         subject=f"test email alert (mocked {str(exception)} exception)",
                         body=body,
                     )
-                finally:
-                    util.unit_test_mode = original_unit_test_mode
                 fail_msg = (
                     f"send email with mocked SMTP exception returned "
                     f"status code: {return_status}: "
