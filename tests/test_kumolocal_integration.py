@@ -52,7 +52,6 @@ class LocalNetworkDetectionTest(IntegrationTest):
     def test_local_network_detection_method(self):
         """Test that local network detection method exists and returns bool."""
         # This test verifies the API exists, but doesn't require actual devices
-        result = None
         try:
             thermostat = self.mod.ThermostatClass(zone=0, verbose=False)
             # Test that the method exists and returns a boolean
@@ -60,7 +59,7 @@ class LocalNetworkDetectionTest(IntegrationTest):
         except Exception as e:
             # If kumolocal isn't available, just verify the method signature
             self.skipTest(f"Kumolocal not available for testing: {e}")
-        if result is not None:
+        else:
             self.assertIsInstance(result, bool)
 
 

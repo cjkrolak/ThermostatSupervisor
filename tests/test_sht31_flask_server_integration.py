@@ -223,7 +223,7 @@ class TestSht31FlaskClientAzure(utc.UnitTest):
                 response = None
                 try:
                     response = self.client.get(endpoint)
-                except Exception as e:
+                except (FileNotFoundError, OSError) as e:
                     # In test environment, some endpoints may fail due to
                     # missing hardware. This is acceptable as we're testing
                     # the Flask routing, not hardware
