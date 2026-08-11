@@ -53,4 +53,4 @@ tests/playwright/playwright-report/
 tests/playwright/test-results/
 tests/playwright/test-results.json
 tests/playwright/test-results.xml
-tests/playwright/package-lock.json
+
