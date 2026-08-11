@@ -852,7 +852,7 @@ class Sensors:
             )
 
         cell_number_re = re.compile(
-            r"^Cell\s+(?P<cellnumber>.+)\s+-\s+Address:\s(?P<mac>.+)$"
+            r"^Cell\s+(?P<cellnumber>\S+)\s+-\s+Address:\s(?P<mac>\S+)$"
         )
         regexps = [
             re.compile(r"^ESSID:\"(?P<essid>.*)\"$"),
@@ -869,7 +869,7 @@ class Sensors:
                 r"\s+Signal level=(?P<signal_level_dBm>.+) d.+$"
             ),
             re.compile(
-                r"^Signal level=(?P<signal_quality>\d+)/(?P<signal_total>\d+).*$"
+                r"^Signal level=(?P<signal_quality>\d+)/(?P<signal_total>\d+)"
             ),
         ]
 

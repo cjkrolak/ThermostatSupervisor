@@ -77,8 +77,8 @@ class DuplicateStdoutFixTest(unittest.TestCase):
         )
 
         # Should only appear in STDERR once, not in STDOUT
-        self.assertEqual('', stdout)
-        self.assertEqual('Test message\n', stderr)
+        self.assertEqual(stdout, '')
+        self.assertEqual(stderr, 'Test message\n')
 
     def test_explicit_stdout_stderr_combination_still_works(self):
         """Test that explicit STDOUT_LOG | STDERR_LOG combination still works when not in flask mode."""  # noqa: E501
@@ -89,8 +89,8 @@ class DuplicateStdoutFixTest(unittest.TestCase):
         )
 
         # Should appear in both streams when explicitly requested
-        self.assertEqual('Test message\n', stdout)
-        self.assertEqual('Test message\n', stderr)
+        self.assertEqual(stdout, 'Test message\n')
+        self.assertEqual(stderr, 'Test message\n')
 
     def test_flask_server_mode_stdout_to_stderr_conversion(self):
         """Test that flask server mode correctly converts STDOUT to STDERR."""
@@ -101,8 +101,8 @@ class DuplicateStdoutFixTest(unittest.TestCase):
         )
 
         # Should only appear in STDERR, not STDOUT
-        self.assertEqual('', stdout)
-        self.assertEqual('Test message\n', stderr)
+        self.assertEqual(stdout, '')
+        self.assertEqual(stderr, 'Test message\n')
 
     def test_both_log_mode_works_correctly(self):
         """Test that BOTH_LOG mode works correctly without duplicates."""
@@ -112,7 +112,7 @@ class DuplicateStdoutFixTest(unittest.TestCase):
 
         # Should appear in STDOUT only (file logging tested separately)
         # Directory creation message should be in STDERR
-        self.assertEqual('Test message\n', stdout)
+        self.assertEqual(stdout, 'Test message\n')
         self.assertIn('data folder', stderr)
 
     def test_quiet_log_mode_no_duplicates(self):
@@ -122,8 +122,8 @@ class DuplicateStdoutFixTest(unittest.TestCase):
         )
 
         # Should appear in STDOUT only once
-        self.assertEqual('Test message\n', stdout)
-        self.assertEqual('', stderr)
+        self.assertEqual(stdout, 'Test message\n')
+        self.assertEqual(stderr, '')
 
 
 if __name__ == '__main__':
