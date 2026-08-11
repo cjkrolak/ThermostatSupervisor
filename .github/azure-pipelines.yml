@@ -260,7 +260,13 @@ stages:
 
               # Get the coverage gist ID set by the uploadCoverage step
               # (passed via env variable to avoid bash command-substitution issues)
+              # Guard against unresolved ADO macro (e.g. if uploadCoverage skipped)
               coverage_gist_id="${COVERAGE_GIST_ID}"
+              if [[ "${coverage_gist_id}" == \$\(* ]]; then
+                echo "WARNING: coverage gist ID variable was not resolved by ADO" \
+                  "(uploadCoverage step may have been skipped or failed)"
+                coverage_gist_id=""
+              fi
               echo "Coverage gist ID: ${coverage_gist_id}"
 
               # Determine test result status from Stage 1 output variable
