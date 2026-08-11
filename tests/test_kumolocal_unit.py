@@ -202,6 +202,73 @@ class LocalNetworkDetectionUnitTest(utc.UnitTest):
         except ImportError:
             self.skipTest("kumolocal module not available for testing")
 
+    def test_pykumo_logging_level_matches_app_debug_mode(self):
+        """Test pykumo logger level is WARNING by default, DEBUG when debug on."""
+        try:
+            from src import utilities as util
+
+            pykumo_modules = [
+                "pykumo.py_kumo_cloud_account",
+                "pykumo.py_kumo",
+                "pykumo.py_kumo_base",
+                "pykumo.py_kumo_station",
+            ]
+
+            original_debug = getattr(util.log_msg, "debug", False)
+            try:
+                # Test 1: debug mode OFF -> expect WARNING level
+                util.log_msg.debug = False  # type: ignore[attr-defined]
+                # Reset pykumo loggers so _setup_pykumo_logging re-applies them
+                for mod in pykumo_modules:
+                    logging.getLogger(mod).handlers.clear()
+
+                # Invoke setup via a mock thermostat-like object
+                class _FakeTherm:
+                    """Minimal stub to invoke _setup_pykumo_logging."""
+
+                    def _setup_pykumo_logging(self_inner):
+                        """Forward to the real implementation."""
+                        kumolocal.ThermostatClass._setup_pykumo_logging(
+                            self_inner
+                        )
+
+                _FakeTherm()._setup_pykumo_logging()
+
+                for mod in pykumo_modules:
+                    logger = logging.getLogger(mod)
+                    self.assertEqual(
+                        logger.level,
+                        logging.WARNING,
+                        f"{mod} should be WARNING when debug is off",
+                    )
+
+                # Test 2: debug mode ON -> expect DEBUG level
+                util.log_msg.debug = True  # type: ignore[attr-defined]
+                for mod in pykumo_modules:
+                    logging.getLogger(mod).handlers.clear()
+
+                _FakeTherm()._setup_pykumo_logging()
+
+                for mod in pykumo_modules:
+                    logger = logging.getLogger(mod)
+                    self.assertEqual(
+                        logger.level,
+                        logging.DEBUG,
+                        f"{mod} should be DEBUG when debug is on",
+                    )
+            finally:
+                util.log_msg.debug = original_debug  # type: ignore[attr-defined]
+                # Restore logger levels to avoid side-effects
+                restore_level = (
+                    logging.DEBUG if original_debug else logging.WARNING
+                )
+                for mod in pykumo_modules:
+                    logging.getLogger(mod).setLevel(restore_level)
+                    logging.getLogger(mod).handlers.clear()
+
+        except ImportError:
+            self.skipTest("kumolocal module not available for testing")
+
     def test_get_zone_name_does_not_mutate_global_metadata(self):
         """get_zone_name returns device name without mutating config metadata."""
         from unittest.mock import MagicMock

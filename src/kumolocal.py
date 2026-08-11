@@ -256,7 +256,16 @@ class ThermostatClass(
                 supervisor_handler.setFormatter(formatter)
 
                 pykumo_logger.addHandler(supervisor_handler)
-                pykumo_logger.setLevel(logging.INFO)
+
+                # Match pykumo log level to the main application's level:
+                # DEBUG when debug mode is enabled, WARNING otherwise to
+                # suppress INFO-level chatter from pykumo while still
+                # surfacing warnings and errors.
+                app_debug = getattr(util.log_msg, "debug", False)
+                pykumo_log_level = (
+                    logging.DEBUG if app_debug else logging.WARNING
+                )
+                pykumo_logger.setLevel(pykumo_log_level)
 
                 # Prevent propagation to avoid duplicate messages
                 pykumo_logger.propagate = False
