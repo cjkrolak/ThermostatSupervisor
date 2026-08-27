@@ -963,8 +963,8 @@ class Test(utc.UnitTest):
                         mod.ThermostatClass,  # type: ignore[union-attr]
                         mod.ThermostatZone,  # type: ignore[union-attr]
                     )
-                print(f"thermotat={type(thermostat)}")
-                print(f"thermotat={type(zone_number)}")
+                print(f"thermostat={type(thermostat)}")
+                print(f"zone_number={type(zone_number)}")
         finally:
             self.Zone.get_system_switch_position = self.switch_position_backup
 

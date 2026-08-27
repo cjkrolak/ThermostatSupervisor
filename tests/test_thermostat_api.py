@@ -188,7 +188,7 @@ class Test(utc.UnitTest):
                         f"expected={exp_result}, actual={act_result}",
                     )
             finally:
-                # restore max masurements
+                # restore max measurements
                 api.uip.set_user_inputs(
                     api.uip.zone_name, api.input_flds.measurements,
                     max_measurement_bkup

@@ -50,8 +50,10 @@ class TestSHT31MissingEnvVar(utc.UnitTest):
 
         with patch.object(util, 'unit_test_mode', True):
             # Verify unit test mode is actually set
-            self.assertTrue(util.unit_test_mode,
-                            "unit_test_mode should be True for this test")
+            self.assertTrue(
+                util.unit_test_mode,
+                "unit_test_mode should be True for this test",
+            )
 
             # Clear the env var from OS environment if it exists
             # to simulate missing environment variable scenario
@@ -104,8 +106,10 @@ class TestSHT31MissingEnvVar(utc.UnitTest):
 
         with patch.object(util, 'unit_test_mode', False):
             # Verify unit test mode is actually disabled
-            self.assertFalse(util.unit_test_mode,
-                             "unit_test_mode should be False for this test")
+            self.assertFalse(
+                util.unit_test_mode,
+                "unit_test_mode should be False for this test",
+            )
 
             # Clear the env var from OS environment if it exists
             if 'SHT31_REMOTE_IP_ADDRESS_1' in os.environ:

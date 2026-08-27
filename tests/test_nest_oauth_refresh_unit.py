@@ -49,7 +49,7 @@ class TestNestOAuthRefresh(utc.UnitTest):
         self.test_cache_file.close()
 
         # Preserve shared cache state to avoid cross-test contamination
-        # using monkeypatching to ensure proper restoration.
+        # using patching to ensure proper restoration.
         patcher_cache = patch.object(
             nest.ThermostatClass, '_shared_devices_cache', None
         )
