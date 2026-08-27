@@ -21,12 +21,10 @@ class TestSHT31MissingEnvVar(utc.UnitTest):
     def setUp(self):
         """Set up test fixtures."""
         super().setUp()
-        self.original_unit_test_mode = util.unit_test_mode
         self.original_cwd = os.getcwd()
 
     def tearDown(self):
         """Clean up after tests."""
-        util.unit_test_mode = self.original_unit_test_mode
         os.chdir(self.original_cwd)
         super().tearDown()
 
@@ -50,10 +48,7 @@ class TestSHT31MissingEnvVar(utc.UnitTest):
         # Mock the file reading to return empty dict (simulating missing file)
         mock_read_env_file.return_value = {}
 
-        try:
-            # Explicitly set unit test mode
-            util.unit_test_mode = True
-
+        with patch.object(util, 'unit_test_mode', True):
             # Verify unit test mode is actually set
             self.assertTrue(util.unit_test_mode,
                             "unit_test_mode should be True for this test")
@@ -95,9 +90,6 @@ class TestSHT31MissingEnvVar(utc.UnitTest):
             # Verify URL does NOT contain None or empty host
             self.assertNotIn("http://:5000", tstat.url)
             self.assertNotIn("None", tstat.url)
-        finally:
-            # Always restore original mode (saved in setUp())
-            util.unit_test_mode = self.original_unit_test_mode
 
     @patch.object(sht31.ThermostatClass, "spawn_flask_server")
     @patch.dict(os.environ, {}, clear=False)
@@ -110,13 +102,7 @@ class TestSHT31MissingEnvVar(utc.UnitTest):
         """
         mock_spawn.return_value = None
 
-        # Save original state
-        original_mode = util.unit_test_mode
-
-        try:
-            # Explicitly disable unit test mode
-            util.unit_test_mode = False
-
+        with patch.object(util, 'unit_test_mode', False):
             # Verify unit test mode is actually disabled
             self.assertFalse(util.unit_test_mode,
                              "unit_test_mode should be False for this test")
@@ -155,10 +141,6 @@ class TestSHT31MissingEnvVar(utc.UnitTest):
                 if backup_path and os.path.exists(backup_path):
                     shutil.move(backup_path, supervisor_env_path)
 
-        finally:
-            # Always restore original mode
-            util.unit_test_mode = original_mode
-
     @patch.object(sht31.ThermostatClass, "spawn_flask_server")
     def test_placeholder_value_preserved_in_non_unit_test_mode(self, mock_spawn):
         """
@@ -167,26 +149,26 @@ class TestSHT31MissingEnvVar(utc.UnitTest):
         This ensures that in production, placeholder values don't get replaced.
         """
         mock_spawn.return_value = None
-        util.unit_test_mode = False
 
         # Create a temporary supervisor-env.txt with placeholder value
         import tempfile
 
-        with tempfile.TemporaryDirectory() as temp_dir:
-            try:
-                os.chdir(temp_dir)
+        with patch.object(util, 'unit_test_mode', False):
+            with tempfile.TemporaryDirectory() as temp_dir:
+                try:
+                    os.chdir(temp_dir)
 
-                # Create supervisor-env.txt with placeholder value
-                with open("supervisor-env.txt", "w") as f:
-                    f.write("SHT31_REMOTE_IP_ADDRESS_1=***\n")
+                    # Create supervisor-env.txt with placeholder value
+                    with open("supervisor-env.txt", "w") as f:
+                        f.write("SHT31_REMOTE_IP_ADDRESS_1=***\n")
 
-                # Test that placeholder value is NOT replaced in
-                # non-unit-test mode
-                tstat = sht31.ThermostatClass(1, verbose=False)
-                self.assertEqual(tstat.ip_address, "***")
-            finally:
-                # Change back to original directory before cleanup
-                os.chdir(self.original_cwd)
+                    # Test that placeholder value is NOT replaced in
+                    # non-unit-test mode
+                    tstat = sht31.ThermostatClass(1, verbose=False)
+                    self.assertEqual(tstat.ip_address, "***")
+                finally:
+                    # Change back to original directory before cleanup
+                    os.chdir(self.original_cwd)
 
     @patch.object(sht31.ThermostatClass, "spawn_flask_server")
     @patch.dict(os.environ, {}, clear=True)  # Clear environment variables
@@ -199,42 +181,42 @@ class TestSHT31MissingEnvVar(utc.UnitTest):
         placeholder values.
         """
         mock_spawn.return_value = None
-        util.unit_test_mode = True
 
         # Create a temporary supervisor-env.txt with placeholder value
         import tempfile
 
-        with tempfile.TemporaryDirectory() as temp_dir:
-            try:
-                os.chdir(temp_dir)
+        with patch.object(util, 'unit_test_mode', True):
+            with tempfile.TemporaryDirectory() as temp_dir:
+                try:
+                    os.chdir(temp_dir)
 
-                # Create supervisor-env.txt with placeholder value
-                with open("supervisor-env.txt", "w") as f:
-                    f.write("SHT31_REMOTE_IP_ADDRESS_1=***\n")
+                    # Create supervisor-env.txt with placeholder value
+                    with open("supervisor-env.txt", "w") as f:
+                        f.write("SHT31_REMOTE_IP_ADDRESS_1=***\n")
 
-                # Test that placeholder value gets replaced with localhost
-                tstat = sht31.ThermostatClass(1, verbose=False)
-                self.assertEqual(tstat.ip_address, "127.0.0.1")
-            finally:
-                # Change back to original directory before cleanup
-                os.chdir(self.original_cwd)
+                    # Test that placeholder value gets replaced with localhost
+                    tstat = sht31.ThermostatClass(1, verbose=False)
+                    self.assertEqual(tstat.ip_address, "127.0.0.1")
+                finally:
+                    # Change back to original directory before cleanup
+                    os.chdir(self.original_cwd)
 
     @patch.object(sht31.ThermostatClass, "spawn_flask_server")
     def test_unit_test_zone_still_works(self, mock_spawn):
         """Test that the unit test zone (99) still works as expected."""
         mock_spawn.return_value = None
-        util.unit_test_mode = True
 
-        # Zone 99 should work (this was already working before the fix)
-        tstat = sht31.ThermostatClass(
-            sht31_config.UNIT_TEST_ZONE,
-            verbose=False
-        )
+        with patch.object(util, 'unit_test_mode', True):
+            # Zone 99 should work (this was already working before the fix)
+            tstat = sht31.ThermostatClass(
+                sht31_config.UNIT_TEST_ZONE,
+                verbose=False
+            )
 
-        # Should get local IP via existing logic in environment.py
-        self.assertIsNotNone(tstat.ip_address)
-        self.assertIn("http://", tstat.url)
-        self.assertNotIn("http://:5000", tstat.url)
+            # Should get local IP via existing logic in environment.py
+            self.assertIsNotNone(tstat.ip_address)
+            self.assertIn("http://", tstat.url)
+            self.assertNotIn("http://:5000", tstat.url)
 
 
 if __name__ == "__main__":

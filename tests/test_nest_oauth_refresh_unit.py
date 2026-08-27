@@ -48,22 +48,23 @@ class TestNestOAuthRefresh(utc.UnitTest):
         json.dump(self.initial_token_data, self.test_cache_file, indent=4)
         self.test_cache_file.close()
 
-        # Preserve shared cache state to avoid cross-test contamination.
-        self._original_shared_devices_cache = nest.ThermostatClass._shared_devices_cache
-        self._original_shared_devices_cache_time = (
-            nest.ThermostatClass._shared_devices_cache_time
+        # Preserve shared cache state to avoid cross-test contamination
+        # using monkeypatching to ensure proper restoration.
+        patcher_cache = patch.object(
+            nest.ThermostatClass, '_shared_devices_cache', None
         )
-        nest.ThermostatClass._shared_devices_cache = None
-        nest.ThermostatClass._shared_devices_cache_time = 0.0
+        patcher_time = patch.object(
+            nest.ThermostatClass, '_shared_devices_cache_time', 0.0
+        )
+        patcher_cache.start()
+        self.addCleanup(patcher_cache.stop)
+        patcher_time.start()
+        self.addCleanup(patcher_time.stop)
 
     def tearDown(self):
         """Clean up test fixtures."""
         if os.path.exists(self.cache_file_path):
             os.unlink(self.cache_file_path)
-        nest.ThermostatClass._shared_devices_cache = self._original_shared_devices_cache
-        nest.ThermostatClass._shared_devices_cache_time = (
-            self._original_shared_devices_cache_time
-        )
 
     @patch("src.nest.requests.post")
     def test_refresh_oauth_token_with_new_refresh_token(self, mock_post):
@@ -254,25 +255,28 @@ class TestNestOAuthRefresh(utc.UnitTest):
     def test_get_device_data_rate_limit_uses_cached_fallback(self, _mock_sleep):
         """Test that 429 errors fall back to shared cache after retries."""
         fallback_devices = [{"name": "cached-device"}]
-        nest.ThermostatClass._shared_devices_cache = fallback_devices
-        nest.ThermostatClass._shared_devices_cache_time = 0.0
 
-        thermostat = nest.ThermostatClass.__new__(nest.ThermostatClass)
-        thermostat.cache_period = 600
-        thermostat.devices = []
-        thermostat.thermostat_obj = Mock()
-        thermostat.thermostat_obj.get_devices.side_effect = Exception(
-            {
-                "code": 429,
-                "message": "Rate limited for the ListDevices API for the user.",
-                "status": "RESOURCE_EXHAUSTED",
-            }
-        )
+        with patch.object(
+            nest.ThermostatClass, '_shared_devices_cache', fallback_devices
+        ), patch.object(
+            nest.ThermostatClass, '_shared_devices_cache_time', 0.0
+        ):
+            thermostat = nest.ThermostatClass.__new__(nest.ThermostatClass)
+            thermostat.cache_period = 600
+            thermostat.devices = []
+            thermostat.thermostat_obj = Mock()
+            thermostat.thermostat_obj.get_devices.side_effect = Exception(
+                {
+                    "code": 429,
+                    "message": "Rate limited for the ListDevices API for the user.",
+                    "status": "RESOURCE_EXHAUSTED",
+                }
+            )
 
-        result = thermostat.get_device_data(force_refresh=True)
-        self.assertEqual(result, fallback_devices)
-        self.assertEqual(thermostat.thermostat_obj.get_devices.call_count, 3)
-        self.assertGreater(nest.ThermostatClass._shared_devices_cache_time, 0)
+            result = thermostat.get_device_data(force_refresh=True)
+            self.assertEqual(result, fallback_devices)
+            self.assertEqual(thermostat.thermostat_obj.get_devices.call_count, 3)
+            self.assertGreater(nest.ThermostatClass._shared_devices_cache_time, 0)
 
 
 if __name__ == "__main__":

@@ -146,15 +146,15 @@ class TestSSLCertificate(unittest.TestCase):
 
     def test_get_ssl_context_with_adhoc_fallback(self):
         """Test SSL context generation with adhoc fallback."""
-        # Mock a failure scenario by temporarily breaking OpenSSL
-        original_generate = ssl_certificate.generate_self_signed_certificate
 
         def mock_generate_failure(*args, **kwargs):
             raise RuntimeError("Mocked OpenSSL failure")
 
-        ssl_certificate.generate_self_signed_certificate = mock_generate_failure
-
-        try:
+        with patch.object(
+            ssl_certificate,
+            'generate_self_signed_certificate',
+            mock_generate_failure,
+        ):
             ssl_context = ssl_certificate.get_ssl_context(
                 cert_file="fallback_test.crt",
                 key_file="fallback_test.key",
@@ -163,10 +163,6 @@ class TestSSLCertificate(unittest.TestCase):
 
             # Should fallback to 'adhoc'
             self.assertEqual(ssl_context, "adhoc")
-
-        finally:
-            # Restore original function
-            ssl_certificate.generate_self_signed_certificate = original_generate
 
     def test_certificate_reuse(self):
         """Test that existing recent certificates are reused."""
@@ -801,15 +797,15 @@ MIIDXTCCAkWgAwIBAgIJAKuK0VGDJJhjMA0GCSqGSIb3DQEBCwUAMEUxCzAJBgNV
 
     def test_get_ssl_context_without_fallback(self):
         """Test SSL context generation without adhoc fallback."""
-        # Mock generate_self_signed_certificate to fail
-        original_generate = ssl_certificate.generate_self_signed_certificate
 
         def mock_generate_failure(*args, **kwargs):
             raise RuntimeError("Mocked failure")
 
-        ssl_certificate.generate_self_signed_certificate = mock_generate_failure
-
-        try:
+        with patch.object(
+            ssl_certificate,
+            'generate_self_signed_certificate',
+            mock_generate_failure,
+        ):
             ssl_context = ssl_certificate.get_ssl_context(
                 cert_file="no_fallback.crt",
                 key_file="no_fallback.key",
@@ -818,10 +814,6 @@ MIIDXTCCAkWgAwIBAgIJAKuK0VGDJJhjMA0GCSqGSIb3DQEBCwUAMEUxCzAJBgNV
 
             # Should return None
             self.assertIsNone(ssl_context)
-
-        finally:
-            # Restore original function
-            ssl_certificate.generate_self_signed_certificate = original_generate
 
     @patch("src.ssl_certificate.download_ssl_certificate")
     @patch("src.ssl_certificate.import_ssl_certificate_to_system")
