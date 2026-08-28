@@ -19,13 +19,13 @@ class TestSht31EdgeCases(unittest.TestCase):
 
     def setUp(self):
         """Set up test environment."""
-        # Mock unit_test_mode to avoid spawning Flask server
-        self.original_unit_test_mode = util.unit_test_mode
-        util.unit_test_mode = False
+        # Patch unit_test_mode to False to avoid spawning Flask server
+        patcher = patch.object(util, 'unit_test_mode', False)
+        patcher.start()
+        self.addCleanup(patcher.stop)
 
     def tearDown(self):
         """Clean up test environment."""
-        util.unit_test_mode = self.original_unit_test_mode
 
     @patch('src.environment.get_env_variable')
     def test_should_use_fallback_with_none(self, mock_env):
@@ -71,10 +71,7 @@ class TestSht31EdgeCases(unittest.TestCase):
         tstat = sht31.ThermostatClass(zone=0, verbose=False)
 
         # Enable unit test mode temporarily
-        original_mode = util.unit_test_mode
-        util.unit_test_mode = True
-
-        try:
+        with patch.object(util, 'unit_test_mode', True):
             # Placeholder patterns should return True in unit test mode
             result = tstat._should_use_fallback("***")
             self.assertTrue(result)
@@ -85,9 +82,6 @@ class TestSht31EdgeCases(unittest.TestCase):
             # Valid IP should return False
             result = tstat._should_use_fallback("192.168.1.100")
             self.assertFalse(result)
-
-        finally:
-            util.unit_test_mode = original_mode
 
     @patch('src.environment.get_env_variable')
     def test_handle_403_error_with_ipban_message(self, mock_env):
@@ -295,12 +289,12 @@ class TestSht31ThermostatZone(unittest.TestCase):
 
     def setUp(self):
         """Set up test environment."""
-        self.original_unit_test_mode = util.unit_test_mode
-        util.unit_test_mode = False
+        patcher = patch.object(util, 'unit_test_mode', False)
+        patcher.start()
+        self.addCleanup(patcher.stop)
 
     def tearDown(self):
         """Clean up test environment."""
-        util.unit_test_mode = self.original_unit_test_mode
 
     @patch('src.environment.get_env_variable')
     def test_get_system_switch_position_with_list(self, mock_env):
@@ -361,32 +355,21 @@ class TestSht31ThermostatZone(unittest.TestCase):
     @patch('src.environment.get_env_variable')
     def test_get_ip_address_production_mode_with_blank_value(self, mock_env):
         """Test get_ip_address in production mode with blank value."""
-        # Set up for production mode
-        original_mode = util.unit_test_mode
-        util.unit_test_mode = False
-
-        try:
+        with patch.object(util, 'unit_test_mode', False):
             mock_env.return_value = {"value": ""}
             with self.assertRaises(ValueError) as context:
                 sht31.ThermostatClass(zone=0, verbose=False)
 
             self.assertIn("empty or missing", str(context.exception))
-        finally:
-            util.unit_test_mode = original_mode
 
     @patch('src.environment.get_env_variable')
     def test_get_ip_address_unit_test_mode_with_blank_value(self, mock_env):
         """Test get_ip_address in unit test mode with blank value."""
-        original_mode = util.unit_test_mode
-        util.unit_test_mode = True
-
-        try:
+        with patch.object(util, 'unit_test_mode', True):
             mock_env.return_value = {"value": ""}
             tstat = sht31.ThermostatClass(zone=0, verbose=False)
             # Should get localhost fallback
             self.assertEqual(tstat.ip_address, "127.0.0.1")
-        finally:
-            util.unit_test_mode = original_mode
 
     @patch('requests.get')
     @patch('src.environment.get_env_variable')
@@ -440,12 +423,12 @@ class TestSht31ZoneMetadataMethods(unittest.TestCase):
 
     def setUp(self):
         """Set up test environment."""
-        self.original_unit_test_mode = util.unit_test_mode
-        util.unit_test_mode = False
+        patcher = patch.object(util, 'unit_test_mode', False)
+        patcher.start()
+        self.addCleanup(patcher.stop)
 
     def tearDown(self):
         """Clean up test environment."""
-        util.unit_test_mode = self.original_unit_test_mode
 
     @patch('requests.get')
     @patch('src.environment.get_env_variable')
@@ -676,12 +659,12 @@ class TestSht31ZoneSimpleMethods(unittest.TestCase):
 
     def setUp(self):
         """Set up test environment."""
-        self.original_unit_test_mode = util.unit_test_mode
-        util.unit_test_mode = False
+        patcher = patch.object(util, 'unit_test_mode', False)
+        patcher.start()
+        self.addCleanup(patcher.stop)
 
     def tearDown(self):
         """Clean up test environment."""
-        util.unit_test_mode = self.original_unit_test_mode
 
     @patch('requests.get')
     @patch('src.environment.get_env_variable')

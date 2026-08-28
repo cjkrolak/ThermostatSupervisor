@@ -942,28 +942,29 @@ class Test(utc.UnitTest):
                     tc.ThermostatCommonZone.DRY_MODE
                 ]
             )
-            api.uip = api.UserInputs(self.unit_test_argv)
-            thermostat_type = api.uip.get_user_inputs(
-                api.uip.zone_name, api.input_flds.thermostat_type
-            )
-            zone_number = api.uip.get_user_inputs(
-                api.uip.zone_name, api.input_flds.zone
-            )
-            mod = api.load_hardware_library(thermostat_type)
-
-            # Mock the environment variable verification to avoid requiring credentials
-            # for this unit test which should be truly loopback
-            with unittest.mock.patch.object(
-                api, "verify_required_env_variables", return_value=True
-            ):
-                thermostat, zone_number = tc.thermostat_basic_checkout(
-                    thermostat_type,
-                    zone_number,
-                    mod.ThermostatClass,  # type: ignore[union-attr]
-                    mod.ThermostatZone,  # type: ignore[union-attr]
+            new_uip = api.UserInputs(self.unit_test_argv)
+            with unittest.mock.patch.object(api, 'uip', new_uip):
+                thermostat_type = api.uip.get_user_inputs(
+                    api.uip.zone_name, api.input_flds.thermostat_type
                 )
-            print(f"thermotat={type(thermostat)}")
-            print(f"thermotat={type(zone_number)}")
+                zone_number = api.uip.get_user_inputs(
+                    api.uip.zone_name, api.input_flds.zone
+                )
+                mod = api.load_hardware_library(thermostat_type)
+
+                # Mock the env variable verification to avoid requiring
+                # credentials for this unit test which should be loopback
+                with unittest.mock.patch.object(
+                    api, "verify_required_env_variables", return_value=True
+                ):
+                    thermostat, zone_number = tc.thermostat_basic_checkout(
+                        thermostat_type,
+                        zone_number,
+                        mod.ThermostatClass,  # type: ignore[union-attr]
+                        mod.ThermostatZone,  # type: ignore[union-attr]
+                    )
+                print(f"thermostat={type(thermostat)}")
+                print(f"zone_number={type(zone_number)}")
         finally:
             self.Zone.get_system_switch_position = self.switch_position_backup
 
@@ -979,28 +980,29 @@ class Test(utc.UnitTest):
                     tc.ThermostatCommonZone.DRY_MODE
                 ]
             )
-            api.uip = api.UserInputs(self.unit_test_argv)
-            thermostat_type = api.uip.get_user_inputs(
-                api.uip.zone_name, api.input_flds.thermostat_type
-            )
-            zone_number = api.uip.get_user_inputs(
-                api.uip.zone_name, api.input_flds.zone
-            )
-            mod = api.load_hardware_library(thermostat_type)
-
-            # Mock the environment variable verification to avoid requiring credentials
-            # for this unit test which should be truly loopback
-            with unittest.mock.patch.object(
-                api, "verify_required_env_variables", return_value=True
-            ):
-                tc.print_select_data_from_all_zones(
-                    thermostat_type,
-                    [zone_number],
-                    mod.ThermostatClass,  # type: ignore[union-attr]
-                    mod.ThermostatZone,  # type: ignore[union-attr]
-                    display_wifi=True,
-                    display_battery=True,
+            new_uip = api.UserInputs(self.unit_test_argv)
+            with unittest.mock.patch.object(api, 'uip', new_uip):
+                thermostat_type = api.uip.get_user_inputs(
+                    api.uip.zone_name, api.input_flds.thermostat_type
                 )
+                zone_number = api.uip.get_user_inputs(
+                    api.uip.zone_name, api.input_flds.zone
+                )
+                mod = api.load_hardware_library(thermostat_type)
+
+                # Mock the env variable verification to avoid requiring
+                # credentials for this unit test which should be loopback
+                with unittest.mock.patch.object(
+                    api, "verify_required_env_variables", return_value=True
+                ):
+                    tc.print_select_data_from_all_zones(
+                        thermostat_type,
+                        [zone_number],
+                        mod.ThermostatClass,  # type: ignore[union-attr]
+                        mod.ThermostatZone,  # type: ignore[union-attr]
+                        display_wifi=True,
+                        display_battery=True,
+                    )
         finally:
             self.Zone.get_system_switch_position = self.switch_position_backup
 
@@ -1382,7 +1384,11 @@ class Test(utc.UnitTest):
             "UNKNOWN_MODE",
             "5",  # 5 measurements
         ]
-        api.uip = api.UserInputs(test_argv)
+        _uip_patcher = unittest.mock.patch.object(
+            api, 'uip', api.UserInputs(test_argv)
+        )
+        _uip_patcher.start()
+        self.addCleanup(_uip_patcher.stop)
 
         # Mock get_current_mode to avoid actual operations
         original_get_current_mode = self.Zone.get_current_mode
@@ -1445,7 +1451,11 @@ class Test(utc.UnitTest):
                 "UNKNOWN_MODE",
                 "10",  # 10 measurements
             ]
-            api.uip = api.UserInputs(test_argv)
+            _uip_patcher = unittest.mock.patch.object(
+                api, 'uip', api.UserInputs(test_argv)
+            )
+            _uip_patcher.start()
+            self.addCleanup(_uip_patcher.stop)
 
             # Mock get_current_mode to simulate a slow operation (2 seconds)
             def slow_get_current_mode(*_args, **_kwargs):
@@ -1531,7 +1541,11 @@ class Test(utc.UnitTest):
                 "UNKNOWN_MODE",
                 "3",  # 3 measurements
             ]
-            api.uip = api.UserInputs(test_argv)
+            _uip_patcher = unittest.mock.patch.object(
+                api, 'uip', api.UserInputs(test_argv)
+            )
+            _uip_patcher.start()
+            self.addCleanup(_uip_patcher.stop)
 
             # Track how many times get_current_mode is called
             call_count = [0]

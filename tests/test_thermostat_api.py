@@ -160,37 +160,39 @@ class Test(utc.UnitTest):
             },
         }
         # backup max_measurements
-        api.uip = api.UserInputs(
+        new_uip = api.UserInputs(
             self.unit_test_argv,
             "unit test parser",
             thermostat_type=self.tstat,
             zone_name=self.zone_name,
         )
-        max_measurement_bkup = api.uip.get_user_inputs(
-            api.uip.zone_name, api.input_flds.measurements
-        )
-        try:
-            for test_case, parameters in test_cases.items():
-                api.uip.set_user_inputs(
-                    api.uip.zone_name,
-                    api.input_flds.measurements,
-                    parameters["max_measurements"],
-                )
-                act_result = api.uip.max_measurement_count_exceeded(
-                    parameters["measurement"]
-                )
-                exp_result = parameters["exp_result"]
-                self.assertEqual(
-                    exp_result,
-                    act_result,
-                    f"test case '{test_case}', "
-                    f"expected={exp_result}, actual={act_result}",
-                )
-        finally:
-            # restore max masurements
-            api.uip.set_user_inputs(
-                api.uip.zone_name, api.input_flds.measurements, max_measurement_bkup
+        with unittest.mock.patch.object(api, 'uip', new_uip):
+            max_measurement_bkup = api.uip.get_user_inputs(
+                api.uip.zone_name, api.input_flds.measurements
             )
+            try:
+                for test_case, parameters in test_cases.items():
+                    api.uip.set_user_inputs(
+                        api.uip.zone_name,
+                        api.input_flds.measurements,
+                        parameters["max_measurements"],
+                    )
+                    act_result = api.uip.max_measurement_count_exceeded(
+                        parameters["measurement"]
+                    )
+                    exp_result = parameters["exp_result"]
+                    self.assertEqual(
+                        exp_result,
+                        act_result,
+                        f"test case '{test_case}', "
+                        f"expected={exp_result}, actual={act_result}",
+                    )
+            finally:
+                # restore max measurements
+                api.uip.set_user_inputs(
+                    api.uip.zone_name, api.input_flds.measurements,
+                    max_measurement_bkup
+                )
 
     def test_load_user_inputs(self):
         """Test load_user_inputs() function."""
