@@ -1149,5 +1149,213 @@ class LocalAddressUnitTest(utc.UnitTest):
         zone.refresh_zone_info()
 
 
+class V3AuthenticationUnitTest(utc.UnitTest):
+    """Unit tests for the kumocloud-compatible v3 authentication flow."""
+
+    def setUp(self):
+        """Setup for unit tests."""
+        super().setUp()
+        self.print_test_name()
+
+    def _make_v3_client(self):
+        """Create a KumoCloudV3Compatible instance with a fake access token."""
+        client = kumolocal.KumoCloudV3Compatible("user", "pwd")
+        client._access_token = "token"  # pylint: disable=protected-access
+        return client
+
+    def _make_thermostat_class(self):
+        """Create a ThermostatClass instance without calling __init__."""
+        obj = kumolocal.ThermostatClass.__new__(kumolocal.ThermostatClass)
+        obj._username = "user"
+        obj._password = "pwd"
+        obj._units = {}
+        obj._kumo_dict = None
+        obj._need_fetch = True
+        return obj
+
+    def test_auth_headers_match_kumocloud_headers(self):
+        """Test v3 client sends the same Accept headers used by kumocloud.py."""
+        client = self._make_v3_client()
+        headers = client._auth_headers()
+        self.assertEqual(headers["Accept"], "application/json, text/plain, */*")
+        self.assertEqual(headers["Accept-Language"], "en-US, en")
+        self.assertIn("Authorization", headers)
+
+    def test_get_zones_uses_trailing_slash_endpoint(self):
+        """Test zones are requested from the kumocloud.py endpoint first."""
+        from unittest.mock import patch
+        client = self._make_v3_client()
+        paths = []
+
+        def fake_get(path):
+            paths.append(path)
+            return [{"name": "zone1"}]
+
+        with patch.object(client, "_get", side_effect=fake_get):
+            zones = client.get_zones("site1")
+
+        self.assertEqual(paths, ["/v3/sites/site1/zones/"])
+        self.assertEqual(zones, [{"name": "zone1"}])
+
+    def test_get_zones_falls_back_to_pykumo_endpoint(self):
+        """Test zones fall back to pykumo's endpoint when trailing slash fails."""
+        from unittest.mock import patch
+        client = self._make_v3_client()
+        paths = []
+
+        def fake_get(path):
+            paths.append(path)
+            if path.endswith("zones/"):
+                return None
+            return [{"name": "zone1"}]
+
+        with patch.object(client, "_get", side_effect=fake_get):
+            zones = client.get_zones("site1")
+
+        self.assertEqual(
+            paths, ["/v3/sites/site1/zones/", "/v3/sites/site1/zones"]
+        )
+        self.assertEqual(zones, [{"name": "zone1"}])
+
+    def test_get_device_status_merges_device_endpoint(self):
+        """Test cryptoSerial is retrieved from the kumocloud.py device endpoint."""
+        from unittest.mock import patch
+        client = self._make_v3_client()
+        paths = []
+
+        def fake_get(path):
+            paths.append(path)
+            if path.endswith("/status"):
+                return {"cryptoSerial": ""}
+            return {"cryptoSerial": "ABCD", "password": "pw"}
+
+        with patch.object(client, "_get", side_effect=fake_get):
+            status = client.get_device_status("SN1")
+
+        self.assertEqual(paths, ["/v3/devices/SN1/status", "/v3/devices/SN1"])
+        self.assertEqual(status["cryptoSerial"], "ABCD")
+        self.assertEqual(status["password"], "pw")
+
+    def test_get_device_status_skips_fallback_when_crypto_present(self):
+        """Test the extra device request is skipped when cryptoSerial is present."""
+        from unittest.mock import patch
+        client = self._make_v3_client()
+        paths = []
+
+        def fake_get(path):
+            paths.append(path)
+            return {"cryptoSerial": "ABCD"}
+
+        with patch.object(client, "_get", side_effect=fake_get):
+            status = client.get_device_status("SN1")
+
+        self.assertEqual(paths, ["/v3/devices/SN1/status"])
+        self.assertEqual(status["cryptoSerial"], "ABCD")
+
+    def test_get_all_device_credentials_fills_missing_password(self):
+        """Test missing Socket.IO passwords are filled from the REST endpoint."""
+        from unittest.mock import patch
+        import pykumo
+        client = self._make_v3_client()
+        base_devices = {"SN1": {"password": "", "cryptoSerial": "ABCD"}}
+
+        with patch.object(
+            pykumo.KumoCloudV3,
+            "get_all_device_credentials",
+            return_value=base_devices,
+        ):
+            with patch.object(
+                client, "get_device_status", return_value={"password": "pw"}
+            ):
+                devices = client.get_all_device_credentials()
+
+        self.assertEqual(devices["SN1"]["password"], "pw")
+
+    def test_try_setup_configures_units_from_v3_credentials(self):
+        """Test try_setup populates units using the v3 credential fetch."""
+        from unittest.mock import patch
+        obj = self._make_thermostat_class()
+        devices = {
+            "SN1": {
+                "label": "Basement",
+                "password": "pw",
+                "cryptoSerial": "ABCD",
+                "unitType": "ductless",
+                "mac": "aa:bb",
+            },
+        }
+
+        with patch.object(
+            obj, "_fetch_v3_device_credentials", return_value=devices
+        ):
+            result = obj.try_setup()
+
+        self.assertTrue(result)
+        self.assertEqual(list(obj._units), ["SN1"])
+        self.assertEqual(obj._units["SN1"]["serial"], "SN1")
+        self.assertFalse(obj._need_fetch)
+        # cached dict must be readable by pykumo's cache parser
+        self.assertEqual(
+            list(obj._extract_cached_units()), ["SN1"]
+        )
+
+    def test_try_setup_skips_units_missing_credentials(self):
+        """Test try_setup falls back to pykumo when credentials are incomplete."""
+        from unittest.mock import patch
+        import pykumo
+        obj = self._make_thermostat_class()
+        devices = {"SN1": {"label": "Basement", "password": "", "cryptoSerial": ""}}
+
+        with patch.object(
+            obj, "_fetch_v3_device_credentials", return_value=devices
+        ):
+            with patch.object(
+                pykumo.KumoCloudAccount, "try_setup", return_value=False
+            ) as mock_super:
+                result = obj.try_setup()
+
+        self.assertFalse(result)
+        mock_super.assert_called_once()
+
+    def test_try_setup_falls_back_when_v3_fetch_fails(self):
+        """Test try_setup falls back to pykumo when the v3 fetch returns nothing."""
+        from unittest.mock import patch
+        import pykumo
+        obj = self._make_thermostat_class()
+
+        with patch.object(obj, "_fetch_v3_device_credentials", return_value={}):
+            with patch.object(
+                pykumo.KumoCloudAccount, "try_setup", return_value=True
+            ) as mock_super:
+                result = obj.try_setup()
+
+        self.assertTrue(result)
+        mock_super.assert_called_once()
+
+    def test_fetch_v3_device_credentials_handles_exception(self):
+        """Test credential fetch failures return an empty dict instead of raising."""
+        from unittest.mock import patch
+        obj = self._make_thermostat_class()
+
+        with patch.object(
+            kumolocal,
+            "KumoCloudV3Compatible",
+            side_effect=RuntimeError("network down"),
+        ):
+            self.assertEqual(obj._fetch_v3_device_credentials(), {})
+
+    def test_pykumo_v3_logger_is_integrated(self):
+        """Test the v3 cloud logger is routed through supervisor logging."""
+        obj = self._make_thermostat_class()
+        obj._setup_pykumo_logging()
+        v3_logger = logging.getLogger("pykumo.py_kumo_cloud_account_v3")
+        self.assertTrue(
+            any(
+                isinstance(handler, kumolocal.SupervisorLogHandler)
+                for handler in v3_logger.handlers
+            )
+        )
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
