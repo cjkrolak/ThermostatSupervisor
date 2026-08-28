@@ -375,7 +375,7 @@ class ThermostatClass(
         # establish local interface to kumos, must be on local net
         # init_update_status=False avoids calling update_status() for every
         # zone at creation time; only the matched zone is updated below.
-        kumos = self.make_pykumos(init_update_status=False)
+        kumos = self._make_pykumos_with_retry()
         matched_zone_name, device_id = self._resolve_zone_device(kumos, zone)
         if device_id is None:
             self._raise_zone_lookup_error(kumos, zone)
@@ -400,6 +400,38 @@ class ThermostatClass(
 
         # return the target zone object
         return self.device_id
+
+    def _make_pykumos_with_retry(self, retries=1, retry_delay_sec=5):
+        """Return pykumo zone dict, retrying once on a blank (auth) result.
+
+        pykumo's KumoCloud V3 credential fetch involves a live cloud login
+        plus a Socket.IO round-trip to obtain each device's local password.
+        That round-trip can fail transiently (e.g. slow/lossy network) even
+        when the account credentials are valid, unlike kumocloud.py's simpler
+        token-only authentication. Retrying once before giving up avoids
+        surfacing a spurious authentication error for a transient failure.
+
+        inputs:
+            retries(int): number of retry attempts after the initial attempt.
+            retry_delay_sec(int): seconds to wait before each retry.
+        returns:
+            (dict): mapping of zone name to PyKumo object, may be empty.
+        """
+        kumos = self.make_pykumos(init_update_status=False)
+        attempt = 0
+        while not kumos and attempt < retries:
+            attempt += 1
+            util.log_msg(
+                "kumolocal returned no zones, retrying "
+                f"({attempt}/{retries}) in {retry_delay_sec}s...",
+                mode=util.DEBUG_LOG + util.STDOUT_LOG,
+                func_name=1,
+            )
+            time.sleep(retry_delay_sec)
+            # force a fresh fetch attempt on the underlying pykumo account
+            self._need_fetch = True
+            kumos = self.make_pykumos(init_update_status=False)
+        return kumos
 
     def _resolve_zone_device(self, kumos, zone):
         """Resolve a device with compatibility fallbacks."""
@@ -429,12 +461,23 @@ class ThermostatClass(
         return self.zone_name, None
 
     def _raise_zone_lookup_error(self, kumos, zone) -> None:
-        """Raise an informative error for unresolved zone lookups."""
+        """Raise an informative error for unresolved zone lookups.
+
+        If no kumolocal zones were returned at all, the account failed to
+        authenticate with (or fetch data from) the KumoCloud service, mirroring
+        the AuthenticationError raised elsewhere in this module (see
+        `_validate_kumocloud_serial_numbers`) and in kumocloud.py. Raising a
+        plain KeyError in that case is misleading, since it looks like a zone
+        name typo rather than an authentication/connectivity failure.
+        """
         available_zone_names = list(kumos.keys())
-        if available_zone_names:
-            valid_range = f"[0..{len(available_zone_names) - 1}]"
-        else:
-            valid_range = "[]"
+        if not available_zone_names:
+            raise tc.AuthenticationError(
+                "kumolocal meta data is blank, probably"
+                " due to an Authentication Error,"
+                " check your credentials."
+            )
+        valid_range = f"[0..{len(available_zone_names) - 1}]"
         raise KeyError(
             f"Configured zone name '{self.zone_name}' was not found in available "
             f"kumolocal zones: {available_zone_names}, and zone index {zone!r} "

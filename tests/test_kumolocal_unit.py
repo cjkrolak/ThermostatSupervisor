@@ -696,6 +696,74 @@ class TargetZoneIdResolutionUnitTest(utc.UnitTest):
         ):
             thermostat.get_target_zone_id(5)
 
+    def test_get_target_zone_id_raises_authentication_error_when_no_zones(self):
+        """Empty kumolocal zones should raise AuthenticationError, not KeyError.
+
+        A blank zone dict means the KumoCloud account could not be reached or
+        authenticated (e.g. pykumo's cloud/local credential fetch failed), not
+        that a configured zone name has a typo. This mirrors the
+        AuthenticationError raised elsewhere in this module and in
+        kumocloud.py for the equivalent failure.
+        """
+        from unittest.mock import patch
+        from src import thermostat_common as tc
+
+        thermostat = kumolocal.ThermostatClass.__new__(kumolocal.ThermostatClass)
+        thermostat.zone_name = "Living Room"
+        thermostat.zone_number = 0
+        thermostat.device_id = None
+        thermostat.verbose = False
+        thermostat._need_fetch = False
+        thermostat.make_pykumos = lambda **kwargs: {}  # type: ignore[method-assign]
+
+        with patch("src.kumolocal.time.sleep"):
+            with self.assertRaisesRegex(
+                tc.AuthenticationError,
+                r"kumolocal meta data is blank, probably due to an "
+                r"Authentication Error, check your credentials\.",
+            ):
+                thermostat.get_target_zone_id(0)
+
+    def test_get_target_zone_id_retries_once_before_giving_up(self):
+        """get_target_zone_id retries a blank zone fetch once before failing."""
+        from unittest.mock import MagicMock, patch
+
+        thermostat = kumolocal.ThermostatClass.__new__(kumolocal.ThermostatClass)
+        thermostat.zone_name = "Living Room"
+        thermostat.zone_number = 0
+        thermostat.device_id = None
+        thermostat.verbose = False
+        thermostat._need_fetch = False
+        mock_make_pykumos = MagicMock(return_value={})
+        thermostat.make_pykumos = mock_make_pykumos  # type: ignore[method-assign]
+
+        with patch("src.kumolocal.time.sleep"):
+            kumos = thermostat._make_pykumos_with_retry()
+
+        self.assertEqual(kumos, {})
+        self.assertEqual(mock_make_pykumos.call_count, 2)
+
+    def test_get_target_zone_id_retry_recovers_on_second_attempt(self):
+        """get_target_zone_id succeeds if the retry attempt returns zones."""
+        from unittest.mock import MagicMock, patch
+
+        thermostat = kumolocal.ThermostatClass.__new__(kumolocal.ThermostatClass)
+        thermostat.zone_name = "Living Room"
+        thermostat.zone_number = 0
+        thermostat.device_id = None
+        thermostat.verbose = False
+        thermostat._need_fetch = False
+        mock_make_pykumos = MagicMock(
+            side_effect=[{}, {"Living Room": "dev-living-room"}]
+        )
+        thermostat.make_pykumos = mock_make_pykumos  # type: ignore[method-assign]
+
+        with patch("src.kumolocal.time.sleep"):
+            device_id = thermostat.get_target_zone_id(0)
+
+        self.assertEqual(device_id, "dev-living-room")
+        self.assertEqual(mock_make_pykumos.call_count, 2)
+
     def test_get_target_zone_id_non_integer_zone_raises_keyerror(self):
         """Test non-integer zone values don't trigger TypeError in fallback logic."""
         thermostat = kumolocal.ThermostatClass.__new__(kumolocal.ThermostatClass)
