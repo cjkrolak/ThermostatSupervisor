@@ -19,7 +19,7 @@ current code is provided.
 
 ## Where to Store Blink Login Information
 
-### Preferred: `supervisor-env.txt` in current working directory
+### Preferred: `supervisor-env.txt` in the project root
 
 Create `supervisor-env.txt` in the directory where you run
 ThermostatSupervisor with key/value pairs:
@@ -30,8 +30,8 @@ BLINK_PASSWORD=your_blink_password
 BLINK_2FA=123456
 ```
 
-- Location: current working directory used to run `python -m src.*` (this is
-  often the repository root)
+- Location: project root. The current working directory is checked first, so a
+  file there overrides the project-root file.
 - This file is ignored by git (`supervisor-env.txt` is in `.gitignore`)
 - Use `supervisor-env.txt.example` as a template
 

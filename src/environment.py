@@ -48,9 +48,16 @@ def _read_supervisor_env_file():
     """
     env_dict = {}
     try:
-        # Look for supervisor-env.txt in the current working directory
-        env_file_path = os.path.join(os.getcwd(), "supervisor-env.txt")
-        if os.path.exists(env_file_path):
+        # Prefer the current directory, then the project root when launched
+        # from a subdirectory such as src.
+        project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        env_file_paths = [
+            os.path.join(os.getcwd(), "supervisor-env.txt"),
+            os.path.join(project_root, "supervisor-env.txt"),
+        ]
+        for env_file_path in dict.fromkeys(env_file_paths):
+            if not os.path.exists(env_file_path):
+                continue
             with open(env_file_path, "r", encoding="utf-8-sig") as f:
                 for line_num, line in enumerate(f, 1):
                     line = line.strip()
@@ -67,6 +74,7 @@ def _read_supervisor_env_file():
                             f"{line_num}: {line}",
                             mode=util.DEBUG_LOG,
                         )
+            break
     except Exception as ex:
         util.log_msg(
             f"Error reading supervisor-env.txt: {str(ex)}", mode=util.DEBUG_LOG
