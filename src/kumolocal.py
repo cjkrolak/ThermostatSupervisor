@@ -189,6 +189,10 @@ class ThermostatClass(
         # construct the superclass
         # call both parent class __init__
         self.args = [self.kc_uname, self.kc_pwd]
+        # v3 authentication diagnostics, populated by _fetch_v3_device_credentials
+        self.v3_login_ok = False
+        self.v3_devices_discovered = 0
+        self.v3_local_credentials_returned = 0
         # kumocloud account init sets the self._url
         pykumo.KumoCloudAccount.__init__(  # type: ignore[attr-defined]
             self, *self.args
@@ -445,6 +449,9 @@ class ThermostatClass(
         """
         try:
             client = KumoCloudV3Compatible(self._username, self._password)
+            # login explicitly so a credential-withholding account (which logs
+            # in fine) can be distinguished from a genuine credential failure.
+            self.v3_login_ok = bool(client.login())
             devices = client.get_all_device_credentials()
         except Exception as exc:  # pylint: disable=broad-except
             # any failure falls back to pykumo's stock setup path.
@@ -454,7 +461,36 @@ class ThermostatClass(
                 func_name=1,
             )
             return {}
-        return devices if isinstance(devices, dict) else {}
+        if not isinstance(devices, dict):
+            return {}
+        self.v3_devices_discovered = len(devices)
+        self.v3_local_credentials_returned = sum(
+            1
+            for device in devices.values()
+            if device.get("password") and device.get("cryptoSerial")
+        )
+        return devices
+
+    def _local_credentials_withheld(self) -> bool:
+        """Return True when the cloud logged in but withheld local credentials.
+
+        Local (LAN) control requires a per-device ``password`` and
+        ``cryptoSerial``, which kumocloud never needs because it only uses the
+        cloud JWT. Since mid-2026 the KumoCloud v3 API has stopped returning
+        those two secrets for many accounts, so login and device discovery both
+        succeed while no unit can be configured for local control. See
+        https://github.com/dlarrick/pykumo/issues/78.
+
+        inputs:
+            None
+        returns:
+            (bool): True if login and discovery succeeded with no credentials.
+        """
+        return bool(
+            getattr(self, "v3_login_ok", False)
+            and getattr(self, "v3_devices_discovered", 0) > 0
+            and getattr(self, "v3_local_credentials_returned", 0) == 0
+        )
 
     def try_setup(self, candidate_ips=None, prefer_cache=False):
         """Set up the account using the kumocloud-compatible v3 auth flow.
@@ -587,6 +623,10 @@ class ThermostatClass(
         kumos = self.make_pykumos(init_update_status=False)
         attempt = 0
         while not kumos and attempt < retries:
+            if self._local_credentials_withheld():
+                # login and discovery both worked; the cloud is deliberately
+                # withholding local credentials, so retrying cannot help.
+                break
             attempt += 1
             util.log_msg(
                 "kumolocal returned no zones, retrying "
@@ -636,9 +676,26 @@ class ThermostatClass(
         `_validate_kumocloud_serial_numbers`) and in kumocloud.py. Raising a
         plain KeyError in that case is misleading, since it looks like a zone
         name typo rather than an authentication/connectivity failure.
+
+        When the cloud login succeeded and devices were discovered but no local
+        credentials were returned, the credentials are the problem, not the
+        account, so a distinct message is raised (see
+        `_local_credentials_withheld`).
         """
         available_zone_names = list(kumos.keys())
         if not available_zone_names:
+            if self._local_credentials_withheld():
+                raise tc.AuthenticationError(
+                    "kumolocal cloud login succeeded and "
+                    f"{self.v3_devices_discovered} device(s) were discovered, "
+                    "but the KumoCloud v3 API returned no local credentials "
+                    "(password/cryptoSerial) for any device, so local control "
+                    "cannot be established. Your account credentials are valid;"
+                    " this is a server-side change on the KumoCloud service,"
+                    " see https://github.com/dlarrick/pykumo/issues/78."
+                    " Use kumocloud instead of kumolocal until local"
+                    " credentials are available again."
+                )
             raise tc.AuthenticationError(
                 "kumolocal meta data is blank, probably"
                 " due to an Authentication Error,"

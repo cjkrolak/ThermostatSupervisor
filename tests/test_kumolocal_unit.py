@@ -1171,6 +1171,9 @@ class V3AuthenticationUnitTest(utc.UnitTest):
         obj._units = {}
         obj._kumo_dict = None
         obj._need_fetch = True
+        obj.v3_login_ok = False
+        obj.v3_devices_discovered = 0
+        obj.v3_local_credentials_returned = 0
         return obj
 
     def test_auth_headers_match_kumocloud_headers(self):
@@ -1343,6 +1346,92 @@ class V3AuthenticationUnitTest(utc.UnitTest):
             side_effect=RuntimeError("network down"),
         ):
             self.assertEqual(obj._fetch_v3_device_credentials(), {})
+
+    def test_fetch_v3_device_credentials_records_diagnostics(self):
+        """Test the v3 fetch records login/discovery/credential counters."""
+        from unittest.mock import MagicMock, patch
+        obj = self._make_thermostat_class()
+        client = MagicMock()
+        client.login.return_value = True
+        client.get_all_device_credentials.return_value = {
+            "SN1": {"password": "", "cryptoSerial": ""},
+            "SN2": {"password": "pw", "cryptoSerial": "ABCD"},
+        }
+
+        with patch.object(
+            kumolocal, "KumoCloudV3Compatible", return_value=client
+        ):
+            obj._fetch_v3_device_credentials()
+
+        self.assertTrue(obj.v3_login_ok)
+        self.assertEqual(obj.v3_devices_discovered, 2)
+        self.assertEqual(obj.v3_local_credentials_returned, 1)
+
+    def test_local_credentials_withheld_true_when_cloud_omits_secrets(self):
+        """Test withheld detection when login and discovery succeed w/o secrets."""
+        obj = self._make_thermostat_class()
+        obj.v3_login_ok = True
+        obj.v3_devices_discovered = 3
+        obj.v3_local_credentials_returned = 0
+        self.assertTrue(obj._local_credentials_withheld())
+
+    def test_local_credentials_withheld_false_on_login_failure(self):
+        """Test withheld detection is False when the cloud login itself failed."""
+        obj = self._make_thermostat_class()
+        obj.v3_login_ok = False
+        obj.v3_devices_discovered = 0
+        obj.v3_local_credentials_returned = 0
+        self.assertFalse(obj._local_credentials_withheld())
+
+    def test_local_credentials_withheld_false_when_credentials_returned(self):
+        """Test withheld detection is False when local credentials were returned."""
+        obj = self._make_thermostat_class()
+        obj.v3_login_ok = True
+        obj.v3_devices_discovered = 2
+        obj.v3_local_credentials_returned = 2
+        self.assertFalse(obj._local_credentials_withheld())
+
+    def test_zone_lookup_error_reports_withheld_credentials(self):
+        """Test the raised error distinguishes withheld credentials from bad creds."""
+        obj = self._make_thermostat_class()
+        obj.zone_name = "Basement"
+        obj.v3_login_ok = True
+        obj.v3_devices_discovered = 3
+        obj.v3_local_credentials_returned = 0
+
+        with self.assertRaises(kumolocal.tc.AuthenticationError) as context:
+            obj._raise_zone_lookup_error({}, 0)
+
+        message = str(context.exception)
+        self.assertIn("no local credentials", message)
+        self.assertIn("dlarrick/pykumo/issues/78", message)
+        self.assertNotIn("check your credentials", message)
+
+    def test_zone_lookup_error_reports_credential_failure(self):
+        """Test the original message is kept when the cloud login failed."""
+        obj = self._make_thermostat_class()
+        obj.zone_name = "Basement"
+
+        with self.assertRaises(kumolocal.tc.AuthenticationError) as context:
+            obj._raise_zone_lookup_error({}, 0)
+
+        self.assertIn("check your credentials", str(context.exception))
+
+    def test_retry_is_skipped_when_credentials_are_withheld(self):
+        """Test no retry/sleep occurs when the cloud is withholding credentials."""
+        from unittest.mock import patch
+        obj = self._make_thermostat_class()
+        obj.v3_login_ok = True
+        obj.v3_devices_discovered = 3
+        obj.v3_local_credentials_returned = 0
+
+        with patch.object(obj, "make_pykumos", return_value={}) as mock_make:
+            with patch.object(kumolocal.time, "sleep") as mock_sleep:
+                kumos = obj._make_pykumos_with_retry()
+
+        self.assertEqual(kumos, {})
+        mock_make.assert_called_once()
+        mock_sleep.assert_not_called()
 
     def test_pykumo_v3_logger_is_integrated(self):
         """Test the v3 cloud logger is routed through supervisor logging."""
