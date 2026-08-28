@@ -124,10 +124,11 @@ class BlinkSpamMitigationTest(unittest.TestCase):
         # Setup time progression
         start_time = 1000.0
         mock_time.side_effect = [
-            start_time - 120,  # Constructor time (force initial refresh)
-            start_time,  # First refresh check
+            start_time - 120,  # First refresh check (expired)
+            start_time,  # First refresh completed
             start_time + 30,  # Second refresh check (within cache time)
             start_time + 70,  # Third refresh check (past cache time)
+            start_time + 70,  # Third refresh completed
         ]
 
         # Create zone instance
@@ -157,9 +158,10 @@ class BlinkSpamMitigationTest(unittest.TestCase):
         """Test that force_refresh=True bypasses cache."""
         start_time = 1000.0
         mock_time.side_effect = [
-            start_time - 120,  # Constructor time
-            start_time,  # First refresh
-            start_time + 10,  # Force refresh (within cache time)
+            start_time - 120,  # First refresh check
+            start_time,  # First refresh completed
+            start_time + 10,  # Force refresh check (within cache time)
+            start_time + 10,  # Force refresh completed
         ]
 
         # Create zone instance
