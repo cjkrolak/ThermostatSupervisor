@@ -210,6 +210,36 @@ EMPTY_LINE_ABOVE=yes
                 del os.environ["FALLBACK_TEST"]
             shutil.rmtree(test_dir, ignore_errors=True)
 
+    def test_get_env_variable_from_project_root_file(self):
+        """Load BLINK_2FA from the project root when running from src."""
+        project_root = tempfile.mkdtemp()
+        source_dir = os.path.join(project_root, "src")
+        original_cwd = os.getcwd()
+
+        try:
+            os.mkdir(source_dir)
+            with open(
+                os.path.join(project_root, "supervisor-env.txt"),
+                "w",
+                encoding="utf-8",
+            ) as env_file:
+                env_file.write("BLINK_2FA=123456\n")
+
+            os.chdir(source_dir)
+            with unittest.mock.patch.object(
+                env,
+                "__file__",
+                os.path.join(source_dir, "environment.py"),
+            ):
+                result = env.get_env_variable("BLINK_2FA")
+
+            self.assertEqual(result["status"], util.NO_ERROR)
+            self.assertEqual(result["value"], "123456")
+            self.assertEqual(result["source"], "supervisor-env.txt")
+        finally:
+            os.chdir(original_cwd)
+            shutil.rmtree(project_root, ignore_errors=True)
+
     def test_read_supervisor_env_file_function(self):
         """
         Test the _read_supervisor_env_file() function directly.
