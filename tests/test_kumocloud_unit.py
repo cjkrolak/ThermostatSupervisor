@@ -2600,5 +2600,107 @@ class SerialMatchHelperUnitTest(utc.UnitTest):
         self.assertIsNone(kumocloud_config.metadata[0]["serial_number"])
 
 
+@unittest.skipIf(
+    kumocloud_import_error,
+    "kumocloud import failed, tests are disabled",
+)
+class AuthenticationFailureUnitTest(utc.UnitTest):
+    """
+    Unit tests for graceful degradation when v3 authentication fails.
+
+    When the KumoCloud v3 login is rejected (e.g. HTTP 403 from a cloud
+    hosted CI runner), the module returns minimal mock metadata instead of
+    raising, so that downstream code and integration tests degrade
+    gracefully.
+    """
+
+    def setUp(self):
+        """Setup for unit tests."""
+        super().setUp()
+        self.print_test_name()
+        self.original_metadata = copy.deepcopy(kumocloud_config.metadata)
+
+    def tearDown(self):
+        """Cleanup after unit tests."""
+        kumocloud_config.metadata.clear()
+        kumocloud_config.metadata.update(self.original_metadata)
+        super().tearDown()
+
+    def test_validate_serial_numbers_empty_unauthenticated(self):
+        """Test _validate_serial_numbers with empty list, auth failed."""
+        with patch.object(
+            kumocloud.ThermostatClass, "_authenticate"
+        ), patch.object(
+            kumocloud.ThermostatClass, "_update_zone_assignments"
+        ):
+            thermostat = kumocloud.ThermostatClass(zone=0, verbose=False)
+            setattr(thermostat, "_authenticated", False)
+
+            # Should return minimal metadata instead of raising
+            result = getattr(thermostat, "_validate_serial_numbers")([])
+            self.assertEqual(
+                result, {"authentication_status": "failed", "zones": []}
+            )
+
+    def test_validate_serial_numbers_populated(self):
+        """Test _validate_serial_numbers returns None for valid list."""
+        with patch.object(
+            kumocloud.ThermostatClass, "_authenticate"
+        ), patch.object(
+            kumocloud.ThermostatClass, "_update_zone_assignments"
+        ):
+            thermostat = kumocloud.ThermostatClass(zone=0, verbose=False)
+            setattr(thermostat, "_authenticated", True)
+
+            self.assertIsNone(
+                getattr(thermostat, "_validate_serial_numbers")(["SERIAL1"])
+            )
+
+    def test_get_zone_raw_data_auth_failed(self):
+        """Verify auth failure returns minimal metadata, not IndexError.
+
+        Regression test: the auth failure sentinel returned by
+        _validate_serial_numbers must be propagated by _get_zone_raw_data,
+        otherwise an empty serial number list causes an IndexError.
+        """
+        with patch.object(
+            kumocloud.ThermostatClass, "_authenticate"
+        ), patch.object(
+            kumocloud.ThermostatClass, "_update_zone_assignments"
+        ):
+            thermostat = kumocloud.ThermostatClass(zone=0, verbose=False)
+            setattr(thermostat, "_authenticated", False)
+
+            expected = {"authentication_status": "failed", "zones": []}
+            # zone as int, zone as name, and all zones (None)
+            for zone in [0, "Living Room", None]:
+                result = getattr(thermostat, "_get_zone_raw_data")(zone, [])
+                self.assertEqual(
+                    result,
+                    expected,
+                    f"zone={zone}: expected minimal metadata, got {result}",
+                )
+
+    def test_get_metadata_auth_failed_returns_mock_parameter(self):
+        """Verify get_metadata returns mock values when auth failed."""
+        with patch.object(
+            kumocloud.ThermostatClass, "_authenticate"
+        ), patch.object(
+            kumocloud.ThermostatClass, "_update_zone_assignments"
+        ), patch.object(
+            kumocloud.ThermostatClass, "get_indoor_units", return_value=[]
+        ):
+            thermostat = kumocloud.ThermostatClass(zone=0, verbose=False)
+            setattr(thermostat, "_authenticated", False)
+
+            # full metadata dict is returned when parameter is None
+            self.assertIsInstance(thermostat.get_metadata(zone=0), dict)
+
+            # mock value of correct type is returned for a parameter
+            self.assertIsInstance(
+                thermostat.get_metadata(zone=0, parameter="address"), str
+            )
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
