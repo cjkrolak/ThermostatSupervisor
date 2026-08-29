@@ -64,45 +64,43 @@ class Blink2FALoggingTests(utc.UnitTest):
         This verifies that the logic for deciding whether to mask
         the 2FA is correct based on debug mode.
         """
-        # Test masking in non-debug mode
-        util.log_msg.debug = False  # type: ignore[attr-defined]
-        value = "123456"
-        debug_enabled = getattr(util.log_msg, "debug", False)
+        # Test masking in non-debug mode; patch restores the original value
+        # automatically once this test completes.
+        with patch.object(util.log_msg, "debug", False, create=True):
+            value = "123456"
+            debug_enabled = getattr(util.log_msg, "debug", False)
 
-        if debug_enabled:
-            twofa_display = f"2FA code: {value}"
-        else:
-            if value and not value.startswith("<"):
-                twofa_display = "2FA code: ******"
-            else:
+            if debug_enabled:
                 twofa_display = f"2FA code: {value}"
-
-        self.assertEqual(
-            twofa_display,
-            "2FA code: ******",
-            "2FA should be masked in non-debug mode"
-        )
-
-        # Test showing in debug mode
-        util.log_msg.debug = True  # type: ignore[attr-defined]
-        debug_enabled = getattr(util.log_msg, "debug", False)
-
-        if debug_enabled:
-            twofa_display = f"2FA code: {value}"
-        else:
-            if value and not value.startswith("<"):
-                twofa_display = "2FA code: ******"
             else:
-                twofa_display = f"2FA code: {value}"
+                if value and not value.startswith("<"):
+                    twofa_display = "2FA code: ******"
+                else:
+                    twofa_display = f"2FA code: {value}"
 
-        self.assertEqual(
-            twofa_display,
-            "2FA code: 123456",
-            "2FA should be visible in debug mode"
-        )
+            self.assertEqual(
+                twofa_display,
+                "2FA code: ******",
+                "2FA should be masked in non-debug mode"
+            )
 
-        # Reset debug mode
-        util.log_msg.debug = False  # type: ignore[attr-defined]
+            # Test showing in debug mode
+            with patch.object(util.log_msg, "debug", True, create=True):
+                debug_enabled = getattr(util.log_msg, "debug", False)
+
+                if debug_enabled:
+                    twofa_display = f"2FA code: {value}"
+                else:
+                    if value and not value.startswith("<"):
+                        twofa_display = "2FA code: ******"
+                    else:
+                        twofa_display = f"2FA code: {value}"
+
+                self.assertEqual(
+                    twofa_display,
+                    "2FA code: 123456",
+                    "2FA should be visible in debug mode"
+                )
 
     def _get_source_msg(self, source):
         if source == "supervisor-env.txt":

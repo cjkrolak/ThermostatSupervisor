@@ -56,9 +56,9 @@ class TestSHT31MissingEnvVar(utc.UnitTest):
             )
 
             # Clear the env var from OS environment if it exists
-            # to simulate missing environment variable scenario
-            if 'SHT31_REMOTE_IP_ADDRESS_1' in os.environ:
-                del os.environ['SHT31_REMOTE_IP_ADDRESS_1']
+            # to simulate missing environment variable scenario. The
+            # patch.dict decorator above restores os.environ afterward.
+            os.environ.pop('SHT31_REMOTE_IP_ADDRESS_1', None)
 
             # This should NOT fail even if env var is missing or has placeholder
             tstat = sht31.ThermostatClass(1, verbose=False)
@@ -111,9 +111,9 @@ class TestSHT31MissingEnvVar(utc.UnitTest):
                 "unit_test_mode should be False for this test",
             )
 
-            # Clear the env var from OS environment if it exists
-            if 'SHT31_REMOTE_IP_ADDRESS_1' in os.environ:
-                del os.environ['SHT31_REMOTE_IP_ADDRESS_1']
+            # Clear the env var from OS environment if it exists. The
+            # patch.dict decorator above restores os.environ afterward.
+            os.environ.pop('SHT31_REMOTE_IP_ADDRESS_1', None)
 
             # Create temporary environment where the env var is truly missing
             # by temporarily moving any supervisor-env.txt file

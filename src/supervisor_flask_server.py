@@ -76,9 +76,6 @@ def create_app():
     # Note: json_encoder is deprecated in Flask 2.2+, but still functional
     app_.json_encoder = flg.CustomJSONEncoder  # type: ignore[attr-defined]
 
-    # api = Api(app)
-
-    # api.add_resource(Controller, "/")
     return app_
 
 

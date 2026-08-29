@@ -25,6 +25,8 @@ from src import sht31_config
 MIN_PYTHON_MAJOR_VERSION = 3  # minimum python major version required
 MIN_PYTHON_MINOR_VERSION = 7  # minimum python minor version required
 
+SUPERVISOR_ENV_FILE_NAME = "supervisor-env.txt"
+
 # all environment variables required by code should be registered here
 env_variables = {
     "GMAIL_USERNAME": None,
@@ -52,8 +54,8 @@ def _read_supervisor_env_file():
         # from a subdirectory such as src.
         project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         env_file_paths = [
-            os.path.join(os.getcwd(), "supervisor-env.txt"),
-            os.path.join(project_root, "supervisor-env.txt"),
+            os.path.join(os.getcwd(), SUPERVISOR_ENV_FILE_NAME),
+            os.path.join(project_root, SUPERVISOR_ENV_FILE_NAME),
         ]
         for env_file_path in dict.fromkeys(env_file_paths):
             if not os.path.exists(env_file_path):
@@ -70,14 +72,15 @@ def _read_supervisor_env_file():
                         env_dict[key.strip()] = value.strip()
                     else:
                         util.log_msg(
-                            f"Invalid format in supervisor-env.txt line "
+                            f"Invalid format in {SUPERVISOR_ENV_FILE_NAME} line "
                             f"{line_num}: {line}",
                             mode=util.DEBUG_LOG,
                         )
             break
     except Exception as ex:
         util.log_msg(
-            f"Error reading supervisor-env.txt: {str(ex)}", mode=util.DEBUG_LOG
+            f"Error reading {SUPERVISOR_ENV_FILE_NAME}: {str(ex)}",
+            mode=util.DEBUG_LOG,
         )
     return env_dict
 
@@ -144,10 +147,11 @@ def _get_env_value_and_source(env_key):
         file_env_vars = {}
     if env_key in file_env_vars:
         util.log_msg(
-            f"Environment variable '{env_key}' loaded from supervisor-env.txt",
+            f"Environment variable '{env_key}' loaded from "
+            f"{SUPERVISOR_ENV_FILE_NAME}",
             mode=util.DEBUG_LOG,
         )
-        return file_env_vars[env_key], "supervisor-env.txt"
+        return file_env_vars[env_key], SUPERVISOR_ENV_FILE_NAME
 
     # Fall back to system environment variables
     return os.environ[env_key], "environment_variable"
@@ -199,10 +203,8 @@ def is_interactive_environment():
     """Return True if script is run through IDE."""
     try:
         parent_process = psutil.Process(os.getpid()).parent()
-        if parent_process is None:
-            return False
         parent = parent_process.name().lower()
-    except (psutil.Error, OSError):
+    except (psutil.Error, OSError, AttributeError):
         return False
 
     non_interactive_parents = {
