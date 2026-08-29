@@ -831,8 +831,23 @@ class ThermostatClass(tc.ThermostatCommon):
             return []
 
     def _get_zone_raw_data(self, zone, serial_num_lst):
-        """Get raw data for zone."""
-        self._validate_serial_numbers(serial_num_lst)
+        """
+        Get raw data for zone.
+
+        If authentication failed, the validation step returns a minimal
+        metadata dict which must be propagated to the caller so that
+        downstream code can degrade gracefully instead of failing on an
+        empty serial number list.
+
+        inputs:
+            zone(int, str, None): zone index, zone name, or None for all zones.
+            serial_num_lst(list): list of serial numbers from the API.
+        returns:
+            (dict): raw zone data, or minimal metadata on auth failure.
+        """
+        auth_failed_data = self._validate_serial_numbers(serial_num_lst)
+        if auth_failed_data is not None:
+            return auth_failed_data
         self._populate_metadata(serial_num_lst)
 
         if zone is None:
@@ -841,7 +856,17 @@ class ThermostatClass(tc.ThermostatCommon):
             return self._get_specific_zone_data(zone, serial_num_lst)
 
     def _validate_serial_numbers(self, serial_num_lst):
-        """Validate serial number list."""
+        """
+        Validate serial number list.
+
+        inputs:
+            serial_num_lst(list): list of serial numbers from the API.
+        returns:
+            (dict, None): minimal metadata dict if authentication failed,
+                          None if the serial number list is valid.
+        raises:
+            tc.AuthenticationError: if authenticated but no data returned.
+        """
         if not serial_num_lst:
             if not self._authenticated:
                 util.log_msg(
@@ -857,6 +882,7 @@ class ThermostatClass(tc.ThermostatCommon):
                     " due to an Authentication Error,"
                     " check your credentials."
                 )
+        return None
 
     def _assign_serials_sequentially(self, serial_num_lst):
         """
