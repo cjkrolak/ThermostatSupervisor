@@ -35,25 +35,30 @@ required_env_variables = {
 # update this list to match your zones as named in the blink app
 # zone number assignments are arbitrary.
 metadata = {
-    # cabin zones
-    0: {"zone_name": "cabin driveway"},
-    1: {"zone_name": "beach"},
+    # cabin back zones
+    0: {"zone_name": "garage door"},
+    1: {"zone_name": "main driveway"},
     2: {"zone_name": "front yard"},
     3: {"zone_name": "back yard"},
-    4: {"zone_name": "front dogs"},
-    5: {"zone_name": "road"},
-    6: {"zone_name": "dock"},
-    7: {"zone_name": "cabin garage"},
-    8: {"zone_name": "loft"},
-    9: {"zone_name": "cabin doorbell"},
+    4: {"zone_name": "road"},
+    5: {"zone_name": "garage back"},
+    6: {"zone_name": "cabin doorbell"},
     # home zones
-    10: {"zone_name": "west"},
-    11: {"zone_name": "north"},
-    12: {"zone_name": "south"},
-    13: {"zone_name": "nw-se"},
-    14: {"zone_name": "home driveway"},
-    15: {"zone_name": "cat camera"},
-    16: {"zone_name": "home doorbell"},
+    7: {"zone_name": "west"},
+    8: {"zone_name": "north"},
+    9: {"zone_name": "south"},
+    10: {"zone_name": "nw-se"},
+    11: {"zone_name": "home driveway"},
+    12: {"zone_name": "cat camera"},
+    13: {"zone_name": "home doorbell"},
+    # cabin front zones
+    14: {"zone_name": "front dogs"},
+    15: {"zone_name": "beach"},
+    16: {"zone_name": "dock"},
+    17: {"zone_name": "deck"},
+    18: {"zone_name": "basement kitchen"},
+    19: {"zone_name": "loft"},
+    20: {"zone_name": "garage"},
 }
 
 # supported thermostat configs
@@ -62,9 +67,9 @@ supported_configs = {
     "type": 6,
     "zones": list(metadata.keys()),
     "modes": ["OFF_MODE"],
-    "zip_code": "55760",  # Zip code for outdoor weather data (zones 0-9)
-    # Note: zones 10-16 are in a different location (55378) but weather
-    # is fetched once per thermostat type for efficiency
+    "zip_code": "55760",  # Zip code for outdoor weather data
+    # Blink zones may span locations, but weather is fetched once per thermostat
+    # type for efficiency.
 }
 
 
