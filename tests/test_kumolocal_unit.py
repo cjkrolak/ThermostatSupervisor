@@ -7,7 +7,12 @@ without requiring actual kumolocal devices.
 
 # built-in imports
 import copy
+import json
 import logging
+import os
+import platform
+import shutil
+import tempfile
 import unittest
 
 # local imports
@@ -1147,6 +1152,595 @@ class LocalAddressUnitTest(utc.UnitTest):
 
         # Should not raise
         zone.refresh_zone_info()
+
+
+class V3AuthenticationUnitTest(utc.UnitTest):
+    """Unit tests for the kumocloud-compatible v3 authentication flow."""
+
+    def setUp(self):
+        """Setup for unit tests, isolating the credential cache file."""
+        super().setUp()
+        self.print_test_name()
+        # redirect the credential cache into a temp dir so tests never read
+        # or write a real cache file.
+        self.cache_dir = tempfile.mkdtemp()
+        self.cache_file = os.path.join(self.cache_dir, "kumolocal_cache.json")
+        self.original_cache_file = kumolocal.CREDENTIAL_CACHE_FILE
+        kumolocal.CREDENTIAL_CACHE_FILE = self.cache_file
+
+    def tearDown(self):
+        """Restore the credential cache path and remove temp files."""
+        kumolocal.CREDENTIAL_CACHE_FILE = self.original_cache_file
+        shutil.rmtree(self.cache_dir, ignore_errors=True)
+        super().tearDown()
+
+    def _make_v3_client(self):
+        """Create a KumoCloudV3Compatible instance with a fake access token."""
+        client = kumolocal.KumoCloudV3Compatible("user", "pwd")
+        client._access_token = "token"  # pylint: disable=protected-access
+        return client
+
+    def _make_thermostat_class(self):
+        """Create a ThermostatClass instance without calling __init__."""
+        obj = kumolocal.ThermostatClass.__new__(kumolocal.ThermostatClass)
+        obj._username = "user"
+        obj._password = "pwd"
+        obj._units = {}
+        obj._kumo_dict = None
+        obj._need_fetch = True
+        obj.v3_login_ok = False
+        obj.v3_devices_discovered = 0
+        obj.v3_local_credentials_returned = 0
+        return obj
+
+    def test_auth_headers_match_kumocloud_headers(self):
+        """Test v3 client sends the same Accept headers used by kumocloud.py."""
+        client = self._make_v3_client()
+        headers = client._auth_headers()
+        self.assertEqual(headers["Accept"], "application/json, text/plain, */*")
+        self.assertEqual(headers["Accept-Language"], "en-US, en")
+        self.assertIn("Authorization", headers)
+
+    def test_get_zones_uses_trailing_slash_endpoint(self):
+        """Test zones are requested from the kumocloud.py endpoint first."""
+        from unittest.mock import patch
+        client = self._make_v3_client()
+        paths = []
+
+        def fake_get(path):
+            paths.append(path)
+            return [{"name": "zone1"}]
+
+        with patch.object(client, "_get", side_effect=fake_get):
+            zones = client.get_zones("site1")
+
+        self.assertEqual(paths, ["/v3/sites/site1/zones/"])
+        self.assertEqual(zones, [{"name": "zone1"}])
+
+    def test_get_zones_falls_back_to_pykumo_endpoint(self):
+        """Test zones fall back to pykumo's endpoint when trailing slash fails."""
+        from unittest.mock import patch
+        client = self._make_v3_client()
+        paths = []
+
+        def fake_get(path):
+            paths.append(path)
+            if path.endswith("zones/"):
+                return None
+            return [{"name": "zone1"}]
+
+        with patch.object(client, "_get", side_effect=fake_get):
+            zones = client.get_zones("site1")
+
+        self.assertEqual(
+            paths, ["/v3/sites/site1/zones/", "/v3/sites/site1/zones"]
+        )
+        self.assertEqual(zones, [{"name": "zone1"}])
+
+    def test_get_device_status_merges_device_endpoint(self):
+        """Test cryptoSerial is retrieved from the kumocloud.py device endpoint."""
+        from unittest.mock import patch
+        client = self._make_v3_client()
+        paths = []
+
+        def fake_get(path):
+            paths.append(path)
+            if path.endswith("/status"):
+                return {"cryptoSerial": ""}
+            return {"cryptoSerial": "ABCD", "password": "pw"}
+
+        with patch.object(client, "_get", side_effect=fake_get):
+            status = client.get_device_status("SN1")
+
+        self.assertEqual(paths, ["/v3/devices/SN1/status", "/v3/devices/SN1"])
+        self.assertEqual(status["cryptoSerial"], "ABCD")
+        self.assertEqual(status["password"], "pw")
+
+    def test_get_device_status_skips_fallback_when_crypto_present(self):
+        """Test the extra device request is skipped when cryptoSerial is present."""
+        from unittest.mock import patch
+        client = self._make_v3_client()
+        paths = []
+
+        def fake_get(path):
+            paths.append(path)
+            return {"cryptoSerial": "ABCD"}
+
+        with patch.object(client, "_get", side_effect=fake_get):
+            status = client.get_device_status("SN1")
+
+        self.assertEqual(paths, ["/v3/devices/SN1/status"])
+        self.assertEqual(status["cryptoSerial"], "ABCD")
+
+    def test_get_all_device_credentials_fills_missing_password(self):
+        """Test missing Socket.IO passwords are filled from the REST endpoint."""
+        from unittest.mock import patch
+        import pykumo
+        client = self._make_v3_client()
+        base_devices = {"SN1": {"password": "", "cryptoSerial": "ABCD"}}
+
+        with patch.object(
+            pykumo.KumoCloudV3,
+            "get_all_device_credentials",
+            return_value=base_devices,
+        ):
+            with patch.object(
+                client, "get_device_status", return_value={"password": "pw"}
+            ):
+                devices = client.get_all_device_credentials()
+
+        self.assertEqual(devices["SN1"]["password"], "pw")
+
+    def test_try_setup_configures_units_from_v3_credentials(self):
+        """Test try_setup populates units using the v3 credential fetch."""
+        from unittest.mock import patch
+        obj = self._make_thermostat_class()
+        devices = {
+            "SN1": {
+                "label": "Basement",
+                "password": "pw",
+                "cryptoSerial": "ABCD",
+                "unitType": "ductless",
+                "mac": "aa:bb",
+            },
+        }
+
+        with patch.object(
+            obj, "_fetch_v3_device_credentials", return_value=devices
+        ):
+            result = obj.try_setup()
+
+        self.assertTrue(result)
+        self.assertEqual(list(obj._units), ["SN1"])
+        self.assertEqual(obj._units["SN1"]["serial"], "SN1")
+        self.assertFalse(obj._need_fetch)
+        # cached dict must be readable by pykumo's cache parser
+        self.assertEqual(
+            list(obj._extract_cached_units()), ["SN1"]
+        )
+
+    def test_try_setup_skips_units_missing_credentials(self):
+        """Test try_setup falls back to pykumo when credentials are incomplete."""
+        from unittest.mock import patch
+        import pykumo
+        obj = self._make_thermostat_class()
+        devices = {"SN1": {"label": "Basement", "password": "", "cryptoSerial": ""}}
+
+        with patch.object(
+            obj, "_fetch_v3_device_credentials", return_value=devices
+        ):
+            with patch.object(
+                obj, "_fetch_v2_device_credentials", return_value={}
+            ):
+                with patch.object(
+                    pykumo.KumoCloudAccount, "try_setup", return_value=False
+                ) as mock_super:
+                    result = obj.try_setup()
+
+        self.assertFalse(result)
+        mock_super.assert_called_once()
+
+    def test_try_setup_falls_back_when_v3_fetch_fails(self):
+        """Test try_setup falls back to pykumo when the v3 fetch returns nothing."""
+        from unittest.mock import patch
+        import pykumo
+        obj = self._make_thermostat_class()
+
+        with patch.object(obj, "_fetch_v3_device_credentials", return_value={}):
+            with patch.object(
+                obj, "_fetch_v2_device_credentials", return_value={}
+            ):
+                with patch.object(
+                    pykumo.KumoCloudAccount, "try_setup", return_value=True
+                ) as mock_super:
+                    result = obj.try_setup()
+
+        self.assertTrue(result)
+        mock_super.assert_called_once()
+
+    def test_fetch_v3_device_credentials_handles_exception(self):
+        """Test credential fetch failures return an empty dict instead of raising."""
+        from unittest.mock import patch
+        obj = self._make_thermostat_class()
+
+        with patch.object(
+            kumolocal,
+            "KumoCloudV3Compatible",
+            side_effect=RuntimeError("network down"),
+        ):
+            self.assertEqual(obj._fetch_v3_device_credentials(), {})
+
+    def test_fetch_v3_device_credentials_records_diagnostics(self):
+        """Test the v3 fetch records login/discovery/credential counters."""
+        from unittest.mock import MagicMock, patch
+        obj = self._make_thermostat_class()
+        client = MagicMock()
+        client.login.return_value = True
+        client.get_all_device_credentials.return_value = {
+            "SN1": {"password": "", "cryptoSerial": ""},
+            "SN2": {"password": "pw", "cryptoSerial": "ABCD"},
+        }
+
+        with patch.object(
+            kumolocal, "KumoCloudV3Compatible", return_value=client
+        ):
+            obj._fetch_v3_device_credentials()
+
+        self.assertTrue(obj.v3_login_ok)
+        self.assertEqual(obj.v3_devices_discovered, 2)
+        self.assertEqual(obj.v3_local_credentials_returned, 1)
+
+    def test_local_credentials_withheld_true_when_cloud_omits_secrets(self):
+        """Test withheld detection when login and discovery succeed w/o secrets."""
+        obj = self._make_thermostat_class()
+        obj.v3_login_ok = True
+        obj.v3_devices_discovered = 3
+        obj.v3_local_credentials_returned = 0
+        self.assertTrue(obj._local_credentials_withheld())
+
+    def test_local_credentials_withheld_false_on_login_failure(self):
+        """Test withheld detection is False when the cloud login itself failed."""
+        obj = self._make_thermostat_class()
+        obj.v3_login_ok = False
+        obj.v3_devices_discovered = 0
+        obj.v3_local_credentials_returned = 0
+        self.assertFalse(obj._local_credentials_withheld())
+
+    def test_local_credentials_withheld_false_when_credentials_returned(self):
+        """Test withheld detection is False when local credentials were returned."""
+        obj = self._make_thermostat_class()
+        obj.v3_login_ok = True
+        obj.v3_devices_discovered = 2
+        obj.v3_local_credentials_returned = 2
+        self.assertFalse(obj._local_credentials_withheld())
+
+    def test_zone_lookup_error_reports_withheld_credentials(self):
+        """Test the raised error distinguishes withheld credentials from bad creds."""
+        obj = self._make_thermostat_class()
+        obj.zone_name = "Basement"
+        obj.v3_login_ok = True
+        obj.v3_devices_discovered = 3
+        obj.v3_local_credentials_returned = 0
+
+        with self.assertRaises(kumolocal.tc.AuthenticationError) as context:
+            obj._raise_zone_lookup_error({}, 0)
+
+        message = str(context.exception)
+        self.assertIn("no local credentials", message)
+        self.assertIn("dlarrick/pykumo/issues/78", message)
+        self.assertNotIn("check your credentials", message)
+
+    def test_zone_lookup_error_reports_credential_failure(self):
+        """Test the original message is kept when the cloud login failed."""
+        obj = self._make_thermostat_class()
+        obj.zone_name = "Basement"
+
+        with self.assertRaises(kumolocal.tc.AuthenticationError) as context:
+            obj._raise_zone_lookup_error({}, 0)
+
+        self.assertIn("check your credentials", str(context.exception))
+
+    def test_retry_is_skipped_when_credentials_are_withheld(self):
+        """Test no retry/sleep occurs when the cloud is withholding credentials."""
+        from unittest.mock import patch
+        obj = self._make_thermostat_class()
+        obj.v3_login_ok = True
+        obj.v3_devices_discovered = 3
+        obj.v3_local_credentials_returned = 0
+
+        with patch.object(obj, "make_pykumos", return_value={}) as mock_make:
+            with patch.object(kumolocal.time, "sleep") as mock_sleep:
+                kumos = obj._make_pykumos_with_retry()
+
+        self.assertEqual(kumos, {})
+        mock_make.assert_called_once()
+        mock_sleep.assert_not_called()
+
+    def test_try_setup_uses_cached_credentials_when_cloud_withholds(self):
+        """Test cached credentials keep local control working (pykumo#78)."""
+        from unittest.mock import patch
+        obj = self._make_thermostat_class()
+        with open(self.cache_file, "w", encoding="utf-8") as file_obj:
+            json.dump(
+                {
+                    "SN1": {
+                        "label": "Basement",
+                        "password": "pw",
+                        "cryptoSerial": "ABCD",
+                        "unitType": "ductless",
+                        "mac": "aa:bb",
+                        "address": "192.168.1.5",
+                    }
+                },
+                file_obj,
+            )
+        # cloud returns the device but withholds password/cryptoSerial
+        cloud_devices = {
+            "SN1": {
+                "label": "Basement",
+                "password": "",
+                "cryptoSerial": "",
+            }
+        }
+
+        with patch.object(
+            obj, "_fetch_v3_device_credentials", return_value=cloud_devices
+        ):
+            with patch.object(
+                obj, "_fetch_v2_device_credentials", return_value={}
+            ):
+                result = obj.try_setup()
+
+        self.assertTrue(result)
+        self.assertEqual(obj._units["SN1"]["password"], "pw")
+        self.assertEqual(obj._units["SN1"]["cryptoSerial"], "ABCD")
+
+    def test_try_setup_uses_v2_fallback_when_v3_withholds(self):
+        """Test the v2 fallback supplies credentials the v3 API withholds."""
+        from unittest.mock import patch
+        obj = self._make_thermostat_class()
+        cloud_devices = {
+            "SN1": {
+                "label": "Basement",
+                "password": "",
+                "cryptoSerial": "",
+            }
+        }
+        v2_devices = {"SN1": {"password": "pw", "cryptoSerial": "ABCD"}}
+
+        with patch.object(
+            obj, "_fetch_v3_device_credentials", return_value=cloud_devices
+        ):
+            with patch.object(
+                obj, "_fetch_v2_device_credentials", return_value=v2_devices
+            ) as mock_v2:
+                result = obj.try_setup()
+
+        self.assertTrue(result)
+        mock_v2.assert_called_once()
+        self.assertEqual(obj._units["SN1"]["password"], "pw")
+        # label from v3 is preserved, credentials come from v2
+        self.assertEqual(obj._units["SN1"]["label"], "Basement")
+
+    def test_v2_fallback_is_skipped_when_v3_returns_credentials(self):
+        """Test the v2 endpoint is not contacted when v3 already succeeded."""
+        from unittest.mock import patch
+        obj = self._make_thermostat_class()
+        devices = {"SN1": {"label": "Basement", "password": "pw",
+                           "cryptoSerial": "ABCD"}}
+
+        with patch.object(
+            obj, "_fetch_v3_device_credentials", return_value=devices
+        ):
+            with patch.object(
+                obj, "_fetch_v2_device_credentials", return_value={}
+            ) as mock_v2:
+                obj.try_setup()
+
+        mock_v2.assert_not_called()
+
+    def test_try_setup_saves_credentials_to_cache(self):
+        """Test successful setup persists credentials for future runs."""
+        from unittest.mock import patch
+        obj = self._make_thermostat_class()
+        devices = {
+            "SN1": {
+                "label": "Basement",
+                "password": "pw",
+                "cryptoSerial": "ABCD",
+                "unitType": "ductless",
+                "mac": "aa:bb",
+                "address": "192.168.1.5",
+            },
+        }
+
+        with patch.object(
+            obj, "_fetch_v3_device_credentials", return_value=devices
+        ):
+            with patch.object(
+                obj, "_fetch_v2_device_credentials", return_value={}
+            ):
+                obj.try_setup()
+
+        self.assertTrue(os.path.exists(self.cache_file))
+        with open(self.cache_file, "r", encoding="utf-8") as file_obj:
+            cache = json.load(file_obj)
+        self.assertEqual(cache["SN1"]["password"], "pw")
+        self.assertEqual(cache["SN1"]["cryptoSerial"], "ABCD")
+
+    def test_credential_cache_file_is_owner_only(self):
+        """Test the credential cache is written with 0o600 permissions."""
+        obj = self._make_thermostat_class()
+        obj._save_credential_cache(
+            {"SN1": {"password": "pw", "cryptoSerial": "ABCD"}}
+        )
+        mode = os.stat(self.cache_file).st_mode & 0o777
+        if platform.system().lower() == "windows":
+            self.assertIn(mode, (0o600, 0o666))
+        else:
+            self.assertEqual(mode, 0o600)
+
+    def test_save_credential_cache_skips_incomplete_devices(self):
+        """Test devices without both secrets are not written to the cache."""
+        obj = self._make_thermostat_class()
+        obj._save_credential_cache(
+            {"SN1": {"password": "pw", "cryptoSerial": ""}}
+        )
+        self.assertFalse(os.path.exists(self.cache_file))
+
+    def test_save_credential_cache_skips_rewrite_when_unchanged(self):
+        """Test the cache file is not rewritten when contents are unchanged."""
+        obj = self._make_thermostat_class()
+        devices = {"SN1": {"password": "pw", "cryptoSerial": "ABCD"}}
+        obj._save_credential_cache(devices)
+        first_mtime = os.stat(self.cache_file).st_mtime_ns
+        obj._save_credential_cache(devices)
+        self.assertEqual(os.stat(self.cache_file).st_mtime_ns, first_mtime)
+
+    def test_load_credential_cache_ignores_incomplete_entries(self):
+        """Test cache entries missing a secret are ignored on load."""
+        obj = self._make_thermostat_class()
+        with open(self.cache_file, "w", encoding="utf-8") as file_obj:
+            json.dump(
+                {
+                    "SN1": {"password": "pw", "cryptoSerial": ""},
+                    "SN2": {"password": "pw2", "cryptoSerial": "ABCD"},
+                },
+                file_obj,
+            )
+        self.assertEqual(list(obj._load_credential_cache()), ["SN2"])
+
+    def test_load_credential_cache_handles_corrupt_file(self):
+        """Test a corrupt cache file returns an empty dict instead of raising."""
+        obj = self._make_thermostat_class()
+        with open(self.cache_file, "w", encoding="utf-8") as file_obj:
+            file_obj.write("{not valid json")
+        self.assertEqual(obj._load_credential_cache(), {})
+
+    def test_load_credential_cache_handles_missing_file(self):
+        """Test a missing cache file returns an empty dict."""
+        obj = self._make_thermostat_class()
+        self.assertEqual(obj._load_credential_cache(), {})
+
+    def test_collect_prefers_cache_when_requested(self):
+        """Test prefer_cache short-circuits the cloud when the cache is usable."""
+        from unittest.mock import patch
+        obj = self._make_thermostat_class()
+        with open(self.cache_file, "w", encoding="utf-8") as file_obj:
+            json.dump({"SN1": {"password": "pw", "cryptoSerial": "ABCD"}}, file_obj)
+
+        with patch.object(obj, "_fetch_v3_device_credentials") as mock_v3:
+            devices = obj._collect_device_credentials(prefer_cache=True)
+
+        mock_v3.assert_not_called()
+        self.assertEqual(list(devices), ["SN1"])
+
+    def test_merge_credentials_prefers_primary_values(self):
+        """Test merging never overwrites values already present in primary."""
+        merged = kumolocal.ThermostatClass._merge_credentials(
+            {"SN1": {"label": "Fresh", "password": ""}},
+            {"SN1": {"label": "Stale", "password": "pw"}, "SN2": {"password": "x"}},
+        )
+        self.assertEqual(merged["SN1"]["label"], "Fresh")
+        self.assertEqual(merged["SN1"]["password"], "pw")
+        self.assertIn("SN2", merged)
+
+    def test_v2_fallback_parses_legacy_zone_table(self):
+        """Test the v2 login payload is parsed into device credentials."""
+        from unittest.mock import MagicMock, patch
+        obj = self._make_thermostat_class()
+        raw_json = [
+            {},
+            {},
+            {
+                "children": [
+                    {
+                        "zoneTable": {
+                            "SN1": {
+                                "serial": "SN1",
+                                "label": "Basement",
+                                "password": "pw",
+                                "cryptoSerial": "ABCD",
+                                "address": "192.168.1.5",
+                            }
+                        }
+                    }
+                ]
+            },
+        ]
+        response = MagicMock()
+        response.json.return_value = raw_json
+
+        with patch.object(obj, "_post_v2_login", return_value=response):
+            devices = obj._fetch_v2_device_credentials()
+
+        self.assertEqual(devices["SN1"]["password"], "pw")
+        self.assertEqual(devices["SN1"]["cryptoSerial"], "ABCD")
+        # the temporary parse must not clobber the account's kumo_dict
+        self.assertIsNone(obj._kumo_dict)
+
+    def test_v2_fallback_handles_null_response(self):
+        """Test a 200/null v2 response (bad credentials) returns no devices."""
+        from unittest.mock import MagicMock, patch
+        obj = self._make_thermostat_class()
+        response = MagicMock()
+        response.json.return_value = None
+
+        with patch.object(obj, "_post_v2_login", return_value=response):
+            self.assertEqual(obj._fetch_v2_device_credentials(), {})
+
+    def test_v2_fallback_handles_http_500_for_migrated_account(self):
+        """Test v2 HTTP 500 (Comfort-migrated account) is handled gracefully."""
+        from unittest.mock import MagicMock, patch
+        obj = self._make_thermostat_class()
+        response = MagicMock()
+        response.status_code = 500
+
+        with patch.object(kumolocal.requests, "post", return_value=response):
+            self.assertIsNone(obj._post_v2_login())
+            self.assertEqual(obj._fetch_v2_device_credentials(), {})
+
+    def test_v2_fallback_handles_request_exception(self):
+        """Test a network failure on the v2 endpoint does not raise."""
+        from unittest.mock import patch
+        obj = self._make_thermostat_class()
+
+        with patch.object(
+            kumolocal.requests,
+            "post",
+            side_effect=kumolocal.requests.exceptions.ConnectionError("down"),
+        ):
+            self.assertEqual(obj._fetch_v2_device_credentials(), {})
+
+    def test_v2_fallback_posts_legacy_app_version(self):
+        """Test the v2 login request uses the legacy endpoint and app version."""
+        from unittest.mock import MagicMock, patch
+        obj = self._make_thermostat_class()
+        response = MagicMock()
+        response.status_code = 200
+        response.ok = True
+
+        with patch.object(
+            kumolocal.requests, "post", return_value=response
+        ) as mock_post:
+            obj._post_v2_login()
+
+        args, kwargs = mock_post.call_args
+        self.assertEqual(args[0], kumolocal.V2_LOGIN_URL)
+        self.assertEqual(kwargs["json"]["appVersion"], kumolocal.V2_APP_VERSION)
+        self.assertEqual(kwargs["json"]["username"], "user")
+
+    def test_pykumo_v3_logger_is_integrated(self):
+        """Test the v3 cloud logger is routed through supervisor logging."""
+        obj = self._make_thermostat_class()
+        obj._setup_pykumo_logging()
+        v3_logger = logging.getLogger("pykumo.py_kumo_cloud_account_v3")
+        self.assertTrue(
+            any(
+                isinstance(handler, kumolocal.SupervisorLogHandler)
+                for handler in v3_logger.handlers
+            )
+        )
 
 
 if __name__ == "__main__":

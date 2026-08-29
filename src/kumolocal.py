@@ -1,12 +1,14 @@
 """KumoCloud integration using local API for data."""
 
 # built-in imports
+import json
 import logging
 import os
 import pprint
 import time
 
 # third party imports
+import requests
 
 # local imports
 from src import kumolocal_config
@@ -24,6 +26,61 @@ if PYKUMO_DEBUG and not env.is_azure_environment():
     pykumo = env.dynamic_module_import("pykumo", mod_path)
 else:
     import pykumo  # noqa E402, from path / site packages
+
+# v3 cloud API settings, mirroring the working kumocloud.py implementation.
+APPLICATION_JSON = "application/json"
+
+# Legacy (v2) KumoCloud login endpoint, still served by geo-c.kumocloud.com.
+# Used only as a fallback: since ~2026-08 the v3 API stopped returning the
+# per-device 'password'/'cryptoSerial' needed for local control, while some
+# accounts still receive them from v2. See
+# https://github.com/dlarrick/pykumo/issues/78.
+V2_LOGIN_URL = "https://geo-c.kumocloud.com/login"
+V2_APP_VERSION = "2.2.0"
+V2_TIMEOUT = (10, 30)  # (connect, read)
+
+# Path for the local credential cache. Local (LAN) control needs a per-device
+# 'password' and 'cryptoSerial' that the cloud may stop returning at any time;
+# once obtained they remain valid, so they are persisted here to keep working
+# installations running. The file is gitignored (./data is in .gitignore).
+CREDENTIAL_CACHE_FILE = "./data/kumolocal_credential_cache.json"
+
+# Fields persisted per device in the credential cache.
+CREDENTIAL_CACHE_FIELDS = (
+    "label",
+    "password",
+    "cryptoSerial",
+    "mac",
+    "unitType",
+    "address",
+)
+
+
+def _write_credential_cache_sync(cache_data: dict) -> None:
+    """Write the credential cache with owner-only permissions.
+
+    The cache holds per-device local-control secrets, so os.open() with mode
+    0o600 is used (mirroring blink.py's token cache) to keep the file
+    owner-readable only on POSIX systems.
+
+    inputs:
+        cache_data(dict): serial -> credential dict to serialize as JSON.
+    returns:
+        None
+    """
+    os.makedirs(os.path.dirname(CREDENTIAL_CACHE_FILE), exist_ok=True)
+    fd = os.open(
+        CREDENTIAL_CACHE_FILE,
+        os.O_WRONLY | os.O_CREAT | os.O_TRUNC,
+        0o600,
+    )
+    try:
+        file_obj = os.fdopen(fd, "w", encoding="utf-8")
+    except Exception:
+        os.close(fd)
+        raise
+    with file_obj:
+        json.dump(cache_data, file_obj, indent=2)
 
 
 class SupervisorLogHandler(logging.Handler):
@@ -59,6 +116,107 @@ class SupervisorLogHandler(logging.Handler):
             self.handleError(record)
 
 
+class KumoCloudV3Compatible(
+    pykumo.KumoCloudV3  # type: ignore[name-defined]
+):
+    """KumoCloud v3 client using the same requests as kumocloud.py.
+
+    kumocloud.py authenticates successfully against the KumoCloud v3 API while
+    pykumo's stock v3 client ends up with zero configured units. The login
+    request itself is identical in both clients; the differences are in the
+    REST accessors used after login:
+
+    * kumocloud.py reads device data from ``/v3/devices/{serial}`` while pykumo
+      reads ``/v3/devices/{serial}/status``. When the ``/status`` variant
+      returns nothing, ``cryptoSerial`` is never retrieved and pykumo discards
+      every unit, logging "Setup complete: 0 units configured".
+    * kumocloud.py requests zones from ``/v3/sites/{site_id}/zones/`` (trailing
+      slash) while pykumo omits the trailing slash.
+    * kumocloud.py sends browser style ``Accept``/``Accept-Language`` headers
+      on every authenticated request.
+
+    Only those accessors are overridden here, so pykumo's Socket.IO logic for
+    retrieving the local device password is reused unchanged.
+    """
+
+    def _auth_headers(self) -> dict:
+        """Return authenticated request headers matching kumocloud.py.
+
+        returns:
+            (dict): request headers including the bearer token.
+        """
+        headers = super()._auth_headers()
+        headers.update(
+            {
+                "Accept": f"{APPLICATION_JSON}, text/plain, */*",
+                "Accept-Language": "en-US, en",
+            }
+        )
+        return headers
+
+    def get_zones(self, site_id: str) -> list:
+        """Return the zones for a site, preferring the kumocloud.py endpoint.
+
+        inputs:
+            site_id(str): site identifier.
+        returns:
+            (list): list of zone dicts, empty list if unavailable.
+        """
+        result = self._get(f"/v3/sites/{site_id}/zones/")
+        if isinstance(result, list) and result:
+            return result
+        # fall back to pykumo's endpoint (no trailing slash)
+        return super().get_zones(site_id)
+
+    def get_device_status(self, serial: str):
+        """Return device data, falling back to the kumocloud.py endpoint.
+
+        pykumo only queries ``/v3/devices/{serial}/status``. If that response
+        is missing (or lacks ``cryptoSerial``), the ``/v3/devices/{serial}``
+        endpoint used by kumocloud.py is queried and merged in so local
+        credentials can still be assembled.
+
+        inputs:
+            serial(str): device serial number.
+        returns:
+            (dict, None): merged device data, or None if nothing was returned.
+        """
+        status = super().get_device_status(serial)
+        if isinstance(status, dict) and status.get("cryptoSerial"):
+            return status
+
+        device = self._get(f"/v3/devices/{serial}")
+        if not isinstance(device, dict):
+            return status
+
+        merged = dict(status) if isinstance(status, dict) else {}
+        for key, value in device.items():
+            if value not in (None, "") and not merged.get(key):
+                merged[key] = value
+        return merged
+
+    def get_all_device_credentials(self) -> dict:
+        """Return credentials for all devices on the account.
+
+        Supplements pykumo's Socket.IO password lookup with the password
+        reported by the REST device endpoint when the Socket.IO round-trip
+        does not return one.
+
+        returns:
+            (dict): serial -> credential dict.
+        """
+        devices = super().get_all_device_credentials()
+        if not isinstance(devices, dict):
+            return {}
+        for serial, device in devices.items():
+            if device.get("password"):
+                continue
+            status = self.get_device_status(serial)
+            if isinstance(status, dict) and status.get("password"):
+                device["password"] = status["password"]
+        return devices
+
+
 class ThermostatClass(
     pykumo.KumoCloudAccount, tc.ThermostatCommon  # type: ignore[name-defined]
 ):
@@ -85,6 +243,10 @@ class ThermostatClass(
         # construct the superclass
         # call both parent class __init__
         self.args = [self.kc_uname, self.kc_pwd]
+        # v3 authentication diagnostics, populated by _fetch_v3_device_credentials
+        self.v3_login_ok = False
+        self.v3_devices_discovered = 0
+        self.v3_local_credentials_returned = 0
         # kumocloud account init sets the self._url
         pykumo.KumoCloudAccount.__init__(  # type: ignore[attr-defined]
             self, *self.args
@@ -233,6 +395,9 @@ class ThermostatClass(
         # List of pykumo modules that have loggers
         pykumo_modules = [
             "pykumo.py_kumo_cloud_account",
+            # v3 cloud client logs all authentication failures, so route it
+            # through supervisor logging to make auth issues visible.
+            "pykumo.py_kumo_cloud_account_v3",
             "pykumo.py_kumo",
             "pykumo.py_kumo_base",
             "pykumo.py_kumo_station",
@@ -328,6 +493,338 @@ class ThermostatClass(
                     func_name=1,
                 )
 
+    def _load_credential_cache(self) -> dict:
+        """Return previously cached device credentials from disk.
+
+        Local-control secrets do not rotate when the cloud stops publishing
+        them, so a cache written by an earlier successful run keeps kumolocal
+        working after the cloud-side change described in
+        https://github.com/dlarrick/pykumo/issues/78.
+
+        inputs:
+            None
+        returns:
+            (dict): serial -> credential dict, empty dict when unavailable.
+        """
+        if not os.path.exists(CREDENTIAL_CACHE_FILE):
+            return {}
+        try:
+            with open(CREDENTIAL_CACHE_FILE, "r", encoding="utf-8") as file_obj:
+                cache = json.load(file_obj)
+        except (json.JSONDecodeError, OSError) as exc:
+            util.log_msg(
+                f"kumolocal could not read credential cache: {exc}",
+                mode=util.DATA_LOG + util.STDERR_LOG,
+                func_name=1,
+            )
+            return {}
+        if not isinstance(cache, dict):
+            return {}
+        return {
+            serial: device
+            for serial, device in cache.items()
+            if isinstance(device, dict)
+            and device.get("password")
+            and device.get("cryptoSerial")
+        }
+
+    def _save_credential_cache(self, devices: dict) -> None:
+        """Persist device credentials so future runs survive cloud changes.
+
+        Only devices with complete local credentials are stored, and the file
+        is rewritten only when its contents would change, to avoid needless
+        writes on every refresh.
+
+        inputs:
+            devices(dict): serial -> credential dict.
+        returns:
+            None
+        """
+        cache = {
+            serial: {
+                field: device.get(field, "") for field in CREDENTIAL_CACHE_FIELDS
+            }
+            for serial, device in devices.items()
+            if device.get("password") and device.get("cryptoSerial")
+        }
+        if not cache or cache == self._load_credential_cache():
+            return
+        try:
+            _write_credential_cache_sync(cache)
+        except OSError as exc:
+            util.log_msg(
+                f"kumolocal could not write credential cache: {exc}",
+                mode=util.DATA_LOG + util.STDERR_LOG,
+                func_name=1,
+            )
+            return
+        util.log_msg(
+            f"kumolocal cached local credentials for {len(cache)} device(s)",
+            mode=util.DEBUG_LOG + util.STDOUT_LOG,
+            func_name=1,
+        )
+
+    def _fetch_v2_device_credentials(self) -> dict:
+        """Return device credentials from the legacy (v2) KumoCloud API.
+
+        The v2 login response embeds the per-device local credentials in the
+        same zoneTable structure that pykumo already parses, so the response is
+        handed to pykumo's parser rather than re-implementing it. Per
+        https://github.com/dlarrick/pykumo/issues/78 this endpoint returns null
+        for invalid credentials and HTTP 500 for accounts migrated to the
+        Comfort service, so both are reported without raising.
+
+        inputs:
+            None
+        returns:
+            (dict): serial -> credential dict, empty dict when unavailable.
+        """
+        response = self._post_v2_login()
+        if response is None:
+            return {}
+        try:
+            raw_json = response.json()
+        except ValueError:
+            return {}
+        if not raw_json:
+            # v2 returns 200/null for an unknown user or a bad password.
+            util.log_msg(
+                "kumolocal v2 fallback: login rejected (empty response)",
+                mode=util.DATA_LOG + util.STDERR_LOG,
+                func_name=1,
+            )
+            return {}
+        units = self._extract_v2_units(raw_json)
+        util.log_msg(
+            f"kumolocal v2 fallback returned credentials for {len(units)} device(s)",
+            mode=util.DEBUG_LOG + util.STDOUT_LOG,
+            func_name=1,
+        )
+        return units
+
+    def _post_v2_login(self):
+        """Post credentials to the legacy v2 login endpoint.
+
+        inputs:
+            None
+        returns:
+            (requests.Response, None): response, or None when unusable.
+        """
+        headers = {
+            "Accept": f"{APPLICATION_JSON}, text/plain, */*",
+            "Accept-Encoding": "gzip, deflate, br",
+            "Accept-Language": "en-US,en;q=0.9",
+            "Content-Type": APPLICATION_JSON,
+        }
+        body = {
+            "username": self._username,
+            "password": self._password,
+            "appVersion": V2_APP_VERSION,
+        }
+        try:
+            response = requests.post(
+                V2_LOGIN_URL, headers=headers, json=body, timeout=V2_TIMEOUT
+            )
+        except requests.exceptions.RequestException as exc:
+            util.log_msg(
+                f"kumolocal v2 fallback request failed: {exc}",
+                mode=util.DATA_LOG + util.STDERR_LOG,
+                func_name=1,
+            )
+            return None
+        if response.status_code == 500:
+            # documented symptom of an account migrated to the Comfort service:
+            # v2 authenticates, then fails rendering the legacy site payload.
+            util.log_msg(
+                "kumolocal v2 fallback unavailable (HTTP 500), which indicates"
+                " this account has been migrated to the Comfort service",
+                mode=util.DATA_LOG + util.STDERR_LOG,
+                func_name=1,
+            )
+            return None
+        if not response.ok:
+            util.log_msg(
+                f"kumolocal v2 fallback failed: HTTP {response.status_code}",
+                mode=util.DATA_LOG + util.STDERR_LOG,
+                func_name=1,
+            )
+            return None
+        return response
+
+    def _extract_v2_units(self, raw_json) -> dict:
+        """Parse a legacy v2 login payload using pykumo's zoneTable parser.
+
+        inputs:
+            raw_json(list): raw v2 login response.
+        returns:
+            (dict): serial -> credential dict.
+        """
+        saved_kumo_dict = self._kumo_dict
+        try:
+            self._kumo_dict = raw_json
+            return dict(self._extract_cached_units())
+        finally:
+            self._kumo_dict = saved_kumo_dict
+
+    @staticmethod
+    def _has_local_credentials(devices: dict) -> bool:
+        """Return True when any device has complete local credentials.
+
+        inputs:
+            devices(dict): serial -> credential dict.
+        returns:
+            (bool): True if at least one device is usable for local control.
+        """
+        return any(
+            device.get("password") and device.get("cryptoSerial")
+            for device in devices.values()
+        )
+
+    @staticmethod
+    def _merge_credentials(primary: dict, supplement: dict) -> dict:
+        """Return primary devices with blank fields filled in from supplement.
+
+        Devices present only in supplement are added. Existing values in
+        primary always win, so fresh cloud data is never overwritten by older
+        cached or v2 data.
+
+        inputs:
+            primary(dict): serial -> credential dict taking precedence.
+            supplement(dict): serial -> credential dict used to fill gaps.
+        returns:
+            (dict): merged serial -> credential dict.
+        """
+        merged = {serial: dict(device) for serial, device in primary.items()}
+        for serial, supplement_device in supplement.items():
+            if serial not in merged:
+                merged[serial] = dict(supplement_device)
+                continue
+            for field, value in supplement_device.items():
+                if value and not merged[serial].get(field):
+                    merged[serial][field] = value
+        return merged
+
+    def _collect_device_credentials(self, prefer_cache: bool = False) -> dict:
+        """Return device credentials from the cloud, v2 fallback, and cache.
+
+        Order of preference:
+        1. cached credentials when ``prefer_cache`` is set and they are complete
+        2. the kumocloud-compatible v3 API
+        3. the legacy v2 API, when v3 returns no local credentials
+        4. the on-disk cache, to fill any remaining gaps
+
+        inputs:
+            prefer_cache(bool): if True, skip the cloud when the cache is usable.
+        returns:
+            (dict): serial -> credential dict.
+        """
+        cached = self._load_credential_cache()
+        if prefer_cache and self._has_local_credentials(cached):
+            return cached
+
+        devices = self._fetch_v3_device_credentials()
+        if not self._has_local_credentials(devices):
+            devices = self._merge_credentials(
+                devices, self._fetch_v2_device_credentials()
+            )
+        return self._merge_credentials(devices, cached)
+
+    def _fetch_v3_device_credentials(self) -> dict:
+        """Return device credentials from the kumocloud-compatible v3 API.
+
+        inputs:
+            None
+        returns:
+            (dict): serial -> credential dict, empty dict on failure.
+        """
+        try:
+            client = KumoCloudV3Compatible(self._username, self._password)
+            # login explicitly so a credential-withholding account (which logs
+            # in fine) can be distinguished from a genuine credential failure.
+            self.v3_login_ok = bool(client.login())
+            devices = client.get_all_device_credentials()
+        except Exception as exc:  # pylint: disable=broad-except
+            # any failure falls back to pykumo's stock setup path.
+            util.log_msg(
+                f"kumolocal v3 credential fetch failed: {exc}",
+                mode=util.DATA_LOG + util.STDERR_LOG,
+                func_name=1,
+            )
+            return {}
+        if not isinstance(devices, dict):
+            return {}
+        self.v3_devices_discovered = len(devices)
+        self.v3_local_credentials_returned = sum(
+            1
+            for device in devices.values()
+            if device.get("password") and device.get("cryptoSerial")
+        )
+        return devices
+
+    def _local_credentials_withheld(self) -> bool:
+        """Return True when the cloud logged in but withheld local credentials.
+
+        Local (LAN) control requires a per-device ``password`` and
+        ``cryptoSerial``, which kumocloud never needs because it only uses the
+        cloud JWT. Since mid-2026 the KumoCloud v3 API has stopped returning
+        those two secrets for many accounts, so login and device discovery both
+        succeed while no unit can be configured for local control. See
+        https://github.com/dlarrick/pykumo/issues/78.
+
+        inputs:
+            None
+        returns:
+            (bool): True if login and discovery succeeded with no credentials.
+        """
+        return bool(
+            getattr(self, "v3_login_ok", False)
+            and getattr(self, "v3_devices_discovered", 0) > 0
+            and getattr(self, "v3_local_credentials_returned", 0) == 0
+        )
+
+    def try_setup(self, candidate_ips=None, prefer_cache=False):
+        """Set up the account using the kumocloud-compatible v3 auth flow.
+
+        Overrides KumoCloudAccount.try_setup so kumolocal authenticates with
+        the same v3 API requests that work for kumocloud, then falls back to
+        the legacy v2 API and finally to the on-disk credential cache. If none
+        of those yield usable credentials, pykumo's stock implementation is
+        used so behavior is unchanged when the stock flow works.
+
+        inputs:
+            candidate_ips(dict): optional {mac: ip} map for DHCP discovery.
+            prefer_cache(bool): if True, prefer cached units over cloud fetch.
+        returns:
+            (bool): True if at least one unit was configured.
+        """
+        devices = self._collect_device_credentials(prefer_cache)
+        units = {
+            serial: self._parse_unit(dict(device, serial=serial))
+            for serial, device in devices.items()
+            if device.get("password") and device.get("cryptoSerial")
+        }
+        if not units:
+            return super().try_setup(
+                candidate_ips=candidate_ips, prefer_cache=prefer_cache
+            )
+
+        self._units = units
+        # store the v2-like cache structure pykumo expects for later reuse.
+        zone_table = {
+            serial: dict(device, serial=serial)
+            for serial, device in devices.items()
+        }
+        self._kumo_dict = [{}, {}, {"children": [{"zoneTable": zone_table}]}]
+        self._need_fetch = False
+        # persist credentials so a later cloud-side change cannot break setup.
+        self._save_credential_cache(devices)
+        util.log_msg(
+            f"kumolocal v3 authentication configured {len(units)} unit(s)",
+            mode=util.DEBUG_LOG + util.STDOUT_LOG,
+            func_name=1,
+        )
+        return True
+
     def _fetch_if_needed(self):
         """Fetch configuration from server if not already done.
 
@@ -420,6 +917,10 @@ class ThermostatClass(
         kumos = self.make_pykumos(init_update_status=False)
         attempt = 0
         while not kumos and attempt < retries:
+            if self._local_credentials_withheld():
+                # login and discovery both worked; the cloud is deliberately
+                # withholding local credentials, so retrying cannot help.
+                break
             attempt += 1
             util.log_msg(
                 "kumolocal returned no zones, retrying "
@@ -469,9 +970,28 @@ class ThermostatClass(
         `_validate_kumocloud_serial_numbers`) and in kumocloud.py. Raising a
         plain KeyError in that case is misleading, since it looks like a zone
         name typo rather than an authentication/connectivity failure.
+
+        When the cloud login succeeded and devices were discovered but no local
+        credentials were returned, the credentials are the problem, not the
+        account, so a distinct message is raised (see
+        `_local_credentials_withheld`).
         """
         available_zone_names = list(kumos.keys())
         if not available_zone_names:
+            if self._local_credentials_withheld():
+                raise tc.AuthenticationError(
+                    "kumolocal cloud login succeeded and "
+                    f"{self.v3_devices_discovered} device(s) were discovered, "
+                    "but no local credentials (password/cryptoSerial) were "
+                    "available from the KumoCloud v3 API, the legacy v2 API, "
+                    f"or the credential cache ({CREDENTIAL_CACHE_FILE}), so "
+                    "local control cannot be established. Your account "
+                    "credentials are valid; this is a server-side change on "
+                    "the KumoCloud service, see "
+                    "https://github.com/dlarrick/pykumo/issues/78."
+                    " Use kumocloud instead of kumolocal until local"
+                    " credentials are available again."
+                )
             raise tc.AuthenticationError(
                 "kumolocal meta data is blank, probably"
                 " due to an Authentication Error,"

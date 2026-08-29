@@ -209,7 +209,10 @@ command line usage:  "*python -m src.kumocloud \<thermostat type\> \<zone\>*"
 ## kumolocal.py:
 Script will connect to Mitsubishi ductless thermostat through kumocloud account and local network.<br/>
 Default poll time is currently set to 10 minutes.<br/>
-Zone number refers to the thermostat order in kumocloud, 0=first thermostat data returned, 1=second thermostat, etc.<br/><br/>
+Zone number refers to the thermostat order in kumocloud, 0=first thermostat data returned, 1=second thermostat, etc.<br/>
+Local (LAN) control additionally requires a per-device 'password' and 'cryptoSerial' from the cloud, which kumocloud does not need.
+Since ~2026-08 the KumoCloud v3 API has stopped returning these for many accounts (see https://github.com/dlarrick/pykumo/issues/78), so kumolocal falls back to the legacy v2 API and then to a credential cache at './data/kumolocal_credential_cache.json' (written with owner-only permissions, gitignored).
+Once cached, these credentials keep local control working even if the cloud stops publishing them; if none are available, use kumocloud instead.<br/><br/>
 command line usage:  "*python -m src.kumolocal \<thermostat type\> \<zone\>*"
 
 ## blink.py:
