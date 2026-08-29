@@ -14,6 +14,7 @@ import platform
 import shutil
 import tempfile
 import unittest
+from unittest import mock
 
 # local imports
 from src import kumolocal
@@ -222,47 +223,51 @@ class LocalNetworkDetectionUnitTest(utc.UnitTest):
             original_debug = getattr(util.log_msg, "debug", False)
             try:
                 # Test 1: debug mode OFF -> expect WARNING level
-                util.log_msg.debug = False  # type: ignore[attr-defined]
-                # Reset pykumo loggers so _setup_pykumo_logging re-applies them
-                for mod in pykumo_modules:
-                    logging.getLogger(mod).handlers.clear()
+                with mock.patch.object(
+                    util.log_msg, "debug", False, create=True
+                ):
+                    # Reset pykumo loggers so _setup_pykumo_logging
+                    # re-applies them
+                    for mod in pykumo_modules:
+                        logging.getLogger(mod).handlers.clear()
 
-                # Invoke setup via a mock thermostat-like object
-                class _FakeTherm:
-                    """Minimal stub to invoke _setup_pykumo_logging."""
+                    # Invoke setup via a mock thermostat-like object
+                    class _FakeTherm:
+                        """Minimal stub to invoke _setup_pykumo_logging."""
 
-                    def _setup_pykumo_logging(self_inner):
-                        """Forward to the real implementation."""
-                        kumolocal.ThermostatClass._setup_pykumo_logging(
-                            self_inner
+                        def _setup_pykumo_logging(self_inner):
+                            """Forward to the real implementation."""
+                            kumolocal.ThermostatClass._setup_pykumo_logging(
+                                self_inner
+                            )
+
+                    _FakeTherm()._setup_pykumo_logging()
+
+                    for mod in pykumo_modules:
+                        logger = logging.getLogger(mod)
+                        self.assertEqual(
+                            logger.level,
+                            logging.WARNING,
+                            f"{mod} should be WARNING when debug is off",
                         )
 
-                _FakeTherm()._setup_pykumo_logging()
+                    # Test 2: debug mode ON -> expect DEBUG level
+                    with mock.patch.object(
+                        util.log_msg, "debug", True, create=True
+                    ):
+                        for mod in pykumo_modules:
+                            logging.getLogger(mod).handlers.clear()
 
-                for mod in pykumo_modules:
-                    logger = logging.getLogger(mod)
-                    self.assertEqual(
-                        logger.level,
-                        logging.WARNING,
-                        f"{mod} should be WARNING when debug is off",
-                    )
+                        _FakeTherm()._setup_pykumo_logging()
 
-                # Test 2: debug mode ON -> expect DEBUG level
-                util.log_msg.debug = True  # type: ignore[attr-defined]
-                for mod in pykumo_modules:
-                    logging.getLogger(mod).handlers.clear()
-
-                _FakeTherm()._setup_pykumo_logging()
-
-                for mod in pykumo_modules:
-                    logger = logging.getLogger(mod)
-                    self.assertEqual(
-                        logger.level,
-                        logging.DEBUG,
-                        f"{mod} should be DEBUG when debug is on",
-                    )
+                        for mod in pykumo_modules:
+                            logger = logging.getLogger(mod)
+                            self.assertEqual(
+                                logger.level,
+                                logging.DEBUG,
+                                f"{mod} should be DEBUG when debug is on",
+                            )
             finally:
-                util.log_msg.debug = original_debug  # type: ignore[attr-defined]
                 # Restore logger levels to avoid side-effects
                 restore_level = (
                     logging.DEBUG if original_debug else logging.WARNING

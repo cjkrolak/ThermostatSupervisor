@@ -64,7 +64,6 @@ class ThermostatClass(tc.ThermostatCommon):
             self.path = sht31_config.flask_folder.unit_test
             self.unit_test_seed = "&seed=" + str(sht31_config.UNIT_TEST_SEED)
         else:
-            # self.path = ""
             self.unit_test_seed = ""
         self.measurements = "?measurements=" + str(sht31_config.MEASUREMENTS)
         # Type guard: ensure ip_address is not None before concatenation

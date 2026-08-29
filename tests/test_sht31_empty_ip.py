@@ -136,9 +136,9 @@ class TestSHT31EmptyIP(utc.UnitTest):
 
         with patch.object(util, 'unit_test_mode', False):
             # Clear the env var from OS environment if it exists
-            # to simulate missing environment variable scenario
-            if 'SHT31_REMOTE_IP_ADDRESS_1' in os.environ:
-                del os.environ['SHT31_REMOTE_IP_ADDRESS_1']
+            # to simulate missing environment variable scenario. The
+            # patch.dict decorator above restores os.environ afterward.
+            os.environ.pop('SHT31_REMOTE_IP_ADDRESS_1', None)
 
             with tempfile.TemporaryDirectory() as temp_dir:
                 try:

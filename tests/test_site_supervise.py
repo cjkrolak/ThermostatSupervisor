@@ -388,29 +388,27 @@ class TestExecSiteSupervise(utc.UnitTest):
 
     def test_exec_site_supervise_with_debug_flag(self):
         """Verify --debug flag enables util.log_msg.debug via CLI flow."""
-        # Start with debug disabled
-        util.log_msg.debug = False  # type: ignore[attr-defined]
-
-        # Execute with --debug flag in argv_list
-        result = ss.exec_site_supervise(
-            argv_list=["--debug", "-n", "1"]
-        )
-        self.assertTrue(result)
-        # Verify debug mode was enabled from --debug flag
-        self.assertTrue(util.log_msg.debug)  # type: ignore[attr-defined]
+        # Start with debug disabled; patch restores original value afterward.
+        with patch.object(util.log_msg, "debug", False, create=True):
+            # Execute with --debug flag in argv_list
+            result = ss.exec_site_supervise(
+                argv_list=["--debug", "-n", "1"]
+            )
+            self.assertTrue(result)
+            # Verify debug mode was enabled from --debug flag
+            self.assertTrue(util.log_msg.debug)  # type: ignore[attr-defined]
 
     def test_exec_site_supervise_without_debug_flag(self):
         """Verify default behavior keeps debug disabled."""
-        # Start with debug disabled
-        util.log_msg.debug = False  # type: ignore[attr-defined]
-
-        # Execute without --debug flag
-        result = ss.exec_site_supervise(
-            argv_list=["-n", "1"]
-        )
-        self.assertTrue(result)
-        # Verify debug mode remains disabled
-        self.assertFalse(util.log_msg.debug)  # type: ignore[attr-defined]
+        # Start with debug disabled; patch restores original value afterward.
+        with patch.object(util.log_msg, "debug", False, create=True):
+            # Execute without --debug flag
+            result = ss.exec_site_supervise(
+                argv_list=["-n", "1"]
+            )
+            self.assertTrue(result)
+            # Verify debug mode remains disabled
+            self.assertFalse(util.log_msg.debug)  # type: ignore[attr-defined]
 
     def test_exec_site_supervise_explicit_debug_overrides_flag(self):
         """Verify explicit debug parameter overrides --debug flag."""

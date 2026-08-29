@@ -719,7 +719,6 @@ class ThermostatZone(tc.ThermostatCommonZone):
                     "6": [0] * 8,
                 }
             }
-            # raise ValueError("unknown heat/cool mode")
         now = datetime.datetime.now()
         minutes_since_midnight = (
             now - now.replace(hour=0, minute=0, second=0, microsecond=0)

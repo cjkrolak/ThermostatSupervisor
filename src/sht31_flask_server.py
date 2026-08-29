@@ -589,7 +589,7 @@ class Sensors:
         else:
             device = 0
             device_dict = {}
-            for match in re.finditer("[0-9][0-9]", addr_payload):
+            for match in re.finditer(r"\d\d", addr_payload):
                 if match:
                     device_addr = match.group(0)
                     print(match.group(0))
@@ -1147,7 +1147,6 @@ class PrintIPBanBlockList(Resource):
         flg.print_ipban_block_list_with_timestamp(ip_ban)
         # return block list to API
         return jsonify(ip_ban.get_block_list())
-        # return {"ipban_block_list": jsonify(ip_ban.get_block_list())}
 
 
 class ClearIPBanBlockList(Resource):
@@ -1159,7 +1158,6 @@ class ClearIPBanBlockList(Resource):
         flg.clear_ipban_block_list(ip_ban)
         # return block list to API
         return jsonify(ip_ban.get_block_list())
-        # return {"ipban_block_list": jsonify(ip_ban.get_block_list())}
 
 
 def create_app():

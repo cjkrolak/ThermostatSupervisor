@@ -64,6 +64,15 @@ class EnvironmentTests(utc.UnitTest):
         mock_proc.return_value.parent.return_value = mock_parent
         self.assertTrue(env.is_interactive_environment())
 
+    @unittest.mock.patch("src.environment.psutil.Process")
+    def test_is_interactive_environment_no_parent_not_interactive(self, mock_proc):
+        """
+        Verify a missing parent process (parent() returns None) is treated
+        as non-interactive instead of raising an exception.
+        """
+        mock_proc.return_value.parent.return_value = None
+        self.assertFalse(env.is_interactive_environment())
+
     def test_get_env_variable_with_default(self):
         """
         Test get_env_variable() with default value parameter.
