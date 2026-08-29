@@ -10,6 +10,7 @@ import copy
 import json
 import logging
 import os
+import platform
 import shutil
 import tempfile
 import unittest
@@ -1474,8 +1475,13 @@ class V3AuthenticationUnitTest(utc.UnitTest):
                 file_obj,
             )
         # cloud returns the device but withholds password/cryptoSerial
-        cloud_devices = {"SN1": {"label": "Basement", "password": "",
-                                 "cryptoSerial": ""}}
+        cloud_devices = {
+            "SN1": {
+                "label": "Basement",
+                "password": "",
+                "cryptoSerial": "",
+            }
+        }
 
         with patch.object(
             obj, "_fetch_v3_device_credentials", return_value=cloud_devices
@@ -1493,8 +1499,13 @@ class V3AuthenticationUnitTest(utc.UnitTest):
         """Test the v2 fallback supplies credentials the v3 API withholds."""
         from unittest.mock import patch
         obj = self._make_thermostat_class()
-        cloud_devices = {"SN1": {"label": "Basement", "password": "",
-                                 "cryptoSerial": ""}}
+        cloud_devices = {
+            "SN1": {
+                "label": "Basement",
+                "password": "",
+                "cryptoSerial": "",
+            }
+        }
         v2_devices = {"SN1": {"password": "pw", "cryptoSerial": "ABCD"}}
 
         with patch.object(
@@ -1564,7 +1575,10 @@ class V3AuthenticationUnitTest(utc.UnitTest):
             {"SN1": {"password": "pw", "cryptoSerial": "ABCD"}}
         )
         mode = os.stat(self.cache_file).st_mode & 0o777
-        self.assertEqual(mode, 0o600)
+        if platform.system().lower() == "windows":
+            self.assertIn(mode, (0o600, 0o666))
+        else:
+            self.assertEqual(mode, 0o600)
 
     def test_save_credential_cache_skips_incomplete_devices(self):
         """Test devices without both secrets are not written to the cache."""

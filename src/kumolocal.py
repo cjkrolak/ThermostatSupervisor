@@ -69,7 +69,11 @@ def _write_credential_cache_sync(cache_data: dict) -> None:
         None
     """
     os.makedirs(os.path.dirname(CREDENTIAL_CACHE_FILE), exist_ok=True)
-    fd = os.open(CREDENTIAL_CACHE_FILE, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    fd = os.open(
+        CREDENTIAL_CACHE_FILE,
+        os.O_WRONLY | os.O_CREAT | os.O_TRUNC,
+        0o600,
+    )
     try:
         file_obj = os.fdopen(fd, "w", encoding="utf-8")
     except Exception:
@@ -807,7 +811,8 @@ class ThermostatClass(
         self._units = units
         # store the v2-like cache structure pykumo expects for later reuse.
         zone_table = {
-            serial: dict(device, serial=serial) for serial, device in devices.items()
+            serial: dict(device, serial=serial)
+            for serial, device in devices.items()
         }
         self._kumo_dict = [{}, {}, {"children": [{"zoneTable": zone_table}]}]
         self._need_fetch = False
