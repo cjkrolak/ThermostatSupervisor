@@ -124,6 +124,8 @@ class BlinkSpamMitigationTest(unittest.TestCase):
         # Setup time progression
         start_time = 1000.0
         mock_time.side_effect = [
+            start_time - 120,  # Base constructor time
+            start_time - 120,  # Constructor time (force initial refresh)
             start_time - 120,  # First refresh check (expired)
             start_time,  # First refresh completed
             start_time + 30,  # Second refresh check (within cache time)
@@ -132,11 +134,7 @@ class BlinkSpamMitigationTest(unittest.TestCase):
         ]
 
         # Create zone instance
-        with patch(
-            "src.thermostat_common.time.time",
-            return_value=start_time - 120,
-        ):
-            zone = blink.ThermostatZone(self.mock_thermostat, verbose=False)
+        zone = blink.ThermostatZone(self.mock_thermostat, verbose=False)
 
         # Reset the get_metadata call count
         self.mock_thermostat.get_metadata.reset_mock()
@@ -158,6 +156,8 @@ class BlinkSpamMitigationTest(unittest.TestCase):
         """Test that force_refresh=True bypasses cache."""
         start_time = 1000.0
         mock_time.side_effect = [
+            start_time - 120,  # Base constructor time
+            start_time - 120,  # Constructor time (force initial refresh)
             start_time - 120,  # First refresh check
             start_time,  # First refresh completed
             start_time + 10,  # Force refresh check (within cache time)
@@ -165,11 +165,7 @@ class BlinkSpamMitigationTest(unittest.TestCase):
         ]
 
         # Create zone instance
-        with patch(
-            "src.thermostat_common.time.time",
-            return_value=start_time - 120,
-        ):
-            zone = blink.ThermostatZone(self.mock_thermostat, verbose=False)
+        zone = blink.ThermostatZone(self.mock_thermostat, verbose=False)
 
         # Reset the get_metadata call count
         self.mock_thermostat.get_metadata.reset_mock()
