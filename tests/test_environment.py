@@ -261,20 +261,35 @@ EMPTY_LINE_ABOVE=yes
         """
         Test the _read_supervisor_env_file() function directly.
         """
-        # Create temporary directory
-        test_dir = tempfile.mkdtemp()
+        # Create temporary directory that mimics a project root with a
+        # nested src directory. _read_supervisor_env_file() also falls back
+        # to the "project root" derived from this module's own __file__
+        # location, which would otherwise resolve to the real repository
+        # root and pick up a real (possibly populated) supervisor-env.txt
+        # file if one happens to exist there. Patching __file__ to point
+        # inside the isolated test directory ensures the fallback lookup
+        # stays within the temporary directory and the test result is not
+        # polluted by a developer's real supervisor-env.txt file.
+        project_root = tempfile.mkdtemp()
+        test_dir = os.path.join(project_root, "src")
+        os.mkdir(test_dir)
         original_cwd = os.getcwd()
 
         try:
             # Change to test directory
             os.chdir(test_dir)
 
-            # Test with no file
-            result = getattr(env, "_read_supervisor_env_file")()
-            self.assertEqual(result, {})
+            with unittest.mock.patch.object(
+                env,
+                "__file__",
+                os.path.join(test_dir, "environment.py"),
+            ):
+                # Test with no file
+                result = getattr(env, "_read_supervisor_env_file")()
+                self.assertEqual(result, {})
 
-            # Test with valid file
-            env_content = """# Comment
+                # Test with valid file
+                env_content = """# Comment
 KEY1=value1
 KEY2=value with spaces
 # Another comment
@@ -283,22 +298,22 @@ KEY3=value3
 INVALID_LINE_NO_EQUALS
 KEY4=value4=with=equals
 """
-            with open("supervisor-env.txt", "w", encoding="utf-8") as f:
-                f.write(env_content)
+                with open("supervisor-env.txt", "w", encoding="utf-8") as f:
+                    f.write(env_content)
 
-            result = getattr(env, "_read_supervisor_env_file")()
-            expected = {
-                "KEY1": "value1",
-                "KEY2": "value with spaces",
-                "KEY3": "value3",
-                "KEY4": "value4=with=equals",
-            }
-            self.assertEqual(result, expected)
+                result = getattr(env, "_read_supervisor_env_file")()
+                expected = {
+                    "KEY1": "value1",
+                    "KEY2": "value with spaces",
+                    "KEY3": "value3",
+                    "KEY4": "value4=with=equals",
+                }
+                self.assertEqual(result, expected)
 
         finally:
             # Cleanup
             os.chdir(original_cwd)
-            shutil.rmtree(test_dir, ignore_errors=True)
+            shutil.rmtree(project_root, ignore_errors=True)
 
     def test_read_supervisor_env_file_bom(self):
         """
