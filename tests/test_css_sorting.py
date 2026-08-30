@@ -18,9 +18,11 @@ from sort_css_properties import (  # noqa: E402
     format_css_rule,
     process_css_file
 )
+from src import utilities as util  # noqa: E402
+from tests import unit_test_common as utc  # noqa: E402
 
 
-class TestCSSPropertySorting(unittest.TestCase):
+class TestCSSPropertySorting(utc.UnitTest):
     """Test cases for CSS property sorting."""
 
     def test_parse_css_rule(self):
@@ -146,4 +148,5 @@ class TestCSSPropertySorting(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    unittest.main()
+    util.log_msg.debug = True  # type: ignore[attr-defined]
+    unittest.main(verbosity=2)

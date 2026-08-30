@@ -11,6 +11,9 @@ import unittest
 from unittest.mock import mock_open, patch, MagicMock
 import sys
 
+from src import utilities as util
+from tests import unit_test_common as utc
+
 # Add the scripts directory to the path to import our module
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".github", "scripts"))
 
@@ -36,7 +39,7 @@ except ImportError:
     version_increment = MockVersionIncrement()  # type: ignore[assignment]
 
 
-class TestVersionIncrement(unittest.TestCase):
+class TestVersionIncrement(utc.UnitTest):
     """Test version increment functionality."""
 
     def setUp(self):
@@ -154,7 +157,7 @@ name = "Thermostatsupervisor"
                     self.assertEqual(written_content, expected)
 
 
-class TestGetMainBranchVersion(unittest.TestCase):
+class TestGetMainBranchVersion(utc.UnitTest):
     """Test get_main_branch_version functionality with path fallback."""
 
     def setUp(self):
@@ -246,7 +249,7 @@ __version__ = "1.0.12"
         self.assertIn("origin/main", str(context.exception))
 
 
-class TestVersionIncrementIntegration(unittest.TestCase):
+class TestVersionIncrementIntegration(utc.UnitTest):
     """Integration tests for version increment functionality."""
 
     def test_real_file_operations(self):
@@ -291,4 +294,5 @@ __version__ = "1.0.12"
 
 
 if __name__ == "__main__":
-    unittest.main()
+    util.log_msg.debug = True  # type: ignore[attr-defined]
+    unittest.main(verbosity=2)

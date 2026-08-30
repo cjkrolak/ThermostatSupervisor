@@ -99,7 +99,7 @@ class PerformanceIntegrationTest(IntegrationTest, utc.PerformanceIntegrationTest
 
 
 @unittest.skipIf(not utc.ENABLE_BLINK_TESTS, "blink tests are disabled")
-class BlinkSpamMitigationTest(unittest.TestCase):
+class BlinkSpamMitigationTest(utc.UnitTest):
     """
     Test blink spam mitigation functionality.
     """

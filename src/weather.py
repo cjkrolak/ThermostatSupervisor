@@ -5,13 +5,13 @@ This module provides functions to fetch outdoor weather data using zip codes.
 """
 
 # built-in imports
-import os
 from typing import Dict, Optional
 
 # third-party imports
 import requests
 
 # local imports
+from src import environment as env
 from src import utilities as util
 
 
@@ -28,7 +28,8 @@ def get_outdoor_weather(
     Get outdoor temperature and humidity data for a given zip code.
 
     This function uses the OpenWeatherMap API to fetch current weather data.
-    If no API key is provided, it returns mock data for testing.
+    If no API key is provided, it loads the configured key. If no configured
+    key exists, it returns mock data for testing.
 
     Args:
         zip_code (str): The zip code for which to fetch weather data
@@ -47,6 +48,9 @@ def get_outdoor_weather(
     if not zip_code or not isinstance(zip_code, str):
         raise WeatherError("Invalid zip code provided")
 
+    if api_key is None:
+        api_key = get_weather_api_key()
+
     # If no API key provided, return mock data for testing
     if not api_key:
         util.log_msg(
@@ -55,6 +59,7 @@ def get_outdoor_weather(
             func_name=1,
         )
         return {
+            "zip_code": zip_code,
             "outdoor_temp": -999.0,
             "outdoor_humidity": -999.0,
             "outdoor_conditions": "Missing API Key",
@@ -63,7 +68,7 @@ def get_outdoor_weather(
 
     try:
         # OpenWeatherMap API endpoint
-        url = "http://api.openweathermap.org/data/2.5/weather"
+        url = "https://api.openweathermap.org/data/2.5/weather"
         params = {
             "zip": f"{zip_code},US",
             "appid": api_key,
@@ -76,6 +81,7 @@ def get_outdoor_weather(
         weather_data = response.json()
 
         return {
+            "zip_code": zip_code,
             "outdoor_temp": float(weather_data["main"]["temp"]),
             "outdoor_humidity": float(weather_data["main"]["humidity"]),
             "outdoor_conditions": weather_data["weather"][0]["description"].title(),
@@ -99,12 +105,13 @@ def get_outdoor_weather(
 
 def get_weather_api_key() -> Optional[str]:
     """
-    Get weather API key from environment variables.
+    Get the OpenWeatherMap API key from the configured environment sources.
 
     Returns:
-        str or None: API key if found in environment variables
+        str or None: API key if configured, otherwise None.
     """
-    return os.environ.get("WEATHER_API_KEY")
+    result = env.get_env_variable("OPENWEATHER_API_KEY", default="")
+    return result["value"] or None
 
 
 def format_weather_display(weather_data: Dict[str, float | str]) -> str:
@@ -120,8 +127,9 @@ def format_weather_display(weather_data: Dict[str, float | str]) -> str:
     if not weather_data:
         return "outdoor: N/A"
 
+    zip_code = weather_data.get("zip_code", "N/A")
     temp = weather_data.get("outdoor_temp", "N/A")
     humidity = weather_data.get("outdoor_humidity", "N/A")
     conditions = weather_data.get("outdoor_conditions", "N/A")
 
-    return f"outdoor: {temp:.1f}°F, {humidity:.0f}%RH ({conditions})"
+    return f"outdoor({zip_code}): {temp:.1f}°F, {humidity:.0f}%RH ({conditions})"

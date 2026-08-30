@@ -13,10 +13,12 @@ from unittest.mock import patch
 from src import emulator_config
 from src import thermostat_api as api
 from src import thermostat_common as tc
+from src import utilities as util
 from src import weather
+from tests import unit_test_common as utc
 
 
-class TestWeatherIntegration(unittest.TestCase):
+class TestWeatherIntegration(utc.UnitTest):
     """Test weather integration with thermostat reporting."""
 
     def test_print_select_data_from_all_zones_signature(self):
@@ -65,7 +67,7 @@ class TestWeatherIntegration(unittest.TestCase):
         # Test weather display formatting
         weather_data = mock_get_weather.return_value
         formatted = weather.format_weather_display(weather_data)
-        expected = "outdoor: 68.5°F, 45%RH (Sunny)"
+        expected = "outdoor(N/A): 68.5°F, 45%RH (Sunny)"
         self.assertEqual(formatted, expected)
 
     def test_config_integration(self):
@@ -82,4 +84,5 @@ class TestWeatherIntegration(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    unittest.main()
+    util.log_msg.debug = True  # type: ignore[attr-defined]
+    unittest.main(verbosity=2)

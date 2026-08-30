@@ -18,6 +18,7 @@ sys.modules["smbus2"] = MagicMock()
 # local imports (must come after mocking)
 from src import sht31  # noqa: E402
 from src import sht31_config  # noqa: E402
+from src import utilities as util  # noqa: E402
 from tests import unit_test_common as utc  # noqa: E402
 
 
@@ -163,4 +164,5 @@ class Enhanced403ErrorTest(utc.UnitTest):
 
 
 if __name__ == "__main__":
-    unittest.main()
+    util.log_msg.debug = True  # type: ignore[attr-defined]
+    unittest.main(verbosity=2)
