@@ -40,6 +40,22 @@ class TestWeather(utc.UnitTest):
 
         self.assertIsNone(result)
 
+    def test_mask_weather_api_key_in_log_messages(self):
+        """Test weather API keys and app IDs are redacted in logs."""
+        raw_message = (
+            "OPENWEATHER_API_KEY=super-secret-weather-key; "
+            "api_key=another-secret; appid=top-secret-app-id"
+        )
+
+        sanitized = util._sanitize_log_message(raw_message)
+
+        self.assertNotIn("super-secret-weather-key", sanitized)
+        self.assertNotIn("another-secret", sanitized)
+        self.assertNotIn("top-secret-app-id", sanitized)
+        self.assertIn("OPENWEATHER_API_KEY=******", sanitized)
+        self.assertIn("api_key=******", sanitized)
+        self.assertIn("appid=******", sanitized)
+
     @patch("src.weather.util.log_msg")
     @patch("src.weather.get_weather_api_key", return_value=None)
     def test_get_outdoor_weather_no_api_key(
