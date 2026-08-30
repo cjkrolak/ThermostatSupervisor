@@ -71,8 +71,8 @@ jobs:
                               try:
                                   with open('gist_response.json', 'r') as f:
                                       data = json.load(f)
-                                      if 'files' in data and
-                                         'coverage.xml' in data['files']:
+                                      if ('files' in data and
+                                              'coverage.xml' in data['files']):
                                           with open('coverage.xml', 'w') as f:
                                               f.write(data['files']['coverage.xml']
                                                   ['content'])
