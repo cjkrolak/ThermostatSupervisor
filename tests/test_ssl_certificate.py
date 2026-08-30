@@ -12,9 +12,11 @@ import subprocess
 from unittest.mock import patch
 
 from src import ssl_certificate
+from src import utilities as util
+from tests import unit_test_common as utc
 
 
-class TestSSLCertificate(unittest.TestCase):
+class TestSSLCertificate(utc.UnitTest):
     """Test SSL certificate generation and management."""
 
     def setUp(self):
@@ -954,4 +956,5 @@ MIIDXTCCAkWgAwIBAgIJAKuK0VGDJJhjMA0GCSqGSIb3DQEBCwUAMEUxCzAJBgNV
 
 
 if __name__ == "__main__":
-    unittest.main()
+    util.log_msg.debug = True  # type: ignore[attr-defined]
+    unittest.main(verbosity=2)

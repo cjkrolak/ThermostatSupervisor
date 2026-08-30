@@ -11,9 +11,11 @@ import unittest
 # local imports
 from src import supervisor_wsgi
 from src import sht31_wsgi
+from src import utilities as util
+from tests import unit_test_common as utc
 
 
-class TestWSGIEntryPoints(unittest.TestCase):
+class TestWSGIEntryPoints(utc.UnitTest):
     """Test WSGI entry points for production deployment."""
 
     def test_supervisor_wsgi_application_creation(self):
@@ -47,4 +49,5 @@ class TestWSGIEntryPoints(unittest.TestCase):
 
 if __name__ == "__main__":
     print("Testing WSGI entry points for production deployment")
+    util.log_msg.debug = True  # type: ignore[attr-defined]
     unittest.main(verbosity=2)

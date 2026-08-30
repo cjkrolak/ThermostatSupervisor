@@ -10,9 +10,11 @@ from unittest.mock import Mock
 
 # local imports
 from src import nest_config
+from src import utilities as util
+from tests import unit_test_common as utc
 
 
-class TestNestSafetyTemperature(unittest.TestCase):
+class TestNestSafetyTemperature(utc.UnitTest):
     """Test nest safety temperature functionality."""
 
     def setUp(self):
@@ -110,4 +112,5 @@ class TestNestSafetyTemperature(unittest.TestCase):
 
 
 if __name__ == "__main__":
+    util.log_msg.debug = True  # type: ignore[attr-defined]
     unittest.main(verbosity=2)

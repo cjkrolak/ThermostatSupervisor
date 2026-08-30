@@ -12,9 +12,11 @@ from unittest.mock import MagicMock, patch
 # local imports
 from src import nest
 from src import nest_config
+from src import utilities as util
+from tests import unit_test_common as utc
 
 
-class NestSpamMitigationTest(unittest.TestCase):
+class NestSpamMitigationTest(utc.UnitTest):
     """
     Test nest spam mitigation functionality.
     """
@@ -223,4 +225,5 @@ class NestSpamMitigationTest(unittest.TestCase):
 
 
 if __name__ == "__main__":
+    util.log_msg.debug = True  # type: ignore[attr-defined]
     unittest.main(verbosity=2)

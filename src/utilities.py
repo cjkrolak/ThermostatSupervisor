@@ -104,9 +104,11 @@ _AUTHORIZATION_PATTERN = re.compile(
     r"[A-Za-z0-9._~+/=-]+(?:['\"])?"
 )
 _SENSITIVE_KEY_PATTERN = re.compile(
-    r"(?i)(?P<prefix>['\"]?(?:password|passwd|pwd|secret|client[_ -]?secret|"
-    r"access[_ -]?token|refresh[_ -]?token|auth(?:entication)?[_ -]?token|"
-    r"api[_ -]?key|token|2fa(?:[_ -]?code)?|otp)['\"]?\s*[:=]\s*)"
+    r"(?i)(?P<prefix>(?:[A-Za-z0-9_.-]*?(?:password|passwd|pwd|secret|"
+    r"client[_ -]?secret|access[_ -]?token|refresh[_ -]?token|"
+    r"auth(?:entication)?[_ -]?token|openweather[_ -]?api[_ -]?key|"
+    r"weather[_ -]?api[_ -]?key|api[_ -]?key|app[_ -]?id|appid|token|"
+    r"2fa(?:[_ -]?code)?|otp))['\"]?\s*[:=]\s*)"
     r"(?P<quote>['\"]?)(?P<value>[^,\s'\"}\]]+)(?P=quote)"
 )
 _BEARER_TOKEN_PATTERN = re.compile(

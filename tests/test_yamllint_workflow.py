@@ -12,13 +12,16 @@ import tempfile
 import unittest
 from pathlib import Path
 
+from src import utilities as util
+from tests import unit_test_common as utc
+
 
 def _is_yamlfix_available():
     """Check if yamlfix command is available in the system."""
     return shutil.which("yamlfix") is not None
 
 
-class TestYamlLintWorkflow(unittest.TestCase):
+class TestYamlLintWorkflow(utc.UnitTest):
     """Test YAML linting workflow functionality."""
 
     def setUp(self):
@@ -184,7 +187,7 @@ class TestYamlLintWorkflow(unittest.TestCase):
 
     def test_github_unit_tests_lint_bypass_conditions(self):
         """Test github-unit-tests workflow skips post-lint steps on lint failure."""
-        content = self.github_unit_tests_workflow.read_text()
+        content = self.github_unit_tests_workflow.read_text(encoding="utf-8")
         # Lint step must have an id so subsequent steps can reference it
         self.assertIn(
             "id: lint",
@@ -325,4 +328,5 @@ class TestYamlLintWorkflow(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    unittest.main()
+    util.log_msg.debug = True  # type: ignore[attr-defined]
+    unittest.main(verbosity=2)

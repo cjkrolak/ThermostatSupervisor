@@ -12,9 +12,10 @@ import requests
 
 from src import sht31
 from src import utilities as util
+from tests import unit_test_common as utc
 
 
-class TestSht31EdgeCases(unittest.TestCase):
+class TestSht31EdgeCases(utc.UnitTest):
     """Test edge cases and error paths in sht31 module."""
 
     def setUp(self):
@@ -284,7 +285,7 @@ class TestSht31EdgeCases(unittest.TestCase):
             self.assertEqual(result, 'unknown')
 
 
-class TestSht31ThermostatZone(unittest.TestCase):
+class TestSht31ThermostatZone(utc.UnitTest):
     """Test ThermostatZone methods in sht31 module."""
 
     def setUp(self):
@@ -418,7 +419,7 @@ class TestSht31ThermostatZone(unittest.TestCase):
                 self.assertEqual(result, {"status": "ok"})
 
 
-class TestSht31ZoneMetadataMethods(unittest.TestCase):
+class TestSht31ZoneMetadataMethods(utc.UnitTest):
     """Test ThermostatZone metadata and HTTP error handling methods."""
 
     def setUp(self):
@@ -654,7 +655,7 @@ class TestSht31ZoneMetadataMethods(unittest.TestCase):
         self.assertIn(KeyError, exception_types)
 
 
-class TestSht31ZoneSimpleMethods(unittest.TestCase):
+class TestSht31ZoneSimpleMethods(utc.UnitTest):
     """Test simple ThermostatZone methods."""
 
     def setUp(self):
@@ -868,4 +869,5 @@ class TestSht31ZoneSimpleMethods(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    unittest.main()
+    util.log_msg.debug = True  # type: ignore[attr-defined]
+    unittest.main(verbosity=2)

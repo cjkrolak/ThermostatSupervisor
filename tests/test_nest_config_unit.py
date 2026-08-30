@@ -5,9 +5,11 @@ Unit tests for `src.nest_config`.
 import unittest
 
 from src import nest_config
+from src import utilities as util
+from tests import unit_test_common as utc
 
 
-class TestNestConfig(unittest.TestCase):
+class TestNestConfig(utc.UnitTest):
     """Validate Nest zone configuration is internally consistent."""
 
     def test_supported_configs_zones_include_four_zones(self) -> None:
@@ -42,4 +44,5 @@ class TestNestConfig(unittest.TestCase):
 
 
 if __name__ == "__main__":
+    util.log_msg.debug = True  # type: ignore[attr-defined]
     unittest.main(verbosity=2)

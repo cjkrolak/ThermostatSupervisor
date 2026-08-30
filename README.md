@@ -90,7 +90,7 @@ Environment variables required depend on the thermostat being used.<br/>
     * 'NEST_TOKEN_EXPIRES_IN': token expiration time in seconds (optional, defaults to 3600)
 * Flask applications support optional security and functionality env vars:
   * 'SECRET_KEY': secret key for Flask CSRF protection (optional - auto-generated if not provided)
-  * 'WEATHER_API_KEY': OpenWeatherMap API key for outdoor weather data (optional - mock data used if not provided)
+  * 'OPENWEATHER_API_KEY': OpenWeatherMap API key for outdoor weather data (optional - mock data used if not provided)
 
 ## updating environment variables:<br/>
 * Linux: update file ~/.profile and then "source ~/.profile" to load the file<br/>

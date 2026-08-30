@@ -16,6 +16,7 @@ import oauthlib.oauth2.rfc6749.errors
 
 # local imports
 from src import nest
+from src import utilities as util
 from tests import unit_test_common as utc
 
 
@@ -280,4 +281,5 @@ class TestNestOAuthRefresh(utc.UnitTest):
 
 
 if __name__ == "__main__":
-    unittest.main()
+    util.log_msg.debug = True  # type: ignore[attr-defined]
+    unittest.main(verbosity=2)

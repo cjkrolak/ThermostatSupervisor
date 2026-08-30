@@ -4,26 +4,68 @@ Unit tests for weather module.
 
 import unittest
 from unittest.mock import patch, MagicMock
+
+import requests
+
+from src import utilities as util
 from src import weather
+from tests import unit_test_common as utc
 
 
-class TestWeather(unittest.TestCase):
+class TestWeather(utc.UnitTest):
     """Test functions in weather.py."""
 
-    def test_get_weather_api_key(self):
-        """Test get_weather_api_key function."""
-        with patch.dict("os.environ", {"WEATHER_API_KEY": "test_key"}):
-            result = weather.get_weather_api_key()
-            self.assertEqual(result, "test_key")
+    @patch("src.weather.env.get_env_variable")
+    def test_get_weather_api_key(self, mock_get_env_variable):
+        """Test that the API key is read through the environment helper."""
+        mock_get_env_variable.return_value = {
+            "value": "test_key",
+            "source": "supervisor-env.txt",
+        }
 
-        with patch.dict("os.environ", {}, clear=True):
-            result = weather.get_weather_api_key()
-            self.assertIsNone(result)
+        result = weather.get_weather_api_key()
 
-    def test_get_outdoor_weather_no_api_key(self):
-        """Test get_outdoor_weather with no API key returns mock data."""
+        self.assertEqual(result, "test_key")
+        mock_get_env_variable.assert_called_once_with(
+            "OPENWEATHER_API_KEY", default=""
+        )
+
+        mock_get_env_variable.return_value = {
+            "value": "",
+            "source": "default",
+        }
+
+        with patch("src.weather.env.get_env_variable", return_value={"value": ""}):
+            result = weather.get_weather_api_key()
+
+        self.assertIsNone(result)
+
+    def test_mask_weather_api_key_in_log_messages(self):
+        """Test weather API keys and app IDs are redacted in logs."""
+        raw_message = (
+            "OPENWEATHER_API_KEY=super-secret-weather-key; "
+            "api_key=another-secret; appid=top-secret-app-id"
+        )
+
+        sanitized = util._sanitize_log_message(raw_message)
+
+        self.assertNotIn("super-secret-weather-key", sanitized)
+        self.assertNotIn("another-secret", sanitized)
+        self.assertNotIn("top-secret-app-id", sanitized)
+        self.assertIn("OPENWEATHER_API_KEY=******", sanitized)
+        self.assertIn("api_key=******", sanitized)
+        self.assertIn("appid=******", sanitized)
+
+    @patch("src.weather.util.log_msg")
+    @patch("src.weather.get_weather_api_key", return_value=None)
+    def test_get_outdoor_weather_no_api_key(
+        self, mock_get_weather_api_key, mock_log_msg
+    ):
+        """Test a missing configured API key returns mock data."""
         result = weather.get_outdoor_weather("12345")
 
+        mock_get_weather_api_key.assert_called_once_with()
+        mock_log_msg.assert_called_once()
         self.assertIsInstance(result, dict)
         self.assertIn("outdoor_temp", result)
         self.assertIn("outdoor_humidity", result)
@@ -60,13 +102,16 @@ class TestWeather(unittest.TestCase):
         self.assertEqual(result["outdoor_conditions"], "Partly Cloudy")
         self.assertEqual(result["data_source"], "OpenWeatherMap")
 
+    @patch("src.weather.util.log_msg")
     @patch("requests.get")
-    def test_get_outdoor_weather_api_error(self, mock_get):
-        """Test get_outdoor_weather with API error."""
-        mock_get.side_effect = Exception("API Error")
+    def test_get_outdoor_weather_api_error(self, mock_get, mock_log_msg):
+        """Test an HTTP request error raises a weather error."""
+        mock_get.side_effect = requests.exceptions.RequestException("API Error")
 
         with self.assertRaises(weather.WeatherError):
             weather.get_outdoor_weather("12345", "test_api_key")
+
+        mock_log_msg.assert_called_once()
 
     def test_format_weather_display(self):
         """Test format_weather_display function."""
@@ -77,7 +122,7 @@ class TestWeather(unittest.TestCase):
         }
 
         result = weather.format_weather_display(weather_data)
-        expected = "outdoor: 75.5°F, 60%RH (Partly Cloudy)"
+        expected = "outdoor(N/A): 75.5°F, 60%RH (Partly Cloudy)"
         self.assertEqual(result, expected)
 
     def test_format_weather_display_empty(self):
@@ -90,4 +135,5 @@ class TestWeather(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    unittest.main()
+    util.log_msg.debug = True  # type: ignore[attr-defined]
+    unittest.main(verbosity=2)

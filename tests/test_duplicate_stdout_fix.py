@@ -10,9 +10,10 @@ from io import StringIO
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from src import utilities as util  # noqa: E402
+from tests import unit_test_common as utc  # noqa: E402
 
 
-class DuplicateStdoutFixTest(unittest.TestCase):
+class DuplicateStdoutFixTest(utc.UnitTest):
     """Test that duplicate STDOUT messages have been fixed."""
 
     def setUp(self):
@@ -127,4 +128,5 @@ class DuplicateStdoutFixTest(unittest.TestCase):
 
 
 if __name__ == '__main__':
+    util.log_msg.debug = True  # type: ignore[attr-defined]
     unittest.main(verbosity=2)

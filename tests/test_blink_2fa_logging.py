@@ -1124,4 +1124,5 @@ class BlinkDiagnosticsTests(utc.UnitTest):
 
 
 if __name__ == "__main__":
-    unittest.main()
+    util.log_msg.debug = True  # type: ignore[attr-defined]
+    unittest.main(verbosity=2)

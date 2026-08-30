@@ -6,8 +6,11 @@ import unittest
 from unittest.mock import patch
 
 from download_ssl_certificates import parse_servers, main
+from src import utilities as util
 
 
+# This suite controls sys.argv for argparse fixtures, while utc.UnitTest
+# patches sys.argv globally; retain unittest.TestCase to preserve those inputs.
 class TestDownloadSSLCertificatesScript(unittest.TestCase):
     """Test the SSL certificate download script functionality."""
 
@@ -119,4 +122,5 @@ class TestDownloadSSLCertificatesScript(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    unittest.main()
+    util.log_msg.debug = True  # type: ignore[attr-defined]
+    unittest.main(verbosity=2)

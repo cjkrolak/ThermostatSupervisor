@@ -13,9 +13,11 @@ from unittest.mock import MagicMock, patch
 
 # local imports
 from src import nest
+from src import utilities as util
+from tests import unit_test_common as utc
 
 
-class TestNestFanTimerMode(unittest.TestCase):
+class TestNestFanTimerMode(utc.UnitTest):
     """Test nest Fan.timerMode missing-key behavior."""
 
     def _make_zone_with_traits(self, traits: dict) -> nest.ThermostatZone:
@@ -80,4 +82,5 @@ class TestNestFanTimerMode(unittest.TestCase):
 
 
 if __name__ == "__main__":
+    util.log_msg.debug = True  # type: ignore[attr-defined]
     unittest.main(verbosity=2)

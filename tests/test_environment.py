@@ -140,17 +140,25 @@ class EnvironmentTests(utc.UnitTest):
 
     def test_get_env_variable_2fa_masking(self):
         """
-        Test that 2FA keys are properly masked in get_env_variable().
+        Test that secret-like keys are properly masked in get_env_variable().
         """
-        # Test that 2FA keys are masked in logs
-        os.environ["TEST_2FA"] = "123456"
+        secret_variants = ["TEST_2FA", "OPENWEATHER_API_KEY", "ACCESS_TOKEN"]
+        for env_key in secret_variants:
+            os.environ[env_key] = "secret_value"
+
         try:
-            result = env.get_env_variable("TEST_2FA")
-            self.assertEqual(result["status"], util.NO_ERROR)
-            self.assertEqual(result["value"], "123456")
-            # The actual masking is done in logging, not in the return value
+            for env_key in secret_variants:
+                result = env.get_env_variable(env_key)
+                self.assertEqual(result["status"], util.NO_ERROR)
+                self.assertEqual(result["value"], "secret_value")
+                self.assertEqual(
+                    env._mask_sensitive_env_value(env_key, "secret_value"),
+                    "(hidden)",
+                )
         finally:
-            del os.environ["TEST_2FA"]
+            for env_key in secret_variants:
+                if env_key in os.environ:
+                    del os.environ[env_key]
 
     def test_get_env_variable(self):
         """
