@@ -40,5 +40,4 @@ FLASK_LIMITER_STORAGE_URI=memory://
 
 # OpenWeatherMap API Key
 # OPENWEATHER_API_KEY=your_api_key_here
-# test_key=your_api_key_here
 

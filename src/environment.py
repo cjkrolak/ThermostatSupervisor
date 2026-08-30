@@ -159,7 +159,9 @@ def _get_env_value_and_source(env_key):
 
 def _mask_sensitive_env_value(env_key, env_value):
     """Return masked display text for sensitive environment values."""
-    if "PASSWORD" in env_key or "2FA" in env_key:
+    key_name = env_key.upper()
+    sensitive_markers = ("PASSWORD", "2FA", "API_KEY", "TOKEN", "SECRET")
+    if any(marker in key_name for marker in sensitive_markers):
         return "(hidden)"
     return env_value
 
