@@ -85,6 +85,17 @@ def save_sarif_files(runs_by_tool: Dict[str, Dict[str, Any]], output_dir: str = 
     return output_files
 
 
+def write_github_output(name: str, value: str) -> None:
+    """Write a step output using the GitHub Actions environment file API."""
+    github_output = os.getenv("GITHUB_OUTPUT")
+    if not github_output:
+        print(f"{name}={value}")
+        return
+
+    with open(github_output, "a", encoding="utf-8") as output_file:
+        output_file.write(f"{name}={value}\n")
+
+
 def main():
     """Main function to process SARIF file."""
     if len(sys.argv) < 2:
@@ -119,7 +130,7 @@ def main():
 
     # Set output for GitHub Actions
     files_json = json.dumps([f["file"] for f in output_files])
-    print(f"::set-output name=sarif_files::{files_json}")
+    write_github_output("sarif_files", files_json)
 
 
 if __name__ == "__main__":
