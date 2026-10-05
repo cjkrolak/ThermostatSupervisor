@@ -50,11 +50,9 @@ supported_configs = {
     "zip_code": "55760",  # Zip code for outdoor weather data
 }
 
-# metadata dict
-# 'zone_name' is a placeholder, used at Thermostat class level.
-# 'zone_name' is updated by device memory via Zone.get_zone_name()
-# 'host_name' is used for DNS lookup to determine if device
-# 'ip_address' is just for reference.
+# Per-zone metadata, keyed by the configured zone number.
+# `zone_name` is required and may be updated from device data at runtime.
+# `host_name` is used for DNS lookup; `ip_address` is informational only.
 metadata = {
     MAIN_LEVEL: {
         "ip_address": "192.168.86.229",  # local IP, for ref only.

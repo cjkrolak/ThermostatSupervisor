@@ -41,9 +41,9 @@ supported_configs = {
     "zip_code": "55760",  # Zip code for outdoor weather data
 }
 
-# metadata dict
-# 'zone_name' is updated by Zone.get_zone_name()
-# 'host_name' is just for reference
+# Per-zone metadata, keyed by the current zone number.
+# `zone_name` is required and may be updated from the API at runtime.
+# `host_name` is informational; `serial_number` is populated from the API.
 metadata = {
     LIVING_ROOM: {
         "zone_name": kumo_common_zones.ZONE_NAME_LIVING_ROOM,
