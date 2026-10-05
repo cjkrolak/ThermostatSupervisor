@@ -263,7 +263,6 @@ class UnitTest(unittest.TestCase, metaclass=PatchMeta):
                 "GMAIL_PASSWORD": None,
             },
         }
-        self.unit_test_argv = unit_test_argv  # use defaults
         self.user_inputs_backup = getattr(api.uip, "user_inputs", None)
         # parse runtime arguments
         api.uip = api.UserInputs(self.unit_test_argv)
