@@ -24,10 +24,9 @@ supported_configs = {
     "zip_code": "55760",  # Zip code for outdoor weather data
 }
 
-# metadata dict
-# 'zone_name' is returned by self.get_zone_name
-# 'host_name' is used for dns lookup of IP address for each zone
-# 'ip_address' key (if present is used for hard-coding IP address
+# Per-zone metadata, keyed by the configured zone number.
+# `zone_name` is required. `host_name` is used for DNS lookup; optional
+# `ip_address` values can override DNS resolution with a fixed address.
 metadata = {
     MAIN_3M50: {
         "zone_name": "Main Level",

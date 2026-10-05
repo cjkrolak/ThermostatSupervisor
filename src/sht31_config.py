@@ -105,10 +105,9 @@ supported_configs = {
     "modes": ["OFF_MODE", "UNKNOWN_MODE"],
 }
 
-# metadata dict:
-# 'zone_name' is returned by self.get_zone_name()
-# 'host_name' is used for DNS lookup to determine if device
-# is on the current network.
+# Per-zone metadata, keyed by the configured zone number.
+# `zone_name` is required. `host_name` is used to determine whether the
+# sensor is available on the current network.
 metadata = {
     LOFT_SHT31: {
         "zone_name": "Loft (local)",

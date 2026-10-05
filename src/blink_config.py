@@ -30,10 +30,10 @@ required_env_variables = {
     "BLINK_PASSWORD": None,
 }
 
-# metadata dict
-# 'zone_name' is a placeholder, used at Thermostat class level.
-# update this list to match your zones as named in the blink app
-# zone number assignments are arbitrary.
+# Per-zone metadata, keyed by the configured zone number.
+# `zone_name` is required and should match the name used in the Blink app.
+# Zone numbers are arbitrary. Other thermostat configs may also include
+# `host_name`, `ip_address`, `serial_number`, or runtime status fields.
 metadata = {
     # cabin back zones
     0: {"zone_name": "garage door"},
@@ -88,7 +88,7 @@ def get_available_zones():
 
 
 default_zone = supported_configs["zones"][0]
-default_zone_name = metadata[default_zone]
+default_zone_name = metadata[default_zone]["zone_name"]
 
 argv = [
     "supervise.py",  # module

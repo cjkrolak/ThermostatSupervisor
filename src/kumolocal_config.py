@@ -44,11 +44,10 @@ supported_configs = {
 INI_FILE = "kumolocal.ini"
 
 
-# metadata dict
-# 'zone_name' is a placeholder, used at Thermostat class level.
-# 'host_name' is used for DNS lookup to determine if device
-# 'ip_address' is loaded from kumolocal.ini; falls back to defaults below.
-# 'local_net_available' is set by local network detection
+# Per-zone metadata, keyed by the configured zone number.
+# `zone_name` is required. `host_name` is used for DNS lookup, and
+# `ip_address` is loaded from kumolocal.ini or defaults below.
+# `local_net_available` is runtime status set by local network detection.
 metadata = {
     LIVING_ROOM: {
         "ip_address": "192.168.86.84",  # default; overridden by kumolocal.ini
