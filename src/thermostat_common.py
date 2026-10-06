@@ -1786,16 +1786,25 @@ def _get_outdoor_weather_data(
             return weather_data_by_zip
 
         api_key = weather.get_weather_api_key()
-        for zip_code in zip_codes:
-            weather_data_by_zip[zip_code] = weather.get_outdoor_weather(
-                zip_code, api_key
-            )
     except Exception as e:
         util.log_msg(
             f"Failed to get outdoor weather data: {e}",
             mode=util.BOTH_LOG,
             func_name=1,
         )
+        return weather_data_by_zip
+
+    for zip_code in zip_codes:
+        try:
+            weather_data_by_zip[zip_code] = weather.get_outdoor_weather(
+                zip_code, api_key
+            )
+        except Exception as e:
+            util.log_msg(
+                f"Failed to get outdoor weather data for ZIP {zip_code}: {e}",
+                mode=util.BOTH_LOG,
+                func_name=1,
+            )
     return weather_data_by_zip
 
 
