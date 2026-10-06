@@ -3,17 +3,158 @@ Tests for thermostat_common.py
 """
 
 # built-in imports
+import io
 import operator
 import pprint
 import random
 import unittest
 import unittest.mock
+from contextlib import redirect_stdout
+from itertools import product
+from typing import Any, Tuple
 
 # local imports
 from src import thermostat_api as api
 from src import thermostat_common as tc
 from src import utilities as util
 from tests import unit_test_common as utc
+
+
+class SelectDataTableTest(unittest.TestCase):
+    """Test zone table output without hardware or external API calls."""
+
+    def setUp(self) -> None:
+        """Provide two zones with different name lengths and status values."""
+        self.thermostat = unittest.mock.Mock()
+        self.zones = []
+        for name, temperature, status in [
+            ("Hall", 72.56, True),
+            ("Long camera name, upstairs", None, False),
+        ]:
+            zone = unittest.mock.Mock()
+            zone.zone_name = name
+            zone.get_display_temp.return_value = temperature
+            zone.get_wifi_strength.return_value = -45
+            zone.get_wifi_status.return_value = status
+            zone.get_battery_voltage.return_value = 3.456
+            zone.get_battery_status.return_value = status
+            self.zones.append(zone)
+        self.create = self.enterContext(
+            unittest.mock.patch.object(
+                tc,
+                "create_thermostat_instance",
+                side_effect=[(self.thermostat, zone) for zone in self.zones],
+            )
+        )
+        self.enterContext(
+            unittest.mock.patch.dict(
+                api.SUPPORTED_THERMOSTATS, {"blink": {"zip_code": "00000"}}
+            )
+        )
+        self.enterContext(
+            unittest.mock.patch.object(
+                tc.weather, "get_weather_api_key", return_value=None
+            )
+        )
+        self.get_weather = self.enterContext(
+            unittest.mock.patch.object(
+                tc.weather, "get_outdoor_weather", return_value={"temperature": 60}
+            )
+        )
+        self.format_weather = self.enterContext(
+            unittest.mock.patch.object(
+                tc.weather, "format_weather_display", return_value="outdoor: 60°F"
+            )
+        )
+
+    def query_table(self, **options: Any) -> Tuple[str, Any]:
+        """Capture output and return values using the mocked zone factory."""
+        output = io.StringIO()
+        with redirect_stdout(output):
+            result = tc.print_select_data_from_all_zones(
+                "blink", [0, 12], object, object, **options
+            )
+        return output.getvalue(), result
+
+    def test_aligned_table(self) -> None:
+        """Verify zone-first columns, formatted data, alignment, and returns."""
+        output, result = self.query_table()
+        lines = output.splitlines()[2:]
+        self.assertEqual(
+            [cell.strip() for cell in lines[0].split("|")],
+            ["Zone", "Name", "Temperature", "Wi-Fi", "Battery", "Outdoor weather"],
+        )
+        self.assertEqual(
+            [cell.strip() for cell in lines[2].split("|")],
+            [
+                "0", "Hall", "72.6 °F", "-45 dBm (ok)", "3.46 volts (ok)",
+                "outdoor: 60°F",
+            ],
+        )
+        self.assertEqual(
+            [cell.strip() for cell in lines[3].split("|")],
+            [
+                "12", "Long camera name, upstairs", "N/A", "-45 dBm (weak)",
+                "3.46 volts (bad)", "outdoor: 60°F",
+            ],
+        )
+        positions = [
+            [i for i, char in enumerate(line) if char == "|"]
+            for line in [lines[0], lines[2], lines[3]]
+        ]
+        self.assertEqual(positions[0], positions[1])
+        self.assertEqual(positions[0], positions[2])
+        self.assertEqual(len(lines[0]), len(lines[1]))
+        self.assertEqual(result, (self.thermostat, self.zones[-1]))
+        self.get_weather.assert_called_once()
+        self.format_weather.assert_called_once()
+        self.assertEqual(self.create.call_count, 2)
+
+    def test_optional_columns(self) -> None:
+        """Verify every display-flag combination avoids disabled data queries."""
+        for wifi, battery, outdoor in product([False, True], repeat=3):
+            with self.subTest(wifi=wifi, battery=battery, outdoor=outdoor):
+                self.create.side_effect = [
+                    (self.thermostat, zone) for zone in self.zones
+                ]
+                self.get_weather.reset_mock()
+                for zone in self.zones:
+                    zone.reset_mock()
+                output, _ = self.query_table(
+                    display_wifi=wifi,
+                    display_battery=battery,
+                    display_outdoor_weather=outdoor,
+                )
+                header = output.splitlines()[2]
+                self.assertEqual("Wi-Fi" in header, wifi)
+                self.assertEqual("Battery" in header, battery)
+                self.assertEqual("Outdoor weather" in header, outdoor)
+                self.assertEqual(self.get_weather.call_count, int(outdoor))
+                for zone in self.zones:
+                    self.assertEqual(zone.get_wifi_strength.call_count, int(wifi))
+                    self.assertEqual(zone.get_wifi_status.call_count, int(wifi))
+                    self.assertEqual(
+                        zone.get_battery_voltage.call_count, int(battery)
+                    )
+                    self.assertEqual(
+                        zone.get_battery_status.call_count, int(battery)
+                    )
+
+    def test_unavailable_weather(self) -> None:
+        """Omit the weather column when outdoor data is unavailable."""
+        self.get_weather.return_value = None
+        output, _ = self.query_table()
+        self.assertNotIn("Outdoor weather", output)
+        self.format_weather.assert_not_called()
+
+    def test_empty_zones(self) -> None:
+        """An empty zone list must not query hardware or weather."""
+        with redirect_stdout(io.StringIO()) as output:
+            result = tc.print_select_data_from_all_zones("blink", [], object, object)
+        self.assertEqual(result, (None, None))
+        self.assertIn("No zones to query", output.getvalue())
+        self.create.assert_not_called()
+        self.get_weather.assert_not_called()
 
 
 class Test(utc.UnitTest):
@@ -1038,7 +1179,7 @@ class Test(utc.UnitTest):
         finally:
             self.Zone.get_system_switch_position = self.switch_position_backup
 
-    def test_print_select_data_from_all_zones_handles_none_temperature(self):
+    def test_print_select_data_from_all_zones_handles_none_temperature(self) -> None:
         """Verify all-zones output uses N/A when a zone temperature is unavailable."""
         from unittest.mock import MagicMock
         from unittest.mock import patch
@@ -1066,7 +1207,7 @@ class Test(utc.UnitTest):
 
         self.assertIs(thermostat, fake_thermostat)
         self.assertIs(zone, fake_zone)
-        mock_print.assert_any_call("zone: 0, name: Living Room, temp: N/A")
+        mock_print.assert_any_call("0    | Living Room | N/A        ")
 
     def test_revert_temperature_deviation(self):
         """Verify revert_temperature_deviation()."""

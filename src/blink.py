@@ -1865,15 +1865,14 @@ if __name__ == "__main__":
         blink_config.ALIAS, zone_number, ThermostatClass, ThermostatZone
     )
 
-    # this code is rem'd out because it will trigger blink server spam detectors.
-    # tc.print_select_data_from_all_zones(
-    #     blink_config.ALIAS,
-    #     blink_config.get_available_zones(),
-    #     ThermostatClass,
-    #     ThermostatZone,
-    #     display_wifi=True,
-    #     display_battery=True,
-    # )
+    tc.print_select_data_from_all_zones(
+        blink_config.ALIAS,
+        blink_config.get_available_zones(),
+        ThermostatClass,
+        ThermostatZone,
+        display_wifi=True,
+        display_battery=True,
+    )
 
     # measure thermostat response time
     if blink_config.check_response_time:

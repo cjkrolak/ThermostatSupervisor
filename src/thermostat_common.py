@@ -9,6 +9,7 @@ import pprint
 import statistics
 import time
 import traceback
+from typing import List, Optional, Sequence, Tuple, Type, Union
 
 # local imports
 from src import email_notification as eml
@@ -1694,19 +1695,19 @@ def get_battery_status_display(battery_status):
 
 
 def print_select_data_from_all_zones(
-    thermostat_type,
-    zone_lst,
-    ThermostatClass,
-    ThermostatZone,
-    display_wifi=True,
-    display_battery=True,
-    display_outdoor_weather=True,
-):
+    thermostat_type: str,
+    zone_lst: Sequence[Union[int, str]],
+    ThermostatClass: Type[ThermostatCommon],
+    ThermostatZone: Type[ThermostatCommonZone],
+    display_wifi: bool = True,
+    display_battery: bool = True,
+    display_outdoor_weather: bool = True,
+) -> Tuple[Optional[ThermostatCommon], Optional[ThermostatCommonZone]]:
     """
-    Cycle through all zones and print out select data.
+    Print an aligned table with each zone followed by its selected data.
 
     inputs:
-        tstat(int):  thermostat_type
+        thermostat_type(str): thermostat type
         zone_lst(list): list of zones
         ThermostatClass(cls): Thermostat class
         ThermostatZone(cls): ThermostatZone class
@@ -1728,23 +1729,33 @@ def print_select_data_from_all_zones(
     outdoor_weather_data = _get_outdoor_weather_data(
         thermostat_type, display_outdoor_weather
     )
+    weather_display = (
+        weather.format_weather_display(outdoor_weather_data)
+        if outdoor_weather_data
+        else None
+    )
+    headers = ["Zone", "Name", "Temperature"]
+    if display_wifi:
+        headers.append("Wi-Fi")
+    if display_battery:
+        headers.append("Battery")
+    if weather_display is not None:
+        headers.append("Outdoor weather")
 
     Thermostat = None
     Zone = None
+    rows = []
     for zone in zone_lst:
         # create class instances
         Thermostat, Zone = create_thermostat_instance(
             thermostat_type, zone, ThermostatClass, ThermostatZone, verbose=False
         )
-        msg = _build_zone_select_data_message(
-            zone,
-            Zone,
-            display_wifi,
-            display_battery,
-            display_outdoor_weather,
-            outdoor_weather_data,
+        rows.append(
+            _build_zone_select_data_row(
+                zone, Zone, display_wifi, display_battery, weather_display
+            )
         )
-        print(msg)
+    _print_select_data_table(headers, rows)
 
     return Thermostat, Zone
 
@@ -1770,48 +1781,40 @@ def _get_outdoor_weather_data(thermostat_type, display_outdoor_weather):
         return None
 
 
-def _build_zone_select_data_message(
-    zone,
-    zone_obj,
-    display_wifi,
-    display_battery,
-    display_outdoor_weather,
-    outdoor_weather_data,
-):
-    """Build one select-data output line for a single zone."""
+def _build_zone_select_data_row(
+    zone: Union[int, str],
+    zone_obj: ThermostatCommonZone,
+    display_wifi: bool,
+    display_battery: bool,
+    weather_display: Optional[str],
+) -> List[str]:
+    """Build a table row without querying disabled optional fields."""
     display_temp = zone_obj.get_display_temp()
     temp_display = f"{display_temp:.1f} °F" if display_temp is not None else "N/A"
-    msg = f"zone: {zone}, name: {zone_obj.zone_name}, temp: {temp_display}"
+    row = [str(zone), str(zone_obj.zone_name), temp_display]
 
     if display_wifi:
-        msg = _append_wifi_status_message(msg, zone_obj)
+        wifi_strength = zone_obj.get_wifi_strength()
+        wifi_status = get_wifi_status_display(zone_obj.get_wifi_status())
+        row.append(f"{wifi_strength} dBm ({wifi_status})")
 
     if display_battery:
-        msg = _append_battery_status_message(msg, zone_obj)
+        battery_voltage = zone_obj.get_battery_voltage()
+        battery_status = get_battery_status_display(zone_obj.get_battery_status())
+        row.append(f"{battery_voltage:.2f} volts ({battery_status})")
 
-    if display_outdoor_weather and outdoor_weather_data:
-        weather_display = weather.format_weather_display(outdoor_weather_data)
-        msg += f", {weather_display}"
-    return msg
-
-
-def _append_wifi_status_message(msg, zone_obj):
-    """Append Wi-Fi status details to a zone output line."""
-    wifi_strength = zone_obj.get_wifi_strength()
-    wifi_status = zone_obj.get_wifi_status()
-    wifi_status_display = get_wifi_status_display(wifi_status)
-    return f"{msg}, wifi strength: {wifi_strength} dBm ({wifi_status_display})"
+    if weather_display is not None:
+        row.append(weather_display)
+    return row
 
 
-def _append_battery_status_message(msg, zone_obj):
-    """Append battery status details to a zone output line."""
-    battery_voltage = zone_obj.get_battery_voltage()
-    battery_status = zone_obj.get_battery_status()
-    battery_status_display = get_battery_status_display(battery_status)
-    return (
-        f"{msg}, battery voltage: {battery_voltage:.2f} volts "
-        f"({battery_status_display})"
-    )
+def _print_select_data_table(headers: List[str], rows: List[List[str]]) -> None:
+    """Size columns to fit the headers and all zone values before printing."""
+    widths = [max(len(value) for value in column) for column in zip(headers, *rows)]
+    for index, row in enumerate([headers] + rows):
+        print(" | ".join(value.ljust(width) for value, width in zip(row, widths)))
+        if index == 0:
+            print("-+-".join("-" * width for width in widths))
 
 
 class AuthenticationError(ValueError):
