@@ -9,6 +9,7 @@ import pprint
 import statistics
 import time
 import traceback
+from typing import Any
 
 # local imports
 from src import email_notification as eml
@@ -1726,7 +1727,7 @@ def print_select_data_from_all_zones(
         return None, None
 
     outdoor_weather_data = _get_outdoor_weather_data(
-        thermostat_type, display_outdoor_weather
+        thermostat_type, zone_lst, display_outdoor_weather
     )
 
     Thermostat = None
@@ -1742,32 +1743,70 @@ def print_select_data_from_all_zones(
             display_wifi,
             display_battery,
             display_outdoor_weather,
-            outdoor_weather_data,
+            outdoor_weather_data.get(_get_zone_zip_code(thermostat_type, zone)),
         )
         print(msg)
 
     return Thermostat, Zone
 
 
-def _get_outdoor_weather_data(thermostat_type, display_outdoor_weather):
-    """Return outdoor weather data once for all zone status lines."""
+def _get_outdoor_weather_data(
+    thermostat_type: str,
+    zone_lst: list[int | str],
+    display_outdoor_weather: bool,
+) -> dict[str, dict[str, Any]]:
+    """Return weather data once per distinct zone zip code."""
     if not display_outdoor_weather:
-        return None
+        return {}
 
+    weather_data_by_zip = {}
     try:
-        # Get zip code from thermostat configuration
-        zip_code = api.SUPPORTED_THERMOSTATS.get(thermostat_type, {}).get("zip_code")
-        if not zip_code:
-            return None
+        zip_codes = dict.fromkeys(
+            zip_code
+            for zone in zone_lst
+            if (zip_code := _get_zone_zip_code(thermostat_type, zone))
+        )
+        if not zip_codes:
+            return weather_data_by_zip
+
         api_key = weather.get_weather_api_key()
-        return weather.get_outdoor_weather(zip_code, api_key)
+        for zip_code in zip_codes:
+            weather_data_by_zip[zip_code] = weather.get_outdoor_weather(
+                zip_code, api_key
+            )
     except Exception as e:
         util.log_msg(
             f"Failed to get outdoor weather data: {e}",
             mode=util.BOTH_LOG,
             func_name=1,
         )
-        return None
+    return weather_data_by_zip
+
+
+def _get_zone_zip_code(thermostat_type: str, zone: int | str) -> str | None:
+    """Return a zone's zip code, falling back to its thermostat default."""
+    thermostat_config = api.SUPPORTED_THERMOSTATS.get(thermostat_type, {})
+    config_module = next(
+        (
+            module
+            for module in api.config_modules
+            if module.ALIAS == thermostat_type
+        ),
+        None,
+    )
+    zone_metadata = getattr(config_module, "metadata", {}).get(zone, {})
+    if not zone_metadata:
+        zone_metadata = next(
+            (
+                metadata
+                for metadata_zone, metadata in getattr(
+                    config_module, "metadata", {}
+                ).items()
+                if str(metadata_zone) == str(zone)
+            ),
+            {},
+        )
+    return zone_metadata.get("zip_code") or thermostat_config.get("zip_code")
 
 
 def _build_zone_select_data_message(
