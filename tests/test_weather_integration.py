@@ -108,10 +108,16 @@ class TestWeatherIntegration(utc.UnitTest):
         )
         output = "\n".join(call.args[0] for call in mock_print.call_args_list)
         self.assertIn(
-            "zone: 0, name: zone 0, temp: 70.0 °F, outdoor(55760)", output
+            "0    | zone 0 | 70.0 °F", output
         )
         self.assertIn(
-            "zone: 7, name: zone 7, temp: 70.0 °F, outdoor(55378)", output
+            "outdoor(55760): 68.5°F", output
+        )
+        self.assertIn(
+            "7    | zone 7 | 70.0 °F", output
+        )
+        self.assertIn(
+            "outdoor(55378): 68.5°F", output
         )
 
     @patch("src.weather.get_outdoor_weather")
