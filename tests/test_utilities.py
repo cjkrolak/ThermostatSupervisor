@@ -114,6 +114,13 @@ class FileAndLoggingTests(utc.UnitTest):
         refresh_token = "rtok" + "456"
         twofa_code = "123" + "456"
         access_token = "tok" + "789"
+        private_key_value = "private" + "-key-material"
+        pem_private_key = (
+            "-----BEGIN " + "PRIVATE KEY-----\n"
+            + "pem-placeholder\n"
+            + "-----END " + "PRIVATE KEY-----"
+        )
+        spaced_private_key_value = "spaced" + "-key-material"
         msg = (
             "Authorization"
             + ": Bearer "
@@ -128,6 +135,12 @@ class FileAndLoggingTests(utc.UnitTest):
             + twofa_code
             + ' "access_token": "'
             + access_token
+            + '" private_key="'
+            + private_key_value
+            + '" "private key": "'
+            + pem_private_key
+            + '" private key="'
+            + spaced_private_key_value
             + '"'
         )
 
@@ -138,11 +151,17 @@ class FileAndLoggingTests(utc.UnitTest):
         self.assertNotIn(refresh_token, sanitized_msg)
         self.assertNotIn(twofa_code, sanitized_msg)
         self.assertNotIn(access_token, sanitized_msg)
+        self.assertNotIn(private_key_value, sanitized_msg)
+        self.assertNotIn(pem_private_key, sanitized_msg)
+        self.assertNotIn(spaced_private_key_value, sanitized_msg)
         self.assertIn("Authorization: ******", sanitized_msg)
         self.assertIn("******", sanitized_msg)
         self.assertIn('refresh_token: "******"', sanitized_msg)
         self.assertIn('2FA code: ******', sanitized_msg)
         self.assertIn('"access_token": "******"', sanitized_msg)
+        self.assertIn('private_key="******"', sanitized_msg)
+        self.assertIn('"private key": "******"', sanitized_msg)
+        self.assertIn('private key="******"', sanitized_msg)
 
     def test_log_msg_redacts_sensitive_values_in_stdout_and_file(self):
         """log_msg writes redacted sensitive values to stdout and data logs."""
@@ -153,6 +172,12 @@ class FileAndLoggingTests(utc.UnitTest):
         full_path = util.get_full_file_path(file_name)
         password_value = "secret" + "123"
         refresh_token = "rtok" + "456"
+        private_key_value = "private" + "-key-material"
+        pem_private_key = (
+            "-----BEGIN " + "PRIVATE KEY-----\n"
+            + "pem-placeholder\n"
+            + "-----END " + "PRIVATE KEY-----"
+        )
         msg = (
             "password"
             + "="
@@ -161,6 +186,11 @@ class FileAndLoggingTests(utc.UnitTest):
             + "refresh_token"
             + "="
             + refresh_token
+            + " private_key="
+            + private_key_value
+            + ' private key="'
+            + pem_private_key
+            + '"'
         )
 
         try:
@@ -170,8 +200,12 @@ class FileAndLoggingTests(utc.UnitTest):
 
             self.assertIn("******", stdout)
             self.assertIn("refresh_token=******", stdout)
+            self.assertIn("private_key=******", stdout)
+            self.assertIn('private key="******"', stdout)
             self.assertNotIn(password_value, stdout)
             self.assertNotIn(refresh_token, stdout)
+            self.assertNotIn(private_key_value, stdout)
+            self.assertNotIn(pem_private_key, stdout)
             self.assertEqual("", stderr)
 
             with open(full_path, encoding="utf-8") as file_handle:
@@ -179,8 +213,12 @@ class FileAndLoggingTests(utc.UnitTest):
 
             self.assertIn("******", file_contents)
             self.assertIn("refresh_token=******", file_contents)
+            self.assertIn("private_key=******", file_contents)
+            self.assertIn('private key="******"', file_contents)
             self.assertNotIn(password_value, file_contents)
             self.assertNotIn(refresh_token, file_contents)
+            self.assertNotIn(private_key_value, file_contents)
+            self.assertNotIn(pem_private_key, file_contents)
         finally:
             util.FILE_PATH = original_file_path
             shutil.rmtree(temp_dir)
