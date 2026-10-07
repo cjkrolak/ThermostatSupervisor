@@ -54,7 +54,7 @@ else:
     FLASK_SSL_CERT = None
     flask_kwargs = {}
     FLASK_URL_PREFIX = "http://"
-flask_url = FLASK_URL_PREFIX + flask_ip_address + ":" + str(FLASK_PORT)
+flask_url = FLASK_URL_PREFIX + flask_ip_address + ":" + str(FLASK_PORT) + "/data"
 
 argv = []  # supervisor runtime args list
 
