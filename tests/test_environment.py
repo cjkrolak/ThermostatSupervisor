@@ -138,27 +138,28 @@ class EnvironmentTests(utc.UnitTest):
         self.assertEqual(result["value"], "default_val")
         self.assertEqual(result["source"], "default")
 
-    def test_get_env_variable_2fa_masking(self):
+    @unittest.mock.patch.object(env, "_read_supervisor_env_file", return_value={})
+    def test_get_env_variable_2fa_masking(
+        self, mock_env_file: unittest.mock.Mock
+    ) -> None:
         """
         Test that secret-like keys are properly masked in get_env_variable().
         """
         secret_variants = ["TEST_2FA", "OPENWEATHER_API_KEY", "ACCESS_TOKEN"]
-        for env_key in secret_variants:
-            os.environ[env_key] = "secret_value"
-
-        try:
+        # Local configuration must not override or be deleted by this fixture.
+        with unittest.mock.patch.dict(
+            os.environ, dict.fromkeys(secret_variants, "secret_value")
+        ):
             for env_key in secret_variants:
                 result = env.get_env_variable(env_key)
                 self.assertEqual(result["status"], util.NO_ERROR)
                 self.assertEqual(result["value"], "secret_value")
+                self.assertEqual(result["source"], "environment_variable")
                 self.assertEqual(
                     env._mask_sensitive_env_value(env_key, "secret_value"),
                     "(hidden)",
                 )
-        finally:
-            for env_key in secret_variants:
-                if env_key in os.environ:
-                    del os.environ[env_key]
+        mock_env_file.assert_called()
 
     def test_get_env_variable(self):
         """

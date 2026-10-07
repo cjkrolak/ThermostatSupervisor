@@ -8,8 +8,9 @@ was creating invalid URLs when environment variables contain empty values.
 import os
 import tempfile
 import unittest
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
+from src import environment as env
 from src import sht31
 from src import utilities as util
 from tests import unit_test_common as utc
@@ -127,8 +128,8 @@ class TestSHT31EmptyIP(utc.UnitTest):
     @patch.object(sht31.ThermostatClass, "spawn_flask_server")
     @patch.dict(os.environ, {}, clear=False)
     def test_none_ip_address_raises_error_in_non_unit_test_mode(
-        self, mock_spawn
-    ):
+        self, mock_spawn: Mock
+    ) -> None:
         """
         Test that None IP addresses raise ValueError in non-unit test mode.
         """
@@ -144,10 +145,12 @@ class TestSHT31EmptyIP(utc.UnitTest):
                 try:
                     os.chdir(temp_dir)
 
-                    # Don't create supervisor-env.txt, so env var is missing
-                    # This should raise ValueError
-                    with self.assertRaises(ValueError) as context:
-                        sht31.ThermostatClass(1, verbose=False)
+                    # Keep the project-root fallback inside the empty fixture.
+                    with patch.object(
+                        env, "__file__", os.path.join(temp_dir, "src", "environment.py")
+                    ):
+                        with self.assertRaises(ValueError) as context:
+                            sht31.ThermostatClass(1, verbose=False)
 
                     # Verify the error message is informative
                     error_msg = str(context.exception)
