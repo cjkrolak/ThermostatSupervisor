@@ -105,7 +105,7 @@ _AUTHORIZATION_PATTERN = re.compile(
 )
 _SENSITIVE_KEY_PATTERN = re.compile(
     r"(?i)(?P<prefix>(?:[A-Za-z0-9_.-]*?(?:password|passwd|pwd|secret|"
-    r"client[_ -]?secret|access[_ -]?token|refresh[_ -]?token|"
+    r"client[_ -]?secret|private[_ -]?key|access[_ -]?token|refresh[_ -]?token|"
     r"auth(?:entication)?[_ -]?token|openweather[_ -]?api[_ -]?key|"
     r"weather[_ -]?api[_ -]?key|api[_ -]?key|app[_ -]?id|appid|token|"
     r"2fa(?:[_ -]?code)?|otp))['\"]?\s*[:=]\s*)"
