@@ -30,35 +30,36 @@ required_env_variables = {
     "BLINK_PASSWORD": None,
 }
 
-# Per-zone metadata, keyed by the configured zone number.
+# Per-zone metadata, keyed by the configured zone number. Blink zones can span
+# locations, so a zone zip code overrides the global default for weather data.
 # `zone_name` is required and should match the name used in the Blink app.
 # Zone numbers are arbitrary. Other thermostat configs may also include
 # `host_name`, `ip_address`, `serial_number`, or runtime status fields.
 metadata = {
     # cabin back zones
-    0: {"zone_name": "garage door"},
-    1: {"zone_name": "main driveway"},
-    2: {"zone_name": "front yard"},
-    3: {"zone_name": "back yard"},
-    4: {"zone_name": "road"},
-    5: {"zone_name": "garage back"},
-    6: {"zone_name": "cabin doorbell"},
+    0: {"zone_name": "garage door", "zip_code": "55760"},
+    1: {"zone_name": "main driveway", "zip_code": "55760"},
+    2: {"zone_name": "front yard", "zip_code": "55760"},
+    3: {"zone_name": "back yard", "zip_code": "55760"},
+    4: {"zone_name": "road", "zip_code": "55760"},
+    5: {"zone_name": "garage back", "zip_code": "55760"},
+    6: {"zone_name": "cabin doorbell", "zip_code": "55760"},
     # home zones
-    7: {"zone_name": "west"},
-    8: {"zone_name": "north"},
-    9: {"zone_name": "south"},
-    10: {"zone_name": "nw-se"},
-    11: {"zone_name": "home driveway"},
-    12: {"zone_name": "cat camera"},
-    13: {"zone_name": "home doorbell"},
+    7: {"zone_name": "west", "zip_code": "55378"},
+    8: {"zone_name": "north", "zip_code": "55378"},
+    9: {"zone_name": "south", "zip_code": "55378"},
+    10: {"zone_name": "nw-se", "zip_code": "55378"},
+    11: {"zone_name": "home driveway", "zip_code": "55378"},
+    12: {"zone_name": "cat camera", "zip_code": "55378"},
+    13: {"zone_name": "home doorbell", "zip_code": "55378"},
     # cabin front zones
-    14: {"zone_name": "front dogs"},
-    15: {"zone_name": "beach"},
-    16: {"zone_name": "dock"},
-    17: {"zone_name": "deck"},
-    18: {"zone_name": "basement kitchen"},
-    19: {"zone_name": "loft"},
-    20: {"zone_name": "garage"},
+    14: {"zone_name": "front dogs", "zip_code": "55760"},
+    15: {"zone_name": "beach", "zip_code": "55760"},
+    16: {"zone_name": "dock", "zip_code": "55760"},
+    17: {"zone_name": "deck", "zip_code": "55760"},
+    18: {"zone_name": "basement kitchen", "zip_code": "55760"},
+    19: {"zone_name": "loft", "zip_code": "55760"},
+    20: {"zone_name": "garage", "zip_code": "55760"},
 }
 
 # supported thermostat configs
@@ -67,9 +68,8 @@ supported_configs = {
     "type": 6,
     "zones": list(metadata.keys()),
     "modes": ["OFF_MODE"],
-    "zip_code": "55760",  # Zip code for outdoor weather data
-    # Blink zones may span locations, but weather is fetched once per thermostat
-    # type for efficiency.
+    # Keep one default for thermostat types or zones without a specific value.
+    "zip_code": "55760",
 }
 
 

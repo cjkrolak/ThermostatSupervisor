@@ -33,6 +33,7 @@ class TestConfigMetadata(unittest.TestCase):
             "ip_address",
             "serial_number",
             "local_net_available",
+            "zip_code",
         }
 
         for config in configs:

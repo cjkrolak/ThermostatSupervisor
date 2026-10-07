@@ -51,6 +51,7 @@ class SelectDataTableTest(unittest.TestCase):
                 api.SUPPORTED_THERMOSTATS, {"blink": {"zip_code": "00000"}}
             )
         )
+        self.enterContext(unittest.mock.patch.object(api, "config_modules", []))
         self.enterContext(
             unittest.mock.patch.object(
                 tc.weather, "get_weather_api_key", return_value=None
@@ -107,7 +108,7 @@ class SelectDataTableTest(unittest.TestCase):
         self.assertEqual(len(lines[0]), len(lines[1]))
         self.assertEqual(result, (self.thermostat, self.zones[-1]))
         self.get_weather.assert_called_once()
-        self.format_weather.assert_called_once()
+        self.assertEqual(self.format_weather.call_count, 2)
         self.assertEqual(self.create.call_count, 2)
 
     def test_optional_columns(self) -> None:
@@ -146,6 +147,29 @@ class SelectDataTableTest(unittest.TestCase):
         output, _ = self.query_table()
         self.assertNotIn("Outdoor weather", output)
         self.format_weather.assert_not_called()
+
+    def test_weather_failure_isolated_by_zip(self) -> None:
+        """Fetch later locations even when one ZIP lookup fails."""
+        self.enterContext(
+            unittest.mock.patch.object(
+                tc,
+                "_get_zone_zip_code",
+                side_effect=["55760", "55378"],
+            )
+        )
+        self.get_weather.side_effect = [
+            tc.weather.WeatherError("ZIP lookup failed"),
+            {"outdoor_temp": 68.5},
+        ]
+
+        with unittest.mock.patch.object(tc.util, "log_msg"):
+            weather_data = tc._get_outdoor_weather_data("blink", [0, 12], True)
+
+        self.assertEqual(weather_data, {"55378": {"outdoor_temp": 68.5}})
+        self.assertEqual(
+            [call.args[0] for call in self.get_weather.call_args_list],
+            ["55760", "55378"],
+        )
 
     def test_empty_zones(self) -> None:
         """An empty zone list must not query hardware or weather."""
