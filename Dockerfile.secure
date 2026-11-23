@@ -2,7 +2,7 @@
 # This version addresses Docker security vulnerabilities
 
 # Use specific Python version for reproducibility
-FROM python:3.16.0a2-slim@sha256:b743a8ab2708d630f1c1c008ef5c99d4b635ec16bb2012284f731d9957a14a1c
+FROM python:3.16.0a2-slim@sha256:7bee4fbf8ee96e444034d88e5640245c25a1a9a664388c08cf0edd119789210a
 
 # Security: Add labels for tracking
 LABEL maintainer="ThermostatSupervisor" \
